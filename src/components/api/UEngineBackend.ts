@@ -2013,7 +2013,9 @@ class UEngineBackend implements Backend {
 
     async getPaletteSettings(): Promise<any> {
         console.warn("getPaletteSettings is not implemented - only use Process-GPT Mode");
-        return { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+        return {
+            visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask']
+        };
     }
 
     async savePaletteSettings(settings: any): Promise<any> {

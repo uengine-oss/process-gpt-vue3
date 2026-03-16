@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import BackendFactory from '@/components/api/BackendFactory';
 
+const getDefaultVisibleTaskTypes = (): string[] => ['bpmn:ManualTask', 'bpmn:ServiceTask'];
+
 // Interfaces
 export interface TaskSystem {
     id: string;
@@ -87,7 +89,7 @@ export const useTaskCatalogStore = defineStore({
 
         // Palette Settings (legacy)
         paletteSettings: {
-            visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask']
+            visibleTaskTypes: getDefaultVisibleTaskTypes()
         } as PaletteSettings,
         paletteSettingsLoaded: false,
 
@@ -222,7 +224,8 @@ export const useTaskCatalogStore = defineStore({
             this.error = null;
             try {
                 const backend = BackendFactory.createBackend();
-                this.propertySchemas = await backend.getPropertySchemas(taskType);
+                const schemas = await backend.getPropertySchemas(taskType);
+                this.propertySchemas = Array.isArray(schemas) ? schemas : [];
                 this.schemasLoaded = true;
             } catch (error: any) {
                 console.error('Failed to load property schemas:', error);
@@ -279,11 +282,20 @@ export const useTaskCatalogStore = defineStore({
             this.error = null;
             try {
                 const backend = BackendFactory.createBackend();
-                this.paletteSettings = await backend.getPaletteSettings();
+                const settings = await backend.getPaletteSettings();
+                const visibleTaskTypes = settings?.visibleTaskTypes;
+                this.paletteSettings = {
+                    visibleTaskTypes: Array.isArray(visibleTaskTypes)
+                        ? visibleTaskTypes
+                        : getDefaultVisibleTaskTypes()
+                };
                 this.paletteSettingsLoaded = true;
             } catch (error: any) {
                 console.error('Failed to load palette settings:', error);
                 this.error = error.message;
+                this.paletteSettings = {
+                    visibleTaskTypes: getDefaultVisibleTaskTypes()
+                };
             } finally {
                 this.loading = false;
             }
@@ -306,6 +318,9 @@ export const useTaskCatalogStore = defineStore({
         },
 
         toggleTaskType(taskType: string) {
+            if (!Array.isArray(this.paletteSettings.visibleTaskTypes)) {
+                this.paletteSettings.visibleTaskTypes = getDefaultVisibleTaskTypes();
+            }
             const index = this.paletteSettings.visibleTaskTypes.indexOf(taskType);
             if (index !== -1) {
                 this.paletteSettings.visibleTaskTypes.splice(index, 1);
@@ -364,7 +379,7 @@ export const useTaskCatalogStore = defineStore({
             this.catalogLoaded = false;
             this.propertySchemas = [];
             this.schemasLoaded = false;
-            this.paletteSettings = { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+            this.paletteSettings = { visibleTaskTypes: getDefaultVisibleTaskTypes() };
             this.paletteSettingsLoaded = false;
             this.paletteTaskTypes = [];
             this.paletteTaskTypesLoaded = false;
@@ -391,21 +406,24 @@ export const useTaskCatalogStore = defineStore({
 
         // Get schemas by task type
         schemasByTaskType: (state) => (taskType: string) => {
-            return state.propertySchemas
+            const schemas = Array.isArray(state.propertySchemas) ? state.propertySchemas : [];
+            return schemas
                 .filter(s => s.task_type === taskType)
                 .sort((a, b) => a.display_order - b.display_order);
         },
 
         // Get mandatory schemas by task type
         mandatorySchemasByTaskType: (state) => (taskType: string) => {
-            return state.propertySchemas
+            const schemas = Array.isArray(state.propertySchemas) ? state.propertySchemas : [];
+            return schemas
                 .filter(s => s.task_type === taskType && s.is_mandatory)
                 .sort((a, b) => a.display_order - b.display_order);
         },
 
         // Check if task type is visible in palette
         isTaskTypeVisible: (state) => (taskType: string) => {
-            return state.paletteSettings.visibleTaskTypes.includes(taskType);
+            const visible = state.paletteSettings?.visibleTaskTypes;
+            return Array.isArray(visible) ? visible.includes(taskType) : false;
         },
 
         // Get enabled palette task types (new table-based)

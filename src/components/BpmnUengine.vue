@@ -239,8 +239,16 @@ export default {
         } else {
             const isGsDefinitionChat = !!window.$gs && this.$route?.path === '/definitions/chat';
             if (isGsDefinitionChat) {
-                // GS 모드의 definitions/chat에서는 초기 기본값(BPMN)을 주입하지 않는다.
-                this.diagramXML = null;
+                // GS 모드 definitions/chat: 샘플 태스크는 제외하되, 편집 가능한 빈 다이어그램은 생성한다.
+                this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <uengine:ProcessVariables id="ProcessVariables_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1" />
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
             } else {
                 // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
                 this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -311,7 +319,9 @@ export default {
         }
         Promise.resolve()
             .then(() => {
-                if (!this.diagramXML) return;
+                if (!this.diagramXML) {
+                    return this.bpmnViewer.createDiagram();
+                }
                 return this.bpmnViewer.importXML(this.diagramXML);
             })
             .catch((e) => {

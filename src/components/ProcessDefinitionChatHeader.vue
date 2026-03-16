@@ -107,7 +107,7 @@
                                 </template>
                                 <span>{{ $t('chat.import') }}</span>
                             </v-tooltip>
-                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold, .csv, .xlsx" style="display: none" />
+                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn" style="display: none" />
                     
                             <div v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map' && !isMobile">
                                 <!-- ProcessDefinitionChatHeader.vue 프로세스 정의 수정 및 저장 아이콘 -->

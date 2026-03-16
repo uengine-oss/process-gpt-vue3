@@ -243,7 +243,8 @@ const rightPartStyle = computed(() => {
                 </template>
                 <span>{{ menuName }}</span>
             </v-tooltip>
-            <slot :name="slotName"></slot>
+            <slot v-if="slotName === 'leftpart'" name="leftpart"></slot>
+            <slot v-else name="rightpart"></slot>
         </div>
 
         <!---right chat conversation -->
@@ -259,10 +260,8 @@ const rightPartStyle = computed(() => {
             </v-btn>
         </div>
         <v-card-text class="pa-0 mobile-left-menu mobile-drawer-content">
-            <slot 
-                :name="route.path === '/definition-map' ? 'rightpart' : 'mobileLeftContent'" 
-                :closeDrawer="handleCloseDrawer"
-            ></slot>
+            <slot v-if="route.path === '/definition-map'" name="rightpart" :closeDrawer="handleCloseDrawer"></slot>
+            <slot v-else name="mobileLeftContent" :closeDrawer="handleCloseDrawer"></slot>
         </v-card-text>
     </v-navigation-drawer>
 </template>

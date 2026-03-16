@@ -21,6 +21,13 @@ CustomReplaceMenuProvider.$inject = [
  * Get enabled task types from window global
  */
 CustomReplaceMenuProvider.prototype._getEnabledTaskTypes = function() {
+    const isGsMode = !!window.$gs
+        || window._env_?.VITE_GS_MODE === 'true';
+    // GS 모드에서는 태스크 전환을 UserTask만 허용
+    if (isGsMode) {
+        return ['bpmn:UserTask'];
+    }
+
     const enabledTypes = window.$enabledPaletteTaskTypes || [];
     if (enabledTypes.length > 0) {
         return enabledTypes.map(t => t.task_type);

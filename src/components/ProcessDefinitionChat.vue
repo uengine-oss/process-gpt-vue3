@@ -5,41 +5,41 @@
         :class="{ 'is-deleted': isDeleted, 'user-left-part': !isAdmin }"
     >
         <v-card v-if="isConsultingMode">
-            <div :key="chatRenderKey">
-                <div style="display: none;">
-                    <process-definition
-                        ref="definitionComponent"    
-                        class="process-definition-resize"
-                        :bpmn="bpmn"
-                        :isViewMode="true"
-                        :key="definitionChangeCount"
-                        :isXmlMode="isXmlMode"
-                        :definitionPath="fullPath"
-                        :definitionChat="this"
-                        @update="updateDefinition"
-                        @update:processVariables="(val) => (processVariables = val)"
-                    ></process-definition>
-                </div>
-                <div class="process-consulting-ai-first-screen">
-                    <Chat
-                        :messages="messages"
-                        :userInfo="userInfo"
-                        :agentInfo="agentInfo"
-                        :type="'consulting'"
-                        :ProcessGPTActive="ProcessGPTActive"
-                        @requestDraftAgent="requestDraftAgent"
-                        @requestFile="requestFile"
-                        @beforeReply="beforeReply"
-                        @sendMessage="beforeSendMessage"
-                        @startProcess="startProcess"
-                        @cancelProcess="cancelProcess"
-                        @deleteWorkList="deleteWorkList"
-                        @deleteAllWorkList="deleteAllWorkList"
-                        @sendEditedMessage="sendEditedMessage"
-                        @stopMessage="stopMessage"
-                        @toggleProcessGPTActive="toggleProcessGPTActive"
-                    ></Chat>
-                </div>
+            <!-- process-definition만 chatRenderKey로 관리 (BPMN 갱신 시 강제 리셋) -->
+            <div :key="chatRenderKey" style="display: none;">
+                <process-definition
+                    ref="definitionComponent"    
+                    class="process-definition-resize"
+                    :bpmn="bpmn"
+                    :isViewMode="true"
+                    :key="definitionChangeCount"
+                    :isXmlMode="isXmlMode"
+                    :definitionPath="fullPath"
+                    :definitionChat="this"
+                    @update="updateDefinition"
+                    @update:processVariables="(val) => (processVariables = val)"
+                ></process-definition>
+            </div>
+            <!-- Chat은 chatRenderKey 바깥 - 안정적인 컴포넌트 수명주기 보장 -->
+            <div class="process-consulting-ai-first-screen">
+                <Chat
+                    :messages="messages"
+                    :userInfo="userInfo"
+                    :agentInfo="agentInfo"
+                    :type="'consulting'"
+                    :ProcessGPTActive="ProcessGPTActive"
+                    @requestDraftAgent="requestDraftAgent"
+                    @requestFile="requestFile"
+                    @beforeReply="beforeReply"
+                    @sendMessage="beforeSendMessage"
+                    @startProcess="startProcess"
+                    @cancelProcess="cancelProcess"
+                    @deleteWorkList="deleteWorkList"
+                    @deleteAllWorkList="deleteAllWorkList"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                    @toggleProcessGPTActive="toggleProcessGPTActive"
+                ></Chat>
             </div>
         </v-card>
         <AppBaseCard v-else
@@ -49,7 +49,16 @@
                 <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
                     {{ projectName }}
                 </h5>
-                <!-- 프로세스 정의 내부에 있는 ProcessDefinition.vue 컴포넌트 -->
+                <v-alert
+                    v-if="importErrorMessage"
+                    type="error"
+                    variant="tonal"
+                    class="ma-2"
+                    closable
+                    @click:close="importErrorMessage = ''"
+                >
+                    {{ importErrorMessage }}
+                </v-alert>
                 <process-definition
                     ref="definitionComponent"
                     class="process-definition-resize"
@@ -178,34 +187,6 @@
 
             <template v-slot:mobileLeftContent>
                 <div class="process-consulting-ai-third-screen chat-info-view-wrapper">
-                    <Chat
-                        v-if="isAdmin"
-                        :prompt="prompt"
-                        :name="projectName"
-                        :messages="messages"
-                        :chatInfo="chatInfo"
-                        :userInfo="userInfo"
-                        :allUserList="allUserList"
-                        :lock="lock"
-                        :disableChat="disableChat"
-                        :chatRoomId="chatRoomId"
-                        @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage"
-                        @stopMessage="stopMessage"
-                        @addTeam="addTeam"
-                        @addTeamMembers="addTeamMembers"
-                    >
-                        <template v-slot:custom-title>
-                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
-                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
-                                :isEditable="isEditable"
-                                :chatMode="chatMode"
-                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
-                                @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
-                        </template>
-                    </Chat>
                 </div>
             </template>
         </AppBaseCard>
@@ -265,6 +246,7 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 
 const backend = BackendFactory.createBackend();
+const MAX_BPMN_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
@@ -349,6 +331,8 @@ export default {
         lastParsedJSON: null,
         isRetry: false,
         retryCount: 0,
+        importErrorMessage: '',
+        chatContainerReady: false,
     }),
     async created() {
         $try(async () => {
@@ -878,31 +862,86 @@ export default {
             if (!file) {
                 return;
             }
+            me.importErrorMessage = '';
+            const fileName = (file.name || '').toLowerCase();
+            if (!fileName.endsWith('.bpmn')) {
+                console.error('[BPMN Import] Unsupported extension:', file.name);
+                me.importErrorMessage = 'BPMN 파일(.bpmn)만 선택할 수 있습니다.';
+                event.target.value = '';
+                return;
+            }
+            if (file.size > MAX_BPMN_FILE_SIZE_BYTES) {
+                const maxMb = Math.floor(MAX_BPMN_FILE_SIZE_BYTES / (1024 * 1024));
+                const currentMb = (file.size / (1024 * 1024)).toFixed(2);
+                console.error('[BPMN Import] File size exceeded:', {
+                    fileName: file.name,
+                    fileSizeBytes: file.size,
+                    fileSizeMb: currentMb,
+                    maxSizeBytes: MAX_BPMN_FILE_SIZE_BYTES
+                });
+                me.importErrorMessage = `BPMN 파일 용량이 너무 큽니다. 최대 ${maxMb}MB까지 업로드할 수 있습니다.`;
+                event.target.value = '';
+                return;
+            }
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 const content = e.target.result;
-
                 let jsonContent = content;
                 let convertedBpmn = jsonContent;
 
-                if(file.name.indexOf('.jsonold') != -1) {
-                    jsonContent = me.convertOldJson(JSON.parse(content));
-                    convertedBpmn = me.createBpmnXml(jsonContent);
-                }
-                if(file.name.indexOf('.csv') != -1 || file.name.indexOf('.xlsx') != -1) {
-                    jsonContent = me.convertCSVToJSON(content);
-                    console.log("convertCSVToJSON", jsonContent);
-                    if(jsonContent) {
+                try {
+                    if(file.name.indexOf('.jsonold') != -1) {
+                        jsonContent = me.convertOldJson(JSON.parse(content));
                         convertedBpmn = me.createBpmnXml(jsonContent);
                     }
+                    if(file.name.indexOf('.csv') != -1 || file.name.indexOf('.xlsx') != -1) {
+                        jsonContent = me.convertCSVToJSON(content);
+                        console.log("convertCSVToJSON", jsonContent);
+                        if(jsonContent) {
+                            convertedBpmn = me.createBpmnXml(jsonContent);
+                        }
+                    }
+
+                    if (typeof convertedBpmn === 'string' && convertedBpmn.trim()) {
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(convertedBpmn, 'application/xml');
+                        const parseError = xmlDoc.getElementsByTagName('parsererror');
+                        const hasBpmnDefinitions = convertedBpmn.includes('<bpmn:definitions')
+                            || convertedBpmn.includes('<definitions');
+
+                        if (parseError.length > 0) {
+                            throw new Error('BPMN_XML_SYNTAX_ERROR');
+                        }
+                        if (!hasBpmnDefinitions) {
+                            throw new Error('BPMN_DEFINITIONS_NOT_FOUND');
+                        }
+                    }
+                } catch (error) {
+                    console.error('[BPMN Import] Parse/convert error:', error);
+                    if (error?.message === 'BPMN_XML_SYNTAX_ERROR') {
+                        me.importErrorMessage = 'BPMN XML 문법 오류가 있습니다. 내용을 확인해 주세요.';
+                    } else if (error?.message === 'BPMN_DEFINITIONS_NOT_FOUND') {
+                        me.importErrorMessage = 'BPMN XML에 definitions 루트가 없습니다.';
+                    } else {
+                        me.importErrorMessage = '유효한 BPMN XML 파일이 아닙니다.';
+                    }
+                    event.target.value = '';
+                    return;
                 }
 
                 if(convertedBpmn) {
                     me.loadBPMN(convertedBpmn);
                 } else {
-                    alert('BPMN 파일 변환 중 오류가 발생했습니다.');
+                    console.error('[BPMN Import] Empty BPMN content');
+                    me.importErrorMessage = 'BPMN 파일을 불러오지 못했습니다.';
                 }
+                event.target.value = '';
+            };
+            reader.onerror = (error) => {
+                console.error('[BPMN Import] File read error:', error);
+                me.importErrorMessage = '파일을 읽는 중 오류가 발생했습니다.';
+                event.target.value = '';
             };
             reader.readAsText(file);
         },
@@ -2561,12 +2600,10 @@ export default {
 
 :deep(.left-part) {
     width: 75%;
-    /* Apply specific width */
 }
 
 .user-left-part :deep(.left-part) {
     width: 100%;
-    /* Apply specific width for admin */
 }
 
 .is-deleted {
@@ -2579,7 +2616,7 @@ export default {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5); /* 회색 오버레이 */
+    background-color: rgba(0, 0, 0, 0.5);
     z-index: 10;
 }
 </style>

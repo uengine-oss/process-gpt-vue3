@@ -2,7 +2,7 @@
 
 services:
   frontend:
-    image: ghcr.io/uengine-oss/process-gpt-gs:v1.2.9
+    image: ghcr.io/uengine-oss/process-gpt-gs:v1.4.2
     ports:
       - "8080:8080"
     environment:
@@ -12,7 +12,7 @@ services:
       VITE_GS_MODE: "true"
 
   completion:
-    image: ghcr.io/uengine-oss/process-gpt-completion:d639aa4
+    image: ghcr.io/uengine-oss/process-gpt-completion:8529d71
     ports:
       - "8000:8000"
     healthcheck:
@@ -49,7 +49,7 @@ services:
         condition: service_started
 
   polling-service:
-    image: ghcr.io/uengine-oss/process-gpt-polling-service:latest
+    image: ghcr.io/uengine-oss/process-gpt-polling-service:8529d71
     ports:
       - "8010:8000"
     environment:

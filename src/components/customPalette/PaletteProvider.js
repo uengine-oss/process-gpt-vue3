@@ -798,10 +798,21 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
   var visibleTaskTypes = enabledTaskTypes.length > 0
     ? enabledTaskTypes.map(t => t.task_type)
     : (window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask']);
+  var isGsMode = !!window.$gs
+    || window._env_?.VITE_GS_MODE === 'true'
+    || import.meta.env.VITE_GS_MODE === 'true';
+  if (isGsMode) {
+    // GS 모드에서는 UserTask만 노출
+    visibleTaskTypes = ['bpmn:UserTask'];
+  }
+  var defaultTaskType = isGsMode ? 'bpmn:UserTask' : 'bpmn:ManualTask';
+  var defaultTaskTitle = isGsMode
+    ? i18n.global.t('PaletteProvider.Task')
+    : i18n.global.t('PaletteProvider.ManualTask');
 
   if (visibleTaskTypes.includes('bpmn:ManualTask')) {
     actions['create.manual-task'] = createAction(
-      'bpmn:ManualTask', 'activity', 'bpmn-icon-task', i18n.global.t('PaletteProvider.ManualTask')
+      defaultTaskType, 'activity', 'bpmn-icon-task', defaultTaskTitle
     );
   }
 

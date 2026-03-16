@@ -1,0 +1,18 @@
+{
+  "startedAt": "2026-03-11T03:21:18.736Z",
+  "finishedAt": "2026-03-11T03:21:20.047Z",
+  "status": "failed",
+  "steps": [
+    {
+      "name": "semgrep",
+      "startedAt": "2026-03-11T03:21:18.744Z",
+      "finishedAt": "2026-03-11T03:21:20.045Z",
+      "status": "failed",
+      "exitCode": 2,
+      "signal": null,
+      "stdoutPath": "reports\\sast-vue-logs\\semgrep.stdout.log",
+      "stderrPath": "reports\\sast-vue-logs\\semgrep.stderr.log",
+      "reportFile": "reports/semgrep-vue.json"
+    }
+  ]
+}

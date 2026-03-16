@@ -1,4 +1,5 @@
 <template>
+    <div class="chat-component-root" style="height:100%;">
     <div v-if="!workAssistantAgentMode" style="background-color: rgba( 255, 255, 255, 1 );"
         class="chat-info-view-wrapper"
     >
@@ -1372,23 +1373,9 @@
                         </div>
                     </div>
                 </div>
-                <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
-                <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-                <div style="z-index: 9999;" class="d-flex flex-wrap">
-                    <!-- 이미지 미리보기 -->
-                    <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
-                        <img :src="image.url" width="56" height="56" style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />
-                        <v-btn
-                            @click="deleteImage(index)"
-                            density="compact"
-                            icon
-                            size="16"
-                            style="background-color: black !important; margin: 4px 0px 0px -20px !important; position: absolute; top: 4px; right: 4px;"
-                        >
-                            <v-icon color="white" size="14">mdi-close</v-icon>
-                        </v-btn>
-                    </div>
-                </div>
+                <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
+                <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" ref="uploader" class="d-none" @change="changeImage">
+                <div ref="imagePreviewContainer1" style="z-index: 9999;" class="d-flex flex-wrap align-center"></div>
                 <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;' : 'position:relative;'" class="d-flex flex-column align-center pa-0">
                     <div class="mention-autocomplete-wrap">
                         <!-- 선택된 멘션 표시(Primary) -->
@@ -1539,28 +1526,17 @@
             :class="['chat-input-card', inputOnly ? 'pa-0 chat-input-card--inline' : 'pa-4']"
             :style="inputOnly ? 'background: transparent; border-radius: 0; box-shadow: none;' : ''"
         >
-            <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
-            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+            <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
+            <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" ref="uploader" class="d-none" @change="changeImage">
             <input
                 type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png"
                 ref="pdfUploader"
                 class="d-none"
                 @change="handlePdfSelect"
             >
             <div style="z-index: 9999;" class="d-flex flex-wrap">
-                <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
-                    <img :src="image.url" width="56" height="56" style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />
-                    <v-btn
-                        @click="deleteImage(index)"
-                        density="compact"
-                        icon
-                        size="16"
-                        style="background-color: black !important; margin: 4px 0px 0px -20px !important; position: absolute; top: 4px; right: 4px;"
-                    >
-                        <v-icon color="white" size="14">mdi-close</v-icon>
-                    </v-btn>
-                </div>
+                <div ref="imagePreviewContainer2" class="d-flex flex-wrap"></div>
                 <!-- PDF 미리보기(선택된 파일) -->
                 <div v-if="selectedPdfFile" class="pdf-preview-item" style="position: relative; margin: 8px;">
                     <v-chip
@@ -1853,6 +1829,7 @@
     </div>
     <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
         :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingMode" />
+    </div>
 </template>
 
 <script>
@@ -1875,6 +1852,12 @@ import { marked } from 'marked';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
+const MAX_CHAT_IMAGE_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const ALLOWED_CHAT_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png'];
+const ALLOWED_CHAT_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png'];
+const MAX_CHAT_IMAGE_WIDTH = 1920;
+const MAX_CHAT_IMAGE_HEIGHT = 1080;
+const CHAT_ATTACHMENT_DEBUG = true;
 
 export default {
     components: {
@@ -2044,7 +2027,6 @@ export default {
             replyUser: null,
             isViewJSON: [],
             isviewJSONStatus: false,
-            attachedImages: [],
             delImgBtn: false,
             // PDF 업로드(정의체계도/패널 공통)
             selectedPdfFile: null,
@@ -2106,14 +2088,18 @@ export default {
                 { title: "chat.helpDocumentGeneration" },
                 { title: "chat.helpTodoRegistration" },
                 { title: "chat.helpNote" }
-            ]
+            ],
+            attachedImageIdSeed: 0,
+            isComponentAlive: false,
+            attachmentDebugSeq: 0
         };
     },
     created() {
-        // 창 크기 변경 시 높이 조정을 위한 이벤트 리스너 추가
+        this.attachedImages = [];
         window.addEventListener('resize', this.handleResize);
     },
     mounted() {
+        this.isComponentAlive = true;
         var me = this
         document.addEventListener('click', (event) => {
             if (event.target.matches('.request-file-link')) {
@@ -2135,6 +2121,10 @@ export default {
         });
     },
     beforeUnmount() {
+        this.logAttachmentDebug('beforeUnmount', {
+            pendingAttachedImages: Array.isArray(this.attachedImages) ? this.attachedImages.length : -1
+        });
+        this.isComponentAlive = false;
         // 컴포넌트 제거 시 이벤트 리스너 제거
         window.removeEventListener('resize', this.handleResize);
         try {
@@ -2335,6 +2325,207 @@ export default {
         }
     },
     methods: {
+        nextAttachmentDebugId() {
+            this.attachmentDebugSeq += 1;
+            return `${Date.now()}_${this.attachmentDebugSeq}`;
+        },
+        logAttachmentDebug(stage, payload = {}) {
+            if (!CHAT_ATTACHMENT_DEBUG) return;
+            try {
+                const routePath = this.$route?.fullPath || this.$route?.path || '';
+                console.info('[ChatAttachmentDebug]', {
+                    stage,
+                    componentUid: this?._?.uid,
+                    routePath,
+                    isComponentAlive: this.isComponentAlive,
+                    attachedImagesCount: Array.isArray(this.attachedImages) ? this.attachedImages.length : -1,
+                    ...payload
+                });
+            } catch (error) {
+                console.warn('[ChatAttachmentDebug] logging failed:', error);
+            }
+        },
+        showAttachmentError(message) {
+            if (!this.isComponentAlive) {
+                console.warn('[Chat] skip attachment error on unmounted component:', message);
+                return;
+            }
+            this.logAttachmentDebug('showAttachmentError', { message });
+            try {
+                if (typeof this.$try === 'function') {
+                    this.$try({
+                        action: async () => { throw new Error(message); },
+                        errorMsg: message
+                    });
+                    return;
+                }
+                alert(message);
+            } catch (error) {
+                console.error('[Chat] attachment error message failed:', error);
+            }
+        },
+        getFileExtension(fileName) {
+            const name = (fileName || '').toLowerCase();
+            const lastDot = name.lastIndexOf('.');
+            return lastDot > -1 ? name.slice(lastDot) : '';
+        },
+        isAllowedChatImage(file) {
+            if (!file) return false;
+            const mimeType = (file.type || '').toLowerCase();
+            const ext = this.getFileExtension(file.name || '');
+            return ALLOWED_CHAT_IMAGE_MIME_TYPES.includes(mimeType) || ALLOWED_CHAT_IMAGE_EXTENSIONS.includes(ext);
+        },
+        isChatImageSizeValid(file) {
+            return !!file && file.size <= MAX_CHAT_IMAGE_FILE_SIZE_BYTES;
+        },
+        async getImageDimensions(file) {
+            this.logAttachmentDebug('getImageDimensions:start', {
+                fileName: file?.name || null,
+                mimeType: file?.type || null,
+                fileSizeBytes: file?.size ?? null
+            });
+            return new Promise((resolve, reject) => {
+                const objectUrl = URL.createObjectURL(file);
+                const image = new Image();
+                image.onload = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    const dimensions = { width: image.naturalWidth, height: image.naturalHeight };
+                    this.logAttachmentDebug('getImageDimensions:success', dimensions);
+                    resolve(dimensions);
+                };
+                image.onerror = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    this.logAttachmentDebug('getImageDimensions:error', {
+                        fileName: file?.name || null
+                    });
+                    reject(new Error('IMAGE_DIMENSION_READ_FAILED'));
+                };
+                image.src = objectUrl;
+            });
+        },
+        isChatImageResolutionValid(dimensions) {
+            if (!dimensions) return false;
+            return dimensions.width <= MAX_CHAT_IMAGE_WIDTH && dimensions.height <= MAX_CHAT_IMAGE_HEIGHT;
+        },
+        async validateAttachedImagesBeforeSend() {
+            const maxMb = Math.floor(MAX_CHAT_IMAGE_FILE_SIZE_BYTES / (1024 * 1024));
+            const images = Array.isArray(this.attachedImages) ? this.attachedImages : [];
+            this.logAttachmentDebug('validateAttachedImagesBeforeSend:start', {
+                maxMb,
+                maxWidth: MAX_CHAT_IMAGE_WIDTH,
+                maxHeight: MAX_CHAT_IMAGE_HEIGHT,
+                count: images.length
+            });
+            for (const image of images) {
+                const file = image?.file;
+                if (!file) continue;
+                if (!this.isAllowedChatImage(file)) {
+                    console.error('[Chat] attached image format invalid before send:', {
+                        fileName: file.name,
+                        mimeType: file.type
+                    });
+                    this.showAttachmentError('이미지는 JPG(.jpg, .jpeg), PNG(.png) 형식만 업로드할 수 있습니다.');
+                    return false;
+                }
+                if (!this.isChatImageSizeValid(file)) {
+                    console.error('[Chat] attached image size invalid before send:', {
+                        fileName: file.name,
+                        fileSizeBytes: file.size,
+                        maxSizeBytes: MAX_CHAT_IMAGE_FILE_SIZE_BYTES
+                    });
+                    this.showAttachmentError(`이미지 파일은 최대 ${maxMb}MB까지 업로드할 수 있습니다.`);
+                    return false;
+                }
+                try {
+                    const dimensions = await this.getImageDimensions(file);
+                    if (!this.isChatImageResolutionValid(dimensions)) {
+                        console.error('[Chat] attached image resolution invalid before send:', {
+                            fileName: file.name,
+                            width: dimensions.width,
+                            height: dimensions.height,
+                            maxWidth: MAX_CHAT_IMAGE_WIDTH,
+                            maxHeight: MAX_CHAT_IMAGE_HEIGHT
+                        });
+                        this.showAttachmentError(`이미지 해상도는 ${MAX_CHAT_IMAGE_WIDTH}x${MAX_CHAT_IMAGE_HEIGHT} 이하만 업로드할 수 있습니다.`);
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('[Chat] attached image dimension read failed before send:', error);
+                    this.showAttachmentError('이미지 해상도를 확인할 수 없습니다. 다른 이미지를 시도해 주세요.');
+                    return false;
+                }
+            }
+            this.logAttachmentDebug('validateAttachedImagesBeforeSend:ok');
+            return true;
+        },
+        getNextAttachedImageId() {
+            this.attachedImageIdSeed += 1;
+            return `${Date.now()}_${this.attachedImageIdSeed}`;
+        },
+        appendAttachedImage(file, url) {
+            if (!this.isComponentAlive) return;
+            const id = this.getNextAttachedImageId();
+            this.attachedImages.push({ id, url, file });
+            this._renderPreviewDOM(id, url);
+        },
+        _renderPreviewDOM(id, url) {
+            const containers = [this.$refs.imagePreviewContainer1, this.$refs.imagePreviewContainer2].filter(Boolean);
+            containers.forEach(container => {
+                const wrapper = document.createElement('div');
+                wrapper.setAttribute('data-img-id', id);
+                wrapper.style.cssText = 'position:relative; display:inline-block;';
+                const img = document.createElement('img');
+                img.src = url;
+                img.width = 56;
+                img.height = 56;
+                img.style.cssText = 'border:1px solid #ccc; border-radius:10px; margin:8px;';
+                const btn = document.createElement('span');
+                btn.className = 'attached-image-close-btn';
+                btn.innerHTML = '&times;';
+                btn.onclick = () => this.deleteImage(id);
+                wrapper.appendChild(img);
+                wrapper.appendChild(btn);
+                container.appendChild(wrapper);
+            });
+        },
+        _removePreviewDOM(id) {
+            const containers = [this.$refs.imagePreviewContainer1, this.$refs.imagePreviewContainer2].filter(Boolean);
+            containers.forEach(container => {
+                const el = container.querySelector(`[data-img-id="${id}"]`);
+                if (el) el.remove();
+            });
+        },
+        _clearAllPreviewDOM() {
+            const containers = [this.$refs.imagePreviewContainer1, this.$refs.imagePreviewContainer2].filter(Boolean);
+            containers.forEach(container => { container.innerHTML = ''; });
+        },
+        buildCompressedPreview(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('IMAGE_READ_FAILED'));
+                reader.onload = (event) => {
+                    const imgElement = document.createElement("img");
+                    imgElement.onerror = () => reject(new Error('IMAGE_DECODE_FAILED'));
+                    imgElement.src = event?.target?.result || '';
+                    imgElement.onload = () => {
+                        const canvas = document.createElement("canvas");
+                        const maxWidth = 2048;
+                        const scaleSize = imgElement.width > maxWidth ? maxWidth / imgElement.width : 1;
+                        canvas.width = imgElement.width * scaleSize;
+                        canvas.height = imgElement.height * scaleSize;
+
+                        const ctx = canvas.getContext("2d");
+                        if (!ctx) {
+                            reject(new Error('CANVAS_CONTEXT_UNAVAILABLE'));
+                            return;
+                        }
+                        ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+                        resolve(ctx.canvas.toDataURL("image/jpeg", 0.9));
+                    };
+                };
+                reader.readAsDataURL(file);
+            });
+        },
         getLoadingLabel(message) {
             return (message?.content || '생각 중...');
         },
@@ -3190,8 +3381,17 @@ export default {
             }
         },
         beforeSend($event) {
+            const debugId = this.nextAttachmentDebugId();
+            this.logAttachmentDebug('beforeSend:entered', {
+                debugId,
+                eventType: $event?.type || null,
+                newMessageLength: (this.newMessage || '').length,
+                attachedImagesCount: Array.isArray(this.attachedImages) ? this.attachedImages.length : 0,
+                hasSelectedPdfFile: !!this.selectedPdfFile
+            });
             // 이미 전송 중이면 무시
             if (this.isSending) {
+                this.logAttachmentDebug('beforeSend:blocked-isSending', { debugId });
                 return;
             }
             
@@ -3223,11 +3423,17 @@ export default {
                 const hasPdf = !!this.selectedPdfFile;
                 if (copyMsg.length > 0 || this.attachedImages.length > 0 || hasPdf) {
                     this.isSending = true;
+                    this.logAttachmentDebug('beforeSend:dispatch-send', { debugId });
                     this.send();
                 }
             }
         },
         async send() {
+            this.logAttachmentDebug('send:entered', {
+                editIndex: this.editIndex,
+                hasPdf: !!this.selectedPdfFile,
+                attachedImagesCount: Array.isArray(this.attachedImages) ? this.attachedImages.length : 0
+            });
             if (this.editIndex >= 0) {
                 // ChatRoomPage 등 DB 기반 채팅에서는 수정 내용을 저장까지 수행
                 try {
@@ -3252,6 +3458,12 @@ export default {
                 this.editIndex = -1;
             } else {
                 // PDF가 선택된 경우: 전송 직전 업로드하여 fileInfo 생성
+                const imagesValid = await this.validateAttachedImagesBeforeSend();
+                if (!imagesValid) {
+                    this.isSending = false;
+                    this.logAttachmentDebug('send:blocked-invalid-images');
+                    return;
+                }
                 if (this.selectedPdfFile && !this.uploadedPdfInfo) {
                     await this.ensurePdfUploaded();
                 }
@@ -3269,9 +3481,14 @@ export default {
                         content: this.replyPreviewText(this.replyUser)
                     } : null
                 });
+                this.logAttachmentDebug('send:emit-sendMessage', {
+                    attachedImagesCount: this.attachedImages.length,
+                    hasPdf: !!this.uploadedPdfInfo
+                });
             }
             if (this.isReply) this.isReply = false;
             this.attachedImages = [];
+            this._clearAllPreviewDOM();
             this.selectedPdfFile = null;
             this.uploadedPdfInfo = null;
             this.delImgBtn = false;
@@ -3294,25 +3511,70 @@ export default {
                 this.$refs.pdfUploader.click();
             }
         },
-        handlePdfSelect(e) {
+        async handlePdfSelect(e) {
             const file = e.target.files?.[0];
             if (!file) return;
+            const debugId = this.nextAttachmentDebugId();
+            this.logAttachmentDebug('handlePdfSelect:start', {
+                debugId,
+                fileName: file.name,
+                mimeType: file.type,
+                fileSizeBytes: file.size
+            });
 
             // Allow PDF + common Office + image formats (stored to Supabase, converted/OCR’d server-side).
             const name = (file.name || '').toLowerCase();
             const allowedExt = [
                 '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
                 '.txt', '.csv',
-                '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'
+                '.jpg', '.jpeg', '.png'
             ];
             const ok = allowedExt.some(ext => name.endsWith(ext));
             if (!ok) {
+                this.logAttachmentDebug('handlePdfSelect:blocked-invalid-ext', { debugId, fileName: file.name });
                 alert('지원되는 파일 형식이 아닙니다. (PDF/Office/Image/Text)');
                 if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
                 return;
             }
+            if (this.isAllowedChatImage(file) && !this.isChatImageSizeValid(file)) {
+                const maxMb = Math.floor(MAX_CHAT_IMAGE_FILE_SIZE_BYTES / (1024 * 1024));
+                console.error('[Chat] image size exceeded in file uploader:', {
+                    fileName: file.name,
+                    fileSizeBytes: file.size,
+                    maxSizeBytes: MAX_CHAT_IMAGE_FILE_SIZE_BYTES
+                });
+                this.showAttachmentError(`이미지 파일은 최대 ${maxMb}MB까지 업로드할 수 있습니다.`);
+                if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
+                this.logAttachmentDebug('handlePdfSelect:blocked-size', { debugId });
+                return;
+            }
+            if (this.isAllowedChatImage(file)) {
+                try {
+                    const dimensions = await this.getImageDimensions(file);
+                    if (!this.isChatImageResolutionValid(dimensions)) {
+                        console.error('[Chat] image resolution exceeded in file uploader:', {
+                            fileName: file.name,
+                            width: dimensions.width,
+                            height: dimensions.height,
+                            maxWidth: MAX_CHAT_IMAGE_WIDTH,
+                            maxHeight: MAX_CHAT_IMAGE_HEIGHT
+                        });
+                        this.showAttachmentError(`이미지 해상도는 ${MAX_CHAT_IMAGE_WIDTH}x${MAX_CHAT_IMAGE_HEIGHT} 이하만 업로드할 수 있습니다.`);
+                        if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
+                        this.logAttachmentDebug('handlePdfSelect:blocked-resolution', { debugId, dimensions });
+                        return;
+                    }
+                } catch (error) {
+                    console.error('[Chat] image dimension read failed in file uploader:', error);
+                    this.showAttachmentError('이미지 해상도를 확인할 수 없습니다. 다른 이미지를 시도해 주세요.');
+                    if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
+                    this.logAttachmentDebug('handlePdfSelect:blocked-dimension-error', { debugId, error: error?.message || String(error) });
+                    return;
+                }
+            }
             this.selectedPdfFile = file;
             this.uploadedPdfInfo = null; // 새 파일 선택 시 업로드 정보 초기화
+            this.logAttachmentDebug('handlePdfSelect:accepted', { debugId });
         },
         clearSelectedPdf() {
             this.selectedPdfFile = null;
@@ -3386,6 +3648,57 @@ export default {
             const me = this;
             const imageFile = e?.target?.files?.[0];
             if (!imageFile) return;
+            const debugId = me.nextAttachmentDebugId();
+            me.logAttachmentDebug('changeImage:start', {
+                debugId,
+                fileName: imageFile.name,
+                mimeType: imageFile.type,
+                fileSizeBytes: imageFile.size
+            });
+            const maxMb = Math.floor(MAX_CHAT_IMAGE_FILE_SIZE_BYTES / (1024 * 1024));
+            if (!me.isAllowedChatImage(imageFile)) {
+                console.error('[Chat] unsupported image format:', {
+                    fileName: imageFile.name,
+                    mimeType: imageFile.type
+                });
+                me.showAttachmentError('이미지는 JPG(.jpg, .jpeg), PNG(.png) 형식만 업로드할 수 있습니다.');
+                if (e?.target) e.target.value = '';
+                me.logAttachmentDebug('changeImage:blocked-invalid-format', { debugId });
+                return;
+            }
+            if (!me.isChatImageSizeValid(imageFile)) {
+                console.error('[Chat] image size exceeded:', {
+                    fileName: imageFile.name,
+                    fileSizeBytes: imageFile.size,
+                    maxSizeBytes: MAX_CHAT_IMAGE_FILE_SIZE_BYTES
+                });
+                me.showAttachmentError(`이미지 파일은 최대 ${maxMb}MB까지 업로드할 수 있습니다.`);
+                if (e?.target) e.target.value = '';
+                me.logAttachmentDebug('changeImage:blocked-size', { debugId });
+                return;
+            }
+            try {
+                const dimensions = await me.getImageDimensions(imageFile);
+                if (!me.isChatImageResolutionValid(dimensions)) {
+                    console.error('[Chat] image resolution exceeded:', {
+                        fileName: imageFile.name,
+                        width: dimensions.width,
+                        height: dimensions.height,
+                        maxWidth: MAX_CHAT_IMAGE_WIDTH,
+                        maxHeight: MAX_CHAT_IMAGE_HEIGHT
+                    });
+                    me.showAttachmentError(`이미지 해상도는 ${MAX_CHAT_IMAGE_WIDTH}x${MAX_CHAT_IMAGE_HEIGHT} 이하만 업로드할 수 있습니다.`);
+                    if (e?.target) e.target.value = '';
+                    me.logAttachmentDebug('changeImage:blocked-resolution', { debugId, dimensions });
+                    return;
+                }
+            } catch (error) {
+                console.error('[Chat] image dimension read failed:', error);
+                me.showAttachmentError('이미지 해상도를 확인할 수 없습니다. 다른 이미지를 시도해 주세요.');
+                if (e?.target) e.target.value = '';
+                me.logAttachmentDebug('changeImage:blocked-dimension-error', { debugId, error: error?.message || String(error) });
+                return;
+            }
 
             const hostname = (window.location.hostname || '').toLowerCase();
             const isLocalHost =
@@ -3434,50 +3747,39 @@ export default {
                     if (data && data.path) {
                         const imageUrl = await backend.getImageUrl(data.path);
                         if (imageUrl) {
-                            me.attachedImages.push({
-                                id: Date.now(),
-                                url: imageUrl,
-                                file: imageFile
-                            });
+                            me.appendAttachedImage(imageFile, imageUrl);
+                            me.logAttachmentDebug('changeImage:uploaded-and-appended', { debugId });
                             return;
                         }
                     }
                 } catch (error) {
+                    console.error('[Chat] image upload failed, fallback to local preview:', error);
+                    me.logAttachmentDebug('changeImage:upload-failed-fallback', { debugId, error: error?.message || String(error) });
                     // 업로드 실패 시 로컬 미리보기(base64)로 폴백
                 }
             }
 
             // 로컬 환경 또는 업로드 실패 시 공통 폴백
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const imgElement = document.createElement("img");
-                imgElement.src = event.target.result;
-                imgElement.onload = () => {
-                    const canvas = document.createElement("canvas");
-                    const max_width = 2048;
-                    const scaleSize = imgElement.width > max_width ? max_width / imgElement.width : 1;
-                    canvas.width = imgElement.width * scaleSize;
-                    canvas.height = imgElement.height * scaleSize;
-
-                    const ctx = canvas.getContext("2d");
-                    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-                    const srcEncoded = ctx.canvas.toDataURL("image/jpeg", 0.9);
-
-                    me.attachedImages.push({
-                        id: Date.now(),
-                        url: srcEncoded,
-                        file: imageFile
-                    });
-                };
-            };
-            reader.readAsDataURL(imageFile);
+            try {
+                const srcEncoded = await me.buildCompressedPreview(imageFile);
+                me.appendAttachedImage(imageFile, srcEncoded);
+                me.logAttachmentDebug('changeImage:local-preview-appended', { debugId });
+            } catch (error) {
+                console.error('[Chat] image preview generation failed:', error);
+                me.showAttachmentError('이미지를 처리하는 중 오류가 발생했습니다. 다른 이미지를 시도해 주세요.');
+                me.logAttachmentDebug('changeImage:local-preview-error', { debugId, error: error?.message || String(error) });
+            } finally {
+                if (e?.target) e.target.value = '';
+            }
         },
         capture() {
             this.$refs.captureImg.value = '';
             this.$refs.captureImg.click();
         },
-        deleteImage(index) {
-            this.attachedImages.splice(index, 1);
+        deleteImage(id) {
+            const idx = this.attachedImages.findIndex(img => img.id === id);
+            if (idx !== -1) this.attachedImages.splice(idx, 1);
+            this._removePreviewDOM(id);
         },
         shouldDisplayUserInfo(message, index) {
             if (index === 0) return true; // 첫 번째 메시지는 항상 유저 정보 표시
@@ -3529,6 +3831,11 @@ export default {
         },
         // 클립보드에서 이미지 붙여넣기 처리 함수
         handlePaste(event) {
+            const debugId = this.nextAttachmentDebugId();
+            this.logAttachmentDebug('handlePaste:start', {
+                debugId,
+                itemCount: (event.clipboardData || event.originalEvent.clipboardData)?.items?.length || 0
+            });
             // 클립보드 데이터 확인
             const items = (event.clipboardData || event.originalEvent.clipboardData).items;
             let imageFound = false;
@@ -3537,35 +3844,53 @@ export default {
                 // 이미지 형식인지 확인
                 if (item.type.indexOf('image') === 0) {
                     const blob = item.getAsFile();
+                    if (!blob) continue;
                     imageFound = true;
-                    
-                    // 파일리더로 이미지 데이터 읽기
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const imgElement = document.createElement("img");
-                        imgElement.src = e.target.result;
-                        imgElement.onload = () => {
-                            const canvas = document.createElement("canvas");
-                            // AI Vision 분석을 위해 고해상도 유지 (최대 2048px)
-                            const max_width = 2048;
-                            const scaleSize = imgElement.width > max_width ? max_width / imgElement.width : 1;
-                            canvas.width = imgElement.width * scaleSize;
-                            canvas.height = imgElement.height * scaleSize;
-
-                            const ctx = canvas.getContext("2d");
-                            ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-                            // AI가 이미지를 제대로 인식할 수 있도록 높은 품질 유지 (0.9 = 90% 품질)
-                            const srcEncoded = ctx.canvas.toDataURL("image/jpeg", 0.9);
-
-                            // 이미지 배열에 추가
-                            this.attachedImages.push({
-                                id: Date.now(),
-                                url: srcEncoded,
-                                file: blob
-                            });
-                        };
-                    };
-                    reader.readAsDataURL(blob);
+                    const maxMb = Math.floor(MAX_CHAT_IMAGE_FILE_SIZE_BYTES / (1024 * 1024));
+                    if (!this.isAllowedChatImage(blob)) {
+                        console.error('[Chat] unsupported pasted image format:', { mimeType: blob.type });
+                        this.showAttachmentError('붙여넣기 이미지는 JPG(.jpg, .jpeg), PNG(.png) 형식만 지원합니다.');
+                        this.logAttachmentDebug('handlePaste:blocked-invalid-format', { debugId, mimeType: blob.type });
+                        return;
+                    }
+                    if (!this.isChatImageSizeValid(blob)) {
+                        console.error('[Chat] pasted image size exceeded:', {
+                            fileSizeBytes: blob.size,
+                            maxSizeBytes: MAX_CHAT_IMAGE_FILE_SIZE_BYTES
+                        });
+                        this.showAttachmentError(`이미지 파일은 최대 ${maxMb}MB까지 업로드할 수 있습니다.`);
+                        this.logAttachmentDebug('handlePaste:blocked-size', { debugId, fileSizeBytes: blob.size });
+                        return;
+                    }
+                    this.getImageDimensions(blob)
+                        .then((dimensions) => {
+                            if (!this.isChatImageResolutionValid(dimensions)) {
+                                console.error('[Chat] pasted image resolution exceeded:', {
+                                    width: dimensions.width,
+                                    height: dimensions.height,
+                                    maxWidth: MAX_CHAT_IMAGE_WIDTH,
+                                    maxHeight: MAX_CHAT_IMAGE_HEIGHT
+                                });
+                                this.showAttachmentError(`이미지 해상도는 ${MAX_CHAT_IMAGE_WIDTH}x${MAX_CHAT_IMAGE_HEIGHT} 이하만 업로드할 수 있습니다.`);
+                                this.logAttachmentDebug('handlePaste:blocked-resolution', { debugId, dimensions });
+                                return;
+                            }
+                            this.buildCompressedPreview(blob)
+                                .then((srcEncoded) => {
+                                    this.appendAttachedImage(blob, srcEncoded);
+                                    this.logAttachmentDebug('handlePaste:appended', { debugId });
+                                })
+                                .catch((error) => {
+                                    console.error('[Chat] pasted image preview generation failed:', error);
+                                    this.showAttachmentError('붙여넣은 이미지를 처리하는 중 오류가 발생했습니다.');
+                                    this.logAttachmentDebug('handlePaste:preview-error', { debugId, error: error?.message || String(error) });
+                                });
+                        })
+                        .catch((error) => {
+                            console.error('[Chat] pasted image dimension read failed:', error);
+                            this.showAttachmentError('붙여넣은 이미지 해상도를 확인할 수 없습니다.');
+                            this.logAttachmentDebug('handlePaste:dimension-error', { debugId, error: error?.message || String(error) });
+                        });
                     break;
                 }
             }
@@ -4499,11 +4824,22 @@ pre {
   display: inline-block;
 }
 
-.image-preview-item .v-btn {
+.attached-image-close-btn {
   position: absolute;
   top: 4px;
   right: 4px;
   z-index: 10;
+  width: 18px;
+  height: 18px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .chat-participants-box {

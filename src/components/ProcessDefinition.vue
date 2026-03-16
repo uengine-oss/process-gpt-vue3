@@ -22,6 +22,24 @@
                         ></v-skeleton-loader>
                     </div>
                     <div v-if="isXmlMode" style="height: calc(100% - 50px); margin-top: 50px; overflow: auto; padding: 10px">
+                        <div class="d-flex justify-end mb-2 ga-2">
+                            <v-btn
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                @click="copyXmlToClipboard"
+                            >
+                                복사
+                            </v-btn>
+                            <v-btn
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                @click="downloadXmlFile"
+                            >
+                                다운로드
+                            </v-btn>
+                        </div>
                         <XmlViewer v-if="isViewMode" :xml="bpmn"/>
                         <XMLEditor v-else :xml="bpmn" @changeBpmn="changeBpmn"/>
                     </div>
@@ -1160,6 +1178,87 @@ export default {
             this.isResizing = false;
             document.removeEventListener('mousemove', this.doResize);
             document.removeEventListener('mouseup', this.stopResize);
+        },
+        getSafeXmlText() {
+            return typeof this.bpmn === 'string' ? this.bpmn : '';
+        },
+        formatXml(xmlText) {
+            if (!xmlText) return '';
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
+            const parseError = xmlDoc.getElementsByTagName('parsererror');
+            if (parseError.length > 0) {
+                return xmlText;
+            }
+            const serializer = new XMLSerializer();
+            const serialized = serializer.serializeToString(xmlDoc).replace(/(>)(<)(\/*)/g, '$1\r\n$2$3');
+            let indent = 0;
+            return serialized
+                .split('\r\n')
+                .map((line) => line.trim())
+                .filter(Boolean)
+                .map((line) => {
+                    if (line.startsWith('</')) {
+                        indent = Math.max(indent - 1, 0);
+                    }
+                    const formattedLine = `${'  '.repeat(indent)}${line}`;
+                    if (!line.startsWith('</') && !line.endsWith('/>') && !line.startsWith('<?') && !line.startsWith('<!')) {
+                        indent += 1;
+                    }
+                    return formattedLine;
+                })
+                .join('\n');
+        },
+        async copyXmlToClipboard() {
+            try {
+                const xmlText = this.getSafeXmlText();
+                const formattedXml = this.formatXml(xmlText);
+                const output = formattedXml || xmlText;
+
+                if (navigator?.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(output);
+                    return;
+                }
+
+                const textarea = document.createElement('textarea');
+                textarea.value = output;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            } catch (error) {
+                console.error('Failed to copy XML:', error);
+            }
+        },
+        downloadXmlFile() {
+            try {
+                const xmlText = this.getSafeXmlText();
+                const formattedXml = this.formatXml(xmlText);
+                const processName = this.processDefinition?.processDefinitionName
+                    || this.processDefinition?.processDefinitionId
+                    || this.definitionPath
+                    || 'process';
+                const safeName = String(processName).replace(/[\\/:*?"<>|]/g, '_');
+                const now = new Date();
+                const pad = (n) => String(n).padStart(2, '0');
+                const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+                const fileName = `${safeName}_${timestamp}.bpmn`;
+
+                const blob = new Blob([formattedXml || xmlText], { type: 'application/xml;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Failed to download XML:', error);
+            }
         }
     }
 };

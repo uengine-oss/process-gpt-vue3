@@ -1,0 +1,4157 @@
+{
+  "generatedAt": "2026-03-11T03:21:20.023Z",
+  "items": [
+    {
+      "sourceFile": "src\\App.vue",
+      "sourceStartLine": 43,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__App__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\admin\\PropertySchemaDialog.vue",
+      "sourceStartLine": 132,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__admin__PropertySchemaDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\admin\\PropertySchemaManager.vue",
+      "sourceStartLine": 394,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__admin__PropertySchemaManager__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\admin\\SystemManager.vue",
+      "sourceStartLine": 152,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__admin__SystemManager__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\admin\\TaskCatalogAdmin.vue",
+      "sourceStartLine": 43,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__admin__TaskCatalogAdmin__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\admin\\TaskCatalogDialog.vue",
+      "sourceStartLine": 143,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__admin__TaskCatalogDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\admin\\TaskCatalogList.vue",
+      "sourceStartLine": 130,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__admin__TaskCatalogList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\admin\\TaskTypeSettings.vue",
+      "sourceStartLine": 99,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__admin__TaskTypeSettings__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentChat.vue",
+      "sourceStartLine": 45,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentChat__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentChatActions.vue",
+      "sourceStartLine": 53,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentChatActions__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentChatInfo.vue",
+      "sourceStartLine": 301,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentChatInfo__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentChatLearning.vue",
+      "sourceStartLine": 13,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentChatLearning__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentChatModule.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentChatModule__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentChatQuestion.vue",
+      "sourceStartLine": 13,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentChatQuestion__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentChatRooms.vue",
+      "sourceStartLine": 208,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentChatRooms__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentDmnHistory.vue",
+      "sourceStartLine": 215,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentDmnHistory__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentKnowledgeManagement.vue",
+      "sourceStartLine": 140,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentKnowledgeManagement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentSkillEdit.vue",
+      "sourceStartLine": 69,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentSkillEdit__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentSkillHistory.vue",
+      "sourceStartLine": 219,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentSkillHistory__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentSkills.vue",
+      "sourceStartLine": 165,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentSkills__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\AgentToolPriority.vue",
+      "sourceStartLine": 59,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__AgentToolPriority__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\analytics\\olap\\FieldList.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__analytics__olap__FieldList__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\analytics\\olap\\NaturalQueryInput.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__analytics__olap__NaturalQueryInput__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\analytics\\olap\\PivotEditor.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__analytics__olap__PivotEditor__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\analytics\\olap\\ResultGrid.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__analytics__olap__ResultGrid__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\chats\\ChatDetail.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__chats__ChatDetail__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\chats\\ChatInfo.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__chats__ChatInfo__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\chats\\ChatListing.vue",
+      "sourceStartLine": 277,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__chats__ChatListing__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\chats\\ChatProfile.vue",
+      "sourceStartLine": 20,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__chats__ChatProfile__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\chats\\ChatSendMsg.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__chats__ChatSendMsg__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\chats\\UserListing.vue",
+      "sourceStartLine": 69,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__chats__UserListing__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\BaseProcess.vue",
+      "sourceStartLine": 5,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__BaseProcess__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\DefinitionMapList.vue",
+      "sourceStartLine": 92,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__DefinitionMapList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\DryRunProcess.vue",
+      "sourceStartLine": 49,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__DryRunProcess__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\MajorProcess.vue",
+      "sourceStartLine": 104,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__MajorProcess__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\MegaProcess.vue",
+      "sourceStartLine": 97,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__MegaProcess__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\MetricsView.vue",
+      "sourceStartLine": 303,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__MetricsView__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\PermissionDialog.vue",
+      "sourceStartLine": 246,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__PermissionDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\ProcessDefinitionMap.vue",
+      "sourceStartLine": 768,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__ProcessDefinitionMap__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\ProcessDialog.vue",
+      "sourceStartLine": 141,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__ProcessDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\ProcessExecuteDialog.vue",
+      "sourceStartLine": 26,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__ProcessExecuteDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\ProcessGPTExecute.vue",
+      "sourceStartLine": 87,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__ProcessGPTExecute__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\ProcessMenu.vue",
+      "sourceStartLine": 58,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__ProcessMenu__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\SubProcess.vue",
+      "sourceStartLine": 103,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__SubProcess__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\SubProcessDetail.vue",
+      "sourceStartLine": 197,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__SubProcessDetail__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\TestProcess.vue",
+      "sourceStartLine": 452,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__TestProcess__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\TestRecordCard.vue",
+      "sourceStartLine": 26,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__TestRecordCard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\TestVariable.vue",
+      "sourceStartLine": 54,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__TestVariable__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\TestVariables.vue",
+      "sourceStartLine": 57,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__TestVariables__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\definition-map\\ViewProcessDetails.vue",
+      "sourceStartLine": 127,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__definition-map__ViewProcessDetails__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\BackToHereView.vue",
+      "sourceStartLine": 86,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__BackToHereView__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\DefaultWorkItem.vue",
+      "sourceStartLine": 100,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__DefaultWorkItem__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\DelegateTaskForm.vue",
+      "sourceStartLine": 221,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__DelegateTaskForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\FormInterviewChat.vue",
+      "sourceStartLine": 24,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__FormInterviewChat__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\FormRealtimeAssistant.vue",
+      "sourceStartLine": 95,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__FormRealtimeAssistant__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\FormWorkItem.vue",
+      "sourceStartLine": 200,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__FormWorkItem__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\GanttChart.vue",
+      "sourceStartLine": 106,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__GanttChart__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\InstanceCard.vue",
+      "sourceStartLine": 260,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__InstanceCard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\InstanceHistoryViewer.vue",
+      "sourceStartLine": 16,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__InstanceHistoryViewer__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\InstanceOutput.vue",
+      "sourceStartLine": 36,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__InstanceOutput__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\InstanceProgress.vue",
+      "sourceStartLine": 27,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__InstanceProgress__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\InstanceSource.vue",
+      "sourceStartLine": 91,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__InstanceSource__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\InstanceTodo.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__InstanceTodo__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\InstanceWorkHistory.vue",
+      "sourceStartLine": 27,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__InstanceWorkHistory__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\KanbanBoard.vue",
+      "sourceStartLine": 24,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__KanbanBoard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\KanbanColumn.vue",
+      "sourceStartLine": 64,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__KanbanColumn__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\KanbanColumnCard.vue",
+      "sourceStartLine": 237,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__KanbanColumnCard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\KanbanColumnConfig.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__KanbanColumnConfig__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\ProjectCard.vue",
+      "sourceStartLine": 156,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__ProjectCard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\ProjectCreationForm.vue",
+      "sourceStartLine": 99,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__ProjectCreationForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\ReworkDialog.vue",
+      "sourceStartLine": 57,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__ReworkDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\TaskReturnForm.vue",
+      "sourceStartLine": 93,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__TaskReturnForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\TodoDialog.vue",
+      "sourceStartLine": 82,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__TodoDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\TodolistCard.vue",
+      "sourceStartLine": 45,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__TodolistCard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\TodoTaskColumn.vue",
+      "sourceStartLine": 34,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__TodoTaskColumn__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\TodoTaskItemCard.vue",
+      "sourceStartLine": 106,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__TodoTaskItemCard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\URLWorkItem.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__URLWorkItem__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\WorkItem.vue",
+      "sourceStartLine": 524,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__WorkItem__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\todolist\\WorkItemDialog.vue",
+      "sourceStartLine": 17,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__todolist__WorkItemDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\user-profile\\PhotosCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__user-profile__PhotosCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\user-profile\\PostListing.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__user-profile__PostListing__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\user-profile\\posts\\Comments.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__user-profile__posts__Comments__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\user-profile\\posts\\PostItem.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__user-profile__posts__PostItem__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\user-profile\\profile-one\\IntroCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__user-profile__profile-one__IntroCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\user-profile\\profile-one\\NumberCards.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__user-profile__profile-one__NumberCards__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\user-profile\\profile-one\\TeamsCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__user-profile__profile-one__TeamsCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\user-profile\\ProfileBanner.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__user-profile__ProfileBanner__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\apps\\user-profile\\ProfileBannerOne.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__apps__user-profile__ProfileBannerOne__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\auth\\InitialSettingForm.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__auth__InitialSettingForm__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\auth\\LoginForm.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__auth__LoginForm__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\auth\\RegisterForm.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__auth__RegisterForm__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\auth\\ResetForm.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__auth__ResetForm__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\BpmnLLM.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__BpmnLLM__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\BPMNPDFPreviewer.vue",
+      "sourceStartLine": 36,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__BPMNPDFPreviewer__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\BpmnUengine.vue",
+      "sourceStartLine": 70,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__BpmnUengine__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\BpmnUengineViewer.vue",
+      "sourceStartLine": 137,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__BpmnUengineViewer__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\BPMNXmlGenerator.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__BPMNXmlGenerator__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\BrowserAgent.vue",
+      "sourceStartLine": 159,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__BrowserAgent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\business-rules\\BusinessRuleDefinitions.vue",
+      "sourceStartLine": 513,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__business-rules__BusinessRuleDefinitions__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\business-rules\\BusinessRuleDmnHistory.vue",
+      "sourceStartLine": 188,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__business-rules__BusinessRuleDmnHistory__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\business-rules\\BusinessRuleTestRunner.vue",
+      "sourceStartLine": 254,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__business-rules__BusinessRuleTestRunner__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\business-rules\\BusinessRuleVersionManager.vue",
+      "sourceStartLine": 200,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__business-rules__BusinessRuleVersionManager__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\BusinessRuleLearning.vue",
+      "sourceStartLine": 5,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__BusinessRuleLearning__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\chat\\ChatThread.vue",
+      "sourceStartLine": 217,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__chat__ChatThread__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\chat\\UnifiedChatInput.vue",
+      "sourceStartLine": 39,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__chat__UnifiedChatInput__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ChatModule.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ChatModule__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\dashboards\\dashboard2\\DashboardTodoCards.vue",
+      "sourceStartLine": 22,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dashboards__dashboard2__DashboardTodoCards__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\dashboards\\dashboard2\\DashboardUpcomingScheduls.vue",
+      "sourceStartLine": 49,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dashboards__dashboard2__DashboardUpcomingScheduls__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\dashboards\\dashboard2\\FigmaCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dashboards__dashboard2__FigmaCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\dashboards\\dashboard2\\PayingTable.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dashboards__dashboard2__PayingTable__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\dashboards\\dashboard2\\ProductSales.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dashboards__dashboard2__ProductSales__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\dashboards\\dashboard2\\ProfitExpanse.vue",
+      "sourceStartLine": 76,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dashboards__dashboard2__ProfitExpanse__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\dashboards\\dashboard2\\TextCards.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dashboards__dashboard2__TextCards__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\dashboards\\dashboard2\\TrafficDistribution.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dashboards__dashboard2__TrafficDistribution__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\dashboards\\dashboard2\\UpcommingSchedule.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dashboards__dashboard2__UpcommingSchedule__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\dashboards\\dashboard2\\WelcomeCard.vue",
+      "sourceStartLine": 16,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dashboards__dashboard2__WelcomeCard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\BpmnCommonPanel.vue",
+      "sourceStartLine": 99,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__BpmnCommonPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\BpmnComponentChanger.vue",
+      "sourceStartLine": 40,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__BpmnComponentChanger__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\BpmnComponentFinder.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__BpmnComponentFinder__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\BpmnLoopType.vue",
+      "sourceStartLine": 36,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__BpmnLoopType__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\BpmnStateAnimation.vue",
+      "sourceStartLine": 102,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__BpmnStateAnimation__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\BpmnSubController.vue",
+      "sourceStartLine": 37,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__BpmnSubController__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\BpmnTreeList.vue",
+      "sourceStartLine": 20,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__BpmnTreeList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\BpmnVue.vue",
+      "sourceStartLine": 113,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__BpmnVue__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\BpmnVueFinder.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__BpmnVueFinder__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\ColorRulesetDialog.vue",
+      "sourceStartLine": 337,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__ColorRulesetDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\end\\CompensationEndEvent.vue",
+      "sourceStartLine": 85,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__end__CompensationEndEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\end\\EndEvent.vue",
+      "sourceStartLine": 63,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__end__EndEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\end\\EndEventPanel.vue",
+      "sourceStartLine": 15,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__end__EndEventPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\end\\ErrorEndEvent.vue",
+      "sourceStartLine": 77,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__end__ErrorEndEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\end\\EscalationEndEvent.vue",
+      "sourceStartLine": 75,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__end__EscalationEndEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\end\\SignalEndEvent.vue",
+      "sourceStartLine": 74,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__end__SignalEndEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\end\\TerminateEndEvent.vue",
+      "sourceStartLine": 71,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__end__TerminateEndEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\CatchErrorEvent.vue",
+      "sourceStartLine": 76,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__CatchErrorEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\CompensationIntermediateThrowEvent.vue",
+      "sourceStartLine": 90,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__CompensationIntermediateThrowEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\ConditionalCatchEvent.vue",
+      "sourceStartLine": 87,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__ConditionalCatchEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\EscalationIntermediateCatchEvent.vue",
+      "sourceStartLine": 90,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__EscalationIntermediateCatchEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\EscalationIntermediateThrowEvent.vue",
+      "sourceStartLine": 90,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__EscalationIntermediateThrowEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\IntermediateEvent.vue",
+      "sourceStartLine": 58,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__IntermediateEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\IntermediateEventPanel.vue",
+      "sourceStartLine": 121,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__IntermediateEventPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\LinkIntermediateCatchEvent.vue",
+      "sourceStartLine": 97,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__LinkIntermediateCatchEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\LinkIntermediateThrowEvent.vue",
+      "sourceStartLine": 89,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__LinkIntermediateThrowEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\MessageIntermediateCatchEvent.vue",
+      "sourceStartLine": 75,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__MessageIntermediateCatchEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\MessageIntermediateThrowEvent.vue",
+      "sourceStartLine": 91,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__MessageIntermediateThrowEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\SignalIntermediateCatchEvent.vue",
+      "sourceStartLine": 75,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__SignalIntermediateCatchEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\SignalIntermediateThrowEvent.vue",
+      "sourceStartLine": 77,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__SignalIntermediateThrowEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\intermediate\\TimerIntermediateEvent.vue",
+      "sourceStartLine": 75,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__intermediate__TimerIntermediateEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\start\\ConditionalStartEvent.vue",
+      "sourceStartLine": 74,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__start__ConditionalStartEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\start\\MessageStartEvent.vue",
+      "sourceStartLine": 62,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__start__MessageStartEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\start\\SignalStartEvent.vue",
+      "sourceStartLine": 68,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__start__SignalStartEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\start\\StartEvent.vue",
+      "sourceStartLine": 57,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__start__StartEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\start\\StartEventPanel.vue",
+      "sourceStartLine": 23,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__start__StartEventPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\event\\start\\TimerStartEvent.vue",
+      "sourceStartLine": 68,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__event__start__TimerStartEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\gateway\\ComplexGateway.vue",
+      "sourceStartLine": 67,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__gateway__ComplexGateway__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\gateway\\EventBasedGateway.vue",
+      "sourceStartLine": 77,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__gateway__EventBasedGateway__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\gateway\\ExclusiveGateway.vue",
+      "sourceStartLine": 65,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__gateway__ExclusiveGateway__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\gateway\\Gateway.vue",
+      "sourceStartLine": 63,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__gateway__Gateway__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\gateway\\GatewayPanel.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__gateway__GatewayPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\gateway\\InclusiveGateway.vue",
+      "sourceStartLine": 64,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__gateway__InclusiveGateway__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\gateway\\ParallelGateway.vue",
+      "sourceStartLine": 65,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__gateway__ParallelGateway__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\IBpmn.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__IBpmn__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\mapper\\MapperContextMenu.vue",
+      "sourceStartLine": 17,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__mapper__MapperContextMenu__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\mapper\\MapperRelation.vue",
+      "sourceStartLine": 19,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__mapper__MapperRelation__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\mapper\\Mapper_.vue",
+      "sourceStartLine": 156,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__mapper__Mapper___script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\mapper\\ProcessVariable.vue",
+      "sourceStartLine": 140,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__mapper__ProcessVariable__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\mapper\\ProcessVariables.vue",
+      "sourceStartLine": 32,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__mapper__ProcessVariables__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\BpmnPropertyPanel.vue",
+      "sourceStartLine": 143,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__BpmnPropertyPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\BusinessRuleTaskPanel.vue",
+      "sourceStartLine": 170,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__BusinessRuleTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\CallActivityPanel.vue",
+      "sourceStartLine": 141,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__CallActivityPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\CollaborationAPIPanel.vue",
+      "sourceStartLine": 4,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__CollaborationAPIPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\ConditionExampleField.vue",
+      "sourceStartLine": 42,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__ConditionExampleField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\ConditionField.vue",
+      "sourceStartLine": 103,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__ConditionField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\BoundaryEventPanel.vue",
+      "sourceStartLine": 20,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__BoundaryEventPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\CompensateEventDefinitionPanel.vue",
+      "sourceStartLine": 19,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__CompensateEventDefinitionPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\ConditionalEventDefinitionPanel.vue",
+      "sourceStartLine": 6,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__ConditionalEventDefinitionPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\EndEventPanel.vue",
+      "sourceStartLine": 11,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__EndEventPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\ErrorEventDefinitionPanel.vue",
+      "sourceStartLine": 4,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__ErrorEventDefinitionPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\EscalationEventDefinitionPanel.vue",
+      "sourceStartLine": 13,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__EscalationEventDefinitionPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\IntermediateCatchEventPanel.vue",
+      "sourceStartLine": 11,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__IntermediateCatchEventPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\IntermediateThrowEvent.vue",
+      "sourceStartLine": 12,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__IntermediateThrowEvent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\LinkEventDefinitionPanel.vue",
+      "sourceStartLine": 4,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__LinkEventDefinitionPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\MessageEventDefinitionPanel.vue",
+      "sourceStartLine": 109,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__MessageEventDefinitionPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\SignalEventDefinitionPanel.vue",
+      "sourceStartLine": 13,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__SignalEventDefinitionPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\StartEventPanel.vue",
+      "sourceStartLine": 11,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__StartEventPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\TerminateEventDefinitionPanel.vue",
+      "sourceStartLine": 4,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__TerminateEventDefinitionPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\EventPanel\\TimerEventDefinitionPanel.vue",
+      "sourceStartLine": 113,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__EventPanel__TimerEventDefinitionPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\ExampleTable.vue",
+      "sourceStartLine": 109,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__ExampleTable__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\GenerateScriptPanel.vue",
+      "sourceStartLine": 35,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__GenerateScriptPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\GPTLanePanel.vue",
+      "sourceStartLine": 78,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__GPTLanePanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\GPTScriptTaskPanel.vue",
+      "sourceStartLine": 93,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__GPTScriptTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\GPTServiceTaskPanel.vue",
+      "sourceStartLine": 98,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__GPTServiceTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\GPTTaskPanel.vue",
+      "sourceStartLine": 97,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__GPTTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\GPTUserTaskPanel.vue",
+      "sourceStartLine": 250,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__GPTUserTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\LanePanel.vue",
+      "sourceStartLine": 108,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__LanePanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\LeadTimeInput.vue",
+      "sourceStartLine": 60,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__LeadTimeInput__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\ManualTaskPanel.vue",
+      "sourceStartLine": 320,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__ManualTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\PALCallActivityPanel.vue",
+      "sourceStartLine": 20,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__PALCallActivityPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\PALUserTaskPanel.vue",
+      "sourceStartLine": 67,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__PALUserTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\ParticipantPanel.vue",
+      "sourceStartLine": 46,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__ParticipantPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\ReceiveTaskPanel.vue",
+      "sourceStartLine": 206,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__ReceiveTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\SchemaBasedProperties.vue",
+      "sourceStartLine": 105,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__SchemaBasedProperties__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\ScriptTaskPanel.vue",
+      "sourceStartLine": 119,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__ScriptTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\SendTaskPanel.vue",
+      "sourceStartLine": 205,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__SendTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\SequenceFlowPanel copy.vue",
+      "sourceStartLine": 251,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__SequenceFlowPanel copy__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\SequenceFlowPanel.vue",
+      "sourceStartLine": 131,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__SequenceFlowPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\ServiceTaskPanel.vue",
+      "sourceStartLine": 194,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__ServiceTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\SubProcessPanel.vue",
+      "sourceStartLine": 252,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__SubProcessPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\TextAnnotation.vue",
+      "sourceStartLine": 9,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__TextAnnotation__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\TextConditionField.vue",
+      "sourceStartLine": 16,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__TextConditionField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\UserTaskPanel.vue",
+      "sourceStartLine": 271,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__UserTaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\ValidationField.vue",
+      "sourceStartLine": 52,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__ValidationField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\panel\\ZeebePropertiesPanel.vue",
+      "sourceStartLine": 482,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__panel__ZeebePropertiesPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\relation\\ConditionEditorRelation.vue",
+      "sourceStartLine": 43,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__relation__ConditionEditorRelation__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\relation\\MessageFlow.vue",
+      "sourceStartLine": 46,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__relation__MessageFlow__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\relation\\OrgUengineKernelAnd.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__relation__OrgUengineKernelAnd__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\relation\\OrgUengineKernelEvaluate.vue",
+      "sourceStartLine": 58,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__relation__OrgUengineKernelEvaluate__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\relation\\OrgUengineKernelOr.vue",
+      "sourceStartLine": 44,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__relation__OrgUengineKernelOr__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\relation\\Relation.vue",
+      "sourceStartLine": 33,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__relation__Relation__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\relation\\RelationPanel.vue",
+      "sourceStartLine": 131,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__relation__RelationPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\role\\BpmnRoleParameterContexts.vue",
+      "sourceStartLine": 83,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__role__BpmnRoleParameterContexts__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\role\\Role.vue",
+      "sourceStartLine": 59,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__role__Role__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\role\\RolePanel.vue",
+      "sourceStartLine": 142,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__role__RolePanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\subprocess\\SubProcess.vue",
+      "sourceStartLine": 83,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__subprocess__SubProcess__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\task\\BusinessTask.vue",
+      "sourceStartLine": 74,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__task__BusinessTask__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\task\\CallActivity.vue",
+      "sourceStartLine": 67,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__task__CallActivity__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\task\\ManualTask.vue",
+      "sourceStartLine": 74,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__task__ManualTask__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\task\\ReceiveTask.vue",
+      "sourceStartLine": 74,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__task__ReceiveTask__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\task\\ScriptTask.vue",
+      "sourceStartLine": 74,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__task__ScriptTask__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\task\\SendTask.vue",
+      "sourceStartLine": 74,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__task__SendTask__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\task\\ServiceTask.vue",
+      "sourceStartLine": 80,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__task__ServiceTask__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\task\\Task.vue",
+      "sourceStartLine": 67,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__task__Task__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\task\\TaskPanel.vue",
+      "sourceStartLine": 136,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__task__TaskPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\task\\UserTask.vue",
+      "sourceStartLine": 74,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__task__UserTask__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\variable\\BpmnInstanceVariables.vue",
+      "sourceStartLine": 69,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__variable__BpmnInstanceVariables__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\variable\\BpmnParameterContexts.vue",
+      "sourceStartLine": 80,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__variable__BpmnParameterContexts__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\bpmn\\variable\\BpmnVariableSelector.vue",
+      "sourceStartLine": 20,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__bpmn__variable__BpmnVariableSelector__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\BpmnModelCanvas.vue",
+      "sourceStartLine": 367,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__BpmnModelCanvas__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\BpmnObjectForm.vue",
+      "sourceStartLine": 36,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__BpmnObjectForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\BpmnObjectGrid.vue",
+      "sourceStartLine": 87,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__BpmnObjectGrid__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\bpmnModeling\\ProcessDesigner.vue",
+      "sourceStartLine": 460,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__bpmnModeling__ProcessDesigner__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\CheckpointsField.vue",
+      "sourceStartLine": 52,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__CheckpointsField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\DefaultArguments.vue",
+      "sourceStartLine": 47,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__DefaultArguments__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\DefaultForm.vue",
+      "sourceStartLine": 41,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__DefaultForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\DescriptionField.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__DescriptionField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\DynamicComponent.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__DynamicComponent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\DynamicForm.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__DynamicForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\EventSynchronizationForm.vue",
+      "sourceStartLine": 222,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__EventSynchronizationForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\FormDesignSavePanel.vue",
+      "sourceStartLine": 28,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__FormDesignSavePanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\InstanceNamePatternForm.vue",
+      "sourceStartLine": 8,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__InstanceNamePatternForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\InstructionField.vue",
+      "sourceStartLine": 65,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__InstructionField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\KeyValueField.vue",
+      "sourceStartLine": 67,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__KeyValueField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\mapper\\AttributeComponent.vue",
+      "sourceStartLine": 70,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__mapper__AttributeComponent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\mapper\\BlockComponent.vue",
+      "sourceStartLine": 43,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__mapper__BlockComponent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\mapper\\ConnectorComponent.vue",
+      "sourceStartLine": 5,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__mapper__ConnectorComponent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\mapper\\ContextMenu.vue",
+      "sourceStartLine": 23,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__mapper__ContextMenu__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\mapper\\Mapper.vue",
+      "sourceStartLine": 113,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__mapper__Mapper__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\mapper\\PortComponent.vue",
+      "sourceStartLine": 45,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__mapper__PortComponent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\mapper\\URLMapper.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__mapper__URLMapper__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\Mashup.vue",
+      "sourceStartLine": 30,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__Mashup__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\ModelerImageGenerator.vue",
+      "sourceStartLine": 4,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__ModelerImageGenerator__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ContainerSettingPanel.vue",
+      "sourceStartLine": 40,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ContainerSettingPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\Element.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__Element__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ExpectedTemplateTestDialog.vue",
+      "sourceStartLine": 149,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ExpectedTemplateTestDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\FormDefinitionPanel.vue",
+      "sourceStartLine": 163,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__FormDefinitionPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\FormDefinitionPanelItemTable.vue",
+      "sourceStartLine": 132,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__FormDefinitionPanelItemTable__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\InviteUserDialog.vue",
+      "sourceStartLine": 105,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__InviteUserDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ModelCanvas.vue",
+      "sourceStartLine": 5,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ModelCanvas__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ModelCanvasParticipants.vue",
+      "sourceStartLine": 96,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ModelCanvasParticipants__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ModelCanvasShare.vue",
+      "sourceStartLine": 30,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ModelCanvasShare__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ModelCanvasShareDialog.vue",
+      "sourceStartLine": 48,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ModelCanvasShareDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ModelElement.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ModelElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ModelPanel.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ModelPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ModelReplay.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ModelReplay__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ModelStorageBase.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ModelStorageBase__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ModelStorageDialog.vue",
+      "sourceStartLine": 80,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ModelStorageDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ParticipantIcons.vue",
+      "sourceStartLine": 45,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ParticipantIcons__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ParticipantPanel.vue",
+      "sourceStartLine": 49,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ParticipantPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\ReplayPortal.vue",
+      "sourceStartLine": 9,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__ReplayPortal__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\StorageBase.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__StorageBase__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\StorageBaseAbstract.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__StorageBaseAbstract__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\StorageBaseAceBase.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__StorageBaseAceBase__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\StorageBaseAceBase_.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__StorageBaseAceBase___script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\StorageBaseComposition.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__StorageBaseComposition__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\StorageBaseLocalStorage.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__StorageBaseLocalStorage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\StorageBaseLocalStorage_.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__StorageBaseLocalStorage___script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\StorageBaseMinio.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__StorageBaseMinio__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\StorageBaseMinio_.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__StorageBaseMinio___script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\StormingSubController.vue",
+      "sourceStartLine": 51,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__StormingSubController__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\modeling\\UmlJavaParser.vue",
+      "sourceStartLine": 49,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__modeling__UmlJavaParser__script2.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\MultiEventSynchronizationForm.vue",
+      "sourceStartLine": 72,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__MultiEventSynchronizationForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\ProcessDefinitionDisplay.vue",
+      "sourceStartLine": 35,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__ProcessDefinitionDisplay__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\SaveToCatalogDialog.vue",
+      "sourceStartLine": 375,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__SaveToCatalogDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\TaskCatalogSection.vue",
+      "sourceStartLine": 135,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__TaskCatalogSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\designer\\URLForm.vue",
+      "sourceStartLine": 12,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__designer__URLForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\dmn\\DecisionTableDiff.vue",
+      "sourceStartLine": 195,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dmn__DecisionTableDiff__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\dmn\\DmnDiffView.vue",
+      "sourceStartLine": 103,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dmn__DmnDiffView__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\dmn\\DmnStructureView.vue",
+      "sourceStartLine": 109,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dmn__DmnStructureView__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\dmn\\KeyValueDiffTable.vue",
+      "sourceStartLine": 30,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__dmn__KeyValueDiffTable__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\DmnChat.vue",
+      "sourceStartLine": 243,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__DmnChat__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\DmnModeler.vue",
+      "sourceStartLine": 5,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__DmnModeler__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\FormDefinition.vue",
+      "sourceStartLine": 68,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__FormDefinition__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\FormDefinitionModule.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__FormDefinitionModule__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\FormScanModule.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__FormScanModule__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\FullScreenChatDialog.vue",
+      "sourceStartLine": 75,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__FullScreenChatDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\Gantt.vue",
+      "sourceStartLine": 5,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__Gantt__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\GeneratorAgent.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__GeneratorAgent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\labs\\TenantAware.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__labs__TenantAware__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\landingpage\\layout\\Header.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__landingpage__layout__Header__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\landingpage\\layout\\MobileSidebar.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__landingpage__layout__MobileSidebar__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\landingpage\\layout\\Navigation.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__landingpage__layout__Navigation__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\landingpage\\layout\\PageMegamenu.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__landingpage__layout__PageMegamenu__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\landingpage\\layout\\PageMenuQuicklinks.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__landingpage__layout__PageMenuQuicklinks__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\landingpage\\section\\Revolution.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__landingpage__section__Revolution__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\MainChatInput.vue",
+      "sourceStartLine": 10,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__MainChatInput__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\oauth\\LoginByAcebase.vue",
+      "sourceStartLine": 73,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__oauth__LoginByAcebase__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\OrganizationChartChat.vue",
+      "sourceStartLine": 74,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__OrganizationChartChat__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\AccountTab.vue",
+      "sourceStartLine": 77,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__AccountTab__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\BillsTab.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__BillsTab__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\ConnectionInfoTab.vue",
+      "sourceStartLine": 224,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__ConnectionInfoTab__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\DriveTab.vue",
+      "sourceStartLine": 82,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__DriveTab__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\ManageAccessTab.vue",
+      "sourceStartLine": 140,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__ManageAccessTab__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\MCPEnvSecret.vue",
+      "sourceStartLine": 212,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__MCPEnvSecret__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\MCPServer.vue",
+      "sourceStartLine": 229,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__MCPServer__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\NotificationTab.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__NotificationTab__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\OrgChartGroupTab.vue",
+      "sourceStartLine": 181,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__OrgChartGroupTab__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\SecurityTab.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__SecurityTab__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\pages\\account-settings\\SkillsTab.vue",
+      "sourceStartLine": 14,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__pages__account-settings__SkillsTab__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\PDFPreviewer.vue",
+      "sourceStartLine": 29,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__PDFPreviewer__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessDefinition.vue",
+      "sourceStartLine": 396,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessDefinition__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessDefinitionChat.vue",
+      "sourceStartLine": 413,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessDefinitionChat__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessDefinitionChatHeader.vue",
+      "sourceStartLine": 312,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessDefinitionChatHeader__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessDefinitionChatWithTree.vue",
+      "sourceStartLine": 109,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessDefinitionChatWithTree__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessDefinitionConvertModule.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessDefinitionConvertModule__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessDefinitionMarketPlace.vue",
+      "sourceStartLine": 272,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessDefinitionMarketPlace__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessDefinitionMarketPlaceDialog.vue",
+      "sourceStartLine": 76,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessDefinitionMarketPlaceDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessDefinitionModule.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessDefinitionModule__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessDefinitionVersionDialog.vue",
+      "sourceStartLine": 201,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessDefinitionVersionDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessDefinitionVersionManager.vue",
+      "sourceStartLine": 231,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessDefinitionVersionManager__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessInstance.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessInstance__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessInstanceChat.vue",
+      "sourceStartLine": 109,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessInstanceChat__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessInstanceRunning.vue",
+      "sourceStartLine": 59,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessInstanceRunning__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ProcessInstanceTable.vue",
+      "sourceStartLine": 347,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ProcessInstanceTable__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\retrieval\\RetrievalBox.vue",
+      "sourceStartLine": 37,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__retrieval__RetrievalBox__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\scheduler\\ScheduleList.vue",
+      "sourceStartLine": 35,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__scheduler__ScheduleList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\settings\\BpmnColorRulesSettings.vue",
+      "sourceStartLine": 96,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__settings__BpmnColorRulesSettings__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\settings\\ColorRuleDialog.vue",
+      "sourceStartLine": 145,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__settings__ColorRuleDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\AppBaseCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__AppBaseCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\BaseBreadcrumb.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__BaseBreadcrumb__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\BaseCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__BaseCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\CardHeaderFooter.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__CardHeaderFooter__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\eCommerceCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__eCommerceCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\ProductBaseCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__ProductBaseCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\UiChildCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__UiChildCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\UiParentCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__UiParentCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\UiParentCardLogo.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__UiParentCardLogo__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\UiTableCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__UiTableCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\UiTextfieldPrimary.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__UiTextfieldPrimary__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\UiTittleSubtitleCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__UiTittleSubtitleCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\WidgetCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__WidgetCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\shared\\WidgetCardv2.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__shared__WidgetCardv2__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\SkillDetail.vue",
+      "sourceStartLine": 336,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__SkillDetail__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\SkillsManagement.vue",
+      "sourceStartLine": 504,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__SkillsManagement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\style-components\\typography\\DefaultText.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__style-components__typography__DefaultText__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\style-components\\typography\\Heading.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__style-components__typography__Heading__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\tenant\\inviteUserCard.vue",
+      "sourceStartLine": 97,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__tenant__inviteUserCard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\tenant\\TenantCreatePage.vue",
+      "sourceStartLine": 49,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__tenant__TenantCreatePage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\tenant\\TenantEditPage.vue",
+      "sourceStartLine": 23,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__tenant__TenantEditPage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\tenant\\TenantInfoField.vue",
+      "sourceStartLine": 72,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__tenant__TenantInfoField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\tenant\\TenantManagePage.vue",
+      "sourceStartLine": 274,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__tenant__TenantManagePage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\tenant\\TenantRegisterForm.vue",
+      "sourceStartLine": 31,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__tenant__TenantRegisterForm__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\TestPage.vue",
+      "sourceStartLine": 29,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__TestPage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\testTerminals\\FormDefinitionTestTerminal.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__testTerminals__FormDefinitionTestTerminal__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ActivityInputData.vue",
+      "sourceStartLine": 67,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ActivityInputData__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\Admin.vue",
+      "sourceStartLine": 173,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__Admin__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\AdminDetail.vue",
+      "sourceStartLine": 272,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__AdminDetail__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\AgentBadgesDiagram.vue",
+      "sourceStartLine": 62,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__AgentBadgesDiagram__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\AgentList.vue",
+      "sourceStartLine": 48,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__AgentList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\AgentMessagePanel.vue",
+      "sourceStartLine": 221,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__AgentMessagePanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\AgentsChat.vue",
+      "sourceStartLine": 128,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__AgentsChat__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ApprovalStatePanel.vue",
+      "sourceStartLine": 416,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ApprovalStatePanel__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\AudioStream.vue",
+      "sourceStartLine": 5,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__AudioStream__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\AudioTextarea.vue",
+      "sourceStartLine": 29,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__AudioTextarea__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\AuditLogViewer.vue",
+      "sourceStartLine": 83,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__AuditLogViewer__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\BSCard.vue",
+      "sourceStartLine": 287,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__BSCard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\Chat.vue",
+      "sourceStartLine": 2681,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__Chat__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ChatList.vue",
+      "sourceStartLine": 185,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ChatList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\Checkpoints.vue",
+      "sourceStartLine": 24,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__Checkpoints__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\CommentThread.vue",
+      "sourceStartLine": 211,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__CommentThread__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\common\\ListPage.vue",
+      "sourceStartLine": 150,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__common__ListPage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\common\\StatusChip.vue",
+      "sourceStartLine": 8,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__common__StatusChip__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ElementCommentPanel.vue",
+      "sourceStartLine": 96,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ElementCommentPanel__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\EmptyState.vue",
+      "sourceStartLine": 105,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__EmptyState__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\EventTimeline.vue",
+      "sourceStartLine": 537,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__EventTimeline__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ExpandableList.vue",
+      "sourceStartLine": 26,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ExpandableList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ExternalForms.vue",
+      "sourceStartLine": 77,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ExternalForms__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\AgentField.vue",
+      "sourceStartLine": 131,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__AgentField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\AgentSelectField.vue",
+      "sourceStartLine": 114,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__AgentSelectField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\BooleanField.vue",
+      "sourceStartLine": 14,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__BooleanField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\BpmnUengineField.vue",
+      "sourceStartLine": 128,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__BpmnUengineField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\CheckboxField.vue",
+      "sourceStartLine": 24,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__CheckboxField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\CodeField.vue",
+      "sourceStartLine": 17,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__CodeField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\CommonSettingInfos.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__CommonSettingInfos__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\FileField.vue",
+      "sourceStartLine": 29,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__FileField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\LabelField.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__LabelField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\MarkdownField.vue",
+      "sourceStartLine": 88,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__MarkdownField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\ProfileField.vue",
+      "sourceStartLine": 42,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__ProfileField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\RadioField.vue",
+      "sourceStartLine": 22,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__RadioField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\ReportField.vue",
+      "sourceStartLine": 68,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__ReportField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\RowLayout.vue",
+      "sourceStartLine": 29,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__RowLayout__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\RowLayoutItemHead.vue",
+      "sourceStartLine": 17,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__RowLayoutItemHead__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\SelectField.vue",
+      "sourceStartLine": 28,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__SelectField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\SlideField.vue",
+      "sourceStartLine": 75,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__SlideField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\TextareaField.vue",
+      "sourceStartLine": 21,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__TextareaField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\TextField.vue",
+      "sourceStartLine": 24,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__TextField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\field\\UserSelectField.vue",
+      "sourceStartLine": 45,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__field__UserSelectField__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\InfoAlert.vue",
+      "sourceStartLine": 9,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__InfoAlert__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\InstanceHistory.vue",
+      "sourceStartLine": 191,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__InstanceHistory__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\Instruction.vue",
+      "sourceStartLine": 11,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__Instruction__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\list-pages\\CompletedListPage.vue",
+      "sourceStartLine": 9,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__list-pages__CompletedListPage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\list-pages\\InstanceListPage.vue",
+      "sourceStartLine": 63,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__list-pages__InstanceListPage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\list-pages\\ProjectListPage.vue",
+      "sourceStartLine": 32,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__list-pages__ProjectListPage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\list-pages\\TaskListPage.vue",
+      "sourceStartLine": 32,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__list-pages__TaskListPage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\list-pages\\UsageListPage.vue",
+      "sourceStartLine": 56,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__list-pages__UsageListPage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\list-pages\\UserListPage.vue",
+      "sourceStartLine": 37,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__list-pages__UserListPage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ManualLinkField.vue",
+      "sourceStartLine": 40,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ManualLinkField__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\MultiSelectPanel.vue",
+      "sourceStartLine": 78,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__MultiSelectPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\OntologyGraphViewer.vue",
+      "sourceStartLine": 26,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__OntologyGraphViewer__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\OrganizationAddDialog.vue",
+      "sourceStartLine": 179,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__OrganizationAddDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\OrganizationChart.vue",
+      "sourceStartLine": 52,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__OrganizationChart__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\OrganizationEditDialog.vue",
+      "sourceStartLine": 58,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__OrganizationEditDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\OrganizationTeamDialog.vue",
+      "sourceStartLine": 58,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__OrganizationTeamDialog__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\OwnerSelect.vue",
+      "sourceStartLine": 57,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__OwnerSelect__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\OwnerSettingDialog.vue",
+      "sourceStartLine": 41,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__OwnerSettingDialog__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\PaintWaveAnimation.vue",
+      "sourceStartLine": 15,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__PaintWaveAnimation__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\payment\\Credit.vue",
+      "sourceStartLine": 82,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__payment__Credit__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\payment\\Payment.vue",
+      "sourceStartLine": 58,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__payment__Payment__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\payment\\Plans.vue",
+      "sourceStartLine": 68,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__payment__Plans__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\payment\\RequestFailure.vue",
+      "sourceStartLine": 12,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__payment__RequestFailure__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\payment\\RequestSuccess.vue",
+      "sourceStartLine": 52,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__payment__RequestSuccess__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ProcessFeedback.vue",
+      "sourceStartLine": 474,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ProcessFeedback__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ProcessInstanceList.vue",
+      "sourceStartLine": 31,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ProcessInstanceList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ProcessTooltip.vue",
+      "sourceStartLine": 66,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ProcessTooltip__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ProcessWorkResult.vue",
+      "sourceStartLine": 171,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ProcessWorkResult__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ProgressAnimated.vue",
+      "sourceStartLine": 2,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ProgressAnimated__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ProgressBadge.vue",
+      "sourceStartLine": 38,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ProgressBadge__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ProjectList.vue",
+      "sourceStartLine": 13,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ProjectList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\PropertyDiffPanel.vue",
+      "sourceStartLine": 63,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__PropertyDiffPanel__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\Proposal.vue",
+      "sourceStartLine": 191,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__Proposal__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\Record.vue",
+      "sourceStartLine": 80,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__Record__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\Record2.vue",
+      "sourceStartLine": 11,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__Record2__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ScrollBottomHandle.vue",
+      "sourceStartLine": 2,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ScrollBottomHandle__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\SidebarUserList.vue",
+      "sourceStartLine": 66,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__SidebarUserList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\SkillList.vue",
+      "sourceStartLine": 40,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__SkillList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\SummaryButton.vue",
+      "sourceStartLine": 25,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__SummaryButton__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\System.vue",
+      "sourceStartLine": 55,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__System__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\SystemList.vue",
+      "sourceStartLine": 45,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__SystemList__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ThreeWaveAnimation.vue",
+      "sourceStartLine": 5,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ThreeWaveAnimation__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\usage-billing\\Billing.vue",
+      "sourceStartLine": 60,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__usage-billing__Billing__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\usage-billing\\Usage.vue",
+      "sourceStartLine": 232,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__usage-billing__Usage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\UserInputGenerator.vue",
+      "sourceStartLine": 29,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__UserInputGenerator__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\ValidationConsolePanel.vue",
+      "sourceStartLine": 49,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__ValidationConsolePanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\VoiceAgentDesktopMode.vue",
+      "sourceStartLine": 6,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__VoiceAgentDesktopMode__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\WorkItemChat.vue",
+      "sourceStartLine": 59,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__WorkItemChat__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui\\XMLEditor.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui__XMLEditor__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\alert\\Closable.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__alert__Closable__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\avatar\\BasicAvatar.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__avatar__BasicAvatar__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\avatar\\IconAvatar.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__avatar__IconAvatar__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\avatar\\VariantAvatar.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__avatar__VariantAvatar__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\chip\\CustomIcon.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__chip__CustomIcon__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\chip\\CustomIconOutlined.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__chip__CustomIconOutlined__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\chip\\Disabled.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__chip__Disabled__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\chip\\FilledColor.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__chip__FilledColor__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\chip\\Outlined.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__chip__Outlined__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\details\\DetailComponent.vue",
+      "sourceStartLine": 45,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__details__DetailComponent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\dialogs\\DialogsActivator.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__dialogs__DialogsActivator__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\dialogs\\DialogsForm.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__dialogs__DialogsForm__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\dialogs\\DialogsFullscreen.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__dialogs__DialogsFullscreen__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\dialogs\\DialogsModel.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__dialogs__DialogsModel__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\dialogs\\DialogsNested.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__dialogs__DialogsNested__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\dialogs\\DialogsPersistent.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__dialogs__DialogsPersistent__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\dialogs\\DialogsScrollable.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__dialogs__DialogsScrollable__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\dialogs\\DialogsTransitions.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__dialogs__DialogsTransitions__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\expansionpanel\\CustomizedIcon.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__expansionpanel__CustomizedIcon__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\expansionpanel\\DefaultExpand.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__expansionpanel__DefaultExpand__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\Icons.vue",
+      "sourceStartLine": 15,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__Icons__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\list\\CustomAlignList.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__list__CustomAlignList__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\list\\DisabledList.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__list__DisabledList__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\list\\FolderList.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__list__FolderList__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\list\\NestedList.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__list__NestedList__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\list\\RoundedList.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__list__RoundedList__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\list\\SimpleList.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__list__SimpleList__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\list\\SwitchList.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__list__SwitchList__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\menus\\MenusActivatorTooltip.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__menus__MenusActivatorTooltip__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\menus\\MenusAnchor.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__menus__MenusAnchor__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\menus\\MenusHover.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__menus__MenusHover__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\menus\\MenusPopover.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__menus__MenusPopover__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\ratting\\BasicRatting.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__ratting__BasicRatting__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\ratting\\ClearableRatting.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__ratting__ClearableRatting__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\ratting\\HalfRatting.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__ratting__HalfRatting__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\ratting\\HoverRatting.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__ratting__HoverRatting__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\ratting\\IconsRatting.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__ratting__IconsRatting__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\ratting\\LabelRatting.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__ratting__LabelRatting__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\ratting\\LengthRatting.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__ratting__LengthRatting__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\ratting\\ReadOnlyRatting.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__ratting__ReadOnlyRatting__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\tabs\\AlignCenterTabs.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__tabs__AlignCenterTabs__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\tabs\\AlignEndTabs.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__tabs__AlignEndTabs__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\tabs\\BasicTabs.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__tabs__BasicTabs__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\tabs\\CenterTabs.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__tabs__CenterTabs__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\tabs\\ColorTabs.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__tabs__ColorTabs__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\tabs\\DisableTabs.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__tabs__DisableTabs__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\tabs\\IconsWithLabelTabs.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__tabs__IconsWithLabelTabs__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\tabs\\IconTabs.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__tabs__IconTabs__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\tooltip\\IconTooltip.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__tooltip__IconTooltip__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\ui-components\\tooltip\\ToggleTolltip.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__ui-components__tooltip__ToggleTolltip__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\components\\UIDefinitionChat.vue",
+      "sourceStartLine": 182,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__UIDefinitionChat__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\UserChatRooms.vue",
+      "sourceStartLine": 208,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__UserChatRooms__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\components\\WorkAssistantChatPanel.vue",
+      "sourceStartLine": 196,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__components__WorkAssistantChatPanel__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\blank\\BlankLayout.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__blank__BlankLayout__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\customizer\\Customizer.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__customizer__Customizer__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\Footer.vue",
+      "sourceStartLine": 63,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__Footer__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\FullLayout.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__FullLayout__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\horizontal-header\\HorizontalHeader.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__horizontal-header__HorizontalHeader__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\horizontal-sidebar\\HorizontalSidebar.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__horizontal-sidebar__HorizontalSidebar__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\horizontal-sidebar\\NavCollapse\\Index.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__horizontal-sidebar__NavCollapse__Index__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\horizontal-sidebar\\NavItem\\Index.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__horizontal-sidebar__NavItem__Index__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\logo\\Logo.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__logo__Logo__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\logo\\LogoDark.vue",
+      "sourceStartLine": 10,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__logo__LogoDark__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\logo\\LogoDarkRtl.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__logo__LogoDarkRtl__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\logo\\LogoLight.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__logo__LogoLight__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\logo\\LogoLightRtl.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__logo__LogoLightRtl__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-header\\AppsLink.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-header__AppsLink__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-header\\LanguageDD.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-header__LanguageDD__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-header\\MessagesDD.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-header__MessagesDD__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-header\\Navigations.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-header__Navigations__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-header\\NotificationDD.vue",
+      "sourceStartLine": 52,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-header__NotificationDD__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-header\\ProfileDD.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-header__ProfileDD__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-header\\QuickLinks.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-header__QuickLinks__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-header\\RightMobileSidebar.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-header__RightMobileSidebar__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-header\\Searchbar.vue",
+      "sourceStartLine": 79,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-header__Searchbar__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-header\\VerticalHeader.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-header__VerticalHeader__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-sidebar\\DropDown\\index.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-sidebar__DropDown__index__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-sidebar\\extrabox\\ExtraBox.vue",
+      "sourceStartLine": 50,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-sidebar__extrabox__ExtraBox__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-sidebar\\Icon.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-sidebar__Icon__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-sidebar\\MoreOption\\Moreoption.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-sidebar__MoreOption__Moreoption__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-sidebar\\NavCollapse\\NavCollapse.vue",
+      "sourceStartLine": 50,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-sidebar__NavCollapse__NavCollapse__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-sidebar\\NavGroup\\index.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-sidebar__NavGroup__index__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-sidebar\\NavItem\\index.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-sidebar__NavItem__index__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\layouts\\full\\vertical-sidebar\\VerticalSidebar.vue",
+      "sourceStartLine": 376,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__layouts__full__vertical-sidebar__VerticalSidebar__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\mixins\\AgentCrudMixin.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__mixins__AgentCrudMixin__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\geometry\\BezierCurve.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__geometry__BezierCurve__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\geometry\\Circle.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__geometry__Circle__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\geometry\\Curve.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__geometry__Curve__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\geometry\\Ellipse.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__geometry__Ellipse__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\geometry\\Geometry.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__geometry__Geometry__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\geometry\\Line.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__geometry__Line__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\geometry\\Point.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__geometry__Point__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\geometry\\Polygon.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__geometry__Polygon__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\geometry\\PolyLine.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__geometry__PolyLine__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\geometry\\Rectangle.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__geometry__Rectangle__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\Opengraph.vue",
+      "sourceStartLine": 14,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__Opengraph__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\CircleElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__CircleElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\EdgeElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__EdgeElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\EllipseElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__EllipseElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\GeometryElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__GeometryElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\GroupElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__GroupElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\HorizontalLaneElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__HorizontalLaneElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\HorizontalPoolElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__HorizontalPoolElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\HtmlElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__HtmlElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\ImageElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__ImageElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\OpengraphElement.vue",
+      "sourceStartLine": 3,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__OpengraphElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\RectangleElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__RectangleElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\SubController.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__SubController__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\SubElements.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__SubElements__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\SvgElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__SvgElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\TextElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__TextElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\VerticalLaneElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__VerticalLaneElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\opengraph\\shape\\VerticalPoolElement.vue",
+      "sourceStartLine": 7,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__opengraph__shape__VerticalPoolElement__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\analytics\\BottleneckAnalysis.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__analytics__BottleneckAnalysis__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\analytics\\Dashboard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__analytics__Dashboard__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\analytics\\KPIDashboard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__analytics__KPIDashboard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\analytics\\NaturalQueryPage.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__analytics__NaturalQueryPage__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\analytics\\Performance.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__analytics__Performance__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\analytics\\PivotTablePage.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__analytics__PivotTablePage__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\calendar\\Calendar.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__calendar__Calendar__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\calendar\\FullCalender.vue",
+      "sourceStartLine": 87,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__calendar__FullCalender__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\chat\\AssistantChats.vue",
+      "sourceStartLine": 19,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__chat__AssistantChats__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\chat\\Attachments.vue",
+      "sourceStartLine": 22,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__chat__Attachments__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\chat\\Chats.vue",
+      "sourceStartLine": 218,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__chat__Chats__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\contact\\Contact.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__contact__Contact__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\email\\Email.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__email__Email__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\kanban\\Kanban.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__kanban__Kanban__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\proposal\\Proposals.vue",
+      "sourceStartLine": 32,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__proposal__Proposals__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\user-profile\\profile-one\\Connection.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__user-profile__profile-one__Connection__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\user-profile\\profile-one\\ProfileOne.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__user-profile__profile-one__ProfileOne__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\user-profile\\profile-one\\Projects.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__user-profile__profile-one__Projects__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\user-profile\\profile-one\\Teams.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__user-profile__profile-one__Teams__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\user-profile\\profile-two\\Followers.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__user-profile__profile-two__Followers__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\user-profile\\profile-two\\Friends.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__user-profile__profile-two__Friends__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\user-profile\\profile-two\\Gallery.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__user-profile__profile-two__Gallery__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\apps\\user-profile\\profile-two\\ProfileTwo.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__apps__user-profile__profile-two__ProfileTwo__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\authentication\\BoxedForgotPassword.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__authentication__BoxedForgotPassword__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\authentication\\BoxedLogin.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__authentication__BoxedLogin__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\authentication\\BoxedRegister.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__authentication__BoxedRegister__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\authentication\\BoxedTwoStep.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__authentication__BoxedTwoStep__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\authentication\\SideForgotPassword.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__authentication__SideForgotPassword__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\authentication\\SideInitialSetting.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__authentication__SideInitialSetting__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\authentication\\SideLogin.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__authentication__SideLogin__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\authentication\\SideRegister.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__authentication__SideRegister__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\authentication\\SideResetPassword.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__authentication__SideResetPassword__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\authentication\\SideTwoStep.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__authentication__SideTwoStep__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\charts\\ApexAreaChart.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__charts__ApexAreaChart__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\charts\\ApexCandlestickChart.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__charts__ApexCandlestickChart__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\charts\\ApexColumnChart.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__charts__ApexColumnChart__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\charts\\ApexDonutPieChart.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__charts__ApexDonutPieChart__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\charts\\ApexGredientChart.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__charts__ApexGredientChart__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\charts\\ApexLineChart.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__charts__ApexLineChart__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\charts\\ApexRadialRadarChart.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__charts__ApexRadialRadarChart__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\chat\\ChatRoomPage.vue",
+      "sourceStartLine": 689,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__chat__ChatRoomPage__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\dashboard\\dashboard2-pal.vue",
+      "sourceStartLine": 105,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__dashboard__dashboard2-pal__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\dashboard\\dashboard2.vue",
+      "sourceStartLine": 50,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__dashboard__dashboard2__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\forms\\form-elements\\VTextField.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__forms__form-elements__VTextField__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\forms\\plugins\\editor\\Editor.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__forms__plugins__editor__Editor__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\icons\\TablerIcons.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__icons__TablerIcons__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\markdown\\AgentMonitor.vue",
+      "sourceStartLine": 126,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__markdown__AgentMonitor__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\markdown\\MarkdownEditor.vue",
+      "sourceStartLine": 96,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__markdown__MarkdownEditor__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\markdown\\MarkdownParser.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__markdown__MarkdownParser__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\markdown\\PdfExportHelper.vue",
+      "sourceStartLine": 57,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__markdown__PdfExportHelper__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\markdown\\PptxExportHelper.vue",
+      "sourceStartLine": 40,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__markdown__PptxExportHelper__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\markdown\\SlideComponent.vue",
+      "sourceStartLine": 13,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__markdown__SlideComponent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\markdown\\SlideEditor.vue",
+      "sourceStartLine": 87,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__markdown__SlideEditor__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\markdown\\SlidePresentation.vue",
+      "sourceStartLine": 26,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__markdown__SlidePresentation__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\markdown\\SlideStyler.vue",
+      "sourceStartLine": 42,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__markdown__SlideStyler__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\markdown\\WordExportHelper.vue",
+      "sourceStartLine": 32,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__markdown__WordExportHelper__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\account-settings\\AccountSettings.vue",
+      "sourceStartLine": 268,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__account-settings__AccountSettings__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\index.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__index__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\Footer.vue",
+      "sourceStartLine": 18,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__Footer__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\Header.vue",
+      "sourceStartLine": 59,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__Header__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\HomeView.vue",
+      "sourceStartLine": 43,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__HomeView__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\AI3StepsSection.vue",
+      "sourceStartLine": 121,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__AI3StepsSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\CasesSection.vue",
+      "sourceStartLine": 155,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__CasesSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\ConsultingSection.vue",
+      "sourceStartLine": 13,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__ConsultingSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\ContactFormModal.vue",
+      "sourceStartLine": 124,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__ContactFormModal__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\CTASection.vue",
+      "sourceStartLine": 34,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__CTASection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\DemoSection.vue",
+      "sourceStartLine": 38,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__DemoSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\DownloadSection.vue",
+      "sourceStartLine": 70,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__DownloadSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\ExtensibilitySection.vue",
+      "sourceStartLine": 142,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__ExtensibilitySection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\FeaturesSection.vue",
+      "sourceStartLine": 13,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__FeaturesSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\HeroSection.vue",
+      "sourceStartLine": 52,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__HeroSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\HowSection.vue",
+      "sourceStartLine": 319,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__HowSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\IntroSection.vue",
+      "sourceStartLine": 76,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__IntroSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\MovieGallerySection.vue",
+      "sourceStartLine": 194,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__MovieGallerySection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\NecessitySection.vue",
+      "sourceStartLine": 67,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__NecessitySection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\sections\\TechSection.vue",
+      "sourceStartLine": 42,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__sections__TechSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\tutorial\\TutorialContent.vue",
+      "sourceStartLine": 20,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__tutorial__TutorialContent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\tutorial\\TutorialMain.vue",
+      "sourceStartLine": 21,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__tutorial__TutorialMain__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\tutorial\\TutorialSection.vue",
+      "sourceStartLine": 43,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__tutorial__TutorialSection__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\tutorial\\TutorialSidebar.vue",
+      "sourceStartLine": 43,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__tutorial__TutorialSidebar__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\landingpage\\mainPage\\ui\\TabComponent.vue",
+      "sourceStartLine": 44,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__landingpage__mainPage__ui__TabComponent__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\pricing\\Pricing.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__pricing__Pricing__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\term-policy\\Privacy.vue",
+      "sourceStartLine": 156,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__term-policy__Privacy__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\pages\\term-policy\\Terms.vue",
+      "sourceStartLine": 468,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__pages__term-policy__Terms__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\process-architecture\\AdvancedFilterPanel.vue",
+      "sourceStartLine": 300,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-architecture__AdvancedFilterPanel__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\process-architecture\\NewProcessDialog.vue",
+      "sourceStartLine": 342,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-architecture__NewProcessDialog__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\process-architecture\\ProcessArchCardView.vue",
+      "sourceStartLine": 151,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-architecture__ProcessArchCardView__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\process-architecture\\ProcessArchHierarchyView.vue",
+      "sourceStartLine": 287,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-architecture__ProcessArchHierarchyView__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\process-architecture\\ProcessArchitecture.vue",
+      "sourceStartLine": 442,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-architecture__ProcessArchitecture__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\process-architecture\\ProcessArchMatrixView.vue",
+      "sourceStartLine": 113,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-architecture__ProcessArchMatrixView__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\process-architecture\\ProcessArchMermaidView.vue",
+      "sourceStartLine": 75,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-architecture__ProcessArchMermaidView__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\process-architecture\\ProcessArchTreeView.vue",
+      "sourceStartLine": 143,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-architecture__ProcessArchTreeView__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\process-hierarchy\\ProcessHierarchy.vue",
+      "sourceStartLine": 162,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-hierarchy__ProcessHierarchy__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\process-hierarchy\\ProcessHierarchyDesigner.vue",
+      "sourceStartLine": 118,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-hierarchy__ProcessHierarchyDesigner__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\process-hierarchy\\ProcessHierarchyProperties.vue",
+      "sourceStartLine": 628,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-hierarchy__ProcessHierarchyProperties__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\process-hierarchy\\ProcessHierarchyTree.vue",
+      "sourceStartLine": 181,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-hierarchy__ProcessHierarchyTree__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\process-hierarchy\\VersionComparison.vue",
+      "sourceStartLine": 235,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__process-hierarchy__VersionComparison__script1.js",
+      "lang": "js"
+    },
+    {
+      "sourceFile": "src\\views\\review-board\\MyInbox.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__review-board__MyInbox__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\review-board\\ProcessReviewBoard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__review-board__ProcessReviewBoard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\review-board\\ProcessReviewDetail.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__review-board__ProcessReviewDetail__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\review-board\\ReviewBoardCard.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__review-board__ReviewBoardCard__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\school-pages\\attendence\\index.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__school-pages__attendence__index__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\school-pages\\classes\\ClassDetail.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__school-pages__classes__ClassDetail__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\school-pages\\classes\\Classes.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__school-pages__classes__Classes__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\style-animation\\Typography.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__style-animation__Typography__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\ui-elements\\UiAlert.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__ui-elements__UiAlert__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\ui-elements\\UiAvatar.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__ui-elements__UiAvatar__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\ui-elements\\UiChip.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__ui-elements__UiChip__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\ui-elements\\UiDialog.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__ui-elements__UiDialog__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\ui-elements\\UiExpansionPanel.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__ui-elements__UiExpansionPanel__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\ui-elements\\UiList.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__ui-elements__UiList__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\ui-elements\\UiMenus.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__ui-elements__UiMenus__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\ui-elements\\UiRating.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__ui-elements__UiRating__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\ui-elements\\UiTabs.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__ui-elements__UiTabs__script1.ts",
+      "lang": "ts"
+    },
+    {
+      "sourceFile": "src\\views\\ui-elements\\UiTooltip.vue",
+      "sourceStartLine": 1,
+      "extractedFile": ".tmp\\semgrep-vue-src\\src__views__ui-elements__UiTooltip__script1.js",
+      "lang": "js"
+    }
+  ]
+}
