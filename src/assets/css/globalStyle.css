@@ -984,7 +984,28 @@ hr {
 /* 선택된 배경색을 나타내는 클래스 - 영어로 'choice'로 변경 */
 .choice-background-color {
     background-color: rgb(var(--v-theme-primary)) !important;
-    color: white;
+    color: rgb(var(--v-theme-on-primary)) !important;
+}
+
+.bg-primary,
+.bg-primary .v-btn__content,
+.bg-primary .v-chip__content,
+.bg-primary .v-list-item-title,
+.bg-primary .v-icon,
+.v-btn.bg-primary,
+.v-btn.bg-primary .v-btn__content,
+.v-btn.bg-primary .v-icon,
+.v-chip.bg-primary,
+.v-chip.bg-primary .v-chip__content,
+.v-chip.bg-primary .v-icon,
+.v-card.bg-primary,
+.v-card.bg-primary .v-card-title,
+.v-card.bg-primary .v-card-text,
+.v-sheet.bg-primary,
+.v-sheet.bg-primary .v-icon,
+.v-alert.bg-primary,
+.v-alert.bg-primary .v-alert__content {
+    color: rgb(var(--v-theme-on-primary)) !important;
 }
 
 .instance-select-box:focus {

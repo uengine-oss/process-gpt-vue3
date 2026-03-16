@@ -24,7 +24,7 @@
                     v-else-if="localModelValue.length == 0"
                     :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px;`"
                 >
-                    <Icons :icon="'slide-show'" color="white" />
+                    <Icons :icon="'slide-show'" />
                 </div>
             </v-row>
             <!-- 미리보기 확장 영역 -->

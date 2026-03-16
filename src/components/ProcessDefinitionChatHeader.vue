@@ -221,7 +221,7 @@
                                         density="comfortable"
                                         @click="showXmlMode"
                                     >
-                                        <Icons :icon="'code-xml'" :color="isXmlMode ? '#1976D2' : '#666666'" />
+                                        <Icons :icon="'code-xml'" :color="isXmlMode ? 'primary' : ''" />
                                     </v-btn>
                                 </template>
                                 <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>

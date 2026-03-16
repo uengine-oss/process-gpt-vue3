@@ -280,7 +280,7 @@
                                                                     :icon="'play-outline'"
                                                                     :size="17"
                                                                     stroke-width="1.5"
-                                                                    :color="'rgb(var(--v-theme-primary))'"
+                                                                   
                                                                 />
                                                             </v-btn>
                                                         </template>

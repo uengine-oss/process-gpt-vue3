@@ -76,43 +76,6 @@
                                         </template>
                                         <span>{{ $t('processDefinition.processVariables') }}</span>
                                     </v-tooltip>
-                                    <!-- 승인 상태 버튼 -->
-                                    <v-tooltip location="bottom">
-                                        <template v-slot:activator="{ props }">
-                                            <v-icon
-                                                v-bind="props"
-                                                @click="showApprovalPanel = !showApprovalPanel"
-                                                style="cursor: pointer"
-                                                :color="showApprovalPanel ? 'primary' : ''"
-                                                size="small"
-                                                >mdi-clipboard-check-outline</v-icon
-                                            >
-                                        </template>
-                                        <span>{{ $t('processDefinition.approvalState') }}</span>
-                                    </v-tooltip>
-                                    <!-- 댓글 버튼 -->
-                                    <v-tooltip location="bottom">
-                                        <template v-slot:activator="{ props }">
-                                            <v-badge
-                                                :content="totalCommentCount"
-                                                :model-value="totalCommentCount > 0"
-                                                color="error"
-                                                overlap
-                                                offset-x="-2"
-                                                offset-y="-2"
-                                            >
-                                                <v-icon
-                                                    v-bind="props"
-                                                    @click="toggleCommentPanel"
-                                                    style="cursor: pointer"
-                                                    :color="showCommentPanel ? 'primary' : ''"
-                                                    size="small"
-                                                    >mdi-comment-text-multiple-outline</v-icon
-                                                >
-                                            </v-badge>
-                                        </template>
-                                        <span>{{ $t('processDefinition.comments') }}</span>
-                                    </v-tooltip>
                                     <!-- 채팅창 열기/닫기 토글 버튼 -->
                                     <v-tooltip v-if="!isMobile" location="bottom">
                                         <template v-slot:activator="{ props }">
@@ -355,7 +318,7 @@
                                     "
                                 >
                                     <div style="display: flex; justify-content: center; align-items: center">
-                                        <Icons class="cp-variables-add" :icon="'plus'" :color="'#5eb2e8'" />
+                                        <Icons class="cp-variables-add" :icon="'plus'" />
                                     </div>
                                 </v-card>
                             </v-row>
@@ -1468,8 +1431,8 @@ export default {
 /* Task Catalog Floating Panel */
 .task-catalog-floating-panel {
     position: absolute;
-    left: 0;
-    bottom: 0;
+    right: 8px;
+    bottom: 40px;
     width: 280px;
     z-index: 10;
     background: white;
@@ -1596,8 +1559,8 @@ export default {
 /* Task Catalog Floating Panel */
 .task-catalog-floating-panel {
     position: absolute;
-    left: 0;
-    bottom: 0;
+    right: 8px;
+    bottom: 40px;
     width: 280px;
     z-index: 10;
     background: white;

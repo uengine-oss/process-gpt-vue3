@@ -13,7 +13,8 @@ import BackendFactory from '@/components/api/BackendFactory'
 import { olapApi, syncDepartmentsFromOrgChart } from '@/services/analyticsApi'
 
 const backend = BackendFactory.createBackend()
-
+const loading = ref(false)
+const syncing = ref(false)
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Filler)
 
@@ -769,6 +770,7 @@ async function syncDepartments() {
               </div>
               <div v-if="canRenderMonthlyTrend" class="chart-wrapper">
                 <Line
+                  :chartData="safeMonthlyTrendData"
                   :chartOptions="lineChartOptions"
                 />
               </div>
@@ -932,6 +934,23 @@ async function syncDepartments() {
                 <div class="comparison-col agent-col">
                   <div class="comparison-header">
                     <v-icon icon="mdi-robot" color="primary" size="20" class="mr-1" />
+                    <span class="font-weight-semibold">{{ $t('analyticsDashboard.agent') }}</span>
+                  </div>
+                  <div class="comparison-stat">
+                    <span class="stat-value text-primary">{{ getAgentStats?.total_tasks || 0 }}</span>
+                    <span class="stat-label">{{ $t('analyticsDashboard.tasks') }}</span>
+                  </div>
+                  <div class="comparison-stat">
+                    <span class="stat-value text-primary">{{ getAgentStats?.avg_duration_sec?.toFixed(0) || 0 }}{{ $t('analyticsDashboard.seconds') }}</span>
+                    <span class="stat-label">{{ $t('analyticsDashboard.avgProcessingTime') }}</span>
+                  </div>
+                  <div class="comparison-stat">
+                    <span class="stat-value text-success">{{ getAgentStats?.first_time_right_pct?.toFixed(1) || 0 }}%</span>
+                    <span class="stat-label">{{ $t('analyticsDashboard.firstTimeRight') }}</span>
+                  </div>
+                  <div class="comparison-stat">
+                    <span class="stat-value text-error">{{ getAgentStats?.error_rate_pct?.toFixed(1) || 0 }}%</span>
+                    <span class="stat-label">{{ $t('analyticsDashboard.errorRate') }}</span>
                   </div>
                 </div>
 

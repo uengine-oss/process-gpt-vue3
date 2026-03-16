@@ -127,17 +127,11 @@
                             ]"
                             :label="$t('ProcessDefinitionVersionDialog.versionTag')"
                             :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.versionTagRequired')]"
+                            :messages="[versionFlowMessage]"
                             variant="outlined"
                             density="compact"
                             class="mb-2"
-                        >
-                            <template #prepend-inner>
-                                <span class="text-body-2 text-medium-emphasis mr-1">v{{ information.version || '0.0' }} →</span>
-                            </template>
-                            <template #append-inner>
-                                <v-chip size="small" color="primary" variant="flat">v{{ newVersion }}</v-chip>
-                            </template>
-                        </v-select>
+                        ></v-select>
                         <div class="position-relative">
                             <v-textarea
                                 class="process-definition-version-dialog-textarea"
@@ -289,6 +283,10 @@ export default {
                 return `${major}.${minor}`;
             }
             return baseVersion;
+        },
+        versionFlowMessage() {
+            const currentVersionText = this.information.version || '0.0';
+            return `${this.$t('ProcessDefinitionVersionDialog.currentVersion')} : v${currentVersionText} -> ${this.$t('ProcessDefinitionVersionDialog.nextVersion')} : v${this.newVersion}`;
         },
         useLock() {
             if (this.mode == 'ProcessGPT') {

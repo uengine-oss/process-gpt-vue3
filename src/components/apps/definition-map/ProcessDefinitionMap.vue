@@ -48,7 +48,7 @@
                             class="rounded-pill flex-shrink-0"
                         >
                             <template v-slot:prepend>
-                                <Icons :icon="card.icon" color="white" :size="16" />
+                                <Icons :icon="card.icon" :size="16" />
                             </template>
                             {{ card.title }}
                         </v-btn>
@@ -492,7 +492,7 @@
                                     size="42"
                                     class="mr-4"
                                 >
-                                    <Icons :icon="card.icon" :size="24" color="white" />
+                                    <Icons :icon="card.icon" :size="24" />
                                 </v-avatar>
                                 <div>
                                     <v-card-title class="text-primary font-weight-bold pb-1" style="white-space: normal; line-height: 1.2;">

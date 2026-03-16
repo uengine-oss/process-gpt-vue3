@@ -34,13 +34,7 @@
                             <v-row class="ma-0 pa-0 justify-end align-start" style="margin-top: 1px !important">
                                 <v-chip
                                     v-if="category"
-                                    :color="
-                                        task.status === 'DONE'
-                                            ? category.color
-                                            : isMyTask && !isTodolistPath && task.status !== 'DONE'
-                                            ? 'white'
-                                            : 'black'
-                                    "
+                                    :color="task.status === 'DONE' ? '' : isMyTask && !isTodolistPath ? 'on-primary' : 'on-surface'"
                                     size="small"
                                     variant="outlined"
                                     density="comfortable"

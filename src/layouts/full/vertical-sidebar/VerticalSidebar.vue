@@ -192,7 +192,7 @@
                 <ChatList v-if="!gs" />
 
                 <!-- Analytics 타이틀 + 목록 -->
-                <!-- <div v-if="analyticsItem.length > 0 && !gs" class="mb-4">
+                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('VerticalSidebar.analytics') }}
                     </div>
@@ -212,7 +212,7 @@
                             <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
                         </v-list-item>
                     </v-col>
-                </div> -->
+                </div>
 
                 <!-- 프로세스 관리 타이틀 + 목록 -->
                 <!-- <div v-if="processItem.length > 0" class="mb-4">
@@ -721,18 +721,7 @@ export default {
                     BgColor: 'primary',
                     to: '/analytics/query',
                     disable: false
-                },
-                ...(this.pal
-                    ? []
-                    : [
-                          {
-                              title: 'analytics.heatmap',
-                              icon: 'ibm-process-mining',
-                              BgColor: 'primary',
-                              to: '/analytics/heatmap',
-                              disable: false
-                          }
-                      ])
+                }
             ];
 
             // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김

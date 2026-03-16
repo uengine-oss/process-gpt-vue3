@@ -21,87 +21,6 @@
                     class="mb-4"
                 />
 
-                <!-- Manual Links (Phase 4-1) -->
-                <ManualLinkField v-model="activity.manualLinks" :disabled="isViewMode" class="mb-4" />
-
-                <!-- System Name / Menu Name -->
-                <v-row class="ma-0 pa-0 mb-4">
-                    <v-col cols="6" class="pa-0 pr-2">
-                        <v-text-field
-                            v-model="activity.systemName"
-                            :label="$t('BpmnPropertyPanel.systemName') || 'System Name'"
-                            :disabled="isViewMode"
-                            density="compact"
-                            variant="outlined"
-                        ></v-text-field>
-                    </v-col>
-                    <v-col cols="6" class="pa-0 pl-2">
-                        <v-text-field
-                            v-model="activity.menuName"
-                            :label="$t('BpmnPropertyPanel.menuName') || 'Menu Name'"
-                            :disabled="isViewMode"
-                            density="compact"
-                            variant="outlined"
-                        ></v-text-field>
-                    </v-col>
-                </v-row>
-
-                <!-- Duration -->
-                <v-text-field
-                    v-model="activity.duration"
-                    :label="$t('BpmnPropertyPanel.duration')"
-                    :suffix="$t('BpmnPropertyPanel.days')"
-                    type="number"
-                    class="mb-4"
-                ></v-text-field>
-
-                <!-- Future Status (Phase 2-2) -->
-                <v-select
-                    v-model="activity.futureStatus"
-                    :label="$t('futureStatus.label')"
-                    :items="futureStatusOptions"
-                    item-title="title"
-                    item-value="value"
-                    density="compact"
-                    variant="outlined"
-                    class="mb-4"
-                    hide-details
-                    :disabled="isViewMode"
-                    clearable
-                ></v-select>
-
-                <!-- Cost Type (Phase 2-3) -->
-                <div class="mb-4">
-                    <div class="text-caption text-medium-emphasis mb-1">{{ $t('costType.label') }}</div>
-                    <v-chip-group v-model="activity.costType" mandatory :disabled="isViewMode">
-                        <v-chip value="FTE" size="small" variant="outlined" filter>{{ $t('costType.fte') }}</v-chip>
-                        <v-chip value="OPEX" size="small" variant="outlined" filter>{{ $t('costType.opex') }}</v-chip>
-                    </v-chip-group>
-                    <!-- FTE: duration field is already above -->
-                    <!-- OPEX: contract cost / unit price -->
-                    <div v-if="activity.costType === 'OPEX'" class="mt-2">
-                        <v-text-field
-                            v-model="activity.contractCost"
-                            :label="$t('costType.contractCost')"
-                            type="number"
-                            density="compact"
-                            variant="outlined"
-                            hide-details
-                            class="mb-2"
-                            :disabled="isViewMode"
-                        ></v-text-field>
-                        <v-text-field
-                            v-model="activity.unitPrice"
-                            :label="$t('costType.unitPrice')"
-                            type="number"
-                            density="compact"
-                            variant="outlined"
-                            hide-details
-                            :disabled="isViewMode"
-                        ></v-text-field>
-                    </div>
-                </div>
-
                 <!-- Description -->
                 <Description v-model="activity.description" class="mb-4"></Description>
 
@@ -154,33 +73,6 @@
                     @update:modelValue="(newVal) => (activity = newVal)"
                     class="mb-4"
                 ></AgentSelectField>
-
-                <!-- HITL Toggle (Phase 2-4) -->
-                <div class="mb-4">
-                    <v-switch
-                        v-model="activity.hitlEnabled"
-                        :label="$t('hitl.enabled')"
-                        density="compact"
-                        hide-details
-                        :disabled="isViewMode"
-                        color="primary"
-                    ></v-switch>
-                    <v-combobox
-                        v-if="activity.hitlEnabled"
-                        v-model="activity.hitlCapabilities"
-                        :label="$t('hitl.capabilities')"
-                        :placeholder="$t('hitl.capabilityPlaceholder')"
-                        :items="availableCapabilities"
-                        multiple
-                        chips
-                        closable-chips
-                        density="compact"
-                        variant="outlined"
-                        class="mt-2"
-                        hide-details
-                        :disabled="isViewMode"
-                    ></v-combobox>
-                </div>
 
                 <v-divider class="mb-4"></v-divider>
 
