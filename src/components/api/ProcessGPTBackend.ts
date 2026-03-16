@@ -3533,6 +3533,35 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async delegateSuperAdmin(targetUserId: string) {
+        try {
+            if (!targetUserId) {
+                throw new Error('Target user is required');
+            }
+
+            const result: any = await storage.callProcedure('delegate_super_admin', {
+                p_new_super_admin_id: targetUserId,
+                p_tenant_id: window.$tenantName
+            });
+
+            const payload = Array.isArray(result) ? result[0] : result;
+            if (!payload || payload.success === false) {
+                throw new Error(payload?.error || 'Failed to delegate super admin');
+            }
+
+            // 위임 직후 현재 사용자는 admin으로 강등되므로 로컬 상태를 즉시 동기화
+            localStorage.setItem('role', 'admin');
+            localStorage.setItem('isAdmin', 'true');
+            window.dispatchEvent(new CustomEvent('localStorageChange', { detail: { key: 'role', value: 'admin' } }));
+            window.dispatchEvent(new CustomEvent('localStorageChange', { detail: { key: 'isAdmin', value: true } }));
+
+            return payload;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async uploadDefinition(file: File, path: string) {}
 
     async getLock(id: string) {

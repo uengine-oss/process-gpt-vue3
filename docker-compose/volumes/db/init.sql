@@ -893,6 +893,82 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+CREATE OR REPLACE FUNCTION public.delegate_super_admin(
+    p_new_super_admin_id uuid,
+    p_tenant_id text default public.tenant_id()
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_current_user_id uuid;
+    v_current_role text;
+    v_target_exists boolean;
+BEGIN
+    v_current_user_id := auth.uid();
+    IF v_current_user_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Unauthorized');
+    END IF;
+
+    SELECT role
+      INTO v_current_role
+      FROM public.users
+     WHERE id = v_current_user_id
+       AND tenant_id = p_tenant_id
+     LIMIT 1;
+
+    IF COALESCE(v_current_role, '') <> 'superAdmin' THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Only superAdmin can delegate');
+    END IF;
+
+    IF p_new_super_admin_id = v_current_user_id THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Cannot delegate to yourself');
+    END IF;
+
+    SELECT EXISTS (
+        SELECT 1
+          FROM public.users
+         WHERE id = p_new_super_admin_id
+           AND tenant_id = p_tenant_id
+           AND is_agent = false
+    ) INTO v_target_exists;
+
+    IF NOT v_target_exists THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Target user not found');
+    END IF;
+
+    UPDATE public.users
+       SET role = 'superAdmin',
+           is_admin = true
+     WHERE id = p_new_super_admin_id
+       AND tenant_id = p_tenant_id;
+
+    UPDATE public.users
+       SET role = 'admin',
+           is_admin = true
+     WHERE id = v_current_user_id
+       AND tenant_id = p_tenant_id;
+
+    UPDATE public.tenants
+       SET owner = p_new_super_admin_id
+     WHERE id = p_tenant_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'tenant_id', p_tenant_id,
+        'new_super_admin_id', p_new_super_admin_id,
+        'previous_super_admin_id', v_current_user_id
+    );
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN jsonb_build_object('success', false, 'error', SQLERRM);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.delegate_super_admin(uuid, text) TO authenticated;
+
 CREATE OR REPLACE FUNCTION handle_todolist_change()
 RETURNS TRIGGER AS $$
 DECLARE
