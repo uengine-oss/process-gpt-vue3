@@ -6,7 +6,7 @@
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
                     <v-row class="ma-0 pa-0 align-center account-settings-header-row">
-                        <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default" show-arrows>
+                        <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="primary" show-arrows>
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                             <div v-if="admin">
                                 <v-tab value="ManageAccess">
@@ -28,7 +28,7 @@
                                         <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                     </v-tab>
                                     <v-tab v-if="!isUEngineMode" value="TaskCatalog">
-                                        <v-icon class="mr-2" size="20">mdi-folder-cog</v-icon> {{ $t('accountTab.taskCatalog') }}
+                                        <v-icon class="mr-2" size="20">mdi-view-grid</v-icon> {{ $t('taskCatalog.catalog') }}
                                     </v-tab>
                                     <v-tab value="OrgChartGroup">
                                         <v-icon class="mr-2" size="20">mdi-account-group</v-icon> {{ $t('accountTab.orgChartGroup') }}
@@ -144,7 +144,7 @@
                                     @click="tab = 'TaskCatalog'"
                                     :class="{ 'selected-tab': tab === 'TaskCatalog' }"
                                 >
-                                    <v-icon class="mr-2" size="16">mdi-folder-cog</v-icon>{{ $t('accountTab.taskCatalog') }}
+                                    <v-icon class="mr-2" size="16">mdi-view-grid</v-icon>{{ $t('taskCatalog.catalog') }}
                                 </v-btn>
                                 <v-btn
                                     variant="text"
@@ -240,8 +240,8 @@
 
                         <!-- task 설정 탭 -->
                         <v-window-item v-if="!isUEngineMode" value="TaskCatalog">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
-                                <TaskCatalogAdmin />
+                            <div class="pa-4" style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                                <TaskCatalogList />
                             </div>
                         </v-window-item>
                         <v-window-item value="OrgChartGroup">
@@ -278,6 +278,7 @@ import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vu
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
 import SkillsTab from '@/components/pages/account-settings/SkillsTab.vue';
 import TaskCatalogAdmin from '@/components/admin/TaskCatalogAdmin.vue';
+import TaskCatalogList from '@/components/admin/TaskCatalogList.vue';
 import OrgChartGroupTab from '@/components/pages/account-settings/OrgChartGroupTab.vue';
 
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
@@ -298,6 +299,7 @@ export default {
         ConnectionInfoTab,
         SkillsTab,
         TaskCatalogAdmin,
+        TaskCatalogList,
         OrgChartGroupTab
     },
     data() {
