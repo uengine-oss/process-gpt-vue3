@@ -48,9 +48,22 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="d-flex align-center">
+                        <div class="d-flex align-center ga-2">
+                            <v-chip v-if="isMe(item)" variant="tonal" color="secondary" size="x-small">
+                                {{ $t('accountTab.me') }}
+                            </v-chip>
+                            <v-btn
+                                v-if="canDelegateSuperAdmin(item)"
+                                size="x-small"
+                                variant="outlined"
+                                color="primary"
+                                class="ml-1"
+                                @click="openDelegateDialog"
+                            >
+                                {{ $t('accountTab.delegate') }}
+                            </v-btn>
                             <v-chip
-                                v-if="editable"
+                                v-if="canEditUserRole(item)"
                                 variant="elevated"
                                 :color="item.is_admin ? 'primary' : 'gray'"
                                 class="chip-select-wrapper"
@@ -72,7 +85,21 @@
                                     </template>
                                 </v-select>
                             </v-chip>
-                            <v-btn v-if="isAdmin" @click="openDeleteDialog(item)" icon variant="text" size="small" class="ml-2">
+                            <v-chip
+                                v-else-if="!isMe(item)"
+                                variant="elevated"
+                                :color="isProtectedSuperAdmin(item) ? 'primary' : item.is_admin ? 'primary' : 'gray'"
+                                size="x-small"
+                            >
+                                {{ isProtectedSuperAdmin(item) ? 'superAdmin' : item.is_admin ? $t('accountTab.admin') : $t('accountTab.user') }}
+                            </v-chip>
+                            <v-btn
+                                v-if="isAdmin && !isMe(item) && !isProtectedSuperAdmin(item)"
+                                @click="openDeleteDialog(item)"
+                                icon
+                                variant="text"
+                                size="small"
+                            >
                                 <v-icon color="error">mdi-delete</v-icon>
                             </v-btn>
                         </div>
@@ -135,6 +162,50 @@
             </v-row>
         </v-card>
     </v-dialog>
+
+    <v-dialog v-model="openDelegateSuperAdminDialog" max-width="560px">
+        <v-card class="pa-4">
+            <v-row class="ma-0 pa-0 align-center">
+                <v-card-title class="pa-0">{{ $t('accountTab.delegateSuperAdminTitle') }}</v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn @click="closeDelegateDialog" class="ml-auto" variant="text" density="compact" icon>
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-row>
+            <v-card-text class="pa-0 pt-4">
+                <p class="text-body-2 text-grey-darken-1 mb-3">
+                    {{ $t('accountTab.delegateSuperAdminDescription') }}
+                </p>
+                <v-select
+                    v-model="delegateTargetUserId"
+                    :items="delegatableUsers"
+                    item-title="name"
+                    item-value="id"
+                    :placeholder="$t('accountTab.selectUser')"
+                    variant="outlined"
+                    density="comfortable"
+                    hide-details
+                >
+                    <template v-slot:item="{ props, item }">
+                        <v-list-item v-bind="props" :title="item.raw.name" :subtitle="item.raw.email" />
+                    </template>
+                </v-select>
+            </v-card-text>
+            <v-row class="ma-0 pa-0 pt-4">
+                <v-spacer></v-spacer>
+                <v-btn
+                    color="primary"
+                    variant="flat"
+                    class="rounded-pill"
+                    :disabled="!delegateTargetUserId || isDelegating"
+                    :loading="isDelegating"
+                    @click="confirmDelegateSuperAdmin"
+                >
+                    {{ $t('accountTab.delegateAction') }}
+                </v-btn>
+            </v-row>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -158,13 +229,15 @@ export default {
     },
     data: () => ({
         isMobile: false,
+        currentUserId: localStorage.getItem('uid') || '',
+        currentUserEmail: (localStorage.getItem('email') || '').toLowerCase(),
         searchInput: '',
         searchQuery: '',
         searchKey: ['name', 'email'],
         users: [],
         adminItem: [
             { name: 'Admin', value: true },
-            { name: 'User', value: false }
+            { name: 'user', value: false }
         ],
         headers: [
             { title: 'User', key: 'name' },
@@ -175,7 +248,10 @@ export default {
         deleteDialog: false,
         deleteTargetUser: null,
         confirmName: '',
-        organizationChart: null
+        organizationChart: null,
+        openDelegateSuperAdminDialog: false,
+        delegateTargetUserId: '',
+        isDelegating: false
     }),
     computed: {
         isAdmin() {
@@ -196,6 +272,9 @@ export default {
                     return value && value.toString().toLowerCase().includes(query);
                 });
             });
+        },
+        delegatableUsers() {
+            return this.users.filter((user) => !this.isMe(user) && !user.is_agent);
         }
     },
     async mounted() {
@@ -273,7 +352,9 @@ export default {
                     profile: user.profile,
                     name: user.username,
                     email: user.email,
-                    is_admin: user.is_admin
+                    is_admin: user.is_admin,
+                    role: user.role,
+                    is_agent: user.is_agent
                 };
             });
 
@@ -282,11 +363,65 @@ export default {
             }
         },
         async updateUser(user) {
+            if (!this.canEditUserRole(user)) {
+                return;
+            }
             const userInfo = {
                 id: user.id,
                 is_admin: user.is_admin
             };
             await backend.updateUserInfo({ type: 'update', user: userInfo });
+        },
+        isMe(user) {
+            if (!user) return false;
+            const userEmail = (user.email || '').toLowerCase();
+            return (this.currentUserId && user.id === this.currentUserId) || (this.currentUserEmail && userEmail === this.currentUserEmail);
+        },
+        canEditUserRole(user) {
+            return this.editable && !this.isMe(user) && !this.isProtectedSuperAdmin(user);
+        },
+        isProtectedSuperAdmin(user) {
+            return user?.role === 'superAdmin';
+        },
+        canDelegateSuperAdmin(user) {
+            return this.isMe(user) && this.isProtectedSuperAdmin(user);
+        },
+        openDelegateDialog() {
+            this.delegateTargetUserId = '';
+            this.openDelegateSuperAdminDialog = true;
+        },
+        closeDelegateDialog() {
+            this.openDelegateSuperAdminDialog = false;
+            this.delegateTargetUserId = '';
+        },
+        async confirmDelegateSuperAdmin() {
+            if (!this.delegateTargetUserId) {
+                return;
+            }
+            await this.$try({
+                action: async () => {
+                    this.isDelegating = true;
+                    if (!backend.delegateSuperAdmin) {
+                        throw new Error('Delegate API is not available');
+                    }
+                    await backend.delegateSuperAdmin(this.delegateTargetUserId);
+
+                    this.users = this.users.map((user) => {
+                        if (user.id === this.delegateTargetUserId) {
+                            return { ...user, role: 'superAdmin', is_admin: true };
+                        }
+                        if (this.isMe(user)) {
+                            return { ...user, role: 'admin', is_admin: true };
+                        }
+                        return user;
+                    });
+
+                    this.closeDelegateDialog();
+                },
+                successMsg: this.$t('accountTab.delegateSuperAdminSuccess'),
+                errorMsg: this.$t('accountTab.delegateSuperAdminFailed')
+            });
+            this.isDelegating = false;
         },
         async deleteUserFromOrganization(userId) {
             const orgData = await backend.getData('configuration', { match: { key: 'organization' } });
@@ -319,6 +454,9 @@ export default {
             }
         },
         async deleteUser(user) {
+            if (this.isProtectedSuperAdmin(user)) {
+                return;
+            }
             await this.$try({
                 action: async () => {
                     await backend.updateUserInfo({ type: 'delete', user: user });
@@ -333,6 +471,9 @@ export default {
             this.isMobile = window.innerWidth <= 768;
         },
         openDeleteDialog(user) {
+            if (this.isProtectedSuperAdmin(user)) {
+                return;
+            }
             this.deleteTargetUser = user;
             this.deleteDialog = true;
         },

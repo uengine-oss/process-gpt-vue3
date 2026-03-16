@@ -197,7 +197,7 @@
                         <!-- ManageAccess: 사용자 관리 탭 (accountTab.manageAccess) -->
                         <v-window-item value="ManageAccess">
                             <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
-                                <ManageAccessTab :editable="superAdmin" />
+                                <ManageAccessTab :editable="admin" />
                             </div>
                         </v-window-item>
 

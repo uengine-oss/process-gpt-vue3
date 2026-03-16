@@ -143,6 +143,7 @@ export interface Backend {
     // User & Data API
     getUserInfo(): Promise<any>;
     getData(path: string, options: any): Promise<any>;
+    delegateSuperAdmin?(targetUserId: string): Promise<any>;
 
     // User & Data API
     getUserInfo(): Promise<any>;

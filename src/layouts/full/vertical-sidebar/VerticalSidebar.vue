@@ -38,7 +38,7 @@
         <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc">
             <Logo :style="logoPadding" />
             <v-spacer></v-spacer>
-            <v-tooltip v-if="!pal" :text="$t('processDefinitionMap.title')" location="bottom">
+            <v-tooltip v-if="!pal && isAdmin" :text="$t('processDefinitionMap.title')" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn
                         icon
@@ -80,7 +80,7 @@
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <v-btn variant="text" class="text-medium-emphasis d-flex align-center" :to="'/definition-map'" v-if="pal">
+                <v-btn variant="text" class="text-medium-emphasis d-flex align-center" :to="'/definition-map'" v-if="pal && isAdmin">
                     <Icons :icon="'write'" class="mr-2" />
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
@@ -132,7 +132,7 @@
                 </v-col>
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
-                <div v-if="mode !== 'uEngine'" class="mb-4">
+                <div v-if="mode !== 'uEngine' && isAdmin" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
@@ -155,7 +155,7 @@
                 </div>
 
                 <!-- 스킬 타이틀 + 목록 -->
-                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs && isAdmin" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.skills') }}
@@ -238,7 +238,7 @@
                 </div> -->
 
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
-                <v-col class="pa-0">
+                <v-col v-if="isAdmin" class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
@@ -276,7 +276,7 @@
                     </template>
                 </v-col>
                 <!-- 프로세스 섹션: 프로세스 정의 + 옆 작은 버튼 클릭 시 업로드/내보내기 드롭다운 -->
-                <v-col v-if="processSectionListItems.length > 0" class="pa-0">
+                <v-col v-if="isAdmin && processSectionListItems.length > 0" class="pa-0">
                     <v-list-item
                         v-for="item in processSectionListItems"
                         :key="item.title"
@@ -322,7 +322,7 @@
                     </v-list-item>
                 </v-col>
                 <!-- 정의 목록 -->
-                <v-col class="pa-0">
+                <v-col v-if="isAdmin" class="pa-0">
                     <ExpandableList
                         v-if="definitionList && definitionList.children"
                         :items="definitionList.children"
@@ -664,16 +664,19 @@ export default {
             ];
 
             // 프로세스 섹션: 프로세스 정의(메인 행) + 옆 작은 버튼으로 드롭다운
-            this.processSectionListItems = [
-                { title: 'definitionManagement.processDefinition', icon: 'flowchart', to: '/definitions/chat' }
-            ];
-            this.processSectionDropdownItems =
-                this.mode !== 'ProcessGPT'
-                    ? [
-                          { title: 'definitionManagement.upload', icon: 'upload', action: 'upload' },
-                          { title: 'definitionManagement.release', icon: 'download', action: 'openDownloadDialog' }
-                      ]
-                    : [];
+            if (isAdmin) {
+                this.processSectionListItems = [{ title: 'definitionManagement.processDefinition', icon: 'flowchart', to: '/definitions/chat' }];
+                this.processSectionDropdownItems =
+                    this.mode !== 'ProcessGPT'
+                        ? [
+                              { title: 'definitionManagement.upload', icon: 'upload', action: 'upload' },
+                              { title: 'definitionManagement.release', icon: 'download', action: 'openDownloadDialog' }
+                          ]
+                        : [];
+            } else {
+                this.processSectionListItems = [];
+                this.processSectionDropdownItems = [];
+            }
 
             // Analytics 메뉴
             this.analyticsItem = [
