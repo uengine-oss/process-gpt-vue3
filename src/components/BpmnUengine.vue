@@ -2766,32 +2766,34 @@ export default {
     fill: #000000 !important;
 }
 
-/* Minimap styling - positioned above BPMN.io logo */
+/* Minimap card styling */
 .djs-minimap {
-    bottom: 0px !important;
+    bottom: 12px !important;
     top: auto !important;
-    left: 0px !important;
+    left: 12px !important;
     right: auto !important;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 6px;
 }
 
 .djs-minimap .toggle {
-    width: 32px;
-    height: 32px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 34px;
+    height: 34px;
+    background: gray;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.djs-minimap .toggle:hover {
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+.djs-minimap.open .toggle {
+    margin-right: 8px;
 }
 
-/* Map icon */
 .djs-minimap .toggle::before {
     content: '';
     display: block;
@@ -2804,16 +2806,16 @@ export default {
 }
 
 .djs-minimap .map {
-    border: 1px solid #e8e8e8;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: none;
+    border-radius: 8px;
     overflow: hidden;
+    margin-top: 6px;
 }
 
 @media only screen and (max-width: 768px) {
     .djs-minimap {
-        bottom: 0px !important;
-        left: 0px !important;
+        bottom: 8px !important;
+        left: 8px !important;
     }
 }
 </style>

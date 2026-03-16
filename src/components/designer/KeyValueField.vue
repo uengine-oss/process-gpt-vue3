@@ -1,7 +1,7 @@
 <template>
     <div class="key-value-field">
         <div class="d-flex align-center justify-space-between mb-3">
-            <span class="text-subtitle-2 font-weight-bold text-grey-darken-1">{{ label }}</span>
+            <h6 class="text-body-1">{{ label }}</h6>
             <v-btn v-if="!readonly" size="small" variant="tonal" color="primary" prepend-icon="mdi-plus" @click="addItem" class="px-3">
                 {{ $t('KeyValueField.add') || '추가' }}
             </v-btn>
@@ -159,13 +159,5 @@ export default {
 }
 .gap-2 {
     gap: 8px;
-}
-.hover-elevation:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-    border-color: rgba(var(--v-theme-primary), 0.5) !important;
-}
-.hover-opacity-100:hover {
-    opacity: 1 !important;
-    background-color: rgba(0, 0, 0, 0.05);
 }
 </style>

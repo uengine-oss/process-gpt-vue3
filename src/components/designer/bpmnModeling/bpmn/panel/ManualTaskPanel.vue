@@ -1,27 +1,5 @@
 <template>
     <div>
-        <!-- System Name / Menu Name -->
-        <v-row class="ma-0 pa-0 mb-4">
-            <v-col cols="6" class="pa-0 pr-2">
-                <v-text-field
-                    v-model="copyUengineProperties.systemName"
-                    :label="$t('BpmnPropertyPanel.systemName') || 'System Name'"
-                    :disabled="isViewMode"
-                    density="compact"
-                    variant="outlined"
-                ></v-text-field>
-            </v-col>
-            <v-col cols="6" class="pa-0 pl-2">
-                <v-text-field
-                    v-model="copyUengineProperties.menuName"
-                    :label="$t('BpmnPropertyPanel.menuName') || 'Menu Name'"
-                    :disabled="isViewMode"
-                    density="compact"
-                    variant="outlined"
-                ></v-text-field>
-            </v-col>
-        </v-row>
-
         <div v-if="inputData.length > 0" style="margin-bottom: 20px">
             <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
@@ -171,12 +149,6 @@
                 prepend-inner-icon="mdi-identifier"
             />
         </div>
-
-        <!-- Manual Links (Phase 4-1) -->
-        <div class="mt-4">
-            <ManualLinkField v-model="copyUengineProperties.manualLinks" :disabled="isViewMode" />
-        </div>
-
         <!-- Lead Time -->
         <div class="mt-4">
             <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
@@ -196,36 +168,6 @@
                 :disabled="isViewMode"
                 clearable
             ></v-select>
-        </div>
-
-        <!-- Cost Type (Phase 2-3) -->
-        <div class="mt-4">
-            <div class="text-caption text-medium-emphasis mb-1">{{ $t('costType.label') }}</div>
-            <v-chip-group v-model="copyUengineProperties.costType" mandatory :disabled="isViewMode">
-                <v-chip value="FTE" size="small" variant="outlined" filter>{{ $t('costType.fte') }}</v-chip>
-                <v-chip value="OPEX" size="small" variant="outlined" filter>{{ $t('costType.opex') }}</v-chip>
-            </v-chip-group>
-            <div v-if="copyUengineProperties.costType === 'OPEX'" class="mt-2">
-                <v-text-field
-                    v-model="copyUengineProperties.contractCost"
-                    :label="$t('costType.contractCost')"
-                    type="number"
-                    density="compact"
-                    variant="outlined"
-                    hide-details
-                    class="mb-2"
-                    :disabled="isViewMode"
-                ></v-text-field>
-                <v-text-field
-                    v-model="copyUengineProperties.unitPrice"
-                    :label="$t('costType.unitPrice')"
-                    type="number"
-                    density="compact"
-                    variant="outlined"
-                    hide-details
-                    :disabled="isViewMode"
-                ></v-text-field>
-            </div>
         </div>
 
         <!-- Schema-based Properties -->

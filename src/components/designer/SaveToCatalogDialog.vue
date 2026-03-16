@@ -1,350 +1,50 @@
 <template>
-    <v-dialog v-model="dialogOpen" max-width="700" persistent>
-        <v-card>
-            <v-card-title class="d-flex align-center">
-                <v-icon class="mr-2">mdi-folder-plus</v-icon>
-                {{ $t('taskCatalog.saveToCatalog') || 'Save to Catalog' }}
+    <v-dialog v-model="dialogOpen" max-width="400" persistent>
+        <v-card class="pa-0" elevation="10">
+            <v-card-title class="d-flex justify-space-between align-center pa-4 ma-0 pb-0">
+                <div class="d-flex align-center">
+                    <v-icon class="mr-2">mdi-folder-plus</v-icon>
+                    {{ $t('taskCatalog.saveToCatalog') || 'Save to Catalog' }}
+                </div>
+                <v-btn variant="text" density="compact" icon @click="close">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
             </v-card-title>
 
-            <v-card-text>
+            <v-card-text class="pa-4 pb-0">
                 <v-alert v-if="existingItem" type="warning" variant="tonal" class="mb-4" density="compact">
                     {{ $t('taskCatalog.taskExistsWarning') || '동일한 이름과 시스템의 Task가 이미 존재합니다. 저장하면 업데이트됩니다.' }}
                 </v-alert>
 
-                <v-form ref="formRef" v-model="formValid">
-                    <!-- Task Name - readonly, from element -->
+                <v-form ref="formRef" v-model="formValid" class="d-flex flex-column ga-4">
+                    <!-- 태스크 이름 - 읽기 전용, 요소에서 가져옴 -->
                     <v-text-field
                         v-model="formData.name"
                         :label="$t('taskCatalog.taskName') || 'Task Name'"
                         readonly
                         disabled
-                        class="mb-2"
                         variant="outlined"
+                        density="compact"
+                        hide-details
                         bg-color="grey-lighten-4"
                     />
 
-                    <!-- Task Type - readonly, from element -->
+                    <!-- 태스크 유형 - 읽기 전용, 요소에서 가져옴 -->
                     <v-text-field
                         v-model="formData.task_type"
                         :label="$t('taskCatalog.taskType') || 'Task Type'"
                         readonly
                         disabled
-                        class="mb-2"
                         variant="outlined"
+                        density="compact"
+                        hide-details
                         bg-color="grey-lighten-4"
                     />
-
-                    <v-select
-                        v-model="formData.system_name"
-                        :items="systems"
-                        :label="$t('taskCatalog.system') || 'System (OSS)'"
-                        item-title="name"
-                        item-value="name"
-                        :rules="[(v) => !!v || 'Required']"
-                        required
-                        class="mb-2"
-                    >
-                        <template v-slot:append>
-                            <v-btn icon size="x-small" variant="text" @click="showNewSystemDialog = true">
-                                <v-icon>mdi-plus</v-icon>
-                            </v-btn>
-                        </template>
-                    </v-select>
-
-                    <v-select
-                        v-model="formData.level"
-                        :items="['L2', 'L3', 'L4', 'L5']"
-                        :label="$t('taskCatalog.level') || 'Level'"
-                        clearable
-                        class="mb-2"
-                    />
-
-                    <!-- FTE Input Section -->
-                    <v-expansion-panels v-model="ftePanel" class="mb-2 fte-panel">
-                        <v-expansion-panel value="fte" elevation="0">
-                            <v-expansion-panel-title class="fte-panel-title">
-                                <div class="d-flex align-center">
-                                    <v-icon class="mr-2" size="small" color="primary">mdi-calculator-variant</v-icon>
-                                    <span class="font-weight-medium">{{ $t('fteInput.title') || 'FTE 입력' }}</span>
-                                    <v-chip v-if="formData.fte" size="small" class="ml-3" color="primary" variant="flat">
-                                        {{ formData.fte.toFixed(3) }} FTE
-                                    </v-chip>
-                                </div>
-                            </v-expansion-panel-title>
-                            <v-expansion-panel-text class="fte-panel-content">
-                                <!-- 가이드 버튼 & 설명 -->
-                                <div class="d-flex align-center mb-4">
-                                    <v-btn variant="tonal" size="small" color="info" @click="showFteGuide = true">
-                                        <v-icon start size="16">mdi-help-circle-outline</v-icon>
-                                        {{ $t('fteInput.guide') || 'FTE 입력 가이드' }}
-                                    </v-btn>
-                                    <span class="text-caption text-medium-emphasis ml-3">
-                                        {{ $t('fteInput.description') || '※ 개인 판단 비중 또는 시간×반복×인원으로 입력하세요.' }}
-                                    </span>
-                                </div>
-
-                                <!-- 적용 기간 & 저장 주체 -->
-                                <v-card variant="outlined" class="mb-4 pa-3">
-                                    <v-row dense>
-                                        <v-col cols="4">
-                                            <v-menu v-model="showPeriodPicker" :close-on-content-click="false" location="bottom start">
-                                                <template v-slot:activator="{ props }">
-                                                    <v-text-field
-                                                        v-bind="props"
-                                                        :model-value="fteData.period"
-                                                        :label="$t('fteInput.period') || '적용 기간'"
-                                                        density="compact"
-                                                        variant="outlined"
-                                                        hide-details
-                                                        readonly
-                                                        append-inner-icon="mdi-calendar"
-                                                    />
-                                                </template>
-                                                <v-date-picker
-                                                    v-model="selectedMonth"
-                                                    view-mode="months"
-                                                    hide-header
-                                                    @update:model-value="onMonthSelect"
-                                                />
-                                            </v-menu>
-                                        </v-col>
-                                        <v-col cols="3">
-                                            <v-select
-                                                v-model="fteData.subjectType"
-                                                :items="subjectTypes"
-                                                item-title="label"
-                                                item-value="value"
-                                                :label="$t('fteInput.subjectType') || '주체 타입'"
-                                                density="compact"
-                                                variant="outlined"
-                                                hide-details
-                                            />
-                                        </v-col>
-                                        <v-col cols="5">
-                                            <v-text-field
-                                                v-model="fteData.subjectId"
-                                                :label="$t('fteInput.subjectId') || '주체 ID'"
-                                                :placeholder="subjectIdPlaceholder"
-                                                density="compact"
-                                                variant="outlined"
-                                                hide-details
-                                            />
-                                        </v-col>
-                                    </v-row>
-                                </v-card>
-
-                                <!-- 입력 모드 -->
-                                <div class="d-flex align-center mb-3">
-                                    <span class="text-subtitle-2 mr-4">{{ $t('fteInput.inputMode') || '입력 모드' }}</span>
-                                    <v-btn-toggle v-model="fteData.inputMode" mandatory density="compact" color="primary">
-                                        <v-btn value="direct" size="small">
-                                            {{ $t('fteInput.directPercent') || '직접 비중(%)' }}
-                                        </v-btn>
-                                        <v-btn value="calculation" size="small">
-                                            {{ $t('fteInput.timeCalculation') || '시간×반복×인원' }}
-                                        </v-btn>
-                                    </v-btn-toggle>
-                                </div>
-
-                                <!-- 직접 비중 입력 -->
-                                <v-card v-if="fteData.inputMode === 'direct'" variant="outlined" class="mb-4 pa-3">
-                                    <div class="d-flex align-center">
-                                        <v-text-field
-                                            v-model.number="fteData.directPercent"
-                                            :label="$t('fteInput.percentLabel') || '비중'"
-                                            type="number"
-                                            step="0.1"
-                                            min="0"
-                                            max="100"
-                                            density="compact"
-                                            variant="outlined"
-                                            hide-details
-                                            style="max-width: 200px"
-                                            @update:model-value="calculateFte"
-                                        >
-                                            <template v-slot:append-inner>
-                                                <span class="text-medium-emphasis">%</span>
-                                            </template>
-                                        </v-text-field>
-                                        <v-icon class="mx-3" color="grey">mdi-arrow-right</v-icon>
-                                        <div class="fte-result-box">
-                                            <span class="text-h6 font-weight-bold text-primary">{{
-                                                formData.fte?.toFixed(3) || '0.000'
-                                            }}</span>
-                                            <span class="text-caption ml-1">FTE</span>
-                                        </div>
-                                    </div>
-                                </v-card>
-
-                                <!-- 시간×반복×인원 입력 -->
-                                <v-card v-if="fteData.inputMode === 'calculation'" variant="outlined" class="mb-4 pa-3">
-                                    <v-row dense class="mb-3" align="end">
-                                        <v-col cols="6" sm="3">
-                                            <div class="fte-number-input">
-                                                <label class="fte-input-label">{{ $t('fteInput.repeatCycle') || '반복 주기' }}</label>
-                                                <v-select
-                                                    v-model="fteData.repeatCycle"
-                                                    :items="repeatCycleOptions"
-                                                    item-title="label"
-                                                    item-value="value"
-                                                    density="compact"
-                                                    variant="outlined"
-                                                    hide-details
-                                                    class="fte-select"
-                                                    @update:model-value="calculateFte"
-                                                />
-                                            </div>
-                                        </v-col>
-                                        <v-col cols="6" sm="3">
-                                            <div class="fte-number-input">
-                                                <label class="fte-input-label">{{ $t('fteInput.repeatCount') || '주기 내 반복' }}</label>
-                                                <div class="fte-stepper">
-                                                    <button
-                                                        type="button"
-                                                        class="fte-stepper-btn"
-                                                        @click="
-                                                            fteData.repeatCount = Math.max(1, fteData.repeatCount - 1);
-                                                            calculateFte();
-                                                        "
-                                                    >
-                                                        <v-icon size="18">mdi-minus</v-icon>
-                                                    </button>
-                                                    <input
-                                                        type="number"
-                                                        v-model.number="fteData.repeatCount"
-                                                        min="1"
-                                                        class="fte-stepper-input"
-                                                        @input="calculateFte"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        class="fte-stepper-btn"
-                                                        @click="
-                                                            fteData.repeatCount++;
-                                                            calculateFte();
-                                                        "
-                                                    >
-                                                        <v-icon size="18">mdi-plus</v-icon>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </v-col>
-                                        <v-col cols="6" sm="3">
-                                            <div class="fte-number-input">
-                                                <label class="fte-input-label">{{ $t('fteInput.hoursPerTime') }}</label>
-                                                <div class="fte-stepper">
-                                                    <button
-                                                        type="button"
-                                                        class="fte-stepper-btn"
-                                                        @click="
-                                                            fteData.hoursPerTime = Math.max(0, parseFloat(fteData.hoursPerTime) - 0.5);
-                                                            calculateFte();
-                                                        "
-                                                    >
-                                                        <v-icon size="18">mdi-minus</v-icon>
-                                                    </button>
-                                                    <input
-                                                        type="number"
-                                                        v-model.number="fteData.hoursPerTime"
-                                                        min="0"
-                                                        step="0.5"
-                                                        class="fte-stepper-input"
-                                                        @input="calculateFte"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        class="fte-stepper-btn"
-                                                        @click="
-                                                            fteData.hoursPerTime = parseFloat(fteData.hoursPerTime) + 0.5;
-                                                            calculateFte();
-                                                        "
-                                                    >
-                                                        <v-icon size="18">mdi-plus</v-icon>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </v-col>
-                                        <v-col cols="6" sm="3">
-                                            <div class="fte-number-input">
-                                                <label class="fte-input-label">{{ $t('fteInput.peopleCount') || '동시 인원' }}</label>
-                                                <div class="fte-stepper">
-                                                    <button
-                                                        type="button"
-                                                        class="fte-stepper-btn"
-                                                        @click="
-                                                            fteData.peopleCount = Math.max(0, parseFloat(fteData.peopleCount) - 0.5);
-                                                            calculateFte();
-                                                        "
-                                                    >
-                                                        <v-icon size="18">mdi-minus</v-icon>
-                                                    </button>
-                                                    <input
-                                                        type="number"
-                                                        v-model.number="fteData.peopleCount"
-                                                        min="0"
-                                                        step="0.5"
-                                                        class="fte-stepper-input"
-                                                        @input="calculateFte"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        class="fte-stepper-btn"
-                                                        @click="
-                                                            fteData.peopleCount = parseFloat(fteData.peopleCount) + 0.5;
-                                                            calculateFte();
-                                                        "
-                                                    >
-                                                        <v-icon size="18">mdi-plus</v-icon>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </v-col>
-                                    </v-row>
-
-                                    <!-- 계산 결과 -->
-                                    <div class="fte-calculation-result">
-                                        <div class="fte-formula">
-                                            <span class="text-primary">→</span>
-                                            <span>{{ fteData.hoursPerTime }}h</span>
-                                            <span class="text-grey mx-1">×</span>
-                                            <span>{{ annualRepeatCount }}{{ $t('fteInput.timesPerYear') || '회/년' }}</span>
-                                            <span class="text-grey mx-1">×</span>
-                                            <span>{{ fteData.peopleCount }}{{ $t('fteInput.people') || '명' }}</span>
-                                            <span class="text-grey mx-1">÷</span>
-                                            <span>2080h</span>
-                                            <span class="text-grey mx-2">=</span>
-                                        </div>
-                                        <div class="fte-result-box">
-                                            <span class="text-h5 font-weight-bold text-primary">{{
-                                                formData.fte?.toFixed(3) || '0.000'
-                                            }}</span>
-                                            <span class="text-body-2 ml-1">FTE</span>
-                                        </div>
-                                    </div>
-                                </v-card>
-
-                                <!-- 메모 -->
-                                <v-textarea
-                                    v-model="fteData.memo"
-                                    :label="$t('fteInput.memo') || '메모(선택)'"
-                                    :placeholder="$t('fteInput.memoPlaceholder') || '예: 23년 평균 기준, 상반기 2회 증가 예상 등'"
-                                    rows="2"
-                                    density="compact"
-                                    variant="outlined"
-                                    hide-details
-                                />
-                            </v-expansion-panel-text>
-                        </v-expansion-panel>
-                    </v-expansion-panels>
                 </v-form>
             </v-card-text>
 
-            <v-card-actions>
-                <v-spacer />
-                <v-btn variant="text" @click="close">
-                    {{ $t('taskCatalog.cancel') || 'Cancel' }}
-                </v-btn>
-                <v-btn color="primary" :loading="saving" :disabled="!formValid || !formData.name" @click="save">
+            <v-card-actions class="d-flex justify-end align-center pa-4 ga-2">
+                <v-btn color="primary" rounded variant="flat" :loading="saving" :disabled="!formValid || !formData.name" @click="save">
                     {{ $t('taskCatalog.save') || 'Save' }}
                 </v-btn>
             </v-card-actions>
@@ -352,18 +52,33 @@
 
         <!-- New System Dialog -->
         <v-dialog v-model="showNewSystemDialog" max-width="400">
-            <v-card>
-                <v-card-title>{{ $t('taskCatalog.addSystem') || 'Add System' }}</v-card-title>
-                <v-card-text>
-                    <v-text-field v-model="newSystemName" :label="$t('taskCatalog.systemName') || 'System Name'" autofocus />
-                    <v-textarea v-model="newSystemDescription" :label="$t('taskCatalog.description') || 'Description'" rows="2" />
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn variant="text" @click="showNewSystemDialog = false">
-                        {{ $t('taskCatalog.cancel') || 'Cancel' }}
+            <v-card class="pa-0" elevation="10">
+                <v-card-title class="d-flex justify-space-between align-center pa-4 ma-0 pb-0">
+                    <span>{{ $t('taskCatalog.addSystem') || 'Add System' }}</span>
+                    <v-btn variant="text" density="compact" icon @click="showNewSystemDialog = false">
+                        <v-icon>mdi-close</v-icon>
                     </v-btn>
-                    <v-btn color="primary" @click="addNewSystem" :disabled="!newSystemName">
+                </v-card-title>
+                <v-card-text class="d-flex flex-column ga-3 pa-4 pb-0">
+                    <v-text-field
+                        v-model="newSystemName"
+                        :label="$t('taskCatalog.systemName') || 'System Name'"
+                        autofocus
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                    />
+                    <v-textarea
+                        v-model="newSystemDescription"
+                        :label="$t('taskCatalog.description') || 'Description'"
+                        rows="2"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                    />
+                </v-card-text>
+                <v-card-actions class="d-flex justify-end align-center pa-4 ga-2">
+                    <v-btn color="primary" rounded variant="flat" @click="addNewSystem" :disabled="!newSystemName">
                         {{ $t('taskCatalog.add') || 'Add' }}
                     </v-btn>
                 </v-card-actions>

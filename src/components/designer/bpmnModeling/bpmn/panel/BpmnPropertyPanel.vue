@@ -6,9 +6,9 @@
         :class="{ 'view-mode-panel-content': isViewMode, 'pal-view-mode': isViewMode && isPALMode }"
     >
         <v-row class="ma-0 pa-4 pb-0" :class="{ 'view-mode-header': isViewMode }">
-            <v-chip v-if="isViewMode" color="info" variant="tonal" size="x-small" class="mr-2">
+            <v-chip v-if="isViewMode" color="gray" variant="tonal" size="x-small" class="mr-2">
                 <v-icon start size="x-small">mdi-eye</v-icon>
-                {{ $t('BpmnPropertyPanel.readOnly') || 'Read Only' }}
+                <div>{{ $t('BpmnPropertyPanel.readOnly') || 'Read Only' }}</div>
             </v-chip>
             <v-card-title v-if="isViewMode" class="pa-0 view-mode-title">{{ name }}</v-card-title>
             <v-combobox
@@ -22,7 +22,7 @@
                 :loading="termLoading"
                 @update:search="onTermSearch"
                 @update:model-value="recordTermUsage"
-                hide-no-data
+                hide-no-data예
                 clearable
                 class="bpmn-property-panel-name mb-3 delete-input-details"
             ></v-combobox>
@@ -266,6 +266,25 @@ export default {
         // BPMN 모델 변경 이벤트 리스너 추가
         // this.setupModelChangeListener();
 
+        // view mode에서 directEditing 차단으로 사라진 엘리먼트 텍스트 복원
+        if (this.isViewMode && this.bpmnModeler) {
+            setTimeout(() => {
+                try {
+                    const elementRegistry = this.bpmnModeler.get('elementRegistry');
+                    const graphicsFactory = this.bpmnModeler.get('graphicsFactory');
+                    const task = elementRegistry.get(this.element.id);
+                    if (task) {
+                        const gfx = elementRegistry.getGraphics(task);
+                        if (gfx) {
+                            graphicsFactory.update('shape', task, gfx);
+                        }
+                    }
+                } catch (e) {
+                    // view mode 텍스트 복원 실패 무시
+                }
+            }, 100);
+        }
+
         // 템플릿 목록 불러오기
         if (this.isPALMode) {
             await this.loadTaskList();
@@ -390,7 +409,7 @@ export default {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
         },
         async save() {
-            if (window.$pal && this.isViewMode) {
+            if (this.isViewMode) {
                 this.$emit('close');
                 return;
             }
@@ -770,7 +789,6 @@ export default {
 /* View Mode Header */
 .view-mode-header {
     background: linear-gradient(to right, #f8fafc, #ffffff);
-    border-bottom: 1px solid #e2e8f0;
     padding: 4px 10px !important;
     flex-shrink: 0;
     flex-grow: 0;
@@ -794,7 +812,6 @@ export default {
     font-size: 0.7rem !important;
     font-weight: 600;
     background: rgba(99, 102, 241, 0.1) !important;
-    color: #6366f1 !important;
 }
 
 .view-mode-header .panel-close-btn {
@@ -899,9 +916,7 @@ export default {
 .view-mode-panel-content .mb-3 {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 0.8125rem;
-    color: #475569;
     padding: 8px 12px;
-    background: #f1f5f9;
     border-radius: 8px;
     margin-bottom: 4px !important;
 }

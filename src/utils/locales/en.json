@@ -1595,7 +1595,8 @@
         "helpVersionToggle": "• Version Tag (minor / major):\n  - minor: Increases the decimal part of the current version by 1. e.g., 1.3 → 1.4\n    * Typically used as an \"intermediate\" or working save before promoting to a major version, while you are still iterating on the process.\n  - major: Increases the integer part by 1 and resets the decimal to 0. e.g., 1.3 → 2.0\n    * Used for versions that are actually applied/released to users and treated as the main production version.\n  The next version number is automatically calculated from the selected tag and used when saving.",
         "helpOptimize": "• Process Definition Optimization: When enabled, AI analyzes the process definition at save time and automatically refines the input data (reference information) and data flow for each activity.\n  - Checks and connects data flow between activities\n  - Recommends missing or unnecessary fields to improve definition quality\n  - Automates repetitive manual tuning so you can model faster.",
         "generatingDiff": "Analyzing process changes...",
-        "currentVersion": "Current Version"
+        "currentVersion": "Current Version",
+        "nextVersion": "Next Version"
     },
     "FormDefinitionPanel": {
         "editForm": "Edit Form Attribute",
