@@ -1,0 +1,15 @@
+{{/*
+Gateway uses baked-in application.yml with docker profile.
+Service names in the cluster match the gateway's expected names:
+  - frontend-service
+  - completion-service
+  - memento-service
+  - claude-skills
+  - react-voice-agent-service
+  - analytic-service
+  - work-assistant-agent-service
+  - agent-feedback-service
+  - mcp-proxy-service
+
+No ConfigMap override needed unless custom routes are required.
+*/}}

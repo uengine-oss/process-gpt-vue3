@@ -1,0 +1,12 @@
+apiVersion: v2
+name: process-gpt
+description: Process GPT - AI-powered BPM platform with Vue3 frontend, Spring Cloud Gateway, and AI completion service
+type: application
+version: 0.1.0
+appVersion: "1.4.0"
+
+dependencies:
+  - name: supabase
+    version: "0.5.x"
+    repository: "https://supabase-community.github.io/supabase-kubernetes"
+    condition: supabase.enabled

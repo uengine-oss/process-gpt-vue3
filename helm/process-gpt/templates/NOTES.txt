@@ -1,0 +1,24 @@
+=======================================
+  Process GPT has been deployed!
+=======================================
+
+Components:
+  - Frontend (Vue3):     frontend-service
+  - Completion (AI):     completion-service
+  - Gateway (Spring):    gateway-service
+{{- if .Values.supabase.enabled }}
+  - Supabase:            Managed by supabase subchart
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+Access the application at:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+
+To access the application, run:
+  kubectl port-forward svc/gateway-service {{ .Values.gateway.service.port }}:{{ .Values.gateway.service.port }}
+  Then open http://localhost:{{ .Values.gateway.service.port }}
+{{- end }}
