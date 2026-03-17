@@ -788,7 +788,6 @@ export default {
 
 /* View Mode Header */
 .view-mode-header {
-    background: linear-gradient(to right, #f8fafc, #ffffff);
     padding: 4px 10px !important;
     flex-shrink: 0;
     flex-grow: 0;

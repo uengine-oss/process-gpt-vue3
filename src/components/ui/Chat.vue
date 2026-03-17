@@ -1650,9 +1650,8 @@
                                                                             </v-col>
                                                                         </v-row>
                                                                         <pre v-if="isViewJSON.includes(index)" class="text-body-1"
-                                                                            >{{ message.jsonContent }}
-                                                                </pre
-                                                                        >
+                                                                        >{{ message.jsonContent }}
+                                                                        </pre>
                                                                         <v-card
                                                                             v-if="
                                                                                 (type == 'AssistantChats' &&

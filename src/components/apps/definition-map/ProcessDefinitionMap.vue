@@ -1827,8 +1827,8 @@ export default {
             this.$emit('closePDM');
         },
         async closeMarketplaceDialog() {
-            await this.getProcessMap();
             this.openMarketplaceDialog = false;
+            await this.getProcessMap();
         },
         async addSampleProcess() {
             if (this.mode == 'ProcessGPT') {
