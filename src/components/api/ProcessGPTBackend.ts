@@ -9710,12 +9710,13 @@ class ProcessGPTBackend implements Backend {
                 .select('*')
                 .eq('tenant_id', window.$tenantName)
                 .eq('key', 'notice_banner')
-                .maybeSingle();
+                .limit(1);
 
             if (error) throw error;
-            if (!data || !data.value) return { enabled: false, text: '', color: 'info', start_date: '', end_date: '' };
+            if (!data || data.length === 0 || !data[0].value) return { enabled: false, text: '', color: 'info', start_date: '', end_date: '' };
 
-            return typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+            const val = data[0].value;
+            return typeof val === 'string' ? JSON.parse(val) : val;
         } catch (e) {
             console.error('[ProcessGPTBackend] getNoticeBanner error:', e);
             return null;
@@ -9730,15 +9731,32 @@ class ProcessGPTBackend implements Backend {
         if (!supabase) throw new Error('Supabase not initialized');
 
         try {
-            const { error } = await supabase
+            // 기존 레코드 확인
+            const { data: existing } = await supabase
                 .from('configuration')
-                .upsert({
-                    tenant_id: window.$tenantName,
-                    key: 'notice_banner',
-                    value: config
-                }, { onConflict: 'tenant_id,key' });
+                .select('uuid')
+                .eq('tenant_id', window.$tenantName)
+                .eq('key', 'notice_banner')
+                .limit(1);
 
-            if (error) throw error;
+            if (existing && existing.length > 0) {
+                // 기존 레코드 업데이트
+                const { error } = await supabase
+                    .from('configuration')
+                    .update({ value: config })
+                    .eq('uuid', existing[0].uuid);
+                if (error) throw error;
+            } else {
+                // 새 레코드 삽입
+                const { error } = await supabase
+                    .from('configuration')
+                    .insert({
+                        tenant_id: window.$tenantName,
+                        key: 'notice_banner',
+                        value: config
+                    });
+                if (error) throw error;
+            }
             return config;
         } catch (e) {
             console.error('[ProcessGPTBackend] saveNoticeBanner error:', e);

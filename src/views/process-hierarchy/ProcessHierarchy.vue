@@ -604,6 +604,15 @@ export default {
             this.isLockedByOther = false;
             this.lockInfo = null;
 
+            // URL 동기화 (새로고침 시 선택 유지)
+            const currentRouteId = this.$route?.params?.id;
+            if (currentRouteId !== id) {
+                this.$router.replace({
+                    path: `/process-hierarchy/${id}`,
+                    query: name ? { name } : undefined
+                }).catch(() => {});
+            }
+
             // Lock 체크: 다른 사용자가 편집 중인지 확인
             await this.checkEditLock(id);
             await this.loadProcess(id);

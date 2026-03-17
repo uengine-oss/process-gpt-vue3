@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="0" class="process-architecture" style="overflow: auto; height: 100%">
+    <v-card elevation="0" class="process-architecture" style="height: calc(100vh - 130px); overflow: hidden; display: flex; flex-direction: column">
         <!-- Header -->
         <div class="pa-6 pb-0">
             <div class="d-flex align-center justify-space-between mb-1">
@@ -307,8 +307,8 @@
         <!-- Loading -->
         <v-progress-linear v-if="loading" indeterminate color="primary" />
 
-        <!-- View Area -->
-        <div id="processArchView" class="view-area pa-6" v-if="!loading">
+        <!-- View Area (스크롤 영역) -->
+        <div id="processArchView" class="view-area pa-6" v-if="!loading" style="flex: 1; min-height: 0; overflow: hidden">
             <!-- Empty State -->
             <div v-if="isFilteredEmpty" class="empty-state">
                 <svg class="empty-state-illustration" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
