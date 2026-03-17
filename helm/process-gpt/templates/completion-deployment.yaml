@@ -73,22 +73,6 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.completion.resources | nindent 12 }}
-          {{- if .Values.completion.livenessProbe.enabled }}
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: {{ .Values.completion.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.completion.livenessProbe.periodSeconds }}
-          {{- end }}
-          {{- if .Values.completion.readinessProbe.enabled }}
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: {{ .Values.completion.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.completion.readinessProbe.periodSeconds }}
-          {{- end }}
       {{- with .Values.global.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}

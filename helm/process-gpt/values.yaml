@@ -108,7 +108,7 @@ gateway:
 
   image:
     repository: ghcr.io/uengine-oss/process-gpt-gateway
-    tag: 493c7b9
+    tag: c3281fe
     pullPolicy: IfNotPresent
 
   service:

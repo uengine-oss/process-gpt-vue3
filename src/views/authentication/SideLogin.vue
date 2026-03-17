@@ -4,7 +4,7 @@ import LoginForm from '@/components/auth/LoginForm.vue';
 import { ref } from 'vue';
 
 const isTenantServer = ref(window.$isTenantServer);
-const tenantId = ref(window.$tenantName);
+const registerPath = isTenantServer.value ? '/tenant/register' : '/auth/register';
 </script>
 
 <template>
@@ -24,10 +24,9 @@ const tenantId = ref(window.$tenantName);
                                     <LoginForm />
                                     <h6 class="text-subtitle-1 text-grey100 d-flex align-center mt-6 font-weight-medium">
                                         <v-btn
-                                            v-if="isTenantServer || tenantId == 'localhost'"
                                             class="pl-0 text-primary text-body-1 opacity-1 pl-2 font-weight-medium"
                                             height="auto"
-                                            :to="isTenantServer ? '/tenant/register' : '/auth/register'"
+                                            :to="registerPath"
                                             variant="plain"
                                         >
                                             {{ $t('loginPage.create') }}
