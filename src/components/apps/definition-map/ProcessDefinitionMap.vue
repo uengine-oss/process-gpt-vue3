@@ -882,12 +882,8 @@ export default {
                 title: 'processDefinitionMap.usageGuide.details.1.title'
             },
             {
-                icon: 'magic',
-                title: 'processDefinitionMap.usageGuide.details.2.title'
-            },
-            {
                 icon: 'market',
-                title: 'processDefinitionMap.usageGuide.details.3.title'
+                title: 'processDefinitionMap.usageGuide.details.2.title'
             }
         ],
         generator: null,

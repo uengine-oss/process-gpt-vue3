@@ -38,12 +38,6 @@
     "save": {
         "noChanges": "변경 사항이 없습니다."
     },
-    "leadTime": {
-        "title": "BPMN 검증 결과",
-        "days": "일",
-        "hours": "시간",
-        "minutes": "분"
-    },
     "businessRuleDefinition": {
         "title": "룰 정의(비즈니스 규칙)",
         "subtitle": "업무 기준을 표로 정리하고, 위에 있는 규칙이 우선 적용됩니다.",
@@ -757,10 +751,6 @@
                 {
                     "icon": "image-download",
                     "title": "이미지 다운로드 아이콘\n생성된 체계도를 이미지로 다운로드하는 기능입니다."
-                },
-                {
-                    "icon": "magic",
-                    "title": "프로세스 컨설팅\nAI를 활용해 초기 프로세스를 만들 수 있습니다.\n예) '휴가신청 프로세스를 생성해줘'와 같이 입력하면 자동으로 생성됩니다."
                 },
                 {
                     "icon": "market",
