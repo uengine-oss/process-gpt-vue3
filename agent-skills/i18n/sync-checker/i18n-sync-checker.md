@@ -10,7 +10,7 @@ ko.json ↔ en.json 간 키 누락, 라인 불일치, 미번역을 검출하고 
 ### 1단계: 검출
 
 ```bash
-node agent-ui-md/i18n/sync-checker/check-i18n-sync.mjs
+node agent-skills/i18n/sync-checker/check-i18n-sync.mjs
 ```
 
 ### 2단계: 자동 수정 (리포트 결과 기반)
@@ -33,7 +33,6 @@ node agent-ui-md/i18n/sync-checker/check-i18n-sync.mjs
 - 키 순서는 ko.json과 동일하게 유지
 - 번역 시 {변수} 플레이스홀더 보존 필수
 - 전문 용어(BPMN, FTE, DMN 등)는 번역하지 않음
-- 번역 상세 규칙은 [../i18n-locales.md](../i18n-locales.md) 참고
 
 ---
 

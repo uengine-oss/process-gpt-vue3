@@ -58,7 +58,7 @@ import DetailComponent from '@/components/ui-components/details/DetailComponent.
 
 ## i18n 추가 (동시 진행)
 
-**ko.json / en.json** 에 도움말 키 추가 필수. 참조: `agent-ui-md/template/i18n-locales.md`
+**ko.json / en.json** 에 도움말 키 추가 필수. 참조: `agent-skills/i18n/i18n-locales.md`
 
 ```json
 {
