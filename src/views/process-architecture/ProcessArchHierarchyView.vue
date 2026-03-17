@@ -46,6 +46,7 @@
                     <div class="hierarchy-diagram">
                         <div class="tree-node-wrapper">
                             <div
+                                v-if="!hideDomainRoots"
                                 class="tree-node domain-node"
                                 :class="{ 'node-collapsible': getMegasForDomain(domain).length > 0 }"
                                 :style="domain.color ? { background: domain.color } : {}"
@@ -57,11 +58,16 @@
                                     {{ collapsed.has(`domain-${domain.id}`) ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
                                 </v-icon>
                             </div>
+                            <div v-else class="domain-section-title">{{ domain.name }}</div>
 
                             <transition name="fold">
                                 <div
-                                    v-if="getMegasForDomain(domain).length > 0 && !collapsed.has(`domain-${domain.id}`)"
+                                    v-if="
+                                        getMegasForDomain(domain).length > 0 &&
+                                        (hideDomainRoots || !collapsed.has(`domain-${domain.id}`))
+                                    "
                                     class="tree-children"
+                                    :class="{ 'tree-children-root': hideDomainRoots }"
                                 >
                                     <div v-for="mega in getMegasForDomain(domain)" :key="mega.id" class="tree-node-wrapper">
                                         <div
@@ -175,6 +181,7 @@
             <div class="hierarchy-diagram">
                 <div class="tree-node-wrapper">
                     <div
+                        v-if="!hideDomainRoots"
                         class="tree-node domain-node"
                         :class="{ 'node-collapsible': megaProcessesForSingleDomain.length > 0 }"
                         :style="activeDomainData?.color ? { background: activeDomainData.color } : {}"
@@ -188,7 +195,11 @@
                     </div>
 
                     <transition name="fold">
-                        <div v-if="megaProcessesForSingleDomain.length > 0 && !collapsed.has('domain')" class="tree-children">
+                        <div
+                            v-if="megaProcessesForSingleDomain.length > 0 && (hideDomainRoots || !collapsed.has('domain'))"
+                            class="tree-children"
+                            :class="{ 'tree-children-root': hideDomainRoots }"
+                        >
                             <div v-for="mega in megaProcessesForSingleDomain" :key="mega.id" class="tree-node-wrapper">
                                 <div
                                     class="tree-node mega-node"
@@ -299,6 +310,7 @@ const props = defineProps<{
     domains: any[];
     processStatuses: Map<string, any>;
     selectedDomain: string | null;
+    hideDomainRoots?: boolean;
     favorites?: Set<string>;
 }>();
 
@@ -311,6 +323,7 @@ const activeDomainIndex = ref<number | undefined>(undefined);
 const collapsed = ref(new Set<string>());
 
 const isAllDomainsMode = computed(() => activeDomainIndex.value === undefined || activeDomainIndex.value === null);
+const hideDomainRoots = computed(() => !!props.hideDomainRoots);
 
 // If parent selectedDomain changes, sync
 watch(
@@ -437,6 +450,15 @@ function collapseAll() {
     border-bottom: none;
 }
 
+.domain-section-title {
+    margin-bottom: 12px;
+    color: #475569;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-align: center;
+}
+
 /* Tree layout using CSS flexbox */
 .tree-node-wrapper {
     display: flex;
@@ -449,6 +471,14 @@ function collapseAll() {
     gap: 12px;
     padding-top: 24px;
     position: relative;
+}
+
+.tree-children-root {
+    padding-top: 0;
+}
+
+.tree-children-root::before {
+    display: none;
 }
 
 /* Connecting lines */

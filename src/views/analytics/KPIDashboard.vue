@@ -132,7 +132,7 @@ const canRenderVelocityChart = computed(() => {
 function pipelinePercent(type: string) {
     const total = store.pipeline?.total_processes || 1;
     if (type === 'draft') return ((store.pipeline?.draft_count || 0) / total) * 100;
-    if (type === 'review') return ((store.pipeline?.review_count || 0) / total) * 100;
+    if (type === 'review') return ((store.pipeline?.in_review_count || 0) / total) * 100;
     if (type === 'published') return ((store.pipeline?.published_count || 0) / total) * 100;
     return 0;
 }
@@ -282,7 +282,7 @@ onMounted(loadData);
                         <div class="pipeline-item mb-4">
                             <div class="d-flex justify-space-between mb-1">
                                 <span class="text-body-2">{{ $t('reviewBoard.review') }}</span>
-                                <span class="text-body-2 font-weight-bold">{{ store.pipeline?.review_count || 0 }}</span>
+                                <span class="text-body-2 font-weight-bold">{{ store.pipeline?.in_review_count || 0 }}</span>
                             </div>
                             <v-progress-linear :model-value="pipelinePercent('review')" color="warning" height="8" rounded />
                         </div>

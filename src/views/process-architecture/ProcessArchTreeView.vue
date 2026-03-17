@@ -176,6 +176,7 @@ const props = defineProps<{
     processStatuses: Map<string, any>;
     selectedDomain: string | null;
     showToBe?: boolean;
+    hideDomainRoots?: boolean;
     favorites?: Set<string>;
 }>();
 
@@ -225,6 +226,8 @@ const rows = computed<TreeRow[]>(() => {
 
     // If domains exist, group by domain
     if (props.domains.length > 0) {
+        const hideDomainRoots = !!props.hideDomainRoots;
+
         for (const domain of props.domains) {
             const domainKey = `domain-${domain.id}`;
             // Count processes in this domain
@@ -240,18 +243,20 @@ const rows = computed<TreeRow[]>(() => {
                 }
             }
 
-            result.push({
-                key: domainKey,
-                type: 'domain',
-                level: 0,
-                id: domain.id,
-                name: domain.name,
-                hasChildren: true,
-                color: domain.color,
-                count: domainCount
-            });
+            if (!hideDomainRoots) {
+                result.push({
+                    key: domainKey,
+                    type: 'domain',
+                    level: 0,
+                    id: domain.id,
+                    name: domain.name,
+                    hasChildren: true,
+                    color: domain.color,
+                    count: domainCount
+                });
 
-            if (!expanded.value.has(domainKey)) continue;
+                if (!expanded.value.has(domainKey)) continue;
+            }
 
             // Find mega processes that have majors in this domain
             for (const mega of map.mega_proc_list) {
@@ -265,7 +270,7 @@ const rows = computed<TreeRow[]>(() => {
                 result.push({
                     key: megaKey,
                     type: 'mega',
-                    level: 1,
+                    level: hideDomainRoots ? 0 : 1,
                     id: mega.id,
                     name: mega.name,
                     hasChildren: megaMajorsInDomain.length > 0,
@@ -275,57 +280,59 @@ const rows = computed<TreeRow[]>(() => {
                 if (!expanded.value.has(megaKey)) continue;
 
                 for (const major of megaMajorsInDomain) {
-                    addMajorRows(result, major, 2, `domain-${domain.id}-mega-${mega.id}`, mega.id);
+                    addMajorRows(result, major, hideDomainRoots ? 1 : 2, `domain-${domain.id}-mega-${mega.id}`, mega.id);
                 }
             }
         }
 
         // Also show majors without domain
-        const orphanMajors: any[] = [];
-        for (const mega of map.mega_proc_list) {
-            for (const major of mega.major_proc_list || []) {
-                const d = major.domain || major.domain_id;
-                if (!d || !props.domains.find((dom: any) => dom.name === d || dom.id === d)) {
-                    orphanMajors.push({ mega, major });
+        if (!hideDomainRoots) {
+            const orphanMajors: any[] = [];
+            for (const mega of map.mega_proc_list) {
+                for (const major of mega.major_proc_list || []) {
+                    const d = major.domain || major.domain_id;
+                    if (!d || !props.domains.find((dom: any) => dom.name === d || dom.id === d)) {
+                        orphanMajors.push({ mega, major });
+                    }
                 }
             }
-        }
 
-        if (orphanMajors.length > 0) {
-            const orphanKey = 'domain-unassigned';
-            result.push({
-                key: orphanKey,
-                type: 'domain',
-                level: 0,
-                id: 'unassigned',
-                name: '미분류',
-                hasChildren: true,
-                count: orphanMajors.reduce((sum, o) => sum + (o.major.sub_proc_list || []).length, 0)
-            });
+            if (orphanMajors.length > 0) {
+                const orphanKey = 'domain-unassigned';
+                result.push({
+                    key: orphanKey,
+                    type: 'domain',
+                    level: 0,
+                    id: 'unassigned',
+                    name: '미분류',
+                    hasChildren: true,
+                    count: orphanMajors.reduce((sum, o) => sum + (o.major.sub_proc_list || []).length, 0)
+                });
 
-            if (expanded.value.has(orphanKey)) {
-                // Group orphans by mega
-                const megaGroups = new Map<string, any[]>();
-                for (const o of orphanMajors) {
-                    if (!megaGroups.has(o.mega.id)) megaGroups.set(o.mega.id, []);
-                    megaGroups.get(o.mega.id)!.push(o);
-                }
-                for (const [megaId, group] of megaGroups) {
-                    const mega = group[0].mega;
-                    const megaKey = `domain-unassigned-mega-${megaId}`;
-                    result.push({
-                        key: megaKey,
-                        type: 'mega',
-                        level: 1,
-                        id: megaId,
-                        name: mega.name,
-                        hasChildren: true,
-                        count: group.length
-                    });
+                if (expanded.value.has(orphanKey)) {
+                    // Group orphans by mega
+                    const megaGroups = new Map<string, any[]>();
+                    for (const o of orphanMajors) {
+                        if (!megaGroups.has(o.mega.id)) megaGroups.set(o.mega.id, []);
+                        megaGroups.get(o.mega.id)!.push(o);
+                    }
+                    for (const [megaId, group] of megaGroups) {
+                        const mega = group[0].mega;
+                        const megaKey = `domain-unassigned-mega-${megaId}`;
+                        result.push({
+                            key: megaKey,
+                            type: 'mega',
+                            level: 1,
+                            id: megaId,
+                            name: mega.name,
+                            hasChildren: true,
+                            count: group.length
+                        });
 
-                    if (!expanded.value.has(megaKey)) continue;
-                    for (const o of group) {
-                        addMajorRows(result, o.major, 2, megaKey, megaId);
+                        if (!expanded.value.has(megaKey)) continue;
+                        for (const o of group) {
+                            addMajorRows(result, o.major, 2, megaKey, megaId);
+                        }
                     }
                 }
             }
