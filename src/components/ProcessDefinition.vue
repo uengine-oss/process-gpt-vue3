@@ -989,7 +989,8 @@ export default {
                     };
                     const data = await backend.start(input);
                     if (data.instanceId) {
-                        me.$router.push(`/instancelist/${data.instanceId.replace(/\./g, '_DOT_')}`);
+                        const path = `/instancelist/${data.instanceId.replace(/\./g, '_DOT_')}`;
+                        me.$router.push({ path, query: { tab: 'todo' } });
                     }
                     me.EventBus.emit('instances-updated');
                 },
