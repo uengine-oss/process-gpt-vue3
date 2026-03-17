@@ -17,14 +17,14 @@ CustomReplaceMenuProvider.$inject = ['popupMenu', 'bpmnReplace', 'rules'];
  * Get enabled task types from window global
  */
 CustomReplaceMenuProvider.prototype._getEnabledTaskTypes = function () {
-    // uEngine·PAL 모드: UserTask만 사용
-    const isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
-    if (isUEngineOrPal) {
-        return ['bpmn:UserTask'];
-    }
+    // DB 설정된 palette task types 우선 사용
     const enabledTypes = window.$enabledPaletteTaskTypes || [];
     if (enabledTypes.length > 0) {
         return enabledTypes.map((t) => t.task_type);
+    }
+    // uEngine 모드: UserTask만 사용
+    if (typeof window !== 'undefined' && window.$mode === 'uEngine') {
+        return ['bpmn:UserTask'];
     }
     // Fallback to legacy palette settings
     const paletteSettings = window.$paletteSettings || { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };

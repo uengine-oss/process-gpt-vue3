@@ -436,6 +436,7 @@ import Chat from './ui/Chat.vue';
 
 import FormGenerator from './ai/FormDesignGenerator';
 import BackendFactory from '@/components/api/BackendFactory';
+import { authClaimsState } from '@/utils/authClaims';
 
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
@@ -691,8 +692,7 @@ export default {
             return path;
         },
         isAdmin() {
-            const isAdmin = localStorage.getItem('isAdmin') === 'true';
-            return isAdmin;
+            return authClaimsState.isAdmin;
         },
         // 편집 가능 여부: 관리자이거나 수정 권한이 있는 경우
         canEdit() {

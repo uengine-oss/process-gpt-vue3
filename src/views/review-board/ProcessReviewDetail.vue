@@ -1436,7 +1436,7 @@ onBeforeUnmount(cleanupRealtime);
 .rd-root {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    min-height: calc(100dvh - var(--v-layout-top, 0px) - 56px);
     background: #f8fafc;
     overflow: hidden;
 }
@@ -1647,6 +1647,7 @@ onBeforeUnmount(cleanupRealtime);
 .rd-body {
     display: flex;
     flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -1654,6 +1655,7 @@ onBeforeUnmount(cleanupRealtime);
 .rd-left {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -1664,6 +1666,8 @@ onBeforeUnmount(cleanupRealtime);
     display: flex;
     flex-direction: column;
     gap: 14px;
+    flex: 1;
+    min-height: 0;
 }
 .rd-bpmn-panel {
     border: 1px solid #e2e8f0;
@@ -1672,6 +1676,8 @@ onBeforeUnmount(cleanupRealtime);
     background: #fff;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 .rd-bpmn-bar {
     display: flex;
@@ -1706,7 +1712,7 @@ onBeforeUnmount(cleanupRealtime);
     color: #94a3b8;
 }
 .rd-bpmn-canvas {
-    height: 350px;
+    min-height: 220px;
     position: relative;
     overflow: hidden;
     background: #fafafa;
@@ -1717,7 +1723,7 @@ onBeforeUnmount(cleanupRealtime);
     border-radius: 16px;
     overflow: hidden;
     background: #fff;
-    height: 420px;
+    height: clamp(280px, 42vh, 400px);
     position: relative;
 }
 .rd-bpmn-empty {
@@ -1778,6 +1784,7 @@ onBeforeUnmount(cleanupRealtime);
 .rd-right {
     width: 420px;
     flex-shrink: 0;
+    min-height: 0;
     background: #fff;
     border-left: 1px solid #e2e8f0;
     display: flex;
@@ -1787,7 +1794,8 @@ onBeforeUnmount(cleanupRealtime);
 .rd-right-inner {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 .rd-panel-header {
@@ -2332,6 +2340,9 @@ onBeforeUnmount(cleanupRealtime);
 
 /* Responsive */
 @media (max-width: 1024px) {
+    .rd-root {
+        min-height: calc(100dvh - var(--v-layout-top, 0px));
+    }
     .rd-body {
         flex-direction: column;
         overflow-y: auto;
@@ -2346,6 +2357,12 @@ onBeforeUnmount(cleanupRealtime);
     }
     .rd-bpmn-compare {
         grid-template-columns: 1fr;
+    }
+    .rd-bpmn-canvas {
+        height: 260px;
+    }
+    .rd-bpmn-single {
+        height: 320px;
     }
 }
 </style>

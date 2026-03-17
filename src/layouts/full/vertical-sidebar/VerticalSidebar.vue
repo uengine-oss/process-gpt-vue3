@@ -236,6 +236,28 @@
                     </v-col>
                 </div>
 
+                <!-- Admin 타이틀 + 목록 -->
+                <div v-if="adminItem.length > 0" class="mb-4">
+                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                        {{ $t('adminConsole.title') || '관리' }}
+                    </div>
+                    <v-col class="pa-0">
+                        <v-list-item
+                            v-for="item in adminItem"
+                            :key="item.title"
+                            :to="item.to"
+                            :disabled="item.disable"
+                            density="compact"
+                            class="leftPadding sidebar-list-hover-bg"
+                        >
+                            <template v-slot:prepend>
+                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                            </template>
+                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                        </v-list-item>
+                    </v-col>
+                </div>
+
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
                 <v-col v-if="!pal" class="pa-0">
                     <!-- definition menu item -->
@@ -389,6 +411,7 @@ import NavGroup from './NavGroup/index.vue';
 import NavItem from './NavItem/index.vue';
 import ExtraBox from './extrabox/ExtraBox.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import { authClaimsState } from '@/utils/authClaims';
 
 import VerticalHeader from '../vertical-header/VerticalHeader.vue';
 
@@ -430,6 +453,7 @@ export default {
         processSectionListItems: [],
         processSectionDropdownItems: [],
         analyticsItem: [],
+        adminItem: [],
         logoPadding: '',
         instanceLists: [],
         isOpen: false,
@@ -470,13 +494,16 @@ export default {
         isShowProject() {
             return true;
         },
+        authClaimsLoaded() {
+            return authClaimsState.loaded;
+        },
         isAdmin() {
-            const isAdmin = localStorage.getItem('isAdmin') == 'true';
-            return isAdmin;
+            return authClaimsState.isAdmin;
         }
     },
     async mounted() {
         await this.loadSidebar(this.isAdmin);
+        this.syncAdminSidebar();
 
         this.EventBus.on('definitions-updated', async () => {
             await this.getDefinitionList();
@@ -485,17 +512,62 @@ export default {
             this.logoPadding = 'padding:6px';
         }
 
-        window.addEventListener('localStorageChange', (event) => {
-            if (event.detail.key === 'isAdmin') {
-                let isAdmin = false;
-                if (event.detail.value === 'true' || event.detail.value === true) {
-                    isAdmin = true;
-                }
-                this.loadSidebar(isAdmin);
-            }
-        });
+    },
+    watch: {
+        authClaimsLoaded() {
+            this.syncAdminSidebar();
+        },
+        isAdmin(newVal) {
+            this.syncAdminSidebar();
+            this.loadSidebar(newVal);
+        }
     },
     methods: {
+        syncAdminSidebar() {
+            if (!this.authClaimsLoaded || !this.isAdmin) {
+                this.adminItem = [];
+                return;
+            }
+
+            this.adminItem = [
+                {
+                    title: 'adminConsole.tabSchemas',
+                    icon: 'formList',
+                    to: '/admin-console/property-schemas',
+                    disable: false
+                },
+                {
+                    title: 'adminConsole.tabFreeze',
+                    icon: 'lock',
+                    to: '/admin-console/data-freeze',
+                    disable: false
+                },
+                {
+                    title: 'adminConsole.tabRecycle',
+                    icon: 'trash',
+                    to: '/admin-console/recycle-bin',
+                    disable: false
+                },
+                {
+                    title: 'adminConsole.tabSysOps',
+                    icon: 'settings',
+                    to: '/admin-console/system-operations',
+                    disable: false
+                },
+                {
+                    title: 'adminConsole.tabKpi',
+                    icon: 'target',
+                    to: '/admin-console/kpi-targets',
+                    disable: false
+                },
+                {
+                    title: 'adminConsole.tabAudit',
+                    icon: 'document',
+                    to: '/admin-console/audit-trail',
+                    disable: false
+                }
+            ];
+        },
         isAnalyticsItemActive(item) {
             if (!item || !item.to) return false;
             return this.$route?.path === item.to;
@@ -617,13 +689,6 @@ export default {
             // PAL 모드에서는 프로세스 리뷰보드·내 수신함 숨김
             this.processItem = [
                 {
-                    title: 'organizationChartDefinition.title',
-                    icon: 'users-group-rounded-line-duotone',
-                    BgColor: 'primary',
-                    to: '/organization',
-                    disable: false
-                },
-                {
                     title: 'processArchitecture.title',
                     icon: 'sitemap',
                     BgColor: 'primary',
@@ -639,23 +704,30 @@ export default {
                 },
                 {
                     title: 'versionComparison.title',
-                    icon: 'file-document-edit-outline',
+                    icon: 'git-compare',
                     BgColor: 'primary',
                     to: '/version-comparison',
                     disable: false
                 },
                 {
                     title: 'reviewBoard.title',
-                    icon: 'submit-document',
+                    icon: 'clipboard-check',
                     BgColor: 'primary',
                     to: '/review-board',
                     disable: false
                 },
                 {
                     title: 'reviewBoard.myInbox',
-                    icon: 'submit-document',
+                    icon: 'inbox',
                     BgColor: 'primary',
                     to: '/my-inbox',
+                    disable: false
+                },
+                {
+                    title: 'organizationChartDefinition.title',
+                    icon: 'users-group-rounded-line-duotone',
+                    BgColor: 'primary',
+                    to: '/organization',
                     disable: false
                 }
             ];
@@ -682,6 +754,7 @@ export default {
                     disable: false
                 }
             ];
+
             // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
             // if (this.pal) {
             //     this.analyticsItem = [];

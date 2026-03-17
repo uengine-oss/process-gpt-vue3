@@ -72,6 +72,7 @@
                             />
                         </th>
                         <th class="col-name">{{ $t('adminConsole.recycleBin.processName') }}</th>
+                        <th class="col-location">원래 위치</th>
                         <th class="col-type">유형</th>
                         <th class="col-by">{{ $t('adminConsole.recycleBin.deletedBy') }}</th>
                         <th class="col-date">{{ $t('adminConsole.recycleBin.deletedAt') }}</th>
@@ -82,7 +83,7 @@
                 <tbody>
                     <template v-if="filteredItems.length === 0">
                         <tr>
-                            <td colspan="7" class="empty-cell">
+                            <td colspan="8" class="empty-cell">
                                 <div class="empty-state">
                                     <v-icon size="48" color="#d1d5db">mdi-delete-off-outline</v-icon>
                                     <p>{{ $t('adminConsole.recycleBin.noDeletedItems') }}</p>
@@ -106,6 +107,12 @@
                             </td>
                             <td class="col-name">
                                 <span class="item-name">{{ item.name }}</span>
+                            </td>
+                            <td class="col-location">
+                                <span v-if="item.deleted_from" class="location-path">
+                                    {{ item.deleted_from.mega_name }} &rsaquo; {{ item.deleted_from.major_name }}
+                                </span>
+                                <span v-else class="location-unknown">-</span>
                             </td>
                             <td class="col-type">
                                 <span class="type-badge" :class="item.type === 'process' ? 'type-process' : 'type-instance'">
@@ -204,6 +211,7 @@ interface DisplayItem {
     deleted_at: string;
     remaining_days: number;
     raw_id: string;
+    deleted_from?: { mega_name?: string; major_name?: string } | null;
 }
 
 interface DeleteDialogState {
@@ -248,7 +256,8 @@ export default defineComponent({
                 deleted_by: p.deleted_by || '',
                 deleted_at: p.deleted_at,
                 remaining_days: p.remaining_days,
-                raw_id: p.id
+                raw_id: p.id,
+                deleted_from: p.deleted_from || null
             }));
 
             const instances = (store.deletedInstances || []).map(i => ({
@@ -637,6 +646,19 @@ export default defineComponent({
 
 .col-name {
     min-width: 200px;
+}
+
+.col-location {
+    min-width: 160px;
+}
+
+.location-path {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.location-unknown {
+    color: #d1d5db;
 }
 
 .col-type {

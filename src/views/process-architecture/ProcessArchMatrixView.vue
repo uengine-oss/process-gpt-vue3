@@ -87,7 +87,7 @@
                                                             </v-icon>
                                                         </v-btn>
                                                         <ProgressBadge
-                                                            v-if="processStatuses.get(sub.id)"
+                                                            v-if="processStatuses.get(sub.id)?.status && processStatuses.get(sub.id)?.status !== 'none'"
                                                             type="status"
                                                             :status="processStatuses.get(sub.id).status"
                                                             size="x-small"

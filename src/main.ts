@@ -16,6 +16,7 @@ import VueTablerIcons from 'vue-tabler-icons';
 import 'vue3-carousel/dist/carousel.css';
 import { PerfectScrollbarPlugin } from 'vue3-perfect-scrollbar';
 import App from './App.vue';
+import { initAuthClaimsListener } from '@/utils/authClaims';
 import vuetify from './plugins/vuetify';
 import hammerDirective from '@/components/directive/hammerDirective';
 import i18nDirective from './plugins/i18nDirective';
@@ -236,6 +237,7 @@ async function setupSupabase() {
             configurable: false
         });
         console.log('[Main] $supabase 클라이언트가 성공적으로 설정되었습니다.');
+        initAuthClaimsListener();
     } catch (error) {
         console.error('[Main] $supabase 설정 중 오류 발생:', error);
     }

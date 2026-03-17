@@ -342,14 +342,16 @@
                 <ProcessArchTreeView
                     v-else-if="activeView === 'tree'"
                     :procMap="filteredProcMap"
-                    :domains="domains"
+                    :domains="filteredDomainsForViews"
                     :processStatuses="processStatuses"
                     :selectedDomain="selectedDomain"
                     :showToBe="showToBe"
+                    :hideDomainRoots="hasActiveDomainFilter"
                     :favorites="favorites"
                     @navigate="navigateToProcess"
                     @moveSub="handleMoveSub"
                     @toggleFavorite="toggleFavorite"
+                    @openPermission="handleOpenPermission"
                 />
                 <ProcessArchMatrixView
                     v-else-if="activeView === 'matrix'"
@@ -364,10 +366,11 @@
                 <ProcessArchHierarchyView
                     v-else-if="activeView === 'hierarchy'"
                     :procMap="filteredProcMap"
-                    :domains="domains"
+                    :domains="filteredDomainsForViews"
                     :processStatuses="processStatuses"
                     :selectedDomain="selectedDomain"
                     :showToBe="showToBe"
+                    :hideDomainRoots="hasActiveDomainFilter"
                     :favorites="favorites"
                     @navigate="navigateToProcess"
                     @toggleFavorite="toggleFavorite"
@@ -386,6 +389,18 @@
             :available-systems="availableSystemsForFilter"
             @apply="onAdvancedFilterApply"
         />
+
+        <!-- Permission Dialog -->
+        <v-dialog v-model="permissionDialog" max-width="560" persistent>
+            <PermissionDialog
+                v-if="permissionDialog && permissionProcess"
+                :procDef="permissionProcess"
+                :processMap="procMap"
+                :metricsMap="metricsMap"
+                @close:permissionDialog="permissionDialog = false"
+                @saved="permissionDialog = false"
+            />
+        </v-dialog>
 
         <!-- Domain Add Dialog -->
         <v-dialog v-model="domainAddDialog.show" max-width="400" persistent>
@@ -440,18 +455,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, getCurrentInstance } from 'vue';
+import { ref, computed, watch, nextTick, getCurrentInstance } from 'vue';
+import { useRouter } from 'vue-router';
 import { useProcessArchitecture } from './useProcessArchitecture';
+import { authClaimsState } from '@/utils/authClaims';
 import ProcessArchCardView from './ProcessArchCardView.vue';
 import ProcessArchTreeView from './ProcessArchTreeView.vue';
 import ProcessArchMatrixView from './ProcessArchMatrixView.vue';
 import ProcessArchHierarchyView from './ProcessArchHierarchyView.vue';
 import NewProcessDialog from './NewProcessDialog.vue';
 import AdvancedFilterPanel from './AdvancedFilterPanel.vue';
+import PermissionDialog from '@/components/apps/definition-map/PermissionDialog.vue';
 import type { RecentlyViewedItem } from './useProcessArchitecture';
 
 const instance = getCurrentInstance()!;
 const t = (key: string) => instance.proxy!.$t(key);
+const router = useRouter();
 
 const {
     procMap,
@@ -485,13 +504,42 @@ const {
 
 const isAdmin = computed(() => {
     const role = localStorage.getItem('role');
-    return role === 'superAdmin' || localStorage.getItem('isAdmin') === 'true';
+    return role === 'superAdmin' || authClaimsState.isAdmin;
 });
 
 const isPalMode = computed(() => typeof window !== 'undefined' && !!(window as any).$pal);
 
 const showNewProcessDialog = ref(false);
 const showAdvancedFilter = ref(false);
+const hasActiveDomainFilter = computed(() => !!selectedDomain.value || selectedDomains.value.length > 0);
+
+const filteredDomainsForViews = computed(() => {
+    if (!hasActiveDomainFilter.value) return domains.value;
+
+    const visibleDomainKeys = new Set<string>();
+    for (const mega of filteredProcMap.value?.mega_proc_list || []) {
+        for (const major of mega.major_proc_list || []) {
+            const domainKey = major.domain || major.domain_id;
+            if (domainKey) visibleDomainKeys.add(domainKey);
+        }
+    }
+
+    return (domains.value || []).filter((domain: any) => visibleDomainKeys.has(domain.name) || visibleDomainKeys.has(domain.id));
+});
+
+// Permission dialog state
+const permissionDialog = ref(false);
+const permissionProcess = ref<any>(null);
+
+function handleOpenPermission(row: any) {
+    // Build a procDef-like object with _permLevel so PermissionDialog knows the opening level
+    permissionProcess.value = {
+        id: row.id,
+        name: row.name,
+        _permLevel: row.type // 'domain' | 'mega' | 'major' | 'sub'
+    };
+    permissionDialog.value = true;
+}
 
 // 도메인 추가 다이얼로그
 const domainAddDialog = ref({
@@ -889,6 +937,89 @@ function downloadBlob(blob: Blob, filename: string) {
     URL.revokeObjectURL(url);
 }
 
+function hasScrollableAxis(el: HTMLElement, axis: 'x' | 'y') {
+    const style = window.getComputedStyle(el);
+    const overflow = axis === 'x' ? style.overflowX : style.overflowY;
+    return overflow === 'auto' || overflow === 'scroll' || overflow === 'hidden';
+}
+
+async function createExportSnapshotTarget(sourceEl: HTMLElement) {
+    const sandbox = document.createElement('div');
+    sandbox.style.position = 'fixed';
+    sandbox.style.left = '-100000px';
+    sandbox.style.top = '0';
+    sandbox.style.zIndex = '-1';
+    sandbox.style.pointerEvents = 'none';
+    sandbox.style.background = '#ffffff';
+    sandbox.style.padding = '0';
+    sandbox.style.margin = '0';
+
+    const clone = sourceEl.cloneNode(true) as HTMLElement;
+    clone.id = `${sourceEl.id || 'process-arch-export'}-snapshot`;
+    clone.style.overflow = 'visible';
+    clone.style.height = 'auto';
+    clone.style.maxHeight = 'none';
+    clone.style.minHeight = '0';
+    clone.style.background = '#ffffff';
+
+    sandbox.appendChild(clone);
+    document.body.appendChild(sandbox);
+
+    const sourceNodes = [sourceEl, ...Array.from(sourceEl.querySelectorAll<HTMLElement>('*'))];
+    const clonedNodes = [clone, ...Array.from(clone.querySelectorAll<HTMLElement>('*'))];
+    const nodeCount = Math.min(sourceNodes.length, clonedNodes.length);
+
+    for (let i = 0; i < nodeCount; i += 1) {
+        const original = sourceNodes[i];
+        const copied = clonedNodes[i];
+
+        copied.scrollTop = 0;
+        copied.scrollLeft = 0;
+
+        if (original.scrollHeight > original.clientHeight && hasScrollableAxis(original, 'y')) {
+            copied.style.height = `${original.scrollHeight}px`;
+            copied.style.maxHeight = 'none';
+            copied.style.overflowY = 'visible';
+        }
+
+        if (original.scrollWidth > original.clientWidth && hasScrollableAxis(original, 'x')) {
+            copied.style.width = `${original.scrollWidth}px`;
+            copied.style.maxWidth = 'none';
+            copied.style.overflowX = 'visible';
+        }
+
+        if (copied.classList.contains('cards-list')) {
+            copied.style.height = `${original.scrollHeight}px`;
+            copied.style.overflowY = 'visible';
+        }
+
+        if (
+            copied.classList.contains('columns-wrapper') ||
+            copied.classList.contains('matrix-scroll-area') ||
+            copied.classList.contains('hierarchy-diagram-wrapper')
+        ) {
+            copied.style.width = `${original.scrollWidth}px`;
+            copied.style.overflowX = 'visible';
+        }
+    }
+
+    clone.style.width = `${Math.max(sourceEl.scrollWidth, sourceEl.clientWidth)}px`;
+
+    await nextTick();
+
+    const width = Math.ceil(Math.max(clone.scrollWidth, clone.clientWidth));
+    const height = Math.ceil(Math.max(clone.scrollHeight, clone.clientHeight));
+
+    return {
+        target: clone,
+        width,
+        height,
+        cleanup: () => {
+            sandbox.remove();
+        }
+    };
+}
+
 async function logExport(format: ExportFormat, scope: string, recordCount?: number) {
     /*
      * Audit log saved to Supabase `export_log` table.
@@ -985,74 +1116,83 @@ async function runExport(format: ExportFormat) {
             const el = document.getElementById('processArchView');
             if (!el) return;
             const { default: domtoimage } = await import('dom-to-image');
+            const snapshot = await createExportSnapshotTarget(el);
 
-            if (format === 'png') {
-                const dataUrl = await domtoimage.toPng(el, { bgcolor: '#ffffff' });
-                // Overlay logo watermark on canvas
-                const img = new Image();
-                img.src = dataUrl;
-                await new Promise((res) => {
-                    img.onload = res;
-                });
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d')!;
-                ctx.drawImage(img, 0, 0);
-                // Logo: top-left
-                ctx.fillStyle = 'rgba(33, 150, 243, 0.85)';
-                ctx.font = `bold ${Math.max(16, Math.round(img.width * 0.012))}px Arial, sans-serif`;
-                const logoText = 'Process GPT';
-                const padding = 12;
-                const textWidth = ctx.measureText(logoText).width;
-                const textHeight = Math.max(16, Math.round(img.width * 0.012));
-                ctx.fillStyle = 'rgba(255,255,255,0.8)';
-                ctx.fillRect(padding - 4, padding - 4, textWidth + 12, textHeight + 10);
-                ctx.fillStyle = 'rgba(33, 150, 243, 0.9)';
-                ctx.fillText(logoText, padding + 2, padding + textHeight);
-                // Timestamp: bottom-right
-                ctx.font = `${Math.max(10, Math.round(img.width * 0.008))}px Arial, sans-serif`;
-                ctx.fillStyle = 'rgba(120,120,120,0.7)';
-                const tsText = `Exported: ${new Date().toLocaleString()}`;
-                const tsWidth = ctx.measureText(tsText).width;
-                ctx.fillText(tsText, img.width - tsWidth - padding, img.height - padding);
-                canvas.toBlob((blob) => {
-                    if (blob) downloadBlob(blob, `process-architecture-${ts}.png`);
-                }, 'image/png');
-            } else {
-                // PDF: render to PNG then embed in PDF via jsPDF (dynamic import)
-                // NOTE: requires 'jspdf' package: npm install jspdf
-                const dataUrl = await domtoimage.toPng(el, { bgcolor: '#ffffff' });
-                const jsPDF = await import('jspdf').then((m) => m.default || m.jsPDF).catch(() => null);
-                if (!jsPDF) {
-                    // Fallback: open PNG in new tab for manual PDF print
-                    const win = window.open('', '_blank');
-                    if (win) {
-                        win.document.write(`<img src="${dataUrl}" style="max-width:100%" />`);
-                        win.document.title = 'Process Architecture';
+            try {
+                const dataUrl = await domtoimage.toPng(snapshot.target, {
+                    bgcolor: '#ffffff',
+                    width: snapshot.width,
+                    height: snapshot.height,
+                    style: {
+                        width: `${snapshot.width}px`,
+                        height: `${snapshot.height}px`,
+                        transform: 'none'
                     }
-                    return;
+                });
+
+                if (format === 'png') {
+                    // Overlay logo watermark on canvas
+                    const img = new Image();
+                    img.src = dataUrl;
+                    await new Promise((res) => {
+                        img.onload = res;
+                    });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d')!;
+                    ctx.drawImage(img, 0, 0);
+                    // Logo: top-left
+                    ctx.fillStyle = 'rgba(33, 150, 243, 0.85)';
+                    ctx.font = `bold ${Math.max(16, Math.round(img.width * 0.012))}px Arial, sans-serif`;
+                    const logoText = 'Process GPT';
+                    const padding = 12;
+                    const textWidth = ctx.measureText(logoText).width;
+                    const textHeight = Math.max(16, Math.round(img.width * 0.012));
+                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                    ctx.fillRect(padding - 4, padding - 4, textWidth + 12, textHeight + 10);
+                    ctx.fillStyle = 'rgba(33, 150, 243, 0.9)';
+                    ctx.fillText(logoText, padding + 2, padding + textHeight);
+                    // Timestamp: bottom-right
+                    ctx.font = `${Math.max(10, Math.round(img.width * 0.008))}px Arial, sans-serif`;
+                    ctx.fillStyle = 'rgba(120,120,120,0.7)';
+                    const tsText = `Exported: ${new Date().toLocaleString()}`;
+                    const tsWidth = ctx.measureText(tsText).width;
+                    ctx.fillText(tsText, img.width - tsWidth - padding, img.height - padding);
+                    canvas.toBlob((blob) => {
+                        if (blob) downloadBlob(blob, `process-architecture-${ts}.png`);
+                    }, 'image/png');
+                } else {
+                    const jsPDF = await import('jspdf').then((m) => m.default || m.jsPDF).catch(() => null);
+                    if (!jsPDF) {
+                        const win = window.open('', '_blank');
+                        if (win) {
+                            win.document.write(`<img src="${dataUrl}" style="max-width:100%" />`);
+                            win.document.title = 'Process Architecture';
+                        }
+                        return;
+                    }
+                    const img = new Image();
+                    img.src = dataUrl;
+                    await new Promise((res) => {
+                        img.onload = res;
+                    });
+                    const pdf = new (jsPDF as any)({
+                        orientation: img.width > img.height ? 'landscape' : 'portrait',
+                        unit: 'px',
+                        format: [img.width, img.height]
+                    });
+                    pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height);
+                    pdf.setFontSize(14);
+                    pdf.setTextColor(33, 150, 243);
+                    pdf.text('Process GPT', 12, 20);
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(150);
+                    pdf.text(`Exported: ${new Date().toLocaleString()}`, img.width - 10, img.height - 6, { align: 'right' });
+                    pdf.save(`process-architecture-${ts}.pdf`);
                 }
-                const img = new Image();
-                img.src = dataUrl;
-                await new Promise((res) => {
-                    img.onload = res;
-                });
-                const pdf = new (jsPDF as any)({
-                    orientation: img.width > img.height ? 'landscape' : 'portrait',
-                    unit: 'px',
-                    format: [img.width, img.height]
-                });
-                pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height);
-                // Logo watermark: top-left
-                pdf.setFontSize(14);
-                pdf.setTextColor(33, 150, 243);
-                pdf.text('Process GPT', 12, 20);
-                // Timestamp watermark: bottom-right
-                pdf.setFontSize(10);
-                pdf.setTextColor(150);
-                pdf.text(`Exported: ${new Date().toLocaleString()}`, img.width - 10, img.height - 6, { align: 'right' });
-                pdf.save(`process-architecture-${ts}.pdf`);
+            } finally {
+                snapshot.cleanup();
             }
         }
 
@@ -1071,15 +1211,18 @@ async function runExport(format: ExportFormat) {
     }
 }
 
-function onProcessCreated(newProc: { id: string; name: string }) {
-    navigateToProcess(newProc.id, newProc.name);
+async function onProcessCreated(newProc: { id: string; name: string }) {
+    await router.push({
+        path: `/process-hierarchy/${encodeURIComponent(newProc.id)}`,
+        query: newProc.name ? { name: newProc.name } : undefined
+    });
     loadData();
 }
 </script>
 
 <style scoped>
 .process-architecture {
-    background: #fafafa;
+    background: #ffffff;
 }
 
 .view-toggle :deep(.v-btn) {

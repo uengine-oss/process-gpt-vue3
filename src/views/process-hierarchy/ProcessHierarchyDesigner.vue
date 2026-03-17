@@ -16,11 +16,11 @@
             <div class="toolbar-right">
                 <!-- As-Is / To-Be Mode Toggle -->
                 <v-btn-toggle v-model="activeMode" mandatory density="compact" variant="outlined" divided color="purple" class="mr-2">
-                    <v-btn value="as-is" size="small" :disabled="!processName"> As-Is </v-btn>
-                    <v-btn value="to-be" size="small" :disabled="!processName"> To-Be </v-btn>
+                    <v-btn value="as-is" size="small" :disabled="!processName || isViewMode"> As-Is </v-btn>
+                    <v-btn value="to-be" size="small" :disabled="!processName || isViewMode"> To-Be </v-btn>
                 </v-btn-toggle>
                 <v-divider vertical class="mx-1" />
-                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('save')">
+                <v-btn variant="text" size="small" :disabled="!processName || isViewMode" @click="$emit('save')">
                     <v-icon start size="16">mdi-content-save</v-icon>
                     {{ $t('processHierarchy.save') || 'Save' }}
                 </v-btn>
@@ -33,16 +33,20 @@
                     :variant="isWip ? 'flat' : 'text'"
                     :color="isWip ? 'purple' : undefined"
                     size="small"
-                    :disabled="!processName"
+                    :disabled="!processName || isViewMode"
                     @click="$emit('toggleWip')"
                 >
                     <v-icon start size="16">{{ isWip ? 'mdi-progress-wrench' : 'mdi-progress-wrench' }}</v-icon>
                     {{ isWip ? $t('processHierarchy.wipOn') || 'WIP 해제' : $t('processHierarchy.wipOff') || 'WIP 설정' }}
                 </v-btn>
                 <v-divider vertical class="mx-1" />
-                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('clone')">
+                <v-btn variant="text" size="small" :disabled="!processName || isViewMode" @click="$emit('clone')">
                     <v-icon start size="16">mdi-content-copy</v-icon>
                     {{ $t('processHierarchy.clone') || 'Clone Process' }}
+                </v-btn>
+                <v-btn variant="text" size="small" color="error" :disabled="!processName || isViewMode" @click="$emit('delete')">
+                    <v-icon start size="16">mdi-delete-outline</v-icon>
+                    {{ $t('common.delete') || 'Delete' }}
                 </v-btn>
                 <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('versionHistory')">
                     <v-icon start size="16">mdi-history</v-icon>
@@ -75,12 +79,18 @@
 
         <!-- BPMN Canvas -->
         <div class="designer-canvas" v-show="bpmn" :style="canvasMinHeight ? { minHeight: canvasMinHeight + 'px' } : {}">
+            <div v-if="isViewMode && lockInfo" class="lock-banner-floating">
+                <v-icon size="14" class="mr-2">mdi-lock</v-icon>
+                <span class="lock-banner-floating__text">
+                    <strong>{{ lockInfo.user_id }}</strong>{{ $t('processHierarchy.lockedByOther') || ' 님이 편집 중입니다. 읽기 전용으로 표시됩니다.' }}
+                </span>
+            </div>
             <div :class="{ 'canvas-blurred': toBeMode && !hasToBeBlueprint }">
                 <BpmnuEngine
                     ref="bpmnVue"
                     :key="bpmnKey"
                     :bpmn="activeBpmn"
-                    :isViewMode="false"
+                    :isViewMode="isViewMode"
                     @openPanel="(id) => $emit('openPanel', id)"
                     @update-xml="(val) => $emit('updateXml', val)"
                     @definition="(def) => $emit('definition', def)"
@@ -178,13 +188,16 @@ export default {
         definitionPath: { type: String, default: '' },
         definitionList: { type: Array, default: () => [] },
         loading: { type: Boolean, default: false },
-        recoveryBackup: { type: Object, default: null }
+        recoveryBackup: { type: Object, default: null },
+        isViewMode: { type: Boolean, default: false },
+        lockInfo: { type: Object, default: null }
     },
     emits: [
         'openPanel',
         'updateXml',
         'save',
         'clone',
+        'delete',
         'versionHistory',
         'definition',
         'toggleWip',
@@ -866,7 +879,33 @@ export default {
     position: relative;
     overflow: hidden;
 }
-.designer-canvas > div {
+
+.lock-banner-floating {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 12;
+    display: inline-flex;
+    align-items: center;
+    max-width: min(520px, calc(100% - 24px));
+    padding: 6px 10px;
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 248, 235, 0.95);
+    color: #9a6700;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(4px);
+}
+
+.lock-banner-floating__text {
+    font-size: 12px;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.designer-canvas > div:not(.lock-banner-floating) {
     height: 100%;
 }
 

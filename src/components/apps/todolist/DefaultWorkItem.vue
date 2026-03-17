@@ -104,6 +104,7 @@ import Instruction from '@/components/ui/Instruction.vue';
 import TaskReturnForm from '@/components/apps/todolist/TaskReturnForm.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
+import { authClaimsState } from '@/utils/authClaims';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -155,7 +156,7 @@ export default {
     }),
     computed: {
         isAdmin() {
-            return localStorage.getItem('isAdmin');
+            return authClaimsState.isAdmin;
         },
         simulate() {
             return this.isSimulate === 'true' || this.isSimulate === 'false' ? this.isSimulate === 'true' : this.isSimulate;

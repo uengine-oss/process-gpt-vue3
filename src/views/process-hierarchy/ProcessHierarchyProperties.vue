@@ -39,7 +39,11 @@
         </div>
 
         <!-- Content -->
-        <div class="properties-content">
+        <div class="properties-content" :class="{ 'properties-content--readonly': isViewMode && topTab === 'properties' }">
+            <div v-if="isViewMode && topTab === 'properties'" class="readonly-overlay">
+                <v-icon size="16" class="mr-1">mdi-lock</v-icon>
+                다른 사용자가 편집 중이라 속성 변경이 잠겨 있습니다.
+            </div>
             <v-window v-model="topTab">
                 <!-- ==================== Properties Tab ==================== -->
                 <v-window-item value="properties">
@@ -846,14 +850,14 @@
         <div v-if="topTab === 'properties' && (activeTab === 'process' || (activeTab === 'task' && element))" class="properties-footer">
             <v-btn
                 v-if="activeTab === 'process'"
-                color="primary" block variant="flat" class="save-btn" @click="saveProcess"
+                color="primary" block variant="flat" class="save-btn" :disabled="isViewMode" @click="saveProcess"
             >
                 <v-icon start size="16">mdi-content-save</v-icon>
                 Save Changes
             </v-btn>
             <v-btn
                 v-else
-                color="primary" block variant="flat" class="save-btn" @click="saveTask"
+                color="primary" block variant="flat" class="save-btn" :disabled="isViewMode" @click="saveTask"
             >
                 <v-icon start size="16">mdi-content-save</v-icon>
                 Save Changes
@@ -1440,6 +1444,10 @@ export default {
         },
 
         saveProcess() {
+            if (this.isViewMode) {
+                this.$toast?.warning('다른 사용자가 편집 중이라 저장할 수 없습니다.');
+                return;
+            }
             const data = {
                 name: this.processForm.title,
                 description: this.processForm.description,
@@ -1461,6 +1469,10 @@ export default {
         },
 
         async saveTask() {
+            if (this.isViewMode) {
+                this.$toast?.warning('다른 사용자가 편집 중이라 저장할 수 없습니다.');
+                return;
+            }
             if (!this.element) return;
 
             const store = useBpmnStore();
@@ -1603,6 +1615,33 @@ export default {
 .properties-content {
     flex: 1;
     overflow-y: auto;
+    position: relative;
+}
+
+.properties-content--readonly .properties-tabs,
+.properties-content--readonly .pa-4,
+.properties-content--readonly .section-group,
+.properties-content--readonly .element-name-header,
+.properties-content--readonly .task-empty-state {
+    pointer-events: none;
+}
+
+.readonly-overlay {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    margin: 8px 12px 0;
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    border-radius: 10px;
+    background: rgba(255, 248, 235, 0.96);
+    color: #9a6700;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
 /* Element name header (Task tab) */

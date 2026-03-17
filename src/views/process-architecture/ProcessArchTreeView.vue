@@ -68,23 +68,43 @@
                         {{ row.count }} {{ row.count === 1 ? 'process' : 'processes' }}
                     </span>
 
+                    <!-- Permission (lock) button -->
+                    <v-tooltip location="bottom">
+                        <template v-slot:activator="{ props: tp }">
+                            <v-icon
+                                v-bind="tp"
+                                size="14"
+                                color="grey-lighten-1"
+                                class="permission-icon"
+                                style="cursor: pointer"
+                                @click.stop="emit('openPermission', row)"
+                            >mdi-lock-outline</v-icon>
+                        </template>
+                        <span>{{ $t('permissionDialog.title') || '권한 설정' }}</span>
+                    </v-tooltip>
+
                     <!-- Favorite toggle for sub processes -->
-                    <v-btn
-                        v-if="row.type === 'sub'"
-                        icon
-                        variant="text"
-                        size="x-small"
-                        :class="['fav-btn', { 'is-fav': favorites?.has(row.id) }]"
-                        @click.stop="emit('toggleFavorite', row.id)"
-                    >
-                        <v-icon size="14" :color="favorites?.has(row.id) ? 'amber' : 'grey-lighten-1'">
-                            {{ favorites?.has(row.id) ? 'mdi-star' : 'mdi-star-outline' }}
-                        </v-icon>
-                    </v-btn>
+                    <v-tooltip v-if="row.type === 'sub'" location="bottom">
+                        <template v-slot:activator="{ props: tp }">
+                            <v-btn
+                                v-bind="tp"
+                                icon
+                                variant="text"
+                                size="x-small"
+                                :class="['fav-btn', { 'is-fav': favorites?.has(row.id) }]"
+                                @click.stop="emit('toggleFavorite', row.id)"
+                            >
+                                <v-icon size="14" :color="favorites?.has(row.id) ? 'amber' : 'grey-lighten-1'">
+                                    {{ favorites?.has(row.id) ? 'mdi-star' : 'mdi-star-outline' }}
+                                </v-icon>
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processArchitecture.myProcesses.favorites') || '즐겨찾기' }}</span>
+                    </v-tooltip>
 
                     <!-- Status badge for sub processes -->
                     <ProgressBadge
-                        v-if="row.type === 'sub' && row.status"
+                        v-if="row.type === 'sub' && row.status?.status && row.status.status !== 'none'"
                         type="status"
                         :status="row.status.status"
                         :d-day="row.status.dDay ?? null"
@@ -163,6 +183,7 @@ const emit = defineEmits<{
     (e: 'navigate', id: string, name?: string): void;
     (e: 'moveSub', subId: string, fromMajorId: string, toMajorId: string): void;
     (e: 'toggleFavorite', id: string): void;
+    (e: 'openPermission', row: TreeRow): void;
 }>();
 
 const expanded = ref(new Set<string>());
@@ -554,6 +575,19 @@ async function confirmMove() {
 }
 
 .tree-row .fav-btn.is-fav {
+    opacity: 1;
+}
+
+.tree-row .permission-icon {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.tree-row:hover .permission-icon {
+    opacity: 0.5;
+}
+
+.tree-row:hover .permission-icon:hover {
     opacity: 1;
 }
 

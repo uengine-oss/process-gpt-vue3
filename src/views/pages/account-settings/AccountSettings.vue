@@ -278,6 +278,7 @@ import SkillsTab from '@/components/pages/account-settings/SkillsTab.vue';
 import TaskCatalogAdmin from '@/components/admin/TaskCatalogAdmin.vue';
 import OrgChartGroupTab from '@/components/pages/account-settings/OrgChartGroupTab.vue';
 import AdminConsole from '@/views/admin/AdminConsole.vue';
+import { authClaimsState } from '@/utils/authClaims';
 
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
@@ -312,7 +313,7 @@ export default {
                 { value: 'Skills', label: 'Skills' },
                 { value: 'ConnectionInfo', label: 'Connection Info' }
             ],
-            admin: localStorage.getItem('isAdmin') === 'true',
+            admin: authClaimsState.isAdmin,
             selectedLanguage: this.$i18n.locale || 'ko',
             languageOptions: [
                 { value: 'ko', label: '한국어', flag: '🇰🇷', displayLabel: '🇰🇷 한국어' },
@@ -321,7 +322,7 @@ export default {
         };
     },
     mounted() {
-        // this.admin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
+        this.admin = authClaimsState.isAdmin;
     },
     computed: {
         isMobile() {

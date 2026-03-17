@@ -83,6 +83,33 @@ export function formatElementTypeName(type: string): string {
 }
 
 const BPMN_NS = 'http://www.omg.org/spec/BPMN/20100524/MODEL';
+const BPMNDI_NS = 'http://www.omg.org/spec/BPMN/20100524/DI';
+const DI_NS = 'http://www.omg.org/spec/DD/20100524/DI';
+
+function normalizeSerializedXml(xml: string): string {
+    return xml.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
+}
+
+function extractSequenceFlowExtras(doc: Document): Record<string, { waypoints: string }> {
+    const edgeMap: Record<string, { waypoints: string }> = {};
+    const edges = doc.getElementsByTagNameNS(BPMNDI_NS, 'BPMNEdge');
+    for (let i = 0; i < edges.length; i++) {
+        const edge = edges[i];
+        const bpmnElement = edge.getAttribute('bpmnElement');
+        if (!bpmnElement) continue;
+        const waypoints = edge.getElementsByTagNameNS(DI_NS, 'waypoint');
+        const points: string[] = [];
+        for (let w = 0; w < waypoints.length; w++) {
+            const x = waypoints[w].getAttribute('x') || '';
+            const y = waypoints[w].getAttribute('y') || '';
+            points.push(`${x},${y}`);
+        }
+        edgeMap[bpmnElement] = {
+            waypoints: points.join(' -> ')
+        };
+    }
+    return edgeMap;
+}
 
 export function extractBpmnElements(xml: string): BpmnElement[] {
     if (!xml) return [];
@@ -90,6 +117,8 @@ export function extractBpmnElements(xml: string): BpmnElement[] {
     try {
         const parser = new DOMParser();
         const doc = parser.parseFromString(xml, 'text/xml');
+        const sequenceFlowExtras = extractSequenceFlowExtras(doc);
+        const serializer = new XMLSerializer();
 
         RELEVANT_SELECTORS.forEach((tag) => {
             // getElementsByTagNameNS로 네임스페이스 정확히 처리
@@ -121,6 +150,23 @@ export function extractBpmnElements(xml: string): BpmnElement[] {
                         attrs['__flowNodeRefs'] = refs.sort().join(',');
                     }
                 }
+                if (tag === 'sequenceFlow') {
+                    const conditionExpression = el.getElementsByTagNameNS(BPMN_NS, 'conditionExpression')[0];
+                    if (conditionExpression) {
+                        attrs['__conditionExpression'] = normalizeSerializedXml(serializer.serializeToString(conditionExpression));
+                    }
+                    const childXml = Array.from(el.childNodes)
+                        .filter((node) => node.nodeType === Node.ELEMENT_NODE)
+                        .map((node) => normalizeSerializedXml(serializer.serializeToString(node)))
+                        .join('|');
+                    if (childXml) {
+                        attrs['__childXml'] = childXml;
+                    }
+                    const extras = sequenceFlowExtras[id];
+                    if (extras?.waypoints) {
+                        attrs['__waypoints'] = extras.waypoints;
+                    }
+                }
                 elements.push({ id, name, elementType: tag, sourceRef, targetRef, attrs });
             }
         });
@@ -148,6 +194,26 @@ function buildDescription(type: string, el: BpmnElement): string {
 }
 
 function buildModifiedDescription(oldEl: BpmnElement, newEl: BpmnElement): string {
+    if (newEl.elementType === 'sequenceFlow') {
+        const parts: string[] = [];
+        if (oldEl.sourceRef !== newEl.sourceRef || oldEl.targetRef !== newEl.targetRef) {
+            parts.push(`Connection changed: ${oldEl.sourceRef} -> ${oldEl.targetRef} => ${newEl.sourceRef} -> ${newEl.targetRef}`);
+        }
+        if (oldEl.name !== newEl.name) {
+            parts.push(`Connection label changed: "${oldEl.name}" → "${newEl.name}"`);
+        }
+        if ((oldEl.attrs.__conditionExpression || '') !== (newEl.attrs.__conditionExpression || '')) {
+            parts.push('Condition updated');
+        }
+        if ((oldEl.attrs.__childXml || '') !== (newEl.attrs.__childXml || '')) {
+            parts.push('Connection rule updated');
+        }
+        if ((oldEl.attrs.__waypoints || '') !== (newEl.attrs.__waypoints || '')) {
+            parts.push('Connection path updated');
+        }
+        return parts.length > 0 ? parts.join('. ') : 'Updated sequence flow properties';
+    }
+
     const parts: string[] = [];
     if (oldEl.name !== newEl.name) {
         parts.push(`Name changed: "${oldEl.name}" → "${newEl.name}"`);

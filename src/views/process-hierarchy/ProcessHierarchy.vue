@@ -38,6 +38,9 @@
                     :definitionList="definitionList"
                     :selectedId="selectedProcessId"
                     :collapsed="false"
+                    :loading="loading"
+                    :statusLoading="statusLoading"
+                    :lockMap="lockMap"
                     @select="handleSelectProcess"
                     @openPermission="handleOpenPermission"
                 />
@@ -64,13 +67,16 @@
                 :processDefinition="processDefinition"
                 :definitionPath="selectedProcessId"
                 :definitionList="definitionList"
-                :loading="loading"
+                :loading="loadingProcess"
                 :recoveryBackup="recoveryBackup"
+                :isViewMode="isLockedByOther"
+                :lockInfo="lockInfo"
                 @openPanel="handleOpenPanel"
                 @updateXml="handleUpdateXml"
                 @definition="handleDefinition"
                 @save="handleSave"
                 @clone="handleClone"
+                @delete="handleDelete"
                 @versionHistory="handleVersionHistory"
                 @toggleWip="handleToggleWip"
                 @dismissBackup="dismissBackup"
@@ -84,7 +90,7 @@
             <ProcessHierarchyProperties
                 :processDefinition="processDefinition"
                 :element="selectedElement"
-                :isViewMode="false"
+                :isViewMode="isLockedByOther"
                 :roles="roles"
                 :processVariables="processVariables"
                 :definitionPath="selectedProcessId"
@@ -272,7 +278,13 @@ export default {
             roles: [],
             processVariables: [],
             loading: false,
+            loadingProcess: false,
+            statusLoading: false,
             showProperties: true,
+            // Lock state
+            isLockedByOther: false,
+            lockInfo: null, // { user_id, heartbeat_at }
+            lockMap: new Map(), // proc_def_id → { user_id }
             versionDialog: false,
             // Save & Version dialog
             saveVersionDialog: false,
@@ -301,15 +313,26 @@ export default {
             resizeStartX: 0,
             resizeStartWidth: 0,
             selectionListenerCleanup: null,
+            // 저장 여부 체크용 초기 XML
+            savedBpmnXml: '',
         };
+    },
+    async beforeRouteLeave(to, from, next) {
+        if (this.checkUnsavedChanges()) {
+            const answer = window.confirm(this.$t('changePath'));
+            if (!answer) return next(false);
+        }
+        next();
     },
     async mounted() {
         await this.loadInitialData();
         // Auto-select process from query parameter (from Process Architecture navigation)
+        const routeId = this.$route?.params?.id;
         const queryId = this.$route?.query?.id;
         const queryName = this.$route?.query?.name;
-        if (queryId) {
-            await this.handleSelectProcess(queryId, queryName || queryId);
+        const initialId = routeId || queryId;
+        if (initialId) {
+            await this.handleSelectProcess(initialId, queryName || initialId);
         }
         window.addEventListener('mousemove', this.onResize);
         window.addEventListener('mouseup', this.stopResize);
@@ -326,12 +349,23 @@ export default {
             }
         };
         window.addEventListener('offline', this._offlineHandler);
+        // 브라우저 탭 닫기/새로고침 시 미저장 경고
+        this._beforeUnloadHandler = (e) => {
+            if (this.checkUnsavedChanges()) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', this._beforeUnloadHandler);
     },
     beforeUnmount() {
         window.removeEventListener('mousemove', this.onResize);
         window.removeEventListener('mouseup', this.stopResize);
         if (this._offlineHandler) {
             window.removeEventListener('offline', this._offlineHandler);
+        }
+        if (this._beforeUnloadHandler) {
+            window.removeEventListener('beforeunload', this._beforeUnloadHandler);
         }
         if (this.selectionListenerCleanup) {
             this.selectionListenerCleanup();
@@ -381,75 +415,166 @@ export default {
             return `${major}.${minor}`;
         },
     },
+    watch: {
+        '$route.params.id': {
+            immediate: false,
+            async handler(newId) {
+                if (newId && newId !== this.selectedProcessId) {
+                    const routeName = this.$route?.query?.name;
+                    await this.handleSelectProcess(newId, routeName || newId);
+                }
+            }
+        },
+        '$route.query.id': {
+            immediate: false,
+            async handler(newId) {
+                if (newId && newId !== this.selectedProcessId) {
+                    const routeName = this.$route?.query?.name;
+                    await this.handleSelectProcess(newId, routeName || newId);
+                }
+            }
+        }
+    },
     methods: {
+        isProcessGptMode() {
+            return window.$mode === 'ProcessGPT' || window.$pal;
+        },
+
+        async fetchDefinitionListLite() {
+            if (typeof backend.listDefinitionStatusLite === 'function') {
+                return await backend.listDefinitionStatusLite('', {});
+            }
+            return await backend.listDefinition('', {});
+        },
+
+        async fetchProcessDefinitionDetail(id) {
+            if (!id) return null;
+
+            if (this.isProcessGptMode() && typeof backend.getDefinitionDetailLite === 'function') {
+                for (let attempt = 0; attempt < 4; attempt++) {
+                    const detail = await backend.getDefinitionDetailLite(id);
+                    if (detail) return detail;
+                    if (attempt < 3) {
+                        await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+                    }
+                }
+            }
+
+            if (typeof backend.getRawDefinition === 'function') {
+                try {
+                    const raw = await backend.getRawDefinition(id);
+                    if (raw) {
+                        return {
+                            ...raw,
+                            id: raw.id || id,
+                            version: raw.version || raw.prod_version || null,
+                            path: `${raw.id || id}.bpmn`,
+                            name: raw.name || id
+                        };
+                    }
+                } catch (e) {
+                    console.warn('[ProcessHierarchy] getRawDefinition fallback failed:', e);
+                }
+            }
+
+            return this.definitionList.find(d => d.id === id || d.file_name === id) || null;
+        },
+
+        collectProcDefIds(procMap) {
+            const ids = [];
+            const megaList = procMap?.mega_proc_list || [];
+            megaList.forEach((mega) => {
+                (mega.major_proc_list || []).forEach((major) => {
+                    (major.sub_proc_list || []).forEach((sub) => {
+                        if (sub?.id) ids.push(sub.id);
+                    });
+                });
+            });
+            return [...new Set(ids)];
+        },
+
+        applyDefinitionStatusMaps(versionList = [], approvalStates = []) {
+            const latestVersionMap = {};
+            if (versionList?.length) {
+                versionList.forEach((v) => {
+                    const defId = v.proc_def_id;
+                    if (defId && !latestVersionMap[defId]) {
+                        latestVersionMap[defId] = v.version;
+                    }
+                });
+            }
+
+            const approvalMap = {};
+            if (approvalStates?.length) {
+                approvalStates.forEach((row) => {
+                    if (row.proc_def_id && !approvalMap[row.proc_def_id]) {
+                        approvalMap[row.proc_def_id] = row.state;
+                    }
+                });
+            }
+
+            this.definitionList = (this.definitionList || []).map((def) => {
+                const id = def.id || def.file_name;
+                const nextDef = { ...def };
+
+                if (id && latestVersionMap[id]) {
+                    nextDef.version = latestVersionMap[id];
+                }
+
+                if (id && approvalMap[id] && !nextDef.approval_state) {
+                    const state = approvalMap[id];
+                    if (state === 'public_feedback') nextDef.approval_state = 'public_review';
+                    else if (state === 'in_review' || state === 'final_edit') nextDef.approval_state = 'review';
+                    else if (state === 'published') nextDef.approval_state = 'published';
+                    else nextDef.approval_state = state;
+                }
+
+                return nextDef;
+            });
+        },
+
+        async enrichDefinitionStatuses(procIds) {
+            if (!procIds?.length) return;
+
+            this.statusLoading = true;
+            try {
+                const isProcessGpt = this.isProcessGptMode();
+                const [versionList, approvalStates] = await Promise.all([
+                    isProcessGpt && typeof backend.getLatestVersionMapByProcIds === 'function'
+                        ? backend.getLatestVersionMapByProcIds(procIds)
+                        : backend.getLatestVersionMap(),
+                    isProcessGpt && typeof backend.getApprovalStateListByProcIds === 'function'
+                        ? backend.getApprovalStateListByProcIds(procIds)
+                        : backend.getApprovalStateList(),
+                ]);
+
+                this.applyDefinitionStatusMaps(versionList, approvalStates);
+            } catch (e) {
+                console.warn('Failed to enrich hierarchy statuses:', e);
+            } finally {
+                this.statusLoading = false;
+            }
+        },
+
         async loadInitialData() {
             this.loading = true;
             try {
-                const [procMapResult, metricsResult, defList] = await Promise.all([
+                const [procMapResult, metricsResult, defListResult] = await Promise.allSettled([
                     backend.getProcessDefinitionMap({ skipPermissionFilter: true }),
                     backend.getMetricsMap(),
-                    backend.listDefinition('', {}),
+                    this.fetchDefinitionListLite(),
                 ]);
-                this.procMap = procMapResult;
-                this.metricsMap = metricsResult;
 
-                // 버전/승인 상태는 별도로 조회 (실패해도 목록 표시에 영향 없음)
-                let versionList = [];
-                let approvalStates = [];
-                try {
-                    [versionList, approvalStates] = await Promise.all([
-                        backend.getLatestVersionMap(),
-                        backend.getApprovalStateList(),
-                    ]);
-                } catch (e) {
-                    console.warn('Failed to load version/approval data:', e);
-                }
+                this.procMap = procMapResult.status === 'fulfilled' ? procMapResult.value : null;
+                this.metricsMap = metricsResult.status === 'fulfilled' ? metricsResult.value : null;
+                const defList = defListResult.status === 'fulfilled' ? defListResult.value : [];
+                this.definitionList = defList || [];
 
-                // 각 정의의 최신 버전 매핑
-                const latestVersionMap = {};
-                if (versionList && versionList.length > 0) {
-                    versionList.forEach(v => {
-                        const defId = v.proc_def_id;
-                        if (defId && !latestVersionMap[defId]) {
-                            latestVersionMap[defId] = v.version;
-                        }
-                    });
-                }
+                const procIds = this.collectProcDefIds(this.procMap);
+                this.enrichDefinitionStatuses(procIds);
 
-                // 각 정의의 최신 승인 상태 매핑
-                const approvalMap = {};
-                if (approvalStates && approvalStates.length > 0) {
-                    approvalStates.forEach(row => {
-                        if (row.proc_def_id && !approvalMap[row.proc_def_id]) {
-                            approvalMap[row.proc_def_id] = row.state;
-                        }
-                    });
-                }
-
-                const defs = defList || [];
-                defs.forEach(def => {
-                    const id = def.id || def.file_name;
-                    if (id && latestVersionMap[id]) {
-                        def.version = latestVersionMap[id];
-                    }
-                    // WIP flag from definition JSONB
-                    const defObj = typeof def.definition === 'string'
-                        ? JSON.parse(def.definition || '{}')
-                        : (def.definition || {});
-                    if (defObj.wip) {
-                        def.approval_state = 'wip';
-                    }
-                    // approval_state 매핑 (proc_def 테이블에 없는 경우 보충)
-                    else if (id && approvalMap[id] && !def.approval_state) {
-                        const state = approvalMap[id];
-                        // proc_def_approval_state의 state 값을 UI 상태로 매핑
-                        if (state === 'public_feedback') def.approval_state = 'public_review';
-                        else if (state === 'in_review' || state === 'final_edit') def.approval_state = 'review';
-                        else if (state === 'published') def.approval_state = 'published';
-                        else def.approval_state = state;
-                    }
-                });
-                this.definitionList = defs;
+                // Lock 목록 로드
+                this.loadLockMap();
             } catch (e) {
                 console.error('Failed to load initial data:', e);
             } finally {
@@ -457,14 +582,30 @@ export default {
             }
         },
 
+        checkUnsavedChanges() {
+            if (!this.selectedProcessId || !this.savedBpmnXml) return false;
+            return this.bpmnXml !== this.savedBpmnXml;
+        },
+
         async handleSelectProcess(id, name) {
             if (this.selectedProcessId === id) return;
+
+            // 미저장 변경사항 체크
+            if (this.checkUnsavedChanges()) {
+                const answer = window.confirm(this.$t('changePath'));
+                if (!answer) return;
+            }
 
             // 이전 element 선택 초기화
             this.selectedElement = null;
             this.selectedProcessId = id;
             this.selectedProcessName = name;
             this.recoveryBackup = null;
+            this.isLockedByOther = false;
+            this.lockInfo = null;
+
+            // Lock 체크: 다른 사용자가 편집 중인지 확인
+            await this.checkEditLock(id);
             await this.loadProcess(id);
 
             // [6.2.2] 로컬 백업 확인
@@ -492,24 +633,83 @@ export default {
             }
         },
 
+        async loadLockMap() {
+            try {
+                const supabase = window.$supabase;
+                if (!supabase) return;
+                const { data: locks } = await supabase
+                    .from('lock')
+                    .select('id, user_id')
+                    .eq('tenant_id', window.$tenantName);
+                const map = new Map();
+                if (locks) {
+                    const currentUserId = window.$user?.id || '';
+                    for (const lock of locks) {
+                        if (lock.user_id && lock.user_id !== currentUserId) {
+                            map.set(lock.id, { user_id: lock.user_id });
+                        }
+                    }
+                }
+                this.lockMap = map;
+            } catch (e) {
+                console.warn('[ProcessHierarchy] loadLockMap failed:', e);
+            }
+        },
+
+        async checkEditLock(id) {
+            try {
+                const currentUserId = window.$user?.id || '';
+                const lock = await backend.getLock(id);
+                if (lock && lock.user_id && lock.user_id !== currentUserId) {
+                    // 다른 사용자가 편집 중
+                    this.isLockedByOther = true;
+                    this.lockInfo = lock;
+                } else {
+                    this.isLockedByOther = false;
+                    this.lockInfo = null;
+                }
+            } catch (e) {
+                console.warn('[ProcessHierarchy] Lock check failed:', e);
+                this.isLockedByOther = false;
+                this.lockInfo = null;
+            }
+        },
+
         async loadProcess(id) {
             if (!id) return;
-            this.loading = true;
+            this.loadingProcess = true;
             this.bpmnXml = '';
             try {
-                // definitionList에서 해당 프로세스 찾기
-                const def = this.definitionList.find(d => d.id === id || d.file_name === id);
+                const def = await this.fetchProcessDefinitionDetail(id);
 
                 if (def) {
                     this.processDefinition = def;
                     this.bpmnXml = def.bpmn || '';
-                    this.processVariables = def.definition?.data || [];
+                    this.savedBpmnXml = this.bpmnXml;
+                    const definition = typeof def.definition === 'string'
+                        ? JSON.parse(def.definition || '{}')
+                        : (def.definition || {});
+                    this.processDefinition.definition = definition;
+                    this.processVariables = definition?.data || [];
 
                     // roles 추출 (definition에서 가져오기)
-                    if (def.definition?.roles) {
-                        this.roles = def.definition.roles;
+                    if (definition?.roles) {
+                        this.roles = definition.roles;
                     } else {
                         this.roles = [];
+                    }
+
+                    const listIndex = this.definitionList.findIndex(d => (d.id || d.file_name) === id);
+                    if (listIndex >= 0) {
+                        const current = this.definitionList[listIndex];
+                        this.definitionList.splice(listIndex, 1, {
+                            ...current,
+                            name: def.name || current.name,
+                            version: def.version || current.version,
+                            version_tag: def.version_tag || current.version_tag,
+                            status: def.status || current.status,
+                            approval_state: def.approval_state || current.approval_state,
+                        });
                     }
                 } else {
                     this.processDefinition = null;
@@ -522,7 +722,7 @@ export default {
                 this.processDefinition = null;
                 this.bpmnXml = '';
             } finally {
-                this.loading = false;
+                this.loadingProcess = false;
             }
         },
 
@@ -615,6 +815,13 @@ export default {
         },
 
         async handleSave() {
+            // 다른 사용자가 편집 중이면 저장 차단
+            if (this.isLockedByOther) {
+                if (this.$toast) {
+                    this.$toast.warning(this.$t('processHierarchy.lockedByOther') || '다른 사용자가 편집 중입니다.');
+                }
+                return;
+            }
             const designer = this.$refs.designer;
 
             // To-Be 모드에서 저장 시: To-Be XML을 definition.tobe_bpmn에 저장
@@ -820,6 +1027,7 @@ export default {
                 }
 
                 this.saveVersionDialog = false;
+                this.savedBpmnXml = this.bpmnXml;
 
                 if (this.$toast) {
                     const msg = this.submitReviewAfterSave
@@ -903,6 +1111,116 @@ export default {
             }
         },
 
+        async handleDelete() {
+            if (!this.selectedProcessId) return;
+            if (this.isLockedByOther) {
+                if (this.$toast) {
+                    this.$toast.warning(this.$t('processHierarchy.lockedByOther') || '다른 사용자가 편집 중입니다.');
+                }
+                return;
+            }
+
+            const confirmed = window.confirm(
+                this.$t('processHierarchy.confirmDelete') || '선택한 프로세스를 삭제하시겠습니까? 관련 버전과 폼도 함께 삭제됩니다.'
+            );
+            if (!confirmed) return;
+
+            const defId = this.selectedProcessId;
+
+            try {
+                const supabase = window.$supabase;
+                const tenantId = window.$tenantName;
+
+                // 소프트 삭제: deleted_at 타임스탬프 설정 (휴지통에서 복구 가능)
+                if (supabase) {
+                    const deletedAt = new Date().toISOString();
+                    // 현재 로그인 유저 정보 조회
+                    let deletedBy = 'Unknown';
+                    try {
+                        const { data: authData } = await supabase.auth.getUser();
+                        if (authData?.user) {
+                            const uid = authData.user.id;
+                            const { data: userData } = await supabase
+                                .from('users')
+                                .select('username, email')
+                                .match({ id: uid, tenant_id: tenantId })
+                                .limit(1);
+                            deletedBy = userData?.[0]?.username || userData?.[0]?.email || authData.user.email || 'Unknown';
+                        }
+                    } catch (e) {
+                        console.warn('Failed to get user info for delete:', e);
+                    }
+
+                    // 원래 위치 정보 기록 (복원 시 사용)
+                    let deletedFrom = null;
+                    const currentProcMap = this.procMap || { mega_proc_list: [] };
+                    for (const mega of (currentProcMap.mega_proc_list || [])) {
+                        for (const major of (mega.major_proc_list || [])) {
+                            const found = (major.sub_proc_list || []).find((sub) => sub.id === defId);
+                            if (found) {
+                                deletedFrom = {
+                                    mega_id: mega.id,
+                                    mega_name: mega.name,
+                                    major_id: major.id,
+                                    major_name: major.name,
+                                    process_name: found.name || this.selectedProcessName
+                                };
+                                break;
+                            }
+                        }
+                        if (deletedFrom) break;
+                    }
+
+                    // proc_def, tb_bpmn_model 양쪽 모두 soft delete (삭제자 + 원래 위치 기록)
+                    const results = await Promise.allSettled([
+                        supabase.from('proc_def').update({ deleted_at: deletedAt, deleted_by: deletedBy, deleted_from: deletedFrom }).eq('id', defId).eq('tenant_id', tenantId),
+                        supabase.from('tb_bpmn_model').update({ deleted_at: deletedAt, deleted_by: deletedBy }).eq('id', defId).eq('tenant_id', tenantId),
+                    ]);
+
+                    // proc_def 업데이트 실패 시 에러
+                    const procDefResult = results[0];
+                    if (procDefResult.status === 'fulfilled' && procDefResult.value.error) {
+                        throw procDefResult.value.error;
+                    }
+
+                    // lock 해제
+                    await supabase.from('lock').delete().eq('id', defId).eq('tenant_id', tenantId);
+                } else {
+                    await backend.deleteDefinition(defId, {});
+                }
+
+                // procMap에서 제거
+                const nextProcMap = JSON.parse(JSON.stringify(this.procMap || { mega_proc_list: [] }));
+                (nextProcMap.mega_proc_list || []).forEach((mega) => {
+                    (mega.major_proc_list || []).forEach((major) => {
+                        major.sub_proc_list = (major.sub_proc_list || []).filter((sub) => sub.id !== defId);
+                    });
+                });
+
+                await backend.putProcessDefinitionMap(nextProcMap);
+
+                this.selectedProcessId = '';
+                this.selectedProcessName = '';
+                this.bpmnXml = '';
+                this.savedBpmnXml = '';
+                this.processDefinition = null;
+                this.selectedElement = null;
+                this.showProperties = true;
+
+                await this.loadInitialData();
+                this.$router.replace({ path: '/process-hierarchy' });
+
+                if (this.$toast) {
+                    this.$toast.success(this.$t('common.deleteSuccess') || '프로세스가 삭제되었습니다.');
+                }
+            } catch (e) {
+                console.error('Delete failed:', e);
+                if (this.$toast) {
+                    this.$toast.error(this.$t('common.deleteFailed') || '프로세스 삭제에 실패했습니다.');
+                }
+            }
+        },
+
         handleVersionHistory() {
             // Version Comparison 페이지로 이동
             this.$router.push({
@@ -932,10 +1250,7 @@ export default {
             const supabase = window.$supabase;
             if (!supabase) return;
 
-            // 현재 정의 찾기
-            const def = this.definitionList.find(
-                d => (d.file_name || d.id) === this.selectedProcessId
-            );
+            const def = this.processDefinition;
             if (!def) return;
 
             const isCurrentlyWip = def.approval_state === 'wip' || def.status === 'wip';
@@ -962,6 +1277,15 @@ export default {
                 } else {
                     // Restore actual governance state
                     delete def.approval_state;
+                }
+
+                const listDef = this.definitionList.find(d => (d.file_name || d.id) === this.selectedProcessId);
+                if (listDef) {
+                    if (newWipFlag) {
+                        listDef.approval_state = 'wip';
+                    } else {
+                        delete listDef.approval_state;
+                    }
                 }
 
                 if (this.$toast) {

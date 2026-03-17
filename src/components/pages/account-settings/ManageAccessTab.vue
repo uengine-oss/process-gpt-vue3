@@ -139,6 +139,7 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { authClaimsState } from '@/utils/authClaims';
 const backend = BackendFactory.createBackend();
 
 import { VDataTable } from 'vuetify/components/VDataTable';
@@ -179,8 +180,7 @@ export default {
     }),
     computed: {
         isAdmin() {
-            const isAdmin = localStorage.getItem('isAdmin') == 'true';
-            return isAdmin;
+            return authClaimsState.isAdmin;
         },
         isDeleteEnabled() {
             return this.confirmName === (this.deleteTargetUser ? this.deleteTargetUser.name : '');

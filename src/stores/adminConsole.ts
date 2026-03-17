@@ -3,7 +3,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 
 export interface DataFreezeItem {
     id?: string;
-    scope: 'domain' | 'major_process';
+    scope: 'domain' | 'mega_process' | 'major_process' | 'subprocess';
     target_id: string;
     target_name: string;
     reason: string;
@@ -17,6 +17,13 @@ export interface DeletedProcess {
     deleted_by?: string;
     deleted_at: string;
     remaining_days: number;
+    deleted_from?: {
+        mega_id: string;
+        mega_name: string;
+        major_id: string;
+        major_name: string;
+        process_name?: string;
+    } | null;
 }
 
 export interface DeletedInstance {
@@ -112,7 +119,7 @@ export const useAdminConsoleStore = defineStore({
             this.loading = true;
             try {
                 const backend = BackendFactory.createBackend() as any;
-                this.dataFreezeList = await backend.getDataFreezeList();
+                this.dataFreezeList = (await backend.getDataFreezeList()) || [];
             } catch (e: any) {
                 console.error('Failed to fetch data freeze list:', e);
                 this.error = e.message;

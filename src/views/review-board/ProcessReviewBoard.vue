@@ -525,8 +525,9 @@ onBeforeUnmount(cleanupRealtime);
 </script>
 
 <template>
-    <!-- ── Page Header + Critical Alerts ── -->
-    <v-card elevation="10" class="rounded-xl content-card">
+    <div class="review-board-page">
+        <!-- ── Page Header + Critical Alerts ── -->
+        <v-card elevation="10" class="rounded-xl content-card">
         <div class="page-header">
             <div class="page-header-left">
                 <h1 class="page-title">Governance Control Center</h1>
@@ -860,28 +861,30 @@ onBeforeUnmount(cleanupRealtime);
                     </div>
                 </div>
             </transition>
-        </div> </v-card
-    ><!-- end content-card -->
-
-    <!-- ── Bottom Action Bar ── -->
-    <div v-if="selectedRows.size > 0" class="bottom-action-bar">
-        <div class="bottom-action-info">
-            <v-icon size="16" class="mr-1">mdi-check-circle-outline</v-icon>
-            {{ selectedRows.size }}건 선택됨
         </div>
-        <div class="bottom-action-buttons">
-            <v-btn color="primary" variant="flat" size="small" @click="handleBulkApprove">
-                <v-icon start size="16">mdi-check</v-icon>
-                승인: 차기 Draft 생성
-            </v-btn>
-            <v-btn color="default" variant="outlined" size="small" @click="handleBulkReject">
-                <v-icon start size="16">mdi-close</v-icon>
-                반려: 현행 유지
-            </v-btn>
-            <v-btn color="success" variant="flat" size="small" @click="handleBulkPublish">
-                <v-icon start size="16">mdi-rocket-launch-outline</v-icon>
-                Publish (최종 배포)
-            </v-btn>
+        </v-card>
+        <!-- end content-card -->
+
+        <!-- ── Bottom Action Bar ── -->
+        <div v-if="selectedRows.size > 0" class="bottom-action-bar">
+            <div class="bottom-action-info">
+                <v-icon size="16" class="mr-1">mdi-check-circle-outline</v-icon>
+                {{ selectedRows.size }}건 선택됨
+            </div>
+            <div class="bottom-action-buttons">
+                <v-btn color="primary" variant="flat" size="small" @click="handleBulkApprove">
+                    <v-icon start size="16">mdi-check</v-icon>
+                    승인: 차기 Draft 생성
+                </v-btn>
+                <v-btn color="default" variant="outlined" size="small" @click="handleBulkReject">
+                    <v-icon start size="16">mdi-close</v-icon>
+                    반려: 현행 유지
+                </v-btn>
+                <v-btn color="success" variant="flat" size="small" @click="handleBulkPublish">
+                    <v-icon start size="16">mdi-rocket-launch-outline</v-icon>
+                    Publish (최종 배포)
+                </v-btn>
+            </div>
         </div>
     </div>
 
@@ -906,6 +909,13 @@ onBeforeUnmount(cleanupRealtime);
 </template>
 
 <style scoped>
+.review-board-page {
+    min-height: calc(100dvh - var(--v-layout-top, 0px) - 56px);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
 /* ── Page Header ── */
 .page-header {
     display: flex;
@@ -981,6 +991,7 @@ onBeforeUnmount(cleanupRealtime);
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -1248,6 +1259,13 @@ onBeforeUnmount(cleanupRealtime);
 .bottom-action-buttons {
     display: flex;
     gap: 8px;
+}
+
+@media screen and (max-width: 1279px) {
+    .review-board-page {
+        min-height: calc(100dvh - var(--v-layout-top, 0px));
+        gap: 12px;
+    }
 }
 
 /* ── Audit Sidebar (content-card 내부) ── */

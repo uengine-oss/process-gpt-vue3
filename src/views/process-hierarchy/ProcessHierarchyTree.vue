@@ -25,6 +25,9 @@
             <div class="text-caption text-medium-emphasis mt-1">
                 {{ $t('processHierarchy.subtitle') || '프로세스 체계도 기반 트리' }}
             </div>
+            <div v-if="statusLoading && !loading" class="tree-status-loading mt-2">
+                <v-progress-linear indeterminate color="primary" height="3" rounded />
+            </div>
 
             <!-- Search -->
             <v-text-field
@@ -41,7 +44,22 @@
 
         <!-- Tree Content -->
         <div class="tree-content">
-            <div v-if="!treeNodes.length" class="pa-4 text-center text-medium-emphasis">
+            <div v-if="loading" class="tree-loading pa-4">
+                <div class="d-flex align-center mb-3">
+                    <v-progress-circular indeterminate size="18" width="2" color="primary" class="mr-2" />
+                    <span class="text-caption text-medium-emphasis">
+                        {{ $t('common.loading') || '불러오는 중...' }}
+                    </span>
+                </div>
+                <v-skeleton-loader
+                    v-for="idx in 8"
+                    :key="idx"
+                    type="list-item-two-line"
+                    class="tree-skeleton-item"
+                />
+            </div>
+
+            <div v-else-if="!treeNodes.length" class="pa-4 text-center text-medium-emphasis">
                 {{ $t('processHierarchy.noData') || '프로세스가 없습니다.' }}
             </div>
 
@@ -56,7 +74,21 @@
                     </v-icon>
                     <v-icon size="16" class="mr-2" color="primary">mdi-folder-network</v-icon>
                     <span class="tree-node-label">{{ mega.name }}</span>
-                    <v-chip size="x-small" variant="tonal" class="ml-auto">{{ mega.subCount }}</v-chip>
+                    <div class="ml-auto d-flex align-center ga-1">
+                        <v-tooltip location="bottom">
+                            <template v-slot:activator="{ props: tp }">
+                                <v-icon
+                                    v-bind="tp"
+                                    size="14"
+                                    class="permission-icon"
+                                    style="cursor: pointer"
+                                    @click.stop="openPermission({ id: mega.id, name: mega.name, _permLevel: 'mega' })"
+                                >mdi-lock-outline</v-icon>
+                            </template>
+                            <span>{{ $t('permissionDialog.title') || '권한 설정' }}</span>
+                        </v-tooltip>
+                        <v-chip size="x-small" variant="tonal">{{ mega.subCount }}</v-chip>
+                    </div>
                 </div>
 
                 <!-- Domain Level -->
@@ -71,7 +103,21 @@
                             </v-icon>
                             <v-icon size="16" class="mr-2" :color="domain.color || 'grey'">mdi-folder</v-icon>
                             <span class="tree-node-label">{{ domain.name }}</span>
-                            <v-chip size="x-small" variant="tonal" class="ml-auto">{{ domain.subCount }}</v-chip>
+                            <div class="ml-auto d-flex align-center ga-1">
+                                <v-tooltip location="bottom">
+                                    <template v-slot:activator="{ props: tp }">
+                                        <v-icon
+                                            v-bind="tp"
+                                            size="14"
+                                            class="permission-icon"
+                                            style="cursor: pointer"
+                                            @click.stop="openPermission({ id: domain.id, name: domain.name, _permLevel: 'domain' })"
+                                        >mdi-lock-outline</v-icon>
+                                    </template>
+                                    <span>{{ $t('permissionDialog.title') || '권한 설정' }}</span>
+                                </v-tooltip>
+                                <v-chip size="x-small" variant="tonal">{{ domain.subCount }}</v-chip>
+                            </div>
                         </div>
 
                         <!-- Major Process Level -->
@@ -86,6 +132,20 @@
                                     </v-icon>
                                     <v-icon size="16" class="mr-2">mdi-folder-outline</v-icon>
                                     <span class="tree-node-label">{{ major.name }}</span>
+                                    <div class="ml-auto d-flex align-center ga-1">
+                                        <v-tooltip location="bottom">
+                                            <template v-slot:activator="{ props: tp }">
+                                                <v-icon
+                                                    v-bind="tp"
+                                                    size="14"
+                                                    class="permission-icon"
+                                                    style="cursor: pointer"
+                                                    @click.stop="openPermission({ id: major.id, name: major.name, _permLevel: 'major' })"
+                                                >mdi-lock-outline</v-icon>
+                                            </template>
+                                            <span>{{ $t('permissionDialog.title') || '권한 설정' }}</span>
+                                        </v-tooltip>
+                                    </div>
                                 </div>
 
                                 <!-- Sub Process Level (Leaf Nodes) -->
@@ -100,15 +160,25 @@
                                         <v-icon size="14" class="mr-2 ml-1">mdi-file-document-outline</v-icon>
                                         <span class="tree-node-label text-truncate">{{ sub.name }}</span>
                                         <div class="ml-auto d-flex align-center ga-1 flex-shrink-0">
-                                            <v-btn
-                                                icon
-                                                variant="text"
-                                                size="x-small"
-                                                class="permission-btn"
-                                                @click.stop="openPermission(sub)"
-                                            >
-                                                <v-icon size="14">mdi-lock-outline</v-icon>
-                                            </v-btn>
+                                            <!-- Editing lock indicator -->
+                                            <v-tooltip v-if="lockMap.has(sub.id)" location="bottom">
+                                                <template v-slot:activator="{ props: tp }">
+                                                    <v-icon v-bind="tp" size="14" color="warning" class="mr-1">mdi-pencil-lock</v-icon>
+                                                </template>
+                                                <span>{{ lockMap.get(sub.id)?.user_id }} {{ $t('processHierarchy.lockedByOther') || '님이 편집 중' }}</span>
+                                            </v-tooltip>
+                                            <v-tooltip location="bottom">
+                                                <template v-slot:activator="{ props: tp }">
+                                                    <v-icon
+                                                        v-bind="tp"
+                                                        size="14"
+                                                        class="permission-icon"
+                                                        style="cursor: pointer"
+                                                        @click.stop="openPermission({ ...sub, _permLevel: 'sub' })"
+                                                    >mdi-lock-outline</v-icon>
+                                                </template>
+                                                <span>{{ $t('permissionDialog.title') || '권한 설정' }}</span>
+                                            </v-tooltip>
                                             <v-chip
                                                 v-if="getSubVersion(sub.id)"
                                                 size="x-small"
@@ -146,6 +216,9 @@ export default {
         selectedId: { type: String, default: '' },
         hideHeader: { type: Boolean, default: false },
         collapsed: { type: Boolean, default: false },
+        loading: { type: Boolean, default: false },
+        statusLoading: { type: Boolean, default: false },
+        lockMap: { type: Map, default: () => new Map() },
     },
     emits: ['select', 'openPermission'],
     data() {
@@ -340,6 +413,16 @@ export default {
     padding: 4px 0;
 }
 
+.tree-loading {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tree-skeleton-item {
+    border-radius: 10px;
+}
+
 .tree-node {
     display: flex;
     align-items: center;
@@ -384,12 +467,16 @@ export default {
     min-width: 0;
 }
 
-.permission-btn {
+.permission-icon {
     opacity: 0;
     transition: opacity 0.15s;
 }
 
-.tree-node-sub:hover .permission-btn {
+.tree-node:hover .permission-icon {
+    opacity: 0.5;
+}
+
+.tree-node:hover .permission-icon:hover {
     opacity: 1;
 }
 

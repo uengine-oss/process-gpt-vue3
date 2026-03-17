@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, onBeforeMount, onMounted, onBeforeUnmount } from 'vue';
+import { authClaimsState } from '@/utils/authClaims';
 
 const emit = defineEmits(['update-noti-count']);
 import { useCustomizerStore } from '../../../stores/customizer';
@@ -35,7 +36,7 @@ interface SidebarItem {
     isVisible?: boolean;
 }
 
-const isAdmin = localStorage.getItem('isAdmin') === 'true';
+const isAdmin = computed(() => authClaimsState.isAdmin);
 
 const sidebarItems = ref<SidebarItem[]>([
     {
@@ -79,7 +80,7 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'user-admin',
         to: '/admin',
         disable: false,
-        isVisible: isAdmin && !(window as any).$pal // 관리자만 표시, PAL 모드에서는 숨김
+        isVisible: isAdmin.value && !(window as any).$pal // 관리자만 표시, PAL 모드에서는 숨김
     }
     // {
     //     title: 'headerMenu.calendar',

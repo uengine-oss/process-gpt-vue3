@@ -54,7 +54,7 @@ export default {
         status: {
             type: String,
             default: 'draft',
-            validator: (value) => ['draft', 'review', 'published', 'public_review', 'wip', 'sunset'].includes(value)
+            validator: (value) => ['none', 'draft', 'review', 'published', 'public_review', 'wip', 'sunset'].includes(value)
         },
         // 아이콘 표시 여부
         showIcon: {
@@ -101,6 +101,11 @@ export default {
     computed: {
         statusConfig() {
             return {
+                none: {
+                    color: 'grey',
+                    icon: 'mdi-minus',
+                    text: ''
+                },
                 draft: {
                     color: 'grey',
                     icon: 'mdi-pencil-outline',

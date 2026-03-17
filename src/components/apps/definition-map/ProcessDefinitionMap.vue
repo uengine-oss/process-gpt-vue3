@@ -778,6 +778,7 @@ import MainChatInput from '@/components/MainChatInput.vue';
 import ChatModule from '@/components/ChatModule.vue';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import BackendFactory from '@/components/api/BackendFactory';
+import { authClaimsState } from '@/utils/authClaims';
 const backend = BackendFactory.createBackend();
 import { processGptAgent } from '@/constants/processGptAgent';
 
@@ -1143,8 +1144,7 @@ export default {
         me.$try({
             action: async () => {
                 me.userName = localStorage.getItem('userName');
-                const isAdmin = localStorage.getItem('isAdmin');
-                if (isAdmin == 'true') {
+                if (authClaimsState.isAdmin) {
                     me.isAdmin = true;
                 }
                 await me.getProcessMap();
@@ -1172,11 +1172,7 @@ export default {
         });
     },
     mounted() {
-        window.addEventListener('localStorageChange', (event) => {
-            if (event.detail.key === 'isAdmin') {
-                this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
-            }
-        });
+        this.isAdmin = authClaimsState.isAdmin;
 
         // Subscribe to lock table changes for force checkout notifications
         this.subscribeLockChanges();
@@ -1184,6 +1180,9 @@ export default {
         // PAL 전용: 서브프로세스 설정(공통 모듈) 저장 시 정의체계도 저장
         this._onSaveProcessDefinitionMap = () => this.saveProcess();
         this.EventBus.on('saveProcessDefinitionMap', this._onSaveProcessDefinitionMap);
+    },
+    updated() {
+        this.isAdmin = authClaimsState.isAdmin;
     },
     beforeUnmount() {
         // Unsubscribe from lock table changes

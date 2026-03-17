@@ -32,6 +32,7 @@
         "delete": "Delete",
         "edit": "Edit",
         "add": "Add",
+        "loading": "Loading...",
         "reset": "Reset"
     },
     "validation": {
@@ -514,7 +515,7 @@
         "title": "System Definition"
     },
     "organizationChartDefinition": {
-        "title": "Add and Manage Organization Chart",
+        "title": "Organization Chart",
         "cardTitle": "Org Chart Management",
         "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'",
         "addTeam": "Add Team",
@@ -702,7 +703,7 @@
             "exportFailed": "Export failed. Please try again."
             }
         },
-        "newProcess": "+ New Process",
+        "newProcess": "New Process",
         "searchPlaceholder": "Search by name or email",
         "allDomains": "All",
         "noData": "No organization members found",

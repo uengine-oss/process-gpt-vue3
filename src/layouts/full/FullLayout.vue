@@ -81,7 +81,11 @@ const isModelingTab = computed(() => {
                     >
                         <div class="">
                             <div :class="customizer.boxed ? 'maxWidth' : ''">
-                                <RouterView />
+                                <RouterView v-slot="{ Component, route }">
+                                    <transition name="slide-fade" mode="out-in">
+                                        <component :is="Component" :key="route.path" />
+                                    </transition>
+                                </RouterView>
                                 <!-- <v-btn class="customizer-btn" size="large" icon variant="flat" color="primary"
                                 @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
                                 <SettingsIcon />
@@ -129,7 +133,11 @@ const isModelingTab = computed(() => {
                     >
                         <!-- 정의관련 maxWidth -->
                         <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">
-                            <RouterView />
+                            <RouterView v-slot="{ Component, route }">
+                                <transition name="slide-fade" mode="out-in">
+                                    <component :is="Component" :key="route.path" />
+                                </transition>
+                            </RouterView>
                             <!-- <v-btn class="customizer-btn" size="small" icon text variant="flat" color="primary"
                                 @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
                                 <SettingsIcon />
@@ -144,3 +152,18 @@ const isModelingTab = computed(() => {
         </v-app>
     </v-locale-provider>
 </template>
+
+<style scoped>
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+    transition: all 0.25s ease;
+}
+.slide-fade-enter-from {
+    opacity: 0;
+    transform: translateX(30px);
+}
+.slide-fade-leave-to {
+    opacity: 0;
+    transform: translateX(-30px);
+}
+</style>

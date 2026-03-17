@@ -1324,56 +1324,106 @@ export default {
 /* BPMN 버전 비교를 위한 스타일 */
 /* 액티비티(Task, Gateway, Event 등)를 위한 스타일 */
 .bpmn-diff-added .djs-visual > :nth-child(1) {
-    stroke: #2ecc71 !important; /* 초록색 - 추가된 항목 */
-    stroke-width: 3px !important;
+    stroke: #16a34a !important;
+    stroke-width: 4px !important;
+    fill: rgba(34, 197, 94, 0.16) !important;
+    filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.28));
 }
 
 .bpmn-diff-deleted .djs-visual > :nth-child(1) {
-    stroke: #e74c3c !important; /* 빨간색 - 삭제된 항목 */
-    stroke-width: 3px !important;
+    stroke: #dc2626 !important;
+    stroke-width: 4px !important;
+    fill: rgba(239, 68, 68, 0.14) !important;
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.24));
 }
 
 .bpmn-diff-modified .djs-visual > :nth-child(1) {
-    stroke: #f39c12 !important; /* 주황색 - 수정된 항목 */
-    stroke-width: 3px !important;
+    stroke: #f59e0b !important;
+    stroke-width: 4px !important;
+    fill: rgba(245, 158, 11, 0.18) !important;
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.26));
 }
 
-/* 연결선(Sequence Flow)만을 위한 스타일 */
+/* 변경된 노드 라벨도 같이 강조 */
+.bpmn-diff-added .djs-label,
+.bpmn-diff-added .djs-outline {
+    stroke: #16a34a !important;
+    fill: #166534 !important;
+}
+
+.bpmn-diff-deleted .djs-label,
+.bpmn-diff-deleted .djs-outline {
+    stroke: #dc2626 !important;
+    fill: #991b1b !important;
+}
+
+.bpmn-diff-modified .djs-label,
+.bpmn-diff-modified .djs-outline {
+    stroke: #f59e0b !important;
+    fill: #b45309 !important;
+}
+
+/* 연결선(Sequence Flow 포함 connection 전반) 스타일 */
+.djs-connection.bpmn-diff-added .djs-visual > path,
+.djs-connection.bpmn-diff-added .djs-visual path {
+    stroke: #16a34a !important;
+    stroke-width: 4px !important;
+    filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.45));
+}
+
+.djs-connection.bpmn-diff-deleted .djs-visual > path,
+.djs-connection.bpmn-diff-deleted .djs-visual path {
+    stroke: #dc2626 !important;
+    stroke-width: 4px !important;
+    filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.4));
+}
+
+.djs-connection.bpmn-diff-modified .djs-visual > path,
+.djs-connection.bpmn-diff-modified .djs-visual path {
+    stroke: #f59e0b !important;
+    stroke-width: 4px !important;
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.42));
+}
+
+/* 기존 Flow_* / SequenceFlow_* ID 케이스도 보강 */
+[data-element-id*='Flow_'].bpmn-diff-added .djs-visual > path,
 [data-element-id*='SequenceFlow'].bpmn-diff-added .djs-visual > path {
-    stroke: #2ecc71 !important; /* 초록색 - 추가된 연결선 */
-    stroke-width: 3px !important;
+    stroke: #16a34a !important;
+    stroke-width: 4px !important;
 }
 
+[data-element-id*='Flow_'].bpmn-diff-deleted .djs-visual > path,
 [data-element-id*='SequenceFlow'].bpmn-diff-deleted .djs-visual > path {
-    stroke: #e74c3c !important; /* 빨간색 - 삭제된 연결선 */
-    stroke-width: 3px !important;
+    stroke: #dc2626 !important;
+    stroke-width: 4px !important;
 }
 
+[data-element-id*='Flow_'].bpmn-diff-modified .djs-visual > path,
 [data-element-id*='SequenceFlow'].bpmn-diff-modified .djs-visual > path {
-    stroke: #f39c12 !important; /* 주황색 - 수정된 연결선 */
-    stroke-width: 3px !important;
+    stroke: #f59e0b !important;
+    stroke-width: 4px !important;
 }
 
-/* 연결선의 화살표 마커 - 추가/삭제만 */
-[data-element-id*='SequenceFlow'].bpmn-diff-added .djs-visual > path[marker-end] {
-    stroke: #2ecc71 !important;
-    stroke-width: 3px !important;
-}
-
-[data-element-id*='SequenceFlow'].bpmn-diff-deleted .djs-visual > path[marker-end] {
-    stroke: #e74c3c !important;
-    stroke-width: 3px !important;
-}
-
-/* 화살표 마커 자체에 대한 스타일 */
+/* 화살표 마커 자체도 동일한 색으로 */
+.djs-connection.bpmn-diff-added .djs-visual marker path,
+[data-element-id*='Flow_'].bpmn-diff-added .djs-visual marker path,
 [data-element-id*='SequenceFlow'].bpmn-diff-added .djs-visual marker path {
-    fill: #2ecc71 !important;
-    stroke: #2ecc71 !important;
+    fill: #16a34a !important;
+    stroke: #16a34a !important;
 }
 
+.djs-connection.bpmn-diff-deleted .djs-visual marker path,
+[data-element-id*='Flow_'].bpmn-diff-deleted .djs-visual marker path,
 [data-element-id*='SequenceFlow'].bpmn-diff-deleted .djs-visual marker path {
-    fill: #e74c3c !important;
-    stroke: #e74c3c !important;
+    fill: #dc2626 !important;
+    stroke: #dc2626 !important;
+}
+
+.djs-connection.bpmn-diff-modified .djs-visual marker path,
+[data-element-id*='Flow_'].bpmn-diff-modified .djs-visual marker path,
+[data-element-id*='SequenceFlow'].bpmn-diff-modified .djs-visual marker path {
+    fill: #f59e0b !important;
+    stroke: #f59e0b !important;
 }
 
 /* SVG 마커 정의에 대한 글로벌 스타일 */
@@ -1383,14 +1433,20 @@ svg defs marker[id*='sequenceflow-end'] path {
 
 .bpmn-diff-added ~ svg defs marker[id*='sequenceflow-end'] path,
 svg .bpmn-diff-added marker[id*='sequenceflow-end'] path {
-    fill: #2ecc71 !important;
-    stroke: #2ecc71 !important;
+    fill: #16a34a !important;
+    stroke: #16a34a !important;
 }
 
 .bpmn-diff-deleted ~ svg defs marker[id*='sequenceflow-end'] path,
 svg .bpmn-diff-deleted marker[id*='sequenceflow-end'] path {
-    fill: #e74c3c !important;
-    stroke: #e74c3c !important;
+    fill: #dc2626 !important;
+    stroke: #dc2626 !important;
+}
+
+.bpmn-diff-modified ~ svg defs marker[id*='sequenceflow-end'] path,
+svg .bpmn-diff-modified marker[id*='sequenceflow-end'] path {
+    fill: #f59e0b !important;
+    stroke: #f59e0b !important;
 }
 
 .view-mode .djs-palette {

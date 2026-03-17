@@ -409,7 +409,7 @@ const allRoutes = [
     },
     {
         name: 'Process Hierarchy',
-        path: '/process-hierarchy',
+        path: '/process-hierarchy/:id?',
         component: () => import('@/views/process-hierarchy/ProcessHierarchy.vue')
     },
     {
@@ -803,7 +803,7 @@ const MainRoutes = {
             },
             {
                 name: 'Process Hierarchy',
-                path: '/process-hierarchy',
+                path: '/process-hierarchy/:id?',
                 component: () => import('@/views/process-hierarchy/ProcessHierarchy.vue')
             },
             {
@@ -845,13 +845,71 @@ const MainRoutes = {
                 name: 'My Inbox',
                 path: '/my-inbox',
                 component: () => import('@/views/review-board/MyInbox.vue')
-            },
-            {
-                name: 'Admin Console',
-                path: '/admin-console',
-                component: () => import('@/views/admin/AdminConsole.vue')
             }
         ] : [])
+        ,
+        {
+            name: 'Admin Console',
+            path: '/admin-console',
+            component: () => import('@/views/admin/AdminConsoleLayout.vue'),
+            redirect: '/admin-console/property-schemas',
+            children: [
+                {
+                    name: 'Admin Property Schemas',
+                    path: 'property-schemas',
+                    component: () => import('@/views/admin/tabs/PropertySchemaStudio.vue'),
+                    meta: {
+                        adminTitle: 'adminConsole.propertySchema.title',
+                        adminDescription: 'adminConsole.tabSchemas'
+                    }
+                },
+                {
+                    name: 'Admin Data Freeze',
+                    path: 'data-freeze',
+                    component: () => import('@/views/admin/tabs/DataFreezeManager.vue'),
+                    meta: {
+                        adminTitle: 'adminConsole.tabFreeze',
+                        adminDescription: 'adminConsole.description'
+                    }
+                },
+                {
+                    name: 'Admin Recycle Bin',
+                    path: 'recycle-bin',
+                    component: () => import('@/views/admin/tabs/RecycleBin.vue'),
+                    meta: {
+                        adminTitle: 'adminConsole.tabRecycle',
+                        adminDescription: 'adminConsole.description'
+                    }
+                },
+                {
+                    name: 'Admin System Operations',
+                    path: 'system-operations',
+                    component: () => import('@/views/admin/tabs/SystemOperations.vue'),
+                    meta: {
+                        adminTitle: 'adminConsole.tabSysOps',
+                        adminDescription: 'adminConsole.description'
+                    }
+                },
+                {
+                    name: 'Admin KPI Targets',
+                    path: 'kpi-targets',
+                    component: () => import('@/views/admin/tabs/KpiTargetManager.vue'),
+                    meta: {
+                        adminTitle: 'adminConsole.tabKpi',
+                        adminDescription: 'adminConsole.description'
+                    }
+                },
+                {
+                    name: 'Admin Audit Trail',
+                    path: 'audit-trail',
+                    component: () => import('@/views/admin/tabs/AuditTrail.vue'),
+                    meta: {
+                        adminTitle: 'adminConsole.tabAudit',
+                        adminDescription: 'adminConsole.description'
+                    }
+                }
+            ]
+        }
     ]
 };
 

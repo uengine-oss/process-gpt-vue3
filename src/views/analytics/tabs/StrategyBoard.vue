@@ -143,13 +143,13 @@ const filteredDomainProgress = computed(() => {
 const pipeline = computed(() => kpiStore.pipeline)
 const draftToReviewRate = computed(() => {
     if (!pipeline.value) return 0
-    const total = pipeline.value.draft_count + pipeline.value.review_count + pipeline.value.published_count
+    const total = pipeline.value.draft_count + pipeline.value.in_review_count + pipeline.value.published_count
     if (total === 0) return 0
-    return Math.round(((pipeline.value.review_count + pipeline.value.published_count) / total) * 100)
+    return Math.round(((pipeline.value.in_review_count + pipeline.value.published_count) / total) * 100)
 })
 const reviewToPublishedRate = computed(() => {
     if (!pipeline.value) return 0
-    const reviewTotal = pipeline.value.review_count + pipeline.value.published_count
+    const reviewTotal = pipeline.value.in_review_count + pipeline.value.published_count
     if (reviewTotal === 0) return 0
     return Math.round((pipeline.value.published_count / reviewTotal) * 100)
 })
@@ -220,7 +220,7 @@ function goToReviewBoard(procId: string) {
 function getDomainBarWidth(domain: any, type: string) {
     const target = domain.target || domain.total_processes || 1
     const val = type === 'published' ? domain.published_count
-        : type === 'review' ? domain.review_count
+        : type === 'review' ? domain.in_review_count
         : domain.draft_count
     return Math.min(100, Math.round((val / target) * 100))
 }
@@ -325,7 +325,7 @@ watch(() => [kpiStore.pipeline, kpiStore.weeklyVelocity, kpiStore.domainProgress
                                         :style="{ width: getDomainBarWidth(domain, 'review') + '%' }"
                                         class="bar-segment bar-review"
                                     >
-                                        <span v-if="getDomainBarWidth(domain, 'review') > 10" class="bar-label">{{ domain.review_count }}</span>
+                                        <span v-if="getDomainBarWidth(domain, 'review') > 10" class="bar-label">{{ domain.in_review_count }}</span>
                                     </div>
                                     <div
                                         :style="{ width: getDomainBarWidth(domain, 'draft') + '%' }"
@@ -335,7 +335,7 @@ watch(() => [kpiStore.pipeline, kpiStore.weeklyVelocity, kpiStore.domainProgress
                                     </div>
                                 </div>
                                 <!-- In-Review expandable -->
-                                <div v-if="domain.review_count > 0" class="mt-1">
+                                <div v-if="domain.in_review_count > 0" class="mt-1">
                                     <v-btn
                                         variant="text"
                                         density="compact"
@@ -348,7 +348,7 @@ watch(() => [kpiStore.pipeline, kpiStore.weeklyVelocity, kpiStore.domainProgress
                                         <v-icon start size="14">
                                             {{ expandedDomains.includes(domain.domain_id) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
                                         </v-icon>
-                                        INREVIEW {{ t('analysisDashboard.detailList') }} ({{ domain.review_count }}{{ t('analysisDashboard.countUnit') }})
+                                        INREVIEW {{ t('analysisDashboard.detailList') }} ({{ domain.in_review_count }}{{ t('analysisDashboard.countUnit') }})
                                     </v-btn>
                                     <v-expand-transition>
                                         <div v-if="expandedDomains.includes(domain.domain_id)" class="review-detail-table">
@@ -428,7 +428,7 @@ watch(() => [kpiStore.pipeline, kpiStore.weeklyVelocity, kpiStore.domainProgress
                                 >
                                     <template #default>
                                         <span class="text-caption font-weight-medium" style="color: rgba(255,255,255,0.95)">
-                                            {{ (pipeline.review_count || 0) + (pipeline.published_count || 0) }}{{ t('analysisDashboard.countUnit') }}
+                                            {{ (pipeline.in_review_count || 0) + (pipeline.published_count || 0) }}{{ t('analysisDashboard.countUnit') }}
                                         </span>
                                     </template>
                                 </v-progress-linear>
@@ -459,7 +459,7 @@ watch(() => [kpiStore.pipeline, kpiStore.weeklyVelocity, kpiStore.domainProgress
                                     <v-icon start size="12">mdi-circle</v-icon>Draft: {{ pipeline.draft_count }}
                                 </v-chip>
                                 <v-chip size="small" variant="tonal" color="warning" label>
-                                    <v-icon start size="12">mdi-circle</v-icon>Review: {{ pipeline.review_count }}
+                                    <v-icon start size="12">mdi-circle</v-icon>Review: {{ pipeline.in_review_count }}
                                 </v-chip>
                                 <v-chip size="small" variant="tonal" color="success" label>
                                     <v-icon start size="12">mdi-circle</v-icon>Published: {{ pipeline.published_count }}

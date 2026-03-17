@@ -391,34 +391,52 @@ interface AiSuggestion {
 const aiSuggestion = ref<AiSuggestion | null>(null);
 const suggestionTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
-/** 폴더는 제외하고, 하위까지 재귀 탐색해 .bpmn 파일만 수집 (id 기준 중복 제거) */
-async function collectBpmnDefinitionsOnly(basePath = ''): Promise<{ id: string; name: string }[]> {
-    const opts = basePath === '' ? { match: { isdeleted: false } } : undefined;
-    const list = await (backend as any).listDefinition(basePath, opts);
-    const result: { id: string; name: string }[] = [];
-    for (const item of list || []) {
-        if (item.directory) {
-            const subPath = item.path || item.name || item.id;
-            if (subPath) {
-                const children = await collectBpmnDefinitionsOnly(subPath);
-                result.push(...children);
-            }
-        } else {
-            const path = String(item.path || item.name || item.id || '');
-            if (path.toLowerCase().endsWith('.bpmn')) {
-                const id = (item.id || path.replace(/\.bpmn$/i, '')).toString().replace(/\.bpmn$/i, '');
-                const name = item.name || id;
-                result.push({ id, name });
-            }
+/** 프로세스 목록 조회 (tenant_id 필터 포함) */
+async function collectBpmnDefinitionsOnly(): Promise<{ id: string; name: string }[]> {
+    try {
+        const list = await (backend as any).listDefinitionStatusLite('');
+        return (list || []).map((item: any) => ({
+            id: String(item.id || ''),
+            name: item.name || item.id || ''
+        }));
+    } catch (e) {
+        console.error('Failed to collect BPMN definitions:', e);
+        return [];
+    }
+}
+
+/** 조직도 트리에서 사용자(isTeam이 아닌) 노드를 평탄화하여 추출 */
+function extractUsersFromOrgTree(node: any, teamName = ''): { email: string; label: string }[] {
+    if (!node) return [];
+    const isTeam = node.data?.isTeam;
+    const currentTeam = isTeam ? (node.data?.name || node.id) : teamName;
+    const users: { email: string; label: string }[] = [];
+    if (!isTeam && node.data) {
+        const email = node.data.email || node.data.id || node.id;
+        const name = node.data.name || node.id;
+        users.push({ email, label: currentTeam ? `${name} (${currentTeam})` : name });
+    }
+    if (node.children?.length) {
+        for (const child of node.children) {
+            users.push(...extractUsersFromOrgTree(child, currentTeam));
         }
     }
-    // 동일 id 중복 제거 (같은 프로세스가 여러 경로로 나올 수 있음)
-    const seen = new Set<string>();
-    return result.filter((p) => {
-        if (seen.has(p.id)) return false;
-        seen.add(p.id);
-        return true;
-    });
+    return users;
+}
+
+/** 조직도에서 사용자 목록 불러오기 */
+async function loadUsersFromOrgChart(): Promise<{ email: string; label: string }[]> {
+    try {
+        const orgData = await backend.getData('configuration', { match: { key: 'organization' } });
+        if (!orgData?.value) return [];
+        const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;
+        const chart = orgValue.chart || orgValue;
+        if (!chart) return [];
+        return extractUsersFromOrgTree(chart);
+    } catch (e) {
+        console.error('Failed to load org chart users:', e);
+        return [];
+    }
 }
 
 // Load existing processes and users when dialog opens
@@ -428,16 +446,11 @@ watch(
         if (open) {
             try {
                 const [bpmnDefs, users] = await Promise.all([
-                    collectBpmnDefinitionsOnly(''),
-                    backend.listUsers ? backend.listUsers() : Promise.resolve([])
+                    collectBpmnDefinitionsOnly(),
+                    loadUsersFromOrgChart()
                 ]);
                 existingProcesses.value = bpmnDefs;
-                if (users && Array.isArray(users)) {
-                    userOptions.value = users.map((u: any) => ({
-                        email: u.email || u.id,
-                        label: u.username || u.name || u.email || u.id
-                    }));
-                }
+                userOptions.value = users;
             } catch (e) {
                 console.error('Failed to load data:', e);
             }
@@ -659,10 +672,19 @@ async function createProcess() {
         const name = form.value.name.trim();
 
         if (form.value.processMode === 'asis' && form.value.creationType !== 'scratch') {
-            // Clone/Template: duplicate from source
+            // Clone/Template: duplicate an existing local process definition
             const sourceId = form.value.sourceProcessId;
-            const sourceDef = existingProcesses.value.find((p) => p.id === sourceId);
-            const result = await backend.duplicateDefinition({ id: sourceId, name, author_uid: sourceDef?.author_uid }, window.$tenantName);
+            const sourceDef = await backend.getRawDefinition(sourceId);
+            if (!sourceDef?.bpmn) {
+                throw new Error('원본 프로세스 정의를 불러오지 못했습니다.');
+            }
+
+            const result = await backend.duplicateLocalProcess(
+                sourceId,
+                name,
+                sourceDef.bpmn,
+                sourceDef.definition || null
+            );
             newId = result?.newId || result?.id || result;
         } else {
             // Create new process: save empty BPMN definition
@@ -692,7 +714,13 @@ async function createProcess() {
             await backend.putRawDefinition(emptyBpmn, uniqueId, {
                 name,
                 owner: form.value.primaryOwner || undefined,
-                version: '0.0'
+                version: '0.1',
+                version_tag: null,
+                definition: {
+                    processDefinitionId: uniqueId,
+                    data: [],
+                    roles: []
+                }
             });
             newId = uniqueId;
         }
@@ -757,8 +785,9 @@ async function updateProcMap(newId: string, name: string) {
                 }
 
                 majorList[majorIndex].sub_proc_list.push({
-                    id: pid || newId, // PID is the hierarchy ID; fallback to UID
-                    uid: newId, // UID links to the actual proc_def record
+                    id: newId,
+                    proc_def_id: newId,
+                    pid: pid || '',
                     name,
                     type: form.value.processMode === 'tobe' ? 'tobe' : 'asis',
                     ...(form.value.primaryOwner ? { owner: form.value.primaryOwner } : {}),

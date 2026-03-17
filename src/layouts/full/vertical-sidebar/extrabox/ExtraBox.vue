@@ -52,6 +52,7 @@ import { defineComponent } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import { authClaimsState } from '@/utils/authClaims';
 const backend = BackendFactory.createBackend();
 
 export default defineComponent({
@@ -74,7 +75,7 @@ export default defineComponent({
             return window.$gs;
         },
         userRole() {
-            return this.isAdmin ? 'Admin' : '';
+            return authClaimsState.isAdmin ? 'Admin' : '';
         },
         availableCredit() {
             if (this.credit == undefined) return '조회중...';
@@ -86,18 +87,15 @@ export default defineComponent({
     async mounted() {
         this.name = localStorage.getItem('userName') || '';
         this.picture = localStorage.getItem('picture') || '';
-        this.isAdmin = localStorage.getItem('isAdmin') === 'true';
+        this.isAdmin = authClaimsState.isAdmin;
         this.loadCredit();
-
-        window.addEventListener('localStorageChange', (event) => {
-            if (event.detail.key === 'isAdmin') {
-                this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
-            }
-        });
 
         await backend.watchCreditUsage((callback) => {
             this.loadCredit();
         });
+    },
+    updated() {
+        this.isAdmin = authClaimsState.isAdmin;
     },
     methods: {
         logout() {

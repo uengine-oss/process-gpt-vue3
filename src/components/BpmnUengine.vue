@@ -965,6 +965,16 @@ export default {
 
                 var canvas = self.bpmnViewer.get('canvas');
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
+
+                // Open minimap by default
+                try {
+                    var minimap = self.bpmnViewer.get('minimap');
+                    if (minimap && typeof minimap.open === 'function') {
+                        minimap.open();
+                    }
+                } catch (e) {
+                    // minimap not available
+                }
                 var allPools = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
 
                 // 안전한 zoom 함수 - Pool을 화면 중앙에 정렬
@@ -1793,11 +1803,28 @@ export default {
             const container = this.$refs.container;
             if (!container) return;
 
+            const elementRegistry = this.bpmnViewer?.get('elementRegistry');
+
             // Handle internal labels (inside tasks, events, etc.)
             const internalTexts = container.querySelectorAll('.djs-element .djs-visual text');
             internalTexts.forEach((textEl) => {
                 const parentGroup = textEl.closest('.djs-element');
                 if (!parentGroup) return;
+
+                // Check if this is a Lane or Participant (vertical text) — skip repositioning
+                const dataId = parentGroup.getAttribute('data-element-id');
+                if (elementRegistry && dataId) {
+                    const element = elementRegistry.get(dataId);
+                    if (element && (element.type === 'bpmn:Lane' || element.type === 'bpmn:Participant')) {
+                        // For lanes/participants: only update font size, preserve existing transform/position
+                        textEl.style.fontSize = this.labelFontSize + 'px';
+                        const tspans = textEl.querySelectorAll('tspan');
+                        tspans.forEach((tspan) => {
+                            tspan.style.fontSize = this.labelFontSize + 'px';
+                        });
+                        return;
+                    }
+                }
 
                 // Get the shape dimensions from the rect/polygon in the visual
                 const rect = parentGroup.querySelector('.djs-visual rect');
@@ -2424,10 +2451,10 @@ export default {
     pointer-events: auto !important;
 }
 
-/* Font size controls */
+/* Font size controls — above BPMN.io watermark (≈28px tall) */
 .font-size-controls {
     position: absolute;
-    bottom: 16px;
+    bottom: 44px;
     right: 16px;
     display: flex;
     align-items: center;
@@ -2469,12 +2496,12 @@ export default {
     fill: #000000 !important;
 }
 
-/* Minimap styling - positioned above BPMN.io logo */
+/* Minimap styling - positioned at bottom-left */
 .djs-minimap {
-    bottom: 40px !important;
+    bottom: 16px !important;
     top: auto !important;
-    right: 10px !important;
-    left: auto !important;
+    left: 16px !important;
+    right: auto !important;
 }
 
 .djs-minimap .toggle {
@@ -2511,5 +2538,11 @@ export default {
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     overflow: hidden;
+}
+
+/* When minimap is open, place toggle at left side */
+.djs-minimap.open .toggle {
+    right: auto;
+    left: 0;
 }
 </style>

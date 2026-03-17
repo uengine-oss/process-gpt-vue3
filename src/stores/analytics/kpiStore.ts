@@ -11,7 +11,7 @@ const backend = BackendFactory.createBackend() as any;
 export interface KpiSummary {
     total_processes: number;
     draft_count: number;
-    review_count: number;
+    in_review_count: number;
     published_count: number;
     rejected_count: number;
 }
@@ -23,7 +23,7 @@ export interface DomainProgress {
     total_processes: number;
     published_count: number;
     draft_count: number;
-    review_count: number;
+    in_review_count: number;
     target?: number;
 }
 

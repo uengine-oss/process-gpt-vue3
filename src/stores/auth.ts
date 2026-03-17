@@ -27,7 +27,7 @@ export const useAuthStore = defineStore({
                 const result: any = await storage?.signInWithKeycloak();
 
                 if (!result.error) {
-                    router.push('/definition-map');
+                    router.push('/process-architecture');
                 } else {
                     await (window as any).$app_.try({
                         action: () => Promise.reject(new Error()),
@@ -55,7 +55,7 @@ export const useAuthStore = defineStore({
                     } else {
                         const tenantId = window.$tenantName;
                         await backend.setTenant(tenantId);
-                        router.push(window.$isTenantServer ? '/tenant/manage' : '/definition-map');
+                        router.push(window.$isTenantServer ? '/tenant/manage' : '/process-architecture');
                     }
                 }
             } catch (e) {
@@ -103,7 +103,7 @@ export const useAuthStore = defineStore({
                                 action: () => Promise.resolve(),
                                 successMsg: proxy.$t('auth.registrationSuccess')
                             });
-                            router.push('/definition-map');
+                            router.push('/process-architecture');
                         }
                     }
                 }

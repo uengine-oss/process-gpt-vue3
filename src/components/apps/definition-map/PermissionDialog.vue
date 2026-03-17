@@ -315,6 +315,12 @@ export default {
     async mounted() {
         await this.loadData();
         this.processHierarchy = this.findProcessHierarchy();
+
+        // Auto-set permissionLevel based on the level the dialog was opened from
+        const level = this.procDef?._permLevel;
+        if (level && ['domain', 'mega', 'major', 'sub'].includes(level)) {
+            this.permissionLevel = level;
+        }
     },
     methods: {
         getInitials(name) {
@@ -397,6 +403,26 @@ export default {
             const result = { sub: this.procDef, major: null, mega: null, domain: null };
             if (!this.processMap?.mega_proc_list) return result;
 
+            // Check if opened at domain level
+            if (this.metricsMap?.domains) {
+                const domainMatch = this.metricsMap.domains.find((d) => d.id === this.procDef.id || d.name === this.procDef.id);
+                if (domainMatch) {
+                    result.domain = domainMatch.name || domainMatch.id;
+                    // Find first mega/major in this domain to populate hierarchy
+                    for (const mega of this.processMap.mega_proc_list) {
+                        for (const major of mega.major_proc_list || []) {
+                            const d = major.domain || major.domain_id;
+                            if (d === domainMatch.name || d === domainMatch.id) {
+                                result.mega = mega;
+                                result.major = major;
+                                return result;
+                            }
+                        }
+                    }
+                    return result;
+                }
+            }
+
             for (const mega of this.processMap.mega_proc_list) {
                 if (!mega.major_proc_list) continue;
 
@@ -422,6 +448,13 @@ export default {
 
                 if (mega.id === this.procDef.id) {
                     result.mega = mega;
+                    // Also resolve domain from first major
+                    for (const major of mega.major_proc_list || []) {
+                        if (major.domain) {
+                            result.domain = major.domain;
+                            break;
+                        }
+                    }
                     return result;
                 }
             }

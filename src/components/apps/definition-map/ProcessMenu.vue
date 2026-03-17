@@ -57,6 +57,7 @@
 
 <script>
 import ProcessDialog from './ProcessDialog.vue';
+import { authClaimsState } from '@/utils/authClaims';
 
 export default {
     components: {
@@ -91,7 +92,7 @@ export default {
             return typeof window !== 'undefined' && window.$pal;
         },
         isAdmin() {
-            return localStorage.getItem('isAdmin') === 'true';
+            return authClaimsState.isAdmin;
         },
         canSetPermission() {
             // PAL 모드이거나 관리자 권한이 있으면 표시

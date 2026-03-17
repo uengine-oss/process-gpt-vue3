@@ -139,7 +139,10 @@
                                                                     <div class="node-name">{{ sub.name }}</div>
                                                                     <div class="node-meta d-flex align-center justify-center ga-1 mt-1">
                                                                         <ProgressBadge
-                                                                            v-if="processStatuses.get(sub.id)"
+                                                                            v-if="
+                                                                                processStatuses.get(sub.id)?.status &&
+                                                                                processStatuses.get(sub.id)?.status !== 'none'
+                                                                            "
                                                                             type="status"
                                                                             :status="processStatuses.get(sub.id).status"
                                                                             size="x-small"
@@ -234,7 +237,10 @@
                                                             <div class="node-name">{{ sub.name }}</div>
                                                             <div class="node-meta d-flex align-center justify-center ga-1 mt-1">
                                                                 <ProgressBadge
-                                                                    v-if="processStatuses.get(sub.id)"
+                                                                    v-if="
+                                                                        processStatuses.get(sub.id)?.status &&
+                                                                        processStatuses.get(sub.id)?.status !== 'none'
+                                                                    "
                                                                     type="status"
                                                                     :status="processStatuses.get(sub.id).status"
                                                                     size="x-small"

@@ -2,6 +2,11 @@ import { assign } from 'min-dash';
 import ReplaceMenuProvider from 'bpmn-js/lib/features/popup-menu/ReplaceMenuProvider';
 import { i18n } from '@/main';
 
+function getTranslatedText(key, fallback) {
+    const translated = i18n.global.t(`CustomReplaceElement.${key}`);
+    return translated && translated !== `CustomReplaceElement.${key}` ? translated : fallback;
+}
+
 export default class CustomReplaceMenuProvider extends ReplaceMenuProvider {
     constructor(bpmnFactory, popupMenu, modeling, moddle, bpmnReplace, rules, translate, moddleCopy) {
         super(bpmnFactory, popupMenu, modeling, moddle, bpmnReplace, rules, translate, moddleCopy);
@@ -19,8 +24,7 @@ export default class CustomReplaceMenuProvider extends ReplaceMenuProvider {
         const entries = ReplaceMenuProvider.prototype._createEntries.call(this, target, replaceOptions);
         Object.keys(entries).forEach((key) => {
             if (entries[key].label) {
-                const translationKey = `CustomReplaceElement.${key}`;
-                entries[key].label = i18n.global.t(translationKey);
+                entries[key].label = getTranslatedText(key, entries[key].label);
             }
         });
         return entries;
@@ -30,8 +34,7 @@ export default class CustomReplaceMenuProvider extends ReplaceMenuProvider {
         const headerEntries = ReplaceMenuProvider.prototype.getPopupMenuHeaderEntries.call(this, target);
         Object.keys(headerEntries).forEach((key) => {
             if (headerEntries[key].title) {
-                const translationKey = `CustomReplaceElement.${key}`;
-                headerEntries[key].title = i18n.global.t(translationKey);
+                headerEntries[key].title = getTranslatedText(key, headerEntries[key].title);
             }
         });
         return headerEntries;

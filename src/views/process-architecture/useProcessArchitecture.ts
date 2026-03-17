@@ -6,7 +6,7 @@ export { generateProcessId, collectAllProcessIds, isPidInUse } from './processId
 export type ViewMode = 'card' | 'matrix' | 'tree' | 'hierarchy';
 
 export interface ProcessStatus {
-    status: 'draft' | 'review' | 'published' | 'public_review' | 'wip' | 'sunset';
+    status: 'none' | 'draft' | 'review' | 'published' | 'public_review' | 'wip' | 'sunset';
     version?: string;
     dDay?: number;
     reviewEndDate?: string;
@@ -117,12 +117,13 @@ export function useProcessArchitecture() {
 
     async function loadProcessStatuses() {
         try {
-            const defs = await backend.listDefinition('', { match: { isdeleted: false } });
+            const defs = await backend.listDefinitionStatusLite('', { match: { isdeleted: false } });
             if (!defs) return;
             allProcDefs.value = defs;
 
             // proc_def_approval_state 테이블에서 각 프로세스의 최신 승인 상태를 일괄 조회
             const approvalStateMap = new Map<string, any>();
+            const lockSet = new Set<string>();
             const supabase = (window as any).$supabase;
             if (supabase) {
                 try {
@@ -143,6 +144,16 @@ export function useProcessArchitecture() {
                 } catch (e) {
                     console.warn('Failed to load approval states:', e);
                 }
+                try {
+                    const { data: locks } = await supabase.from('lock').select('id').eq('tenant_id', (window as any).$tenantName);
+                    if (locks) {
+                        for (const row of locks) {
+                            if (row?.id) lockSet.add(row.id);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to load locks:', e);
+                }
             }
 
             // proc_def 테이블의 approval_state 컬럼도 체크 (WIP 등 직접 설정된 상태)
@@ -151,7 +162,7 @@ export function useProcessArchitecture() {
             today.setHours(0, 0, 0, 0);
 
             for (const def of defs) {
-                let status: 'draft' | 'review' | 'published' | 'public_review' | 'wip' | 'sunset' = 'draft';
+                let status: 'none' | 'draft' | 'review' | 'published' | 'public_review' | 'wip' | 'sunset' = 'none';
 
                 // 1) proc_def_approval_state 테이블의 최신 상태
                 const approval = approvalStateMap.get(def.id);
@@ -173,6 +184,8 @@ export function useProcessArchitecture() {
                     status = 'published';
                 } else if (def.version_tag === 'major' || def.version_tag === 'published') {
                     status = 'published';
+                } else if (lockSet.has(def.id)) {
+                    status = 'draft';
                 }
 
                 let dDay: number | undefined;
@@ -238,6 +251,35 @@ export function useProcessArchitecture() {
         return list;
     });
 
+    function buildDomainFilterSet(filterValues: string[]): Set<string> {
+        const filterSet = new Set<string>();
+
+        for (const value of filterValues) {
+            if (!value) continue;
+
+            filterSet.add(value);
+
+            const matchedDomain = domains.value.find((domain: any) => domain.name === value || domain.id === value);
+            if (!matchedDomain) continue;
+
+            if (matchedDomain.name) filterSet.add(matchedDomain.name);
+            if (matchedDomain.id) filterSet.add(matchedDomain.id);
+        }
+
+        return filterSet;
+    }
+
+    function matchesDomainFilter(domainValue: string | null | undefined, filterSet: Set<string>): boolean {
+        if (filterSet.size === 0) return true;
+        if (!domainValue) return false;
+        if (filterSet.has(domainValue)) return true;
+
+        const matchedDomain = domains.value.find((domain: any) => domain.name === domainValue || domain.id === domainValue);
+        if (!matchedDomain) return false;
+
+        return filterSet.has(matchedDomain.name) || filterSet.has(matchedDomain.id);
+    }
+
     // Compute the set of process IDs that match My Processes filter (OR logic)
     const myProcessIds = computed((): Set<string> | null => {
         const f = myProcessFilter.value;
@@ -295,7 +337,7 @@ export function useProcessArchitecture() {
         // Status filter
         if (af.statuses.length > 0) {
             const ps = processStatuses.value.get(sub.id);
-            if (!ps || !af.statuses.includes(ps.status)) return false;
+            if (!ps || ps.status === 'none' || !af.statuses.includes(ps.status)) return false;
         }
 
         // Date range filter (against sub.updated_at or sub.created_at)
@@ -368,8 +410,10 @@ export function useProcessArchitecture() {
         if (!map || !map.mega_proc_list) return { mega_proc_list: [] };
 
         const query = debouncedSearchQuery.value.toLowerCase().trim();
-        const domain = selectedDomain.value;
-        const multiDomains = selectedDomains.value;
+        const domainFilterSet = buildDomainFilterSet([
+            ...(selectedDomain.value ? [selectedDomain.value] : []),
+            ...selectedDomains.value
+        ]);
         const myIds = myProcessIds.value;
         const needFeedback = quickFilterNeedFeedback.value;
         const wil = quickFilterWIL.value;
@@ -385,7 +429,7 @@ export function useProcessArchitecture() {
             af.leadTimeRange[1] !== 365 ||
             af.systems.length > 0;
 
-        const hasFilter = query || domain || multiDomains.length > 0 || myIds || needFeedback || wil || hasAdvanced;
+        const hasFilter = query || domainFilterSet.size > 0 || myIds || needFeedback || wil || hasAdvanced;
         if (!hasFilter) return map;
 
         const filtered = {
@@ -394,15 +438,9 @@ export function useProcessArchitecture() {
                 .map((mega: any) => {
                     const filteredMajors = (mega.major_proc_list || [])
                         .map((major: any) => {
-                            // Single domain filter (legacy support)
-                            if (domain) {
-                                const majorDomain = major.domain || major.domain_id;
-                                if (majorDomain && majorDomain !== domain) return null;
-                            }
-                            // Multi-select domain filter
-                            if (multiDomains.length > 0) {
+                            if (domainFilterSet.size > 0) {
                                 const majorDomain = major.domain || major.domain_id || '';
-                                if (!multiDomains.includes(majorDomain)) return null;
+                                if (!matchesDomainFilter(majorDomain, domainFilterSet)) return null;
                             }
 
                             const filteredSubs = (major.sub_proc_list || []).filter((sub: any) => {
@@ -443,18 +481,23 @@ export function useProcessArchitecture() {
         const mm = metricsMap.value;
         if (!mm) return { domains: [], mega_processes: [], processes: [] };
 
-        const domain = selectedDomain.value;
         const query = debouncedSearchQuery.value.toLowerCase().trim();
+        const domainFilterSet = buildDomainFilterSet([
+            ...(selectedDomain.value ? [selectedDomain.value] : []),
+            ...selectedDomains.value
+        ]);
 
         let filteredDomains = mm.domains || [];
+        let filteredMegaProcesses = mm.mega_processes || [];
         let filteredProcesses = mm.processes || [];
 
-        if (domain) {
-            const domainObj = filteredDomains.find((d: any) => d.name === domain);
-            if (domainObj) {
-                filteredDomains = [domainObj];
-                filteredProcesses = filteredProcesses.filter((p: any) => p.domain_id === domainObj.id);
-            }
+        if (domainFilterSet.size > 0) {
+            filteredDomains = filteredDomains.filter(
+                (domain: any) => matchesDomainFilter(domain.name, domainFilterSet) || matchesDomainFilter(domain.id, domainFilterSet)
+            );
+            filteredProcesses = filteredProcesses.filter((process: any) =>
+                matchesDomainFilter(process.domain_id || process.domain_name || process.domain, domainFilterSet)
+            );
         }
 
         if (query) {
@@ -465,9 +508,25 @@ export function useProcessArchitecture() {
             filteredProcesses = filteredProcesses.filter((p: any) => myProcessIds.value!.has(p.id));
         }
 
+        if (domainFilterSet.size > 0 || query || myProcessIds.value) {
+            filteredDomains = filteredDomains.filter((domain: any) =>
+                filteredProcesses.some(
+                    (process: any) =>
+                        process.domain_id === domain.id ||
+                        process.domain_id === domain.name ||
+                        process.domain_name === domain.name ||
+                        process.domain === domain.name
+                )
+            );
+
+            const visibleMegaProcessIds = new Set(filteredProcesses.map((process: any) => process.mega_process_id).filter(Boolean));
+            filteredMegaProcesses = filteredMegaProcesses.filter((megaProcess: any) => visibleMegaProcessIds.has(megaProcess.id));
+        }
+
         return {
             ...mm,
             domains: filteredDomains,
+            mega_processes: filteredMegaProcesses,
             processes: filteredProcesses
         };
     });
@@ -492,7 +551,7 @@ export function useProcessArchitecture() {
         processStatuses.value.forEach((ps) => {
             if (ps.status === 'published') published++;
             else if (ps.status === 'review') review++;
-            else draft++;
+            else if (ps.status === 'draft') draft++;
         });
 
         return { total, subTotal, published, review, draft };

@@ -112,7 +112,7 @@
                                     </v-icon>
                                 </v-btn>
                                 <ProgressBadge
-                                    v-if="getStatus(sub.id)"
+                                    v-if="getStatus(sub.id)?.status && getStatus(sub.id)?.status !== 'none'"
                                     type="status"
                                     :status="getStatus(sub.id).status"
                                     :d-day="getStatus(sub.id).dDay ?? null"

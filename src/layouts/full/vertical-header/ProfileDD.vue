@@ -1,20 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { authClaimsState } from '@/utils/authClaims';
 
 let picture = ref('');
 let name = ref('');
-let isAdmin = ref(false);
+const isAdmin = computed(() => authClaimsState.isAdmin);
 
 onMounted(() => {
-    isAdmin.value = localStorage.getItem('isAdmin') == 'true';
     picture.value = localStorage.getItem('picture');
     name.value = localStorage.getItem('userName');
-
-    window.addEventListener('localStorageChange', (event: any) => {
-        if (event.detail.key === 'isAdmin') {
-            isAdmin.value = event.detail.value === 'true' || event.detail.value === true;
-        }
-    });
 });
 </script>
 

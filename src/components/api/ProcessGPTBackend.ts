@@ -6,6 +6,7 @@ import defaultProcessesData from './defaultProcesses.json';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { runValidation } from '@/utils/bpmnValidationRules';
 import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
+import { getIsAdminClaim } from '@/utils/authClaims';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -74,6 +75,9 @@ class ProcessGPTBackend implements Backend {
 
     async listDefinition(path: string, options?: any) {
         try {
+            const procDefListColumns =
+                'id,name,prod_version,owner,type,deleted_at,tenant_id';
+
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
             if (path == 'form_def') {
                 if (options && options.match) {
@@ -104,25 +108,97 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     options.match.type = 'dmn';
                 }
+                if (!options.key) {
+                    options.key = procDefListColumns;
+                }
                 const procDefs = await storage.list('proc_def', options);
                 return procDefs;
             } else {
                 if (options) {
-                    options.match = { isdeleted: false };
                     if (path) {
-                        options.like = `${path}%`;
+                        options.like = { key: 'id', value: `${path}%` };
                     }
+                } else {
+                    options = {};
+                }
+                if (!options.key) {
+                    options.key = procDefListColumns;
                 }
                 const procDefs = await storage.list('proc_def', options);
-                procDefs.map((item: any) => {
+                // deleted_at이 설정된 프로세스 제외 (소프트 삭제)
+                const activeDefs = procDefs.filter((item: any) => !item.deleted_at);
+                activeDefs.map((item: any) => {
                     item.path = `${item.id}.bpmn`;
                     item.name = item.name || item.id;
                 });
-                return procDefs;
+                return activeDefs;
             }
         } catch (e) {
             //@ts-ignore
             throw new Error(e.message);
+        }
+    }
+
+    async listDefinitionStatusLite(path: string = '', options?: any) {
+        try {
+            const supabase = (window as any).$supabase;
+            if (!supabase) {
+                return await this.listDefinition(path, options);
+            }
+
+            let query = supabase
+                .from('proc_def')
+                .select('id,name,prod_version,owner,type,tenant_id')
+                .eq('tenant_id', (window as any).$tenantName)
+                .is('deleted_at', null)
+                .order('id', { ascending: true });
+
+            if (path) {
+                query = query.ilike('id', `${path}%`);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+
+            return (data || []).map((item: any) => ({
+                ...item,
+                version: item.prod_version || null,
+                path: `${item.id}.bpmn`,
+                name: item.name || item.id
+            }));
+        } catch (e) {
+            console.warn('[ProcessGPTBackend] listDefinitionStatusLite fallback to listDefinition:', e);
+            return await this.listDefinition(path, options);
+        }
+    }
+
+    async getDefinitionDetailLite(defId: string) {
+        try {
+            const supabase = (window as any).$supabase;
+            if (!supabase || !defId) {
+                return null;
+            }
+
+            const { data, error } = await supabase
+                .from('proc_def')
+                .select('id,name,bpmn,definition,prod_version,owner,type,tenant_id')
+                .eq('tenant_id', (window as any).$tenantName)
+                .eq('id', defId)
+                .is('deleted_at', null)
+                .maybeSingle();
+
+            if (error) throw error;
+            if (!data) return null;
+
+            return {
+                ...data,
+                version: data.prod_version || null,
+                path: `${data.id}.bpmn`,
+                name: data.name || data.id
+            };
+        } catch (e) {
+            console.warn('[ProcessGPTBackend] getDefinitionDetailLite failed:', e);
+            return null;
         }
     }
 
@@ -198,7 +274,7 @@ class ProcessGPTBackend implements Backend {
                 }
             });
             if (procDef) {
-                procDef.isdeleted = false;
+                procDef.deleted_at = null;
                 return await storage.putObject('proc_def', procDef, { onConflict: 'id,tenant_id' });
             }
         } catch (e) {
@@ -492,6 +568,23 @@ class ProcessGPTBackend implements Backend {
                 }
             } else {
                 if (defId.includes('/')) defId = defId.replace(/\//g, '_');
+                const supabase = window.$supabase;
+                if (supabase) {
+                    const { data, error } = await supabase
+                        .from('proc_def')
+                        .select('id,name,definition,bpmn,prod_version,owner,type,tenant_id')
+                        .eq('tenant_id', window.$tenantName)
+                        .eq('id', defId)
+                        .is('deleted_at', null)
+                        .maybeSingle();
+                    if (error) throw error;
+                    if (!data) return null;
+                    return {
+                        ...data,
+                        version: data.prod_version || null
+                    };
+                }
+
                 const data = await storage.getObject(`proc_def/${defId}`, { key: 'id' });
                 return data;
             }
@@ -1483,7 +1576,7 @@ class ProcessGPTBackend implements Backend {
                 // 권한 체크: PAL 모드 여부와 관계없이 권한이 설정되어 있으면 필터링 적용
                 const usePermissions = await this.checkUsePermissions();
                 const role = localStorage.getItem('role');
-                const isAdmin = localStorage.getItem('isAdmin') === 'true';
+                const isAdmin = getIsAdminClaim();
 
                 // superAdmin이거나 권한 설정이 없으면 전체 반환
                 if (role === 'superAdmin' || !usePermissions) {
@@ -3074,13 +3167,15 @@ class ProcessGPTBackend implements Backend {
             vectorPromise
                 .then(async (vectorResult) => {
                     if (vectorResult && vectorResult.length > 0) {
-                        const procDefs = await storage.list('proc_def', { match: { isdeleted: false } });
-                        let list = procDefs.filter((item: any) => vectorResult.includes(item.id));
+                        const procDefs = await storage.list('proc_def', {
+                            key: 'id,name'
+                        });
+                        let list = procDefs.filter((item: any) => vectorResult.includes(item.id) && !item.deleted_at);
                         list = list.map((item: any) => {
                             return {
                                 title: item.name,
                                 href: `/definitions/${item.id}`,
-                                matches: [item.bpmn]
+                                matches: []
                             };
                         });
                         if (list.length > 0) {
@@ -4437,7 +4532,7 @@ class ProcessGPTBackend implements Backend {
         try {
             const uid = localStorage.getItem('uid');
             const role = localStorage.getItem('role');
-            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+            const isAdmin = getIsAdminClaim();
 
             // superAdmin 또는 admin은 모든 권한 있음
             if (role === 'superAdmin' || isAdmin) {
@@ -4995,13 +5090,30 @@ class ProcessGPTBackend implements Backend {
                 id: newId,
                 name: newName,
                 bpmn: bpmn,
-                definition: definition || null,
+                definition: (() => {
+                    const baseDefinition =
+                        typeof definition === 'string'
+                            ? JSON.parse(definition || '{}')
+                            : { ...(definition || {}) };
+                    baseDefinition.processDefinitionId = newId;
+                    return baseDefinition;
+                })(),
                 owner: null,
                 type: 'bpmn',
-                isdeleted: false
+                tenant_id: window.$tenantName
             };
 
             await storage.putObject('proc_def', newProcDef, { onConflict: 'id,tenant_id' });
+            await storage.putObject('proc_def_version', {
+                arcv_id: `${newId}_0.1`,
+                proc_def_id: newId,
+                version: '0.1',
+                version_tag: null,
+                timeStamp: new Date().toISOString(),
+                snapshot: bpmn,
+                definition: newProcDef.definition,
+                message: 'Initial version from cloned process'
+            });
 
             return {
                 success: true,
@@ -7782,7 +7894,7 @@ class ProcessGPTBackend implements Backend {
                     type: 'review_request',
                     title: `검토 요청: ${procDefId}`,
                     description: comment || '새 검토 요청이 도착했습니다.',
-                    url: `/process-hierarchy?id=${procDefId}`,
+                    url: `/process-hierarchy/${encodeURIComponent(procDefId)}`,
                 });
             }
             if (reviewers?.field?.id) {
@@ -7791,7 +7903,7 @@ class ProcessGPTBackend implements Backend {
                     type: 'review_request',
                     title: `검토 요청: ${procDefId}`,
                     description: comment || '새 검토 요청이 도착했습니다.',
-                    url: `/process-hierarchy?id=${procDefId}`,
+                    url: `/process-hierarchy/${encodeURIComponent(procDefId)}`,
                 });
             }
         } catch (e) {
@@ -8562,7 +8674,7 @@ class ProcessGPTBackend implements Backend {
                 .from('proc_def')
                 .select('id, name, owner')
                 .eq('tenant_id', tenantId)
-                .eq('isdeleted', false)
+                .is('deleted_at', null)
                 .in('id', procDefIds);
             const defMap: Record<string, any> = {};
             (defs || []).forEach((d: any) => {
@@ -9386,17 +9498,46 @@ class ProcessGPTBackend implements Backend {
         if (!supabase) return [];
 
         try {
-            const { data, error } = await supabase
-                .from('tb_bpmn_model')
-                .select('id, name, deleted_at, updated_by')
-                .eq('tenant_id', window.$tenantName)
-                .not('deleted_at', 'is', null)
-                .order('deleted_at', { ascending: false });
+            const results: any[] = [];
 
-            if (error) throw error;
-            return (data || []).map((p: any) => ({
+            // tb_bpmn_model에서 삭제된 프로세스 조회
+            try {
+                const { data } = await supabase
+                    .from('tb_bpmn_model')
+                    .select('id, name, deleted_at, deleted_by, created_by')
+                    .eq('tenant_id', window.$tenantName)
+                    .not('deleted_at', 'is', null)
+                    .order('deleted_at', { ascending: false });
+                if (data) results.push(...data.map((p: any) => ({ ...p, _source: 'tb_bpmn_model' })));
+            } catch (e) {
+                console.warn('[ProcessGPTBackend] tb_bpmn_model deleted query failed:', e);
+            }
+
+            // proc_def에서 deleted_at이 설정된 프로세스 조회
+            try {
+                const { data } = await supabase
+                    .from('proc_def')
+                    .select('id, name, deleted_at, deleted_by, deleted_from, owner')
+                    .eq('tenant_id', window.$tenantName)
+                    .not('deleted_at', 'is', null)
+                    .order('deleted_at', { ascending: false });
+                if (data) {
+                    // tb_bpmn_model과 중복 제거
+                    const existingIds = new Set(results.map((r: any) => r.id));
+                    results.push(...data.filter((p: any) => !existingIds.has(p.id)).map((p: any) => ({
+                        ...p,
+                        created_by: p.owner,
+                        _source: 'proc_def'
+                    })));
+                }
+            } catch (e) {
+                console.warn('[ProcessGPTBackend] proc_def deleted query failed:', e);
+            }
+
+            return results.map((p: any) => ({
                 ...p,
-                deleted_by: p.updated_by || 'Unknown',
+                deleted_by: p.deleted_by || p.created_by || p.owner || 'Unknown',
+                deleted_from: p.deleted_from || null,
                 remaining_days: Math.max(0, 30 - Math.floor((Date.now() - new Date(p.deleted_at).getTime()) / 86400000))
             }));
         } catch (e) {
@@ -9411,15 +9552,50 @@ class ProcessGPTBackend implements Backend {
     async restoreProcess(procDefId: string): Promise<void> {
         const supabase = window.$supabase;
         if (!supabase) throw new Error('Supabase not initialized');
+        const tenantId = window.$tenantName;
 
         try {
-            const { error } = await supabase
-                .from('tb_bpmn_model')
-                .update({ deleted_at: null })
+            // 1. 원래 위치 정보 조회
+            const { data: procDef } = await supabase
+                .from('proc_def')
+                .select('id, name, deleted_from')
                 .eq('id', procDefId)
-                .eq('tenant_id', window.$tenantName);
+                .eq('tenant_id', tenantId)
+                .single();
 
-            if (error) throw error;
+            const deletedFrom = procDef?.deleted_from;
+
+            // 2. 양쪽 테이블 모두 복원 (deleted_at, deleted_by, deleted_from 초기화)
+            await Promise.allSettled([
+                supabase.from('tb_bpmn_model').update({ deleted_at: null, deleted_by: null }).eq('id', procDefId).eq('tenant_id', tenantId),
+                supabase.from('proc_def').update({ deleted_at: null, deleted_by: null, deleted_from: null }).eq('id', procDefId).eq('tenant_id', tenantId),
+            ]);
+
+            // 3. procMap에 원래 위치로 복원
+            if (deletedFrom && deletedFrom.mega_id && deletedFrom.major_id) {
+                try {
+                    const procMap = await this.getProcessDefinitionMap();
+                    if (procMap && procMap.mega_proc_list) {
+                        const mega = procMap.mega_proc_list.find((m: any) => m.id === deletedFrom.mega_id);
+                        if (mega) {
+                            const major = (mega.major_proc_list || []).find((mj: any) => mj.id === deletedFrom.major_id);
+                            if (major) {
+                                if (!major.sub_proc_list) major.sub_proc_list = [];
+                                // 중복 방지
+                                if (!major.sub_proc_list.some((s: any) => s.id === procDefId)) {
+                                    major.sub_proc_list.push({
+                                        id: procDefId,
+                                        name: deletedFrom.process_name || procDef?.name || procDefId
+                                    });
+                                    await this.putProcessDefinitionMap(procMap);
+                                }
+                            }
+                        }
+                    }
+                } catch (mapErr) {
+                    console.warn('[ProcessGPTBackend] Failed to restore procMap position:', mapErr);
+                }
+            }
         } catch (e) {
             console.error('[ProcessGPTBackend] restoreProcess error:', e);
             throw e;
@@ -9434,13 +9610,19 @@ class ProcessGPTBackend implements Backend {
         if (!supabase) throw new Error('Supabase not initialized');
 
         try {
-            const { error } = await supabase
-                .from('tb_bpmn_model')
-                .delete()
-                .eq('id', procDefId)
-                .eq('tenant_id', window.$tenantName);
-
-            if (error) throw error;
+            // 관련 데이터 정리 후 양쪽 테이블 모두 삭제
+            const tenantId = window.$tenantName;
+            await Promise.allSettled([
+                supabase.from('form_def').delete().eq('proc_def_id', procDefId).eq('tenant_id', tenantId),
+                supabase.from('proc_def_version').delete().eq('proc_def_id', procDefId).eq('tenant_id', tenantId),
+                supabase.from('lock').delete().eq('id', procDefId).eq('tenant_id', tenantId),
+                supabase.from('todolist').delete().eq('proc_def_id', procDefId).eq('tenant_id', tenantId),
+                supabase.from('bpm_proc_inst').delete().eq('proc_def_id', procDefId).eq('tenant_id', tenantId),
+            ]);
+            await Promise.allSettled([
+                supabase.from('tb_bpmn_model').delete().eq('id', procDefId).eq('tenant_id', tenantId),
+                supabase.from('proc_def').delete().eq('id', procDefId).eq('tenant_id', tenantId),
+            ]);
         } catch (e) {
             console.error('[ProcessGPTBackend] hardDeleteProcess error:', e);
             throw e;
@@ -9690,7 +9872,7 @@ class ProcessGPTBackend implements Backend {
 
         try {
             const { error } = await supabase
-                .from('property_schema')
+                .from('task_property_schema')
                 .update({ deprecated_at: new Date().toISOString() })
                 .eq('id', id)
                 .eq('tenant_id', window.$tenantName);
@@ -9748,6 +9930,44 @@ class ProcessGPTBackend implements Backend {
             return data || [];
         } catch (e) {
             console.error('[ProcessGPTBackend] getApprovalStateList error:', e);
+            return [];
+        }
+    }
+
+    async getLatestVersionMapByProcIds(procDefIds: string[]): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase || !procDefIds?.length) return [];
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_version')
+                .select('proc_def_id, version')
+                .in('proc_def_id', procDefIds)
+                .order('timeStamp', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getLatestVersionMapByProcIds error:', e);
+            return [];
+        }
+    }
+
+    async getApprovalStateListByProcIds(procDefIds: string[]): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase || !procDefIds?.length) return [];
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_approval_state')
+                .select('proc_def_id, state, created_at, updated_at')
+                .in('proc_def_id', procDefIds)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getApprovalStateListByProcIds error:', e);
             return [];
         }
     }

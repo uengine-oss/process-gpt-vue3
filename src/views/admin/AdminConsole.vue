@@ -57,6 +57,7 @@
 
 <script>
 import { defineComponent, ref, computed, onMounted } from 'vue';
+import { authClaimsState } from '@/utils/authClaims';
 import PropertySchemaStudio from './tabs/PropertySchemaStudio.vue';
 import DataFreezeManager from './tabs/DataFreezeManager.vue';
 import RecycleBin from './tabs/RecycleBin.vue';
@@ -79,7 +80,7 @@ export default defineComponent({
         const initialLoading = ref(false);
 
         const isAdmin = computed(() => {
-            return localStorage.getItem('isAdmin') === 'true';
+            return authClaimsState.isAdmin;
         });
 
         const tabs = [

@@ -58,11 +58,11 @@ class PalModeBackend extends ProcessGPTBackend {
     async listDefinition(path: string) {
         try {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
-            const procDefs = await storage.list('proc_def', path ? { like: `${path}%` } : undefined);
-            procDefs.map((item: any) => {
+            const procDefs = await storage.list('proc_def', path ? { like: { key: 'id', value: `${path}%` } } : undefined);
+            if (!Array.isArray(procDefs)) return [];
+            procDefs.forEach((item: any) => {
                 item.path = `${item.id}`;
                 item.name = item.name || item.path;
-                item.isDeleted = item.isDeleted || false;
             });
             return procDefs;
         } catch (e) {
