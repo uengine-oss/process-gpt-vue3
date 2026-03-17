@@ -2226,6 +2226,16 @@ class UEngineBackend implements Backend {
         console.warn('setupAgentKnowledge is not implemented - only use Process-GPT Mode');
         return null;
     }
+
+    async getLatestVersionMap(): Promise<any[]> {
+        __warnUnsupported('getLatestVersionMap');
+        return [];
+    }
+
+    async getApprovalStateList(): Promise<any[]> {
+        __warnUnsupported('getApprovalStateList');
+        return [];
+    }
 }
 
 export default UEngineBackend;
