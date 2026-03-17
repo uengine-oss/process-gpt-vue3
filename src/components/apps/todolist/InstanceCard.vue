@@ -312,9 +312,7 @@ export default {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
-                    // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
-                    const lastTab = localStorage.getItem('instanceCard-lastTab');
-                    this.tab = lastTab || 'progress';
+                    this.tab = this.resolveInitialTab('progress');
                     await this.init();
                 }
             }
@@ -354,9 +352,7 @@ export default {
             immediate: true,
             handler(newVal) {
                 if (!newVal) {
-                    // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
-                    const lastTab = localStorage.getItem('instanceCard-lastTab');
-                    this.tab = lastTab || 'workhistory';
+                    this.tab = this.resolveInitialTab('workhistory');
                 }
             }
         },
@@ -378,11 +374,7 @@ export default {
         }
     },
     mounted() {
-        // localStorage에서 마지막 탭 상태 복원
-        const lastTab = localStorage.getItem('instanceCard-lastTab');
-        if (lastTab) {
-            this.tab = lastTab;
-        }
+        this.tab = this.resolveInitialTab('workhistory');
         this.init();
 
         this.EventBus.on('todolist-updated', async () => {
@@ -449,6 +441,15 @@ export default {
         }
     },
     methods: {
+        resolveInitialTab(defaultTab = 'workhistory') {
+            const requestedTab = this.$route.query?.tab;
+            if (typeof requestedTab === 'string' && this.tabItems.some((item) => item.value === requestedTab)) {
+                return requestedTab;
+            }
+
+            const lastTab = localStorage.getItem('instanceCard-lastTab');
+            return lastTab || defaultTab;
+        },
         async handleInstanceUpdated(payload) {
             // DONE 신호를 받은 즉시 UI부터 완료 상태로 전환한다 (낙관적 업데이트)
             if (this.instance && this.instance.status === 'NEW') {

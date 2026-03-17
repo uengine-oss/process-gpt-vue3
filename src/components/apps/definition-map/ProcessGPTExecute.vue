@@ -488,7 +488,7 @@ export default {
                             } else if (response) {
                                 if (response && response.id && response.proc_inst_id) {
                                     const path = `/instancelist/${response.proc_inst_id.replace(/\./g, '_DOT_')}`;
-                                    me.$router.push(path);
+                                    me.$router.push({ path, query: { tab: 'todo' } });
                                 }
                             }
                         })
