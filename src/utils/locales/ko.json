@@ -1451,7 +1451,7 @@
         "dataSource": "데이터소스",
         "dataSourceConnection": "데이터소스 연동",
         "experimentalFeature": "실험 기능",
-        "experimentalFeatureExplanationOn": "폼 스캔 시 외부 dataSource를 자동으로 연동합니다",
+        "experimentalFeatureExplanationOn": "폼 데이터와 외부 DB를 연동합니다. 프로세스 생성 시 필요한 데이터를 폼에 자동으로 채워줍니다. (예: 휴가 잔여일수)",
         "experimentalFeatureExplanationOff": "폼 스캔 시 dataSource 연동을 사용하지 않습니다",
         "experimentalFeatureWarning": "이 기능은 현재 테스트 중이며, 예상과 다르게 동작할 수 있습니다. 피드백은 개발팀에 전달해 주세요.",
         "addDataSource": "데이터소스 추가",
@@ -2107,7 +2107,9 @@
         "chat": "채팅"
     },
     "ProcessDefinitionChat": {
-        "greetingMessage": "{name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!"
+        "greetingMessage": "{name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!",
+        "datasourceSchemaFailed": "데이터소스 스키마 연동에 실패했습니다. 설정 > 데이터소스에서 연결 정보를 확인해 주세요.",
+        "datasourceSchemaFailedNoPermission": "데이터소스 스키마 연동에 실패했습니다. 데이터소스 설정은 관리자만 가능합니다. 관리자에게 문의해 주세요."
     },
     "customContextPad": {
         "endEvent": "종료 이벤트 추가",
@@ -2506,7 +2508,8 @@
         "chatList": "대화목록",
         "chatLoading": "불러오는 중...",
         "chatEmpty": "진행중인 대화가 없습니다.",
-        "analytics": "분석"
+        "analytics": "분석",
+        "definitionLoading": "정의 목록을 불러오는 중..."
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "프로세스 실행실적",

@@ -606,7 +606,9 @@ export default {
                             this.datasourceSchema = Array.isArray(schema) ? schema : [];
                             this.datasourceURL = this.datasourceSchema.map((item) => item.endpoint);
                         },
-                        errorMsg: '데이터소스 스키마 연동 실패'
+                        errorMsg: this.isAdmin
+                            ? this.$t('ProcessDefinitionChat.datasourceSchemaFailed')
+                            : this.$t('ProcessDefinitionChat.datasourceSchemaFailedNoPermission')
                     });
                 }
 

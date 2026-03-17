@@ -28,9 +28,8 @@
         </div>
     </v-expand-transition>
     <div class="chat-room-list">
-        <div v-if="isLoadingChatRooms" class="d-flex align-center pl-4 pr-4 py-2 text-caption text-grey">
-            <v-progress-circular indeterminate color="primary" :size="16" />
-            <span class="ml-2">{{ $t('VerticalSidebar.chatLoading') || '불러오는 중...' }}</span>
+        <div v-if="isLoadingChatRooms" class="list-skeleton-loading">
+            <v-skeleton-loader v-for="n in 3" :key="n" type="list-item" />
         </div>
         <div v-else-if="filteredChatRooms.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
             {{

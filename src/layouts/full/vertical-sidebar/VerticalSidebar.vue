@@ -323,8 +323,11 @@
                 </v-col>
                 <!-- 정의 목록 -->
                 <v-col v-if="isAdmin" class="pa-0">
+                    <div v-if="isDefinitionListLoading" class="list-skeleton-loading">
+                        <v-skeleton-loader v-for="n in 3" :key="n" type="list-item" />
+                    </div>
                     <ExpandableList
-                        v-if="definitionList && definitionList.children"
+                        v-else-if="definitionList && definitionList.children"
                         :items="definitionList.children"
                         :limit="10"
                         @expanded="onDefinitionsExpanded"
@@ -428,6 +431,7 @@ export default {
         organizationItem: [],
         definitionItem: [],
         definitionList: null,
+        isDefinitionListLoading: false,
         processItem: [],
         processSectionListItems: [],
         processSectionDropdownItems: [],
@@ -700,28 +704,28 @@ export default {
                     BgColor: 'primary',
                     to: '/analytics/kpi',
                     disable: false
-                },
-                {
-                    title: 'analytics.pivot',
-                    icon: 'tuning-square-2-linear',
-                    BgColor: 'primary',
-                    to: '/analytics/pivot',
-                    disable: false
-                },
-                {
-                    title: 'analytics.performance',
-                    icon: 'graph-up-linear',
-                    BgColor: 'primary',
-                    to: '/analytics/performance',
-                    disable: false
-                },
-                {
-                    title: 'analytics.query',
-                    icon: 'chat-round-line-linear',
-                    BgColor: 'primary',
-                    to: '/analytics/query',
-                    disable: false
                 }
+                // {
+                //     title: 'analytics.pivot',
+                //     icon: 'tuning-square-2-linear',
+                //     BgColor: 'primary',
+                //     to: '/analytics/pivot',
+                //     disable: false
+                // },
+                // {
+                //     title: 'analytics.performance',
+                //     icon: 'graph-up-linear',
+                //     BgColor: 'primary',
+                //     to: '/analytics/performance',
+                //     disable: false
+                // },
+                // {
+                //     title: 'analytics.query',
+                //     icon: 'chat-round-line-linear',
+                //     BgColor: 'primary',
+                //     to: '/analytics/query',
+                //     disable: false
+                // }
             ];
 
             // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
@@ -850,6 +854,7 @@ export default {
         },
         async getDefinitionList() {
             const me = this;
+            this.isDefinitionListLoading = true;
             const list = await backend.listDefinition();
             if (list && list.length > 0) {
                 var menu = {
@@ -985,6 +990,7 @@ export default {
                 this.definitionList = this.sortProjectList(menu);
                 this.deletedDefinitionList = this.sortProjectList(deletedMenu);
             }
+            this.isDefinitionListLoading = false;
         },
         sortProjectList(list) {
             // list나 list.children이 없는 경우 안전하게 반환
@@ -1079,4 +1085,5 @@ export default {
     min-width: 36px !important;
     min-height: 36px !important;
 }
+
 </style>

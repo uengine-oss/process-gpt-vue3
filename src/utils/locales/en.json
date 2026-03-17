@@ -1290,7 +1290,7 @@
         "dataSource": "DataSource",
         "dataSourceConnection": "DataSource Connection",
         "experimentalFeature": "Experimental Feature",
-        "experimentalFeatureExplanationOn": "Automatically connect external DataSource when scanning forms",
+        "experimentalFeatureExplanationOn": "Connects form data with external DB. Automatically fills form fields with required data when creating a process. (e.g. remaining leave days)",
         "experimentalFeatureExplanationOff": "Do not use DataSource connection when scanning forms",
         "experimentalFeatureWarning": "This feature is currently in testing and may not work as expected. Please provide feedback to the development team.",
         "addDataSource": "Add dataSource",
@@ -1943,7 +1943,9 @@
         "chat": "Chat"
     },
     "ProcessDefinitionChat": {
-        "greetingMessage": "Hello {name}! What tasks and issues are you experiencing? Please let me know and I'll help you!"
+        "greetingMessage": "Hello {name}! What tasks and issues are you experiencing? Please let me know and I'll help you!",
+        "datasourceSchemaFailed": "Failed to connect DataSource schema. Please check the connection info in Settings > DataSource.",
+        "datasourceSchemaFailedNoPermission": "Failed to connect DataSource schema. Only administrators can configure DataSource settings. Please contact your administrator."
     },
     "customContextPad": {
         "endEvent": "Append End Event",
@@ -2342,7 +2344,8 @@
         "chatList": "Conversations",
         "chatLoading": "Loading...",
         "chatEmpty": "No chats.",
-        "analytics": "Analytics"
+        "analytics": "Analytics",
+        "definitionLoading": "Loading definitions..."
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
