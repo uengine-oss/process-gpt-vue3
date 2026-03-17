@@ -370,7 +370,7 @@ spring:
 
                 # Frontend 서비스 (catch-all)
                 - id: frontend
-                  uri: http://frontend-service:5173
+                  uri: http://frontend-service:8080
                   predicates:
                       - Path=/**
                   order: 999
