@@ -236,6 +236,38 @@ export default class StorageBaseSupabase {
                 });
 
                 if (!result.error) {
+                    // Helm 환경처럼 anon 키 + RLS 정책에서는 로그인 전 signup_requests 조회가 제한될 수 있다.
+                    // 로그인 성공 직후(인증 세션 확보 후) 다시 조회해서 pending/rejected 사용자를 강제 차단한다.
+                    try {
+                        const tenantId = window.$tenantName || 'skt';
+                        const userId = result?.data?.user?.id;
+                        if (userId) {
+                            const signupRequest = await this.getObject('signup_requests', {
+                                match: { user_id: userId, tenant_id: tenantId }
+                            });
+
+                            if (signupRequest && !signupRequest.code && signupRequest.status === 'pending') {
+                                await window.$supabase.auth.signOut();
+                                await window.$app_.try({
+                                    action: () => Promise.reject(new Error()),
+                                    errorMsg: window.$i18n.global.t('StorageBaseSupabase.signupPendingApproval')
+                                });
+                                return { error: true };
+                            }
+
+                            if (signupRequest && !signupRequest.code && signupRequest.status === 'rejected') {
+                                await window.$supabase.auth.signOut();
+                                await window.$app_.try({
+                                    action: () => Promise.reject(new Error()),
+                                    errorMsg: window.$i18n.global.t('StorageBaseSupabase.signupRejected')
+                                });
+                                return { error: true };
+                            }
+                        }
+                    } catch (_e) {
+                        // signup_requests 테이블/정책이 없는 환경에서는 기존 로그인 동작 유지
+                    }
+
                     // 로그인 성공
                     return result.data;
                 } else if (result.error && result.error.message.includes('Email not confirmed')) {
