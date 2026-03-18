@@ -38,7 +38,7 @@ frontend:
 
   image:
     repository: ghcr.io/uengine-oss/process-gpt-skt
-    tag: 317b28b
+    tag: a17fb69
     pullPolicy: IfNotPresent
 
   service:
