@@ -192,7 +192,41 @@ language plpgsql
 security definer
 set search_path = public, auth
 as $$
+declare
+  is_first_user boolean;
 begin
+  select not exists(select 1 from public.users) into is_first_user;
+
+  if is_first_user then
+    insert into public.users (
+      id,
+      username,
+      email,
+      tenant_id,
+      is_admin,
+      role
+    )
+    values (
+      new.id,
+      coalesce(
+        (new.raw_user_meta_data ->> 'name'),
+        new.email
+      ),
+      new.email,
+      'skt',
+      true,
+      'superAdmin'
+    )
+    on conflict (id, tenant_id) do nothing;
+
+    update public.tenants
+    set owner = new.id
+    where id = 'skt'
+      and (owner is null or owner = new.id);
+
+    return new;
+  end if;
+
   insert into public.users (
     id,
     username,
