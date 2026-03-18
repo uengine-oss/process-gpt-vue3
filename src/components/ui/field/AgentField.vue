@@ -69,13 +69,25 @@
                     v-if="!gs"
                     v-model="selectedTools"
                     :items="toolList"
+                    item-title="title"
+                    item-value="value"
                     :label="$t('agentField.agentTools')"
                     multiple
                     chips
                     clearable
                     closable-chips
                     variant="outlined"
-                ></v-combobox>
+                >
+                    <template #item="{ item, props }">
+                        <v-tooltip :text="item.raw.subtitle" location="top" :disabled="!item.raw.subtitle" max-width="250">
+                            <template #activator="{ props: tooltipProps }">
+                                <v-list-item v-bind="{ ...props, ...tooltipProps }" :title="item.raw.title">
+                                    <v-list-item-subtitle v-if="item.raw.subtitle" class="text-truncate" style="max-width: 250px;">{{ item.raw.subtitle }}</v-list-item-subtitle>
+                                </v-list-item>
+                            </template>
+                        </v-tooltip>
+                    </template>
+                </v-combobox>
                 <v-combobox
                     v-if="!gs"
                     v-model="selectedSkills"
@@ -93,7 +105,13 @@
                         <v-list-subheader v-if="item.raw?.isHeader" class="text-uppercase font-weight-medium">
                             {{ item.raw.title }}
                         </v-list-subheader>
-                        <v-list-item v-else v-bind="props" :title="item.raw?.title"></v-list-item>
+                        <v-tooltip v-else :text="item.raw?.subtitle" location="top" :disabled="!item.raw?.subtitle" max-width="250">
+                            <template #activator="{ props: tooltipProps }">
+                                <v-list-item v-bind="{ ...props, ...tooltipProps }" :title="item.raw?.title">
+                                    <v-list-item-subtitle v-if="item.raw?.subtitle" class="text-truncate" style="max-width: 250px;">{{ item.raw.subtitle }}</v-list-item-subtitle>
+                                </v-list-item>
+                            </template>
+                        </v-tooltip>
                     </template>
                 </v-combobox>
                 <v-row dense class="ma-0 pa-0">
@@ -292,16 +310,16 @@ export default {
                 title: this.$t('SkillsManagement.uploadedSkills'),
                 isHeader: true
             });
-            (this.uploadedSkills || []).forEach((name) => {
-                items.push({ value: name, title: name, isHeader: false });
+            (this.uploadedSkills || []).forEach((s) => {
+                items.push({ value: s.name, title: s.name, subtitle: s.description, isHeader: false });
             });
             items.push({
                 value: null,
                 title: this.$t('SkillsManagement.builtinSkills'),
                 isHeader: true
             });
-            (this.builtinSkills || []).forEach((name) => {
-                items.push({ value: name, title: name, isHeader: false });
+            (this.builtinSkills || []).forEach((s) => {
+                items.push({ value: s.name, title: s.name, subtitle: s.description, isHeader: false });
             });
             return items;
         },
@@ -351,7 +369,13 @@ export default {
         selectedTools: {
             deep: true,
             handler(newVal) {
-                this.agent.tools = newVal ? newVal.join(',') : '';
+                const normalized = (newVal || []).map((t) => (typeof t === 'object' && t?.value != null ? t.value : String(t ?? ''))).filter(Boolean);
+                this.agent.tools = normalized.join(',');
+                if (newVal?.some((t) => typeof t === 'object')) {
+                    this.$nextTick(() => {
+                        this.selectedTools = normalized;
+                    });
+                }
             }
         },
         selectedSkills: {
@@ -457,14 +481,31 @@ export default {
             } else {
                 this.mcpTools = {};
             }
-            const tools = Object.keys(this.mcpTools);
-            this.toolList = tools;
+            this.toolList = Object.entries(this.mcpTools).map(([name, config]) => {
+                let subtitle = config.description || '';
+                if (!subtitle) {
+                    if (config.command === 'npx') subtitle = 'Node.js Package';
+                    else if (config.command === 'uvx') subtitle = 'Python Package';
+                    else if (config.command === 'deno') subtitle = 'Deno Runtime';
+                    else if (['url', 'sse', 'http'].includes(config.type)) subtitle = 'Web Service';
+                    else subtitle = 'Custom Server';
+                }
+                return { title: name, value: name, subtitle };
+            });
         },
         async getSkills() {
             const normalize = (result) => {
                 const raw = result?.skills ?? result;
                 const list = Array.isArray(raw) ? raw : raw?.skills || [];
-                return list.map((s) => (typeof s === 'string' ? s : s.name || s.skill_name || '')).filter(Boolean);
+                return list
+                    .map((s) => {
+                        if (typeof s === 'string') return { name: s, description: '' };
+                        return {
+                            name: s.name || s.skill_name || '',
+                            description: s.description || ''
+                        };
+                    })
+                    .filter((s) => s.name);
             };
             try {
                 const [uploadedResult, builtinResult] = await Promise.all([

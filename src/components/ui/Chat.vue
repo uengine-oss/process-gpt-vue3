@@ -1316,11 +1316,11 @@
                                                                             v-html="message.htmlContent"
                                                                             class="text-body-1"
                                                                         ></div>
-                                                                        <pre
+                                                                        <div
                                                                             v-else
-                                                                            class="text-body-1"
+                                                                            class="text-body-1 markdown-content"
                                                                             v-html="setMessageForUser(message.content)"
-                                                                        ></pre>
+                                                                        ></div>
 
                                                                         <!-- PDF2BPMN 결과 카드 -->
                                                                         <div
@@ -3904,13 +3904,24 @@ export default {
         },
         setMessageForUser(content) {
             if (content && typeof content == 'string') {
+                let displayContent = content;
+
                 if (content.includes(`"messageForUser":`)) {
                     let contentObj = partialParse(content);
-                    let messageForUserContent = contentObj.messageForUser || content;
-                    return this.linkify(messageForUserContent); // URL을 하이퍼링크로 변환
-                } else {
-                    return this.linkify(content); // URL을 하이퍼링크로 변환
+                    displayContent = contentObj.messageForUser || content;
+                } else if (content.trim().startsWith('{') && content.trim().endsWith('}')) {
+                    try {
+                        let jsonObj = JSON.parse(content.trim());
+                        if (jsonObj.user_message) {
+                            displayContent = jsonObj.user_message;
+                        }
+                    } catch (e) {
+                        // JSON 파싱 실패 시 원본 유지
+                    }
                 }
+
+                marked.setOptions({ breaks: true, gfm: true });
+                return marked(this.linkify(displayContent));
             }
         },
         setTableName(content) {

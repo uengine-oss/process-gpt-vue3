@@ -513,6 +513,7 @@ export default {
             return 'grey';
         },
         getServerDescription(server) {
+            if (server.description) return server.description;
             if (server.command === 'npx') return 'Node.js Package';
             if (server.command === 'uvx') return 'Python Package';
             if (server.command === 'deno') return 'Deno Runtime';
