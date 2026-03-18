@@ -84,6 +84,20 @@ export interface AuditFilter {
     pageSize?: number;
 }
 
+export interface SignupRequest {
+    id: string;
+    user_id: string;
+    username?: string;
+    email: string;
+    tenant_id: string;
+    status: 'pending' | 'approved' | 'rejected';
+    reject_reason?: string | null;
+    reviewed_by?: string | null;
+    reviewed_at?: string | null;
+    created_at: string;
+    updated_at?: string | null;
+}
+
 export const useAdminConsoleStore = defineStore({
     id: 'adminConsole',
     state: () => ({
@@ -105,6 +119,7 @@ export const useAdminConsoleStore = defineStore({
             activated_by: '',
             activated_at: ''
         } as MaintenanceModeConfig,
+        signupRequests: [] as SignupRequest[],
         auditLogs: [] as AuditLogEntry[],
         auditTotal: 0,
         loading: false,
@@ -405,6 +420,67 @@ export const useAdminConsoleStore = defineStore({
             } catch (e: any) {
                 console.error('Failed to fetch audit logs:', e);
                 this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // ============================================
+        // Signup Requests
+        // ============================================
+        async fetchSignupRequests(status: 'all' | 'pending' | 'approved' | 'rejected' = 'all') {
+            this.loading = true;
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                this.signupRequests = (await backend.getSignupRequests(status)) || [];
+            } catch (e: any) {
+                console.error('Failed to fetch signup requests:', e);
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async approveSignupRequest(requestId: string) {
+            this.loading = true;
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                await backend.approveSignupRequest(requestId);
+                this.signupRequests = this.signupRequests.map((item) =>
+                    item.id === requestId
+                        ? {
+                              ...item,
+                              status: 'approved'
+                          }
+                        : item
+                );
+            } catch (e: any) {
+                console.error('Failed to approve signup request:', e);
+                this.error = e.message;
+                throw e;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async rejectSignupRequest(requestId: string, rejectReason = '') {
+            this.loading = true;
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                await backend.rejectSignupRequest(requestId, rejectReason);
+                this.signupRequests = this.signupRequests.map((item) =>
+                    item.id === requestId
+                        ? {
+                              ...item,
+                              status: 'rejected',
+                              reject_reason: rejectReason
+                          }
+                        : item
+                );
+            } catch (e: any) {
+                console.error('Failed to reject signup request:', e);
+                this.error = e.message;
+                throw e;
             } finally {
                 this.loading = false;
             }

@@ -907,6 +907,24 @@ const MainRoutes = {
                         adminTitle: 'adminConsole.tabAudit',
                         adminDescription: 'adminConsole.description'
                     }
+                },
+                {
+                    name: 'Admin Governance Studio',
+                    path: 'governance-studio',
+                    component: () => import('@/views/governance-studio/DataGovernanceStudio.vue'),
+                    meta: {
+                        adminTitle: 'adminConsole.tabGovernance',
+                        adminDescription: 'adminConsole.description'
+                    }
+                },
+                {
+                    name: 'Admin Signup Approval',
+                    path: 'signup-approvals',
+                    component: () => import('@/views/admin/tabs/SignupApprovalManager.vue'),
+                    meta: {
+                        adminTitle: 'adminConsole.signupApproval.title',
+                        adminDescription: 'adminConsole.signupApproval.description'
+                    }
                 }
             ]
         }

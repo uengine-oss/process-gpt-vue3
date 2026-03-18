@@ -204,6 +204,32 @@ export default class StorageBaseSupabase {
             }
             const existUser = await this.getObject('users', filter);
             if ((window.$isTenantServer && !window.$tenantName) || (existUser && existUser.id)) {
+                // 내부 승인 상태 확인 (테이블이 없는 환경은 기존 동작 유지)
+                try {
+                    const tenantId = window.$tenantName || 'process-gpt';
+                    const signupRequest = await this.getObject('signup_requests', {
+                        match: { email: userInfo.email, tenant_id: tenantId }
+                    });
+
+                    if (signupRequest && signupRequest.status === 'pending') {
+                        await window.$app_.try({
+                            action: () => Promise.reject(new Error()),
+                            errorMsg: window.$i18n.global.t('StorageBaseSupabase.signupPendingApproval')
+                        });
+                        return { error: true };
+                    }
+
+                    if (signupRequest && signupRequest.status === 'rejected') {
+                        await window.$app_.try({
+                            action: () => Promise.reject(new Error()),
+                            errorMsg: window.$i18n.global.t('StorageBaseSupabase.signupRejected')
+                        });
+                        return { error: true };
+                    }
+                } catch (_e) {
+                    // signup_requests 테이블이 없는 구버전 스키마일 수 있으므로 무시
+                }
+
                 const result = await window.$supabase.auth.signInWithPassword({
                     email: userInfo.email,
                     password: userInfo.password
@@ -333,13 +359,11 @@ export default class StorageBaseSupabase {
                     options: {
                         data: {
                             name: userInfo.username
-                        },
-                        emailRedirectTo: window.location.origin
+                        }
                     }
                 });
 
                 if (!result.error) {
-                    result.data['isNewUser'] = true;
                     return result.data;
                 } else {
                     result.errorMsg = result.error.message;

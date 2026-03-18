@@ -210,6 +210,33 @@ begin
   )
   on conflict (id, tenant_id) do nothing;  -- 이미 있으면 무시
 
+  insert into public.signup_requests (
+    user_id,
+    username,
+    email,
+    tenant_id,
+    status
+  )
+  values (
+    new.id,
+    coalesce(
+      (new.raw_user_meta_data ->> 'name'),
+      new.email
+    ),
+    new.email,
+    'process-gpt',
+    'pending'
+  )
+  on conflict (user_id, tenant_id) do update
+  set
+    username = excluded.username,
+    email = excluded.email,
+    status = 'pending',
+    reject_reason = null,
+    reviewed_by = null,
+    reviewed_at = null,
+    updated_at = now();
+
   return new;
 end;
 $$;
@@ -549,6 +576,27 @@ create table public.tenant_oauth (
     google_credentials_updated_at timestamp with time zone null,
     constraint tenant_oauth_pkey primary key (tenant_id),
     constraint tenant_oauth_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create table if not exists public.signup_requests (
+    id uuid not null default gen_random_uuid (),
+    user_id uuid not null,
+    username text null,
+    email text not null,
+    tenant_id text not null default public.tenant_id(),
+    status text not null default 'pending',
+    reject_reason text null,
+    reviewed_by text null,
+    reviewed_at timestamp with time zone null,
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now(),
+    constraint signup_requests_pkey primary key (id),
+    constraint signup_requests_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade,
+    constraint signup_requests_status_check check (
+        status = any (array['pending'::text, 'approved'::text, 'rejected'::text])
+    ),
+    constraint signup_requests_user_tenant_unique unique (user_id, tenant_id),
+    constraint signup_requests_email_tenant_unique unique (email, tenant_id)
 ) tablespace pg_default;
 
 create table if not exists public.project (
@@ -1265,6 +1313,7 @@ ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proc_def_marketplace ENABLE ROW LEVEL SECURITY;
 ALTER TABLE form_def_marketplace ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_oauth ENABLE ROW LEVEL SECURITY;
+ALTER TABLE signup_requests ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- Tenants policies
@@ -1379,6 +1428,63 @@ CREATE POLICY tenant_oauth_insert_policy ON tenant_oauth FOR INSERT TO authentic
 CREATE POLICY tenant_oauth_select_policy ON tenant_oauth FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
 CREATE POLICY tenant_oauth_update_policy ON tenant_oauth FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
 CREATE POLICY tenant_oauth_delete_policy ON tenant_oauth FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
+
+-- Signup requests policies
+CREATE POLICY signup_requests_insert_policy ON signup_requests
+FOR INSERT TO authenticated
+WITH CHECK (tenant_id = public.tenant_id());
+
+CREATE POLICY signup_requests_select_policy ON signup_requests
+FOR SELECT TO authenticated
+USING (
+    (tenant_id = public.tenant_id())
+    AND (
+        user_id = auth.uid()
+        OR EXISTS (
+            SELECT 1
+            FROM users
+            WHERE users.id = auth.uid()
+              AND users.tenant_id = public.tenant_id()
+              AND users.is_admin = true
+        )
+    )
+);
+
+CREATE POLICY signup_requests_update_policy ON signup_requests
+FOR UPDATE TO authenticated
+USING (
+    (tenant_id = public.tenant_id())
+    AND EXISTS (
+        SELECT 1
+        FROM users
+        WHERE users.id = auth.uid()
+          AND users.tenant_id = public.tenant_id()
+          AND users.is_admin = true
+    )
+)
+WITH CHECK (
+    (tenant_id = public.tenant_id())
+    AND EXISTS (
+        SELECT 1
+        FROM users
+        WHERE users.id = auth.uid()
+          AND users.tenant_id = public.tenant_id()
+          AND users.is_admin = true
+    )
+);
+
+CREATE POLICY signup_requests_delete_policy ON signup_requests
+FOR DELETE TO authenticated
+USING (
+    (tenant_id = public.tenant_id())
+    AND EXISTS (
+        SELECT 1
+        FROM users
+        WHERE users.id = auth.uid()
+          AND users.tenant_id = public.tenant_id()
+          AND users.is_admin = true
+    )
+);
 
 -- Storage policies
 CREATE POLICY "Allow authenticated users to upload" ON storage.objects FOR INSERT WITH CHECK (auth.role() = 'authenticated');

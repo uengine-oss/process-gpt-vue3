@@ -80,6 +80,18 @@ class UEngineBackend implements Backend {
         __warnUnsupported('getRefForm');
         return [];
     }
+    async getSignupRequests() {
+        __warnUnsupported('getSignupRequests');
+        return [];
+    }
+    async approveSignupRequest() {
+        __warnUnsupported('approveSignupRequest');
+        return { ok: false };
+    }
+    async rejectSignupRequest() {
+        __warnUnsupported('rejectSignupRequest');
+        return { ok: false };
+    }
     async listMarketplaceDefinition() {
         __warnUnsupported('listMarketplaceDefinition');
         return [];

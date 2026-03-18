@@ -2417,13 +2417,16 @@
     "auth": {
         "emailRateLimitExceeded": "Please change the SMTP settings of the connected Supabase to adjust the email sending limit or try again later.\n\nYou can find the SMTP settings in the Supabase dashboard under Project Settings > Authentication > SMTP Settings.",
         "userAlreadyRegistered": "This email is already registered.",
-        "verificationEmailSent": "A verification email has been sent. Please check your email and log in again.<br>If you do not see the email, please check your spam folder.",
+        "verificationEmailSent": "Your signup request has been submitted. You can log in after an admin approves your account.",
         "registrationSuccess": "Registration successful.",
         "emailSent": "An email has been sent.",
-        "passwordUpdated": "Your password has been updated."
+        "passwordUpdated": "Your password has been updated.",
+        "signupPendingApproval": "Your signup request has been submitted. You can log in after an admin approves your account."
     },
     "StorageBaseSupabase": {
         "emailNotConfirmed": "Email verification is not complete. Please check your email and log in again.",
+        "signupPendingApproval": "Your account is pending admin approval. Please try again later.",
+        "signupRejected": "Your signup request was rejected. Please contact an administrator.",
         "wrongPassword": "The password is incorrect.",
         "wrongId": "The ID is incorrect.",
         "notRegisteredEmail": "This email address is not registered.",
@@ -3853,6 +3856,33 @@
             "red": "Red",
             "grey": "Grey",
             "white": "White"
+        }
+    },
+    "adminConsole": {
+        "tabSignupApproval": "Signup Approval",
+        "signupApproval": {
+            "title": "Signup Approval Management",
+            "description": "Review signup requests and approve or reject accounts.",
+            "refresh": "Refresh",
+            "filterAll": "All",
+            "filterPending": "Pending",
+            "filterApproved": "Approved",
+            "filterRejected": "Rejected",
+            "userName": "Name",
+            "email": "Email",
+            "requestedAt": "Requested At",
+            "status": "Status",
+            "reviewedBy": "Reviewed By",
+            "actions": "Actions",
+            "noRequests": "No signup requests to display.",
+            "approve": "Approve",
+            "reject": "Reject",
+            "rejectReason": "Reject Reason",
+            "rejectReasonPlaceholder": "Enter reject reason (optional)",
+            "rejectDialogTitle": "Reject Signup Request",
+            "statusPending": "Pending",
+            "statusApproved": "Approved",
+            "statusRejected": "Rejected"
         }
     }
 }

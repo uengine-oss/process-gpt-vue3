@@ -9403,6 +9403,99 @@ class ProcessGPTBackend implements Backend {
     // ============================================
 
     /**
+     * Signup Approval - 가입 승인 요청 목록 조회
+     */
+    async getSignupRequests(status: 'all' | 'pending' | 'approved' | 'rejected' = 'all'): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            let query = supabase
+                .from('signup_requests')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .order('created_at', { ascending: false });
+
+            if (status !== 'all') {
+                query = query.eq('status', status);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getSignupRequests error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Signup Approval - 가입 승인 처리
+     */
+    async approveSignupRequest(requestId: string): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const reviewer = window.localStorage.getItem('email') || (window as any).$userName || 'admin';
+            const now = new Date().toISOString();
+
+            const { data, error } = await supabase
+                .from('signup_requests')
+                .update({
+                    status: 'approved',
+                    reject_reason: null,
+                    reviewed_by: reviewer,
+                    reviewed_at: now,
+                    updated_at: now
+                })
+                .eq('id', requestId)
+                .eq('tenant_id', window.$tenantName)
+                .select('*')
+                .maybeSingle();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] approveSignupRequest error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * Signup Approval - 가입 반려 처리
+     */
+    async rejectSignupRequest(requestId: string, rejectReason = ''): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const reviewer = window.localStorage.getItem('email') || (window as any).$userName || 'admin';
+            const now = new Date().toISOString();
+
+            const { data, error } = await supabase
+                .from('signup_requests')
+                .update({
+                    status: 'rejected',
+                    reject_reason: rejectReason || null,
+                    reviewed_by: reviewer,
+                    reviewed_at: now,
+                    updated_at: now
+                })
+                .eq('id', requestId)
+                .eq('tenant_id', window.$tenantName)
+                .select('*')
+                .maybeSingle();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] rejectSignupRequest error:', e);
+            throw e;
+        }
+    }
+
+    /**
      * Data Freeze - 잠금 목록 조회
      */
     async getDataFreezeList(): Promise<any[]> {

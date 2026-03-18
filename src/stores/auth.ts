@@ -92,19 +92,11 @@ export const useAuthStore = defineStore({
                     } else {
                         const tenantId = window.$tenantName;
                         await backend.setTenant(tenantId);
-                        if (result['isNewUser']) {
-                            await (window as any).$app_.try({
-                                action: () => Promise.resolve(),
-                                successMsg: proxy.$t('auth.verificationEmailSent')
-                            });
-                            router.push('/auth/login');
-                        } else {
-                            await (window as any).$app_.try({
-                                action: () => Promise.resolve(),
-                                successMsg: proxy.$t('auth.registrationSuccess')
-                            });
-                            router.push('/process-architecture');
-                        }
+                        await (window as any).$app_.try({
+                            action: () => Promise.resolve(),
+                            successMsg: proxy.$t('auth.signupPendingApproval')
+                        });
+                        router.push('/auth/login');
                     }
                 }
             } catch (e) {

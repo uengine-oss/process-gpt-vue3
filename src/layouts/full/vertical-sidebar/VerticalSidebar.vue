@@ -565,6 +565,18 @@ export default {
                     icon: 'document',
                     to: '/admin-console/audit-trail',
                     disable: false
+                },
+                {
+                    title: 'adminConsole.tabGovernance',
+                    icon: 'brain',
+                    to: '/admin-console/governance-studio',
+                    disable: false
+                },
+                {
+                    title: 'adminConsole.tabSignupApproval',
+                    icon: 'check-mark',
+                    to: '/admin-console/signup-approvals',
+                    disable: false
                 }
             ];
         },
