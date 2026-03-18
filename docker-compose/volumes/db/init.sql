@@ -144,6 +144,10 @@ INSERT INTO public.tenants (id, owner)
 VALUES ('process-gpt', null)
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO public.tenants (id, owner)
+VALUES ('skt', null)
+ON CONFLICT (id) DO NOTHING;
+
 create table if not exists public.user_devices (
     user_email text not null,
     device_token text null,
@@ -159,7 +163,7 @@ create table if not exists public.users (
     email text null,
     is_admin boolean not null default false,
     role text null,
-    tenant_id text not null default 'process-gpt',
+    tenant_id text not null default 'skt',
     device_token text null,
     goal text null,
     persona text null,
@@ -204,7 +208,7 @@ begin
       new.email
     ),
     new.email,
-    'process-gpt',   -- 고정 테넌트
+    'skt',   -- 고정 테넌트
     false,           -- 항상 일반 유저
     'user'           -- 기본 역할
   )
@@ -224,7 +228,7 @@ begin
       new.email
     ),
     new.email,
-    'process-gpt',
+    'skt',
     'pending'
   )
   on conflict (user_id, tenant_id) do update

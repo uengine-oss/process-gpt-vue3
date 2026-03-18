@@ -206,7 +206,7 @@ export default class StorageBaseSupabase {
             if ((window.$isTenantServer && !window.$tenantName) || (existUser && existUser.id)) {
                 // 내부 승인 상태 확인 (테이블이 없는 환경은 기존 동작 유지)
                 try {
-                    const tenantId = window.$tenantName || 'process-gpt';
+                    const tenantId = window.$tenantName || 'skt';
                     const signupRequest = await this.getObject('signup_requests', {
                         match: { email: userInfo.email, tenant_id: tenantId }
                     });
@@ -345,7 +345,7 @@ export default class StorageBaseSupabase {
     }
     async signUp(userInfo) {
         try {
-            const tenantId = window.$tenantName || 'process-gpt';
+            const tenantId = window.$tenantName || 'skt';
             const existUser = await this.getObject('users', { match: { email: userInfo.email, tenant_id: tenantId } });
             if (existUser && existUser.id) {
                 return {
