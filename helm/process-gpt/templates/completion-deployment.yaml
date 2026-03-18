@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "process-gpt.fullname" . }}-completion
+  labels:
+    {{- include "process-gpt.labels" . | nindent 4 }}
+    app.kubernetes.io/component: completion
+spec:
+  replicas: {{ .Values.completion.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "process-gpt.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: completion
+  template:
+    metadata:
+      labels:
+        {{- include "process-gpt.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: completion
+    spec:
+      containers:
+        - name: completion
+          image: "{{ .Values.completion.image.repository }}:{{ .Values.completion.image.tag }}"
+          imagePullPolicy: {{ .Values.completion.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "process-gpt.fullname" . }}-secrets
+                  key: OPENAI_API_KEY
+            - name: SUPABASE_URL
+              value: {{ include "process-gpt.supabaseInternalUrl" . | quote }}
+            - name: SUPABASE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "process-gpt.fullname" . }}-secrets
+                  key: SERVICE_ROLE_KEY
+            - name: SUPABASE_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "process-gpt.fullname" . }}-secrets
+                  key: JWT_SECRET
+            - name: DB_NAME
+              value: {{ .Values.global.database.name | quote }}
+            - name: DB_USER
+              value: {{ .Values.global.database.user | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "process-gpt.fullname" . }}-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DB_HOST
+              value: {{ include "process-gpt.postgresHost" . | quote }}
+            - name: DB_PORT
+              value: {{ .Values.global.database.port | quote }}
+            - name: ENV
+              value: {{ .Values.global.env | quote }}
+            {{- if .Values.global.smtp.host }}
+            - name: SMTP_SERVER
+              value: {{ .Values.global.smtp.host | quote }}
+            - name: SMTP_PORT
+              value: {{ .Values.global.smtp.port | quote }}
+            - name: SMTP_USERNAME
+              value: {{ .Values.global.smtp.user | quote }}
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "process-gpt.fullname" . }}-secrets
+                  key: SMTP_PASSWORD
+            {{- end }}
+          resources:
+            {{- toYaml .Values.completion.resources | nindent 12 }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

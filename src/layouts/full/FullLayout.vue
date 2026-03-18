@@ -7,9 +7,31 @@ import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
 import Customizer from './customizer/Customizer.vue';
 import Footer from './Footer.vue';
 import { useCustomizerStore } from '../../stores/customizer';
+import { useAdminConsoleStore } from '../../stores/adminConsole';
 import { pl, zhHans } from 'vuetify/locale';
 import { ref, computed, getCurrentInstance, onMounted, onBeforeUnmount } from 'vue';
 const customizer = useCustomizerStore();
+const adminStore = useAdminConsoleStore();
+
+// ---- Global Notice Banner ----
+const bannerDismissed = ref(false);
+const bannerConfig = computed(() => adminStore.noticeBanner);
+const showBanner = computed(() => {
+    if (bannerDismissed.value || !bannerConfig.value?.enabled) return false;
+    // 로컬 시간(KST) 기준 YYYY-MM-DD
+    const d = new Date();
+    const now = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (bannerConfig.value.start_date && now < bannerConfig.value.start_date) return false;
+    if (bannerConfig.value.end_date && now > bannerConfig.value.end_date) return false;
+    return !!bannerConfig.value.text;
+});
+const bannerColorMap: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+    info: { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', icon: 'mdi-information-outline' },
+    warning: { bg: '#fffbeb', border: '#fde68a', text: '#92400e', icon: 'mdi-alert-outline' },
+    error: { bg: '#fef2f2', border: '#fecaca', text: '#991b1b', icon: 'mdi-alert-circle-outline' },
+    success: { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', icon: 'mdi-check-circle-outline' }
+};
+const bannerStyle = computed(() => bannerColorMap[bannerConfig.value?.color] || bannerColorMap.info);
 
 // globalIsMobile ref로 직접 관리
 const globalIsMobile = ref(window.innerWidth <= 768);
@@ -21,6 +43,7 @@ const updateMobileState = () => {
 
 onMounted(() => {
     window.addEventListener('resize', updateMobileState);
+    adminStore.fetchNoticeBanner();
 });
 
 onBeforeUnmount(() => {
@@ -41,6 +64,21 @@ const isModelingTab = computed(() => {
 </script>
 
 <template>
+    <!-- ===== Floating Global Notice Banner ===== -->
+    <transition name="banner-slide">
+        <div
+            v-if="showBanner"
+            class="global-notice-banner"
+            :class="`global-notice-banner--${bannerConfig.color || 'info'}`"
+        >
+            <v-icon size="16" class="global-notice-banner-icon">{{ bannerStyle.icon }}</v-icon>
+            <span class="global-notice-banner-text">{{ bannerConfig.text }}</span>
+            <button class="global-notice-banner-close" @click="bannerDismissed = true">
+                <v-icon size="14">mdi-close</v-icon>
+            </button>
+        </div>
+    </transition>
+
     <!-----RTL LAYOUT------->
     <v-locale-provider v-if="customizer.setRTLLayout" rtl>
         <v-app
@@ -83,13 +121,9 @@ const isModelingTab = computed(() => {
                             <div :class="customizer.boxed ? 'maxWidth' : ''">
                                 <RouterView v-slot="{ Component, route }">
                                     <transition name="slide-fade" mode="out-in">
-                                        <component :is="Component" :key="route.path" />
+                                        <component :is="Component" :key="route.name || route.path" />
                                     </transition>
                                 </RouterView>
-                                <!-- <v-btn class="customizer-btn" size="large" icon variant="flat" color="primary"
-                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                                <SettingsIcon />
-                            </v-btn> -->
                             </div>
                         </div>
                     </v-container>
@@ -135,19 +169,12 @@ const isModelingTab = computed(() => {
                         <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">
                             <RouterView v-slot="{ Component, route }">
                                 <transition name="slide-fade" mode="out-in">
-                                    <component :is="Component" :key="route.path" />
+                                    <component :is="Component" :key="route.name || route.path" />
                                 </transition>
                             </RouterView>
-                            <!-- <v-btn class="customizer-btn" size="small" icon text variant="flat" color="primary"
-                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                                <SettingsIcon />
-                            </v-btn> -->
                         </div>
                     </v-container>
                 </div>
-                <!-- <footer class="footer">
-                    <Footer />
-                </footer> -->
             </v-main>
         </v-app>
     </v-locale-provider>
@@ -165,5 +192,88 @@ const isModelingTab = computed(() => {
 .slide-fade-leave-to {
     opacity: 0;
     transform: translateX(-30px);
+}
+
+/* ── Global Notice Banner (Floating) ───────────────────── */
+.global-notice-banner {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    max-width: min(720px, calc(100vw - 32px));
+    pointer-events: auto;
+}
+.global-notice-banner-icon {
+    flex-shrink: 0;
+}
+.global-notice-banner-text {
+    flex: 1;
+}
+.global-notice-banner-close {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s, background 0.15s;
+    margin-left: 4px;
+}
+.global-notice-banner-close:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+/* Color variants */
+.global-notice-banner--info {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+}
+.global-notice-banner--warning {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+}
+.global-notice-banner--error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+.global-notice-banner--success {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+/* Banner transition */
+.banner-slide-enter-active {
+    transition: all 0.3s ease;
+}
+.banner-slide-leave-active {
+    transition: all 0.2s ease;
+}
+.banner-slide-enter-from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+}
+.banner-slide-leave-to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
 }
 </style>

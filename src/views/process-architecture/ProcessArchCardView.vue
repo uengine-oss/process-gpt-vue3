@@ -412,7 +412,7 @@ function getDomainColor(domainName: string): string {
     gap: 16px;
     overflow-x: auto;
     padding-bottom: 16px;
-    min-height: 400px;
+    height: 100%;
 }
 
 .board-column {
@@ -420,7 +420,7 @@ function getDomainColor(domainName: string): string {
     flex: 1 0 320px;
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 300px);
+    height: 100%;
 }
 
 .column-header {

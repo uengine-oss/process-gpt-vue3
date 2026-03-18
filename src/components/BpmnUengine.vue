@@ -579,8 +579,14 @@ export default {
         },
         // ========== 프로세스 간 복사/붙여넣기 기능 ==========
         getCurrentProcessId() {
-            // 현재 프로세스 ID 가져오기 (URL 또는 props에서)
-            return this.$route?.params?.pathMatch || window.location.pathname || 'unknown';
+            // 현재 프로세스 ID 가져오기
+            // 1) Vue Router query
+            if (this.$route?.query?.id) return String(this.$route.query.id);
+            // 2) URL에서 직접 파싱 (다른 탭에서는 $route가 다를 수 있으므로)
+            const urlId = new URLSearchParams(window.location.search).get('id');
+            if (urlId) return urlId;
+            // 3) path 기반 fallback
+            return this.$route?.params?.pathMatch || window.location.pathname + window.location.search || 'unknown';
         },
         saveToCrossProcessClipboard(elements) {
             try {
@@ -2023,18 +2029,31 @@ export default {
                         }
                         event.preventDefault();
                         break;
-                    case 'v':
-                        // Paste (내부 붙여넣기 시도 후, 없으면 프로세스 간 붙여넣기)
+                    case 'v': {
+                        // Paste: 내부 붙여넣기 먼저 시도, 실패/빈결과 시 크로스 프로세스 붙여넣기
                         const crossProcessData = this.getFromCrossProcessClipboard();
-                        if (crossProcessData && crossProcessData.processId !== this.getCurrentProcessId()) {
-                            // 다른 프로세스에서 복사한 경우 프로세스 간 붙여넣기
+                        const currentProcId = String(this.getCurrentProcessId() || '');
+                        const sourceProcId = String(crossProcessData?.processId || '');
+                        const isDifferentProcess = crossProcessData && sourceProcId !== currentProcId;
+
+                        if (isDifferentProcess) {
+                            // 다른 프로세스에서 복사한 데이터가 있으면 크로스 프로세스 붙여넣기
                             this.pasteFromCrossProcessClipboard(crossProcessData);
                         } else {
-                            // 같은 프로세스 내 붙여넣기
-                            copyPaste.paste();
+                            // 같은 프로세스: 내부 붙여넣기 시도
+                            const beforeCount = this.bpmnViewer.get('elementRegistry').getAll().length;
+                            try {
+                                copyPaste.paste();
+                            } catch (e) { /* ignore */ }
+                            const afterCount = this.bpmnViewer.get('elementRegistry').getAll().length;
+                            // 내부 붙여넣기로 요소가 추가되지 않았으면 크로스 프로세스 데이터로 폴백
+                            if (afterCount === beforeCount && crossProcessData) {
+                                this.pasteFromCrossProcessClipboard(crossProcessData);
+                            }
                         }
                         event.preventDefault();
                         break;
+                    }
                     case 'x':
                         // Cut
                         const elementsTocut = selection.get();

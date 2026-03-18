@@ -1,0 +1,189 @@
+# =============================================================================
+# Global Configuration
+# =============================================================================
+global:
+  imagePullSecrets: []
+  #  - name: ghcr-secret
+
+  env: "dev"
+
+  database:
+    host: ""  # Auto-resolved to supabase-db if empty
+    port: "5432"
+    name: "postgres"
+    user: "supabase_admin"
+    password: "your-super-secret-and-long-postgres-password"
+
+  jwt:
+    secret: "your-super-secret-jwt-token-with-at-least-32-characters-long"
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE"
+    serviceRoleKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q"
+
+  openaiApiKey: ""
+
+  smtp:
+    host: ""
+    port: "2500"
+    user: ""
+    password: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+# =============================================================================
+# Frontend (process-gpt-vue3)
+# =============================================================================
+frontend:
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/uengine-oss/process-gpt-skt
+    tag: b5b83ff
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  env:
+    supabaseUrl: ""  # Auto-resolved if empty
+    openaiApiKey: false  # Set true to inject VITE_OPENAI_API_KEY
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 15
+    periodSeconds: 20
+
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+# =============================================================================
+# Completion Service (process-gpt-completion)
+# =============================================================================
+completion:
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uengine-oss/process-gpt-completion
+    tag: 0d52729
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 30
+
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 15
+
+# =============================================================================
+# Gateway (Spring Cloud Gateway)
+# =============================================================================
+gateway:
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uengine-oss/process-gpt-gateway
+    tag: c3281fe
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  javaOpts: "-Xmx512m -Xms256m -XX:+UseG1GC"
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 60
+    periodSeconds: 30
+
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 15
+
+# =============================================================================
+# Ingress
+# =============================================================================
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: process-gpt.local
+  tls: []
+  #  - secretName: process-gpt-tls
+  #    hosts:
+  #      - process-gpt.local
+
+# =============================================================================
+# Supabase (subchart)
+# https://github.com/supabase-community/supabase-kubernetes
+# =============================================================================
+supabase:
+  enabled: true
+
+  # Override supabase subchart values here
+  # Refer to: https://github.com/supabase-community/supabase-kubernetes/blob/main/charts/supabase/values.yaml
+
+  # Supabase chart v0.5.x uses "deployment.<component>.enabled" structure
+  deployment:
+    db:
+      enabled: true
+    studio:
+      enabled: true
+    auth:
+      enabled: true
+    rest:
+      enabled: true
+    realtime:
+      enabled: true
+    meta:
+      enabled: true
+    storage:
+      enabled: true
+    imgproxy:
+      enabled: true
+    kong:
+      enabled: true
+    functions:
+      enabled: false
+    analytics:
+      enabled: false
+    vector:
+      enabled: false  # GKE Autopilot: hostPath /var/lib/docker/containers not allowed
