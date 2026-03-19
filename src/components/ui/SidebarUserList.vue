@@ -15,9 +15,8 @@
             </div>
         </v-expand-transition>
 
-        <div v-if="isLoading" class="loading-state">
-            <v-progress-circular indeterminate size="24" color="primary"></v-progress-circular>
-            <span class="ml-2 text-caption">{{ $t('UserList.loading') }}</span>
+        <div v-if="isLoading" class="list-skeleton-loading">
+            <v-skeleton-loader v-for="n in 3" :key="n" type="list-item" />
         </div>
 
         <div v-else-if="filteredUsers.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
@@ -171,15 +170,13 @@ export default {
     padding: 8px 0;
 }
 
-.loading-state,
 .empty-state {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-direction: column;
     padding: 16px 8px;
     text-align: center;
-    gap: 8px;
+    color: #666;
 }
 
 .empty-state {

@@ -1,19 +1,5 @@
 {
     "message": "en",
-    "gatewayNeedsBranches": "Gateway needs at least 2 branches.",
-    "unnamedTask": "Task has no name.",
-    "noLaneAssignee": "Lane has no assignee.",
-    "missingCondition": "Condition expression is missing.",
-    "validationError": "Validation Error",
-    "connectionMissing": "Connection Missing",
-    "nameRequired": "Name Required",
-    "branchingRequired": "Branching Required",
-    "conditionMissing": "Condition Missing",
-    "assigneeRequired": "Assignee Required",
-    "clearOverlays": "Clear Overlays",
-    "save": {
-        "noChanges": "No changes to save."
-    },
     "Common": {
         "cancel": "Cancel",
         "submit": "Submit",
@@ -25,18 +11,20 @@
         "hours": "Hours",
         "minutes": "Min"
     },
-    "common": {
-        "cancel": "Cancel",
-        "close": "Close",
-        "confirm": "Confirm",
-        "delete": "Delete",
-        "edit": "Edit",
-        "add": "Add",
-        "reset": "Reset"
-    },
     "validation": {
         "title": "BPMN Validation Result",
+        "gatewayNeedsBranches": "A gateway requires at least 2 branches.",
+        "unnamedTask": "Task has no name specified.",
+        "noLaneAssignee": "No assignee is specified for the lane.",
+        "missingCondition": "Condition expression is missing.",
+        "validationError": "Validation Error",
         "validationWarning": "Validation Warning",
+        "connectionMissing": "Connection Missing",
+        "nameRequired": "Name Required",
+        "branchingRequired": "Branching Required",
+        "conditionMissing": "Condition Missing",
+        "assigneeRequired": "Assignee Required",
+        "clearOverlays": "Clear Overlays",
         "warningMessage": "The following issues were found in the process definition:",
         "saveAnyway": "Save Anyway",
         "noStartEvent": "No start event found.",
@@ -46,6 +34,155 @@
         "noOutgoingConnection": "No outgoing connection.",
         "noManual": "No manual (description).",
         "callActivityNoProcess": "No process selected."
+    },
+    "save": {
+        "noChanges": "No changes to save."
+    },
+    "businessRuleDefinition": {
+        "title": "Rule Definition (Business Rules)",
+        "subtitle": "Organize business criteria in a table. Rules at the top take priority.",
+        "newRule": "Create New Rule",
+        "search": "Search Rules",
+        "empty": "No rules saved yet.",
+        "loading": "Loading...",
+        "selectHint": "Select a rule from the left or click 'Create New Rule' to get started.",
+        "listTitle": "List",
+        "editTitle": "Edit Rule",
+        "editSubtitle": "Define conditions and results as a set.",
+        "advancedMode": "Advanced Mode",
+        "versionManagement": "Version Management",
+        "selectRuleHint": "Select a rule from the list on the left",
+        "selectRuleHint2": "Or create a new one with 'New Rule'.",
+        "conditionsDescription": "Condition items define \"inputs for the rule table.\" Enter actual values only in the rule table below.",
+        "itemName": "Item Name",
+        "inputMode": "Input Mode",
+        "optionsLabel": "Options (for option input only)",
+        "itemNamePlaceholder": "e.g., Credit Score",
+        "optionsPlaceholder": "e.g., VIP, GOLD, SILVER",
+        "addInput": "Add Condition Item",
+        "rulesTitle": "Rules",
+        "rulesPriorityHint": "Rules at the top take priority.",
+        "ruleNumber": "Rule {n}",
+        "conditionSettings": "Condition Criteria",
+        "addCondition": "Add Condition",
+        "resultSettings": "Result Settings",
+        "notePlaceholder": "Note (optional)",
+        "addRule": "Add Rule",
+        "dmnAdvancedEdit": "DMN (Advanced Edit)",
+        "dmnAdvancedDescription": "In advanced mode, edit rules as a DMN decision table. Table data is synced on save.",
+        "advancedModeLoadFailed": "Failed to load advanced edit content. Please try again later.",
+        "advancedModeSyncFailed": "Failed to sync advanced edit to table. Please try again after saving.",
+        "advancedModeSaveFailed": "Could not save advanced edit. Table was not updated.",
+        "selectRuleFirstForVersion": "Please select a rule first.",
+        "versionApplied": "Version {version} has been applied to the current rule file.",
+        "versionChangeFailed": "Failed to change version.",
+        "sectionBasic": "Basic Rule Info",
+        "ruleName": "Rule Name",
+        "ruleDescription": "Description (When is this rule used?)",
+        "sectionConditions": "Condition Criteria",
+        "conditionsHint": "When all conditions are met (AND), the result below applies.",
+        "conditionItem": "Item",
+        "conditionOperator": "Operator",
+        "conditionValue": "Value",
+        "sectionResult": "Result Settings",
+        "resultOutcome": "Result when this condition is met?",
+        "resultConditionalNote": "Condition / Additional Notes",
+        "resultRejectNote": "Rejection Reason",
+        "save": "Save",
+        "cancel": "Cancel",
+        "loadFailed": "Failed to load the rule. Please try again later.",
+        "saveFailed": "Failed to save the rule. Please try again later.",
+        "notFound": "Selected rule not found.",
+        "delete": "Delete",
+        "deleteConfirmTitle": "Delete Rule",
+        "deleteConfirmMessage": "Are you sure you want to delete the rule '{name}'?",
+        "deleteConfirmHint": "This action cannot be undone.",
+        "deleteSuccess": "Rule has been deleted.",
+        "deleteFailed": "Failed to delete the rule.",
+        "copy": "Copy",
+        "copyTitle": "Copy Rule",
+        "copyRuleNameLabel": "New Rule Name",
+        "copyRuleNamePlaceholder": "e.g., Credit Score Review (Copy)",
+        "copySuffix": "(Copy)",
+        "copySuccess": "Rule has been copied.",
+        "copyFailed": "Failed to copy the rule.",
+        "ruleEnabled": "Enabled"
+    },
+    "businessRuleTaskPanel": {
+        "ruleSelectTitle": "Select Rule",
+        "ruleSelectLabel": "Please select a rule",
+        "refreshRuleList": "Refresh",
+        "openRuleDefinitions": "Open Rule Definitions",
+        "createNewRule": "Create New Rule",
+        "selectedRulePrefix": "Selected rule:",
+        "selectRuleFirst": "Please select a rule first.",
+        "ruleListLoadFailed": "Failed to load rule list. Please try again later.",
+        "ruleLoadFailed": "Failed to load rule. Please try again later.",
+        "ioExtractFailed": "Failed to load rule items. Please check the rule definition.",
+        "mapperBusinessRuleRoot": "Business Rules",
+        "mapperInputsRoot": "Condition Items",
+        "mapperOutputsRoot": "Results",
+        "mapperResultOutcome": "Result",
+        "mapperResultNoteConditional": "Note",
+        "mapperResultNoteReject": "Rejection Reason",
+        "unnamedItem": "Item",
+        "conditionCriteria": "Condition Criteria",
+        "dmnPreview": "DMN Preview",
+        "loading": "Loading...",
+        "dmnPreviewDescription": "Preview as DMN decision table.",
+        "dmnPreviewFailed": "Unable to create DMN preview.",
+        "ruleNumber": "Rule {n}",
+        "rulePriorityHint": "Rules at the top take priority",
+        "noConditionsRegistered": "No condition criteria registered.",
+        "noRulesRegistered": "No rules registered.",
+        "selectRuleFirstMessage": "Please select a rule first."
+    },
+    "businessRuleVersionManager": {
+        "title": "Version History - {name}",
+        "dmnStructureView": "DMN Structure View",
+        "xmlView": "XML View",
+        "xmlDownload": "Download XML (v{version})",
+        "changeToVersion": "Change to this version (v{version})",
+        "latestVersion": "Latest Version",
+        "version": "Version: {version}",
+        "noOtherVersions": "No other versions to compare. (Current version: v{version})",
+        "cannotLoadDmnStructure": "Cannot load DMN structure for comparison.",
+        "cannotLoadSelectedDmnStructure": "Cannot load DMN structure for selected version.",
+        "cannotLoadLatestDmnStructure": "Cannot load DMN structure for latest version.",
+        "versionList": "Version List ({count})",
+        "versionListTooltip": "Version List",
+        "changer": "Changed by: {name}",
+        "businessRule": "Business Rule",
+        "noVersionInfo": "No version information.",
+        "cannotLoadVersionList": "Cannot load version list.",
+        "cannotLoadVersionFile": "Cannot load version file.",
+        "versionChangeFailed": "Failed to change version.",
+        "noXmlData": "No XML data.",
+        "hoursAgo": "{hours} hours ago"
+    },
+    "businessRuleDmnHistory": {
+        "title": "Business Rule Change History",
+        "description": "View business rule change history.",
+        "noHistory": "No change history",
+        "noHistoryDescription": "History will appear when business rules are changed.",
+        "businessRule": "Business Rule",
+        "operation": "Operation",
+        "changeContent": "Change Content",
+        "changer": "Changed By",
+        "changeDate": "Change Date",
+        "previous": "Previous:",
+        "new": "New:",
+        "feedback": "Feedback:",
+        "structuredChanges": "Structured Changes",
+        "rawXml": "Raw XML",
+        "xmlParseFailed": "XML parsing failed. Check the Raw XML tab.",
+        "previousContent": "Previous Content",
+        "newContent": "New Content",
+        "noChangeContent": "No change content.",
+        "operationCreate": "Create",
+        "operationUpdate": "Update",
+        "operationDelete": "Delete",
+        "operationMove": "Move"
     },
     "changePath": "You have unsaved changes. Are you sure you want to leave?",
     "successMsg": {
@@ -529,9 +666,9 @@
         "deleteMessage": "Do you want to delete?",
         "deleteMessage1": "Do you want to delete?",
         "from": "From",
-        "add": "Add",
         "edit": "Edit",
         "save": "Save",
+        "add": "Add",
         "delete": "Delete",
         "close": "Close",
         "addNewUser": "Add Team Member",
@@ -609,19 +746,15 @@
             "details": [
                 {
                     "icon": "pencil",
-                    "title": "Pencil Icon\nEdit button to modify the process definition map."
+                    "title": "Pencil icon: Use the edit button to modify the process definition map."
                 },
                 {
                     "icon": "image-download",
-                    "title": "Image Download Icon\nDownload the generated diagram as an image."
+                    "title": "Image download icon: Download the generated map as an image."
                 },
                 {
                     "icon": "magic",
-                    "title": "Process Consulting\nCreate initial processes using AI.\nExample: Enter 'Create a leave request process' to automatically generate it."
-                },
-                {
-                    "icon": "market",
-                    "title": "Marketplace\nTest and operate example processes registered by other users."
+                    "title": "Marketplace: Test and run example processes registered by others."
                 }
             ]
         },
@@ -635,6 +768,8 @@
         "cancel": "Cancel",
         "download": "Download",
         "uncategorized": "Uncategorized",
+        "searchProcess": "Search process map (e.g., insurance, application)",
+        "isDeployable": "Deploy",
         "closeConsulting": "Are you sure you want to end the consultation without saving?",
         "closeConsultingInPreview": "Are you sure you want to end the consultation without saving?\nYou can save by clicking the lock button on the right.\n\nDo you want to end the consultation?",
         "checkInDBError": "DB connection is lost. Download the modified data and save it, then contact the administrator.",
@@ -651,12 +786,12 @@
         "marketplaceExplanation": "Find a business process template",
         "treeView": "View as Tree",
         "treeViewExplanation": "View and edit processes in a tree structure",
-        "duplicateName": "Duplicate process name exists.",
         "cardView": "Card",
         "matrixView": "Matrix",
+        "duplicateName": "Duplicate process name exists.",
         "allDomains": "All",
         "selectColor": "Select Color",
-"filterByOrganization": "Organization Filter",
+        "filterByOrganization": "Organization Filter",
         "editingEnded": "{name} has finished editing. You can now edit.",
         "manageOrphans": "Manage Uncategorized Processes",
         "orphanManagement": "Uncategorized Process Management",
@@ -694,13 +829,12 @@
             "pngDesc": "Current view as image",
             "json": "JSON",
             "jsonDesc": "Raw proc_map data",
-        "mermaid": {
-            "mermaidDesc": "Hierarchy as .mmd file",
+            "mermaid": "Mermaid",
+            "mermaidDesc": "Hierarchy .mmd file",
             "exporting": "Exporting...",
-            "processingLargeData": "Large dataset detected. Processing in background...",
-            "exportComplete": "Export complete. Downloading...",
+            "processingLargeData": "Large data. Processing in background...",
+            "exportComplete": "Export complete. Downloading.",
             "exportFailed": "Export failed. Please try again."
-            }
         },
         "newProcess": "+ New Process",
         "searchPlaceholder": "Search by name or email",
@@ -727,8 +861,8 @@
         },
         "advancedFilter": {
             "button": "Filters",
-        "title": "Access Permission Settings",
-        "status": "Status",
+            "title": "Access Permission Settings",
+            "status": "Status",
             "statusDraft": "Draft",
             "statusReview": "In Review",
             "statusPublicReview": "Public Review",
@@ -765,7 +899,7 @@
             "fteRange": "FTE Range",
             "leadTimeRange": "Lead-time Range",
             "days": "days",
-        "systems": "Related Systems",
+            "systems": "Related Systems",
             "systemSearch": "Filter by system or OSS..."
         },
         "hierarchy": {
@@ -793,19 +927,18 @@
             "recentlyViewed": "Recently Viewed"
         },
         "myProcesses": {
-        "label": "Time View",
-        "title": "Access Permission Settings",
+            "label": "Time View",
             "favorites": "Favorites",
             "myCreation": "My Creation",
             "myOrganization": "My Organization",
-            "apply": "Apply Filter",
-        "applied": "Batch changes applied."
+            "apply": "Apply Filter"
         },
-        "emptyState": "Select a process",
-        "message": "Saving will reset the current approval process. Continue?",
-        "resetFilters": "Reset Filters",
+        "emptyState": {
+            "message": "Select a process",
+            "resetFilters": "Reset filters"
+        },
         "quickFilters": {
-        "label": "Time View",
+            "label": "Time View",
             "needFeedback": "Need Feedback",
             "wil": "WIL (In Progress)"
         },
@@ -824,9 +957,9 @@
             }
         },
         "newProcessDialog": {
-        "title": "Access Permission Settings",
-        "asIs": "As-Is",
-        "toBe": "To-Be",
+            "title": "Access Permission Settings",
+            "asIs": "As-Is",
+            "toBe": "To-Be",
             "processName": "Process Name",
             "processNamePlaceholder": "e.g., Monthly Payroll Closing",
             "nameRequired": "Process name is required",
@@ -846,7 +979,7 @@
             "creationType": "Creation Type",
             "scratch": "Scratch",
             "template": "Template",
-        "clone": "Clone",
+            "clone": "Clone",
             "selectTemplate": "Select a template...",
             "selectCloneSource": "Select process to clone...",
             "pidPreview": "Auto-assigned ID",
@@ -1129,6 +1262,24 @@
         "save": "Save",
         "cancel": "Cancel"
     },
+    "metricsView": {
+        "domain": "Domain",
+        "addDomain": "Add Domain",
+        "editDomain": "Edit Domain",
+        "domainName": "Domain name",
+        "confirmDeleteDomain": "Delete this Domain?",
+        "addMegaProcess": "Add Mega Process",
+        "editMegaProcess": "Edit Mega Process",
+        "megaProcessName": "Mega Process name",
+        "confirmDeleteMegaProcess": "Delete this Mega Process?",
+        "addProcess": "Add Major Process",
+        "editProcess": "Edit Major Process",
+        "processName": "Major Process name",
+        "subProcesses": "Sub-processes (comma-separated)",
+        "confirmDeleteProcess": "Delete this process?",
+        "confirmRemoveProcess": "Remove this process from matrix? (Process will not be deleted)",
+        "nameRequired": "Please enter a name."
+    },
     "uiDefinition": {
         "title": "Screen Definition",
         "cardTitle": "Screen Definition Management",
@@ -1180,9 +1331,9 @@
         "showChat": "Show Chat",
         "hideChat": "Hide Chat",
         "execution": "Start Process",
-        "deleteProcess": "Delete Process",
         "showXML": "Show XML",
         "showModeling": "Show Modeling",
+        "deleteProcess": "Delete Process",
         "deleteProcessMessage": "Are you sure you want to delete this process?",
         "cancel": "Cancel",
         "simulate": "Simulate",
@@ -1290,7 +1441,7 @@
         "dataSource": "DataSource",
         "dataSourceConnection": "DataSource Connection",
         "experimentalFeature": "Experimental Feature",
-        "experimentalFeatureExplanationOn": "Automatically connect external DataSource when scanning forms",
+        "experimentalFeatureExplanationOn": "Connects form data with external DB. Automatically fills form fields with required data when creating a process. (e.g. remaining leave days)",
         "experimentalFeatureExplanationOff": "Do not use DataSource connection when scanning forms",
         "experimentalFeatureWarning": "This feature is currently in testing and may not work as expected. Please provide feedback to the development team.",
         "addDataSource": "Add dataSource",
@@ -1299,9 +1450,9 @@
         "dataSourceConnectionOn": "DataSource connection is enabled.",
         "dataSourceConnectionOff": "DataSource connection is disabled.",
         "tenantManage": "Tenant Management",
-        "url": "URL",
         "key": "Key",
         "value": "Value",
+        "url": "URL",
         "description": "Description",
         "delete": "Delete",
         "deleteUserSuccess": "User '{name}' has been deleted successfully.",
@@ -1383,7 +1534,8 @@
         "noAvailableTeams": "No teams available to add",
         "addSelectedTeams": "Add Selected Teams",
         "confirmDelete": "Delete Group",
-        "deleteConfirmMessage": "Are you sure you want to delete '{name}' group?"
+        "deleteConfirmMessage": "Are you sure you want to delete '{name}' group?",
+        "affiliatedTeam": "Affiliated team"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -1586,6 +1738,7 @@
         "id": "ID",
         "name": "Name",
         "owner": "Owner",
+        "ownerPlaceholder": "Select owner",
         "message": "Description",
         "versionTag": "Version Tag",
         "save": "Save",
@@ -1614,8 +1767,8 @@
         "readOnly": "Read-Only Mode",
         "save": "Save",
         "fixed": "Fixed Options",
-        "dataBinding": "Data Binding",
-        "urlBinding": "URL Binding"
+        "urlBinding": "URL Binding",
+        "dataBinding": "Data Binding"
     },
     "ContainerSettingPanel": {
         "title": "Edit Container Attribute",
@@ -1712,12 +1865,11 @@
         "useCompetingModeHint": "Use Competing Mode",
         "assignType": "Assignment Method",
         "assignTypeHint": "Assignment Method",
-        "claim": "Claim",
-        "claimDescription": "Claim Assignment",
+        "racing": "Shared Group",
+        "racingDescription": "Assign tasks using racing (first-come) mode.",
         "direct": "Direct Assignment",
         "directDescription": "Direct Assignment",
         "assignee": "Assign User",
-        "racing": "Shared Group",
         "expression": "Expression-based",
         "loadBalancing": "Load Balancing",
         "taskType": "Task Type",
@@ -1732,7 +1884,8 @@
         "loadBalancingStrategy": "Assignment Strategy",
         "roundRobin": "Round Robin (Sequential Assignment)",
         "leastTasks": "Least Tasks First",
-        "idle": "Longest Idle First"
+        "idle": "Longest Idle First",
+        "candidateList": "Candidate list"
     },
     "Mapper": {
         "mapper": "Mapper"
@@ -1777,17 +1930,18 @@
         "apiUrlDescriptionSubTitle1": "1.GET: A request to retrieve data from the server \n2.POST: A request to create and send new data to the server \n3.PUT: A request to update or replace the entire existing data \n4.PATCH: A request to partially modify existing data \n5.API URL: The endpoint address of the server where the request will be sent\n"
     },
     "LanePanel": {
+        "directLabel": "Direct assign",
         "selectRoleType": "Select Role Type",
         "none": "None",
         "UserRole": "User Role",
+        "Department": "Department",
+        "Group": "Group",
         "organization": "Organization/Group",
         "selectOrganization": "Select Organization or Group",
         "group": "Group",
         "team": "Team",
         "IAMScope": "Role Resolution By IAM Scope",
         "DirecUser": "Role Resolution By Direct user",
-        "Department": "Department",
-        "Group": "Group",
         "resolutionRule": "Resolution Rule",
         "scopeName": "Scope Name",
         "userID": "User ID",
@@ -1943,13 +2097,15 @@
         "chat": "Chat"
     },
     "ProcessDefinitionChat": {
-        "greetingMessage": "Hello {name}! What tasks and issues are you experiencing? Please let me know and I'll help you!"
+        "greetingMessage": "Hello {name}! What tasks and issues are you experiencing? Please let me know and I'll help you!",
+        "datasourceSchemaFailed": "Failed to connect DataSource schema. Please check the connection info in Settings > DataSource.",
+        "datasourceSchemaFailedNoPermission": "Failed to connect DataSource schema. Only administrators can configure DataSource settings. Please contact your administrator."
     },
     "customContextPad": {
         "endEvent": "Append End Event",
         "gateway": "Append gateway",
-        "task": "Append task",
         "replaceMultipleTasks": "Change Type (Multiple Tasks)",
+        "task": "Append task",
         "intermediateEvent": "Append intermediate/boundary event",
         "textAnnotation": "Add text annotation",
         "replace": "Change element",
@@ -2090,7 +2246,7 @@
                     "title": "Start working immediately without additional research",
                     "details": [
                         {
-                            "title": "💡 Use this when:\n• You already have all the information you need\n• Simple task or question\n• Quick answer needed"
+                            "title": "💡 Use when:\n• You already have all needed information\n• Simple task or question\n• Need quick response"
                         },
                         {
                             "title": "📝 Examples:\n• Summarize documents\n• Code refactoring\n• Text translation"
@@ -2105,13 +2261,13 @@
                     "title": "Multiple AI experts work together as a team",
                     "details": [
                         {
-                            "title": "🎯 How it works:\nResearcher → Data collection\nAnalyst → Deep analysis\nWriter → Report writing"
+                            "title": "🎯 How it works:\nResearcher → Data collection\nAnalyst → In-depth analysis\nWriter → Report creation"
                         },
                         {
-                            "title": "💡 Use this when:\n• Complex topics requiring multi-angle analysis\n• Expert-level report writing\n• Comprehensive market research"
+                            "title": "💡 Use when:\n• Complex topics needing multi-angle analysis\n• Expert-level report creation\n• Comprehensive market research"
                         },
                         {
-                            "title": "📝 Examples:\n• Competitor analysis report\n• Market trend research\n• Strategic planning document"
+                            "title": "📝 Examples:\n• Competitor analysis report\n• Market trend research\n• Strategy planning document"
                         }
                     ]
                 }
@@ -2123,10 +2279,10 @@
                     "title": "Custom research flow optimized for your environment",
                     "details": [
                         {
-                            "title": "🎯 How it works:\nCustom researcher → Data collection\nCustom analyst → Deep analysis\nCustom writer → Report writing"
+                            "title": "🎯 How it works:\nCustom researcher → Data collection\nCustom analyst → In-depth analysis\nCustom writer → Report creation"
                         },
                         {
-                            "title": "💡 Use this when:\n• You want a custom deep research server\n• Need specialized data sources\n• Tailored report style is required"
+                            "title": "💡 Use when:\n• Want to use Deep Research custom server\n• Need special data sources\n• Need organization-specific report format"
                         },
                         {
                             "title": "📝 Examples:\n• Internal knowledge research\n• Custom data pipeline analysis\n• Organization-specific report"
@@ -2141,13 +2297,13 @@
                     "title": "Data collection using APIs and external tools",
                     "details": [
                         {
-                            "title": "🎯 How it works:\n→ Call specific APIs or tools\n→ Collect structured data\n→ Integrate and organize results"
+                            "title": "🎯 How it works:\n→ Call specific API or tools\n→ Collect structured data\n→ Integrate and organize results"
                         },
                         {
-                            "title": "💡 Use this when:\n• Need data from specific sources\n• Tasks requiring API integration\n• Structured data collection"
+                            "title": "💡 Use when:\n• Need data from specific source\n• API integration required\n• Structured data collection"
                         },
                         {
-                            "title": "📝 Examples:\n• Collect stock market data\n• Query weather information\n• CRM system integration\n• Database queries"
+                            "title": "📝 Examples:\n• Stock quote collection\n• Weather data lookup\n• CRM system integration\n• Database query"
                         }
                     ]
                 }
@@ -2159,13 +2315,13 @@
                     "title": "Highly reliable research through iterative verification",
                     "details": [
                         {
-                            "title": "🎯 How it works:\nStage 1: Initial research\nStage 2: Result evaluation\nStage 3: Re-investigation (if needed)\nStage 4: Final verification"
+                            "title": "🎯 How it works:\nStep 1: Initial research\nStep 2: Result evaluation\nStep 3: Re-investigation (if needed)\nStep 4: Final verification"
                         },
                         {
-                            "title": "💡 Use this when:\n• Exploring uncertain topics\n• Information where reliability is critical\n• Cross-verification from multiple sources needed"
+                            "title": "💡 Use when:\n• Exploring uncertain topics\n• Credibility is important\n• Cross-validation from multiple sources needed"
                         },
                         {
-                            "title": "📝 Examples:\n• Identify latest research trends\n• Fact-checking\n• Analysis of controversial topics"
+                            "title": "📝 Examples:\n• Latest research trends\n• Fact-checking\n• Controversial topic analysis"
                         }
                     ]
                 }
@@ -2177,13 +2333,13 @@
                     "title": "Visit websites and automatically extract data",
                     "details": [
                         {
-                            "title": "🎯 How it works:\n→ Access specified websites\n→ Navigate pages and collect data\n→ Extract and organize information"
+                            "title": "🎯 How it works:\n→ Access specified website\n→ Navigate and collect data\n→ Extract and organize information"
                         },
                         {
-                            "title": "💡 Use this when:\n• Collecting information from specific websites\n• Price comparison or monitoring\n• News article collection"
+                            "title": "💡 Use when:\n• Collect info from specific website\n• Price comparison or monitoring\n• News article collection"
                         },
                         {
-                            "title": "📝 Examples:\n• Shopping mall price comparison\n• Real estate listing collection\n• News headline compilation\n• Competitor website monitoring"
+                            "title": "📝 Examples:\n• Shopping mall price comparison\n• Real estate listing collection\n• News headline collection\n• Competitor website monitoring"
                         },
                         {
                             "title": "⚠️ Note: Website access permission required"
@@ -2198,13 +2354,13 @@
                     "title": "Multiple agents collaborate in real-time",
                     "details": [
                         {
-                            "title": "🎯 How it works:\n→ Multiple agents work simultaneously\n→ Real-time information sharing and integration\n→ Dynamic role adjustment"
+                            "title": "🎯 How it works:\n→ Multiple agents work concurrently\n→ Real-time info sharing and integration\n→ Dynamic role adjustment"
                         },
                         {
-                            "title": "💡 Use this when:\n• Complex and dynamic work flows\n• Continuous monitoring needed\n• Real-time integration from various sources"
+                            "title": "💡 Use when:\n• Complex and dynamic workflows\n• Continuous monitoring needed\n• Real-time integration from multiple sources"
                         },
                         {
-                            "title": "📝 Examples:\n• 24/7 market monitoring\n• Real-time news curation\n• Complex data dashboard"
+                            "title": "📝 Examples:\n• 24/7 market monitoring\n• Real-time news curation\n• Composite data dashboard"
                         },
                         {
                             "title": "⚠️ Advanced user feature"
@@ -2219,16 +2375,16 @@
                     "title": "Call various tools to achieve goals",
                     "details": [
                         {
-                            "title": "🎯 How it works:\nAI → Select and call tools\nTools → Execute tasks (image generation, code)\nAI → Integrate and analyze results"
+                            "title": "🎯 How it works:\nAI → Select and call tools\nTools → Execute (image gen, code)\nAI → Integrate and analyze results"
                         },
                         {
-                            "title": "💡 Use this when:\n• Image generation and editing\n• Code execution and data analysis\n• Math calculation and visualization\n• API-based external service utilization"
+                            "title": "💡 Use when:\n• Image generation and editing\n• Code execution and data analysis\n• Math calculation and visualization\n• API-based external services"
                         },
                         {
-                            "title": "📝 Examples:\n• \"Analyze CSV with Python\"\n• \"Draw a graph\"\n• \"Generate an image\"\n• \"Call weather API and get info\""
+                            "title": "📝 Examples:\n• \"Analyze CSV with Python\"\n• \"Draw a graph\"\n• \"Generate image\"\n• \"Fetch info from weather API\""
                         },
                         {
-                            "title": "📊 Output: Structured data/code\n✅ Pros: Fast, stable, easy automation\n⚠️ Limits: Cannot directly manipulate web UI"
+                            "title": "📊 Output: Structured data/code\n✅ Pros: Fast, stable, easy to automate\n⚠️ Limit: No direct web UI control"
                         }
                     ]
                 }
@@ -2240,16 +2396,16 @@
                     "title": "Perform tasks by manipulating actual browser",
                     "details": [
                         {
-                            "title": "🎯 How it works:\nAI → Launch browser\nBrowser → Access and manipulate webpages\n(Click, input, scroll, scrape)\nAI → Analyze and organize collected info"
+                            "title": "🎯 How it works:\nAI → Launch browser\nBrowser → Access and control page\n(click, type, scroll, scrape)\nAI → Analyze collected info"
                         },
                         {
-                            "title": "💡 Use this when:\n• Collect info from websites without API\n• Tasks requiring login\n• Real-time latest info search\n• Form filling and submission automation"
+                            "title": "💡 Use when:\n• Collect from sites without API\n• Login-required tasks\n• Real-time latest info search\n• Form fill and submit automation"
                         },
                         {
-                            "title": "📝 Examples:\n• \"Search latest news on Naver\"\n• \"Compare shopping mall prices\"\n• \"Automate registration\"\n• \"Scrape real estate listings\""
+                            "title": "📝 Examples:\n• \"Search latest news on Naver\"\n• \"Compare shopping prices\"\n• \"Automate signup\"\n• \"Scrape real estate listings\""
                         },
                         {
-                            "title": "📊 Output: Real-time web data\n✅ Pros: Access all websites\n⚠️ Limits: Slow, vulnerable to site changes"
+                            "title": "📊 Output: Real-time web data\n✅ Pros: Access any website\n⚠️ Limit: Slow, vulnerable to site changes"
                         }
                     ]
                 }
@@ -2342,7 +2498,8 @@
         "chatList": "Conversations",
         "chatLoading": "Loading...",
         "chatEmpty": "No chats.",
-        "analytics": "Analytics"
+        "analytics": "Analytics",
+        "definitionLoading": "Loading definitions..."
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
@@ -2451,7 +2608,13 @@
     "ExternalForms": {
         "submit": "Submit",
         "submitted": "Submitted",
-        "submittedMessage": "Submitted successfully."
+        "submittedMessage": "Submitted successfully.",
+        "formNotFound": "Form not found",
+        "formNotFoundMessage": "The requested form was not found. Please contact the administrator.",
+        "previousStep": "Previous step",
+        "previousStepDescription": "Below is the information you entered in the previous step. For reference only.",
+        "currentStep": "Current step",
+        "invalidAccess": "Invalid access."
     },
     "ProcessDefinitionChatHeader": {
         "addMarketplace": "Register to Marketplace",
@@ -2476,16 +2639,18 @@
         "searchResultTitle": "Search Results",
         "searchingTitle": "Searching...",
         "relatedTemplates": "Related Templates",
+        "previewButton": "Preview",
+        "previewDialogTitle": "Process Preview",
         "addedButton": "Added",
         "addButton": "Add",
         "deleteButton": "Delete",
         "otherCategory": "Other",
-        "countUnit": "items",
-        "allTemplates": "All Templates",
         "deleteDialogTitle": "Confirm Process Deletion",
         "deleteDialogMessage": "Are you sure you want to delete the \"{name}\" process from the marketplace?",
         "deleteDialogWarning": "This action cannot be undone.",
-        "deleteDialogConfirmMessage": "Please type the process name exactly to continue:"
+        "deleteDialogConfirmMessage": "Please type the process name exactly to continue:",
+        "countUnit": "items",
+        "allTemplates": "All Templates"
     },
     "ContentEditorField": {
         "contentEditor": "Content Editor",
@@ -2628,8 +2793,24 @@
         "educationButton": "View Education Course",
         "technicalReportLink": "View Technical Report"
     },
+    "NecessitySection": {
+        "title1": "So far, AI adoption has",
+        "title2": "mostly remained at the level of personal productivity tools.",
+        "feature1": "Draft documents",
+        "feature2": "Translate",
+        "feature3": "Summarize",
+        "feature4": "Search automation",
+        "problemTitle": "These features are useful for individuals but do not impact the organization's end-to-end process.",
+        "solutionTitle": "Now, Agentic Process AI that understands and executes the full workflow is",
+        "solutionDescription": "required for end-to-end process automation.",
+        "benefit1": "Auto-execute from document creation to system integration",
+        "benefit2": "Hybrid human-AI agent organization",
+        "benefit3": "Automate repetitive tasks and knowledge-based decisions",
+        "benefit4": "Focus only on strategic decisions and context judgment"
+    },
     "AI3StepsSection": {
-        "title": "MS Work Trend Index 2025: 3 Stages of AI Transformation",
+        "title1": "ProcessGPT is a",
+        "title2": "solution that implements this Agentic Process AI",
         "category": "Category",
         "step1": "Stage 1: Assistant Utilization",
         "step2": "Stage 2: Digital Colleague Agent",
@@ -2666,7 +2847,6 @@
     },
     "HowSection": {
         "title": "How Process GPT Works?",
-        "subtitle": "Various business tasks, now Process-GPT executes them",
         "subtitle1": "1. Agent Declaration",
         "subtitle2": "2. Process Creation",
         "subtitle3": "3. Process Execution",
@@ -2674,22 +2854,18 @@
         "subtitle5": "5. A2A Call & Service Exposure",
         "description1-1": "Register and manage general agents and A2A agents.",
         "description1-2": "Assign personas and roles to each agent.",
-        "description1-3": "Manage documents and data based on ontology to use for learning and execution.",
-        "description1-4": "Configure necessary tools and permissions to automate tasks and system integrations.",
         "description2-1": "When you enter your goal, tasks, forms, and checkpoints are automatically defined.",
         "description2-2": "The roles of humans and agents are declared in the work chart.",
         "description2-3": "Interpret Open API specifications and process data to propose MCP·A2A integration methods.",
-        "description2-4": "Include input forms and approval procedures to configure, and you can edit in natural language or BPMN.",
         "description3-1": "Create a Crew with registered agents to execute autonomously.",
         "description3-2": "ERP, email, collaboration tools are processed automatically through MCP, and the results of task execution are reflected in the system or output as necessary documents (e.g., documents, reports).",
         "description3-3": "Processes and agents are exposed as A2A services to allow external calls.",
-        "description3-4": "Provide an execution-centered environment that can use internal search·office tools.",
-        "description3-5": "Mobile supports voice·image input, desktop supports text input to ensure task continuity anywhere.",
         "description4-1": "Accumulate execution data as a feedback loop.",
         "description4-2": "Agents improve performance through repeated execution.",
         "description4-3": "Improved knowledge is reflected in the ontology and used for process and task design.",
-        "description4-4": "People can add new knowledge·rules to retrain agents.",
-        "description4-5": "Organizations gradually improve their operational environment based on data."
+        "description5-1": "Supports both web-based MCP (browser/desktop) and mobile app environments for diverse user needs.",
+        "description5-2": "Office workers get precision process design UI; field/sales get voice/image-based mobile interface.",
+        "description5-3": "Multi-interface options ensure consistent UX and task continuity regardless of location or device."
     },
     "ConsultingSection": {
         "title": "Process Consulting AI and Management",
@@ -2963,6 +3139,8 @@
         "toolUsageComplete": "completed",
         "toolUsageInProgress": "in progress",
         "tool": "tool",
+        "parsingDocument": "Parsing document...",
+        "parsingFailed": "Parsing failed",
         "approved": "Approved",
         "rejected": "Rejected",
         "processed": "Processed",
@@ -3023,9 +3201,23 @@
         "feedback": "Is the process execution normal?",
         "feedbackDescription": "Is the process execution normal?"
     },
+    "ProcessInstanceLog": {
+        "headers": {
+            "time": "Time",
+            "role": "Role",
+            "sender": "Sender",
+            "message": "Message"
+        },
+        "noData": "No messages logged yet.",
+        "streaming": "Receiving real-time logs...",
+        "unknownSender": "Unknown",
+        "systemSender": "System"
+    },
     "ActivityInputData": {
         "previousInput": "Previous Activity Input",
-        "previousInputDescription": "This shows the input provided for the previous activity. Please refer to it as you proceed with the current work."
+        "previousInputDescription": "This shows the input provided for the previous activity. Please refer to it as you proceed with the current work.",
+        "previousInputDetailTitle": "What is previous input?",
+        "previousInputDetail": "Shows form data entered by the previous task actor in the BPM process. Use this to perform the current task and understand the flow. Example: In Approve Request → Review → Approve, at 'Review' you see what was entered at 'Approve Request'."
     },
     "MCPServer": {
         "searchMCPServers": "Search MCP Servers"
@@ -3037,11 +3229,14 @@
         "type": "Type",
         "environmentName": "Environment Name",
         "secretName": "Secret Name",
+        "browserUseSecretName": "Browser Use secret name",
         "nameRequired": "Name is required",
         "loadingEnvironments": "Loading Environments...",
         "loadingSecrets": "Loading Secrets...",
+        "loadingBrowserUseSecrets": "Loading Browser Use secrets...",
         "environment": "Environment",
         "secret": "Secret",
+        "browserUse": "Browser Use",
         "name": "Name",
         "data": "Data",
         "actions": "Actions",
@@ -3049,12 +3244,17 @@
         "environmentUpdated": "Environment updated successfully",
         "secretCreated": "Secret created successfully",
         "secretUpdated": "Secret updated successfully",
+        "browserUseSecretCreated": "Browser Use secret created",
+        "browserUseSecretUpdated": "Browser Use secret updated",
         "environmentDeleted": "Environment deleted successfully",
         "secretDeleted": "Secret deleted successfully",
+        "browserUseSecretDeleted": "Browser Use secret deleted",
         "errorSavingEnvironment": "Error saving environment",
         "errorSavingSecret": "Error saving secret",
+        "errorSavingBrowserUseSecret": "Error saving Browser Use secret",
         "errorDeletingEnvironment": "Error deleting environment",
         "errorDeletingSecret": "Error deleting secret",
+        "errorDeletingBrowserUseSecret": "Error deleting Browser Use secret",
         "confirmDeleteEnvironment": "Are you sure you want to delete environment \"{name}\"?",
         "confirmDeleteSecret": "Are you sure you want to delete secret \"{name}\"?",
         "confirmDeleteBrowserUseSecret": "Are you sure you want to delete Browser Use secret \"{name}\"?",
@@ -3083,12 +3283,18 @@
         "versionSummary": "Version {version} · Last modified: {time}",
         "versionItemTitle": "Version {version}",
         "download": "Download",
+        "downloadVersionXML": "Download XML (v{version})",
         "changeToVersion": "Change to Version",
         "noXmlData": "No XML data available for the selected version.",
         "copiedToClipboard": "Copied to clipboard.",
         "relativeJustNow": "just now",
         "relativeMinutesAgo": "{minutes} minutes ago",
         "relativeHoursAgo": "{hours} hours ago"
+    },
+    "BpmnUengineField": {
+        "newProcess": "New",
+        "processSelectLabel": "Process",
+        "versionSelectLabel": "Version"
     },
     "defaultSetting": {
         "defaultLLM": {
@@ -3244,7 +3450,7 @@
         "duplicate": "Duplicate",
         "copySuffix": "Copy",
         "duplicateSuccess": "Process has been duplicated.",
-"duplicateFailed": "Failed to duplicate process.",
+        "duplicateFailed": "Failed to duplicate process.",
         "duplicatePartialSuccess": "Process has been duplicated, but details were not copied."
     },
     "ownerSettingDialog": {
@@ -3345,7 +3551,8 @@
         "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n 'Use the color that matches each company's CI when writing a proposal.' \n 'Proposals for government and public institutions must be written in Korean (HWP) format.' \n 'For B2C proposals, prioritize visual materials to help customers understand.' \n You can train such guides.",
         "questionModeInfo": "Question Mode: You can ask questions to the agent and receive answers. \n For example, \n 'Show me only the assessment items for regional evaluation from last week's learning.' \n 'Summarize the rules related to CI color in the proposal writing guidelines.' \n 'Explain only the procedure for quality inspection in the learned manual.' \n You can verify learning content or check only the necessary parts through such questions.",
         "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results. \n For example, \n 'Calculate the premium based on the input customer data.' \n 'Summarize the recent quarterly sales results and visualize them as a graph.' \n 'Automatically write a proposal according to the specified format.' \n You can execute such commands.",
-        "ruleInferenceModeInfo": "Business Rule Inference Mode: Infer results for specific conditions based on learned business rules. \n For example, \n 'Is a customer with a credit score of 750 and annual income of 60M KRW eligible for a loan?' \n 'What is the final price for a VIP customer with a purchase amount of 1M KRW?' \n 'What is the screening result for an applicant with 7 years of experience and 2 certifications?' \n You can verify rules and infer results in advance."
+        "ruleInferenceModeInfo": "Business Rule Inference Mode: Infer results for specific conditions based on learned business rules. \n For example, \n 'Is a customer with a credit score of 750 and annual income of 60M KRW eligible for a loan?' \n 'What is the final price for a VIP customer with a purchase amount of 1M KRW?' \n 'What is the screening result for an applicant with 7 years of experience and 2 certifications?' \n You can verify rules and infer results in advance.",
+        "mainChatInfo": "Create process, execute, view results, or run Q&A. E.g., 'Create/run leave request process', 'Show my latest leave request result'"
     },
     "ReworkDialog": {
         "title": "Rework Scope Setting",
@@ -3472,6 +3679,16 @@
         "enabled": "Enabled",
         "noRules": "No color rules defined. Add rules to automatically apply colors based on task type or lead time."
     },
+    "common": {
+        "cancel": "Cancel",
+        "save": "Save",
+        "confirm": "Confirm",
+        "delete": "Delete",
+        "edit": "Edit",
+        "add": "Add",
+        "close": "Close",
+        "reset": "Reset"
+    },
     "taskCatalog": {
         "title": "Task Catalog Management",
         "taskTypes": "Task Type Settings",
@@ -3556,7 +3773,6 @@
         "fieldType": "Field Type",
         "appliesTo": "Applies To",
         "config": "Config",
-        "visible": "Visible",
         "placeholder": "Placeholder",
         "visibleByDefault": "Visible by Default",
         "addField": "Add Field",
@@ -3573,10 +3789,6 @@
         "allTasks": "All Tasks",
         "specificTask": "Specific Task",
         "configPlaceholder": "DB: table_name or SUM(tasks.fte)"
-    },
-    "Common": {
-        "submit": "Submit",
-        "role": "Role"
     },
     "fteInput": {
         "title": "FTE Input",
@@ -3606,7 +3818,7 @@
     "analytics": {
         "title": "Analytics",
         "dashboard": "Dashboard",
-"queryResult": "Query Result",
+        "queryResult": "Query Result",
         "kpi": "KPI & Progress",
         "kpiAchievement": "KPI Achievement",
         "processPipeline": "Process Pipeline",
@@ -3620,7 +3832,37 @@
         "avgWeeklyDeployment": "Avg Weekly Deployment",
         "strategyBoard": "Strategy Board",
         "publishedNote": "Only processes published after review are counted toward KPI targets",
-        "noData": "No data available"
+        "noData": "No data available",
+        "heatmap": "Heatmap",
+        "pivot": "Pivot table",
+        "performance": "Performance",
+        "query": "Natural language query",
+        "totalInstances": "Total instances",
+        "completedTasks": "Completed tasks",
+        "avgDuration": "Avg. processing time",
+        "activeUsers": "Active users",
+        "instanceTrend": "Instance trend",
+        "taskDistribution": "Task distribution",
+        "cubeSelect": "Select cube",
+        "schemaUpload": "Schema upload",
+        "schemaRequired": "Schema required",
+        "schemaRequiredDesc": "Upload Mondrian XML schema first to use pivot table.",
+        "naturalQueryDesc": "Query data in natural language (Text2SQL)",
+        "agentPerformance": "Agent performance",
+        "humanPerformance": "Human performance",
+        "taskCount": "Task count",
+        "avgF1": "Avg. F1",
+        "avgProcessTime": "Avg. process time",
+        "errorCount": "Error count",
+        "f1Trend": "F1 score trend",
+        "taskCountTrend": "Task count trend",
+        "rows": "Rows",
+        "columns": "Columns",
+        "measures": "Measures",
+        "dimensions": "Dimensions",
+        "executeQuery": "Execute query",
+        "queryPlaceholder": "e.g., Show completed instances this month",
+        "generatedSql": "Generated SQL"
     },
     "reviewBoard": {
         "title": "Process Review Board",
@@ -3681,37 +3923,7 @@
         "cancelledByNewSave": "Cancelled due to new version save",
         "currentState": "Current State",
         "version": "Version",
-        "submittedBy": "Submitted by",
-        "heatmap": "Heatmap",
-        "pivot": "Pivot Table",
-        "performance": "Performance",
-        "query": "Natural Query",
-        "totalInstances": "Total Instances",
-        "completedTasks": "Completed Tasks",
-        "avgDuration": "Average Duration",
-        "activeUsers": "Active Users",
-        "instanceTrend": "Instance Trend",
-        "taskDistribution": "Task Distribution",
-        "cubeSelect": "Select Cube",
-        "schemaUpload": "Upload Schema",
-        "schemaRequired": "Schema Required",
-        "schemaRequiredDesc": "Please upload a Mondrian XML schema to use the pivot table.",
-        "naturalQueryDesc": "Query your data using natural language (Text2SQL)",
-        "agentPerformance": "Agent Performance",
-        "humanPerformance": "Human Performance",
-        "taskCount": "Task Count",
-        "avgF1": "Average F1",
-        "avgProcessTime": "Avg Process Time",
-        "errorCount": "Error Count",
-        "f1Trend": "F1 Score Trend",
-        "taskCountTrend": "Task Count Trend",
-        "rows": "Rows",
-        "columns": "Columns",
-        "measures": "Measures",
-        "dimensions": "Dimensions",
-        "executeQuery": "Execute Query",
-        "queryPlaceholder": "e.g., Show me the number of completed instances this month",
-        "generatedSql": "Generated SQL"
+        "submittedBy": "Submitted by"
     },
     "mainChat": {
         "placeholder": "How can I help you? Try asking to create, execute, or search processes.",

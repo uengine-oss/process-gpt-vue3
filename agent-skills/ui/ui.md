@@ -311,6 +311,6 @@ isMobile() {
 
 ## 참조
 
-- **테이블**: `agent-ui-md/templates/table-component.md`
-- **도움말**: `agent-ui-md/templates/info-component.md`
-- **다국어**: `agent-ui-md/templates/i18n-locales.md`
+- **테이블**: `agent-skills/ui/table-component.md`
+- **도움말**: `agent-skills/ui/info-component.md`
+- **다국어**: `agent-skills/i18n/i18n-locales.md`

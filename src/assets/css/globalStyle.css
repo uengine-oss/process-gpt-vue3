@@ -900,6 +900,20 @@ hr {
     align-items: center;
     justify-content: center;
 }
+/* 리스트 스켈레톤 로딩 */
+.list-skeleton-loading {
+    padding: 4px 12px;
+}
+
+.list-skeleton-loading .v-skeleton-loader__list-item {
+    margin: 0px;
+    padding: 8px 0px 8px 0px;
+}
+
+.list-skeleton-loading .v-skeleton-loader__text {
+    height: 30px;
+}
+
 /* skeleton 관련 style */
 .tutorial-main-skeleton .v-skeleton-loader__heading {
     display: none;

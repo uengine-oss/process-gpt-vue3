@@ -4,22 +4,20 @@
         <slot name="items" :displayedItems="displayedItems"></slot>
 
         <!-- 더보기/접기 버튼 -->
-        <div v-if="showMoreVisible || showLessVisible" class="mt-2">
-            <v-card v-if="showMoreVisible" @click="showMore" class="text-center cursor-pointer pa-2" elevation="10" rounded="10">
-                <v-card-text class="pa-0">
-                    <span class="text-caption"> {{ $t('VerticalSidebar.showMore') }} ({{ remainingCount }}) </span>
-                    <v-icon size="small" class="ml-1">mdi-chevron-down</v-icon>
-                </v-card-text>
-            </v-card>
-            <v-card v-if="showLessVisible" @click="showLess" class="text-center cursor-pointer pa-2" elevation="10" rounded="10">
-                <v-card-text class="pa-0">
-                    <span class="text-caption">
-                        {{ $t('VerticalSidebar.showLess') }}
-                    </span>
-                    <v-icon size="small" class="ml-1">mdi-chevron-up</v-icon>
-                </v-card-text>
-            </v-card>
-        </div>
+        <v-card
+            v-if="showMoreVisible || showLessVisible"
+            class="text-center cursor-pointer pa-2 mt-2"
+            elevation="10"
+            rounded="10"
+            @click="showMoreVisible ? showMore() : showLess()"
+        >
+            <v-card-text class="pa-0">
+                <span class="text-caption">
+                    {{ showMoreVisible ? `${$t('VerticalSidebar.showMore')} (${remainingCount})` : $t('VerticalSidebar.showLess') }}
+                </span>
+                <v-icon size="small" class="ml-1">{{ showMoreVisible ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
+            </v-card-text>
+        </v-card>
     </div>
 </template>
 

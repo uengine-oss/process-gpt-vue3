@@ -882,12 +882,8 @@ export default {
                 title: 'processDefinitionMap.usageGuide.details.1.title'
             },
             {
-                icon: 'magic',
-                title: 'processDefinitionMap.usageGuide.details.2.title'
-            },
-            {
                 icon: 'market',
-                title: 'processDefinitionMap.usageGuide.details.3.title'
+                title: 'processDefinitionMap.usageGuide.details.2.title'
             }
         ],
         generator: null,
@@ -1147,27 +1143,26 @@ export default {
                 if (isAdmin == 'true') {
                     me.isAdmin = true;
                 }
-                await me.getProcessMap();
-                await me.getMetricsMap();
-                await me.ensureUncategorizedDomainTab(); // '미분류' 탭이 없으면 추가
-                await me.loadOrganizationOptions();
-                // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
-                if (me.useLock) {
-                    await me.checkedLock();
-                } else {
-                    // uEngine
+
+                const [,, userInfo] = await Promise.all([
+                    me.getProcessMap(),
+                    me.getMetricsMap().then(() => me.ensureUncategorizedDomainTab()),
+                    backend.getUserInfo(),
+                    me.loadOrganizationOptions(),
+                    me.useLock ? me.checkedLock() : Promise.resolve()
+                ]);
+
+                if (!me.useLock) {
                     me.editUser = me.userName;
                     me.enableEdit = true;
                 }
 
-                // WorkAssistantGenerator 초기화 (ChatModule 스타일)
                 me.generator = new WorkAssistantGenerator(me, {
-                    isStream: false, // 스트리밍 비활성화 (전체 응답을 받아야 intent 파싱 가능)
+                    isStream: false,
                     preferredLanguage: 'Korean'
                 });
 
-                // ChatModule을 위한 userInfo 설정
-                me.userInfo = await backend.getUserInfo();
+                me.userInfo = userInfo;
             }
         });
     },
@@ -1987,7 +1982,6 @@ export default {
         async getProcessMap() {
             const res = await backend.getProcessDefinitionMap();
             this.value = this.normalizeProcessMap(res);
-            // 미분류 프로세스 업데이트 (항상 재계산)
             await this.updateUncategorizedProcesses();
         },
         async getMetricsMap() {
@@ -1998,7 +1992,9 @@ export default {
         async updateUncategorizedProcesses() {
             try {
                 // 1. 모든 proc_def 가져오기
-                const allProcDefs = await backend.listDefinition();
+                const { data: allProcDefs } = await window.$supabase
+                    .from('proc_def')
+                    .select('id, name');
                 if (!allProcDefs || allProcDefs.length === 0) return;
 
                 // 미분류 이름 목록
