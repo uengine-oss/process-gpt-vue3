@@ -530,24 +530,6 @@ jobs:
             echo "text=🚨 Playwright smoke test failed but rollback job did not run." >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Notify Slack
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: |
-          curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"${{ steps.msg.outputs.text }}\nRepository: ${{ github.repository }}\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
-            "$SLACK_WEBHOOK_URL"
-
-      - name: Notify Teams
-        if: ${{ secrets.TEAMS_WEBHOOK_URL != '' }}
-        env:
-          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
-        run: |
-          curl -H "Content-Type: application/json" \
-            -d "{\"text\":\"${{ steps.msg.outputs.text }}\nRepository: ${{ github.repository }}\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
-            "$TEAMS_WEBHOOK_URL"
-
       - name: Write notification summary
         run: |
           echo "## 🔔 Rollback notification" >> "$GITHUB_STEP_SUMMARY"
