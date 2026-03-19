@@ -342,8 +342,7 @@ jobs:
 
           FRONTEND_MANIFEST="gitops-repo/deployments/frontend-deployment.yaml"
           FRONTEND_DEPLOY=$(yq eval '.metadata.name' "$FRONTEND_MANIFEST")
-          FRONTEND_NS=$(yq eval '.metadata.namespace' "$FRONTEND_MANIFEST")
-          if [ -z "$FRONTEND_NS" ] || [ "$FRONTEND_NS" = "null" ]; then FRONTEND_NS="default"; fi
+          FRONTEND_NS="dev"
 
           if [ -f "gitops-repo/.deploy/last-good-gateway-manifest-path.txt" ]; then
             GATEWAY_MANIFEST_REL=$(cat "gitops-repo/.deploy/last-good-gateway-manifest-path.txt")
@@ -361,31 +360,37 @@ jobs:
           fi
 
           GATEWAY_DEPLOY=$(yq eval '.metadata.name' "$GATEWAY_MANIFEST")
-          GATEWAY_NS=$(yq eval '.metadata.namespace' "$GATEWAY_MANIFEST")
-          if [ -z "$GATEWAY_NS" ] || [ "$GATEWAY_NS" = "null" ]; then GATEWAY_NS="default"; fi
+          GATEWAY_NS="dev"
 
-          echo "Waiting rollout: $FRONTEND_NS/$FRONTEND_DEPLOY"
-          kubectl rollout status deployment/"$FRONTEND_DEPLOY" -n "$FRONTEND_NS" --timeout=900s
-          echo "Waiting rollout: $GATEWAY_NS/$GATEWAY_DEPLOY"
-          kubectl rollout status deployment/"$GATEWAY_DEPLOY" -n "$GATEWAY_NS" --timeout=900s
+          echo "Resolved frontend deployment: $FRONTEND_NS/$FRONTEND_DEPLOY"
+          echo "Resolved gateway deployment:  $GATEWAY_NS/$GATEWAY_DEPLOY"
 
-          ACTUAL_FRONTEND_IMAGE=$(kubectl get deployment "$FRONTEND_DEPLOY" -n "$FRONTEND_NS" -o jsonpath='{.spec.template.spec.containers[0].image}')
-          ACTUAL_GATEWAY_IMAGE=$(kubectl get deployment "$GATEWAY_DEPLOY" -n "$GATEWAY_NS" -o jsonpath='{.spec.template.spec.containers[0].image}')
+          MAX_ATTEMPTS=45
+          SLEEP_SEC=20
 
-          echo "Expected frontend image: $EXPECTED_FRONTEND_IMAGE"
-          echo "Actual frontend image:   $ACTUAL_FRONTEND_IMAGE"
-          echo "Expected gateway image:  $EXPECTED_GATEWAY_IMAGE"
-          echo "Actual gateway image:    $ACTUAL_GATEWAY_IMAGE"
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            ACTUAL_FRONTEND_IMAGE=$(kubectl get deployment "$FRONTEND_DEPLOY" -n "$FRONTEND_NS" -o jsonpath='{.spec.template.spec.containers[0].image}')
+            ACTUAL_GATEWAY_IMAGE=$(kubectl get deployment "$GATEWAY_DEPLOY" -n "$GATEWAY_NS" -o jsonpath='{.spec.template.spec.containers[0].image}')
 
-          if [ "$ACTUAL_FRONTEND_IMAGE" != "$EXPECTED_FRONTEND_IMAGE" ]; then
-            echo "Frontend deployment image has not switched to expected tag."
-            exit 1
-          fi
+            echo "[Attempt $i/$MAX_ATTEMPTS]"
+            echo "Expected frontend image: $EXPECTED_FRONTEND_IMAGE"
+            echo "Actual frontend image:   $ACTUAL_FRONTEND_IMAGE"
+            echo "Expected gateway image:  $EXPECTED_GATEWAY_IMAGE"
+            echo "Actual gateway image:    $ACTUAL_GATEWAY_IMAGE"
 
-          if [ "$ACTUAL_GATEWAY_IMAGE" != "$EXPECTED_GATEWAY_IMAGE" ]; then
-            echo "Gateway deployment image has not switched to expected tag."
-            exit 1
-          fi
+            if [ "$ACTUAL_FRONTEND_IMAGE" = "$EXPECTED_FRONTEND_IMAGE" ] && [ "$ACTUAL_GATEWAY_IMAGE" = "$EXPECTED_GATEWAY_IMAGE" ]; then
+              echo "Expected images detected. Verifying rollout health..."
+              kubectl rollout status deployment/"$FRONTEND_DEPLOY" -n "$FRONTEND_NS" --timeout=300s
+              kubectl rollout status deployment/"$GATEWAY_DEPLOY" -n "$GATEWAY_NS" --timeout=300s
+              echo "Frontend/Gateway image and rollout checks passed."
+              exit 0
+            fi
+
+            sleep $SLEEP_SEC
+          done
+
+          echo "Timed out waiting for expected frontend/gateway images to be applied."
+          exit 1
 
   playwright_smoke_test:
     runs-on: ubuntu-latest
