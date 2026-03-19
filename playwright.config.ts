@@ -31,10 +31,10 @@ export default defineConfig({
     use: {
         baseURL, // CI/로컬에서 BASE_URL 주입 가능
 
-        trace: 'retain-on-failure',
+        trace: 'on',
 
-        video: 'retain-on-failure',
-        screenshot: 'only-on-failure'
+        video: 'on',
+        screenshot: 'on'
     },
 
     projects: [
