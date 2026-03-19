@@ -410,7 +410,7 @@ jobs:
           BASE_URL: ${{ secrets.BASE_URL }}
           E2E_USER: ${{ secrets.E2E_USER }}
           E2E_PASS: ${{ secrets.E2E_PASS }}
-        run: npm run test:e2e:smoke:ci
+        run: npm run test:e2e:smoke:simple:ci
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4

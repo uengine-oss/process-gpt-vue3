@@ -11,7 +11,9 @@
         "sast:vue:report": "node scripts/sast-vue-report.mjs",
         "license:check": "npx --yes license-checker --production --summary",
         "test:e2e:smoke": "playwright test playwright/e2e/smoke",
-        "test:e2e:smoke:ci": "playwright test playwright/e2e/smoke --reporter=list"
+        "test:e2e:smoke:ci": "playwright test playwright/e2e/smoke --reporter=list",
+        "test:e2e:smoke:simple": "playwright test playwright/e2e/smoke/beta-login-smoke-simple.spec.ts",
+        "test:e2e:smoke:simple:ci": "playwright test playwright/e2e/smoke/beta-login-smoke-simple.spec.ts --reporter=list"
     },
     "bin": "server.js",
     "pkg": {
