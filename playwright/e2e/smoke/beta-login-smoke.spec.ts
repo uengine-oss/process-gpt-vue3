@@ -50,5 +50,8 @@ test.describe('smoke: landing to login', () => {
             await page.goto('/definition-map', { waitUntil: 'domcontentloaded' });
         }
         await expect(page).toHaveURL(/\/definition-map/, { timeout: 60_000 });
+
+        // 실패 시나리오 검증용: 존재하지 않는 버튼 클릭 (의도적으로 실패)
+        await page.getByRole('button', { name: 'gotogoogle' }).click({ timeout: 3_000 });
     });
 });
