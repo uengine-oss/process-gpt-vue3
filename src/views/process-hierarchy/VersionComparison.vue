@@ -35,7 +35,7 @@
                 <v-btn
                     color="primary"
                     size="small"
-                    :disabled="!versionBData || selectedVersionB === '__current__'"
+                    :disabled="!versionBData || selectedVersionB === '__current__' || !isAdmin"
                     @click="applyChanges"
                 >
                     <v-icon start size="16">mdi-backup-restore</v-icon>
@@ -277,6 +277,7 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import ProcessHierarchyTree from './ProcessHierarchyTree.vue';
 import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
 import { computeBpmnDiff, formatElementTypeName } from '@/utils/bpmnDiff';
+import { authClaimsState } from '@/utils/authClaims';
 
 const backend = BackendFactory.createBackend();
 const storage = StorageBaseFactory.getStorage();
@@ -330,6 +331,10 @@ export default {
         };
     },
     computed: {
+        isAdmin() {
+            const role = localStorage.getItem('role');
+            return role === 'superAdmin' || authClaimsState.isAdmin;
+        },
         versionItems() {
             const items = [];
             // "Current (latest saved)" 항목
@@ -715,6 +720,10 @@ export default {
         async applyChanges() {
             // Version B(이전)의 XML로 현재 프로세스를 롤백
             if (!this.versionBXml || !this.selectedProcessId) return;
+            if (!this.isAdmin) {
+                this.$toast?.warning(this.$t('processHierarchy.adminOnlyEdit') || '관리자만 편집할 수 있습니다.');
+                return;
+            }
 
             const versionLabel = this.selectedVersionB === '__current__'
                 ? 'Current'

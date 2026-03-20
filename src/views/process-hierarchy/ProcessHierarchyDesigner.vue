@@ -79,10 +79,10 @@
 
         <!-- BPMN Canvas -->
         <div class="designer-canvas" v-show="bpmn" :style="canvasMinHeight ? { minHeight: canvasMinHeight + 'px' } : {}">
-            <div v-if="isViewMode && lockInfo" class="lock-banner-floating">
+            <div v-if="isViewMode" class="lock-banner-floating">
                 <v-icon size="14" class="mr-2">mdi-lock</v-icon>
                 <span class="lock-banner-floating__text">
-                    <strong>{{ lockInfo.user_id }}</strong>{{ $t('processHierarchy.lockedByOther') || ' 님이 편집 중입니다. 읽기 전용으로 표시됩니다.' }}
+                    {{ readOnlyMessage || ($t('processHierarchy.readOnlyMode') || '읽기 전용으로 표시됩니다.') }}
                 </span>
             </div>
             <div :class="{ 'canvas-blurred': toBeMode && !hasToBeBlueprint }">
@@ -109,7 +109,7 @@
                     <v-icon size="48" color="purple">mdi-creation</v-icon>
                     <div class="tobe-overlay-title mt-4">아직 기획된 To-Be 청사진이 없습니다.</div>
                     <div class="tobe-overlay-subtitle mt-2">현재 프로세스를 바탕으로 새로운 개선안 설계를 시작해 보세요.</div>
-                    <v-btn color="purple" variant="flat" size="large" rounded="lg" class="mt-6 tobe-cta-btn" @click="createToBeBlueprint">
+                    <v-btn color="purple" variant="flat" size="large" rounded="lg" class="mt-6 tobe-cta-btn" :disabled="isViewMode" @click="createToBeBlueprint">
                         + 차기 청사진(Blueprint) 생성하기
                     </v-btn>
                 </div>
@@ -190,7 +190,8 @@ export default {
         loading: { type: Boolean, default: false },
         recoveryBackup: { type: Object, default: null },
         isViewMode: { type: Boolean, default: false },
-        lockInfo: { type: Object, default: null }
+        lockInfo: { type: Object, default: null },
+        readOnlyMessage: { type: String, default: '' }
     },
     emits: [
         'openPanel',
@@ -359,6 +360,7 @@ export default {
         },
 
         createToBeBlueprint() {
+            if (this.isViewMode) return;
             // As-Is XML을 복사하여 To-Be 시작점으로 사용
             this.toBeBlueprintXml = this.bpmn || '';
             // bpmnKey 갱신으로 캔버스 리로드 (overlay 사라짐)

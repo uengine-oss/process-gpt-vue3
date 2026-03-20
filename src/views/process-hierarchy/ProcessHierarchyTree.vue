@@ -75,7 +75,7 @@
                     <v-icon size="16" class="mr-2" color="primary">mdi-folder-network</v-icon>
                     <span class="tree-node-label">{{ mega.name }}</span>
                     <div class="ml-auto d-flex align-center ga-1">
-                        <v-tooltip location="bottom">
+                        <v-tooltip v-if="canManagePermissions" location="bottom">
                             <template v-slot:activator="{ props: tp }">
                                 <v-icon
                                     v-bind="tp"
@@ -104,7 +104,7 @@
                             <v-icon size="16" class="mr-2" :color="domain.color || 'grey'">mdi-folder</v-icon>
                             <span class="tree-node-label">{{ domain.name }}</span>
                             <div class="ml-auto d-flex align-center ga-1">
-                                <v-tooltip location="bottom">
+                                <v-tooltip v-if="canManagePermissions" location="bottom">
                                     <template v-slot:activator="{ props: tp }">
                                         <v-icon
                                             v-bind="tp"
@@ -133,7 +133,7 @@
                                     <v-icon size="16" class="mr-2">mdi-folder-outline</v-icon>
                                     <span class="tree-node-label">{{ major.name }}</span>
                                     <div class="ml-auto d-flex align-center ga-1">
-                                        <v-tooltip location="bottom">
+                                        <v-tooltip v-if="canManagePermissions" location="bottom">
                                             <template v-slot:activator="{ props: tp }">
                                                 <v-icon
                                                     v-bind="tp"
@@ -167,7 +167,7 @@
                                                 </template>
                                                 <span>{{ lockMap.get(sub.id)?.user_id }} {{ $t('processHierarchy.lockedByOther') || '님이 편집 중' }}</span>
                                             </v-tooltip>
-                                            <v-tooltip location="bottom">
+                                            <v-tooltip v-if="canManagePermissions" location="bottom">
                                                 <template v-slot:activator="{ props: tp }">
                                                     <v-icon
                                                         v-bind="tp"
@@ -219,6 +219,7 @@ export default {
         loading: { type: Boolean, default: false },
         statusLoading: { type: Boolean, default: false },
         lockMap: { type: Map, default: () => new Map() },
+        canManagePermissions: { type: Boolean, default: false },
     },
     emits: ['select', 'openPermission'],
     data() {
@@ -380,6 +381,7 @@ export default {
         },
 
         openPermission(sub) {
+            if (!this.canManagePermissions) return;
             this.$emit('openPermission', sub);
         },
 

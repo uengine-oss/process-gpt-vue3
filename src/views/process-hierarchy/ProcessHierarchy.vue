@@ -41,6 +41,7 @@
                     :loading="loading"
                     :statusLoading="statusLoading"
                     :lockMap="lockMap"
+                    :canManagePermissions="hasEditAccess"
                     @select="handleSelectProcess"
                     @openPermission="handleOpenPermission"
                 />
@@ -69,8 +70,9 @@
                 :definitionList="definitionList"
                 :loading="loadingProcess"
                 :recoveryBackup="recoveryBackup"
-                :isViewMode="isLockedByOther"
+                :isViewMode="isReadOnlyMode"
                 :lockInfo="lockInfo"
+                :readOnlyMessage="readOnlyMessage"
                 @openPanel="handleOpenPanel"
                 @updateXml="handleUpdateXml"
                 @definition="handleDefinition"
@@ -90,7 +92,8 @@
             <ProcessHierarchyProperties
                 :processDefinition="processDefinition"
                 :element="selectedElement"
-                :isViewMode="isLockedByOther"
+                :isViewMode="isReadOnlyMode"
+                :readOnlyMessage="readOnlyMessage"
                 :roles="roles"
                 :processVariables="processVariables"
                 :definitionPath="selectedProcessId"
@@ -251,6 +254,7 @@ import ProcessHierarchyProperties from './ProcessHierarchyProperties.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
 import PermissionDialog from '@/components/apps/definition-map/PermissionDialog.vue';
 import { useBpmnStore } from '@/stores/bpmn';
+import { authClaimsState } from '@/utils/authClaims';
 
 const backend = BackendFactory.createBackend();
 const storage = StorageBaseFactory.getStorage();
@@ -414,6 +418,25 @@ export default {
             const minor = (parseInt(parts[1]) || 0) + 1;
             return `${major}.${minor}`;
         },
+        isAdmin() {
+            const role = localStorage.getItem('role');
+            return role === 'superAdmin' || authClaimsState.isAdmin;
+        },
+        hasEditAccess() {
+            return this.isAdmin;
+        },
+        isReadOnlyMode() {
+            return !this.hasEditAccess || this.isLockedByOther;
+        },
+        readOnlyMessage() {
+            if (!this.hasEditAccess) {
+                return this.$t('processHierarchy.adminOnlyEdit') || '관리자만 편집할 수 있습니다. 읽기 전용으로 표시됩니다.';
+            }
+            if (this.lockInfo?.user_id) {
+                return `${this.lockInfo.user_id}${this.$t('processHierarchy.lockedByOther') || ' 님이 편집 중입니다. 읽기 전용으로 표시됩니다.'}`;
+            }
+            return this.$t('processHierarchy.lockedByOtherReadOnly') || '다른 사용자가 편집 중입니다. 읽기 전용으로 표시됩니다.';
+        },
     },
     watch: {
         '$route.params.id': {
@@ -436,6 +459,27 @@ export default {
         }
     },
     methods: {
+        showEditDeniedToast() {
+            const message = this.$t('processHierarchy.adminOnlyEdit') || '관리자만 편집할 수 있습니다.';
+            if (this.$toast) {
+                this.$toast.warning(message);
+            }
+        },
+
+        ensureEditable() {
+            if (!this.hasEditAccess) {
+                this.showEditDeniedToast();
+                return false;
+            }
+            if (this.isLockedByOther) {
+                if (this.$toast) {
+                    this.$toast.warning(this.$t('processHierarchy.lockedByOther') || '다른 사용자가 편집 중입니다.');
+                }
+                return false;
+            }
+            return true;
+        },
+
         isProcessGptMode() {
             return window.$mode === 'ProcessGPT' || window.$pal;
         },
@@ -824,13 +868,7 @@ export default {
         },
 
         async handleSave() {
-            // 다른 사용자가 편집 중이면 저장 차단
-            if (this.isLockedByOther) {
-                if (this.$toast) {
-                    this.$toast.warning(this.$t('processHierarchy.lockedByOther') || '다른 사용자가 편집 중입니다.');
-                }
-                return;
-            }
+            if (!this.ensureEditable()) return;
             const designer = this.$refs.designer;
 
             // To-Be 모드에서 저장 시: To-Be XML을 definition.tobe_bpmn에 저장
@@ -889,6 +927,7 @@ export default {
         },
 
         async handleSaveToBe() {
+            if (!this.ensureEditable()) return;
             const store = useBpmnStore();
             const modeler = store.getModeler;
             if (!modeler || !this.selectedProcessId) return;
@@ -1004,6 +1043,7 @@ export default {
         },
 
         async confirmSaveVersion() {
+            if (!this.ensureEditable()) return;
             this.savingVersion = true;
             try {
                 const version = this.saveVersion;
@@ -1088,6 +1128,7 @@ export default {
         },
 
         async handleClone() {
+            if (!this.ensureEditable()) return;
             if (!this.selectedProcessId || !this.processDefinition) return;
             try {
                 const store = useBpmnStore();
@@ -1122,12 +1163,7 @@ export default {
 
         async handleDelete() {
             if (!this.selectedProcessId) return;
-            if (this.isLockedByOther) {
-                if (this.$toast) {
-                    this.$toast.warning(this.$t('processHierarchy.lockedByOther') || '다른 사용자가 편집 중입니다.');
-                }
-                return;
-            }
+            if (!this.ensureEditable()) return;
 
             const confirmed = window.confirm(
                 this.$t('processHierarchy.confirmDelete') || '선택한 프로세스를 삭제하시겠습니까? 관련 버전과 폼도 함께 삭제됩니다.'
@@ -1244,6 +1280,7 @@ export default {
         },
 
         async handlePropertiesSave(data) {
+            if (!this.ensureEditable()) return;
             if (!this.processDefinition) return;
             try {
                 if (data.name) this.selectedProcessName = data.name;
@@ -1255,6 +1292,7 @@ export default {
         },
 
         async handleToggleWip() {
+            if (!this.ensureEditable()) return;
             if (!this.selectedProcessId) return;
             const supabase = window.$supabase;
             if (!supabase) return;
@@ -1332,6 +1370,10 @@ export default {
         },
 
         handleOpenPermission(sub) {
+            if (!this.hasEditAccess) {
+                this.showEditDeniedToast();
+                return;
+            }
             this.permissionProcess = sub;
             this.permissionDialog = true;
         },
@@ -1374,6 +1416,7 @@ export default {
         },
 
         async forceSaveAsNewDraft() {
+            if (!this.ensureEditable()) return;
             this.conflictDialog = false;
             this.savingVersion = true;
             try {

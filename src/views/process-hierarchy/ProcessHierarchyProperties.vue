@@ -42,7 +42,7 @@
         <div class="properties-content" :class="{ 'properties-content--readonly': isViewMode && topTab === 'properties' }">
             <div v-if="isViewMode && topTab === 'properties'" class="readonly-overlay">
                 <v-icon size="16" class="mr-1">mdi-lock</v-icon>
-                다른 사용자가 편집 중이라 속성 변경이 잠겨 있습니다.
+                {{ readOnlyMessage || '읽기 전용 모드입니다.' }}
             </div>
             <v-window v-model="topTab">
                 <!-- ==================== Properties Tab ==================== -->
@@ -937,6 +937,7 @@ export default {
         processDefinition: { type: Object, default: null },
         element: { type: Object, default: null },
         isViewMode: { type: Boolean, default: false },
+        readOnlyMessage: { type: String, default: '' },
         roles: { type: Array, default: () => [] },
         processVariables: { type: Array, default: () => [] },
         definitionPath: { type: String, default: '' },
@@ -1445,7 +1446,7 @@ export default {
 
         saveProcess() {
             if (this.isViewMode) {
-                this.$toast?.warning('다른 사용자가 편집 중이라 저장할 수 없습니다.');
+                this.$toast?.warning(this.readOnlyMessage || '읽기 전용 모드에서는 저장할 수 없습니다.');
                 return;
             }
             const data = {
@@ -1470,7 +1471,7 @@ export default {
 
         async saveTask() {
             if (this.isViewMode) {
-                this.$toast?.warning('다른 사용자가 편집 중이라 저장할 수 없습니다.');
+                this.$toast?.warning(this.readOnlyMessage || '읽기 전용 모드에서는 저장할 수 없습니다.');
                 return;
             }
             if (!this.element) return;
