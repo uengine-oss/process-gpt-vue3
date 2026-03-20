@@ -1,5 +1,5 @@
 // 개발 환경에서 콘솔 워닝 메시지 비활성화 (크롬 개발자 도구 렉 방지)
-// window.console.warn = () => {};
+window.console.warn = () => {};
 // 필요시 다른 콘솔도 비활성화
 // window.console.log = () => {};
 // window.console.error = () => {};
@@ -313,7 +313,27 @@ async function initializeApp() {
     };
     
     // vite-plugin-monaco-editor가 자동으로 경로를 설정하므로 별도 경로 설정 불필요
-    app.use(VueMonacoEditorPlugin);
+    app.use(VueMonacoEditorPlugin, {
+        setup(monaco: any) {
+            monaco.editor.onDidCreateEditor((editor: any) => {
+                if ('addAction' in editor) {
+                    editor.addAction({
+                        id: 'monaco-clipboard-copy',
+                        label: 'Copy',
+                        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC],
+                        run: (ed: any) => {
+                            const model = ed.getModel();
+                            const selection = ed.getSelection();
+                            if (model && selection) {
+                                const text = model.getValueInRange(selection);
+                                if (text) navigator.clipboard.writeText(text);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    });
     app.use(store);
     // @ts-ignore
     app.config.globalProperties.$try = app._component.methods.try;
@@ -368,21 +388,17 @@ async function initializeApp() {
     dayjs.locale('ko');
     app.use(ganttastic);
 
-    // 전역으로 복사 가능하게 추가
+    // 전역으로 복사 가능하게 추가 (Monaco 에디터 내부는 자체 복사 액션 사용)
     document.addEventListener('keydown', function (event) {
         if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+            const target = event.target as HTMLElement;
+            if (target.closest('.monaco-editor')) return;
+
             let selection = window.getSelection();
-            if (selection) {
-                navigator.clipboard.writeText(selection.toString()).then(
-                    function () {
-                        console.log('Copying to clipboard was successful!');
-                    },
-                    function (err) {
-                        console.error('Could not copy text: ', err);
-                    }
-                );
+            if (selection && selection.toString()) {
+                navigator.clipboard.writeText(selection.toString());
             }
-            event.preventDefault(); // 기본 이벤트 방지
+            event.preventDefault();
         }
     });
 

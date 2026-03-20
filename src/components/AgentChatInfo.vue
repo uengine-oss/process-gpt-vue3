@@ -42,6 +42,23 @@
                     >
                         <Icons :icon="'pencil'" :size="14" />
                     </v-btn>
+                    <v-tooltip location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                v-if="!agentInfo?.is_default"
+                                v-bind="props"
+                                @click="openDeleteAgentDialog"
+                                icon
+                                variant="text"
+                                class="text-medium-emphasis flex-shrink-0 ml-1"
+                                density="comfortable"
+                            >
+                                <v-icon color="error">mdi-delete-outline</v-icon>
+                            </v-btn>
+                        </template>
+                        {{ $t('organizationChartDefinition.delete') }}
+                    </v-tooltip>
+
                     <!-- 도구 우선순위 지정 버튼 -->
                     <v-btn
                         v-if="!agentInfo?.is_default && !gs"
@@ -295,6 +312,28 @@
                 @deleteAgent="onDeleteAgent"
             />
         </div>
+
+        <v-dialog v-model="deleteAgentDialog" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '500px'" persistent>
+            <v-card>
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    {{ $t('organizationChartDefinition.agent') }} {{ $t('organizationChartDefinition.delete') }}
+                    <v-btn @click="closeDeleteAgentDialog" variant="text" density="compact" icon>
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-4 pb-0">
+                    <v-alert icon="$warning" color="warning" variant="outlined" density="compact" class="mb-4">
+                        <div class="text-body-1">{{ $t('organizationChartDefinition.deleteAgentExplanation') }}</div>
+                    </v-alert>
+                    <div>'{{ agentDisplayName }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
+                </v-card-text>
+                <v-card-actions class="d-flex justify-end align-center pa-4">
+                    <v-btn color="error" rounded variant="flat" @click="confirmDeleteAgent">
+                        {{ $t('organizationChartDefinition.delete') }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -383,6 +422,7 @@ export default {
             },
             agentType: 'agent',
             toolPriorityDialog: false,
+            deleteAgentDialog: false,
 
             backend: null,
             knowledgeSetupChannel: null,
@@ -461,6 +501,9 @@ export default {
                 label: dmn.name,
                 icon: 'sidebarDMN'
             }));
+        },
+        agentDisplayName() {
+            return this.agentInfo?.username || this.agentInfo?.name || this.$t('AgentChatInfo.defaultAgentName');
         }
     },
     watch: {
@@ -633,6 +676,16 @@ export default {
         },
         onDeleteAgent(editNode) {
             this.$emit('deleteAgent', editNode);
+        },
+        openDeleteAgentDialog() {
+            this.deleteAgentDialog = true;
+        },
+        closeDeleteAgentDialog() {
+            this.deleteAgentDialog = false;
+        },
+        confirmDeleteAgent() {
+            this.$emit('deleteAgent', this.agentInfo);
+            this.closeDeleteAgentDialog();
         },
 
         getTruncatedText(text, maxLength) {

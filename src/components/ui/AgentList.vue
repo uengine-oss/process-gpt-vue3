@@ -1,14 +1,35 @@
 <template>
     <div class="agent-list-container">
+        <v-expand-transition>
+            <div v-show="!isLoading && agentList.length > 0 && isSearchOpen" class="px-2 pb-2">
+                <v-text-field
+                    v-model="agentSearchValue"
+                    variant="solo-filled"
+                    density="compact"
+                    hide-details
+                    clearable
+                    prepend-inner-icon="mdi-magnify"
+                    :placeholder="$t('AgentList.search') || '에이전트 검색'"
+                    ref="agentSearchInput"
+                />
+            </div>
+        </v-expand-transition>
+
         <div v-if="isLoading" class="list-skeleton-loading">
             <v-skeleton-loader v-for="n in 3" :key="n" type="list-item" />
         </div>
 
-        <div v-else-if="agentList.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
-            {{ $t('AgentList.empty') || '등록된 에이전트가 없습니다' }}
+        <div v-else-if="filteredAgentList.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{
+                agentList.length === 0
+                    ? $t('AgentList.empty') || '등록된 에이전트가 없습니다'
+                    : (agentSearchValue || '').trim()
+                    ? $t('AgentList.searchEmpty') || '검색 결과가 없습니다'
+                    : $t('AgentList.empty') || '등록된 에이전트가 없습니다'
+            }}
         </div>
 
-        <ExpandableList v-else :items="agentList" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">
+        <ExpandableList v-else :items="filteredAgentList" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">
             <template #items="{ displayedItems }">
                 <div class="agent-items">
                     <v-tooltip v-for="agent in displayedItems" bottom :key="agent.id" :text="agent.name || 'Unnamed Agent'">
@@ -62,7 +83,9 @@ export default {
     data() {
         return {
             agentList: [],
-            isLoading: false
+            isLoading: false,
+            agentSearchValue: '',
+            isSearchOpen: false
         };
     },
     async mounted() {
@@ -78,7 +101,30 @@ export default {
         this.EventBus.off('agentAdded', this.handleAgentUpdate);
         this.EventBus.off('agentDeleted', this.handleAgentUpdate);
     },
+    computed: {
+        filteredAgentList() {
+            const keyword = (this.agentSearchValue || '').toLowerCase().trim();
+            if (!keyword) return this.agentList;
+            return this.agentList.filter((agent) => {
+                const name = (agent?.name || '').toLowerCase();
+                const role = (agent?.role || '').toLowerCase();
+                return name.includes(keyword) || role.includes(keyword);
+            });
+        }
+    },
     methods: {
+        toggleSearch() {
+            this.isSearchOpen = !this.isSearchOpen;
+            if (this.isSearchOpen) {
+                this.$nextTick(() => {
+                    try {
+                        this.$refs.agentSearchInput?.focus?.();
+                    } catch (e) {}
+                });
+            } else {
+                this.agentSearchValue = '';
+            }
+        },
         isAgentActive(agent) {
             if (!agent || !agent.id) return false;
             const path = this.$route?.path || '';
