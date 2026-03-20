@@ -253,6 +253,9 @@
                         <v-btn value="clone" size="small">
                             {{ $t('processArchitecture.newProcessDialog.clone') }}
                         </v-btn>
+                        <v-btn value="upload" size="small">
+                            {{ $t('processArchitecture.newProcessDialog.upload') }}
+                        </v-btn>
                     </v-btn-toggle>
 
                     <!-- Info Box -->
@@ -282,6 +285,40 @@
                             hide-details
                             clearable
                         />
+                    </div>
+
+                    <div v-else-if="form.creationType === 'upload'" class="mt-3">
+                        <div class="upload-card">
+                            <div class="text-body-2 text-medium-emphasis mb-3">
+                                {{ $t('processArchitecture.newProcessDialog.uploadHint') }}
+                            </div>
+                            <div class="d-flex align-center justify-space-between flex-wrap ga-3">
+                                <div class="min-w-0">
+                                    <div class="text-subtitle-2">
+                                        {{
+                                            uploadedBpmnFileName ||
+                                            ($t('processArchitecture.newProcessDialog.uploadRequired') || 'BPMN XML 파일을 업로드해야 생성할 수 있습니다.')
+                                        }}
+                                    </div>
+                                    <div v-if="uploadedBpmnFileName" class="text-caption text-medium-emphasis mt-1">
+                                        {{ $t('processArchitecture.newProcessDialog.selectedUploadFile') || '선택된 파일' }}:
+                                        {{ uploadedBpmnFileName }}
+                                    </div>
+                                </div>
+                                <div class="d-flex align-center flex-wrap ga-2">
+                                    <v-btn color="primary" variant="outlined" size="small" prepend-icon="mdi-upload" @click="triggerBpmnUpload">
+                                        {{
+                                            uploadedBpmnFileName
+                                                ? $t('processArchitecture.newProcessDialog.replaceUploadFile') || '다른 파일 선택'
+                                                : $t('processArchitecture.newProcessDialog.selectUploadFile') || 'BPMN 파일 선택'
+                                        }}
+                                    </v-btn>
+                                    <v-btn v-if="uploadedBpmnFileName" variant="text" size="small" @click="clearUploadedBpmn">
+                                        {{ $t('common.reset') || '초기화' }}
+                                    </v-btn>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -330,6 +367,8 @@
         </v-card>
     </v-dialog>
 
+    <input ref="bpmnFileInput" type="file" accept=".bpmn,.xml" style="display: none" @change="handleBpmnUploadChange" />
+
     <!-- Error Snackbar -->
     <v-snackbar v-model="errorSnackbar" color="error" :timeout="4000" location="top">
         {{ errorMessage }}
@@ -340,7 +379,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, getCurrentInstance } from 'vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { generateProcessId, isPidInUse } from './processIdUtils';
 
@@ -356,6 +395,12 @@ const emit = defineEmits<{
 }>();
 
 const backend = BackendFactory.createBackend() as any;
+const instance = getCurrentInstance();
+
+function translate(key: string, fallback: string) {
+    const value = (instance?.proxy as any)?.$t?.(key);
+    return value && value !== key ? value : fallback;
+}
 
 const form = ref({
     processMode: 'asis' as 'asis' | 'tobe',
@@ -366,7 +411,7 @@ const form = ref({
     primaryOwner: null as string | null,
     coOwners: [] as string[],
     master: null as string | null,
-    creationType: 'scratch' as 'scratch' | 'template' | 'clone',
+    creationType: 'scratch' as 'scratch' | 'template' | 'clone' | 'upload',
     sourceProcessId: null as string | null,
     sourceMappings: [] as string[]
 });
@@ -378,6 +423,9 @@ const nameCheckTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 const similarProcesses = ref<any[]>([]);
 const errorSnackbar = ref(false);
 const errorMessage = ref('');
+const bpmnFileInput = ref<HTMLInputElement | null>(null);
+const uploadedBpmnXml = ref('');
+const uploadedBpmnFileName = ref('');
 
 // AI suggestion state
 interface AiSuggestion {
@@ -613,14 +661,85 @@ function navigateToSimilar(process: { id: string; name: string }) {
     window.open(`/definitions/chat?id=${process.id}&name=${encodeURIComponent(process.name)}&modeling=true`, '_blank');
 }
 
+function validateBpmnXml(xml: string) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'application/xml');
+    const parseError = doc.querySelector('parsererror');
+    if (parseError) {
+        throw new Error('invalid xml');
+    }
+
+    const rootName = doc.documentElement?.localName?.toLowerCase();
+    if (rootName !== 'definitions') {
+        throw new Error('invalid bpmn definitions');
+    }
+
+    return doc;
+}
+
+function getFirstProcessNode(doc: Document) {
+    return Array.from(doc.getElementsByTagName('*')).find((node) => node.localName?.toLowerCase() === 'process') || null;
+}
+
+function triggerBpmnUpload() {
+    bpmnFileInput.value?.click();
+}
+
+function clearUploadedBpmn() {
+    uploadedBpmnXml.value = '';
+    uploadedBpmnFileName.value = '';
+}
+
+async function handleBpmnUploadChange(event: Event) {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    if (input) {
+        input.value = '';
+    }
+
+    try {
+        const xml = String((await file.text()) || '').trim();
+        if (!xml) {
+            throw new Error('empty xml');
+        }
+
+        const doc = validateBpmnXml(xml);
+        uploadedBpmnXml.value = xml;
+        uploadedBpmnFileName.value = file.name;
+
+        if (!form.value.name.trim()) {
+            const processNode = getFirstProcessNode(doc);
+            const uploadedName = processNode?.getAttribute('name') || processNode?.getAttribute('id') || '';
+            if (uploadedName) {
+                form.value.name = uploadedName;
+                onNameInput();
+            }
+        }
+        errorSnackbar.value = false;
+        errorMessage.value = '';
+    } catch (e) {
+        console.error('Failed to load BPMN upload:', e);
+        clearUploadedBpmn();
+        errorMessage.value = translate(
+            'processArchitecture.newProcessDialog.invalidUploadFile',
+            '유효한 BPMN XML 파일만 업로드할 수 있습니다.'
+        );
+        errorSnackbar.value = true;
+    }
+}
+
 const creationTypeInfo = computed(() => {
     switch (form.value.creationType) {
         case 'scratch':
-            return '새로운 빈 캔버스에서 프로세스를 처음부터 설계합니다.';
+            return translate('processArchitecture.newProcessDialog.scratchInfo', '새로운 빈 캔버스에서 프로세스를 처음부터 설계합니다.');
         case 'template':
-            return '기존 표준 템플릿을 기반으로 프로세스를 빠르게 시작합니다.';
+            return translate('processArchitecture.newProcessDialog.templateInfo', '기존 표준 템플릿을 기반으로 프로세스를 빠르게 시작합니다.');
         case 'clone':
-            return '기존 프로세스를 복사하여 유사한 프로세스를 효율적으로 생성합니다.';
+            return translate('processArchitecture.newProcessDialog.cloneInfo', '기존 프로세스를 복사하여 유사한 프로세스를 효율적으로 생성합니다.');
+        case 'upload':
+            return translate('processArchitecture.newProcessDialog.uploadInfo', 'BPMN/XML 파일을 바로 올려 새 프로세스를 생성합니다.');
         default:
             return '';
     }
@@ -636,7 +755,8 @@ const canCreate = computed(() => {
     if (!form.value.name.trim()) return false;
     if (!form.value.domain || !form.value.mega || !form.value.major) return false;
     if (form.value.processMode === 'asis') {
-        if (form.value.creationType !== 'scratch' && !form.value.sourceProcessId) return false;
+        if (form.value.creationType === 'upload' && !uploadedBpmnXml.value) return false;
+        if ((form.value.creationType === 'template' || form.value.creationType === 'clone') && !form.value.sourceProcessId) return false;
     }
     return true;
 });
@@ -662,6 +782,9 @@ function resetForm() {
     };
     similarProcesses.value = [];
     aiSuggestion.value = null;
+    errorSnackbar.value = false;
+    errorMessage.value = '';
+    clearUploadedBpmn();
 }
 
 async function createProcess() {
@@ -671,7 +794,7 @@ async function createProcess() {
         let newId: string;
         const name = form.value.name.trim();
 
-        if (form.value.processMode === 'asis' && form.value.creationType !== 'scratch') {
+        if (form.value.processMode === 'asis' && form.value.creationType !== 'scratch' && form.value.creationType !== 'upload') {
             // Clone/Template: duplicate an existing local process definition
             const sourceId = form.value.sourceProcessId;
             const sourceDef = await backend.getRawDefinition(sourceId);
@@ -711,7 +834,9 @@ async function createProcess() {
                 .replace(/-+/g, '-')
                 .replace(/^-|-$/g, '');
             const uniqueId = `${defId}-${Date.now()}`;
-            await backend.putRawDefinition(emptyBpmn, uniqueId, {
+            const initialBpmn = form.value.processMode === 'asis' && form.value.creationType === 'upload' ? uploadedBpmnXml.value : emptyBpmn;
+
+            await backend.putRawDefinition(initialBpmn, uniqueId, {
                 name,
                 owner: form.value.primaryOwner || undefined,
                 version: '0.1',
@@ -812,5 +937,12 @@ async function updateProcMap(newId: string, name: string) {
 .mode-toggle :deep(.v-btn) {
     text-transform: none;
     letter-spacing: 0;
+}
+
+.upload-card {
+    border: 1px dashed rgba(59, 130, 246, 0.35);
+    border-radius: 12px;
+    padding: 16px;
+    background: rgba(59, 130, 246, 0.04);
 }
 </style>
