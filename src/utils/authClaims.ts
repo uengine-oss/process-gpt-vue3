@@ -14,6 +14,30 @@ function normalizeBoolean(value: any) {
     return value === true || value === 'true';
 }
 
+function resolveRoleClaim(claims: Record<string, any> | null | undefined) {
+    if (typeof claims?.user_role === 'string') return claims.user_role;
+    if (typeof claims?.role === 'string') return claims.role;
+    return null;
+}
+
+function getStoredClaimsFallback() {
+    if (typeof window === 'undefined') return null;
+
+    const isAdmin = normalizeBoolean(window.localStorage.getItem('isAdmin'));
+    const role = window.localStorage.getItem('role');
+    const tenantId = window.localStorage.getItem('tenantId') || window.$tenantName || null;
+
+    if (!isAdmin && !role && !tenantId) {
+        return null;
+    }
+
+    return {
+        is_admin: isAdmin,
+        user_role: role,
+        tenant_id: tenantId
+    };
+}
+
 function resetClaims() {
     state.isAdmin = false;
     state.role = null;
@@ -23,13 +47,13 @@ function resetClaims() {
 
 function applyClaims(claims: Record<string, any> | null | undefined) {
     state.isAdmin = normalizeBoolean(claims?.is_admin);
-    state.role = typeof claims?.role === 'string' ? claims.role : null;
+    state.role = resolveRoleClaim(claims);
     state.tenantId = typeof claims?.tenant_id === 'string' ? claims.tenant_id : null;
     state.loaded = true;
 }
 
 function hasResolvedClaims(claims: Record<string, any> | null | undefined) {
-    const role = typeof claims?.role === 'string' ? claims.role : null;
+    const role = resolveRoleClaim(claims);
     const hasCustomRole = !!role && role !== 'authenticated' && role !== 'anon';
 
     return (
@@ -40,7 +64,7 @@ function hasResolvedClaims(claims: Record<string, any> | null | undefined) {
 }
 
 function hasFullAdminClaims(claims: Record<string, any> | null | undefined) {
-    const role = typeof claims?.role === 'string' ? claims.role : null;
+    const role = resolveRoleClaim(claims);
     const hasCustomRole = !!role && role !== 'authenticated' && role !== 'anon';
 
     return typeof claims?.is_admin !== 'undefined' || hasCustomRole;
@@ -59,18 +83,21 @@ function decodeAccessToken(accessToken: string | null | undefined) {
 async function loadUserClaimsFromProfile(supabase: any, userId: string | null | undefined, tenantId?: string | null) {
     if (!userId) return false;
 
-    let query = supabase.from('users').select('is_admin, role, tenant_id').eq('id', userId);
-
     if (tenantId) {
-        query = query.eq('tenant_id', tenantId);
+        const { data, error } = await supabase.from('users').select('is_admin, role, tenant_id').eq('id', userId).eq('tenant_id', tenantId).maybeSingle();
+        if (!error && data) {
+            applyClaims(data);
+            return true;
+        }
     }
 
-    const { data, error } = await query.maybeSingle();
-    if (error || !data) {
+    const { data, error } = await supabase.from('users').select('is_admin, role, tenant_id').eq('id', userId).limit(1);
+    const row = Array.isArray(data) ? data[0] : data;
+    if (error || !row) {
         return false;
     }
 
-    applyClaims(data);
+    applyClaims(row);
     return true;
 }
 
@@ -102,6 +129,12 @@ export async function refreshAuthClaims(session?: any) {
             const tenantHint = state.tenantId || window.$tenantName || null;
             const loaded = await loadUserClaimsFromProfile(supabase, session?.user?.id, tenantHint);
             if (!loaded) {
+                const storedClaims = getStoredClaimsFallback();
+                if (storedClaims) {
+                    applyClaims(storedClaims);
+                    return state;
+                }
+
                 resetClaims();
             }
             return state;
@@ -121,8 +154,20 @@ export async function refreshAuthClaims(session?: any) {
             return loaded;
         }
 
+        const storedClaims = getStoredClaimsFallback();
+        if (storedClaims) {
+            applyClaims(storedClaims);
+            return state;
+        }
+
         resetClaims();
     } catch (_e) {
+        const storedClaims = getStoredClaimsFallback();
+        if (storedClaims) {
+            applyClaims(storedClaims);
+            return state;
+        }
+
         resetClaims();
     }
 
