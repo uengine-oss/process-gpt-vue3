@@ -529,6 +529,8 @@ export default {
                 return;
             }
 
+            const hiddenAdminRoutes = ['/admin-console/governance-studio', '/admin-console/signup-approvals'];
+
             this.adminItem = [
                 {
                     title: 'adminConsole.tabSchemas',
@@ -578,7 +580,7 @@ export default {
                     to: '/admin-console/signup-approvals',
                     disable: false
                 }
-            ];
+            ].filter((item) => !hiddenAdminRoutes.includes(item.to));
         },
         isAnalyticsItemActive(item) {
             if (!item || !item.to) return false;

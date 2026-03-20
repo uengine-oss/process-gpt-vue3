@@ -29,11 +29,13 @@
         "cancel": "Cancel",
         "close": "Close",
         "confirm": "Confirm",
+        "copy": "Copy",
         "delete": "Delete",
         "edit": "Edit",
         "add": "Add",
         "loading": "Loading...",
-        "reset": "Reset"
+        "reset": "Reset",
+        "save": "Save"
     },
     "validation": {
         "title": "BPMN Validation Result",
@@ -908,6 +910,9 @@
         "readOnlyMode": "Displayed in read-only mode.",
         "lockedByOther": " is editing this process. Displayed in read-only mode.",
         "lockedByOtherReadOnly": "Another user is editing this process. Displayed in read-only mode.",
+        "xmlEditHint": "After editing the XML, apply it to update the current BPMN canvas.",
+        "xmlApplySuccess": "XML changes have been applied.",
+        "xmlApplyFailed": "Failed to apply XML changes.",
         "savePrepFailed": "Save preparation failed.",
         "saveFailed": "Save failed.",
         "defaultProcessName": "Process",

@@ -28,6 +28,14 @@
                     <v-icon start size="16">mdi-check-circle-outline</v-icon>
                     {{ $t('processHierarchy.validate') || 'Validate' }}
                 </v-btn>
+                <v-btn variant="text" size="small" :disabled="!processName" @click="openXmlDialog">
+                    <v-icon start size="16">mdi-code-tags</v-icon>
+                    {{ $t('processDefinition.showXML') || 'XML 보기' }}
+                </v-btn>
+                <v-btn variant="text" size="small" :disabled="!processName || isViewMode" @click="triggerBpmnUpload">
+                    <v-icon start size="16">mdi-upload</v-icon>
+                    {{ $t('chat.importBpmnFile') || 'BPMN 업로드' }}
+                </v-btn>
                 <v-divider vertical class="mx-1" />
                 <v-btn
                     :variant="isWip ? 'flat' : 'text'"
@@ -133,6 +141,51 @@
             <div class="text-body-2 text-medium-emphasis mt-4">Loading...</div>
         </div>
 
+        <input ref="xmlFileInput" type="file" accept=".bpmn,.xml" style="display: none" @change="handleBpmnFileChange" />
+
+        <v-dialog v-model="xmlDialog" max-width="1100">
+            <v-card rounded="lg">
+                <v-card-title class="d-flex align-center pa-4 pb-2">
+                    <v-icon class="mr-2" color="primary">mdi-code-tags</v-icon>
+                    {{ $t('processDefinition.showXML') || 'XML 보기' }}
+                    <v-spacer />
+                    <v-btn variant="text" size="small" @click="copyXmlToClipboard">
+                        <v-icon start size="16">mdi-content-copy</v-icon>
+                        {{ $t('common.copy') || 'Copy' }}
+                    </v-btn>
+                    <v-btn icon variant="text" size="small" @click="xmlDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-4 pt-2">
+                    <div v-if="!isViewMode" class="text-body-2 text-medium-emphasis mb-3">
+                        {{ $t('processHierarchy.xmlEditHint') || 'XML을 수정한 뒤 적용하면 현재 BPMN 캔버스에 반영됩니다.' }}
+                    </div>
+                    <div class="xml-preview-shell">
+                        <textarea
+                            v-model="xmlPreview"
+                            class="xml-preview-textarea"
+                            :class="{ 'xml-preview-textarea--readonly': isViewMode }"
+                            :readonly="isViewMode"
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+                </v-card-text>
+                <v-card-actions class="pa-4 pt-0">
+                    <v-btn v-if="!isViewMode" variant="text" :disabled="!hasXmlChanges" @click="resetXmlPreview">
+                        {{ $t('common.reset') || 'Reset' }}
+                    </v-btn>
+                    <v-spacer />
+                    <v-btn variant="text" @click="xmlDialog = false">
+                        {{ $t('common.close') || 'Close' }}
+                    </v-btn>
+                    <v-btn v-if="!isViewMode" color="primary" variant="flat" :disabled="!hasXmlChanges" @click="applyXmlPreview">
+                        {{ $t('apply') || '적용' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
         <!-- Validation Results Dialog -->
         <v-dialog v-model="validationDialog" max-width="500">
             <v-card>
@@ -204,7 +257,8 @@ export default {
         'toggleWip',
         'validationDone',
         'dismissBackup',
-        'recoverBackup'
+        'recoverBackup',
+        'replaceXml'
     ],
     beforeUnmount() {
         // 전역 상태 정리 — 다른 페이지에 영향 방지
@@ -239,7 +293,10 @@ export default {
             viewboxInfo: null,
             _viewboxHandler: null,
             canvasMinHeight: 0,
-            _expandDebounceTimer: null
+            _expandDebounceTimer: null,
+            xmlDialog: false,
+            xmlPreview: '',
+            xmlOriginal: ''
         };
     },
     computed: {
@@ -268,6 +325,9 @@ export default {
             if (!this.definitionPath || !this.definitionList) return false;
             const def = this.definitionList.find((d) => (d.file_name || d.id) === this.definitionPath);
             return def?.approval_state === 'wip' || def?.status === 'wip';
+        },
+        hasXmlChanges() {
+            return this.xmlPreview !== this.xmlOriginal;
         }
     },
     watch: {
@@ -338,6 +398,100 @@ export default {
                 return xml;
             } catch {
                 return null;
+            }
+        },
+
+        async openXmlDialog() {
+            const currentXml = await this.getCurrentXml();
+            this.xmlPreview = currentXml || this.activeBpmn || '';
+            this.xmlOriginal = this.xmlPreview;
+            this.xmlDialog = true;
+        },
+
+        triggerBpmnUpload() {
+            if (this.isViewMode) return;
+            this.$refs.xmlFileInput?.click();
+        },
+
+        validateBpmnXml(xml) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xml, 'application/xml');
+            const parseError = doc.querySelector('parsererror');
+            if (parseError) {
+                throw new Error('invalid xml');
+            }
+
+            const rootName = doc.documentElement?.localName?.toLowerCase();
+            if (rootName !== 'definitions') {
+                throw new Error('invalid bpmn definitions');
+            }
+        },
+
+        applyXmlToCanvas(xml) {
+            const normalizedXml = String(xml || '').trim();
+            if (!normalizedXml) {
+                throw new Error('empty xml');
+            }
+
+            this.validateBpmnXml(normalizedXml);
+            this.xmlPreview = normalizedXml;
+
+            if (this.toBeMode) {
+                this.toBeBlueprintXml = normalizedXml;
+                this.bpmnKey++;
+            } else {
+                this.$emit('replaceXml', normalizedXml);
+            }
+
+            this.xmlOriginal = normalizedXml;
+            return normalizedXml;
+        },
+
+        async handleBpmnFileChange(event) {
+            const input = event?.target;
+            const file = input?.files?.[0];
+            if (!file) return;
+
+            if (input) {
+                input.value = '';
+            }
+
+            try {
+                const xml = String((await file.text()) || '').trim();
+                this.applyXmlToCanvas(xml);
+                this.$toast?.success(this.$t('chat.importBpmnFile') || 'BPMN 파일을 불러왔습니다.');
+            } catch (e) {
+                console.error('BPMN upload failed:', e);
+                this.$toast?.error('BPMN XML 파일을 불러오지 못했습니다.');
+            }
+        },
+
+        resetXmlPreview() {
+            this.xmlPreview = this.xmlOriginal;
+        },
+
+        applyXmlPreview() {
+            if (this.isViewMode) return;
+
+            try {
+                this.applyXmlToCanvas(this.xmlPreview);
+                this.xmlDialog = false;
+                this.$toast?.success(this.$t('processHierarchy.xmlApplySuccess') || 'XML 변경사항이 적용되었습니다.');
+            } catch (e) {
+                console.error('Apply XML failed:', e);
+                this.$toast?.error(this.$t('processHierarchy.xmlApplyFailed') || 'XML 변경사항을 적용하지 못했습니다.');
+            }
+        },
+
+        async copyXmlToClipboard() {
+            if (!this.xmlPreview) return;
+
+            try {
+                await navigator.clipboard.writeText(this.xmlPreview);
+                this.$toast?.success(this.$t('ProcessDefinitionVersionManager.copiedToClipboard') || '클립보드에 복사되었습니다.');
+            } catch (e) {
+                console.error('Copy XML failed:', e);
+                this.$toast?.error('XML 복사에 실패했습니다.');
             }
         },
 
@@ -917,6 +1071,30 @@ export default {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+.xml-preview-shell {
+    height: min(70vh, 720px);
+}
+
+.xml-preview-textarea {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #d7dee8;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: none;
+    background: #f8fafc;
+    color: #0f172a;
+    box-sizing: border-box;
+}
+
+.xml-preview-textarea--readonly {
+    background: #f8fafc;
+    color: #475569;
 }
 
 .cursor-pointer {

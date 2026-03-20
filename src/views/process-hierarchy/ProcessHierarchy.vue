@@ -83,6 +83,7 @@
                 @toggleWip="handleToggleWip"
                 @dismissBackup="dismissBackup"
                 @recoverBackup="recoverFromBackup"
+                @replaceXml="handleReplaceXml"
             />
         </div>
 
@@ -865,6 +866,16 @@ export default {
 
         handleUpdateXml(xml) {
             this.bpmnXml = xml;
+        },
+
+        handleReplaceXml(xml) {
+            if (!xml) return;
+            this.selectedElement = null;
+            this.bpmnDefinitions = null;
+            this.bpmnXml = xml;
+            if (this.processDefinition) {
+                this.processDefinition.bpmn = xml;
+            }
         },
 
         async handleSave() {
