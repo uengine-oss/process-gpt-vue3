@@ -1,7 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const baseURL = process.env.BASE_URL || 'http://localhost:8088';
+const useManagedWebServer = !process.env.BASE_URL;
+
 export default defineConfig({
     testDir: './playwright/e2e',
+    timeout: 90_000,
 
     // Playwright 관련 결과물을 playwright 폴더 내부에 저장
     outputDir: './playwright/test-results',
@@ -14,7 +18,7 @@ export default defineConfig({
 
     forbidOnly: !!process.env.CI,
 
-    retries: process.env.CI ? 2 : 0,
+    retries: process.env.CI ? 1 : 0,
 
     // workers: 1 이면 완전 순차 실행, undefined면 병렬 실행
     workers: 1,
@@ -25,11 +29,12 @@ export default defineConfig({
     ],
 
     use: {
-        baseURL: 'http://localhost:8088', // 로컬 개발 환경
+        baseURL, // CI/로컬에서 BASE_URL 주입 가능
 
-        trace: 'on', // 모든 테스트의 trace 저장
+        trace: 'on',
 
-        video: 'on' // 모든 테스트의 비디오 저장
+        video: 'on',
+        screenshot: 'on'
     },
 
     projects: [
@@ -41,10 +46,14 @@ export default defineConfig({
         }
     ],
 
-    webServer: {
-        command: 'npm run dev',
-        url: 'http://localhost:8088',
-        reuseExistingServer: true,
-        timeout: 120 * 1000
-    }
+    ...(useManagedWebServer
+        ? {
+              webServer: {
+                  command: 'npm run dev -- --port 8088',
+                  url: 'http://localhost:8088',
+                  reuseExistingServer: true,
+                  timeout: 120 * 1000
+              }
+          }
+        : {})
 });

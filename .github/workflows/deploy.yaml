@@ -207,7 +207,14 @@ jobs:
         if: github.ref_name == 'main'
         run: |
           cd gitops-repo
-          
+          mkdir -p .deploy
+
+          # 롤백 기준점: 배포 전(기존) 이미지를 last-good로 먼저 저장
+          PREV_IMAGE=$(yq eval '.spec.template.spec.containers[0].image' deployments/frontend-deployment.yaml)
+          if [ -n "$PREV_IMAGE" ] && [ "$PREV_IMAGE" != "null" ]; then
+            echo "$PREV_IMAGE" > .deploy/last-good-frontend-image.txt
+          fi
+
           # Update frontend deployment image
           yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i deployments/frontend-deployment.yaml
 
@@ -293,6 +300,249 @@ jobs:
               }
             }
 
+  wait_gitops_autosync:
+    runs-on: ubuntu-latest
+    needs: [build-and-deploy, build-and-deploy-gateway]
+    if: github.ref_name == 'main'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v4
+        with:
+          repository: uengine-oss/process-gpt-k8s
+          token: ${{ secrets.GITOPS_PAT }}
+          path: gitops-repo
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ secrets.GCP_CLUSTER_NAME }}
+          location: ${{ secrets.GCP_REGION }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Wait for frontend/gateway rollout and image update
+        run: |
+          set -e
+
+          SHA_TAG=$(echo "$GITHUB_SHA" | cut -c1-7)
+          EXPECTED_FRONTEND_IMAGE="ghcr.io/uengine-oss/process-gpt:$SHA_TAG"
+          EXPECTED_GATEWAY_IMAGE="ghcr.io/uengine-oss/process-gpt-gateway:$SHA_TAG"
+
+          FRONTEND_MANIFEST="gitops-repo/deployments/frontend-deployment.yaml"
+          FRONTEND_DEPLOY=$(yq eval '.metadata.name' "$FRONTEND_MANIFEST")
+          FRONTEND_NS="dev"
+
+          if [ -f "gitops-repo/.deploy/last-good-gateway-manifest-path.txt" ]; then
+            GATEWAY_MANIFEST_REL=$(cat "gitops-repo/.deploy/last-good-gateway-manifest-path.txt")
+          elif [ -f "gitops-repo/deployments/gateway.yaml" ]; then
+            GATEWAY_MANIFEST_REL="deployments/gateway.yaml"
+          else
+            echo "Gateway manifest path not found in GitOps repository."
+            exit 1
+          fi
+
+          GATEWAY_MANIFEST="gitops-repo/$GATEWAY_MANIFEST_REL"
+          if [ ! -f "$GATEWAY_MANIFEST" ]; then
+            echo "Gateway manifest file does not exist: $GATEWAY_MANIFEST"
+            exit 1
+          fi
+
+          GATEWAY_DEPLOY=$(yq eval '.metadata.name' "$GATEWAY_MANIFEST")
+          GATEWAY_NS="dev"
+
+          echo "Resolved frontend deployment: $FRONTEND_NS/$FRONTEND_DEPLOY"
+          echo "Resolved gateway deployment:  $GATEWAY_NS/$GATEWAY_DEPLOY"
+
+          MAX_ATTEMPTS=45
+          SLEEP_SEC=20
+
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            ACTUAL_FRONTEND_IMAGE=$(kubectl get deployment "$FRONTEND_DEPLOY" -n "$FRONTEND_NS" -o jsonpath='{.spec.template.spec.containers[0].image}')
+            ACTUAL_GATEWAY_IMAGE=$(kubectl get deployment "$GATEWAY_DEPLOY" -n "$GATEWAY_NS" -o jsonpath='{.spec.template.spec.containers[0].image}')
+
+            echo "[Attempt $i/$MAX_ATTEMPTS]"
+            echo "Expected frontend image: $EXPECTED_FRONTEND_IMAGE"
+            echo "Actual frontend image:   $ACTUAL_FRONTEND_IMAGE"
+            echo "Expected gateway image:  $EXPECTED_GATEWAY_IMAGE"
+            echo "Actual gateway image:    $ACTUAL_GATEWAY_IMAGE"
+
+            if [ "$ACTUAL_FRONTEND_IMAGE" = "$EXPECTED_FRONTEND_IMAGE" ] && [ "$ACTUAL_GATEWAY_IMAGE" = "$EXPECTED_GATEWAY_IMAGE" ]; then
+              echo "Expected images detected. Verifying rollout health..."
+              kubectl rollout status deployment/"$FRONTEND_DEPLOY" -n "$FRONTEND_NS" --timeout=300s
+              kubectl rollout status deployment/"$GATEWAY_DEPLOY" -n "$GATEWAY_NS" --timeout=300s
+              echo "Frontend/Gateway image and rollout checks passed."
+              exit 0
+            fi
+
+            sleep $SLEEP_SEC
+          done
+
+          echo "Timed out waiting for expected frontend/gateway images to be applied."
+          exit 1
+
+  playwright_smoke_test:
+    runs-on: ubuntu-latest
+    needs: wait_gitops_autosync
+    if: github.ref_name == 'main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Run smoke test
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          E2E_USER: ${{ secrets.E2E_USER }}
+          E2E_PASS: ${{ secrets.E2E_PASS }}
+        run: npm run test:e2e:smoke:simple:ci
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-smoke-artifacts
+          path: |
+            playwright/test-results
+            playwright/playwright-report
+
+  record_last_good_on_success:
+    runs-on: ubuntu-latest
+    needs: [wait_gitops_autosync, playwright_smoke_test]
+    if: github.ref_name == 'main' && success()
+    steps:
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          repository: uengine-oss/process-gpt-k8s
+          token: ${{ secrets.GITOPS_PAT }}
+          path: gitops-repo
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Record last known good frontend and gateway images
+        run: |
+          cd gitops-repo
+          mkdir -p .deploy
+
+          CURRENT_FRONTEND_IMAGE=$(yq eval '.spec.template.spec.containers[0].image' deployments/frontend-deployment.yaml)
+          if [ -n "$CURRENT_FRONTEND_IMAGE" ] && [ "$CURRENT_FRONTEND_IMAGE" != "null" ]; then
+            echo "$CURRENT_FRONTEND_IMAGE" > .deploy/last-good-frontend-image.txt
+          fi
+
+          if [ -f .deploy/last-good-gateway-manifest-path.txt ]; then
+            GATEWAY_MANIFEST_PATH=$(cat .deploy/last-good-gateway-manifest-path.txt)
+          elif [ -f deployments/gateway.yaml ]; then
+            GATEWAY_MANIFEST_PATH="deployments/gateway.yaml"
+            echo "$GATEWAY_MANIFEST_PATH" > .deploy/last-good-gateway-manifest-path.txt
+          else
+            GATEWAY_MANIFEST_PATH=""
+          fi
+
+          if [ -n "$GATEWAY_MANIFEST_PATH" ] && [ -f "$GATEWAY_MANIFEST_PATH" ]; then
+            CURRENT_GATEWAY_IMAGE=$(yq eval '.spec.template.spec.containers[0].image' "$GATEWAY_MANIFEST_PATH")
+            if [ -n "$CURRENT_GATEWAY_IMAGE" ] && [ "$CURRENT_GATEWAY_IMAGE" != "null" ]; then
+              echo "$CURRENT_GATEWAY_IMAGE" > .deploy/last-good-gateway-image.txt
+            fi
+          fi
+
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .deploy/
+          git commit -m "chore: record last known good frontend/gateway images" || exit 0
+          git push
+
+  rollback_on_failure:
+    runs-on: ubuntu-latest
+    needs: [wait_gitops_autosync, playwright_smoke_test]
+    if: github.ref_name == 'main' && failure()
+    steps:
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          repository: uengine-oss/process-gpt-k8s
+          token: ${{ secrets.GITOPS_PAT }}
+          path: gitops-repo
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Rollback frontend and gateway to last good image tags
+        run: |
+          cd gitops-repo
+
+          if [ -f .deploy/last-good-frontend-image.txt ]; then
+            PREV_FRONTEND_IMAGE=$(cat .deploy/last-good-frontend-image.txt)
+            yq eval '.spec.template.spec.containers[0].image = "'"$PREV_FRONTEND_IMAGE"'"' -i deployments/frontend-deployment.yaml
+          fi
+
+          if [ -f .deploy/last-good-gateway-image.txt ]; then
+            PREV_GATEWAY_IMAGE=$(cat .deploy/last-good-gateway-image.txt)
+            if [ -f .deploy/last-good-gateway-manifest-path.txt ]; then
+              GATEWAY_MANIFEST_PATH=$(cat .deploy/last-good-gateway-manifest-path.txt)
+            elif [ -f deployments/gateway.yaml ]; then
+              GATEWAY_MANIFEST_PATH="deployments/gateway.yaml"
+            else
+              GATEWAY_MANIFEST_PATH=""
+            fi
+
+            if [ -n "$GATEWAY_MANIFEST_PATH" ] && [ -f "$GATEWAY_MANIFEST_PATH" ]; then
+              yq eval '.spec.template.spec.containers[0].image = "'"$PREV_GATEWAY_IMAGE"'"' -i "$GATEWAY_MANIFEST_PATH"
+            fi
+          fi
+
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A .
+          git commit -m "rollback: restore frontend/gateway images to last known good" || exit 0
+          git push
+
+  rollback_notification:
+    runs-on: ubuntu-latest
+    needs: [playwright_smoke_test, rollback_on_failure]
+    if: github.ref_name == 'main' && always() && needs.playwright_smoke_test.result == 'failure'
+    steps:
+      - name: Build rollback notification message
+        id: msg
+        run: |
+          if [ "${{ needs.rollback_on_failure.result }}" = "success" ]; then
+            echo "status=completed" >> "$GITHUB_OUTPUT"
+            echo "text=🚨 Playwright smoke test failed and rollback completed successfully." >> "$GITHUB_OUTPUT"
+          elif [ "${{ needs.rollback_on_failure.result }}" = "failure" ]; then
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            echo "text=🚨 Playwright smoke test failed and rollback attempt also failed. Immediate action required." >> "$GITHUB_OUTPUT"
+          else
+            echo "status=skipped" >> "$GITHUB_OUTPUT"
+            echo "text=🚨 Playwright smoke test failed but rollback job did not run." >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Write notification summary
+        run: |
+          echo "## 🔔 Rollback notification" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Status: \`${{ steps.msg.outputs.status }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Message: ${{ steps.msg.outputs.text }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
+
   build-and-deploy-gateway:
     runs-on: ubuntu-latest
     needs: build-and-deploy
@@ -347,19 +597,29 @@ jobs:
         run: |
           cd gitops-repo
 
+          mkdir -p .deploy
+
           if [ -f deployments/gateway.yaml ]; then
-            yq eval '.spec.template.spec.containers[0].image = "'$GATEWAY_IMAGE_NAME'"' -i deployments/gateway.yaml
+            TARGET_GATEWAY_MANIFEST="deployments/gateway.yaml"
+            PREV_GATEWAY_IMAGE=$(yq eval '.spec.template.spec.containers[0].image' "$TARGET_GATEWAY_MANIFEST")
+            if [ -n "$PREV_GATEWAY_IMAGE" ] && [ "$PREV_GATEWAY_IMAGE" != "null" ]; then
+              echo "$PREV_GATEWAY_IMAGE" > .deploy/last-good-gateway-image.txt
+            fi
+            echo "$TARGET_GATEWAY_MANIFEST" > .deploy/last-good-gateway-manifest-path.txt
+            yq eval '.spec.template.spec.containers[0].image = "'$GATEWAY_IMAGE_NAME'"' -i "$TARGET_GATEWAY_MANIFEST"
             echo "Updated gateway image to: $GATEWAY_IMAGE_NAME"
           else
             # Fallback: try to find any manifest referencing process-gpt-gateway
             GATEWAY_FILES=$(grep -rl "process-gpt-gateway" . || true)
             if [ -n "$GATEWAY_FILES" ]; then
-              echo "$GATEWAY_FILES" | while read -r f; do
-                if [ -n "$f" ] && [ -f "$f" ]; then
-                  yq eval '.spec.template.spec.containers[0].image = "'$GATEWAY_IMAGE_NAME'"' -i "$f" || true
-                  echo "Updated gateway image in: $f"
-                fi
-              done
+              TARGET_GATEWAY_MANIFEST=$(echo "$GATEWAY_FILES" | head -n 1)
+              PREV_GATEWAY_IMAGE=$(yq eval '.spec.template.spec.containers[0].image' "$TARGET_GATEWAY_MANIFEST")
+              if [ -n "$PREV_GATEWAY_IMAGE" ] && [ "$PREV_GATEWAY_IMAGE" != "null" ]; then
+                echo "$PREV_GATEWAY_IMAGE" > .deploy/last-good-gateway-image.txt
+              fi
+              echo "$TARGET_GATEWAY_MANIFEST" > .deploy/last-good-gateway-manifest-path.txt
+              yq eval '.spec.template.spec.containers[0].image = "'$GATEWAY_IMAGE_NAME'"' -i "$TARGET_GATEWAY_MANIFEST" || true
+              echo "Updated gateway image in: $TARGET_GATEWAY_MANIFEST"
             else
               echo "No gateway manifest found in GitOps repo. Skipping gateway image update."
             fi

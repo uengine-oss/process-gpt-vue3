@@ -79,3 +79,5 @@ playwright/test-results/
 playwright/.cache/
 
 docker-compose-gs/
+
+helm/kind-test/

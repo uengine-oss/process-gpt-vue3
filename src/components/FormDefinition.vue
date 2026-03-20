@@ -307,6 +307,10 @@ export default {
          */
         async saveFormDefinition() {
             // const DynamicFormHTML = this.keditorContentHTMLToDynamicFormHTML(this.modelValue);
+            const latestHtml = this.getFormHTML();
+            if (latestHtml) {
+                this.previewHTML = this.keditorContentHTMLToDynamicFormHTML(latestHtml);
+            }
 
             if (this.formId !== '' && this.formId !== null) {
                 const options = {
@@ -697,11 +701,9 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if (me.modelValue) {
-                        me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.modelValue);
-                    } else {
-                        me.previewHTML = me.keditorContentHTMLToDynamicFormHTML(me.formHTML);
-                    }
+                    const latestHtml = me.getFormHTML();
+                    const sourceHtml = latestHtml || me.modelValue || me.formHTML;
+                    me.previewHTML = sourceHtml ? me.keditorContentHTMLToDynamicFormHTML(sourceHtml) : '';
                     console.log('### 프리뷰 HTML ###');
                     console.log(me.previewHTML);
                 },
