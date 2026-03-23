@@ -4,6 +4,7 @@
             v-if="!localReadonly && !localDisabled"
             :label="(localAlias && localAlias.length > 0) ? localAlias : localName"
             v-model="selectedFiles"
+            :accept="allowedFileAccept"
             :variant="localReadonly ? 'filled' : 'outlined'"
             :hide-details="hideDetails"
             :density="density"
@@ -27,6 +28,31 @@
 <script>
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 import BackendFactory from '@/components/api/BackendFactory';
+
+const MAX_IMAGE_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_GENERAL_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 100MB
+const MAX_IMAGE_WIDTH = 1920;
+const MAX_IMAGE_HEIGHT = 1080;
+
+const ALLOWED_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png'];
+const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png'];
+
+// 일반적으로 많이 사용하는 비이미지 파일 5개
+const ALLOWED_GENERAL_MIME_TYPES = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain'
+];
+const ALLOWED_GENERAL_EXTENSIONS = ['.pdf', '.docx', '.xlsx', '.pptx', '.txt'];
+
+const ALLOWED_FILE_ACCEPT = [
+    ...ALLOWED_IMAGE_EXTENSIONS,
+    ...ALLOWED_GENERAL_EXTENSIONS,
+    ...ALLOWED_IMAGE_MIME_TYPES,
+    ...ALLOWED_GENERAL_MIME_TYPES
+].join(',');
 
 export default {
     props: {
@@ -72,7 +98,8 @@ export default {
                 commonSettingInfos["localReadonly"]
             ],
 
-            backend: null
+            backend: null,
+            allowedFileAccept: ALLOWED_FILE_ACCEPT
         };
     },
 
@@ -178,7 +205,96 @@ export default {
     },
 
     methods: {
-        handleGeneratedFiles(data) {
+        getFileExtension(fileName) {
+            const name = (fileName || '').toLowerCase();
+            const lastDot = name.lastIndexOf('.');
+            return lastDot > -1 ? name.slice(lastDot) : '';
+        },
+        isImageFile(file) {
+            if (!file) return false;
+            const mimeType = (file.type || '').toLowerCase();
+            const ext = this.getFileExtension(file.name || '');
+            return ALLOWED_IMAGE_MIME_TYPES.includes(mimeType) || ALLOWED_IMAGE_EXTENSIONS.includes(ext);
+        },
+        isAllowedGeneralFileType(file) {
+            if (!file) return false;
+            const mimeType = (file.type || '').toLowerCase();
+            const ext = this.getFileExtension(file.name || '');
+            return ALLOWED_GENERAL_MIME_TYPES.includes(mimeType) || ALLOWED_GENERAL_EXTENSIONS.includes(ext);
+        },
+        getMaxSizeByFileType(file) {
+            if (this.isImageFile(file)) return MAX_IMAGE_FILE_SIZE_BYTES;
+            return MAX_GENERAL_FILE_SIZE_BYTES;
+        },
+        isFileSizeValid(file) {
+            if (!file) return false;
+            return file.size <= this.getMaxSizeByFileType(file);
+        },
+        getImageDimensions(file) {
+            return new Promise((resolve, reject) => {
+                const objectUrl = URL.createObjectURL(file);
+                const image = new Image();
+                image.onload = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    resolve({ width: image.naturalWidth, height: image.naturalHeight });
+                };
+                image.onerror = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error('IMAGE_DIMENSION_READ_FAILED'));
+                };
+                image.src = objectUrl;
+            });
+        },
+        isImageResolutionValid(dimensions) {
+            if (!dimensions) return false;
+            return dimensions.width <= MAX_IMAGE_WIDTH && dimensions.height <= MAX_IMAGE_HEIGHT;
+        },
+        showValidationError(message) {
+            if (typeof this.$toast?.error === 'function') {
+                this.$toast.error(message);
+                return;
+            }
+            alert(message);
+        },
+        async validateFile(file) {
+            if (!file) {
+                return { valid: false, message: '업로드할 파일이 없습니다.' };
+            }
+
+            if (this.isImageFile(file)) {
+                if (!this.isFileSizeValid(file)) {
+                    const maxMb = Math.floor(MAX_IMAGE_FILE_SIZE_BYTES / (1024 * 1024));
+                    return { valid: false, message: `이미지 파일은 최대 ${maxMb}MB까지 업로드할 수 있습니다.` };
+                }
+                try {
+                    const dimensions = await this.getImageDimensions(file);
+                    if (!this.isImageResolutionValid(dimensions)) {
+                        return {
+                            valid: false,
+                            message: `이미지 해상도는 ${MAX_IMAGE_WIDTH}x${MAX_IMAGE_HEIGHT} 이하만 업로드할 수 있습니다.`
+                        };
+                    }
+                } catch (error) {
+                    return { valid: false, message: '이미지 해상도를 확인할 수 없습니다. 다른 이미지를 시도해 주세요.' };
+                }
+                return { valid: true };
+            }
+
+            if (!this.isAllowedGeneralFileType(file)) {
+                return {
+                    valid: false,
+                    message: '파일은 PDF(.pdf), DOCX(.docx), XLSX(.xlsx), PPTX(.pptx), TXT(.txt) 형식만 업로드할 수 있습니다.'
+                };
+            }
+
+            if (!this.isFileSizeValid(file)) {
+                const maxMb = Math.floor(MAX_GENERAL_FILE_SIZE_BYTES / (1024 * 1024));
+                return { valid: false, message: `파일은 최대 ${maxMb}MB까지 업로드할 수 있습니다.` };
+            }
+
+            return { valid: true };
+        },
+        async handleGeneratedFiles(data) {
             console.log('[FileField] EventBus로부터 파일 수신:', data);
             
             if (!data || !data.files || data.files.length === 0) {
@@ -186,14 +302,25 @@ export default {
                 return;
             }
             
-            // File 객체들을 selectedFiles에 추가
-            const newFiles = data.files.map(file => {
+            // File 객체들을 selectedFiles에 추가 (검증 실패 파일 제외)
+            const newFiles = [];
+            for (const file of data.files) {
+                const validation = await this.validateFile(file);
+                if (!validation.valid) {
+                    console.warn('[FileField] 브라우저 유즈 파일 검증 실패:', { fileName: file?.name, message: validation.message });
+                    this.showValidationError(validation.message);
+                    continue;
+                }
+
                 // File 객체에 추가 속성 설정
                 file.originalFileName = file.name;
                 file.path = file.url;
-                
-                return file;
-            });
+                newFiles.push(file);
+            }
+
+            if (newFiles.length === 0) {
+                return;
+            }
             
             // 기존 파일이 비어있거나 초기값인 경우 교체
             if (!this.selectedFiles || 
@@ -247,7 +374,18 @@ export default {
         },
         async handleFileChange(event) {
             try {
-                const file = event.target.files[0];
+                const fromEvent = event?.target?.files?.[0];
+                const fromModel = Array.isArray(this.selectedFiles) ? this.selectedFiles[0] : this.selectedFiles;
+                const file = fromEvent || fromModel;
+                const validation = await this.validateFile(file);
+                if (!validation.valid) {
+                    this.showValidationError(validation.message);
+                    this.selectedFiles = [];
+                    this.imgBaseUrl = null;
+                    this.$emit('update:modelValue', { path: null, name: null });
+                    return;
+                }
+
                 const fileName = file.name;
                 console.log('[FileField] 파일 업로드 시도:', fileName);
                 const res = await this.backend.uploadFile(fileName, file);
