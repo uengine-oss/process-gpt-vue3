@@ -70,7 +70,7 @@ services:
       - db
 
   memento:
-    image: ghcr.io/uengine-oss/process-gpt-memento:latest
+    image: ghcr.io/uengine-oss/process-gpt-memento:5a853cb
     ports:
       - "8005:8005"
     environment:
@@ -82,7 +82,7 @@ services:
       - rest
 
   crewai-action:
-    image: ghcr.io/uengine-oss/crewai-action:latest
+    image: ghcr.io/uengine-oss/crewai-action:7624755
     ports:
       - "8001:8000"
     environment:
