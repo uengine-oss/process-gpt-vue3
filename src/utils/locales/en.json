@@ -1533,7 +1533,6 @@
         "noGroups": "No groups registered",
         "noAvailableTeams": "No teams available to add",
         "addSelectedTeams": "Add Selected Teams",
-        "confirmDelete": "Delete Group",
         "deleteConfirmMessage": "Are you sure you want to delete '{name}' group?",
         "affiliatedTeam": "Affiliated team"
     },

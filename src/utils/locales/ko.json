@@ -1482,7 +1482,7 @@
         "role": "역할",
         "user": "user",
         "admin": "Admin",
-        "me": "me",
+        "me": "나",
         "delegate": "위임",
         "delegateAction": "위임하기",
         "delegateSuperAdminTitle": "SuperAdmin 권한 위임",
@@ -1533,7 +1533,6 @@
         "noGroups": "등록된 그룹이 없습니다",
         "noAvailableTeams": "추가 가능한 팀이 없습니다",
         "addSelectedTeams": "선택한 팀 추가",
-        "confirmDelete": "그룹 삭제",
         "deleteConfirmMessage": "'{name}' 그룹을 삭제하시겠습니까?",
         "affiliatedTeam": "소속 팀"
     },

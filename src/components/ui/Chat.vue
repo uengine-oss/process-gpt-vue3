@@ -1879,7 +1879,7 @@
                         @preview-bpmn="(bpmn) => $emit('preview-bpmn', bpmn)"
                     />
                     </div>
-                    <div v-if="!workAssistantAgentMode" style="position: relative; z-index: 9999; margin-bottom: 10px">
+                    <div v-if="!workAssistantAgentMode" style="position: relative; z-index: 9999;">
                         <v-row class="pa-0 ma-0">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
                                 <v-tooltip :text="$t('chat.addFile')">
