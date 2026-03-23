@@ -9,27 +9,34 @@
                         <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="primary" show-arrows>
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                             <div v-if="admin">
+                                <!-- 계정 설정 -->
                                 <v-tab value="ManageAccess">
                                     <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }}
                                 </v-tab>
                                 <template v-if="!gs">
+                                    <!-- 구글 드라이브 -->
                                     <v-tab v-if="superAdmin && !isUEngineMode" value="Drive">
                                         <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }}
                                     </v-tab>
+                                    <!-- MCP 서버 -->
                                     <v-tab v-if="!isUEngineMode" value="MCP-Servers">
                                         <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }}
                                     </v-tab>
+                                    <!-- MCP 환경변수 -->
                                     <v-tab v-if="!isUEngineMode" value="MCP-Environments">
                                         <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon>
                                         {{ $t('accountTab.environments') }}
                                     </v-tab>
                                     <!-- <v-tab v-if="!isUEngineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab> -->
+                                    <!-- 데이터 소스 연결 정보 -->
                                     <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                         <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                     </v-tab>
+                                    <!-- 업무 카탈로그 -->
                                     <v-tab v-if="!isUEngineMode" value="TaskCatalog">
                                         <v-icon class="mr-2" size="20">mdi-view-grid</v-icon> {{ $t('taskCatalog.catalog') }}
                                     </v-tab>
+                                    <!-- 조직도 그룹 -->
                                     <v-tab value="OrgChartGroup">
                                         <v-icon class="mr-2" size="20">mdi-account-group</v-icon> {{ $t('accountTab.orgChartGroup') }}
                                     </v-tab>

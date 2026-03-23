@@ -1,14 +1,14 @@
 <template>
     <div class="settings-container pa-4">
         <!-- Info Banner -->
-        <div class="info-banner">
-            <v-icon size="18" color="primary">mdi-information-outline</v-icon>
-            <span>{{ $t('orgChartGroup.description') }}</span>
-        </div>
-
+        <v-alert dense outlined type="info" color="gray" class="mb-4 pa-4 pt-2 pb-2">
+            <span class="text-body-1">{{ $t('orgChartGroup.description') }}</span>
+        </v-alert>
+        
         <!-- Header with Add Button -->
-        <div class="section-header">
-            <span class="section-title">{{ $t('orgChartGroup.title') }}</span>
+        <div class="d-flex align-center mb-4">
+            <span class="text-h6 font-weight-bold">{{ $t('orgChartGroup.title') }}</span>
+            <v-spacer />
             <v-btn color="primary" rounded variant="flat" @click="openGroupDialog()">
                 <v-icon size="16" class="mr-1">mdi-plus</v-icon>
                 {{ $t('orgChartGroup.addGroup') }}
@@ -17,69 +17,73 @@
 
         <!-- Groups List -->
         <div class="groups-container">
-            <div v-if="loading" class="loading-state">
+            <div v-if="loading" class="d-flex flex-column align-center justify-center text-grey py-16 ga-3">
                 <v-progress-circular indeterminate size="32" color="primary" />
             </div>
 
-            <div v-else-if="groups.length === 0" class="empty-state">
+            <div v-else-if="groups.length === 0" class="d-flex flex-column align-center justify-center text-grey py-16 ga-3">
                 <v-icon size="48" color="grey-lighten-1">mdi-account-group-outline</v-icon>
                 <span>{{ $t('orgChartGroup.noGroups') }}</span>
             </div>
 
             <div v-else class="groups-list">
-                <div v-for="group in groups" :key="group.id" class="group-card" :class="{ expanded: expandedGroupId === group.id }">
-                    <div class="group-header" @click="toggleGroup(group.id)">
-                        <div class="group-info">
+                <v-card v-for="group in groups" :key="group.id" class="pa-0 mb-3" variant="outlined">
+                    <div class="d-flex align-center justify-space-between pa-4">
+                        <div class="d-flex align-center">
                             <v-icon size="20" color="primary" class="mr-2">mdi-account-group</v-icon>
                             <div>
-                                <div class="group-name">{{ group.name }}</div>
-                                <div class="group-desc" v-if="group.description">{{ group.description }}</div>
+                                <div class="text-subtitle-2 font-weight-bold">{{ group.name }}</div>
+                                <div class="text-caption text-grey" v-if="group.description">{{ group.description }}</div>
                             </div>
                         </div>
-                        <div class="group-actions">
-                            <span class="team-count">{{ getTeamCount(group.id) }} {{ $t('orgChartGroup.teams') }}</span>
-                            <button class="action-btn action-edit" @click.stop="openGroupDialog(group)">
-                                <v-icon size="16">mdi-pencil</v-icon>
-                            </button>
-                            <button class="action-btn action-delete" @click.stop="confirmDeleteGroup(group)">
-                                <v-icon size="16">mdi-delete</v-icon>
-                            </button>
-                            <v-icon size="20" class="expand-icon">
-                                {{ expandedGroupId === group.id ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
-                            </v-icon>
+                        <div class="d-flex align-center ga-1">
+                            <v-chip size="small" color="warning" variant="tonal">
+                                {{ getTeamCount(group.id) }} {{ $t('orgChartGroup.teams') }}
+                            </v-chip>
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable" @click.stop="confirmDeleteGroup(group)">
+                                        <v-icon color="error">mdi-delete-outline</v-icon>
+                                    </v-btn>
+                                </template>
+                                {{ $t('common.delete') }}
+                            </v-tooltip>
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable" @click.stop="openGroupDialog(group)">
+                                        <v-icon>mdi-pencil</v-icon>
+                                    </v-btn>
+                                </template>
+                                {{ $t('orgChartGroup.editGroup') }}
+                            </v-tooltip>
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable" @click="openTeamSelector(group)">
+                                        <v-icon size="32">mdi-plus</v-icon>
+                                    </v-btn>
+                                </template>
+                                {{ $t('orgChartGroup.addTeam') }}
+                            </v-tooltip>
                         </div>
                     </div>
 
-                    <!-- Expanded Team List -->
-                    <v-expand-transition>
-                        <div v-show="expandedGroupId === group.id" class="teams-section">
-                            <div class="teams-header">
-                                <span class="teams-title">{{ $t('orgChartGroup.assignedTeams') }}</span>
-                                <button class="add-team-btn" @click="openTeamSelector(group)">
-                                    <v-icon size="14">mdi-plus</v-icon>
-                                    {{ $t('orgChartGroup.addTeam') }}
-                                </button>
-                            </div>
-                            <div class="teams-list">
-                                <div v-for="team in getGroupTeams(group.id)" :key="team.id" class="team-chip">
-                                    <v-icon size="14" class="mr-1">mdi-account-multiple</v-icon>
-                                    {{ team.team_name }}
-                                    <button class="chip-remove" @click="removeTeamFromGroup(group.id, team.id)">
-                                        <v-icon size="12">mdi-close</v-icon>
-                                    </button>
-                                </div>
-                                <div v-if="getGroupTeams(group.id).length === 0" class="no-teams">
-                                    {{ $t('orgChartGroup.noTeamsAssigned') }}
-                                </div>
-                            </div>
+                    <div class="px-4 pb-4">
+                        <div class="d-flex flex-wrap ga-2">
+                            <v-chip v-for="team in getGroupTeams(group.id)" :key="team.id" size="small" closable @click:close="removeTeamFromGroup(group.id, team.id)">
+                                <v-icon size="14" class="mr-1">mdi-account-multiple</v-icon>
+                                {{ team.team_name }}
+                            </v-chip>
+                            <span v-if="getGroupTeams(group.id).length === 0" class="text-caption text-grey pa-2">
+                                {{ $t('orgChartGroup.noTeamsAssigned') }}
+                            </span>
                         </div>
-                    </v-expand-transition>
-                </div>
+                    </div>
+                </v-card>
             </div>
         </div>
 
         <!-- Add/Edit Group Dialog -->
-        <v-dialog v-model="groupDialog" max-width="450" persistent>
+        <v-dialog v-model="groupDialog" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '450px'" persistent>
             <v-card>
                 <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
                     {{ editingGroup ? $t('orgChartGroup.editGroup') : $t('orgChartGroup.addGroup') }}
@@ -111,69 +115,79 @@
         </v-dialog>
 
         <!-- Team Selector Dialog -->
-        <v-dialog v-model="teamSelectorDialog" max-width="500">
-            <div class="dialog-card">
-                <div class="dialog-header">
-                    <span>{{ $t('orgChartGroup.selectTeams') }}</span>
-                    <button class="dialog-close" @click="teamSelectorDialog = false">
-                        <v-icon size="18">mdi-close</v-icon>
-                    </button>
-                </div>
-                <div class="dialog-content">
-                    <div class="search-field">
-                        <v-icon size="18" color="grey">mdi-magnify</v-icon>
-                        <input v-model="teamSearchQuery" type="text" :placeholder="$t('orgChartGroup.searchTeams')" class="flat-input" />
+        <v-dialog v-model="teamSelectorDialog" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '500px'" persistent>
+            <v-card :style="isMobile ? '' : 'max-height: 600px;'" class="d-flex flex-column">
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    {{ $t('orgChartGroup.selectTeams') }}
+                    <v-btn variant="text" density="compact" icon @click="teamSelectorDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-4 pb-0 d-flex flex-column" style="overflow: hidden;">
+                    <div class="d-flex align-center border border-borderColor rounded-pill px-5 mb-4 flex-shrink-0"
+                        style="min-width: 160px;">
+                        <Icons :icon="'magnifer-linear'" :size="20" />
+                        <v-text-field
+                            v-model="teamSearchQuery"
+                            variant="plain"
+                            density="compact"
+                            class="position-relative pt-0 ml-3 custom-placeholer-color org-chart-group-search-input"
+                            :placeholder="$t('orgChartGroup.searchTeams')"
+                            single-line
+                            hide-details
+                        />
                     </div>
-                    <div class="team-selector-list">
-                        <div
+                    <v-list class="pa-0 border rounded flex-grow-1" style="max-height: 300px; overflow-y: auto;">
+                        <v-list-item
                             v-for="team in filteredAvailableTeams"
                             :key="team.id"
-                            class="team-selector-item"
-                            :class="{ selected: selectedTeams.includes(team.id) }"
+                            :class="{ 'bg-blue-lighten-5': selectedTeams.includes(team.id) }"
                             @click="toggleTeamSelection(team)"
                         >
-                            <v-icon size="18" class="mr-2">
-                                {{ selectedTeams.includes(team.id) ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline' }}
-                            </v-icon>
-                            <span>{{ team.name }}</span>
-                        </div>
-                        <div v-if="filteredAvailableTeams.length === 0" class="no-teams">
+                            <template v-slot:prepend>
+                                <v-icon size="18" :color="selectedTeams.includes(team.id) ? 'primary' : 'grey'">
+                                    {{ selectedTeams.includes(team.id) ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline' }}
+                                </v-icon>
+                            </template>
+                            <v-list-item-title>{{ team.name }}</v-list-item-title>
+                        </v-list-item>
+                        <div v-if="filteredAvailableTeams.length === 0" class="text-center text-grey pa-4">
                             {{ $t('orgChartGroup.noAvailableTeams') }}
                         </div>
-                    </div>
-                </div>
-                <div class="dialog-actions">
-                    <button class="btn-cancel" @click="teamSelectorDialog = false">
+                    </v-list>
+                </v-card-text>
+                <v-card-actions class="d-flex justify-end align-center pa-4">
+                    <v-btn color="gray" rounded="pill" variant="flat" @click="teamSelectorDialog = false">
                         {{ $t('common.cancel') }}
-                    </button>
-                    <button class="btn-save" @click="addSelectedTeams" :disabled="selectedTeams.length === 0">
+                    </v-btn>
+                    <v-btn color="primary" rounded variant="flat" @click="addSelectedTeams" :disabled="selectedTeams.length === 0">
                         {{ $t('orgChartGroup.addSelectedTeams') }} ({{ selectedTeams.length }})
-                    </button>
-                </div>
-            </div>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
         </v-dialog>
 
         <!-- Delete Confirmation Dialog -->
-        <v-dialog v-model="deleteDialog" max-width="400">
-            <div class="dialog-card">
-                <div class="dialog-header">
-                    <span>{{ $t('orgChartGroup.confirmDelete') }}</span>
-                    <button class="dialog-close" @click="deleteDialog = false">
-                        <v-icon size="18">mdi-close</v-icon>
-                    </button>
-                </div>
-                <div class="dialog-content">
+        <v-dialog v-model="deleteDialog" :max-width="isMobile ? '100%' : '400px'" persistent>
+            <v-card>
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    {{ $t('orgChartGroup.deleteGroup') }}
+                    <v-btn variant="text" density="compact" icon @click="deleteDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-4 pb-0">
                     <p>{{ $t('orgChartGroup.deleteConfirmMessage', { name: deletingGroup?.name }) }}</p>
-                </div>
-                <div class="dialog-actions">
-                    <button class="btn-cancel" @click="deleteDialog = false">
+                </v-card-text>
+                <v-card-actions class="d-flex justify-end align-center pa-4">
+                    <v-btn color="gray" rounded="pill" variant="flat" @click="deleteDialog = false">
                         {{ $t('common.cancel') }}
-                    </button>
-                    <button class="btn-delete" @click="deleteGroup">
+                    </v-btn>
+                    <v-btn color="error" rounded variant="flat" @click="deleteGroup">
                         {{ $t('common.delete') }}
-                    </button>
-                </div>
-            </div>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
         </v-dialog>
     </div>
 </template>
@@ -188,8 +202,6 @@ export default defineComponent({
         const groups = ref([]);
         const groupTeams = ref([]);
         const availableTeams = ref([]);
-        const expandedGroupId = ref(null);
-
         // Dialog states
         const groupDialog = ref(false);
         const teamSelectorDialog = ref(false);
@@ -209,6 +221,7 @@ export default defineComponent({
         const selectedTeams = ref([]);
 
         const supabase = window.$supabase;
+        const isMobile = computed(() => window.innerWidth <= 768);
 
         // Computed
         const filteredAvailableTeams = computed(() => {
@@ -306,10 +319,6 @@ export default defineComponent({
 
         const getGroupTeams = (groupId) => {
             return groupTeams.value.filter((t) => t.group_id === groupId);
-        };
-
-        const toggleGroup = (groupId) => {
-            expandedGroupId.value = expandedGroupId.value === groupId ? null : groupId;
         };
 
         const openGroupDialog = (group = null) => {
@@ -424,7 +433,7 @@ export default defineComponent({
             groups,
             groupTeams,
             availableTeams,
-            expandedGroupId,
+            isMobile,
             groupDialog,
             teamSelectorDialog,
             deleteDialog,
@@ -436,7 +445,6 @@ export default defineComponent({
             filteredAvailableTeams,
             getTeamCount,
             getGroupTeams,
-            toggleGroup,
             openGroupDialog,
             saveGroup,
             confirmDeleteGroup,
@@ -450,458 +458,12 @@ export default defineComponent({
 });
 </script>
 
-<style scoped>
-/* Info Banner */
-.info-banner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    background: #eff6ff;
-    border: 1px solid #dbeafe;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 13px;
-    color: #1e40af;
-}
-
-/* Section Header */
-.section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-}
-
-.section-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.add-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}
-
-.add-btn:hover {
-    background: #2563eb;
-}
-
-/* Groups Container */
+<style>
 .groups-container {
     min-height: 200px;
 }
 
-.loading-state,
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 20px;
-    gap: 12px;
-    color: #9ca3af;
-    font-size: 14px;
-}
-
-/* Group Card */
-.group-card {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    background: #ffffff;
-    transition: border-color 0.2s ease;
-}
-
-.group-card:hover {
-    border-color: #d1d5db;
-}
-
-.group-card.expanded {
-    border-color: #3b82f6;
-}
-
-.group-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
-    cursor: pointer;
-}
-
-.group-info {
-    display: flex;
-    align-items: center;
-}
-
-.group-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.group-desc {
-    font-size: 12px;
-    color: #6b7280;
-    margin-top: 2px;
-}
-
-.group-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.team-count {
-    font-size: 12px;
-    color: #6b7280;
-    background: #f3f4f6;
-    padding: 4px 8px;
-    border-radius: 4px;
-}
-
-.expand-icon {
-    color: #9ca3af;
-}
-
-/* Teams Section */
-.teams-section {
-    border-top: 1px solid #f3f4f6;
-    padding: 16px;
-    background: #fafafa;
-}
-
-.teams-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.teams-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #374151;
-}
-
-.add-team-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    font-size: 12px;
-    color: #6b7280;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.add-team-btn:hover {
-    border-color: #3b82f6;
-    color: #3b82f6;
-}
-
-.teams-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.team-chip {
-    display: flex;
-    align-items: center;
-    padding: 6px 10px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    font-size: 12px;
-    color: #374151;
-}
-
-.chip-remove {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    margin-left: 6px;
-    background: transparent;
-    border: none;
-    border-radius: 50%;
-    color: #9ca3af;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.chip-remove:hover {
-    background: #fef2f2;
-    color: #ef4444;
-}
-
-.no-teams {
-    font-size: 13px;
-    color: #9ca3af;
-    padding: 8px 0;
-}
-
-/* Action Buttons */
-.action-btn {
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s ease;
-}
-
-.action-btn:hover {
-    background-color: #f3f4f6;
-}
-
-.action-edit {
-    color: #6b7280;
-}
-
-.action-edit:hover {
-    color: #3b82f6;
-    background-color: #eff6ff;
-}
-
-.action-delete {
-    color: #9ca3af;
-}
-
-.action-delete:hover {
-    color: #ef4444;
-    background-color: #fef2f2;
-}
-
-/* Dialog */
-.dialog-card {
-    background: #ffffff;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.dialog-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid #f3f4f6;
-    font-size: 16px;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.dialog-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: transparent;
-    border: none;
-    border-radius: 6px;
-    color: #9ca3af;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.dialog-close:hover {
-    background: #f3f4f6;
-    color: #6b7280;
-}
-
-.dialog-content {
-    padding: 20px;
-}
-
-.dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 16px 20px;
-    border-top: 1px solid #f3f4f6;
-    background: #fafafa;
-}
-
-/* Form Fields */
-.form-field {
-    margin-bottom: 16px;
-}
-
-.form-field:last-child {
-    margin-bottom: 0;
-}
-
-.form-field label {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 6px;
-}
-
-.flat-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #1f2937;
-    transition: border-color 0.15s ease;
-}
-
-.flat-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-}
-
-.flat-textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #1f2937;
-    resize: vertical;
-    transition: border-color 0.15s ease;
-}
-
-.flat-textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-}
-
-/* Search Field */
-.search-field {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    margin-bottom: 16px;
-}
-
-.search-field .flat-input {
-    flex: 1;
-    border: none;
-    padding: 0;
-    background: transparent;
-}
-
-.search-field .flat-input:focus {
-    outline: none;
-}
-
-/* Team Selector */
-.team-selector-list {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-}
-
-.team-selector-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    cursor: pointer;
-    border-bottom: 1px solid #f3f4f6;
-    transition: background-color 0.15s ease;
-}
-
-.team-selector-item:last-child {
-    border-bottom: none;
-}
-
-.team-selector-item:hover {
-    background: #f9fafb;
-}
-
-.team-selector-item.selected {
-    background: #eff6ff;
-}
-
-.team-selector-item .v-icon {
-    color: #9ca3af;
-}
-
-.team-selector-item.selected .v-icon {
-    color: #3b82f6;
-}
-
-/* Buttons */
-.btn-cancel {
-    padding: 8px 16px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #6b7280;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.btn-cancel:hover {
-    background: #f9fafb;
-}
-
-.btn-save {
-    padding: 8px 16px;
-    background: #3b82f6;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}
-
-.btn-save:hover:not(:disabled) {
-    background: #2563eb;
-}
-
-.btn-save:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.btn-delete {
-    padding: 8px 16px;
-    background: #ef4444;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}
-
-.btn-delete:hover {
-    background: #dc2626;
+.org-chart-group-search-input input {
+   padding: 0px !important;
 }
 </style>

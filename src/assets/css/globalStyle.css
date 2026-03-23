@@ -137,7 +137,7 @@ hr {
 }
 
 .mcp-server-list-box {
-    height: calc(100vh - 250px) !important;
+    height: calc(100vh - 290px) !important;
     overflow: auto;
 }
 
@@ -1557,8 +1557,8 @@ hr {
 
     .app-base-card-is-mobile-height,
     .instance-card-process-box {
-        max-height: calc(100vh - 200px);
-        height: calc(100vh - 200px);
+        max-height: calc(100vh - 220px);
+        height: calc(100vh - 220px);
     }
 
     .work-itme-current-component .v-checkbox {
