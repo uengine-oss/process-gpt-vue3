@@ -41,7 +41,52 @@
                                 </v-avatar>
                             </div>
                             <div class="ml-5">
-                                <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ item.name }}</h4>
+                                <div class="d-flex align-center ga-2">
+                                    <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ item.name }}</h4>
+                                    <v-chip
+                                        v-if="isMe(item)"
+                                        variant="flat"
+                                        color="#f0f0f0"
+                                        :class="item.is_admin ? 'text-primary' : 'text-black'"
+                                        size="x-small"
+                                    >
+                                        {{ $t('accountTab.me') }}
+                                    </v-chip>
+                                    <v-chip
+                                        v-if="canEditUserRole(item)"
+                                        variant="flat"
+                                        color="#f0f0f0"
+                                        :class="item.is_admin ? 'text-primary' : 'text-black'"
+                                        class="chip-select-wrapper"
+                                        size="x-small"
+                                    >
+                                        <v-select
+                                            v-model="item.is_admin"
+                                            :items="adminItem"
+                                            item-title="name"
+                                            item-value="value"
+                                            @update:model-value="updateUser(item)"
+                                            variant="flat"
+                                            density="compact"
+                                            hide-details
+                                            class="chip-select"
+                                            :class="item.is_admin ? 'text-primary' : 'text-black'"
+                                        >
+                                            <template v-slot:selection="{ item: selectedItem }">
+                                                <span :class="item.is_admin ? 'text-primary' : 'text-black'">{{ selectedItem.title }}</span>
+                                            </template>
+                                        </v-select>
+                                    </v-chip>
+                                    <v-chip
+                                        v-else
+                                        variant="flat"
+                                        color="#f0f0f0"
+                                        :class="(isProtectedSuperAdmin(item) || item.is_admin) ? 'text-primary' : 'text-black'"
+                                        size="x-small"
+                                    >
+                                        {{ isProtectedSuperAdmin(item) ? 'superAdmin' : item.is_admin ? $t('accountTab.admin') : $t('accountTab.user') }}
+                                    </v-chip>
+                                </div>
                                 <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ item.email }}</div>
                                 <div v-if="item.teamName" class="text-caption mt-1">
                                     {{ $t('accountTab.affiliatedTeam') }} : {{ item.teamName }}
@@ -49,50 +94,15 @@
                             </div>
                         </div>
                         <div class="d-flex align-center ga-2">
-                            <v-chip v-if="isMe(item)" variant="tonal" color="secondary" size="x-small">
-                                {{ $t('accountTab.me') }}
-                            </v-chip>
                             <v-btn
                                 v-if="canDelegateSuperAdmin(item)"
                                 size="x-small"
                                 variant="outlined"
                                 color="primary"
-                                class="ml-1"
                                 @click="openDelegateDialog"
                             >
                                 {{ $t('accountTab.delegate') }}
                             </v-btn>
-                            <v-chip
-                                v-if="canEditUserRole(item)"
-                                variant="elevated"
-                                :color="item.is_admin ? 'primary' : 'gray'"
-                                class="chip-select-wrapper"
-                                size="x-small"
-                            >
-                                <v-select
-                                    v-model="item.is_admin"
-                                    :items="adminItem"
-                                    item-title="name"
-                                    item-value="value"
-                                    @update:model-value="updateUser(item)"
-                                    variant="plain"
-                                    density="compact"
-                                    hide-details
-                                    class="chip-select"
-                                >
-                                    <template v-slot:selection="{ item: selectedItem }">
-                                        {{ selectedItem.title }}
-                                    </template>
-                                </v-select>
-                            </v-chip>
-                            <v-chip
-                                v-else-if="!isMe(item)"
-                                variant="elevated"
-                                :color="isProtectedSuperAdmin(item) ? 'primary' : item.is_admin ? 'primary' : 'gray'"
-                                size="x-small"
-                            >
-                                {{ isProtectedSuperAdmin(item) ? 'superAdmin' : item.is_admin ? $t('accountTab.admin') : $t('accountTab.user') }}
-                            </v-chip>
                             <v-btn
                                 v-if="isAdmin && !isMe(item) && !isProtectedSuperAdmin(item)"
                                 @click="openDeleteDialog(item)"
@@ -358,6 +368,12 @@ export default {
                 };
             });
 
+            this.users.sort((a, b) => {
+                if (this.isMe(a)) return -1;
+                if (this.isMe(b)) return 1;
+                return 0;
+            });
+
             if (this.organizationChart) {
                 this.updateUserTeamInfo();
             }
@@ -544,6 +560,16 @@ export default {
 .chip-select .v-field__append-inner {
     padding: 0 !important;
     margin: 0 !important;
+}
+
+.chip-select-wrapper.text-primary :deep(.v-field__append-inner),
+.chip-select-wrapper.text-primary :deep(.v-field__append-inner .v-icon) {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+.chip-select-wrapper.text-black :deep(.v-field__append-inner),
+.chip-select-wrapper.text-black :deep(.v-field__append-inner .v-icon) {
+    color: #000 !important;
 }
 
 .user-row {

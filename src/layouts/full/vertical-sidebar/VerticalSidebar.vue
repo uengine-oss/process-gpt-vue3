@@ -132,17 +132,27 @@
                 </v-col>
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
-                <div v-if="mode !== 'uEngine' && isAdmin" class="mb-4">
+                <div v-if="mode !== 'uEngine' && isAdmin" class="mb-4 mt-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
                         </div>
+                        <div class="sidebar-title-icon" @click="toggleSidebarAgentSearch">
+                            <Icons :icon="'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
+                        </div>
                         <template v-if="isAdmin">
+                            <v-tooltip location="bottom" :text="$t('VerticalSidebar.createAgent')">
+                                <template v-slot:activator="{ props }">
+                                    <div class="sidebar-title-icon" v-bind="props" @click="openAgentCreateDialog">
+                                        <Icons :icon="'plus'" :size="14" :color="'#808080'" />
+                                    </div>
+                                </template>
+                            </v-tooltip>
                             <div v-for="item in organizationItem" :key="item.title">
                                 <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
                                     <template v-slot:activator="{ props }">
                                         <div class="sidebar-title-icon" v-bind="props" @click="navigateTo(item.to)">
-                                            <Icons :icon="item.icon" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
+                                            <Icons :icon="item.icon" :size="20" :color="'#808080'" />
                                         </div>
                                     </template>
                                 </v-tooltip>
@@ -150,7 +160,22 @@
                         </template>
                     </v-row>
                     <v-col class="pa-0">
-                        <AgentList />
+                        <AgentList ref="sidebarAgentList" />
+                    </v-col>
+                </div>
+
+                <!-- 사람 동료 -->
+                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                    <div class="d-flex align-center ml-2">
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
+                            {{ $t('VerticalSidebar.userList') || '유저 목록' }}
+                        </div>
+                        <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
+                            <Icons :icon="'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
+                        </div>
+                    </div>
+                    <v-col class="pa-0">
+                        <SidebarUserList ref="sidebarUserList" />
                     </v-col>
                 </div>
 
@@ -173,26 +198,11 @@
                     </v-col>
                 </div>
 
-                <!-- 유저 목록 -->
-                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
-                    <div class="d-flex align-center ml-2">
-                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
-                            {{ $t('VerticalSidebar.userList') || '유저 목록' }}
-                        </div>
-                        <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
-                            <Icons :icon="'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
-                        </div>
-                    </div>
-                    <v-col class="pa-0">
-                        <SidebarUserList ref="sidebarUserList" />
-                    </v-col>
-                </div>
-
                 <!-- 대화목록 -->
                 <ChatList v-if="!gs" />
 
                 <!-- Analytics 타이틀 + 목록 -->
-                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4">
+                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4 mt-8">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('VerticalSidebar.analytics') }}
                     </div>
@@ -358,6 +368,10 @@
         <ProjectCreationForm @close="closeNewProject" @save="createNewProject" />
     </v-dialog>
 
+    <v-dialog v-model="isAgentCreateDialogOpen" :fullscreen="globalIsMobile.value" max-width="600">
+        <AgentCreateDialog @closeDialog="closeAgentCreateDialog" />
+    </v-dialog>
+
     <v-dialog v-model="isOpen" max-width="400" class="delete-input-details">
         <v-card class="pa-4 pt-2">
             <v-row class="ma-0 pa-0 pb-2" align="center">
@@ -385,6 +399,7 @@ import SkillList from '@/components/ui/SkillList.vue';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 import SidebarUserList from '@/components/ui/SidebarUserList.vue';
 import ChatList from '@/components/ui/ChatList.vue';
+import AgentCreateDialog from '@/components/ui/AgentCreateDialog.vue';
 
 import { useCustomizerStore } from '@/stores/customizer';
 
@@ -408,6 +423,7 @@ export default {
         ProjectList,
         ProjectCreationForm,
         AgentList,
+        AgentCreateDialog,
         SkillList,
         SidebarUserList,
         ExpandableList,
@@ -448,7 +464,8 @@ export default {
         },
         isNewProjectOpen: false,
         deletedDefinitionList: [],
-        notiCount: 0
+        notiCount: 0,
+        isAgentCreateDialogOpen: false
     }),
     computed: {
         mobileSideBarBtnStyle() {
@@ -512,6 +529,22 @@ export default {
         },
         closeChatPanelIfOpen() {
             this.EventBus.emit('close-chat-panel');
+        },
+        openAgentCreateDialog() {
+            this.isAgentCreateDialogOpen = true;
+        },
+        closeAgentCreateDialog() {
+            this.isAgentCreateDialogOpen = false;
+        },
+        toggleSidebarAgentSearch() {
+            try {
+                const comp = this.$refs.sidebarAgentList;
+                if (comp && typeof comp.toggleSearch === 'function') {
+                    comp.toggleSearch();
+                }
+            } catch (e) {
+                // ignore
+            }
         },
         toggleSidebarUserSearch() {
             try {
@@ -614,11 +647,10 @@ export default {
                 this.organizationItem = [
                     {
                         title: 'organizationChartDefinition.title',
-                        icon: 'plus',
+                        icon: 'diagram',
                         BgColor: 'primary',
                         to: '/organization',
                         disable: false,
-                        size: 12
                     }
                 ];
             }

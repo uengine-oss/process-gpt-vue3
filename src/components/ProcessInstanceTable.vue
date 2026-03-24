@@ -1,6 +1,6 @@
 <template>
     <div class="w-100">
-        <v-card flat class="log-card ma-0 pa-0 w-100">
+        <div flat class="log-card ma-0 pa-0 w-100">
             <v-skeleton-loader v-if="isLoading" :type="isMobile ? 'card' : 'table'" class="w-100"></v-skeleton-loader>
 
             <v-data-table
@@ -340,7 +340,7 @@
                     </v-expand-transition>
                 </v-card>
             </div>
-        </v-card>
+        </div>
     </div>
 </template>
 
@@ -394,7 +394,7 @@ export default {
     }),
     computed: {
         isMobile() {
-            return window.innerWidth <= 768;
+            return window.innerWidth <= 1279;
         },
         tableHeaders() {
             return [

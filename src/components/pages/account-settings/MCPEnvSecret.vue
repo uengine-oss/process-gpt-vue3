@@ -154,6 +154,7 @@
                                 v-model="showPassword"
                                 :label="$t('accountTab.showSecretData')"
                                 density="compact"
+                                hide-details
                             ></v-checkbox>
                         </v-col>
                     </v-row>
@@ -518,16 +519,16 @@ export default {
 .mcp-environment-monaco-editor,
 .mcp-secret-monaco-editor,
 .mcp-browser-use-monaco-editor {
-    height: 200px !important;
-    max-height: 200px !important;
+    height: 300px !important;
+    max-height: 300px !important;
     overflow: hidden;
 }
 
 .mcp-environment-monaco-editor .monaco-editor,
 .mcp-secret-monaco-editor .monaco-editor,
 .mcp-browser-use-monaco-editor .monaco-editor {
-    height: 200px !important;
-    max-height: 200px !important;
+    height: 240px !important;
+    max-height: 280px !important;
 }
 
 /* Browser Use JSON Editor */

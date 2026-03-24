@@ -73,7 +73,6 @@ export default class AIGenerator {
         // Vite dev server에서는 /langchain-chat 프록시를 사용하고,
         // 빌드/배포(nginx)에서는 /completion prefix 경로를 사용한다.
         this.backendUrl = import.meta.env.DEV ? '/langchain-chat' : '/completion/langchain-chat';
-        this.vendor = 'openai';
         this.modelConfig = {
             temperature: 1,
             frequency_penalty: 0,
@@ -81,8 +80,6 @@ export default class AIGenerator {
         };
 
         const llmConfig = getLLMConfig(options?.llmPurpose || 'default');
-        this.forced_vendor = llmConfig.vendor;
-        this.forced_model = llmConfig.model;
         this.forced_model_config = { ...llmConfig.modelConfig };
     }
 
@@ -483,11 +480,9 @@ export default class AIGenerator {
 
         this._addDetailHighToImageUrl(messages);
         const data = {
-            vendor: this.forced_vendor || this.vendor, // OpenAI API에서는 불필요
-            model: this.forced_model || this.model,
             messages: messages,
             stream: this.options.isStream || true,
-            modelConfig: this.forced_model_config || this.modelConfig // OpenAI API에서는 불필요
+            modelConfig: this.forced_model_config || this.modelConfig
             // temperature: this.forced_model_config?.temperature || this.modelConfig.temperature,
             // top_p: this.forced_model_config?.top_p || 0.9,
             // frequency_penalty: this.forced_model_config?.frequency_penalty || this.modelConfig.frequency_penalty,

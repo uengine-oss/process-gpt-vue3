@@ -38,7 +38,6 @@
                     :userList="userList"
                     :organizationChart="organizationChart"
                     @addUser="addUser"
-                    @addAgent="addAgent"
                     @closeDialog="closeAddDialog"
                     @updateTeam="updateTeam"
                 ></OrganizationAddDialog>
@@ -62,7 +61,6 @@
                     :userList="userList"
                     :organizationChart="organizationChart"
                     @addUser="addUser"
-                    @addAgent="addAgent"
                     @closeDialog="closeAddDialog"
                     @updateTeam="updateTeam"
                 ></OrganizationAddDialog>
@@ -127,10 +125,12 @@ export default {
 
         this.EventBus.on('user-deleted', this.handleUserDeleted);
         this.EventBus.on('agentDeleted', this.handleAgentDeleted);
+        this.EventBus.on('agentAdded', this.handleAgentAddedToChart);
     },
     beforeUnmount() {
         this.EventBus.off('user-deleted', this.handleUserDeleted);
         this.EventBus.off('agentDeleted', this.handleAgentDeleted);
+        this.EventBus.off('agentAdded', this.handleAgentAddedToChart);
     },
     computed: {
         isMobile() {
@@ -406,26 +406,20 @@ export default {
                 console.error('[OrganizationChartChat] updateUsersDepartment error:', e);
             }
         },
-        async addAgent(selectedTeam, newAgent) {
-            this.editNode = selectedTeam;
-            const agent = {
-                id: newAgent.id,
-                name: newAgent.name,
-                data: newAgent
-            };
-            this.editNode.children.push(agent);
-            await this.backend.putAgent(newAgent);
-
-            await this.updateNode();
-            this.$refs.organizationChart.drawTree();
-
-            this.EventBus.emit('agentAdded', newAgent);
-
-            this.$nextTick(() => {
-                this.$nextTick(async () => {
-                    await this.$refs.organizationChart.selectAgentById(newAgent.id, newAgent);
+        async handleAgentAddedToChart(newAgent) {
+            if (!newAgent || !newAgent.id) return;
+            const agentId = newAgent.id;
+            const agentSnapshot = JSON.parse(JSON.stringify(newAgent));
+            this.userList = await this.backend.getUserList();
+            if (this.$refs.organizationChart) {
+                await this.$refs.organizationChart.loadUserList();
+                this.$refs.organizationChart.drawTree();
+                this.$nextTick(() => {
+                    this.$nextTick(async () => {
+                        await this.$refs.organizationChart.selectAgentById(agentId, agentSnapshot);
+                    });
                 });
-            });
+            }
         },
         deleteNode(obj, children) {
             if (children && children.some((item) => item.id == obj.id)) {

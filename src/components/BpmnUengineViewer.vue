@@ -7,8 +7,8 @@
         v-hammer:pan="onPan"
         v-hammer:pinch="onPinch"
     >
-        <div :class="isMobile ? 'mobile-position' : 'desktop-position'" :style="laneAssignments.length > 0 ? 'top: 38px;' : ''">
-            <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
+        <div :class="isMobile ? 'mobile-position' : 'desktop-position'" :style="laneAssignments.length > 0 ? '' : ''">
+            <div class="pa-1 ga-2" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer">mdi-crosshairs-gps</v-icon>
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer">mdi-plus</v-icon>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer">mdi-minus</v-icon>
@@ -26,48 +26,48 @@
                     </template>
                     <span>{{ $t('BpmnUengineViewer.expandedView') }}</span>
                 </v-tooltip>
-            </div>
-        </div>
-        <!-- 참여자 보기 툴팁 -->
-        <div v-if="laneAssignments.length > 0" class="participants-tooltip-wrapper">
-            <v-menu open-on-hover :open-delay="200" :close-delay="200" location="bottom" max-width="400">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" icon size="x-small" variant="text" class="detail-info-button">
-                        <v-icon>mdi-account-group</v-icon>
-                    </v-btn>
-                </template>
+                <!-- 참여자 보기 툴팁 -->
+                <div v-if="laneAssignments.length > 0" class="participants-tooltip-wrapper">
+                    <v-menu :open-on-hover="!isMobile" :open-delay="200" :close-delay="200" location="bottom" max-width="400">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon size="small" variant="text" class="detail-info-button">
+                                <v-icon size="24">mdi-account-group</v-icon>
+                            </v-btn>
+                        </template>
 
-                <v-card class="participants-popup-card">
-                    <v-card-title class="pa-4 pb-2 d-flex align-center">
-                        <v-icon class="mr-2" style="flex-shrink: 0">mdi-account-group</v-icon>
-                        <span class="participants-title-text">{{ $t('BpmnUengineViewer.viewParticipants') }}</span>
-                    </v-card-title>
+                        <v-card class="participants-popup-card">
+                            <v-card-title class="pa-4 pb-2 d-flex align-center">
+                                <v-icon class="mr-2" style="flex-shrink: 0">mdi-account-group</v-icon>
+                                <span class="participants-title-text">{{ $t('BpmnUengineViewer.viewParticipants') }}</span>
+                            </v-card-title>
 
-                    <v-divider class="my-1"></v-divider>
+                            <v-divider class="my-1"></v-divider>
 
-                    <v-card-text class="pa-0" style="max-height: 400px; overflow-y: auto">
-                        <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="participant-item pa-2">
-                            <div class="d-flex align-center">
-                                <v-avatar size="32" class="mr-3">
-                                    <v-img :src="assignment.profileImage" :alt="assignment.assignee" cover>
-                                        <template v-slot:error>
-                                            <v-img src="/images/defaultUser.png" cover>
+                            <v-card-text class="pa-0" style="max-height: 400px; overflow-y: auto">
+                                <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="participant-item pa-2">
+                                    <div class="d-flex align-center">
+                                        <v-avatar size="32" class="mr-3">
+                                            <v-img :src="assignment.profileImage" :alt="assignment.assignee" cover>
                                                 <template v-slot:error>
-                                                    <v-icon size="small" style="color: #666">mdi-account</v-icon>
+                                                    <v-img src="/images/defaultUser.png" cover>
+                                                        <template v-slot:error>
+                                                            <v-icon size="small" style="color: #666">mdi-account</v-icon>
+                                                        </template>
+                                                    </v-img>
                                                 </template>
                                             </v-img>
-                                        </template>
-                                    </v-img>
-                                </v-avatar>
-                                <div class="flex-grow-1">
-                                    <div class="text-body-2 font-weight-medium" style="color: #444">{{ assignment.laneName }}</div>
-                                    <div class="text-caption" style="color: #666">{{ assignment.assignee }}</div>
+                                        </v-avatar>
+                                        <div class="flex-grow-1">
+                                            <div class="text-body-2 font-weight-medium" style="color: #444">{{ assignment.laneName }}</div>
+                                            <div class="text-caption" style="color: #666">{{ assignment.assignee }}</div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    </v-card-text>
-                </v-card>
-            </v-menu>
+                            </v-card-text>
+                        </v-card>
+                    </v-menu>
+                </div>
+            </div>
         </div>
         <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10">
             <v-row class="ma-0 pa-0">
@@ -1312,8 +1312,8 @@ export default {
 }
 .desktop-position {
     position: absolute;
-    top: 16px;
-    right: 16px;
+    top: 32px;
+    right: 20px;
     pointer-events: auto;
     z-index: 10;
 }
@@ -1322,16 +1322,13 @@ export default {
     flex-direction: row;
     align-items: center;
     border: none;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 카드 스타일 그림자 적용 */
     border-radius: 10px;
     background-color: rgba(255, 255, 255, 0.6); /* 반투명 백그라운드 0.6 적용 */
 }
 .desktop-style {
     display: flex;
-    flex-direction: column;
     align-items: center;
     border: none;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 카드 스타일 그림자 적용 */
     border-radius: 10px;
     background-color: rgba(255, 255, 255, 0.6); /* 반투명 백그라운드 0.6 적용 */
 }
@@ -1434,9 +1431,6 @@ svg .bpmn-diff-deleted marker[id*='sequenceflow-end'] path {
 
 /* 참여자 툴팁 스타일 */
 .participants-tooltip-wrapper {
-    position: absolute;
-    top: 0px;
-    right: 16px;
     z-index: 10;
 }
 

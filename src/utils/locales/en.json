@@ -651,9 +651,9 @@
         "title": "System Definition"
     },
     "organizationChartDefinition": {
-        "title": "Add and Manage Organization Chart",
-        "cardTitle": "Org Chart Management",
-        "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'",
+        "title": "Organization Chart Management",
+        "cardTitle": "Organization Chart Management",
+        "organizationChartExplanation": "Easily manage your organization chart interactively. You can add, edit, or remove teams (departments), roles, and employees.\nFor example, you can give commands such as: 'Add Development and Management teams, and register Hong Gil-dong as a new employee in the Management team. Set his role to Developer. Make Team Leader Amuge the head of the Management team.'",
         "addTeam": "Add Team",
         "deleteTeam": "Delete Team",
         "editTeam": "Edit Team",
@@ -1533,7 +1533,6 @@
         "noGroups": "No groups registered",
         "noAvailableTeams": "No teams available to add",
         "addSelectedTeams": "Add Selected Teams",
-        "confirmDelete": "Delete Group",
         "deleteConfirmMessage": "Are you sure you want to delete '{name}' group?",
         "affiliatedTeam": "Affiliated team"
     },
@@ -2481,10 +2480,10 @@
     "VerticalSidebar": {
         "instanceList": "Instance",
         "projectList": "Project",
-        "agentList": "Agent/Organization",
+        "agentList": "Agent Colleagues",
         "skills": "Skills",
         "addSkill": "Manage Skills",
-        "userList": "Users",
+        "userList": "People Colleagues",
         "userLoading": "Loading...",
         "instanceMyGroup": "My Group Instance",
         "saveFileName": "File name to be saved",
@@ -2498,8 +2497,10 @@
         "chatList": "Conversations",
         "chatLoading": "Loading...",
         "chatEmpty": "No chats.",
+        "chatSearchEmpty": "No search results.",
         "analytics": "Analytics",
-        "definitionLoading": "Loading definitions..."
+        "definitionLoading": "Loading definitions...",
+        "createAgent": "Create Agent"
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
@@ -3322,7 +3323,9 @@
         "title": "Agent List",
         "loading": "Loading agents...",
         "empty": "No registered agents",
-        "loadFailed": "Failed to load agent list"
+        "loadFailed": "Failed to load agent list",
+        "search": "Search agents",
+        "searchEmpty": "No search results"
     },
     "SkillList": {
         "title": "Skill List",

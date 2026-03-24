@@ -120,7 +120,7 @@ export default {
                         ? `<div class="node-content-btn-box"><div class="node-content-btn edit-root-name-btn"><i class="mdi mdi-pencil node-content-icon"></i></div></div>`
                         : '';
                     return `
-                    <div class='node-content' id='${nodeId}' data-original-id='${content.id}'>
+                    <div class='node-content' id='${nodeId}' data-original-id='${content.originalId || content.id}'>
                         <div class="node-content-text-box">
                             <div style="display: flex;">
                                 ${
@@ -282,10 +282,19 @@ export default {
             // 팀원들을 세로 배치하기 위한 데이터 변환
             const transformedNode = this.transformForVerticalLayout(this.node);
             this.tree.render(transformedNode);
+            this.suppressApextreeMouseEvents();
 
             // 검색 결과가 있으면 하이라이트 적용
             if (this.searchResults.length > 0) {
                 this.applySearchHighlight();
+            }
+        },
+        suppressApextreeMouseEvents() {
+            const svgEl = this.$refs.tree?.querySelector('svg');
+            if (svgEl && !svgEl.__mouseEventsSuppressed) {
+                svgEl.addEventListener('mouseover', (e) => e.stopImmediatePropagation(), true);
+                svgEl.addEventListener('mouseout', (e) => e.stopImmediatePropagation(), true);
+                svgEl.__mouseEventsSuppressed = true;
             }
         },
         transformForVerticalLayout(node) {
@@ -311,6 +320,8 @@ export default {
                         // 동일 멤버가 여러 팀에 속할 때 노드 ID 충돌 방지를 위해 고유 렌더링 ID 부여
                         transformedChild.children.forEach((member) => {
                             const originalId = member.id;
+                            member.originalId = originalId;
+                            member.data.originalId = originalId;
                             member.id = teamId + '__' + originalId;
                             member.data.renderNodeId = teamId + '__' + originalId;
                         });
@@ -463,11 +474,12 @@ export default {
                 // 원본 데이터에서 노드를 찾아서 사용
                 const originalId = target.getAttribute('data-original-id') || target.id;
                 const foundNode = this.findOriginalNodeById(this.node, originalId);
+                const selectedNodeIsAgent = foundNode?.data?.isAgent ?? foundNode?.data?.is_agent;
                 if (foundNode && foundNode.data) {
                     this.editNode = foundNode;
 
                     // Agent 클릭 시 뱃지 다이어그램 토글, 아닌 경우 닫기
-                    if (foundNode.data.isAgent) {
+                    if (selectedNodeIsAgent) {
                         // 이미 같은 Agent가 선택되어 있고 다이어그램이 열려있으면 닫기
                         if (this.showBadgesDiagram && this.selectedAgent && this.selectedAgent.id === foundNode.data.id) {
                             this.closeBadgesDiagram();
@@ -526,7 +538,7 @@ export default {
 
             const foundNode = this.findOriginalNodeById(this.node, agentId);
             const nodeData = (foundNode && (foundNode.data || foundNode)) || fallbackData;
-            const isAgent = foundNode?.data?.isAgent ?? fallbackData?.isAgent ?? true;
+            const isAgent = foundNode?.data?.isAgent ?? foundNode?.data?.is_agent ?? fallbackData?.isAgent ?? fallbackData?.is_agent ?? true;
 
             if (!nodeData || !isAgent) return;
 
@@ -727,13 +739,6 @@ export default {
 </script>
 
 <style scoped>
-.organization-chart-search-container {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 100;
-    width: 300px;
-}
 
 .header-search {
     background-color: white !important;
@@ -742,8 +747,8 @@ export default {
 }
 
 #tree {
-    width: 98% !important;
-    height: 99% !important;
+    width: 97% !important;
+    height: 98% !important;
 }
 
 @media screen and (max-width: 768px) {

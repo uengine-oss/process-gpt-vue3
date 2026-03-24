@@ -213,7 +213,7 @@
                                 </div>
                             </div>
                         </v-window-item>
-                        <v-window-item v-if="isTabAvailable('history')" value="history" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('history')" value="history" class="pa-2 work-item-history-tab">
                             <!-- 워크아이템 액티비티 -->
                             <v-card elevation="10" class="pa-0">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
