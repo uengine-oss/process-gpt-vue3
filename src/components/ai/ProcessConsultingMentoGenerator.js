@@ -57,6 +57,19 @@ export default class ProcessConsultingMentoGenerator extends AIGenerator {
                 "validity": "Suitable" || "Unsuitable",
                 "content": "컨설팅 시스템의 질문이 부적합한 이유와 개선된 추천 질문" // ~ 때문에 부적합한 질문입니다. 또는 불필요한 질문입니다. 주제와 벗어난 질문입니다. ~ 라고 질문해보세요.
             }
+
+            [출력 형식 절대 규칙]
+            1) 출력은 반드시 JSON 객체 1개만 반환한다.
+            2) JSON 앞뒤에 설명문, 코드블록(\`\`\`json), 주석, 마크다운 텍스트를 절대 추가하지 않는다.
+            3) 허용 키는 "validity", "content" 이다.
+            4) validity는 반드시 "Suitable" 또는 "Unsuitable" 중 하나다.
+            5) content는 반드시 문자열이어야 하며, 빈 문자열은 금지한다.
+            6) JSON.parse가 즉시 가능한 유효한 JSON 문법만 사용한다. (후행 쉼표, 작은따옴표 key/value 금지)
+            7) 어떤 경우에도 위 JSON 형식을 깨지 않는다.
+
+            [최종 자기검증]
+            - 응답 직전에 반드시 스스로 점검: "JSON 객체 1개인가?", "validity가 허용값인가?", "content가 문자열인가?"
+            - 하나라도 아니면 내부적으로 수정 후, 최종 출력은 JSON 객체 1개만 반환한다.
 `
             }
         ];

@@ -3467,6 +3467,81 @@ export default {
             me.$nextTick(() => me.scrollToBottomSafe());
         },
 
+        extractConsultingText(payload) {
+            if (payload === null || payload === undefined) return '';
+            if (typeof payload === 'string') return payload;
+            if (typeof payload === 'number' || typeof payload === 'boolean') return String(payload);
+
+            if (Array.isArray(payload)) {
+                const parts = payload
+                    .map((item) => this.extractConsultingText(item))
+                    .filter((v) => typeof v === 'string' && v.trim().length > 0);
+                return parts.join('\n');
+            }
+
+            if (typeof payload === 'object') {
+                const preferredKeys = [
+                    'content',
+                    'modelJson',
+                    'answer',
+                    'message',
+                    'text',
+                    'result',
+                    'output',
+                    'response',
+                    'final_answer',
+                    'finalResponse',
+                    'data'
+                ];
+
+                for (const key of preferredKeys) {
+                    if (!(key in payload)) continue;
+                    const picked = this.extractConsultingText(payload[key]);
+                    if (typeof picked === 'string' && picked.trim().length > 0) {
+                        return picked;
+                    }
+                }
+
+                try {
+                    return JSON.stringify(payload, null, 2);
+                } catch (e) {
+                    return String(payload);
+                }
+            }
+
+            return String(payload);
+        },
+
+        normalizeConsultingResponse(response) {
+            if (response === null || response === undefined) return response;
+            if (typeof response !== 'string') return response;
+
+            const raw = response.trim();
+            if (!raw) return '';
+
+            // 코드펜스(JSON)로 감싸진 경우 제거
+            const fencedMatch = raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+            const candidate = fencedMatch ? fencedMatch[1].trim() : raw;
+
+            try {
+                return JSON.parse(candidate);
+            } catch (e1) {
+                // ignore
+            }
+
+            try {
+                const startIdx = candidate.indexOf('{');
+                const endIdx = candidate.lastIndexOf('}');
+                if (startIdx >= 0 && endIdx > startIdx) {
+                    return JSON.parse(candidate.substring(startIdx, endIdx + 1));
+                }
+            } catch (e2) {
+                // ignore
+            }
+
+            return response;
+        },
+
         // AIGenerator에서 호출 - 생성 완료
         async onGenerationFinished(response) {
             const me = this;
@@ -3484,18 +3559,7 @@ export default {
             }
 
             // JSON 파싱 시도
-            let jsonData = response;
-            if (typeof response === 'string') {
-                try {
-                    if (response.includes('{')) {
-                        const jsonMatch = response.match(/\{[\s\S]*\}/);
-                        if (jsonMatch) jsonData = JSON.parse(jsonMatch[0]);
-                    }
-                } catch (e) {
-                    // JSON 파싱 실패 시 원본 사용
-                    jsonData = response;
-                }
-            }
+            const jsonData = me.normalizeConsultingResponse(response);
 
             await me.afterGenerationFinished(jsonData);
 
@@ -3524,6 +3588,7 @@ export default {
         // 컨설팅 응답 처리 (WorkAssistantChatPanel.afterGenerationFinished와 동일)
         async afterGenerationFinished(responseObj) {
             const me = this;
+            const normalizedContent = me.extractConsultingText(responseObj);
 
             if (responseObj && (responseObj.answerType || responseObj.validity)) {
                 if (me.messages.length > 0) {
@@ -3531,7 +3596,7 @@ export default {
                     if (lastMessage.role === 'assistant' && !lastMessage.uuid) {
                         lastMessage.uuid = me.uuid();
                     }
-                    lastMessage.content = responseObj.content;
+                    lastMessage.content = me.extractConsultingText(responseObj.content) || normalizedContent || '응답을 받았지만 표시할 텍스트를 찾지 못했습니다.';
                     if (!lastMessage.isLoading) {
                         await me.saveMessage(lastMessage);
                     }
@@ -3547,7 +3612,18 @@ export default {
             if (me.messages.length > 0) {
                 const lastMsg = me.messages[me.messages.length - 1];
                 if (!lastMsg.uuid) lastMsg.uuid = me.uuid();
+                if (lastMsg.role === 'assistant' && (!lastMsg.content || lastMsg.content === '...')) {
+                    lastMsg.content = normalizedContent || '응답을 받았지만 표시할 텍스트를 찾지 못했습니다.';
+                }
                 if (!lastMsg.isLoading) await me.saveMessage(lastMsg);
+            } else {
+                const fallbackMsg = me.createMessageObj(
+                    normalizedContent || '응답을 받았지만 표시할 텍스트를 찾지 못했습니다.',
+                    'assistant'
+                );
+                fallbackMsg.uuid = me.uuid();
+                me.messages.push(fallbackMsg);
+                await me.saveMessage(fallbackMsg);
             }
         },
 
