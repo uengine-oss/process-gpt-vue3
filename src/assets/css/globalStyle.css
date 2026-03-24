@@ -1302,7 +1302,7 @@ hr {
 }
 
 .instance-card-process-box {
-    height: 73vh;
+    height: calc(100vh - 244px);
 }
 
 .node-info-btn {
@@ -1431,6 +1431,10 @@ hr {
 }
 
 @media only screen and (max-width: 1279px) {
+    .work-item-history-tab {
+        height: calc(100vh - 264px);
+        overflow: auto;
+    }
     .organization-chart-search-container {
         position: absolute;
         top: 6px;
@@ -1447,12 +1451,18 @@ hr {
 
 
     .agent-chat-info-content {
-        height: calc(100vh - 74px);
+        height: calc(100vh - 190px);
         overflow: auto;
     }
 }
 
 @media only screen and (max-width: 768px) {
+
+    .agent-chat-info-content {
+        height: calc(100vh - 74px);
+        overflow: auto;
+    }
+
     .version-manager-vuediff-box .vue-diff-viewer {
         font-size: 11px !important;
     }

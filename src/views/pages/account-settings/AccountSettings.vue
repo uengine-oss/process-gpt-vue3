@@ -8,7 +8,7 @@
                     <v-row class="ma-0 pa-0 align-center account-settings-header-row">
                         <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="primary" show-arrows>
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
-                            <div v-if="admin">
+                            <template v-if="admin">
                                 <!-- 계정 설정 -->
                                 <v-tab value="ManageAccess">
                                     <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }}
@@ -41,7 +41,7 @@
                                         <v-icon class="mr-2" size="20">mdi-account-group</v-icon> {{ $t('accountTab.orgChartGroup') }}
                                     </v-tab>
                                 </template>
-                            </div>
+                            </template>
                             <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                             <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
                             <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->

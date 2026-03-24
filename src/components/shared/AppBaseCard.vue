@@ -128,9 +128,8 @@ const heightClass = computed(() => {
 const menuButtonStyle = computed(() => {
     const path = route.path;
     const isTargetPath = path === '/' || path.includes('instancelist');
-    const shouldHideForMobile = isTargetPath && isMobile.value;
 
-    if (globalState?.state.isRightZoomed || shouldHideForMobile) {
+    if (globalState?.state.isRightZoomed || isTargetPath) {
         return 'display:none;';
     }
     return '';
@@ -225,7 +224,7 @@ const rightPartStyle = computed(() => {
 
         <!---right chat conversation -->
         <div class="right-part" :style="rightPartStyle" :class="{ 'chat-hidden': isChatHidden }">
-            <!---Toggle Button For mobile-->
+            <!-- 내부 메뉴 버튼 -->
             <v-tooltip location="right">
                 <template v-slot:activator="{ props: tooltipProps }">
                     <v-btn

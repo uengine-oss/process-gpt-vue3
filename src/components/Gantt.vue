@@ -62,6 +62,10 @@ export default {
             openedTasks.forEach((id) => {
                 gantt.open(id);
             });
+
+            requestAnimationFrame(() => {
+                gantt.render();
+            });
         };
 
         // 전역 삭제 함수 정의

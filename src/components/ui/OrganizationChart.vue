@@ -747,8 +747,8 @@ export default {
 }
 
 #tree {
-    width: 98% !important;
-    height: 99% !important;
+    width: 97% !important;
+    height: 98% !important;
 }
 
 @media screen and (max-width: 768px) {

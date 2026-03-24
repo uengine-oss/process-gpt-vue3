@@ -330,6 +330,24 @@ async function initializeApp() {
                             }
                         }
                     });
+                    editor.addAction({
+                        id: 'monaco-clipboard-paste',
+                        label: 'Paste',
+                        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV],
+                        run: async (ed: any) => {
+                            const text = await navigator.clipboard.readText();
+                            if (text) {
+                                const selection = ed.getSelection();
+                                if (selection) {
+                                    ed.executeEdits('clipboard-paste', [{
+                                        range: selection,
+                                        text: text,
+                                        forceMoveMarkers: true
+                                    }]);
+                                }
+                            }
+                        }
+                    });
                 }
             });
         }
