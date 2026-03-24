@@ -739,13 +739,6 @@ export default {
 </script>
 
 <style scoped>
-.organization-chart-search-container {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 100;
-    width: 300px;
-}
 
 .header-search {
     background-color: white !important;
