@@ -89,13 +89,15 @@ spring:
             # 라우트별 설정
             routes:
                 # LiteLLM Proxy 라우트
-                # - id: litellm
-                #   uri: http://litellm-proxy:4000
-                #   predicates:
-                #       - Path=/litellm/**
-                #   filters:
-                #       - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
-                #   order: 1
+                - id: litellm
+                  uri: http://litellm-proxy:4000
+                  predicates:
+                      - Path=/litellm/**
+                  filters:
+                      - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
+                      - SetRequestHeader=X-Forwarded-Prefix, /litellm
+                      - RewriteLocationResponseHeader=AS_IN_REQUEST, Location, ,
+                  order: 1
 
                 # 2. MCP SSE 라우트: 무제한 타임아웃
                 - id: mcp-sse

@@ -4,8 +4,6 @@
  */
 export const LLM_CONFIG = {
     default: {
-        vendor: 'openai',
-        model: 'gpt-4.1-2025-04-14',
         modelConfig: {
             temperature: 1,
             top_p: 0.9,
@@ -14,8 +12,6 @@ export const LLM_CONFIG = {
         }
     },
     summary: {
-        vendor: 'openai',
-        model: 'gpt-4o-mini',
         modelConfig: {
             temperature: 0.7,
             top_p: 0.9,
