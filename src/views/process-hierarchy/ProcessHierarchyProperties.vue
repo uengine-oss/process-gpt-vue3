@@ -565,296 +565,218 @@
                 <!-- ==================== Governance Tab ==================== -->
                 <v-window-item value="governance">
                     <div class="pa-4">
-                        <div class="governance-strategy-card mb-5">
-                            <div class="d-flex align-start justify-space-between flex-wrap ga-3 mb-4">
+                        <div class="governance-status-strip mb-4">
+                            <div class="d-flex align-center flex-wrap ga-2">
+                                <v-chip size="small" :color="governanceStateColor" variant="flat">
+                                    {{ governanceStateLabel }}
+                                </v-chip>
+                                <v-chip v-if="governanceVersionLabel" size="small" color="primary" variant="tonal">
+                                    {{ governanceVersionLabel }}
+                                </v-chip>
+                                <v-chip v-if="hasReviewContext" size="small" color="indigo" variant="tonal">
+                                    Review Context
+                                </v-chip>
+                                <v-chip v-if="approvalState && approvalState.id" size="small" color="grey" variant="outlined">
+                                    Round {{ String(approvalState.id).slice(0, 8) }}
+                                </v-chip>
+                            </div>
+                        </div>
+
+                        <div v-if="hasReviewContext" class="governance-context-banner mb-4">
+                            <div class="text-caption text-medium-emphasis">
+                                현재 화면은 Review Board 문맥으로 열려 있습니다. 거버넌스 상태와 상세 검토 화면을 바로 오갈 수 있습니다.
+                            </div>
+                            <div class="d-flex align-center ga-2 flex-wrap">
+                                <v-btn
+                                    v-if="canOpenPublishedBaselineDiff"
+                                    size="small"
+                                    variant="tonal"
+                                    color="secondary"
+                                    class="text-none"
+                                    @click="openPublishedBaselineDiff"
+                                >
+                                    <v-icon start size="14">mdi-compare</v-icon>
+                                    Published 비교
+                                </v-btn>
+                                <v-btn size="small" variant="tonal" color="primary" class="text-none" @click="openReviewDetail">
+                                    <v-icon start size="14">mdi-open-in-new</v-icon>
+                                    Review 상세
+                                </v-btn>
+                                <v-btn size="small" variant="text" class="text-none" @click="openReviewBoard">
+                                    Board로 이동
+                                </v-btn>
+                            </div>
+                        </div>
+
+                        <div v-if="approvalState" class="governance-review-summary mb-4">
+                            <div class="governance-review-summary__headline">
                                 <div>
-                                    <div class="governance-strategy-card__title">Release Strategy</div>
-                                    <div class="governance-strategy-card__subtitle">
-                                        현재 변경 사이클과 minor patch / major upgrade 경로를 분리해서 보여줍니다.
+                                    <div class="governance-section-label">Review Progress</div>
+                                    <div class="governance-review-summary__title">
+                                        미해결 {{ unresolvedFeedbackCount }}건 / 전체 {{ reviewFeedbackItems.length }}건
                                     </div>
+                                </div>
+                                <div class="governance-review-summary__stat">
+                                    해결 {{ resolvedFeedbackCount }}건
+                                </div>
+                            </div>
+                            <v-progress-linear
+                                :model-value="feedbackResolutionProgress"
+                                :color="unresolvedFeedbackCount > 0 ? 'warning' : 'success'"
+                                bg-color="grey-lighten-3"
+                                height="6"
+                                rounded
+                                class="review-status-progress mt-3"
+                            />
+
+                            <div v-if="hasParallelApproval" class="review-status-stack mt-3">
+                                <div class="review-status-pill">
+                                    <div>
+                                        <div class="review-status-pill__title">HQ</div>
+                                        <div class="review-status-pill__meta">{{ approvalState.hq_reviewer_name || '미지정' }}</div>
+                                    </div>
+                                    <v-chip size="x-small" :color="getReviewerStatusColor(hqReviewStatus)" variant="tonal">
+                                        {{ getReviewerStatusLabel(hqReviewStatus) }}
+                                    </v-chip>
+                                </div>
+                                <div class="review-status-pill">
+                                    <div>
+                                        <div class="review-status-pill__title">Field</div>
+                                        <div class="review-status-pill__meta">{{ approvalState.field_reviewer_name || '미지정' }}</div>
+                                    </div>
+                                    <v-chip size="x-small" :color="getReviewerStatusColor(fieldReviewStatus)" variant="tonal">
+                                        {{ getReviewerStatusLabel(fieldReviewStatus) }}
+                                    </v-chip>
+                                </div>
+                            </div>
+
+                            <div v-if="reviewOwnershipSummary" class="governance-review-summary__meta mt-3">
+                                {{ reviewOwnershipSummary }}
+                            </div>
+                        </div>
+
+                        <div v-if="approvalState" class="governance-action-box mb-5">
+                            <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
+                                <div>
+                                    <div class="governance-action-box__title">Review Actions</div>
+                                    <div class="governance-action-box__subtitle">
+                                        BPMN 캔버스는 읽기 전용이어도 review action은 여기서 계속 처리할 수 있습니다.
+                                    </div>
+                                </div>
+                                <v-chip size="x-small" color="primary" variant="tonal">
+                                    {{ governanceStateLabel }}
+                                </v-chip>
+                            </div>
+
+                            <div v-if="governanceActionNotice" class="governance-action-notice">
+                                <v-icon size="14" class="mr-1">mdi-information-outline</v-icon>
+                                {{ governanceActionNotice }}
+                            </div>
+
+                            <v-textarea
+                                v-model="governanceActionComment"
+                                label="Review Note"
+                                placeholder="승인 메모, 반려 사유, 공람 종료 사유를 입력하세요"
+                                variant="outlined"
+                                density="compact"
+                                rows="3"
+                                auto-grow
+                                hide-details
+                                class="mt-3"
+                            />
+
+                            <div class="d-flex align-center justify-space-between flex-wrap ga-2 mt-3">
+                                <div class="text-caption text-medium-emphasis">
+                                    배포는 미해결 피드백이 0건일 때만 가능합니다.
                                 </div>
                                 <div class="d-flex align-center flex-wrap ga-2">
-                                    <v-chip size="small" :color="governanceStateColor" variant="flat">
-                                        {{ governanceStateLabel }}
-                                    </v-chip>
-                                    <v-chip v-if="governanceVersionLabel" size="small" color="primary" variant="tonal">
-                                        {{ governanceVersionLabel }}
-                                    </v-chip>
-                                    <v-chip v-if="hasReviewContext" size="small" color="indigo" variant="tonal">
-                                        Review Context
-                                    </v-chip>
-                                </div>
-                            </div>
-
-                            <div v-if="hasReviewContext" class="d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
-                                <div class="text-caption text-medium-emphasis">
-                                    현재 화면은 Review Board 문맥으로 열려 있습니다. 거버넌스 상태와 상세 검토 화면을 바로 오갈 수 있습니다.
-                                </div>
-                                <div class="d-flex align-center ga-2">
                                     <v-btn
-                                        v-if="canOpenPublishedBaselineDiff"
+                                        v-if="canApproveHQAction"
                                         size="small"
-                                        variant="tonal"
-                                        color="secondary"
+                                        color="primary"
+                                        variant="flat"
                                         class="text-none"
-                                        @click="openPublishedBaselineDiff"
+                                        :loading="governanceActionLoading"
+                                        :disabled="governanceActionLoading || !canApproveOrReject"
+                                        @click="handleGovernanceApproveHQ"
                                     >
-                                        <v-icon start size="14">mdi-compare</v-icon>
-                                        Published 비교
+                                        <v-icon start size="14">mdi-domain</v-icon>
+                                        HQ 승인
                                     </v-btn>
-                                    <v-btn size="small" variant="tonal" color="primary" class="text-none" @click="openReviewDetail">
-                                        <v-icon start size="14">mdi-open-in-new</v-icon>
-                                        Review 상세
-                                    </v-btn>
-                                    <v-btn size="small" variant="text" class="text-none" @click="openReviewBoard">
-                                        Board로 이동
-                                    </v-btn>
-                                </div>
-                            </div>
-
-                            <div v-if="approvalState" class="governance-review-card mb-4">
-                                <div class="d-flex align-start justify-space-between flex-wrap ga-3">
-                                    <div>
-                                        <div class="governance-review-card__title">Current Review Round</div>
-                                        <div class="governance-review-card__subtitle">
-                                            Page2 안에서 현재 review round 상태를 확인하고 승인 액션을 이어서 처리합니다.
-                                        </div>
-                                    </div>
-                                    <v-chip
-                                        v-if="approvalState.id"
+                                    <v-btn
+                                        v-if="canApproveFieldAction"
                                         size="small"
-                                        color="grey"
-                                        variant="outlined"
+                                        color="success"
+                                        variant="flat"
+                                        class="text-none"
+                                        :loading="governanceActionLoading"
+                                        :disabled="governanceActionLoading || !canApproveOrReject"
+                                        @click="handleGovernanceApproveField"
                                     >
-                                        Round {{ String(approvalState.id).slice(0, 8) }}
-                                    </v-chip>
-                                </div>
-
-                                <div class="review-status-grid mt-4">
-                                    <div v-if="hasParallelApproval" class="review-status-box">
-                                        <div class="review-status-box__label">Parallel Approval</div>
-                                        <div class="review-status-stack mt-3">
-                                            <div class="review-status-pill">
-                                                <div>
-                                                    <div class="review-status-pill__title">HQ</div>
-                                                    <div class="review-status-pill__meta">{{ approvalState.hq_reviewer_name || '미지정' }}</div>
-                                                </div>
-                                                <v-chip size="x-small" :color="getReviewerStatusColor(hqReviewStatus)" variant="tonal">
-                                                    {{ getReviewerStatusLabel(hqReviewStatus) }}
-                                                </v-chip>
-                                            </div>
-                                            <div class="review-status-pill">
-                                                <div>
-                                                    <div class="review-status-pill__title">Field</div>
-                                                    <div class="review-status-pill__meta">{{ approvalState.field_reviewer_name || '미지정' }}</div>
-                                                </div>
-                                                <v-chip size="x-small" :color="getReviewerStatusColor(fieldReviewStatus)" variant="tonal">
-                                                    {{ getReviewerStatusLabel(fieldReviewStatus) }}
-                                                </v-chip>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="review-status-box">
-                                        <div class="review-status-box__label">Feedback Resolution</div>
-                                        <div class="review-status-box__value">
-                                            미해결 {{ unresolvedFeedbackCount }}건
-                                        </div>
-                                        <div class="review-status-box__meta">
-                                            해결 {{ resolvedFeedbackCount }}건 / 전체 {{ reviewFeedbackItems.length }}건
-                                        </div>
-                                        <v-progress-linear
-                                            :model-value="feedbackResolutionProgress"
-                                            :color="unresolvedFeedbackCount > 0 ? 'warning' : 'success'"
-                                            bg-color="grey-lighten-3"
-                                            height="6"
-                                            rounded
-                                            class="review-status-progress"
-                                        />
-                                    </div>
-
-                                    <div class="review-status-box">
-                                        <div class="review-status-box__label">Review Ownership</div>
-                                        <div class="review-status-box__value">
-                                            {{ assignedReviewerName || currentUserName || '미지정' }}
-                                        </div>
-                                        <div class="review-status-box__meta">
-                                            <template v-if="assignedReviewerName">
-                                                현재 담당자 {{ assignedReviewerName }}
-                                            </template>
-                                            <template v-else-if="isSelfSubmitter">
-                                                본인 상신 건으로 승인 액션은 제한됩니다.
-                                            </template>
-                                            <template v-else>
-                                                지정 담당자 없이 병렬 승인 기준으로 동작합니다.
-                                            </template>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="governance-action-box mt-4">
-                                    <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
-                                        <div>
-                                            <div class="governance-action-box__title">Review Actions</div>
-                                            <div class="governance-action-box__subtitle">
-                                                BPMN 캔버스는 읽기 전용이어도 review action은 여기서 계속 처리할 수 있습니다.
-                                            </div>
-                                        </div>
-                                        <v-chip size="x-small" color="primary" variant="tonal">
-                                            {{ governanceStateLabel }}
-                                        </v-chip>
-                                    </div>
-
-                                    <div v-if="governanceActionNotice" class="governance-action-notice">
-                                        <v-icon size="14" class="mr-1">mdi-information-outline</v-icon>
-                                        {{ governanceActionNotice }}
-                                    </div>
-
-                                    <v-textarea
-                                        v-model="governanceActionComment"
-                                        label="Review Note"
-                                        placeholder="승인 메모, 반려 사유, 공람 종료 사유를 입력하세요"
+                                        <v-icon start size="14">mdi-account-hard-hat</v-icon>
+                                        Field 승인
+                                    </v-btn>
+                                    <v-btn
+                                        v-if="canEndPublicFeedbackAction"
+                                        size="small"
+                                        color="info"
+                                        variant="flat"
+                                        class="text-none"
+                                        :loading="governanceActionLoading"
+                                        :disabled="governanceActionLoading"
+                                        @click="handleGovernanceEndPublicFeedback"
+                                    >
+                                        <v-icon start size="14">mdi-fast-forward</v-icon>
+                                        공람 종료
+                                    </v-btn>
+                                    <v-tooltip
+                                        v-if="canPublishActionState"
+                                        :text="publishActionDisabledReason"
+                                        :disabled="!publishActionDisabledReason"
+                                        location="top"
+                                    >
+                                        <template #activator="{ props: tooltipProps }">
+                                            <span v-bind="tooltipProps">
+                                                <v-btn
+                                                    size="small"
+                                                    color="deep-purple"
+                                                    variant="flat"
+                                                    class="text-none"
+                                                    :loading="governanceActionLoading"
+                                                    :disabled="governanceActionLoading || !canPublishAction"
+                                                    @click="handleGovernancePublish"
+                                                >
+                                                    <v-icon start size="14">mdi-rocket-launch-outline</v-icon>
+                                                    Publish
+                                                </v-btn>
+                                            </span>
+                                        </template>
+                                    </v-tooltip>
+                                    <v-btn
+                                        v-if="!isGovernanceFinished"
+                                        size="small"
+                                        color="error"
                                         variant="outlined"
-                                        density="compact"
-                                        rows="3"
-                                        auto-grow
-                                        hide-details
-                                        class="mt-3"
-                                    />
-
-                                    <div class="d-flex align-center justify-space-between flex-wrap ga-2 mt-3">
-                                        <div class="text-caption text-medium-emphasis">
-                                            배포는 미해결 피드백이 0건일 때만 가능합니다.
-                                        </div>
-                                        <div class="d-flex align-center flex-wrap ga-2">
-                                            <v-btn
-                                                v-if="canApproveHQAction"
-                                                size="small"
-                                                color="primary"
-                                                variant="flat"
-                                                class="text-none"
-                                                :loading="governanceActionLoading"
-                                                :disabled="governanceActionLoading || !canApproveOrReject"
-                                                @click="handleGovernanceApproveHQ"
-                                            >
-                                                <v-icon start size="14">mdi-domain</v-icon>
-                                                HQ 승인
-                                            </v-btn>
-                                            <v-btn
-                                                v-if="canApproveFieldAction"
-                                                size="small"
-                                                color="success"
-                                                variant="flat"
-                                                class="text-none"
-                                                :loading="governanceActionLoading"
-                                                :disabled="governanceActionLoading || !canApproveOrReject"
-                                                @click="handleGovernanceApproveField"
-                                            >
-                                                <v-icon start size="14">mdi-account-hard-hat</v-icon>
-                                                Field 승인
-                                            </v-btn>
-                                            <v-btn
-                                                v-if="canEndPublicFeedbackAction"
-                                                size="small"
-                                                color="info"
-                                                variant="flat"
-                                                class="text-none"
-                                                :loading="governanceActionLoading"
-                                                :disabled="governanceActionLoading"
-                                                @click="handleGovernanceEndPublicFeedback"
-                                            >
-                                                <v-icon start size="14">mdi-fast-forward</v-icon>
-                                                공람 종료
-                                            </v-btn>
-                                            <v-tooltip
-                                                v-if="canPublishActionState"
-                                                :text="publishActionDisabledReason"
-                                                :disabled="!publishActionDisabledReason"
-                                                location="top"
-                                            >
-                                                <template #activator="{ props: tooltipProps }">
-                                                    <span v-bind="tooltipProps">
-                                                        <v-btn
-                                                            size="small"
-                                                            color="deep-purple"
-                                                            variant="flat"
-                                                            class="text-none"
-                                                            :loading="governanceActionLoading"
-                                                            :disabled="governanceActionLoading || !canPublishAction"
-                                                            @click="handleGovernancePublish"
-                                                        >
-                                                            <v-icon start size="14">mdi-rocket-launch-outline</v-icon>
-                                                            Publish
-                                                        </v-btn>
-                                                    </span>
-                                                </template>
-                                            </v-tooltip>
-                                            <v-btn
-                                                v-if="!isGovernanceFinished"
-                                                size="small"
-                                                color="error"
-                                                variant="outlined"
-                                                class="text-none"
-                                                :loading="governanceActionLoading"
-                                                :disabled="governanceActionLoading || !governanceActionComment.trim() || !canApproveOrReject"
-                                                @click="handleGovernanceReject"
-                                            >
-                                                <v-icon start size="14">mdi-alert-circle-outline</v-icon>
-                                                Request Changes
-                                            </v-btn>
-                                            <v-btn
-                                                size="small"
-                                                color="grey-darken-1"
-                                                variant="outlined"
-                                                class="text-none"
-                                                :loading="governanceActionLoading"
-                                                :disabled="governanceActionLoading || !governanceActionComment.trim()"
-                                                @click="handleGovernanceComment"
-                                            >
-                                                <v-icon start size="14">mdi-send-outline</v-icon>
-                                                Comment
-                                            </v-btn>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="release-lanes">
-                                <div class="release-lane">
-                                    <div class="release-lane__eyebrow">Minor Patch</div>
-                                    <div class="release-lane__title">현재 변경 사이클 안에서 보완</div>
-                                    <div class="release-lane__desc">
-                                        {{ minorPatchDescription }}
-                                    </div>
-                                </div>
-                                <div class="release-lane release-lane--accent">
-                                    <div class="release-lane__eyebrow">Major Upgrade</div>
-                                    <div class="release-lane__title">{{ majorUpgradeTitle }}</div>
-                                    <div class="release-lane__desc">
-                                        {{ majorUpgradeDescription }}
-                                    </div>
-                                    <div class="d-flex align-center flex-wrap ga-2 mt-3">
-                                        <v-btn
-                                            v-if="canRequestMajorUpgrade"
-                                            size="small"
-                                            color="deep-orange"
-                                            variant="flat"
-                                            class="text-none"
-                                            @click="openMajorUpgradeDialog"
-                                        >
-                                            <v-icon start size="14">mdi-source-branch-plus</v-icon>
-                                            차기 Major Draft 요청
-                                        </v-btn>
-                                        <v-chip
-                                            v-else-if="hasPendingMajorUpgrade"
-                                            size="small"
-                                            color="warning"
-                                            variant="flat"
-                                        >
-                                            <v-icon start size="14">mdi-timer-sand</v-icon>
-                                            승인 대기 중
-                                        </v-chip>
-                                    </div>
+                                        class="text-none"
+                                        :loading="governanceActionLoading"
+                                        :disabled="governanceActionLoading || !governanceActionComment.trim() || !canApproveOrReject"
+                                        @click="handleGovernanceReject"
+                                    >
+                                        <v-icon start size="14">mdi-alert-circle-outline</v-icon>
+                                        Request Changes
+                                    </v-btn>
+                                    <v-btn
+                                        size="small"
+                                        color="grey-darken-1"
+                                        variant="outlined"
+                                        class="text-none"
+                                        :loading="governanceActionLoading"
+                                        :disabled="governanceActionLoading || !governanceActionComment.trim()"
+                                        @click="handleGovernanceComment"
+                                    >
+                                        <v-icon start size="14">mdi-send-outline</v-icon>
+                                        Comment
+                                    </v-btn>
                                 </div>
                             </div>
                         </div>
@@ -1006,6 +928,68 @@
                                     <v-icon start size="14">{{ feedbackExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
                                     {{ feedbackExpanded ? '접기' : `피드백 더보기 (${feedbackItems.length - 5}건)` }}
                                 </v-btn>
+                            </div>
+
+                            <div v-if="showReleaseStrategy" class="release-strategy-panel mb-4">
+                                <div class="d-flex align-start justify-space-between flex-wrap ga-2">
+                                    <div>
+                                        <div class="release-strategy-panel__title">Release Strategy</div>
+                                        <div class="release-strategy-panel__subtitle">
+                                            피드백을 확인한 뒤 현재 사이클에 누적할지, 차기 major 변경으로 분리할지 결정합니다.
+                                        </div>
+                                    </div>
+                                    <v-chip size="x-small" :color="governanceStateColor" variant="tonal">
+                                        {{ governanceStateLabel }}
+                                    </v-chip>
+                                </div>
+
+                                <div class="release-lanes mt-3">
+                                    <div class="release-lane">
+                                        <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+                                            <div>
+                                                <div class="release-lane__eyebrow">Current Cycle</div>
+                                                <div class="release-lane__title">Minor Patch</div>
+                                            </div>
+                                            <v-chip size="x-small" color="primary" variant="tonal">
+                                                기본 경로
+                                            </v-chip>
+                                        </div>
+                                        <div class="release-lane__desc">
+                                            {{ minorPatchDescription }}
+                                        </div>
+                                    </div>
+                                    <div class="release-lane release-lane--accent">
+                                        <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+                                            <div>
+                                                <div class="release-lane__eyebrow">Next Cycle</div>
+                                                <div class="release-lane__title">{{ majorUpgradeTitle }}</div>
+                                            </div>
+                                            <v-chip
+                                                size="x-small"
+                                                :color="hasPendingMajorUpgrade ? 'warning' : 'deep-orange'"
+                                                :variant="hasPendingMajorUpgrade ? 'flat' : 'tonal'"
+                                            >
+                                                {{ hasPendingMajorUpgrade ? '승인 대기' : '분리 경로' }}
+                                            </v-chip>
+                                        </div>
+                                        <div class="release-lane__desc">
+                                            {{ majorUpgradeDescription }}
+                                        </div>
+                                        <div class="d-flex align-center flex-wrap ga-2 mt-3">
+                                            <v-btn
+                                                v-if="canRequestMajorUpgrade"
+                                                size="small"
+                                                color="deep-orange"
+                                                variant="flat"
+                                                class="text-none"
+                                                @click="openMajorUpgradeDialog"
+                                            >
+                                                <v-icon start size="14">mdi-source-branch-plus</v-icon>
+                                                차기 Major Draft 요청
+                                            </v-btn>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Feedback Input -->
@@ -1481,6 +1465,20 @@ export default {
         feedbackResolutionProgress() {
             if (this.reviewFeedbackItems.length === 0) return 100;
             return Math.round((this.resolvedFeedbackCount / this.reviewFeedbackItems.length) * 100);
+        },
+        showReleaseStrategy() {
+            if (this.isViewMode) return false;
+            return this.feedbackItems.length > 0 || this.canRequestMajorUpgrade || this.hasPendingMajorUpgrade;
+        },
+        reviewOwnershipSummary() {
+            if (!this.approvalState) return '';
+            if (this.assignedReviewerName) {
+                return `현재 담당자 ${this.assignedReviewerName}`;
+            }
+            if (this.isSelfSubmitter) {
+                return '본인 상신 건으로 승인 액션은 제한됩니다.';
+            }
+            return '지정 담당자 없이 HQ/Field 병렬 승인 기준으로 동작합니다.';
         },
         isGovernanceFinished() {
             return ['published', 'rejected', 'cancelled', 'archived'].includes(this.governanceStateKey);
@@ -2340,60 +2338,44 @@ export default {
     background: #fafafa;
 }
 
-.governance-strategy-card {
-    padding: 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+.governance-status-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e5e7eb;
 }
 
-.governance-strategy-card__title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #111827;
+.governance-context-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    background: #f8fafc;
 }
 
-.governance-strategy-card__subtitle {
-    margin-top: 4px;
-    font-size: 12px;
-    color: #6b7280;
-    line-height: 1.5;
-}
-
-.governance-review-card {
-    padding: 16px;
+.governance-review-summary {
+    padding: 14px;
     border: 1px solid #dbe4f0;
     border-radius: 14px;
     background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
 }
 
-.governance-review-card__title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #0f172a;
-}
-
-.governance-review-card__subtitle {
-    margin-top: 4px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: #64748b;
-}
-
-.review-status-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+.governance-review-summary__headline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
-.review-status-box {
-    padding: 14px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    background: #ffffff;
-}
-
-.review-status-box__label {
+.governance-section-label {
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -2401,15 +2383,24 @@ export default {
     color: #94a3b8;
 }
 
-.review-status-box__value {
-    margin-top: 10px;
+.governance-review-summary__title {
+    margin-top: 6px;
     font-size: 17px;
     font-weight: 700;
     color: #0f172a;
 }
 
-.review-status-box__meta {
-    margin-top: 4px;
+.governance-review-summary__stat {
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid #dbe4f0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.governance-review-summary__meta {
     font-size: 12px;
     line-height: 1.5;
     color: #64748b;
@@ -2479,14 +2470,34 @@ export default {
     color: #9a3412;
 }
 
+.release-strategy-panel {
+    padding: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.release-strategy-panel__title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.release-strategy-panel__subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #64748b;
+}
+
 .release-lanes {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .release-lane {
-    padding: 14px;
+    padding: 13px 14px;
     border-radius: 12px;
     border: 1px solid #e5e7eb;
     background: #ffffff;
@@ -2531,12 +2542,12 @@ export default {
 }
 
 @media (max-width: 880px) {
-    .review-status-grid {
-        grid-template-columns: 1fr;
+    .governance-review-summary__headline {
+        align-items: flex-start;
     }
 
-    .release-lanes {
-        grid-template-columns: 1fr;
+    .governance-context-banner {
+        align-items: flex-start;
     }
 }
 
