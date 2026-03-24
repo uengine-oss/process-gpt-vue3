@@ -4,7 +4,9 @@
  * 리소스 & 효율 — Native UI 데이터 테이블 3종
  */
 import { onMounted, ref, computed, getCurrentInstance } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAnalysisDashboardStore } from '@/stores/analytics/analysisDashboardStore'
+import { buildProcessHierarchyQuery, PROCESS_HIERARCHY_ENTRY, PROCESS_HIERARCHY_MODE } from '@/views/process-hierarchy/navigation'
 
 const props = defineProps<{
     filters: { domains: string[]; orgId: string; dateRange: string; comparisonMode: boolean }
@@ -12,6 +14,7 @@ const props = defineProps<{
 
 const instance = getCurrentInstance()
 const t = (key: string) => instance?.proxy?.$t(key) || key
+const router = useRouter()
 
 const store = useAnalysisDashboardStore()
 const staleFilter = ref(0)
@@ -50,7 +53,15 @@ const filteredStaleProcesses = computed(() => {
 })
 
 function openProcess(id: string, name: string) {
-    window.open(`/definitions/chat?id=${id}&name=${encodeURIComponent(name)}&modeling=true`, '_blank')
+    router.push({
+        name: 'Process Hierarchy',
+        params: { id },
+        query: buildProcessHierarchyQuery({
+            name,
+            entry: PROCESS_HIERARCHY_ENTRY.ANALYSIS,
+            mode: PROCESS_HIERARCHY_MODE.VIEW
+        })
+    })
 }
 
 function requestRefresh() {

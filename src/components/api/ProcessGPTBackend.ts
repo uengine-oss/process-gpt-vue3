@@ -716,8 +716,10 @@ class ProcessGPTBackend implements Backend {
 
     /**
      * 실행용 프로세스 정의 조회
-     * - 1순위: proc_def_version 중 version_tag = 'major' 이면서 가장 높은 version
-     * - 2순위: 해당 레코드가 없으면 proc_def에서 현재 정의 사용
+     * - 1순위: proc_def.prod_version
+     * - 2순위: proc_def_version 중 version_tag = 'published' 최신 버전
+     * - 3순위: proc_def_version 중 version_tag = 'major' 이면서 가장 높은 version
+     * - 4순위: 해당 레코드가 없으면 proc_def에서 현재 정의 사용
      * - todolist / bpm_proc_inst 등에 버전 정보를 전달하기 위해 version, version_tag 도 함께 반환
      */
     async getExecutionDefinition(defId: string): Promise<{ definition: any; bpmn: string; version?: string; version_tag?: string } | null> {
@@ -753,7 +755,36 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
-            // 1) major 버전 중 가장 최신 버전 검색
+            // 2) published 버전 중 가장 최신 버전 검색
+            let publishedVersions: any[] = [];
+            try {
+                publishedVersions = await storage.list('proc_def_version', {
+                    match: {
+                        proc_def_id: defId,
+                        version_tag: 'published'
+                    }
+                });
+            } catch (e) {
+                publishedVersions = [];
+            }
+
+            if (publishedVersions && publishedVersions.length > 0) {
+                publishedVersions.sort((a: any, b: any) => {
+                    const va = parseFloat(a.version || '0') || 0;
+                    const vb = parseFloat(b.version || '0') || 0;
+                    return vb - va;
+                });
+
+                const latestPublished = publishedVersions[0];
+                return {
+                    definition: latestPublished.definition,
+                    bpmn: latestPublished.snapshot,
+                    version: latestPublished.version,
+                    version_tag: latestPublished.version_tag
+                };
+            }
+
+            // 3) major 버전 중 가장 최신 버전 검색
             let majorVersions: any[] = [];
             try {
                 majorVersions = await storage.list('proc_def_version', {
@@ -782,7 +813,7 @@ class ProcessGPTBackend implements Backend {
                 };
             }
 
-            // 2) major 버전이 없으면 minor 버전 중 가장 최신 버전 검색
+            // 4) major 버전이 없으면 minor 버전 중 가장 최신 버전 검색
             let minorVersions: any[] = [];
             try {
                 minorVersions = await storage.list('proc_def_version', {
@@ -4378,6 +4409,43 @@ class ProcessGPTBackend implements Backend {
         );
         const data = response.data;
         return data.embedding;
+    }
+
+    async generateProcessCopilotAnswer(payload: {
+        question: string;
+        process_definition: any;
+        process_definition_id?: string;
+        process_name?: string;
+        activity_id?: string;
+        activity_name?: string;
+        selected_element?: any;
+        locale?: string;
+        vendor?: string;
+        model?: string;
+        modelConfig?: Record<string, any>;
+    }) {
+        const response = await axios.post(
+            '/completion/langchain-chat/process-copilot',
+            JSON.stringify({
+                vendor: payload.vendor || 'openai',
+                model: payload.model || 'gpt-4.1-2025-04-14',
+                modelConfig: {
+                    temperature: 0.2,
+                    top_p: 0.9,
+                    frequency_penalty: 0,
+                    presence_penalty: 0,
+                    ...(payload.modelConfig || {})
+                },
+                ...payload
+            }),
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        return response.data;
     }
 
     async updateVectorStore(content: string, type: string) {
@@ -8007,28 +8075,113 @@ class ProcessGPTBackend implements Backend {
      * 개선 요청 승인 (Master) → 자동으로 v(N+1).0 Draft 생성
      */
     async approveReopen(reviewId: string, comment?: string): Promise<any> {
-        const result = await this._changeApprovalState(reviewId, 'approve_reopen', 'draft', comment);
+        const result = await this._changeApprovalState(reviewId, 'approve_reopen', 'archived', comment);
 
         // 새 Draft 리뷰 자동 생성 (v(N+1).0)
         if (result) {
             const supabase = window.$supabase;
             if (supabase) {
+                const tenantId = result.tenant_id || window.$tenantName;
+                const now = new Date().toISOString();
                 const currentMajor = result.major_version || 1;
-                const newVersion = `v${currentMajor + 1}.0`;
+                const nextMajor = currentMajor + 1;
+                const nextVersion = `${nextMajor}.0`;
+                const nextVersionLabel = `v${nextVersion}`;
+
+                const { data: existingDraft } = await supabase
+                    .from('proc_def_approval_state')
+                    .select('*')
+                    .eq('proc_def_id', result.proc_def_id)
+                    .eq('tenant_id', tenantId)
+                    .eq('state', 'draft')
+                    .eq('major_version', nextMajor)
+                    .eq('minor_version', 0)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (existingDraft) {
+                    return existingDraft;
+                }
+
+                let baselineSnapshot = '';
+                let baselineDefinition: any = null;
+
+                const { data: publishedVersion } = await supabase
+                    .from('proc_def_version')
+                    .select('snapshot, definition')
+                    .eq('proc_def_id', result.proc_def_id)
+                    .eq('tenant_id', tenantId)
+                    .eq('version_tag', 'published')
+                    .order('timeStamp', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (publishedVersion?.snapshot) {
+                    baselineSnapshot = publishedVersion.snapshot;
+                    baselineDefinition = publishedVersion.definition || null;
+                } else {
+                    const { data: latestVersion } = await supabase
+                        .from('proc_def_version')
+                        .select('snapshot, definition')
+                        .eq('proc_def_id', result.proc_def_id)
+                        .eq('tenant_id', tenantId)
+                        .order('timeStamp', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (latestVersion?.snapshot) {
+                        baselineSnapshot = latestVersion.snapshot;
+                        baselineDefinition = latestVersion.definition || null;
+                    } else {
+                        const { data: procDef } = await supabase
+                            .from('proc_def')
+                            .select('bpmn, definition')
+                            .eq('id', result.proc_def_id)
+                            .eq('tenant_id', tenantId)
+                            .maybeSingle();
+                        baselineSnapshot = procDef?.bpmn || '';
+                        baselineDefinition = procDef?.definition || null;
+                    }
+                }
+
+                const { data: existingVersion } = await supabase
+                    .from('proc_def_version')
+                    .select('arcv_id')
+                    .eq('proc_def_id', result.proc_def_id)
+                    .eq('tenant_id', tenantId)
+                    .eq('version', nextVersion)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (!existingVersion && baselineSnapshot) {
+                    await supabase.from('proc_def_version').insert({
+                        arcv_id: `${result.proc_def_id}_${nextVersion}`,
+                        proc_def_id: result.proc_def_id,
+                        version: nextVersion,
+                        version_tag: null,
+                        timeStamp: now,
+                        snapshot: baselineSnapshot,
+                        definition: baselineDefinition,
+                        message: 'Initial major draft seeded from published baseline',
+                        tenant_id: tenantId
+                    });
+                }
 
                 const { data: newDraft } = await supabase
                     .from('proc_def_approval_state')
                     .insert({
                         proc_def_id: result.proc_def_id,
                         state: 'draft',
-                        major_version: currentMajor + 1,
+                        version: nextVersion,
+                        major_version: nextMajor,
                         minor_version: 0,
-                        version_label: newVersion,
+                        version_label: nextVersionLabel,
                         root_cause_review_id: result.id,
                         submitted_by: result.reopen_requested_by,
-                        tenant_id: result.tenant_id,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
+                        tenant_id: tenantId,
+                        created_at: now,
+                        updated_at: now
                     })
                     .select()
                     .single();

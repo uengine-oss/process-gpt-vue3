@@ -6,6 +6,13 @@ import BackendFactory from '@/components/api/BackendFactory';
 import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
 import OwnerSelect from '@/components/ui/OwnerSelect.vue';
 import { computeBpmnDiff, type BpmnChange } from '@/utils/bpmnDiff';
+import {
+    buildProcessHierarchyQuery,
+    PROCESS_HIERARCHY_ENTRY,
+    PROCESS_HIERARCHY_MODE,
+    PROCESS_HIERARCHY_PANEL_STATE,
+    PROCESS_HIERARCHY_RIGHT_TAB
+} from '@/views/process-hierarchy/navigation';
 
 const route = useRoute();
 const router = useRouter();
@@ -728,6 +735,24 @@ async function confirmResolve() {
     }
 }
 
+function openInEditor() {
+    const procDefId = approvalState.value?.proc_def_id;
+    if (!procDefId) return;
+
+    router.push({
+        name: 'Process Hierarchy',
+        params: { id: procDefId },
+        query: buildProcessHierarchyQuery({
+            name: processName.value || procDefId,
+            entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
+            mode: PROCESS_HIERARCHY_MODE.VIEW,
+            right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
+            rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
+            reviewId: approvalState.value?.id || reviewId.value
+        })
+    });
+}
+
 // ── Supabase Realtime: 상태 변경 감지 ──
 let realtimeChannel: any = null;
 
@@ -886,6 +911,10 @@ onBeforeUnmount(cleanupRealtime);
                     <v-chip size="small" :color="getStateColor(currentState)" variant="tonal">
                         {{ getStateLabel(currentState) }}
                     </v-chip>
+                    <v-btn size="small" variant="tonal" color="primary" @click="openInEditor">
+                        <v-icon start size="14">mdi-file-document-edit-outline</v-icon>
+                        Open in Editor
+                    </v-btn>
                     <v-btn v-if="!isFinished" size="small" variant="tonal" color="grey" @click="openReassignDialog">
                         <v-icon start size="14">mdi-account-switch</v-icon>
                         Reassign

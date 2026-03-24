@@ -184,6 +184,163 @@
             </div>
         </div>
 
+        <!-- ===================== Section 3: Restructure Cut-over Jobs ===================== -->
+        <div class="section-card">
+            <div class="section-header">
+                <v-icon class="section-icon" size="20">mdi-source-branch</v-icon>
+                <span class="section-title">Restructure Cut-over Jobs</span>
+            </div>
+            <div class="section-body">
+                <div v-if="store.cutoverJobs.length === 0" class="cutover-empty">
+                    <v-icon size="28" color="grey-lighten-1">mdi-timeline-outline</v-icon>
+                    <span>아직 구조개편 cut-over 이력이 없습니다.</span>
+                </div>
+                <template v-else>
+                    <div class="cutover-overview">
+                        <div v-for="metric in cutoverStatusSummary" :key="metric.status" class="cutover-overview__card">
+                            <div class="cutover-overview__label">{{ metric.label }}</div>
+                            <div class="cutover-overview__value">{{ metric.count }}</div>
+                        </div>
+                    </div>
+                    <div class="cutover-list">
+                        <div v-for="job in store.cutoverJobs" :key="job.id" class="cutover-job">
+                            <div class="cutover-job__top">
+                                <div>
+                                    <div class="cutover-job__title">{{ job.title }}</div>
+                                    <div class="cutover-job__meta">
+                                        {{ job.draft_id }} · {{ job.approval_type }} · {{ job.version_label || 'version n/a' }}
+                                    </div>
+                                </div>
+                                <v-chip size="small" :color="cutoverStatusColor(job.status)" variant="tonal">
+                                    {{ job.status }}
+                                </v-chip>
+                            </div>
+                            <div class="cutover-job__summary">{{ job.summary }}</div>
+                            <div class="cutover-job__metrics">
+                                <span>Mega {{ job.impacted_mega_count }}</span>
+                                <span>Major {{ job.impacted_major_count }}</span>
+                                <span>Sub {{ job.impacted_sub_count }}</span>
+                            </div>
+                            <div class="cutover-job__timeline">
+                                <span v-if="job.scheduled_at">Scheduled {{ formatDateTime(job.scheduled_at) }}</span>
+                                <span v-if="job.started_at">Started {{ formatDateTime(job.started_at) }}</span>
+                                <span v-if="job.executed_at">Completed {{ formatDateTime(job.executed_at) }}</span>
+                                <span v-if="job.failed_at">Failed {{ formatDateTime(job.failed_at) }}</span>
+                            </div>
+                            <div v-if="job.maintenance_message" class="cutover-job__maintenance">
+                                Maintenance Message: {{ job.maintenance_message }}
+                            </div>
+                            <div class="cutover-job__actions">
+                                <v-btn size="small" variant="text" class="text-none" @click="openCutoverJob(job)">
+                                    상세 보기
+                                </v-btn>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="selectedCutoverJob" class="cutover-detail">
+                        <div class="cutover-detail__header">
+                            <div>
+                                <div class="cutover-detail__title">{{ selectedCutoverJob.title }}</div>
+                                <div class="cutover-detail__meta">
+                                    {{ selectedCutoverJob.approval_title || selectedCutoverJob.summary }}
+                                </div>
+                            </div>
+                            <v-chip size="small" :color="cutoverStatusColor(selectedCutoverJob.status)" variant="flat">
+                                {{ selectedCutoverJob.status }}
+                            </v-chip>
+                        </div>
+
+                        <div class="cutover-detail__grid">
+                            <div class="cutover-detail__panel">
+                                <div class="cutover-detail__panel-title">Execution Timeline</div>
+                                <div class="cutover-detail__timeline">
+                                    <div class="cutover-detail__timeline-row">
+                                        <span class="cutover-detail__timeline-key">Created</span>
+                                        <span>{{ formatDateTime(selectedCutoverJob.created_at) }} · {{ selectedCutoverJob.created_by || 'system' }}</span>
+                                    </div>
+                                    <div class="cutover-detail__timeline-row">
+                                        <span class="cutover-detail__timeline-key">Scheduled</span>
+                                        <span>{{ selectedCutoverJob.scheduled_at ? formatDateTime(selectedCutoverJob.scheduled_at) : '—' }}</span>
+                                    </div>
+                                    <div class="cutover-detail__timeline-row">
+                                        <span class="cutover-detail__timeline-key">Started</span>
+                                        <span>{{ selectedCutoverJob.started_at ? formatDateTime(selectedCutoverJob.started_at) : '—' }}</span>
+                                    </div>
+                                    <div class="cutover-detail__timeline-row">
+                                        <span class="cutover-detail__timeline-key">Completed</span>
+                                        <span>{{ selectedCutoverJob.executed_at ? formatDateTime(selectedCutoverJob.executed_at) : '—' }}</span>
+                                    </div>
+                                    <div class="cutover-detail__timeline-row">
+                                        <span class="cutover-detail__timeline-key">Failed</span>
+                                        <span>{{ selectedCutoverJob.failed_at ? formatDateTime(selectedCutoverJob.failed_at) : '—' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="cutover-detail__panel">
+                                <div class="cutover-detail__panel-title">Before / After Snapshot</div>
+                                <div class="cutover-detail__snapshot-grid">
+                                    <div class="cutover-detail__snapshot-card">
+                                        <div class="cutover-detail__snapshot-title">Before</div>
+                                        <div class="cutover-detail__snapshot-metrics">
+                                            <span>Mega {{ selectedCutoverJob.before_snapshot?.mega_count ?? 0 }}</span>
+                                            <span>Major {{ selectedCutoverJob.before_snapshot?.major_count ?? 0 }}</span>
+                                            <span>Sub {{ selectedCutoverJob.before_snapshot?.sub_count ?? 0 }}</span>
+                                        </div>
+                                        <div class="cutover-detail__snapshot-lines">
+                                            <div
+                                                v-for="line in selectedCutoverJob.before_snapshot?.highlights || []"
+                                                :key="`before-${line}`"
+                                                class="cutover-detail__snapshot-line"
+                                            >
+                                                {{ line }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="cutover-detail__snapshot-card">
+                                        <div class="cutover-detail__snapshot-title">After</div>
+                                        <div class="cutover-detail__snapshot-metrics">
+                                            <span>Mega {{ selectedCutoverJob.after_snapshot?.mega_count ?? 0 }}</span>
+                                            <span>Major {{ selectedCutoverJob.after_snapshot?.major_count ?? 0 }}</span>
+                                            <span>Sub {{ selectedCutoverJob.after_snapshot?.sub_count ?? 0 }}</span>
+                                        </div>
+                                        <div class="cutover-detail__snapshot-lines">
+                                            <div
+                                                v-for="line in selectedCutoverJob.after_snapshot?.highlights || []"
+                                                :key="`after-${line}`"
+                                                class="cutover-detail__snapshot-line"
+                                            >
+                                                {{ line }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="selectedCutoverJob.change_summary?.length" class="cutover-detail__panel cutover-detail__panel--full">
+                            <div class="cutover-detail__panel-title">Change Summary</div>
+                            <div class="cutover-detail__summary-list">
+                                <div
+                                    v-for="line in selectedCutoverJob.change_summary"
+                                    :key="line"
+                                    class="cutover-detail__summary-item"
+                                >
+                                    <v-icon size="14" color="primary">mdi-arrow-right</v-icon>
+                                    <span>{{ line }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="selectedCutoverJob.error_message" class="cutover-detail__error">
+                            {{ selectedCutoverJob.error_message }}
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
         <!-- ===================== Confirmation Dialog ===================== -->
         <v-dialog v-model="confirmDialog" max-width="460" persistent>
             <v-card class="confirm-dialog-card">
@@ -222,7 +379,7 @@
 </template>
 
 <script>
-import { defineComponent, ref, reactive, onMounted, watch } from 'vue';
+import { defineComponent, ref, reactive, onMounted, watch, computed } from 'vue';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
 
 export default defineComponent({
@@ -252,6 +409,7 @@ export default defineComponent({
         // Confirmation dialog
         const confirmDialog = ref(false);
         const confirmMessage = ref('');
+        const selectedCutoverJobId = ref('');
 
         // Color options for banner
         const colorOptions = [
@@ -343,9 +501,48 @@ export default defineComponent({
             }
         }
 
+        function cutoverStatusColor(status) {
+            if (status === 'running') return 'info';
+            if (status === 'completed') return 'success';
+            if (status === 'failed') return 'error';
+            return 'warning';
+        }
+
+        const cutoverStatusSummary = computed(() => {
+            const jobs = store.cutoverJobs || [];
+            return [
+                { status: 'scheduled', label: 'Scheduled', count: jobs.filter(job => job.status === 'scheduled').length },
+                { status: 'running', label: 'Running', count: jobs.filter(job => job.status === 'running').length },
+                { status: 'completed', label: 'Completed', count: jobs.filter(job => job.status === 'completed').length },
+                { status: 'failed', label: 'Failed', count: jobs.filter(job => job.status === 'failed').length }
+            ];
+        });
+
+        const selectedCutoverJob = computed(() => {
+            const jobs = store.cutoverJobs || [];
+            return jobs.find(job => job.id === selectedCutoverJobId.value) || jobs[0] || null;
+        });
+
+        function openCutoverJob(job) {
+            selectedCutoverJobId.value = job.id;
+        }
+
         // ---- Watch store changes (reactive sync) ----
         watch(() => store.noticeBanner, syncBannerFromStore, { deep: true });
         watch(() => store.maintenanceMode, syncMaintenanceFromStore, { deep: true });
+        watch(
+            () => store.cutoverJobs,
+            (jobs) => {
+                if (!jobs.length) {
+                    selectedCutoverJobId.value = '';
+                    return;
+                }
+                if (!jobs.some(job => job.id === selectedCutoverJobId.value)) {
+                    selectedCutoverJobId.value = jobs[0].id;
+                }
+            },
+            { deep: true, immediate: true }
+        );
 
         // ---- Lifecycle ----
         onMounted(async () => {
@@ -353,6 +550,7 @@ export default defineComponent({
                 store.fetchNoticeBanner(),
                 store.fetchMaintenanceMode()
             ]);
+            store.loadCutoverJobs();
             syncBannerFromStore();
             syncMaintenanceFromStore();
         });
@@ -369,7 +567,11 @@ export default defineComponent({
             onMaintenanceToggle,
             cancelMaintenanceToggle,
             confirmMaintenanceEnable,
-            formatDateTime
+            formatDateTime,
+            cutoverStatusColor,
+            cutoverStatusSummary,
+            selectedCutoverJob,
+            openCutoverJob
         };
     }
 });
@@ -682,6 +884,258 @@ export default defineComponent({
     font-size: 12px;
     font-weight: 500;
     color: #dc2626;
+}
+
+/* ── Cut-over Jobs ──────────────────────────────────────────── */
+.cutover-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px dashed #d1d5db;
+    border-radius: 8px;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.cutover-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cutover-overview {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.cutover-overview__card {
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+.cutover-overview__label {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.cutover-overview__value {
+    margin-top: 6px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.cutover-job {
+    padding: 14px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.cutover-job__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.cutover-job__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.cutover-job__meta {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.cutover-job__summary {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #374151;
+}
+
+.cutover-job__metrics {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
+.cutover-job__timeline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.cutover-job__maintenance {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 12px;
+}
+
+.cutover-job__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+
+.cutover-detail {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #dbeafe;
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.cutover-detail__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.cutover-detail__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.cutover-detail__meta {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #4b5563;
+}
+
+.cutover-detail__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.cutover-detail__panel {
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #dbeafe;
+    background: rgba(255, 255, 255, 0.92);
+}
+
+.cutover-detail__panel--full {
+    margin-top: 14px;
+}
+
+.cutover-detail__panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e3a8a;
+}
+
+.cutover-detail__timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.cutover-detail__timeline-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 12px;
+    color: #374151;
+}
+
+.cutover-detail__timeline-key {
+    min-width: 84px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.cutover-detail__snapshot-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.cutover-detail__snapshot-card {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+.cutover-detail__snapshot-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.cutover-detail__snapshot-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.cutover-detail__snapshot-lines {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cutover-detail__snapshot-line {
+    font-size: 12px;
+    color: #4b5563;
+}
+
+.cutover-detail__summary-list {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cutover-detail__summary-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: #374151;
+}
+
+.cutover-detail__error {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 12px;
 }
 
 /* ── Confirmation Dialog ─────────────────────────────────────── */

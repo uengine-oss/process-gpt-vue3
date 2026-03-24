@@ -697,13 +697,12 @@
             "pngDesc": "Current view as image",
             "json": "JSON",
             "jsonDesc": "Raw proc_map data",
-        "mermaid": {
+            "mermaid": "Mermaid",
             "mermaidDesc": "Hierarchy as .mmd file",
             "exporting": "Exporting...",
             "processingLargeData": "Large dataset detected. Processing in background...",
             "exportComplete": "Export complete. Downloading...",
             "exportFailed": "Export failed. Please try again."
-            }
         },
         "newProcess": "New Process",
         "searchPlaceholder": "Search by name or email",
@@ -714,6 +713,7 @@
             "card": "Card",
             "matrix": "Matrix",
             "tree": "Tree",
+            "mermaid": "Mermaid",
             "hierarchy": "Hierarchy"
         },
         "stats": {
@@ -772,10 +772,21 @@
             "systemSearch": "Filter by system or OSS..."
         },
         "hierarchy": {
+            "title": "Process Architecture",
+            "subtitle": "Hierarchical Process Structure",
             "selectDomain": "Select Domain",
             "expandAll": "Expand All",
             "collapseAll": "Collapse All",
-            "clickToToggle": "Click node to expand/collapse"
+            "clickToToggle": "Click node to expand/collapse",
+            "legendStructure": "Hierarchy Structure",
+            "legendStatus": "Process Status",
+            "statusGuide": "Status colors are applied to Sub Process nodes.",
+            "legendItems": {
+                "domain": "Domain",
+                "mega": "Mega Process",
+                "major": "Major Process",
+                "sub": "Sub Process"
+            }
         },
         "mermaid": {
             "zoomLevel": "Zoom",
@@ -827,7 +838,7 @@
             }
         },
         "newProcessDialog": {
-        "title": "Access Permission Settings",
+            "title": "New Process",
         "asIs": "As-Is",
         "toBe": "To-Be",
             "processName": "Process Name",
@@ -861,6 +872,8 @@
             "selectedUploadFile": "Selected file",
             "uploadRequired": "You must upload a BPMN XML file before creating the process.",
             "invalidUploadFile": "Only valid BPMN XML files can be uploaded.",
+            "sourceDefinitionLoadFailed": "Failed to load the source process definition.",
+            "createFailed": "Failed to create the process.",
             "selectTemplate": "Select a template...",
             "selectCloneSource": "Select process to clone...",
             "pidPreview": "Auto-assigned ID",
@@ -878,16 +891,21 @@
         "title": "Process Hierarchy",
         "processManagement": "Process Management",
         "subtitle": "Tree-based process hierarchy view",
+        "treeDesc": "Open the process selected from the architecture in the hierarchy editor.",
         "searchPlaceholder": "Search by name or email",
         "noData": "No organization members found",
         "selectProcess": "Select a detail process to compare",
         "emptyState": "Select a process",
         "emptyStateDesc": "Click a sub-process in the left tree to display the BPMN editor.",
         "save": "Save",
+        "saveDesc": "Save the process currently being edited.",
         "validate": "Validate",
         "clone": "Clone",
         "versionHistory": "Version History",
+        "versionHistoryDesc": "Review saved versions and changes in the bottom history panel.",
         "validationPassed": "Validation passed",
+        "propertiesDesc": "Review properties and governance for the selected process and task.",
+        "expandPanel": "Expand panel",
         "processTab": "Process",
         "taskTab": "Task",
         "basic": "Basic",

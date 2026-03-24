@@ -1,9 +1,13 @@
 import { ref, computed, watch, type Ref } from 'vue';
 import { useRouter } from 'vue-router';
 import BackendFactory from '@/components/api/BackendFactory';
+import {
+    buildProcessHierarchyQuery,
+    PROCESS_HIERARCHY_ENTRY
+} from '@/views/process-hierarchy/navigation';
 export { generateProcessId, collectAllProcessIds, isPidInUse } from './processIdUtils';
 
-export type ViewMode = 'card' | 'matrix' | 'tree' | 'hierarchy';
+export type ViewMode = 'card' | 'matrix' | 'tree' | 'mermaid';
 
 export interface ProcessStatus {
     status: 'none' | 'draft' | 'review' | 'published' | 'public_review' | 'wip' | 'sunset';
@@ -564,7 +568,14 @@ export function useProcessArchitecture() {
     function navigateToProcess(subId: string, subName?: string) {
         const name = subName || subId;
         addToRecentlyViewed(subId, name);
-        router.push({ name: 'Process Hierarchy', query: { id: subId, name } });
+        router.push({
+            name: 'Process Hierarchy',
+            params: { id: subId },
+            query: buildProcessHierarchyQuery({
+                name,
+                entry: PROCESS_HIERARCHY_ENTRY.ARCHITECTURE
+            })
+        });
     }
 
     // --- localStorage helpers ---

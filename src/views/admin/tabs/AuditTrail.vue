@@ -58,6 +58,33 @@
             </div>
         </div>
 
+        <div class="cutover-audit-card">
+            <div class="cutover-audit-card__header">
+                <div class="cutover-audit-card__title">Restructure Cut-over Events</div>
+                <div class="cutover-audit-card__subtitle">Scenario 4 구조개편 cut-over 이력을 운영 감사 화면에서 함께 확인합니다.</div>
+            </div>
+            <div v-if="cutoverJobs.length === 0" class="cutover-audit-empty">
+                cut-over 이벤트가 없습니다.
+            </div>
+            <div v-else class="cutover-audit-list">
+                <div v-for="job in cutoverJobs.slice(0, 5)" :key="job.id" class="cutover-audit-item">
+                    <div class="cutover-audit-item__top">
+                        <span class="cutover-audit-item__title">{{ job.title }}</span>
+                        <span class="action-chip chip-teal">{{ job.status }}</span>
+                    </div>
+                    <div class="cutover-audit-item__meta">
+                        {{ formatDatetime(job.executed_at || job.failed_at || job.started_at || job.created_at) }} · {{ job.executed_by || job.created_by || 'system' }} · {{ job.approval_type }} · {{ job.version_label || 'version n/a' }}
+                    </div>
+                    <div class="cutover-audit-item__summary">
+                        {{ job.summary }}
+                    </div>
+                    <div v-if="job.error_message" class="cutover-audit-item__summary">
+                        Error: {{ job.error_message }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading -->
         <div v-if="loading" class="loading-state">
             <v-progress-circular indeterminate color="primary" size="32" width="3" />
@@ -149,7 +176,7 @@
 </template>
 
 <script>
-import { defineComponent, ref, computed, onMounted, watch } from 'vue';
+import { defineComponent, ref, computed, onMounted } from 'vue';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
 import { storeToRefs } from 'pinia';
 
@@ -158,7 +185,7 @@ export default defineComponent({
 
     setup() {
         const store = useAdminConsoleStore();
-        const { auditLogs, auditTotal, loading } = storeToRefs(store);
+        const { auditLogs, auditTotal, loading, cutoverJobs } = storeToRefs(store);
 
         const pageSize = 50;
         const currentPage = ref(1);
@@ -306,12 +333,14 @@ export default defineComponent({
         // Lifecycle
         // -----------------------------------------------
         onMounted(() => {
+            store.loadCutoverJobs();
             loadLogs();
         });
 
         return {
             auditLogs,
             auditTotal,
+            cutoverJobs,
             loading,
             filters,
             currentPage,
@@ -448,6 +477,75 @@ export default defineComponent({
 
 .filter-text {
     width: 100%;
+}
+
+/* ── Cut-over Audit Card ───────────────────────────── */
+.cutover-audit-card {
+    margin-bottom: 20px;
+    padding: 16px;
+    border: 1px solid #e0e7ff;
+    border-radius: 10px;
+    background: #f8faff;
+}
+
+.cutover-audit-card__header {
+    margin-bottom: 12px;
+}
+
+.cutover-audit-card__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e3a8a;
+}
+
+.cutover-audit-card__subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.cutover-audit-empty {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.cutover-audit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cutover-audit-item {
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #dbeafe;
+}
+
+.cutover-audit-item__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.cutover-audit-item__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.cutover-audit-item__meta {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.cutover-audit-item__summary {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #334155;
 }
 
 /* ── Loading ─────────────────────────────────────────── */

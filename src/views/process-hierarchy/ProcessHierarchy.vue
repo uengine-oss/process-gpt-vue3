@@ -1,120 +1,170 @@
 <template>
     <v-card elevation="10" class="process-hierarchy-container rounded-xl">
-        <!-- Left Panel: Tree -->
-        <div class="hierarchy-left-panel" :style="{ width: isLeftCollapsed ? '40px' : leftPanelWidth + 'px' }">
-            <!-- Collapsed Mini Bar -->
-            <div v-if="isLeftCollapsed" class="collapsed-sidebar">
-                <v-tooltip v-for="item in collapsedMenuItems" :key="item.icon" location="right">
-                    <template v-slot:activator="{ props }">
-                        <div
-                            v-bind="props"
-                            class="collapsed-menu-icon"
-                            :class="{ 'collapsed-menu-icon--active': item.active }"
-                            @click="item.action"
-                        >
-                            <v-icon size="18" :color="item.active ? 'primary' : 'grey-darken-1'">{{ item.icon }}</v-icon>
+        <div class="hierarchy-workspace">
+            <!-- Left Panel: Tree -->
+            <div class="hierarchy-left-panel" :style="{ width: isLeftCollapsed ? '40px' : leftPanelWidth + 'px' }">
+                <!-- Collapsed Mini Bar -->
+                <div v-if="isLeftCollapsed" class="collapsed-sidebar">
+                    <v-tooltip v-for="item in collapsedMenuItems" :key="item.icon" location="right">
+                        <template v-slot:activator="{ props }">
+                            <div
+                                v-bind="props"
+                                class="collapsed-menu-icon"
+                                :class="{ 'collapsed-menu-icon--active': item.active }"
+                                @click="item.action"
+                            >
+                                <v-icon size="18" :color="item.active ? 'primary' : 'grey-darken-1'">{{ item.icon }}</v-icon>
+                            </div>
+                        </template>
+                        <div class="collapsed-tooltip-content">
+                            <div class="font-weight-bold text-body-2">{{ item.name }}</div>
+                            <div class="text-caption" style="opacity: 0.85;">{{ item.desc }}</div>
                         </div>
-                    </template>
-                    <div class="collapsed-tooltip-content">
-                        <div class="font-weight-bold text-body-2">{{ item.name }}</div>
-                        <div class="text-caption" style="opacity: 0.85;">{{ item.desc }}</div>
-                    </div>
-                </v-tooltip>
-                <v-divider class="my-1" style="width: 24px; opacity: 0.3;" />
-                <v-tooltip location="right">
-                    <template v-slot:activator="{ props }">
-                        <div v-bind="props" class="collapsed-menu-icon" @click="toggleLeftPanel">
-                            <v-icon size="18" color="grey-darken-1">mdi-chevron-right</v-icon>
-                        </div>
-                    </template>
-                    <span class="text-caption">{{ $t('processHierarchy.expandPanel') || '패널 펼치기' }}</span>
-                </v-tooltip>
+                    </v-tooltip>
+                    <v-divider class="my-1" style="width: 24px; opacity: 0.3;" />
+                    <v-tooltip location="right">
+                        <template v-slot:activator="{ props }">
+                            <div v-bind="props" class="collapsed-menu-icon" @click="toggleLeftPanel">
+                                <v-icon size="18" color="grey-darken-1">mdi-chevron-right</v-icon>
+                            </div>
+                        </template>
+                        <span class="text-caption">{{ $t('processHierarchy.expandPanel') || '패널 펼치기' }}</span>
+                    </v-tooltip>
+                </div>
+                <!-- Full Tree -->
+                <template v-else>
+                    <ProcessHierarchyTree
+                        :procMap="procMap"
+                        :metricsMap="metricsMap"
+                        :definitionList="definitionList"
+                        :selectedId="selectedProcessId"
+                        :collapsed="false"
+                        :loading="loading"
+                        :statusLoading="statusLoading"
+                        :lockMap="lockMap"
+                        :canManagePermissions="hasEditAccess"
+                        @select="handleSelectProcess"
+                        @openPermission="handleOpenPermission"
+                    />
+                    <div class="resize-handle-left" @mousedown="startResizeLeft"></div>
+                </template>
+                <!-- Toggle Button -->
+                <v-btn
+                    icon
+                    size="x-small"
+                    variant="text"
+                    class="collapse-toggle-btn"
+                    @click="toggleLeftPanel"
+                >
+                    <v-icon size="16">{{ isLeftCollapsed ? 'mdi-chevron-right' : 'mdi-chevron-left' }}</v-icon>
+                </v-btn>
             </div>
-            <!-- Full Tree -->
-            <template v-else>
-                <ProcessHierarchyTree
-                    :procMap="procMap"
-                    :metricsMap="metricsMap"
+
+            <!-- Center Panel: BPMN Designer -->
+            <div class="hierarchy-center-panel">
+                <ProcessHierarchyDesigner
+                    ref="designer"
+                    :bpmn="bpmnXml"
+                    :processName="selectedProcessName"
+                    :processDefinition="processDefinition"
+                    :definitionPath="selectedProcessId"
                     :definitionList="definitionList"
-                    :selectedId="selectedProcessId"
-                    :collapsed="false"
-                    :loading="loading"
-                    :statusLoading="statusLoading"
-                    :lockMap="lockMap"
-                    :canManagePermissions="hasEditAccess"
-                    @select="handleSelectProcess"
-                    @openPermission="handleOpenPermission"
+                    :loading="loadingProcess"
+                    :recoveryBackup="recoveryBackup"
+                    :isViewMode="isReadOnlyMode"
+                    :editorMode="editorMode"
+                    :breadcrumbItems="selectedBreadcrumbItems"
+                    :lockInfo="lockInfo"
+                    :readOnlyMessage="readOnlyMessage"
+                    :showCopilotPanel="showCopilotPanel"
+                    @openPanel="handleOpenPanel"
+                    @updateXml="handleUpdateXml"
+                    @definition="handleDefinition"
+                    @save="handleSave"
+                    @clone="handleClone"
+                    @delete="handleDelete"
+                    @versionHistory="handleVersionHistory"
+                    @toggleWip="handleToggleWip"
+                    @dismissBackup="dismissBackup"
+                    @recoverBackup="recoverFromBackup"
+                    @replaceXml="handleReplaceXml"
+                    @toggleCopilot="toggleCopilotPanel"
                 />
-                <div class="resize-handle-left" @mousedown="startResizeLeft"></div>
-            </template>
-            <!-- Toggle Button -->
+            </div>
+
+            <!-- Right Panel: Properties -->
+            <div v-if="showProperties && selectedProcessId" class="hierarchy-right-panel" :style="{ width: rightPanelWidth + 'px' }">
+                <div class="resize-handle-right" @mousedown="startResizeRight"></div>
+                <ProcessHierarchyProperties
+                    :processDefinition="processDefinition"
+                    :element="selectedElement"
+                    :isViewMode="isReadOnlyMode"
+                    :initialTopTab="initialRightTab"
+                    :readOnlyMessage="readOnlyMessage"
+                    :roles="roles"
+                    :processVariables="processVariables"
+                    :definitionPath="selectedProcessId"
+                    :definition="bpmnDefinitions"
+                    :entrySource="entrySource"
+                    :reviewId="currentReviewId"
+                    @save="handlePropertiesSave"
+                    @close="handleCloseProperties"
+                    @focusElement="handleFocusElement"
+                    @governanceUpdated="handleGovernanceUpdated"
+                />
+            </div>
+
+            <div v-if="showCopilotPanel && selectedProcessId" class="hierarchy-copilot-panel" :style="{ width: copilotPanelWidth + 'px' }">
+                <div class="hierarchy-copilot-panel__header">
+                    <div class="hierarchy-copilot-panel__heading">
+                        <div class="hierarchy-copilot-panel__title">AI Copilot</div>
+                        <div class="hierarchy-copilot-panel__subtitle">
+                            {{ selectedElement?.businessObject?.name || selectedProcessName || '프로세스 전체 문맥' }}
+                        </div>
+                    </div>
+                    <v-btn icon variant="text" size="x-small" @click="showCopilotPanel = false">
+                        <v-icon size="16">mdi-close</v-icon>
+                    </v-btn>
+                </div>
+                <div class="hierarchy-copilot-panel__body">
+                    <ProcessHierarchyAIGuide
+                        embedded
+                        :element="selectedElement"
+                        :processDefinition="processDefinition"
+                        :isViewMode="isReadOnlyMode"
+                        @focusElement="handleFocusElement"
+                    />
+                </div>
+            </div>
+
+            <!-- Toggle Properties Button -->
             <v-btn
+                v-if="!showProperties && selectedProcessId"
                 icon
-                size="x-small"
-                variant="text"
-                class="collapse-toggle-btn"
-                @click="toggleLeftPanel"
+                size="small"
+                class="toggle-properties-btn"
+                :style="{ right: `${showCopilotPanel ? copilotPanelWidth + 8 : 8}px` }"
+                @click="showProperties = true"
             >
-                <v-icon size="16">{{ isLeftCollapsed ? 'mdi-chevron-right' : 'mdi-chevron-left' }}</v-icon>
+                <v-icon>mdi-chevron-left</v-icon>
             </v-btn>
         </div>
 
-        <!-- Center Panel: BPMN Designer -->
-        <div class="hierarchy-center-panel">
-            <ProcessHierarchyDesigner
-                ref="designer"
-                :bpmn="bpmnXml"
-                :processName="selectedProcessName"
-                :processDefinition="processDefinition"
-                :definitionPath="selectedProcessId"
-                :definitionList="definitionList"
-                :loading="loadingProcess"
-                :recoveryBackup="recoveryBackup"
-                :isViewMode="isReadOnlyMode"
-                :lockInfo="lockInfo"
-                :readOnlyMessage="readOnlyMessage"
-                @openPanel="handleOpenPanel"
-                @updateXml="handleUpdateXml"
-                @definition="handleDefinition"
-                @save="handleSave"
-                @clone="handleClone"
-                @delete="handleDelete"
-                @versionHistory="handleVersionHistory"
-                @toggleWip="handleToggleWip"
-                @dismissBackup="dismissBackup"
-                @recoverBackup="recoverFromBackup"
-                @replaceXml="handleReplaceXml"
+        <div v-if="showHistoryPanel && selectedProcessId" class="history-panel-shell" :style="{ height: `${historyPanelHeight}px` }">
+            <ProcessHierarchyHistoryPanel
+                :loading="historyLoading"
+                :versions="historyVersions"
+                :selectedVersion="historySelectedVersion"
+                :compareVersion="historyCompareVersion"
+                :compareVersionOptions="historyCompareVersionOptions"
+                :selectedVersionMeta="historySelectedVersionMeta"
+                :diffRows="historyDiffRows"
+                :compareLabel="historyCompareLabel"
+                @close="showHistoryPanel = false"
+                @selectVersion="selectHistoryVersion"
+                @update:compareVersion="updateHistoryCompareVersion"
             />
         </div>
-
-        <!-- Right Panel: Properties -->
-        <div v-if="showProperties && selectedProcessId" class="hierarchy-right-panel" :style="{ width: rightPanelWidth + 'px' }">
-            <div class="resize-handle-right" @mousedown="startResizeRight"></div>
-            <ProcessHierarchyProperties
-                :processDefinition="processDefinition"
-                :element="selectedElement"
-                :isViewMode="isReadOnlyMode"
-                :readOnlyMessage="readOnlyMessage"
-                :roles="roles"
-                :processVariables="processVariables"
-                :definitionPath="selectedProcessId"
-                :definition="bpmnDefinitions"
-                @save="handlePropertiesSave"
-                @close="handleCloseProperties"
-                @focusElement="handleFocusElement"
-            />
-        </div>
-
-        <!-- Toggle Properties Button -->
-        <v-btn
-            v-if="!showProperties && selectedProcessId"
-            icon
-            size="small"
-            class="toggle-properties-btn"
-            @click="showProperties = true"
-        >
-            <v-icon>mdi-chevron-left</v-icon>
-        </v-btn>
 
         <!-- Version History Dialog -->
         <process-definition-version-dialog
@@ -152,7 +202,7 @@
                 </v-card-text>
                 <v-card-actions class="pa-4 pt-2">
                     <v-spacer />
-                    <v-btn variant="text" @click="approvalWarningDialog = false; activeApprovalState = null;">
+                    <v-btn variant="text" @click="approvalWarningDialog = false; activeApprovalState = null; forceReviewSubmission = false;">
                         {{ $t('common.cancel') || '취소' }}
                     </v-btn>
                     <v-btn color="warning" variant="flat" @click="proceedAfterApprovalWarning">
@@ -179,6 +229,12 @@
                         <span class="text-body-2 text-medium-emphasis">{{ $t('processHierarchy.currentVersion') || '현재 버전' }}:</span>
                         <v-chip size="small" color="primary" variant="flat" class="ml-2">v{{ saveVersion }}</v-chip>
                     </div>
+                    <v-alert density="compact" variant="tonal" type="info" class="mb-3">
+                        현재 저장은 minor patch 경로입니다.
+                        <span v-if="currentGovernanceStatus === 'published'" class="d-block mt-1">
+                            차기 major 변경은 우측 Governance 탭에서 요청해야 배포본과 병렬 Draft로 분기됩니다.
+                        </span>
+                    </v-alert>
                     <v-textarea
                         v-model="saveVersionMessage"
                         :label="$t('processHierarchy.changeNote') || '변경 사항 메모'"
@@ -189,13 +245,20 @@
                         hide-details
                         class="mb-3"
                     />
-                    <v-checkbox
-                        v-model="submitReviewAfterSave"
-                        :label="$t('processHierarchy.submitForReviewAfterSave') || '저장 후 검토 요청'"
-                        color="primary"
-                        density="compact"
-                        hide-details
-                    />
+                    <div class="text-subtitle-2 mb-2">
+                        {{ $t('processHierarchy.saveStrategy') || '저장 전략' }}
+                    </div>
+                    <v-btn-toggle v-model="saveSubmissionMode" mandatory divided class="mb-2">
+                        <v-btn value="draft" size="small" :disabled="forceReviewSubmission">
+                            {{ $t('processHierarchy.saveDraftOnly') || 'Draft만 저장' }}
+                        </v-btn>
+                        <v-btn value="review" size="small">
+                            {{ $t('processHierarchy.saveAndRequestReview') || '저장 후 검토 요청' }}
+                        </v-btn>
+                    </v-btn-toggle>
+                    <div class="text-caption text-medium-emphasis">
+                        {{ saveSubmissionDescription }}
+                    </div>
                 </v-card-text>
                 <v-card-actions class="pa-4 pt-2">
                     <v-spacer />
@@ -204,7 +267,7 @@
                     </v-btn>
                     <v-btn color="primary" variant="flat" @click="confirmSaveVersion" :loading="savingVersion">
                         <v-icon start>mdi-content-save</v-icon>
-                        {{ $t('processHierarchy.saveAndContinue') || '저장' }}
+                        {{ saveConfirmButtonLabel }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -252,10 +315,20 @@ import { saveBackup, getBackup, deleteBackup } from '@/utils/localBackup';
 import ProcessHierarchyTree from './ProcessHierarchyTree.vue';
 import ProcessHierarchyDesigner from './ProcessHierarchyDesigner.vue';
 import ProcessHierarchyProperties from './ProcessHierarchyProperties.vue';
+import ProcessHierarchyAIGuide from './ProcessHierarchyAIGuide.vue';
+import ProcessHierarchyHistoryPanel from './ProcessHierarchyHistoryPanel.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
 import PermissionDialog from '@/components/apps/definition-map/PermissionDialog.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import { authClaimsState } from '@/utils/authClaims';
+import { computeBpmnDiff, formatElementTypeName } from '@/utils/bpmnDiff';
+import {
+    PROCESS_HIERARCHY_ENTRY,
+    PROCESS_HIERARCHY_MODE,
+    PROCESS_HIERARCHY_PANEL_STATE,
+    PROCESS_HIERARCHY_RIGHT_TAB,
+    resolveProcessHierarchyEntryState
+} from './navigation';
 
 const backend = BackendFactory.createBackend();
 const storage = StorageBaseFactory.getStorage();
@@ -266,6 +339,8 @@ export default {
         ProcessHierarchyTree,
         ProcessHierarchyDesigner,
         ProcessHierarchyProperties,
+        ProcessHierarchyAIGuide,
+        ProcessHierarchyHistoryPanel,
         ProcessDefinitionVersionDialog,
         PermissionDialog,
     },
@@ -286,6 +361,12 @@ export default {
             loadingProcess: false,
             statusLoading: false,
             showProperties: true,
+            showCopilotPanel: false,
+            showHistoryPanel: false,
+            entrySource: 'direct',
+            currentReviewId: '',
+            requestedMode: PROCESS_HIERARCHY_MODE.EDIT,
+            initialRightTab: PROCESS_HIERARCHY_RIGHT_TAB.PROPERTIES,
             // Lock state
             isLockedByOther: false,
             lockInfo: null, // { user_id, heartbeat_at }
@@ -295,7 +376,8 @@ export default {
             saveVersionDialog: false,
             saveVersionTag: 'minor',
             saveVersionMessage: '',
-            submitReviewAfterSave: true,
+            saveSubmissionMode: 'draft',
+            forceReviewSubmission: false,
             latestVersion: '0.0',
             savingVersion: false,
             pendingSaveXml: '',
@@ -314,12 +396,19 @@ export default {
             permissionProcess: null,
             leftPanelWidth: 280,
             rightPanelWidth: 340,
+            copilotPanelWidth: 360,
+            historyPanelHeight: 280,
             resizing: null,
             resizeStartX: 0,
             resizeStartWidth: 0,
             selectionListenerCleanup: null,
             // 저장 여부 체크용 초기 XML
             savedBpmnXml: '',
+            historyLoading: false,
+            historyVersions: [],
+            historySelectedVersion: '',
+            historyCompareVersion: '__current__',
+            historyDiffRows: [],
         };
     },
     async beforeRouteLeave(to, from, next) {
@@ -330,6 +419,7 @@ export default {
         next();
     },
     async mounted() {
+        this.applyEntryStateFromRoute();
         await this.loadInitialData();
         // Auto-select process from query parameter (from Process Architecture navigation)
         const routeId = this.$route?.params?.id;
@@ -427,17 +517,108 @@ export default {
             return this.isAdmin;
         },
         isReadOnlyMode() {
-            return !this.hasEditAccess || this.isLockedByOther;
+            return (
+                this.requestedMode === PROCESS_HIERARCHY_MODE.VIEW ||
+                this.requestedMode === PROCESS_HIERARCHY_MODE.HISTORY ||
+                !this.hasEditAccess ||
+                this.isLockedByOther
+            );
         },
         readOnlyMessage() {
             if (!this.hasEditAccess) {
                 return this.$t('processHierarchy.adminOnlyEdit') || '관리자만 편집할 수 있습니다. 읽기 전용으로 표시됩니다.';
+            }
+            if (this.requestedMode === PROCESS_HIERARCHY_MODE.VIEW || this.requestedMode === PROCESS_HIERARCHY_MODE.HISTORY) {
+                return this.$t('processHierarchy.readOnlyMode') || '읽기 전용으로 표시됩니다.';
             }
             if (this.lockInfo?.user_id) {
                 return `${this.lockInfo.user_id}${this.$t('processHierarchy.lockedByOther') || ' 님이 편집 중입니다. 읽기 전용으로 표시됩니다.'}`;
             }
             return this.$t('processHierarchy.lockedByOtherReadOnly') || '다른 사용자가 편집 중입니다. 읽기 전용으로 표시됩니다.';
         },
+        editorMode() {
+            if (this.requestedMode === PROCESS_HIERARCHY_MODE.HISTORY) {
+                return PROCESS_HIERARCHY_MODE.HISTORY;
+            }
+            return this.isReadOnlyMode ? PROCESS_HIERARCHY_MODE.VIEW : PROCESS_HIERARCHY_MODE.EDIT;
+        },
+        selectedBreadcrumbItems() {
+            const targetId = this.selectedProcessId;
+            if (!targetId || !this.procMap?.mega_proc_list) return [];
+
+            for (const mega of this.procMap.mega_proc_list) {
+                for (const major of mega.major_proc_list || []) {
+                    const found = (major.sub_proc_list || []).find((sub) => sub.id === targetId);
+                    if (found) {
+                        const domainLabel = major.domain || major.domain_id || '';
+                        return [domainLabel, mega.name, major.name].filter(Boolean);
+                    }
+                }
+            }
+
+            return [];
+        },
+        currentGovernanceStatus() {
+            if (this.processDefinition?.approval_state) {
+                return this.processDefinition.approval_state;
+            }
+            const matched = this.definitionList.find((def) => (def.id || def.file_name) === this.selectedProcessId);
+            return matched?.approval_state || matched?.status || '';
+        },
+        historySelectedVersionMeta() {
+            return this.historyVersions.find((row) => String(row.version) === String(this.historySelectedVersion)) || null;
+        },
+        historyCompareVersionOptions() {
+            const options = [
+                {
+                    title: `현재 편집본${this.processDefinition?.version ? ` · v${this.processDefinition.version}` : ''}`,
+                    value: '__current__',
+                },
+            ];
+
+            this.historyVersions.forEach((row) => {
+                if (String(row.version) === String(this.historySelectedVersion)) return;
+                options.push({
+                    title: `v${row.version}${row.version_tag ? ` · ${row.version_tag}` : ''}`,
+                    value: String(row.version),
+                });
+            });
+
+            return options;
+        },
+        historyCompareLabel() {
+            if (!this.historySelectedVersion) {
+                return '좌측에서 버전을 선택하면 현재 편집본 또는 다른 버전과 비교합니다.';
+            }
+            if (this.historyCompareVersion === '__current__') {
+                return `v${this.historySelectedVersion} 기준으로 현재 편집본과 비교합니다.`;
+            }
+            return `v${this.historySelectedVersion} 기준으로 v${this.historyCompareVersion}과 비교합니다.`;
+        },
+        saveSubmissionDescription() {
+            if (this.forceReviewSubmission) {
+                return (
+                    this.$t('processHierarchy.saveSubmissionForcedReviewDesc') ||
+                    '진행 중인 review를 갱신해야 하므로 이번 저장은 검토 요청 경로로만 진행됩니다.'
+                );
+            }
+            if (this.saveSubmissionMode === 'review') {
+                return this.$t('processHierarchy.saveSubmissionReviewDesc') || '저장 후 Review Board의 검토 파이프라인으로 바로 올립니다.';
+            }
+            if (this.currentGovernanceStatus === 'published') {
+                return (
+                    this.$t('processHierarchy.saveSubmissionDraftPublishedDesc') ||
+                    '배포본은 유지하고 minor draft만 저장합니다. major 변경은 Governance 탭에서 별도 요청해야 합니다.'
+                );
+            }
+            return this.$t('processHierarchy.saveSubmissionDraftDesc') || '현재 편집본만 저장하고, 검토 요청은 나중에 별도로 진행합니다.';
+        },
+        saveConfirmButtonLabel() {
+            if (this.saveSubmissionMode === 'review') {
+                return this.$t('processHierarchy.saveAndRequestReview') || '저장 후 검토 요청';
+            }
+            return this.$t('processHierarchy.saveAndContinue') || '저장';
+        }
     },
     watch: {
         '$route.params.id': {
@@ -457,9 +638,57 @@ export default {
                     await this.handleSelectProcess(newId, routeName || newId);
                 }
             }
+        },
+        '$route.query': {
+            deep: true,
+            handler() {
+                this.applyEntryStateFromRoute();
+            }
         }
     },
     methods: {
+        applyEntryStateFromRoute() {
+            const state = resolveProcessHierarchyEntryState(this.$route?.query || {});
+            this.entrySource = state.entry;
+            this.currentReviewId = state.reviewId;
+            this.requestedMode = state.mode;
+            this.initialRightTab =
+                state.rightTab === PROCESS_HIERARCHY_RIGHT_TAB.AI_GUIDE
+                    ? PROCESS_HIERARCHY_RIGHT_TAB.PROPERTIES
+                    : state.rightTab;
+            this.isLeftCollapsed = state.left === PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED;
+            this.showProperties = state.right === PROCESS_HIERARCHY_PANEL_STATE.OPEN;
+            this.showCopilotPanel =
+                state.rightTab === PROCESS_HIERARCHY_RIGHT_TAB.AI_GUIDE || state.mode === PROCESS_HIERARCHY_MODE.VIEW;
+        },
+
+        getDefaultSaveSubmissionMode() {
+            if (this.entrySource === PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD) {
+                return 'review';
+            }
+            if (['in_review', 'review', 'public_feedback', 'final_edit', 'rejected'].includes(this.currentGovernanceStatus)) {
+                return 'review';
+            }
+            return 'draft';
+        },
+
+        activateContextPanelForSelection() {
+            if (this.entrySource === PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD) {
+                this.initialRightTab = PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE;
+            } else {
+                this.initialRightTab = PROCESS_HIERARCHY_RIGHT_TAB.PROPERTIES;
+            }
+            this.showProperties = true;
+        },
+
+        toggleCopilotPanel(forceState) {
+            if (typeof forceState === 'boolean') {
+                this.showCopilotPanel = forceState;
+                return;
+            }
+            this.showCopilotPanel = !this.showCopilotPanel;
+        },
+
         showEditDeniedToast() {
             const message = this.$t('processHierarchy.adminOnlyEdit') || '관리자만 편집할 수 있습니다.';
             if (this.$toast) {
@@ -523,6 +752,62 @@ export default {
             }
 
             return this.definitionList.find(d => d.id === id || d.file_name === id) || null;
+        },
+
+        normalizeReviewVersion(reviewState) {
+            if (reviewState?.version) return String(reviewState.version);
+            if (reviewState && (reviewState.major_version !== undefined || reviewState.minor_version !== undefined)) {
+                return `${reviewState.major_version || 0}.${reviewState.minor_version || 0}`;
+            }
+            if (reviewState?.version_label) {
+                return String(reviewState.version_label).replace(/^v/i, '');
+            }
+            return '';
+        },
+
+        async resolveReviewVersionContext(defId) {
+            if (!defId || !this.currentReviewId || this.entrySource !== PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD) {
+                return null;
+            }
+            if (typeof backend.getApprovalStateById !== 'function') return null;
+
+            try {
+                const reviewState = await backend.getApprovalStateById(this.currentReviewId);
+                if (!reviewState || reviewState.proc_def_id !== defId) return null;
+
+                const reviewVersion = this.normalizeReviewVersion(reviewState);
+                if (!reviewVersion) {
+                    return { reviewState, reviewVersion: '', snapshot: '', versionRow: null };
+                }
+
+                let snapshot = '';
+                try {
+                    snapshot = await backend.getRawDefinition(defId, { type: 'bpmn', version: reviewVersion });
+                } catch (e) {
+                    console.warn('[ProcessHierarchy] Failed to load review snapshot:', e);
+                }
+
+                let versionRow = null;
+                try {
+                    const versions = await backend.getDefinitionVersions(defId, {
+                        sort: 'desc',
+                        orderBy: 'version',
+                    });
+                    versionRow = (versions || []).find((row) => String(row.version) === reviewVersion) || null;
+                } catch (e) {
+                    console.warn('[ProcessHierarchy] Failed to resolve review version row:', e);
+                }
+
+                return {
+                    reviewState,
+                    reviewVersion,
+                    snapshot,
+                    versionRow
+                };
+            } catch (e) {
+                console.warn('[ProcessHierarchy] Failed to resolve review context:', e);
+                return null;
+            }
         },
 
         collectProcDefIds(procMap) {
@@ -648,19 +933,33 @@ export default {
             this.recoveryBackup = null;
             this.isLockedByOther = false;
             this.lockInfo = null;
+            this.showHistoryPanel = false;
+            this.historyVersions = [];
+            this.historySelectedVersion = '';
+            this.historyCompareVersion = '__current__';
+            this.historyDiffRows = [];
 
             // URL 동기화 (새로고침 시 선택 유지)
             const currentRouteId = this.$route?.params?.id;
             if (currentRouteId !== id) {
+                const nextQuery = { ...this.$route.query };
+                delete nextQuery.id;
+                if (name) nextQuery.name = name;
+                else delete nextQuery.name;
                 this.$router.replace({
                     path: `/process-hierarchy/${id}`,
-                    query: name ? { name } : undefined
-                }).catch(() => {});
+                    query: nextQuery
+                }).catch((navigationError) => {
+                    console.debug('[ProcessHierarchy] route sync skipped:', navigationError);
+                });
             }
 
             // Lock 체크: 다른 사용자가 편집 중인지 확인
             await this.checkEditLock(id);
             await this.loadProcess(id);
+            if (this.requestedMode === PROCESS_HIERARCHY_MODE.HISTORY) {
+                await this.handleVersionHistory();
+            }
 
             // [6.2.2] 로컬 백업 확인
             try {
@@ -735,15 +1034,24 @@ export default {
             this.bpmnXml = '';
             try {
                 const def = await this.fetchProcessDefinitionDetail(id);
+                const reviewContext = await this.resolveReviewVersionContext(id);
 
                 if (def) {
                     this.processDefinition = def;
-                    this.bpmnXml = def.bpmn || '';
+                    this.bpmnXml = reviewContext?.snapshot || def.bpmn || '';
                     this.savedBpmnXml = this.bpmnXml;
-                    const definition = typeof def.definition === 'string'
-                        ? JSON.parse(def.definition || '{}')
-                        : (def.definition || {});
+                    const rawDefinition = reviewContext?.versionRow?.definition ?? def.definition;
+                    const definition = typeof rawDefinition === 'string'
+                        ? JSON.parse(rawDefinition || '{}')
+                        : (rawDefinition || {});
                     this.processDefinition.definition = definition;
+                    this.processDefinition.review_state = reviewContext?.reviewState || null;
+                    if (reviewContext?.reviewVersion) {
+                        this.processDefinition.version = reviewContext.reviewVersion;
+                    }
+                    if (reviewContext?.reviewState?.state) {
+                        this.processDefinition.approval_state = reviewContext.reviewState.state;
+                    }
                     this.processVariables = definition?.data || [];
 
                     // roles 추출 (definition에서 가져오기)
@@ -807,7 +1115,7 @@ export default {
             }
 
             this.selectedElement = element;
-            this.showProperties = true;
+            this.activateContextPanelForSelection();
         },
 
         handleDefinition(def) {
@@ -846,7 +1154,7 @@ export default {
                         bpmnVue.extendUEngineProperties({ businessObject: element.businessObject });
                     }
                     this.selectedElement = element;
-                    this.showProperties = true;
+                    this.activateContextPanelForSelection();
                 } else if (newSelection.length === 0) {
                     this.selectedElement = null;
                 }
@@ -895,6 +1203,7 @@ export default {
             try {
                 const { xml } = await modeler.saveXML({ format: true, preamble: true });
                 this.pendingSaveXml = xml;
+                this.forceReviewSubmission = false;
 
                 // 최신 버전 조회
                 const versions = await backend.getDefinitionVersions(this.selectedProcessId, {
@@ -927,7 +1236,8 @@ export default {
                 // 다이얼로그 초기화 후 열기
                 this.saveVersionTag = 'minor';
                 this.saveVersionMessage = '';
-                this.submitReviewAfterSave = true;
+                this.forceReviewSubmission = false;
+                this.saveSubmissionMode = this.getDefaultSaveSubmissionMode();
                 this.saveVersionDialog = true;
             } catch (e) {
                 console.error('Save preparation failed:', e);
@@ -1016,7 +1326,8 @@ export default {
             // 승인 취소는 submitForReview에서 자동 처리됨 → 저장 다이얼로그 열기
             this.saveVersionTag = 'minor';
             this.saveVersionMessage = '';
-            this.submitReviewAfterSave = true;
+            this.forceReviewSubmission = true;
+            this.saveSubmissionMode = 'review';
             this.saveVersionDialog = true;
         },
 
@@ -1058,6 +1369,7 @@ export default {
             this.savingVersion = true;
             try {
                 const version = this.saveVersion;
+                const shouldSubmitReview = this.forceReviewSubmission || this.saveSubmissionMode === 'review';
                 // BPMN XML 내부 uengine:properties의 version 필드 업데이트
                 const xml = this.updateXmlVersion(this.pendingSaveXml, version);
                 this.bpmnXml = xml;
@@ -1078,7 +1390,7 @@ export default {
                 });
 
                 // 검토 요청 (버전 정보 포함)
-                if (this.submitReviewAfterSave) {
+                if (shouldSubmitReview) {
                     try {
                         await (backend).submitForReview(this.selectedProcessId, this.saveVersionMessage || undefined, version);
                     } catch (reviewErr) {
@@ -1087,10 +1399,11 @@ export default {
                 }
 
                 this.saveVersionDialog = false;
+                this.forceReviewSubmission = false;
                 this.savedBpmnXml = this.bpmnXml;
 
                 if (this.$toast) {
-                    const msg = this.submitReviewAfterSave
+                    const msg = shouldSubmitReview
                         ? (this.$t('processHierarchy.savedAndSubmitted') || `v${version} 저장 및 검토 요청 완료`)
                         : (this.$t('successMsg.save') || '저장되었습니다.');
                     this.$toast.success(msg);
@@ -1098,7 +1411,9 @@ export default {
 
                 // [6.2.1] Save 성공 시 로컬 백업 삭제
                 if (this.selectedProcessId) {
-                    deleteBackup(this.selectedProcessId).catch(() => {});
+                    deleteBackup(this.selectedProcessId).catch((deleteBackupError) => {
+                        console.debug('[ProcessHierarchy] backup cleanup skipped:', deleteBackupError);
+                    });
                 }
                 this.recoveryBackup = null;
 
@@ -1277,15 +1592,115 @@ export default {
             }
         },
 
-        handleVersionHistory() {
-            // Version Comparison 페이지로 이동
-            this.$router.push({
-                path: '/version-comparison',
-                query: { processId: this.selectedProcessId },
-            });
+        async loadHistoryPanelData() {
+            if (!this.selectedProcessId) return;
+
+            this.historyLoading = true;
+            try {
+                const versions = await backend.getDefinitionVersions(this.selectedProcessId, {
+                    sort: 'desc',
+                    orderBy: 'version',
+                });
+                this.historyVersions = [...(versions || [])].sort((a, b) => {
+                    const [aMajor, aMinor] = String(a.version || '0.0').split('.').map(Number);
+                    const [bMajor, bMinor] = String(b.version || '0.0').split('.').map(Number);
+                    if (bMajor !== aMajor) return bMajor - aMajor;
+                    return (bMinor || 0) - (aMinor || 0);
+                });
+
+                if (!this.historySelectedVersion && this.historyVersions.length > 0) {
+                    this.historySelectedVersion = String(this.historyVersions[0].version);
+                }
+
+                const compareOptions = this.historyCompareVersionOptions.map((item) => item.value);
+                if (!compareOptions.includes(this.historyCompareVersion)) {
+                    this.historyCompareVersion = '__current__';
+                }
+
+                await this.runHistoryDiff();
+            } catch (e) {
+                console.error('Failed to load history panel data:', e);
+                this.historyVersions = [];
+                this.historyDiffRows = [];
+            } finally {
+                this.historyLoading = false;
+            }
         },
 
-        async handleVersionSave(info) {
+        async resolveHistoryXml(versionKey) {
+            if (versionKey === '__current__') {
+                return this.bpmnXml || '';
+            }
+
+            const matched = this.historyVersions.find((row) => String(row.version) === String(versionKey));
+            if (matched?.snapshot) {
+                return matched.snapshot;
+            }
+
+            if (!versionKey || !this.selectedProcessId || typeof backend.getRawDefinition !== 'function') {
+                return '';
+            }
+
+            try {
+                return await backend.getRawDefinition(this.selectedProcessId, { type: 'bpmn', version: versionKey });
+            } catch (e) {
+                console.warn('Failed to resolve history version xml:', e);
+                return '';
+            }
+        },
+
+        async runHistoryDiff() {
+            if (!this.historySelectedVersion) {
+                this.historyDiffRows = [];
+                return;
+            }
+
+            const [baseXml, compareXml] = await Promise.all([
+                this.resolveHistoryXml(this.historySelectedVersion),
+                this.resolveHistoryXml(this.historyCompareVersion),
+            ]);
+
+            if (!baseXml || !compareXml || this.historySelectedVersion === this.historyCompareVersion) {
+                this.historyDiffRows = [];
+                return;
+            }
+
+            try {
+                const result = computeBpmnDiff(baseXml, compareXml);
+                this.historyDiffRows = (result.changes || []).map((change, index) => ({
+                    key: `${change.id}-${change.type}-${index}`,
+                    label: change.name || change.id,
+                    description: change.description || '변경점이 감지되었습니다.',
+                    section: formatElementTypeName(change.elementType || ''),
+                }));
+            } catch (e) {
+                console.error('Failed to compute history diff:', e);
+                this.historyDiffRows = [];
+            }
+        },
+
+        async selectHistoryVersion(version) {
+            this.historySelectedVersion = String(version || '');
+
+            if (this.historySelectedVersion === this.historyCompareVersion) {
+                this.historyCompareVersion = '__current__';
+            }
+
+            await this.runHistoryDiff();
+        },
+
+        async updateHistoryCompareVersion(version) {
+            this.historyCompareVersion = String(version || '__current__');
+            await this.runHistoryDiff();
+        },
+
+        async handleVersionHistory() {
+            if (!this.selectedProcessId) return;
+            this.showHistoryPanel = true;
+            await this.loadHistoryPanelData();
+        },
+
+        async handleVersionSave() {
             this.versionDialog = false;
             await this.handleSave();
         },
@@ -1299,6 +1714,34 @@ export default {
                 await this.handleSave();
             } catch (e) {
                 console.error('Properties save failed:', e);
+            }
+        },
+
+        async handleGovernanceUpdated(payload = {}) {
+            if (payload?.reviewId) {
+                this.currentReviewId = payload.reviewId;
+            }
+
+            if (this.processDefinition && payload?.state) {
+                this.processDefinition.approval_state = payload.state;
+                this.processDefinition.review_state = {
+                    ...(this.processDefinition.review_state || {}),
+                    id: payload.reviewId || this.currentReviewId || this.processDefinition.review_state?.id || null,
+                    state: payload.state
+                };
+            }
+
+            const listIndex = this.definitionList.findIndex((d) => (d.id || d.file_name) === this.selectedProcessId);
+            if (listIndex >= 0 && payload?.state) {
+                const current = this.definitionList[listIndex];
+                this.definitionList.splice(listIndex, 1, {
+                    ...current,
+                    approval_state: payload.state
+                });
+            }
+
+            if (this.selectedProcessId) {
+                await this.enrichDefinitionStatuses([this.selectedProcessId]);
             }
         },
 
@@ -1470,10 +1913,19 @@ export default {
 <style scoped>
 .process-hierarchy-container {
     display: flex;
+    flex-direction: column;
     height: calc(100vh - 140px);
     overflow: hidden;
     position: relative;
     background: #fafafa;
+}
+
+.hierarchy-workspace {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .hierarchy-left-panel {
@@ -1499,6 +1951,49 @@ export default {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+}
+
+.hierarchy-copilot-panel {
+    flex-shrink: 0;
+    border-left: 1px solid #e5e7eb;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    min-width: 320px;
+}
+
+.hierarchy-copilot-panel__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.hierarchy-copilot-panel__heading {
+    min-width: 0;
+}
+
+.hierarchy-copilot-panel__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.hierarchy-copilot-panel__subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6b7280;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hierarchy-copilot-panel__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .resize-handle-left {
@@ -1533,6 +2028,14 @@ export default {
     top: 50%;
     transform: translateY(-50%);
     z-index: 5;
+}
+
+.history-panel-shell {
+    position: relative;
+    flex: 0 0 auto;
+    border-top: 1px solid #dbe4f0;
+    background: #ffffff;
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08);
 }
 
 .collapsed-sidebar {

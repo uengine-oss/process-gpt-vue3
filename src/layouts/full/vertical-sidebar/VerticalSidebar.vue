@@ -710,20 +710,6 @@ export default {
                     disable: false
                 },
                 {
-                    title: 'processHierarchy.title',
-                    icon: 'file-tree',
-                    BgColor: 'primary',
-                    to: '/process-hierarchy',
-                    disable: false
-                },
-                {
-                    title: 'versionComparison.title',
-                    icon: 'git-compare',
-                    BgColor: 'primary',
-                    to: '/version-comparison',
-                    disable: false
-                },
-                {
                     title: 'reviewBoard.title',
                     icon: 'clipboard-check',
                     BgColor: 'primary',

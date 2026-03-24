@@ -193,7 +193,7 @@
                         <v-col cols="12" class="mb-2">
                             <v-autocomplete
                                 v-model="form.primaryOwner"
-                                :items="userOptions"
+                                :items="primaryOwnerOptions"
                                 item-title="label"
                                 item-value="email"
                                 :label="$t('processArchitecture.newProcessDialog.primaryOwner')"
@@ -206,11 +206,11 @@
                         </v-col>
                         <v-col cols="12" class="mb-2">
                             <v-autocomplete
-                                v-model="form.coOwners"
-                                :items="coOwnerOptions"
+                                v-model="form.fieldOwners"
+                                :items="fieldOwnerOptions"
                                 item-title="label"
                                 item-value="email"
-                                :label="$t('processArchitecture.newProcessDialog.coOwner')"
+                                :label="translate('processArchitecture.newProcessDialog.fieldOwners', 'Field Owner(s)')"
                                 variant="outlined"
                                 density="compact"
                                 hide-details
@@ -218,13 +218,30 @@
                                 multiple
                                 chips
                                 closable-chips
-                                :placeholder="$t('processArchitecture.newProcessDialog.coOwnerPlaceholder')"
+                                :placeholder="translate('processArchitecture.newProcessDialog.fieldOwnerPlaceholder', '현업 담당자를 선택하세요')"
+                            />
+                        </v-col>
+                        <v-col cols="12" class="mb-2">
+                            <v-autocomplete
+                                v-model="form.hqOwners"
+                                :items="hqOwnerOptions"
+                                item-title="label"
+                                item-value="email"
+                                :label="translate('processArchitecture.newProcessDialog.hqOwners', 'HQ Owner(s)')"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                clearable
+                                multiple
+                                chips
+                                closable-chips
+                                :placeholder="translate('processArchitecture.newProcessDialog.hqOwnerPlaceholder', '본사 담당자를 선택하세요')"
                             />
                         </v-col>
                         <v-col cols="12">
                             <v-autocomplete
-                                v-model="form.master"
-                                :items="userOptions"
+                                v-model="form.masterOwner"
+                                :items="masterOwnerOptions"
                                 item-title="label"
                                 item-value="email"
                                 :label="$t('processArchitecture.newProcessDialog.master')"
@@ -409,8 +426,9 @@ const form = ref({
     mega: null as string | null,
     major: null as string | null,
     primaryOwner: null as string | null,
-    coOwners: [] as string[],
-    master: null as string | null,
+    fieldOwners: [] as string[],
+    hqOwners: [] as string[],
+    masterOwner: null as string | null,
     creationType: 'scratch' as 'scratch' | 'template' | 'clone' | 'upload',
     sourceProcessId: null as string | null,
     sourceMappings: [] as string[]
@@ -520,10 +538,26 @@ const majorOptions = computed(() => {
     return (mega.major_proc_list || []).map((m: any) => ({ id: m.id, name: m.name }));
 });
 
-// Co-owner options: exclude primary owner and master
-const coOwnerOptions = computed(() => {
-    return userOptions.value.filter((u) => u.email !== form.value.primaryOwner && u.email !== form.value.master);
-});
+function createOwnerOptions(excluded: Array<string | null | undefined>) {
+    const excludedSet = new Set(excluded.filter(Boolean));
+    return userOptions.value.filter((u) => !excludedSet.has(u.email));
+}
+
+const primaryOwnerOptions = computed(() =>
+    createOwnerOptions([...form.value.fieldOwners, ...form.value.hqOwners, form.value.masterOwner])
+);
+
+const fieldOwnerOptions = computed(() =>
+    createOwnerOptions([form.value.primaryOwner, ...form.value.hqOwners, form.value.masterOwner])
+);
+
+const hqOwnerOptions = computed(() =>
+    createOwnerOptions([form.value.primaryOwner, ...form.value.fieldOwners, form.value.masterOwner])
+);
+
+const masterOwnerOptions = computed(() =>
+    createOwnerOptions([form.value.primaryOwner, ...form.value.fieldOwners, ...form.value.hqOwners])
+);
 
 // Reset cascading selects when domain changes
 function onDomainChange() {
@@ -774,8 +808,9 @@ function resetForm() {
         mega: null,
         major: null,
         primaryOwner: null,
-        coOwners: [],
-        master: null,
+        fieldOwners: [],
+        hqOwners: [],
+        masterOwner: null,
         creationType: 'scratch',
         sourceProcessId: null,
         sourceMappings: []
@@ -793,13 +828,26 @@ async function createProcess() {
     try {
         let newId: string;
         const name = form.value.name.trim();
+        const coOwners = [...new Set([...form.value.fieldOwners, ...form.value.hqOwners])];
+        const sourceLineage = form.value.processMode === 'tobe' ? [...form.value.sourceMappings] : [];
+        const ownerModel = {
+            primaryOwner: form.value.primaryOwner,
+            fieldOwners: [...form.value.fieldOwners],
+            hqOwners: [...form.value.hqOwners],
+            masterOwner: form.value.masterOwner
+        };
 
         if (form.value.processMode === 'asis' && form.value.creationType !== 'scratch' && form.value.creationType !== 'upload') {
             // Clone/Template: duplicate an existing local process definition
             const sourceId = form.value.sourceProcessId;
             const sourceDef = await backend.getRawDefinition(sourceId);
             if (!sourceDef?.bpmn) {
-                throw new Error('원본 프로세스 정의를 불러오지 못했습니다.');
+                throw new Error(
+                    translate(
+                        'processArchitecture.newProcessDialog.sourceDefinitionLoadFailed',
+                        '원본 프로세스 정의를 불러오지 못했습니다.'
+                    )
+                );
             }
 
             const result = await backend.duplicateLocalProcess(
@@ -839,18 +887,29 @@ async function createProcess() {
             await backend.putRawDefinition(initialBpmn, uniqueId, {
                 name,
                 owner: form.value.primaryOwner || undefined,
+                field_owners: form.value.fieldOwners,
+                hq_owners: form.value.hqOwners,
+                master_owner: form.value.masterOwner || undefined,
+                co_owners: coOwners,
+                master: form.value.masterOwner || undefined,
                 version: '0.1',
                 version_tag: null,
                 definition: {
                     processDefinitionId: uniqueId,
                     data: [],
-                    roles: []
+                    roles: [],
+                    meta: {
+                        process_mode: form.value.processMode,
+                        owners: ownerModel,
+                        source_lineage: sourceLineage
+                    }
                 }
             });
             newId = uniqueId;
         }
 
         if (newId) {
+            await syncProcessDefinitionMetadata(newId, name, ownerModel, coOwners, sourceLineage);
             // Update proc_map with new process in the right location
             await updateProcMap(newId, name);
             emit('created', { id: newId, name });
@@ -858,10 +917,56 @@ async function createProcess() {
         close();
     } catch (e: any) {
         console.error('Failed to create process:', e);
-        errorMessage.value = e?.message || String(e) || 'Failed to create process';
+        errorMessage.value =
+            e?.message ||
+            String(e) ||
+            translate('processArchitecture.newProcessDialog.createFailed', '프로세스를 생성하지 못했습니다.');
         errorSnackbar.value = true;
     } finally {
         creating.value = false;
+    }
+}
+
+async function syncProcessDefinitionMetadata(
+    defId: string,
+    name: string,
+    ownerModel: {
+        primaryOwner: string | null;
+        fieldOwners: string[];
+        hqOwners: string[];
+        masterOwner: string | null;
+    },
+    coOwners: string[],
+    sourceLineage: string[]
+) {
+    try {
+        const current = await backend.getRawDefinition(defId);
+        if (!current?.bpmn) return;
+
+        await backend.putRawDefinition(current.bpmn, defId, {
+            ...current,
+            name,
+            owner: ownerModel.primaryOwner || undefined,
+            field_owners: ownerModel.fieldOwners,
+            hq_owners: ownerModel.hqOwners,
+            master_owner: ownerModel.masterOwner || undefined,
+            co_owners: coOwners,
+            master: ownerModel.masterOwner || undefined,
+            version: current.version || '0.1',
+            version_tag: current.version_tag || null,
+            definition: {
+                ...(current.definition || {}),
+                processDefinitionId: defId,
+                meta: {
+                    ...((current.definition || {}).meta || {}),
+                    process_mode: form.value.processMode,
+                    owners: ownerModel,
+                    source_lineage: sourceLineage
+                }
+            }
+        });
+    } catch (e) {
+        console.warn('Failed to sync process definition metadata:', e);
     }
 }
 
@@ -869,6 +974,7 @@ async function updateProcMap(newId: string, name: string) {
     try {
         const currentMap = await backend.getProcessDefinitionMap();
         const map = currentMap && currentMap.mega_proc_list ? currentMap : { mega_proc_list: [] };
+        const coOwners = [...new Set([...form.value.fieldOwners, ...form.value.hqOwners])];
 
         const targetMegaId = form.value.mega;
         const targetMajorId = form.value.major;
@@ -916,8 +1022,12 @@ async function updateProcMap(newId: string, name: string) {
                     name,
                     type: form.value.processMode === 'tobe' ? 'tobe' : 'asis',
                     ...(form.value.primaryOwner ? { owner: form.value.primaryOwner } : {}),
-                    ...(form.value.master ? { master: form.value.master } : {}),
-                    ...(form.value.coOwners.length > 0 ? { co_owners: form.value.coOwners } : {}),
+                    ...(form.value.fieldOwners.length > 0 ? { field_owners: form.value.fieldOwners } : {}),
+                    ...(form.value.hqOwners.length > 0 ? { hq_owners: form.value.hqOwners } : {}),
+                    ...(form.value.masterOwner ? { master_owner: form.value.masterOwner } : {}),
+                    ...(form.value.masterOwner ? { master: form.value.masterOwner } : {}),
+                    ...(coOwners.length > 0 ? { co_owners: coOwners } : {}),
+                    ...(form.value.processMode === 'tobe' ? { source_process_ids: form.value.sourceMappings } : {}),
                     ...(form.value.processMode === 'tobe' && form.value.sourceMappings.length > 0
                         ? { source_mappings: form.value.sourceMappings }
                         : {})

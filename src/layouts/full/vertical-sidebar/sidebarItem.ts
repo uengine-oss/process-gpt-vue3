@@ -96,12 +96,6 @@ const allSidebarItems: menu[] = [
         to: '/process-architecture'
     },
     {
-        title: '프로세스 계층',
-        icon: 'file-tree',
-        BgColor: 'primary',
-        to: '/process-hierarchy'
-    },
-    {
         header: 'Analytics'
     },
     {

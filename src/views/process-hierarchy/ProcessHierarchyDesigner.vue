@@ -2,64 +2,89 @@
     <div class="hierarchy-designer">
         <!-- Header Toolbar -->
         <div class="designer-toolbar">
-            <div class="toolbar-left">
-                <template v-if="processName">
-                    <span class="process-name font-weight-bold">{{ processName }}</span>
-                    <ProgressBadge v-if="currentStatus" type="status" :status="currentStatus" size="x-small" class="ml-2" />
-                    <span v-if="currentVersion" class="text-caption text-medium-emphasis ml-2"> v{{ currentVersion }} </span>
-                    <v-chip v-if="toBeMode" color="purple" variant="flat" size="small" class="ml-3"> To-Be Mode </v-chip>
-                </template>
-                <span v-else class="text-medium-emphasis">
-                    {{ $t('processHierarchy.selectProcess') || '왼쪽 트리에서 프로세스를 선택하세요' }}
-                </span>
+            <div v-if="processName && breadcrumbItems.length > 0" class="toolbar-breadcrumb-row">
+                <div class="toolbar-breadcrumb" :title="breadcrumbItems.join(' > ')">
+                    <template v-for="(item, index) in breadcrumbItems" :key="`${item}-${index}`">
+                        <span class="toolbar-breadcrumb__item" :title="item">{{ item }}</span>
+                        <v-icon v-if="index < breadcrumbItems.length - 1" size="12" class="mx-1 text-medium-emphasis"> mdi-chevron-right </v-icon>
+                    </template>
+                </div>
             </div>
-            <div class="toolbar-right">
-                <!-- As-Is / To-Be Mode Toggle -->
-                <v-btn-toggle v-model="activeMode" mandatory density="compact" variant="outlined" divided color="purple" class="mr-2">
-                    <v-btn value="as-is" size="small" :disabled="!processName || isViewMode"> As-Is </v-btn>
-                    <v-btn value="to-be" size="small" :disabled="!processName || isViewMode"> To-Be </v-btn>
-                </v-btn-toggle>
-                <v-divider vertical class="mx-1" />
-                <v-btn variant="text" size="small" :disabled="!processName || isViewMode" @click="$emit('save')">
-                    <v-icon start size="16">mdi-content-save</v-icon>
-                    {{ $t('processHierarchy.save') || 'Save' }}
-                </v-btn>
-                <v-btn variant="text" size="small" :disabled="!processName" @click="handleValidate">
-                    <v-icon start size="16">mdi-check-circle-outline</v-icon>
-                    {{ $t('processHierarchy.validate') || 'Validate' }}
-                </v-btn>
-                <v-btn variant="text" size="small" :disabled="!processName" @click="openXmlDialog">
-                    <v-icon start size="16">mdi-code-tags</v-icon>
-                    {{ $t('processDefinition.showXML') || 'XML 보기' }}
-                </v-btn>
-                <v-btn variant="text" size="small" :disabled="!processName || isViewMode" @click="triggerBpmnUpload">
-                    <v-icon start size="16">mdi-upload</v-icon>
-                    {{ $t('chat.importBpmnFile') || 'BPMN 업로드' }}
-                </v-btn>
-                <v-divider vertical class="mx-1" />
-                <v-btn
-                    :variant="isWip ? 'flat' : 'text'"
-                    :color="isWip ? 'purple' : undefined"
-                    size="small"
-                    :disabled="!processName || isViewMode"
-                    @click="$emit('toggleWip')"
-                >
-                    <v-icon start size="16">{{ isWip ? 'mdi-progress-wrench' : 'mdi-progress-wrench' }}</v-icon>
-                    {{ isWip ? $t('processHierarchy.wipOn') || 'WIP 해제' : $t('processHierarchy.wipOff') || 'WIP 설정' }}
-                </v-btn>
-                <v-divider vertical class="mx-1" />
-                <v-btn variant="text" size="small" :disabled="!processName || isViewMode" @click="$emit('clone')">
-                    <v-icon start size="16">mdi-content-copy</v-icon>
-                    {{ $t('processHierarchy.clone') || 'Clone Process' }}
-                </v-btn>
-                <v-btn variant="text" size="small" color="error" :disabled="!processName || isViewMode" @click="$emit('delete')">
-                    <v-icon start size="16">mdi-delete-outline</v-icon>
-                    {{ $t('common.delete') || 'Delete' }}
-                </v-btn>
-                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('versionHistory')">
-                    <v-icon start size="16">mdi-history</v-icon>
-                    {{ $t('processHierarchy.versionHistory') || 'Version History' }}
-                </v-btn>
+            <div class="toolbar-main-row">
+                <div class="toolbar-left">
+                    <template v-if="processName">
+                        <div class="toolbar-title-group">
+                            <div class="toolbar-meta-row">
+                                <v-chip size="x-small" variant="tonal" :color="editorModeColor">{{ editorModeLabel }}</v-chip>
+                                <span class="process-name font-weight-bold" :title="processName">{{ processName }}</span>
+                                <ProgressBadge v-if="currentStatus" type="status" :status="currentStatus" size="x-small" />
+                                <span v-if="currentVersion" class="text-caption text-medium-emphasis">v{{ currentVersion }}</span>
+                                <v-chip v-if="toBeMode" color="purple" variant="flat" size="small"> To-Be Mode </v-chip>
+                            </div>
+                        </div>
+                    </template>
+                    <span v-else class="text-medium-emphasis">
+                        {{ $t('processHierarchy.selectProcess') || '왼쪽 트리에서 프로세스를 선택하세요' }}
+                    </span>
+                </div>
+                <div class="toolbar-right">
+                    <!-- As-Is / To-Be Mode Toggle -->
+                    <v-btn-toggle v-model="activeMode" mandatory density="compact" variant="outlined" divided color="purple" class="mr-2">
+                        <v-btn value="as-is" size="small" :disabled="!processName || isViewMode"> As-Is </v-btn>
+                        <v-btn value="to-be" size="small" :disabled="!processName || isViewMode"> To-Be </v-btn>
+                    </v-btn-toggle>
+                    <v-divider vertical class="mx-1" />
+                    <v-btn variant="text" size="small" :disabled="!processName || isViewMode" @click="$emit('save')">
+                        <v-icon start size="16">mdi-content-save</v-icon>
+                        {{ $t('processHierarchy.save') || 'Save' }}
+                    </v-btn>
+                    <v-btn variant="text" size="small" :disabled="!processName" @click="handleValidate">
+                        <v-icon start size="16">mdi-check-circle-outline</v-icon>
+                        {{ $t('processHierarchy.validate') || 'Validate' }}
+                    </v-btn>
+                    <v-btn variant="text" size="small" :disabled="!processName" @click="openXmlDialog">
+                        <v-icon start size="16">mdi-code-tags</v-icon>
+                        {{ $t('processDefinition.showXML') || 'XML 보기' }}
+                    </v-btn>
+                    <v-btn variant="text" size="small" :disabled="!processName || isViewMode" @click="triggerBpmnUpload">
+                        <v-icon start size="16">mdi-upload</v-icon>
+                        {{ $t('chat.importBpmnFile') || 'BPMN 업로드' }}
+                    </v-btn>
+                    <v-divider vertical class="mx-1" />
+                    <v-btn
+                        :variant="isWip ? 'flat' : 'text'"
+                        :color="isWip ? 'purple' : undefined"
+                        size="small"
+                        :disabled="!processName || isViewMode"
+                        @click="$emit('toggleWip')"
+                    >
+                        <v-icon start size="16">{{ isWip ? 'mdi-progress-wrench' : 'mdi-progress-wrench' }}</v-icon>
+                        {{ isWip ? $t('processHierarchy.wipOn') || 'WIP 해제' : $t('processHierarchy.wipOff') || 'WIP 설정' }}
+                    </v-btn>
+                    <v-divider vertical class="mx-1" />
+                    <v-btn variant="text" size="small" :disabled="!processName || isViewMode" @click="$emit('clone')">
+                        <v-icon start size="16">mdi-content-copy</v-icon>
+                        {{ $t('processHierarchy.clone') || 'Clone Process' }}
+                    </v-btn>
+                    <v-btn variant="text" size="small" color="error" :disabled="!processName || isViewMode" @click="$emit('delete')">
+                        <v-icon start size="16">mdi-delete-outline</v-icon>
+                        {{ $t('common.delete') || 'Delete' }}
+                    </v-btn>
+                    <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('versionHistory')">
+                        <v-icon start size="16">mdi-history</v-icon>
+                        {{ $t('processHierarchy.versionHistory') || 'Version History' }}
+                    </v-btn>
+                    <v-btn
+                        :variant="showCopilotPanel ? 'flat' : 'tonal'"
+                        color="primary"
+                        size="small"
+                        :disabled="!processName"
+                        @click="$emit('toggleCopilot')"
+                    >
+                        <v-icon start size="16">mdi-robot-outline</v-icon>
+                        AI Copilot
+                    </v-btn>
+                </div>
             </div>
         </div>
 
@@ -243,8 +268,11 @@ export default {
         loading: { type: Boolean, default: false },
         recoveryBackup: { type: Object, default: null },
         isViewMode: { type: Boolean, default: false },
+        editorMode: { type: String, default: 'edit' },
+        breadcrumbItems: { type: Array, default: () => [] },
         lockInfo: { type: Object, default: null },
-        readOnlyMessage: { type: String, default: '' }
+        readOnlyMessage: { type: String, default: '' },
+        showCopilotPanel: { type: Boolean, default: false }
     },
     emits: [
         'openPanel',
@@ -258,7 +286,8 @@ export default {
         'validationDone',
         'dismissBackup',
         'recoverBackup',
-        'replaceXml'
+        'replaceXml',
+        'toggleCopilot'
     ],
     beforeUnmount() {
         // 전역 상태 정리 — 다른 페이지에 영향 방지
@@ -325,6 +354,16 @@ export default {
             if (!this.definitionPath || !this.definitionList) return false;
             const def = this.definitionList.find((d) => (d.file_name || d.id) === this.definitionPath);
             return def?.approval_state === 'wip' || def?.status === 'wip';
+        },
+        editorModeLabel() {
+            if (this.editorMode === 'history') return 'Version History';
+            if (this.editorMode === 'view') return 'View Mode';
+            return 'Edit Mode';
+        },
+        editorModeColor() {
+            if (this.editorMode === 'history') return 'info';
+            if (this.editorMode === 'view') return 'grey';
+            return 'primary';
         },
         hasXmlChanges() {
             return this.xmlPreview !== this.xmlOriginal;
@@ -1000,27 +1039,80 @@ export default {
 
 .designer-toolbar {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 8px;
     padding: 8px 16px;
     border-bottom: 1px solid #e0e0e0;
     background: #fafafa;
     flex-shrink: 0;
-    min-height: 48px;
+    min-height: 64px;
+}
+
+.toolbar-breadcrumb-row {
+    min-width: 0;
+}
+
+.toolbar-main-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
 }
 
 .toolbar-left {
     display: flex;
     align-items: center;
+    flex: 1 1 auto;
     min-width: 0;
+    overflow: hidden;
+}
+
+.toolbar-title-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.toolbar-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.toolbar-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-width: 0;
+    white-space: nowrap;
+    color: rgba(60, 60, 67, 0.7);
+    font-size: 12px;
+    scrollbar-width: thin;
+}
+
+.toolbar-breadcrumb__item {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .process-name {
     font-size: 14px;
+    flex: 1 1 auto;
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 300px;
 }
 
 .toolbar-right {
@@ -1028,6 +1120,10 @@ export default {
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
 }
 
 .designer-canvas {
