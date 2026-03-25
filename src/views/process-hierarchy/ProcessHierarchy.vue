@@ -2,26 +2,9 @@
     <v-card elevation="10" class="process-hierarchy-container rounded-xl">
         <div class="hierarchy-workspace">
             <!-- Left Panel: Tree -->
-            <div class="hierarchy-left-panel" :style="{ width: isLeftCollapsed ? '40px' : leftPanelWidth + 'px' }">
-                <!-- Collapsed Mini Bar -->
+            <div class="hierarchy-left-panel" :style="{ width: isLeftCollapsed ? '36px' : leftPanelWidth + 'px' }">
+                <!-- Collapsed: expand button only -->
                 <div v-if="isLeftCollapsed" class="collapsed-sidebar">
-                    <v-tooltip v-for="item in collapsedMenuItems" :key="item.icon" location="right">
-                        <template v-slot:activator="{ props }">
-                            <div
-                                v-bind="props"
-                                class="collapsed-menu-icon"
-                                :class="{ 'collapsed-menu-icon--active': item.active }"
-                                @click="item.action"
-                            >
-                                <v-icon size="18" :color="item.active ? 'primary' : 'grey-darken-1'">{{ item.icon }}</v-icon>
-                            </div>
-                        </template>
-                        <div class="collapsed-tooltip-content">
-                            <div class="font-weight-bold text-body-2">{{ item.name }}</div>
-                            <div class="text-caption" style="opacity: 0.85;">{{ item.desc }}</div>
-                        </div>
-                    </v-tooltip>
-                    <v-divider class="my-1" style="width: 24px; opacity: 0.3;" />
                     <v-tooltip location="right">
                         <template v-slot:activator="{ props }">
                             <div v-bind="props" class="collapsed-menu-icon" @click="toggleLeftPanel">
@@ -45,19 +28,10 @@
                         :canManagePermissions="hasEditAccess"
                         @select="handleSelectProcess"
                         @openPermission="handleOpenPermission"
+                        @collapse="toggleLeftPanel"
                     />
                     <div class="resize-handle-left" @mousedown="startResizeLeft"></div>
                 </template>
-                <!-- Toggle Button -->
-                <v-btn
-                    icon
-                    size="x-small"
-                    variant="text"
-                    class="collapse-toggle-btn"
-                    @click="toggleLeftPanel"
-                >
-                    <v-icon size="16">{{ isLeftCollapsed ? 'mdi-chevron-right' : 'mdi-chevron-left' }}</v-icon>
-                </v-btn>
             </div>
 
             <!-- Center Panel: BPMN Designer -->
@@ -2114,14 +2088,4 @@ export default {
     line-height: 1.4;
 }
 
-.collapse-toggle-btn {
-    position: absolute;
-    top: 8px;
-    right: -14px;
-    z-index: 15;
-    background: #fff !important;
-    border: 1px solid #e0e0e0 !important;
-    border-radius: 50% !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
 </style>
