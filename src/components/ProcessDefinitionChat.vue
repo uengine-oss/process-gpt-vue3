@@ -451,7 +451,6 @@ const storage = StorageBaseFactory.getStorage();
 
 const backend = BackendFactory.createBackend();
 
-// import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
         return '$$index:' + index;
@@ -467,7 +466,6 @@ export default {
         ChatDetail,
         ChatProfile,
         ProcessDefinition,
-        // BpmnModelingCanvas,
         ChatGenerator,
         ProcessDefinitionVersionDialog,
         ProcessDefinitionChatHeader,

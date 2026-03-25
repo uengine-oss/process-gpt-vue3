@@ -242,6 +242,19 @@ onBeforeUnmount(cleanupRealtime);
 
 <template>
     <div class="inbox-root">
+        <!-- Global Toast -->
+        <transition name="toast-slide">
+            <div v-if="globalToast" class="global-toast" :class="`global-toast--${globalToast.color}`">
+                <v-icon size="16" class="mr-2">
+                    {{ globalToast.color === 'success' ? 'mdi-check-circle' : 'mdi-alert-circle' }}
+                </v-icon>
+                {{ globalToast.message }}
+                <button class="global-toast-close" @click="globalToast = null">
+                    <v-icon size="14">mdi-close</v-icon>
+                </button>
+            </div>
+        </transition>
+
         <!-- Header -->
         <div class="inbox-header">
             <div class="inbox-header-left">
@@ -491,19 +504,6 @@ onBeforeUnmount(cleanupRealtime);
                 </div>
             </template>
         </div>
-
-        <!-- Global Toast -->
-        <transition name="toast-slide">
-            <div v-if="globalToast" class="global-toast" :class="`global-toast--${globalToast.color}`">
-                <v-icon size="16" class="mr-2">
-                    {{ globalToast.color === 'success' ? 'mdi-check-circle' : 'mdi-alert-circle' }}
-                </v-icon>
-                {{ globalToast.message }}
-                <button class="global-toast-close" @click="globalToast = null">
-                    <v-icon size="14">mdi-close</v-icon>
-                </button>
-            </div>
-        </transition>
     </div>
 </template>
 

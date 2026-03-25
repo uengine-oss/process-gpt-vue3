@@ -940,26 +940,25 @@ onBeforeUnmount(cleanupRealtime);
                 </v-btn>
             </div>
         </div>
+        <!-- ── Global Toast (Realtime 알림) ── -->
+        <transition name="toast-slide">
+            <div v-if="globalToast" class="global-toast" :class="`global-toast--${globalToast.color}`">
+                <v-icon size="16" class="mr-2">
+                    {{
+                        globalToast.color === 'success'
+                            ? 'mdi-check-circle'
+                            : globalToast.color === 'error'
+                            ? 'mdi-alert-circle'
+                            : 'mdi-information'
+                    }}
+                </v-icon>
+                {{ globalToast.message }}
+                <button class="global-toast-close" @click="globalToast = null">
+                    <v-icon size="14">mdi-close</v-icon>
+                </button>
+            </div>
+        </transition>
     </div>
-
-    <!-- ── Global Toast (Realtime 알림) ── -->
-    <transition name="toast-slide">
-        <div v-if="globalToast" class="global-toast" :class="`global-toast--${globalToast.color}`">
-            <v-icon size="16" class="mr-2">
-                {{
-                    globalToast.color === 'success'
-                        ? 'mdi-check-circle'
-                        : globalToast.color === 'error'
-                        ? 'mdi-alert-circle'
-                        : 'mdi-information'
-                }}
-            </v-icon>
-            {{ globalToast.message }}
-            <button class="global-toast-close" @click="globalToast = null">
-                <v-icon size="14">mdi-close</v-icon>
-            </button>
-        </div>
-    </transition>
 </template>
 
 <style scoped>
