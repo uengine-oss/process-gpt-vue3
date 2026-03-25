@@ -153,6 +153,7 @@
         </div>
 
         <div v-if="showHistoryPanel && selectedProcessId" class="history-panel-shell" :style="{ height: `${historyPanelHeight}px` }">
+            <div class="resize-handle-history" @mousedown="startResizeHistory"></div>
             <ProcessHierarchyHistoryPanel
                 :loading="historyLoading"
                 :versions="historyVersions"
@@ -402,7 +403,9 @@ export default {
             historyPanelHeight: 280,
             resizing: null,
             resizeStartX: 0,
+            resizeStartY: 0,
             resizeStartWidth: 0,
+            resizeStartHeight: 0,
             selectionListenerCleanup: null,
             // 저장 여부 체크용 초기 XML
             savedBpmnXml: '',
@@ -1872,6 +1875,12 @@ export default {
             this.resizeStartWidth = this.rightPanelWidth;
             e.preventDefault();
         },
+        startResizeHistory(e) {
+            this.resizing = 'history';
+            this.resizeStartY = e.clientY;
+            this.resizeStartHeight = this.historyPanelHeight;
+            e.preventDefault();
+        },
         onResize(e) {
             if (!this.resizing) return;
             if (this.resizing === 'left') {
@@ -1880,6 +1889,9 @@ export default {
             } else if (this.resizing === 'right') {
                 const diff = this.resizeStartX - e.clientX;
                 this.rightPanelWidth = Math.max(250, Math.min(500, this.resizeStartWidth + diff));
+            } else if (this.resizing === 'history') {
+                const diff = this.resizeStartY - e.clientY;
+                this.historyPanelHeight = Math.max(150, Math.min(600, this.resizeStartHeight + diff));
             }
         },
         stopResize() {
@@ -2053,6 +2065,19 @@ export default {
     border-top: 1px solid #dbe4f0;
     background: #ffffff;
     box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.resize-handle-history {
+    position: absolute;
+    top: -3px;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    cursor: row-resize;
+    z-index: 10;
+}
+.resize-handle-history:hover {
+    background-color: rgba(25, 118, 210, 0.3);
 }
 
 .collapsed-sidebar {
