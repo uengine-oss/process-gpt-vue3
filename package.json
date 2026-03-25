@@ -2,6 +2,10 @@
     "name": "spikeadmin",
     "type": "module",
     "version": "1.4.0",
+    "engines": {
+        "node": ">=22.15.1 <23",
+        "npm": ">=10"
+    },
     "scripts": {
         "dev": "vite --host",
         "build": "NODE_OPTIONS=\"--max-old-space-size=4096\" vue-tsc --noEmit && vite build",

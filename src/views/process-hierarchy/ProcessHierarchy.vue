@@ -77,6 +77,8 @@
                     :lockInfo="lockInfo"
                     :readOnlyMessage="readOnlyMessage"
                     :showCopilotPanel="showCopilotPanel"
+                    :hasEditAccess="hasEditAccess"
+                    @changeMode="handleChangeMode"
                     @openPanel="handleOpenPanel"
                     @updateXml="handleUpdateXml"
                     @definition="handleDefinition"
@@ -1692,6 +1694,21 @@ export default {
         async updateHistoryCompareVersion(version) {
             this.historyCompareVersion = String(version || '__current__');
             await this.runHistoryDiff();
+        },
+
+        handleChangeMode(newMode) {
+            if (!newMode) return;
+            if (newMode === PROCESS_HIERARCHY_MODE.EDIT && !this.hasEditAccess) return;
+            if (newMode === PROCESS_HIERARCHY_MODE.EDIT && this.isLockedByOther) {
+                this.$toast?.warning(this.$t('processHierarchy.lockedByOther') || '다른 사용자가 편집 중입니다.');
+                return;
+            }
+            this.requestedMode = newMode;
+            if (newMode === PROCESS_HIERARCHY_MODE.HISTORY) {
+                this.handleVersionHistory();
+            } else {
+                this.showHistoryPanel = false;
+            }
         },
 
         async handleVersionHistory() {

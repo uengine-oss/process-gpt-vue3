@@ -99,6 +99,11 @@ export default defineConfig({
                 target: 'http://127.0.0.1:8000',
                 changeOrigin: true
             },
+            '/completion': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/completion/, '')
+            },
             '/langchain-chat': {
                 target: 'http://127.0.0.1:8000',
                 changeOrigin: true
