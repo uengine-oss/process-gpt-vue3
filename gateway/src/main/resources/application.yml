@@ -7,12 +7,14 @@ spring:
         gateway:
             #<<< API Gateway / Routes
             routes:
-                # - id: litellm
-                #   uri: http://localhost:4000
-                #   predicates:
-                #       - Path=/litellm/**
-                #   filters:
-                #       - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
+                - id: litellm
+                  uri: http://localhost:4000
+                  predicates:
+                      - Path=/litellm/**
+                  filters:
+                    #   - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
+                      - SetRequestHeader=X-Forwarded-Prefix, /litellm
+                      - RewriteLocationResponseHeader=AS_IN_REQUEST, Location, ,
                 - id: completion
                   uri: http://localhost:8000
                   predicates:
@@ -94,7 +96,7 @@ spring:
                   predicates:
                       - Path=/litellm/**
                   filters:
-                      - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
+                    #   - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
                       - SetRequestHeader=X-Forwarded-Prefix, /litellm
                       - RewriteLocationResponseHeader=AS_IN_REQUEST, Location, ,
                   order: 1
