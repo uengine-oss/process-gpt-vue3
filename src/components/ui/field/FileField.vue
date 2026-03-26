@@ -30,7 +30,7 @@ import { commonSettingInfos } from "./CommonSettingInfos.vue"
 import BackendFactory from '@/components/api/BackendFactory';
 
 const MAX_IMAGE_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-const MAX_GENERAL_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 100MB
+const MAX_GENERAL_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 const MAX_IMAGE_WIDTH = 1920;
 const MAX_IMAGE_HEIGHT = 1080;
 
