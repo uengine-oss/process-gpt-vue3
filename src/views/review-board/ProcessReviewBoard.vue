@@ -910,7 +910,7 @@ onBeforeUnmount(cleanupRealtime);
 
 <style scoped>
 .review-board-page {
-    min-height: calc(100dvh - var(--v-layout-top, 0px) - 56px);
+    height: 100%;
     display: flex;
     flex-direction: column;
     gap: 16px;

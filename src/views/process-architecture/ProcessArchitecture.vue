@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="0" class="process-architecture" style="height: calc(100vh - 130px); overflow: hidden; display: flex; flex-direction: column">
+    <v-card elevation="0" class="process-architecture" style="overflow: hidden; display: flex; flex-direction: column">
         <!-- Header -->
         <div class="pa-6 pb-0">
             <div class="d-flex align-center justify-space-between mb-1">

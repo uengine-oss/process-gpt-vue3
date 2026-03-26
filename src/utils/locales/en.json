@@ -1478,7 +1478,8 @@
         "updatePassword": "Update Password"
     },
     "ExtraBox": {
-        "logOut": "log out"
+        "logOut": "log out",
+        "myAccount": "Settings"
     },
     "BpmnPropertyPanel": {
         "readOnly": "Read Only",

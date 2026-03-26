@@ -104,18 +104,18 @@ const isModelingTab = computed(() => {
                 <Customizer />
             </v-navigation-drawer>
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
-            <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
+            <!-- <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             </div>
             <div :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" />
             </div>
-            <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
+            <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" /> -->
             <v-main>
-                <div class="rtl-lyt mb-3 hr-layout">
+                <div class="rtl-lyt mb-3 hr-layout ltr-main-no-header">
                     <v-container
                         fluid
-                        :class="globalIsMobile ? 'page-wrapper bg-background' : 'page-wrapper bg-background px-sm-5 px-4  pt-12 rounded-xl'"
+                        :class="globalIsMobile ? 'page-wrapper bg-background' : 'page-wrapper bg-background px-sm-5 px-4 pt-4 rounded-xl'"
                     >
                         <div class="">
                             <div :class="customizer.boxed ? 'maxWidth' : ''">
@@ -149,21 +149,19 @@ const isModelingTab = computed(() => {
                 <Customizer />
             </v-navigation-drawer>
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
-            <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
+            <!-- <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             </div>
             <div :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" />
             </div>
-            <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
+            <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" /> -->
 
-            <v-main :style="globalIsMobile ? 'padding-top: 0px;' : ''">
-                <div class="hr-layout">
+            <v-main>
+                <div class="hr-layout ltr-main-no-header">
                     <v-container
                         fluid
-                        :class="
-                            globalIsMobile ? 'page-wrapper bg-background pa-0' : 'page-wrapper bg-background px-sm-4 pt-9 px-4 rounded-xl'
-                        "
+                        :class="globalIsMobile ? 'page-wrapper bg-background pa-0' : 'page-wrapper bg-background px-sm-4 pt-5 px-4 rounded-xl'"
                     >
                         <!-- 정의관련 maxWidth -->
                         <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">
@@ -259,6 +257,11 @@ const isModelingTab = computed(() => {
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
     color: #166534;
+}
+
+.ltr-main-no-header {
+    padding-top: 0px !important;
+    height: calc(100vh - 6px) !important;
 }
 
 /* Banner transition */

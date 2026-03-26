@@ -1,9 +1,15 @@
 <template>
     <v-sheet rounded="md" color="lightprimary" class="pa-4 ExtraBox hide-menu">
         <div class="d-flex align-center justify-space-between">
-            <v-avatar size="50">
-                <v-img :src="picture" width="50" />
-            </v-avatar>
+            <v-tooltip :text="$t('ExtraBox.myAccount')">
+                <template v-slot:activator="{ props }">
+                    <router-link :to="'/account-settings'">
+                        <v-avatar v-bind="props" size="50" style="cursor: pointer;">
+                            <v-img :src="picture" width="50" />
+                        </v-avatar>
+                    </router-link>
+                </template>
+            </v-tooltip>
             <div>
                 <h6 class="text-h6 d-flex align-center font-weight-semibold">{{ name }}</h6>
                 <span class="text-subtitle-2 font-weight-medium text-grey100">

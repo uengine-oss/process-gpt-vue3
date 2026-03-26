@@ -23,6 +23,16 @@
         offset-x="-40"
         offset-y="-37"
     ></v-badge>
+    <v-btn
+        v-if="!globalIsMobile.value && !customizer.Sidebar_drawer"
+        icon
+        size="32"
+        color="primary"
+        class="pc-sidebar-open-btn"
+        @click.stop="customizer.SET_SIDEBAR_DRAWER"
+    >
+        <v-icon size="16">mdi-chevron-right</v-icon>
+    </v-btn>
     <v-navigation-drawer
         left
         v-model="customizer.Sidebar_drawer"
@@ -50,6 +60,20 @@
                         @click="closeChatPanelIfOpen"
                     >
                         <Icons :icon="'write'" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip :text="$t('headerMenu.sidebar')" location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn
+                        icon
+                        variant="text"
+                        density="comfortable"
+                        v-bind="props"
+                        class="text-medium-emphasis"
+                        @click.stop="customizer.SET_SIDEBAR_DRAWER"
+                    >
+                        <v-icon size="18">mdi-chevron-left</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -1117,6 +1141,20 @@ export default {
     right: 16px;
     bottom: 58px;
     z-index: 999;
+}
+
+.pc-sidebar-open-btn {
+    position: fixed;
+    left: 8px;
+    top: 16px;
+    z-index: 999;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    z-index: 9999;
+}
+
+.pc-sidebar-open-btn:hover {
+    opacity: 1;
 }
 
 /* 프로세스 정의 옆 점 세 개 버튼 클릭 영역 확대 */

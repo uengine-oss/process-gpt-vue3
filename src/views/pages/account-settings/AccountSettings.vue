@@ -1,7 +1,11 @@
 <template>
-    <v-row class="justify-center ma-0 pa-0">
+    <v-row class="justify-center ma-0 pa-0"
+        style="height: 100%;"
+    >
         <!--Account Settings tabs-->
-        <v-col cols="12" md="12" class="pa-0">
+        <v-col cols="12" md="12" class="pa-0"
+            style="height: 100%;"
+        >
             <v-card elevation="10" class="is-work-height">
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
@@ -198,22 +202,22 @@
                 <v-card-text class="pa-0">
                     <v-window v-model="tab">
                         <v-window-item value="Account">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: 100%' : 'height: calc(100vh - 80px);'">
                                 <AccountTab />
                             </div>
                         </v-window-item>
                         <v-window-item value="ManageAccess">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: 100%' : 'height: calc(100vh - 80px);'">
                                 <ManageAccessTab :editable="superAdmin" />
                             </div>
                         </v-window-item>
                         <v-window-item value="Drive">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: 100%' : 'height: calc(100vh - 80px);'">
                                 <DriveTab />
                             </div>
                         </v-window-item>
                         <v-window-item value="ConnectionInfo">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: 100%' : 'height: calc(100vh - 80px);'">
                                 <ConnectionInfoTab />
                             </div>
                         </v-window-item>
@@ -223,27 +227,27 @@
                             </div>
                         </v-window-item>
                         <v-window-item value="MCP-Environments">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: 100%' : 'height: calc(100vh - 80px);'">
                                 <MCPEnvSecretTab />
                             </div>
                         </v-window-item>
                         <v-window-item value="Skills">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: 100%' : 'height: calc(100vh - 80px);'">
                                 <SkillsTab />
                             </div>
                         </v-window-item>
                         <v-window-item value="TaskCatalog">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: 100%' : 'height: calc(100vh - 80px);'">
                                 <TaskCatalogAdmin />
                             </div>
                         </v-window-item>
                         <v-window-item value="OrgChartGroup">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: 100%' : 'height: calc(100vh - 80px);'">
                                 <OrgChartGroupTab />
                             </div>
                         </v-window-item>
                         <v-window-item value="AdminConsole">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: 100%' : 'height: calc(100vh - 80px);'">
                                 <AdminConsole />
                             </div>
                         </v-window-item>

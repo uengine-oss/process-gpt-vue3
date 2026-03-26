@@ -1812,7 +1812,8 @@
         "updatePassword": "비밀번호 변경"
     },
     "ExtraBox": {
-        "logOut": "로그아웃"
+        "logOut": "로그아웃",
+        "myAccount": "설정"
     },
     "BpmnPropertyPanel": {
         "readOnly": "읽기 전용",
