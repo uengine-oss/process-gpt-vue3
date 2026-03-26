@@ -4,6 +4,13 @@ import { useRouter } from 'vue-router';
 import { differenceInDays, formatDistanceToNowStrict } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import BackendFactory from '@/components/api/BackendFactory';
+import {
+    buildProcessHierarchyQuery,
+    PROCESS_HIERARCHY_ENTRY,
+    PROCESS_HIERARCHY_MODE,
+    PROCESS_HIERARCHY_PANEL_STATE,
+    PROCESS_HIERARCHY_RIGHT_TAB
+} from '@/views/process-hierarchy/navigation';
 
 const backend = BackendFactory.createBackend() as any;
 const router = useRouter();
@@ -149,6 +156,25 @@ const pipelineSteps = computed(() => [
 
 function openDetail(reviewId: string) {
     router.push('/review-board/' + reviewId);
+}
+
+function openInEditor(item: any) {
+    const procDefId = item.proc_def_id;
+    if (!procDefId) return;
+
+    const mode = ['draft', 'rejected'].includes(item.state) ? PROCESS_HIERARCHY_MODE.EDIT : PROCESS_HIERARCHY_MODE.VIEW;
+    router.push({
+        name: 'Process Hierarchy',
+        params: { id: procDefId },
+        query: buildProcessHierarchyQuery({
+            name: item.process_name || procDefId,
+            entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
+            mode,
+            right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
+            rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
+            reviewId: item.review_id || item.id
+        })
+    });
 }
 
 async function openSidebar(item: any) {
@@ -739,16 +765,30 @@ onBeforeUnmount(cleanupRealtime);
                                     <span class="time-text">{{ getRelativeTime(item.updated_at) }}</span>
                                 </td>
                                 <td class="td-action" @click.stop>
-                                    <v-btn
-                                        size="small"
-                                        variant="outlined"
-                                        color="primary"
-                                        rounded
-                                        @click="openDetail(item.review_id || item.proc_def_id)"
-                                    >
-                                        <v-icon start size="14">mdi-eye-outline</v-icon>
-                                        Review
-                                    </v-btn>
+                                    <div class="d-flex align-center ga-2 flex-wrap justify-end">
+                                        <v-btn
+                                            size="small"
+                                            variant="outlined"
+                                            color="primary"
+                                            rounded
+                                            @click="openDetail(item.review_id || item.proc_def_id)"
+                                        >
+                                            <v-icon start size="14">mdi-eye-outline</v-icon>
+                                            Review
+                                        </v-btn>
+                                        <v-btn
+                                            size="small"
+                                            variant="tonal"
+                                            color="secondary"
+                                            rounded
+                                            @click="openInEditor(item)"
+                                        >
+                                            <v-icon start size="14">
+                                                {{ ['draft', 'rejected'].includes(item.state) ? 'mdi-file-document-edit-outline' : 'mdi-open-in-app' }}
+                                            </v-icon>
+                                            {{ ['draft', 'rejected'].includes(item.state) ? 'Edit' : 'Editor' }}
+                                        </v-btn>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -790,16 +830,30 @@ onBeforeUnmount(cleanupRealtime);
                                 {{ getStateLabel(selectedItem.state) }}
                             </v-chip>
                         </div>
-                        <v-btn
-                            size="small"
-                            variant="flat"
-                            color="primary"
-                            class="mt-3 w-100"
-                            @click="openDetail(selectedItem.review_id || selectedItem.proc_def_id)"
-                        >
-                            <v-icon start size="16">mdi-open-in-new</v-icon>
-                            상세 보기
-                        </v-btn>
+                        <div class="d-flex flex-column ga-2 mt-3">
+                            <v-btn
+                                size="small"
+                                variant="flat"
+                                color="primary"
+                                class="w-100"
+                                @click="openDetail(selectedItem.review_id || selectedItem.proc_def_id)"
+                            >
+                                <v-icon start size="16">mdi-open-in-new</v-icon>
+                                상세 보기
+                            </v-btn>
+                            <v-btn
+                                size="small"
+                                variant="tonal"
+                                color="secondary"
+                                class="w-100"
+                                @click="openInEditor(selectedItem)"
+                            >
+                                <v-icon start size="16">
+                                    {{ ['draft', 'rejected'].includes(selectedItem.state) ? 'mdi-file-document-edit-outline' : 'mdi-open-in-app' }}
+                                </v-icon>
+                                {{ ['draft', 'rejected'].includes(selectedItem.state) ? 'Page2 편집 열기' : 'Page2 리뷰 열기' }}
+                            </v-btn>
+                        </div>
                     </div>
 
                     <!-- Governance Timeline -->
@@ -886,26 +940,25 @@ onBeforeUnmount(cleanupRealtime);
                 </v-btn>
             </div>
         </div>
+        <!-- ── Global Toast (Realtime 알림) ── -->
+        <transition name="toast-slide">
+            <div v-if="globalToast" class="global-toast" :class="`global-toast--${globalToast.color}`">
+                <v-icon size="16" class="mr-2">
+                    {{
+                        globalToast.color === 'success'
+                            ? 'mdi-check-circle'
+                            : globalToast.color === 'error'
+                            ? 'mdi-alert-circle'
+                            : 'mdi-information'
+                    }}
+                </v-icon>
+                {{ globalToast.message }}
+                <button class="global-toast-close" @click="globalToast = null">
+                    <v-icon size="14">mdi-close</v-icon>
+                </button>
+            </div>
+        </transition>
     </div>
-
-    <!-- ── Global Toast (Realtime 알림) ── -->
-    <transition name="toast-slide">
-        <div v-if="globalToast" class="global-toast" :class="`global-toast--${globalToast.color}`">
-            <v-icon size="16" class="mr-2">
-                {{
-                    globalToast.color === 'success'
-                        ? 'mdi-check-circle'
-                        : globalToast.color === 'error'
-                        ? 'mdi-alert-circle'
-                        : 'mdi-information'
-                }}
-            </v-icon>
-            {{ globalToast.message }}
-            <button class="global-toast-close" @click="globalToast = null">
-                <v-icon size="14">mdi-close</v-icon>
-            </button>
-        </div>
-    </transition>
 </template>
 
 <style scoped>

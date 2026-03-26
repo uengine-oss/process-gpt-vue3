@@ -521,9 +521,15 @@ export default {
                         return (bMinor || 0) - (aMinor || 0);
                     });
 
-                    // 기본 선택: A = current, B = 가장 최신 버전
-                    this.selectedVersionA = '__current__';
-                    if (this.versions.length >= 1) {
+                    const queryVersionA = typeof this.$route.query?.versionA === 'string' ? this.$route.query.versionA : '';
+                    const queryVersionB = typeof this.$route.query?.versionB === 'string' ? this.$route.query.versionB : '';
+                    const hasVersionA = queryVersionA === '__current__' || this.versions.some((v) => String(v.version) === String(queryVersionA));
+                    const hasVersionB = queryVersionB === '__current__' || this.versions.some((v) => String(v.version) === String(queryVersionB));
+
+                    this.selectedVersionA = hasVersionA && queryVersionA ? queryVersionA : '__current__';
+                    if (hasVersionB && queryVersionB) {
+                        this.selectedVersionB = queryVersionB;
+                    } else if (this.versions.length >= 1) {
                         this.selectedVersionB = this.versions[0].version;
                     }
 

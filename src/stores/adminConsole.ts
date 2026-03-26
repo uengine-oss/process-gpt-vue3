@@ -61,6 +61,42 @@ export interface MaintenanceModeConfig {
     activated_at?: string;
 }
 
+export type CutoverJobStatus = 'scheduled' | 'running' | 'completed' | 'failed';
+
+export interface CutoverJobSnapshot {
+    mega_count: number;
+    major_count: number;
+    sub_count: number;
+    highlights?: string[];
+}
+
+export interface CutoverJob {
+    id: string;
+    draft_id: string;
+    title: string;
+    operation: string;
+    approval_type: string;
+    status: CutoverJobStatus;
+    summary: string;
+    impacted_mega_count: number;
+    impacted_major_count: number;
+    impacted_sub_count: number;
+    created_at: string;
+    created_by?: string;
+    scheduled_at?: string;
+    started_at?: string;
+    executed_at?: string;
+    failed_at?: string;
+    executed_by?: string;
+    maintenance_message?: string;
+    approval_title?: string;
+    version_label?: string;
+    change_summary?: string[];
+    before_snapshot?: CutoverJobSnapshot | null;
+    after_snapshot?: CutoverJobSnapshot | null;
+    error_message?: string;
+}
+
 export interface AuditLogEntry {
     id: string;
     proc_def_id: string;
@@ -98,6 +134,30 @@ export interface SignupRequest {
     updated_at?: string | null;
 }
 
+const CUTOVER_JOBS_KEY = 'admin_console_cutover_jobs';
+
+function readCutoverJobs(): CutoverJob[] {
+    if (typeof window === 'undefined') return [];
+    try {
+        const raw = localStorage.getItem(CUTOVER_JOBS_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        console.error('Failed to read cutover jobs:', e);
+        return [];
+    }
+}
+
+function writeCutoverJobs(jobs: CutoverJob[]) {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(CUTOVER_JOBS_KEY, JSON.stringify(jobs));
+    } catch (e) {
+        console.error('Failed to persist cutover jobs:', e);
+    }
+}
+
 export const useAdminConsoleStore = defineStore({
     id: 'adminConsole',
     state: () => ({
@@ -119,6 +179,7 @@ export const useAdminConsoleStore = defineStore({
             activated_by: '',
             activated_at: ''
         } as MaintenanceModeConfig,
+        cutoverJobs: readCutoverJobs() as CutoverJob[],
         signupRequests: [] as SignupRequest[],
         auditLogs: [] as AuditLogEntry[],
         auditTotal: 0,
@@ -405,6 +466,29 @@ export const useAdminConsoleStore = defineStore({
             } finally {
                 this.loading = false;
             }
+        },
+
+        loadCutoverJobs() {
+            this.cutoverJobs = readCutoverJobs();
+        },
+
+        recordCutoverJob(job: CutoverJob) {
+            const nextJobs = [job, ...this.cutoverJobs.filter((item) => item.id !== job.id)].slice(0, 20);
+            this.cutoverJobs = nextJobs;
+            writeCutoverJobs(nextJobs);
+        },
+
+        updateCutoverJob(jobId: string, patch: Partial<CutoverJob>) {
+            const nextJobs = this.cutoverJobs.map((job) =>
+                job.id === jobId
+                    ? {
+                          ...job,
+                          ...patch
+                      }
+                    : job
+            );
+            this.cutoverJobs = nextJobs;
+            writeCutoverJobs(nextJobs);
         },
 
         // ============================================

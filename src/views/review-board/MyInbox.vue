@@ -3,6 +3,13 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { differenceInDays } from 'date-fns';
 import BackendFactory from '@/components/api/BackendFactory';
+import {
+    buildProcessHierarchyQuery,
+    PROCESS_HIERARCHY_ENTRY,
+    PROCESS_HIERARCHY_MODE,
+    PROCESS_HIERARCHY_PANEL_STATE,
+    PROCESS_HIERARCHY_RIGHT_TAB
+} from '@/views/process-hierarchy/navigation';
 
 const backend = BackendFactory.createBackend() as any;
 const router = useRouter();
@@ -102,9 +109,19 @@ function openDetail(item: any) {
 
 function openInReviewMode(item: any) {
     const procDefId = item.proc_def_id;
-    const reviewId = item.review_id || item.id;
     if (!procDefId) return;
-    window.open(`/definitions/chat?id=${procDefId}&reviewMode=true&reviewId=${reviewId}&modeling=true`, '_blank');
+    router.push({
+        name: 'Process Hierarchy',
+        params: { id: procDefId },
+        query: buildProcessHierarchyQuery({
+            name: item.process_name || procDefId,
+            entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
+            mode: PROCESS_HIERARCHY_MODE.VIEW,
+            right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
+            rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
+            reviewId: item.review_id || item.id
+        })
+    });
 }
 
 async function handleApproveReopen(item: any) {
@@ -112,8 +129,22 @@ async function handleApproveReopen(item: any) {
     if (!rid) return;
     reopenActionLoading.value = rid;
     try {
-        await backend.approveReopen(rid);
+        const newDraft = await backend.approveReopen(rid);
         await loadData();
+        if (newDraft?.proc_def_id) {
+            router.push({
+                name: 'Process Hierarchy',
+                params: { id: newDraft.proc_def_id },
+                query: buildProcessHierarchyQuery({
+                    name: item.process_name || newDraft.proc_def_id,
+                    entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
+                    mode: PROCESS_HIERARCHY_MODE.EDIT,
+                    right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
+                    rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
+                    reviewId: newDraft.id
+                })
+            });
+        }
     } catch (e) {
         console.error('approveReopen error:', e);
     } finally {
@@ -211,6 +242,19 @@ onBeforeUnmount(cleanupRealtime);
 
 <template>
     <div class="inbox-root">
+        <!-- Global Toast -->
+        <transition name="toast-slide">
+            <div v-if="globalToast" class="global-toast" :class="`global-toast--${globalToast.color}`">
+                <v-icon size="16" class="mr-2">
+                    {{ globalToast.color === 'success' ? 'mdi-check-circle' : 'mdi-alert-circle' }}
+                </v-icon>
+                {{ globalToast.message }}
+                <button class="global-toast-close" @click="globalToast = null">
+                    <v-icon size="14">mdi-close</v-icon>
+                </button>
+            </div>
+        </transition>
+
         <!-- Header -->
         <div class="inbox-header">
             <div class="inbox-header-left">
@@ -460,19 +504,6 @@ onBeforeUnmount(cleanupRealtime);
                 </div>
             </template>
         </div>
-
-        <!-- Global Toast -->
-        <transition name="toast-slide">
-            <div v-if="globalToast" class="global-toast" :class="`global-toast--${globalToast.color}`">
-                <v-icon size="16" class="mr-2">
-                    {{ globalToast.color === 'success' ? 'mdi-check-circle' : 'mdi-alert-circle' }}
-                </v-icon>
-                {{ globalToast.message }}
-                <button class="global-toast-close" @click="globalToast = null">
-                    <v-icon size="14">mdi-close</v-icon>
-                </button>
-            </div>
-        </transition>
     </div>
 </template>
 

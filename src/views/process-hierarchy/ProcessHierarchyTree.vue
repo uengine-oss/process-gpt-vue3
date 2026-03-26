@@ -19,8 +19,13 @@
         <template v-else>
         <!-- Header -->
         <div v-if="!hideHeader" class="tree-header pa-4 pb-2">
-            <div class="text-h6 font-weight-bold">
-                {{ $t('processHierarchy.title') || 'Process Hierarchy' }}
+            <div class="d-flex align-center justify-space-between">
+                <div class="text-h6 font-weight-bold">
+                    {{ $t('processHierarchy.title') || 'Process Hierarchy' }}
+                </div>
+                <v-btn icon size="x-small" variant="text" @click="$emit('collapse')">
+                    <v-icon size="16">mdi-chevron-left</v-icon>
+                </v-btn>
             </div>
             <div class="text-caption text-medium-emphasis mt-1">
                 {{ $t('processHierarchy.subtitle') || '프로세스 체계도 기반 트리' }}
@@ -221,7 +226,7 @@ export default {
         lockMap: { type: Map, default: () => new Map() },
         canManagePermissions: { type: Boolean, default: false },
     },
-    emits: ['select', 'openPermission'],
+    emits: ['select', 'openPermission', 'collapse'],
     data() {
         return {
             searchText: '',

@@ -100,8 +100,8 @@
                         <v-icon start size="16">mdi-file-tree</v-icon>
                         {{ $t('processArchitecture.views.tree') }}
                     </v-btn>
-                    <v-btn value="hierarchy" size="small">
-                        <v-icon start size="16">mdi-sitemap</v-icon>
+                    <v-btn value="mermaid" size="small">
+                        <v-icon start size="16">mdi-chart-timeline-variant</v-icon>
                         {{ $t('processArchitecture.views.hierarchy') }}
                     </v-btn>
                 </v-btn-toggle>
@@ -117,7 +117,28 @@
                 >
                     {{ $t('processArchitecture.toBeToggle') }}
                 </v-chip>
+                <v-btn
+                    v-if="isAdmin"
+                    :color="showRestructureMode ? 'deep-orange' : undefined"
+                    :variant="showRestructureMode ? 'flat' : 'outlined'"
+                    size="small"
+                    prepend-icon="mdi-source-branch"
+                    class="text-none"
+                    @click="showRestructureMode = !showRestructureMode"
+                >
+                    {{ showRestructureMode ? 'Re-structuring On' : 'Re-structuring Mode' }}
+                </v-btn>
             </div>
+
+            <ProcessArchRestructureStudio
+                v-if="showRestructureMode && isAdmin"
+                :procMap="procMap"
+                :maintenanceMode="maintenanceMode"
+                @applyDraft="applyRestructureDraft"
+                @scheduleCutover="scheduleRestructureDraft"
+                @openSystemOps="openSystemOperations"
+                @openReviewBoard="openReviewBoard"
+            />
 
             <!-- Search + Domain Filter -->
             <div class="d-flex align-center ga-3 mb-3 flex-wrap">
@@ -339,42 +360,43 @@
                     @navigate="navigateToProcess"
                     @toggleFavorite="toggleFavorite"
                 />
-                <ProcessArchTreeView
-                    v-else-if="activeView === 'tree'"
-                    :procMap="filteredProcMap"
-                    :domains="filteredDomainsForViews"
-                    :processStatuses="processStatuses"
-                    :selectedDomain="selectedDomain"
-                    :showToBe="showToBe"
-                    :hideDomainRoots="hasActiveDomainFilter"
-                    :favorites="favorites"
-                    @navigate="navigateToProcess"
-                    @moveSub="handleMoveSub"
-                    @toggleFavorite="toggleFavorite"
-                    @openPermission="handleOpenPermission"
-                />
-                <ProcessArchMatrixView
-                    v-else-if="activeView === 'matrix'"
-                    :metricsMap="filteredMetricsMap"
-                    :processStatuses="processStatuses"
-                    :selectedDomain="selectedDomain"
-                    :showToBe="showToBe"
-                    :favorites="favorites"
-                    @navigate="navigateToProcess"
-                    @toggleFavorite="toggleFavorite"
-                />
-                <ProcessArchHierarchyView
-                    v-else-if="activeView === 'hierarchy'"
-                    :procMap="filteredProcMap"
-                    :domains="filteredDomainsForViews"
-                    :processStatuses="processStatuses"
-                    :selectedDomain="selectedDomain"
-                    :showToBe="showToBe"
-                    :hideDomainRoots="hasActiveDomainFilter"
-                    :favorites="favorites"
-                    @navigate="navigateToProcess"
-                    @toggleFavorite="toggleFavorite"
-                />
+                <div v-else class="view-scroll-shell">
+                    <ProcessArchTreeView
+                        v-if="activeView === 'tree'"
+                        :procMap="filteredProcMap"
+                        :domains="filteredDomainsForViews"
+                        :processStatuses="processStatuses"
+                        :selectedDomain="selectedDomain"
+                        :showToBe="showToBe"
+                        :hideDomainRoots="hasActiveDomainFilter"
+                        :favorites="favorites"
+                        @navigate="navigateToProcess"
+                        @moveSub="handleMoveSub"
+                        @toggleFavorite="toggleFavorite"
+                        @openPermission="handleOpenPermission"
+                    />
+                    <ProcessArchMatrixView
+                        v-else-if="activeView === 'matrix'"
+                        :metricsMap="filteredMetricsMap"
+                        :processStatuses="processStatuses"
+                        :selectedDomain="selectedDomain"
+                        :showToBe="showToBe"
+                        :favorites="favorites"
+                        @navigate="navigateToProcess"
+                        @toggleFavorite="toggleFavorite"
+                    />
+                    <ProcessArchMermaidView
+                        v-else-if="activeView === 'mermaid'"
+                        :procMap="filteredProcMap"
+                        :domains="filteredDomainsForViews"
+                        :processStatuses="processStatuses"
+                        :selectedDomain="selectedDomain"
+                        :hideDomainRoots="hasActiveDomainFilter"
+                        :favorites="favorites"
+                        @navigate="navigateToProcess"
+                        @toggleFavorite="toggleFavorite"
+                    />
+                </div>
             </template>
         </div>
 
@@ -455,22 +477,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, getCurrentInstance } from 'vue';
+import { ref, computed, watch, nextTick, getCurrentInstance, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProcessArchitecture } from './useProcessArchitecture';
 import { authClaimsState } from '@/utils/authClaims';
 import ProcessArchCardView from './ProcessArchCardView.vue';
 import ProcessArchTreeView from './ProcessArchTreeView.vue';
 import ProcessArchMatrixView from './ProcessArchMatrixView.vue';
-import ProcessArchHierarchyView from './ProcessArchHierarchyView.vue';
+import ProcessArchMermaidView from './ProcessArchMermaidView.vue';
+import ProcessArchRestructureStudio from './ProcessArchRestructureStudio.vue';
 import NewProcessDialog from './NewProcessDialog.vue';
 import AdvancedFilterPanel from './AdvancedFilterPanel.vue';
 import PermissionDialog from '@/components/apps/definition-map/PermissionDialog.vue';
 import type { RecentlyViewedItem } from './useProcessArchitecture';
+import { useAdminConsoleStore } from '@/stores/adminConsole';
+import {
+    buildProcessHierarchyQuery,
+    PROCESS_HIERARCHY_ENTRY,
+    PROCESS_HIERARCHY_MODE
+} from '@/views/process-hierarchy/navigation';
 
 const instance = getCurrentInstance()!;
 const t = (key: string) => instance.proxy!.$t(key);
 const router = useRouter();
+const adminStore = useAdminConsoleStore();
 
 const {
     procMap,
@@ -508,9 +538,11 @@ const isAdmin = computed(() => {
 });
 
 const isPalMode = computed(() => typeof window !== 'undefined' && !!(window as any).$pal);
+const maintenanceMode = computed(() => adminStore.maintenanceMode);
 
 const showNewProcessDialog = ref(false);
 const showAdvancedFilter = ref(false);
+const showRestructureMode = ref(false);
 const hasActiveDomainFilter = computed(() => !!selectedDomain.value || selectedDomains.value.length > 0);
 
 const filteredDomainsForViews = computed(() => {
@@ -786,6 +818,20 @@ function handleRecentItemClick(item: RecentlyViewedItem) {
 
 loadData();
 
+onMounted(() => {
+    if (isAdmin.value) {
+        adminStore.fetchMaintenanceMode();
+    }
+});
+
+function openSystemOperations() {
+    router.push({ name: 'Admin System Operations' });
+}
+
+function openReviewBoard() {
+    router.push('/review-board');
+}
+
 async function handleMoveSub(subId: string, fromMajorId: string, toMajorId: string) {
     // Deep-clone the proc map to avoid mutating the reactive ref directly
     const newMap = JSON.parse(JSON.stringify(procMap.value));
@@ -827,6 +873,98 @@ async function handleMoveSub(subId: string, fromMajorId: string, toMajorId: stri
     }
 
     await saveProcMap(newMap);
+}
+
+function resolveCutoverActor() {
+    return (window as any).$userName || (window as any).$user?.email || 'admin';
+}
+
+function buildCutoverJobPayload(draft: any, status: 'scheduled' | 'running' | 'completed' | 'failed') {
+    return {
+        id: `cutover-${draft.id}`,
+        draft_id: draft.id,
+        title: `Scenario 4 Cut-over · ${draft.operation}`,
+        operation: draft.operation,
+        approval_type: draft.approvalType || 'structure_restructure',
+        approval_title: draft.approvalTitle || draft.summary || 'Scenario 4 cut-over',
+        version_label: draft.versionLabel || '',
+        status,
+        summary: draft.summary || '구조개편 draft cut-over 적용',
+        change_summary: draft.changeSummary || [],
+        impacted_mega_count: draft.blastRadius?.impactedMegaCount || 0,
+        impacted_major_count: draft.blastRadius?.impactedMajorCount || 0,
+        impacted_sub_count: draft.blastRadius?.impactedSubCount || 0,
+        before_snapshot: draft.beforeSnapshot
+            ? {
+                  mega_count: draft.beforeSnapshot.megaCount || 0,
+                  major_count: draft.beforeSnapshot.majorCount || 0,
+                  sub_count: draft.beforeSnapshot.subCount || 0,
+                  highlights: draft.beforeSnapshot.highlights || []
+              }
+            : null,
+        after_snapshot: draft.afterSnapshot
+            ? {
+                  mega_count: draft.afterSnapshot.megaCount || 0,
+                  major_count: draft.afterSnapshot.majorCount || 0,
+                  sub_count: draft.afterSnapshot.subCount || 0,
+                  highlights: draft.afterSnapshot.highlights || []
+              }
+            : null,
+        created_at: draft.createdAt || new Date().toISOString(),
+        created_by: resolveCutoverActor(),
+        maintenance_message: maintenanceMode.value?.message || ''
+    };
+}
+
+function scheduleRestructureDraft(draft: any) {
+    if (!draft?.id) return;
+    const now = new Date().toISOString();
+    adminStore.recordCutoverJob({
+        ...buildCutoverJobPayload(draft, 'scheduled'),
+        scheduled_at: now
+    });
+}
+
+async function applyRestructureDraft(draft: any) {
+    if (!draft?.map) return;
+    if (!maintenanceMode.value?.enabled) {
+        showExportNotification('maintenance mode를 먼저 활성화해야 구조개편 cut-over를 적용할 수 있습니다.', 'warning');
+        return;
+    }
+
+    const jobId = `cutover-${draft.id}`;
+    const startedAt = new Date().toISOString();
+    const actor = resolveCutoverActor();
+    adminStore.recordCutoverJob({
+        ...buildCutoverJobPayload(draft, 'running'),
+        scheduled_at: draft.createdAt || startedAt,
+        started_at: startedAt,
+        executed_by: actor
+    });
+
+    try {
+        await saveProcMap(draft.map);
+        adminStore.updateCutoverJob(jobId, {
+            status: 'completed',
+            started_at: startedAt,
+            executed_at: new Date().toISOString(),
+            executed_by: actor,
+            error_message: ''
+        });
+        await loadData();
+        showRestructureMode.value = false;
+        showExportNotification('구조개편 target architecture draft가 maintenance cut-over로 반영되었습니다.', 'success');
+    } catch (e: any) {
+        console.error('Failed to apply restructure draft:', e);
+        adminStore.updateCutoverJob(jobId, {
+            status: 'failed',
+            started_at: startedAt,
+            failed_at: new Date().toISOString(),
+            executed_by: actor,
+            error_message: e?.message || 'unknown error'
+        });
+        showExportNotification('구조개편 draft 반영에 실패했습니다.', 'error');
+    }
 }
 
 // --- Export ---
@@ -1214,7 +1352,11 @@ async function runExport(format: ExportFormat) {
 async function onProcessCreated(newProc: { id: string; name: string }) {
     await router.push({
         path: `/process-hierarchy/${encodeURIComponent(newProc.id)}`,
-        query: newProc.name ? { name: newProc.name } : undefined
+        query: buildProcessHierarchyQuery({
+            name: newProc.name,
+            entry: PROCESS_HIERARCHY_ENTRY.ARCHITECTURE,
+            mode: PROCESS_HIERARCHY_MODE.EDIT
+        })
     });
     loadData();
 }
@@ -1262,6 +1404,19 @@ async function onProcessCreated(newProc: { id: string; name: string }) {
 
 .view-area {
     min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.view-scroll-shell {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.view-scroll-shell > * {
+    min-height: 100%;
 }
 
 .smart-search-wrapper {

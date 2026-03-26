@@ -565,6 +565,222 @@
                 <!-- ==================== Governance Tab ==================== -->
                 <v-window-item value="governance">
                     <div class="pa-4">
+                        <div class="governance-status-strip mb-4">
+                            <div class="d-flex align-center flex-wrap ga-2">
+                                <v-chip size="small" :color="governanceStateColor" variant="flat">
+                                    {{ governanceStateLabel }}
+                                </v-chip>
+                                <v-chip v-if="governanceVersionLabel" size="small" color="primary" variant="tonal">
+                                    {{ governanceVersionLabel }}
+                                </v-chip>
+                                <v-chip v-if="hasReviewContext" size="small" color="indigo" variant="tonal">
+                                    Review Context
+                                </v-chip>
+                                <v-chip v-if="approvalState && approvalState.id" size="small" color="grey" variant="outlined">
+                                    Round {{ String(approvalState.id).slice(0, 8) }}
+                                </v-chip>
+                            </div>
+                        </div>
+
+                        <div v-if="hasReviewContext" class="governance-context-banner mb-4">
+                            <div class="text-caption text-medium-emphasis">
+                                현재 화면은 Review Board 문맥으로 열려 있습니다. 거버넌스 상태와 상세 검토 화면을 바로 오갈 수 있습니다.
+                            </div>
+                            <div class="d-flex align-center ga-2 flex-wrap">
+                                <v-btn
+                                    v-if="canOpenPublishedBaselineDiff"
+                                    size="small"
+                                    variant="tonal"
+                                    color="secondary"
+                                    class="text-none"
+                                    @click="openPublishedBaselineDiff"
+                                >
+                                    <v-icon start size="14">mdi-compare</v-icon>
+                                    Published 비교
+                                </v-btn>
+                                <v-btn size="small" variant="tonal" color="primary" class="text-none" @click="openReviewDetail">
+                                    <v-icon start size="14">mdi-open-in-new</v-icon>
+                                    Review 상세
+                                </v-btn>
+                                <v-btn size="small" variant="text" class="text-none" @click="openReviewBoard">
+                                    Board로 이동
+                                </v-btn>
+                            </div>
+                        </div>
+
+                        <div v-if="approvalState" class="governance-review-summary mb-4">
+                            <div class="governance-review-summary__headline">
+                                <div>
+                                    <div class="governance-section-label">Review Progress</div>
+                                    <div class="governance-review-summary__title">
+                                        미해결 {{ unresolvedFeedbackCount }}건 / 전체 {{ reviewFeedbackItems.length }}건
+                                    </div>
+                                </div>
+                                <div class="governance-review-summary__stat">
+                                    해결 {{ resolvedFeedbackCount }}건
+                                </div>
+                            </div>
+                            <v-progress-linear
+                                :model-value="feedbackResolutionProgress"
+                                :color="unresolvedFeedbackCount > 0 ? 'warning' : 'success'"
+                                bg-color="grey-lighten-3"
+                                height="6"
+                                rounded
+                                class="review-status-progress mt-3"
+                            />
+
+                            <div v-if="hasParallelApproval" class="review-status-stack mt-3">
+                                <div class="review-status-pill">
+                                    <div>
+                                        <div class="review-status-pill__title">HQ</div>
+                                        <div class="review-status-pill__meta">{{ approvalState.hq_reviewer_name || '미지정' }}</div>
+                                    </div>
+                                    <v-chip size="x-small" :color="getReviewerStatusColor(hqReviewStatus)" variant="tonal">
+                                        {{ getReviewerStatusLabel(hqReviewStatus) }}
+                                    </v-chip>
+                                </div>
+                                <div class="review-status-pill">
+                                    <div>
+                                        <div class="review-status-pill__title">Field</div>
+                                        <div class="review-status-pill__meta">{{ approvalState.field_reviewer_name || '미지정' }}</div>
+                                    </div>
+                                    <v-chip size="x-small" :color="getReviewerStatusColor(fieldReviewStatus)" variant="tonal">
+                                        {{ getReviewerStatusLabel(fieldReviewStatus) }}
+                                    </v-chip>
+                                </div>
+                            </div>
+
+                            <div v-if="reviewOwnershipSummary" class="governance-review-summary__meta mt-3">
+                                {{ reviewOwnershipSummary }}
+                            </div>
+                        </div>
+
+                        <div v-if="approvalState" class="governance-action-box mb-5">
+                            <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
+                                <div>
+                                    <div class="governance-action-box__title">Review Actions</div>
+                                    <div class="governance-action-box__subtitle">
+                                        BPMN 캔버스는 읽기 전용이어도 review action은 여기서 계속 처리할 수 있습니다.
+                                    </div>
+                                </div>
+                                <v-chip size="x-small" color="primary" variant="tonal">
+                                    {{ governanceStateLabel }}
+                                </v-chip>
+                            </div>
+
+                            <div v-if="governanceActionNotice" class="governance-action-notice">
+                                <v-icon size="14" class="mr-1">mdi-information-outline</v-icon>
+                                {{ governanceActionNotice }}
+                            </div>
+
+                            <v-textarea
+                                v-model="governanceActionComment"
+                                label="Review Note"
+                                placeholder="승인 메모, 반려 사유, 공람 종료 사유를 입력하세요"
+                                variant="outlined"
+                                density="compact"
+                                rows="3"
+                                auto-grow
+                                hide-details
+                                class="mt-3"
+                            />
+
+                            <div class="d-flex align-center justify-space-between flex-wrap ga-2 mt-3">
+                                <div class="text-caption text-medium-emphasis">
+                                    배포는 미해결 피드백이 0건일 때만 가능합니다.
+                                </div>
+                                <div class="d-flex align-center flex-wrap ga-2">
+                                    <v-btn
+                                        v-if="canApproveHQAction"
+                                        size="small"
+                                        color="primary"
+                                        variant="flat"
+                                        class="text-none"
+                                        :loading="governanceActionLoading"
+                                        :disabled="governanceActionLoading || !canApproveOrReject"
+                                        @click="handleGovernanceApproveHQ"
+                                    >
+                                        <v-icon start size="14">mdi-domain</v-icon>
+                                        HQ 승인
+                                    </v-btn>
+                                    <v-btn
+                                        v-if="canApproveFieldAction"
+                                        size="small"
+                                        color="success"
+                                        variant="flat"
+                                        class="text-none"
+                                        :loading="governanceActionLoading"
+                                        :disabled="governanceActionLoading || !canApproveOrReject"
+                                        @click="handleGovernanceApproveField"
+                                    >
+                                        <v-icon start size="14">mdi-account-hard-hat</v-icon>
+                                        Field 승인
+                                    </v-btn>
+                                    <v-btn
+                                        v-if="canEndPublicFeedbackAction"
+                                        size="small"
+                                        color="info"
+                                        variant="flat"
+                                        class="text-none"
+                                        :loading="governanceActionLoading"
+                                        :disabled="governanceActionLoading"
+                                        @click="handleGovernanceEndPublicFeedback"
+                                    >
+                                        <v-icon start size="14">mdi-fast-forward</v-icon>
+                                        공람 종료
+                                    </v-btn>
+                                    <v-tooltip
+                                        v-if="canPublishActionState"
+                                        :text="publishActionDisabledReason"
+                                        :disabled="!publishActionDisabledReason"
+                                        location="top"
+                                    >
+                                        <template #activator="{ props: tooltipProps }">
+                                            <span v-bind="tooltipProps">
+                                                <v-btn
+                                                    size="small"
+                                                    color="deep-purple"
+                                                    variant="flat"
+                                                    class="text-none"
+                                                    :loading="governanceActionLoading"
+                                                    :disabled="governanceActionLoading || !canPublishAction"
+                                                    @click="handleGovernancePublish"
+                                                >
+                                                    <v-icon start size="14">mdi-rocket-launch-outline</v-icon>
+                                                    Publish
+                                                </v-btn>
+                                            </span>
+                                        </template>
+                                    </v-tooltip>
+                                    <v-btn
+                                        v-if="!isGovernanceFinished"
+                                        size="small"
+                                        color="error"
+                                        variant="outlined"
+                                        class="text-none"
+                                        :loading="governanceActionLoading"
+                                        :disabled="governanceActionLoading || !governanceActionComment.trim() || !canApproveOrReject"
+                                        @click="handleGovernanceReject"
+                                    >
+                                        <v-icon start size="14">mdi-alert-circle-outline</v-icon>
+                                        Request Changes
+                                    </v-btn>
+                                    <v-btn
+                                        size="small"
+                                        color="grey-darken-1"
+                                        variant="outlined"
+                                        class="text-none"
+                                        :loading="governanceActionLoading"
+                                        :disabled="governanceActionLoading || !governanceActionComment.trim()"
+                                        @click="handleGovernanceComment"
+                                    >
+                                        <v-icon start size="14">mdi-send-outline</v-icon>
+                                        Comment
+                                    </v-btn>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Timeline -->
                         <div class="governance-timeline">
                             <div
@@ -714,6 +930,68 @@
                                 </v-btn>
                             </div>
 
+                            <div v-if="showReleaseStrategy" class="release-strategy-panel mb-4">
+                                <div class="d-flex align-start justify-space-between flex-wrap ga-2">
+                                    <div>
+                                        <div class="release-strategy-panel__title">Release Strategy</div>
+                                        <div class="release-strategy-panel__subtitle">
+                                            피드백을 확인한 뒤 현재 사이클에 누적할지, 차기 major 변경으로 분리할지 결정합니다.
+                                        </div>
+                                    </div>
+                                    <v-chip size="x-small" :color="governanceStateColor" variant="tonal">
+                                        {{ governanceStateLabel }}
+                                    </v-chip>
+                                </div>
+
+                                <div class="release-lanes mt-3">
+                                    <div class="release-lane">
+                                        <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+                                            <div>
+                                                <div class="release-lane__eyebrow">Current Cycle</div>
+                                                <div class="release-lane__title">Minor Patch</div>
+                                            </div>
+                                            <v-chip size="x-small" color="primary" variant="tonal">
+                                                기본 경로
+                                            </v-chip>
+                                        </div>
+                                        <div class="release-lane__desc">
+                                            {{ minorPatchDescription }}
+                                        </div>
+                                    </div>
+                                    <div class="release-lane release-lane--accent">
+                                        <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+                                            <div>
+                                                <div class="release-lane__eyebrow">Next Cycle</div>
+                                                <div class="release-lane__title">{{ majorUpgradeTitle }}</div>
+                                            </div>
+                                            <v-chip
+                                                size="x-small"
+                                                :color="hasPendingMajorUpgrade ? 'warning' : 'deep-orange'"
+                                                :variant="hasPendingMajorUpgrade ? 'flat' : 'tonal'"
+                                            >
+                                                {{ hasPendingMajorUpgrade ? '승인 대기' : '분리 경로' }}
+                                            </v-chip>
+                                        </div>
+                                        <div class="release-lane__desc">
+                                            {{ majorUpgradeDescription }}
+                                        </div>
+                                        <div class="d-flex align-center flex-wrap ga-2 mt-3">
+                                            <v-btn
+                                                v-if="canRequestMajorUpgrade"
+                                                size="small"
+                                                color="deep-orange"
+                                                variant="flat"
+                                                class="text-none"
+                                                @click="openMajorUpgradeDialog"
+                                            >
+                                                <v-icon start size="14">mdi-source-branch-plus</v-icon>
+                                                차기 Major Draft 요청
+                                            </v-btn>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Feedback Input -->
                             <div class="feedback-input-area mt-4">
                                 <!-- Reply indicator -->
@@ -796,10 +1074,57 @@
                         </div>
                     </div>
                 </v-window-item>
+
             </v-window>
         </div>
 
         <!-- Resolve Feedback Dialog -->
+        <v-dialog v-model="majorUpgradeDialog" max-width="520" persistent>
+            <v-card rounded="lg">
+                <v-card-title class="text-subtitle-1 font-weight-bold pa-4 pb-2">
+                    <v-icon size="18" color="deep-orange" class="mr-2">mdi-source-branch-plus</v-icon>
+                    차기 Major Draft 요청
+                </v-card-title>
+                <v-card-text class="pa-4">
+                    <div class="text-body-2 text-medium-emphasis mb-4">
+                        현재 배포본은 유지한 채, Review Board에서 차기 major 변경 사이클을 열도록 요청합니다.
+                    </div>
+                    <label class="field-label">요청 사유 <span class="text-error">*</span></label>
+                    <v-textarea
+                        v-model="majorUpgradeReason"
+                        rows="4"
+                        auto-grow
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        placeholder="예: 정책 변경 반영, 상위 승인 체계 개편, 배포본과 분리된 차세대 설계 필요"
+                    />
+                </v-card-text>
+                <v-card-actions class="pa-4 pt-0">
+                    <v-spacer />
+                    <v-btn
+                        variant="text"
+                        class="text-none"
+                        :disabled="requestingMajorUpgrade"
+                        @click="majorUpgradeDialog = false"
+                    >
+                        취소
+                    </v-btn>
+                    <v-btn
+                        variant="flat"
+                        color="deep-orange"
+                        class="text-none"
+                        :disabled="!majorUpgradeReason.trim()"
+                        :loading="requestingMajorUpgrade"
+                        @click="requestMajorUpgrade"
+                    >
+                        <v-icon start size="14">mdi-send</v-icon>
+                        요청 등록
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
         <v-dialog v-model="resolveDialog" max-width="480" persistent>
             <v-card>
                 <v-card-title class="text-subtitle-1 font-weight-bold pa-4 pb-2">
@@ -873,6 +1198,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { formatDistanceToNow } from 'date-fns';
 import { ko, enUS } from 'date-fns/locale';
 
+const backend = BackendFactory.createBackend();
 const ANNUAL_WORKING_HOURS = 2080; // 52 weeks x 40 hours
 
 function defaultFte() {
@@ -937,13 +1263,16 @@ export default {
         processDefinition: { type: Object, default: null },
         element: { type: Object, default: null },
         isViewMode: { type: Boolean, default: false },
+        initialTopTab: { type: String, default: 'properties' },
         readOnlyMessage: { type: String, default: '' },
         roles: { type: Array, default: () => [] },
         processVariables: { type: Array, default: () => [] },
         definitionPath: { type: String, default: '' },
         definition: { type: Object, default: null },
+        entrySource: { type: String, default: 'direct' },
+        reviewId: { type: String, default: '' },
     },
-    emits: ['save', 'close', 'focusElement'],
+    emits: ['save', 'close', 'focusElement', 'governanceUpdated'],
     data() {
         return {
             topTab: 'properties',
@@ -980,6 +1309,10 @@ export default {
             approvalState: null,
             approvalHistory: [],
             comments: [],
+            governanceActionComment: '',
+            governanceActionLoading: false,
+            currentUserId: '',
+            currentUserName: '',
             // Feedback input
             newFeedbackText: '',
             submittingFeedback: false,
@@ -996,6 +1329,10 @@ export default {
             // 더보기 state
             timelineExpanded: false,
             feedbackExpanded: false,
+            // Major upgrade request
+            majorUpgradeDialog: false,
+            majorUpgradeReason: '',
+            requestingMajorUpgrade: false,
         };
     },
     computed: {
@@ -1043,6 +1380,210 @@ export default {
                 }
             }
             return alerts;
+        },
+        governanceStateKey() {
+            return this.approvalState?.state || this.processDefinition?.approval_state || this.processDefinition?.status || 'untracked';
+        },
+        governanceStateLabel() {
+            const stateMap = {
+                draft: 'Draft',
+                in_review: 'In Review',
+                public_feedback: 'Public Feedback',
+                final_edit: 'Final Edit',
+                published: 'Published',
+                reopen_requested: 'Major Upgrade Requested',
+                rejected: 'Rejected',
+                cancelled: 'Cancelled',
+                archived: 'Archived',
+                untracked: 'Governance Untracked',
+            };
+            return stateMap[this.governanceStateKey] || this.governanceStateKey;
+        },
+        governanceStateColor() {
+            const colorMap = {
+                draft: 'grey',
+                in_review: 'warning',
+                public_feedback: 'info',
+                final_edit: 'deep-purple',
+                published: 'success',
+                reopen_requested: 'deep-orange',
+                rejected: 'error',
+                cancelled: 'grey',
+                archived: 'grey-darken-1',
+                untracked: 'blue-grey',
+            };
+            return colorMap[this.governanceStateKey] || 'blue-grey';
+        },
+        governanceVersionLabel() {
+            if (this.approvalState?.version_label) {
+                return this.approvalState.version_label;
+            }
+            if (this.approvalState && (this.approvalState.major_version !== undefined || this.approvalState.minor_version !== undefined)) {
+                return `v${this.approvalState.major_version || 0}.${this.approvalState.minor_version || 0}`;
+            }
+            if (this.approvalState?.version) {
+                return `v${this.approvalState.version}`;
+            }
+            if (this.processDefinition?.version) {
+                return `v${this.processDefinition.version}`;
+            }
+            return '';
+        },
+        canRequestMajorUpgrade() {
+            return this.governanceStateKey === 'published' && typeof backend.requestReopen === 'function';
+        },
+        hasPendingMajorUpgrade() {
+            return this.governanceStateKey === 'reopen_requested';
+        },
+        hasReviewContext() {
+            return this.entrySource === 'review-board' && !!this.reviewId;
+        },
+        currentReviewVersion() {
+            if (this.approvalState?.version) {
+                return String(this.approvalState.version);
+            }
+            if (this.approvalState && (this.approvalState.major_version !== undefined || this.approvalState.minor_version !== undefined)) {
+                return `${this.approvalState.major_version || 0}.${this.approvalState.minor_version || 0}`;
+            }
+            if (this.approvalState?.version_label) {
+                return String(this.approvalState.version_label).replace(/^v/i, '');
+            }
+            return '';
+        },
+        canOpenPublishedBaselineDiff() {
+            return !!this.definitionPath && !!this.currentReviewVersion;
+        },
+        reviewFeedbackItems() {
+            return (this.feedbackItems || []).filter((item) => !item.parent_comment_id);
+        },
+        unresolvedFeedbackCount() {
+            return this.reviewFeedbackItems.filter((item) => !item.is_resolved).length;
+        },
+        resolvedFeedbackCount() {
+            return Math.max(this.reviewFeedbackItems.length - this.unresolvedFeedbackCount, 0);
+        },
+        feedbackResolutionProgress() {
+            if (this.reviewFeedbackItems.length === 0) return 100;
+            return Math.round((this.resolvedFeedbackCount / this.reviewFeedbackItems.length) * 100);
+        },
+        showReleaseStrategy() {
+            if (this.isViewMode) return false;
+            return this.feedbackItems.length > 0 || this.canRequestMajorUpgrade || this.hasPendingMajorUpgrade;
+        },
+        reviewOwnershipSummary() {
+            if (!this.approvalState) return '';
+            if (this.assignedReviewerName) {
+                return `현재 담당자 ${this.assignedReviewerName}`;
+            }
+            if (this.isSelfSubmitter) {
+                return '본인 상신 건으로 승인 액션은 제한됩니다.';
+            }
+            return '지정 담당자 없이 HQ/Field 병렬 승인 기준으로 동작합니다.';
+        },
+        isGovernanceFinished() {
+            return ['published', 'rejected', 'cancelled', 'archived'].includes(this.governanceStateKey);
+        },
+        hqReviewStatus() {
+            return this.approvalState?.hq_status || 'pending';
+        },
+        fieldReviewStatus() {
+            return this.approvalState?.field_status || 'pending';
+        },
+        hasParallelApproval() {
+            return !!(
+                this.approvalState?.hq_reviewer_name ||
+                this.approvalState?.field_reviewer_name ||
+                this.approvalState?.hq_status ||
+                this.approvalState?.field_status
+            );
+        },
+        assignedReviewerName() {
+            return this.approvalState?.assigned_reviewer_name || '';
+        },
+        isSelfSubmitter() {
+            if (!this.currentUserName) return false;
+            const submittedBy = this.approvalState?.submitted_by || this.approvalState?.submitted_by_name || '';
+            const submittedById = this.approvalState?.submitted_by_id || '';
+            return (submittedById && submittedById === this.currentUserId) || (submittedBy && submittedBy === this.currentUserName);
+        },
+        canApproveOrReject() {
+            if (!this.approvalState || this.isGovernanceFinished || this.isSelfSubmitter) {
+                return false;
+            }
+            if (!this.assignedReviewerName) {
+                return true;
+            }
+            const assignedReviewerId = this.approvalState?.assigned_reviewer_id || '';
+            return (assignedReviewerId && assignedReviewerId === this.currentUserId) || this.assignedReviewerName === this.currentUserName;
+        },
+        canApproveHQAction() {
+            return ['in_review', 'review'].includes(this.governanceStateKey) && this.hqReviewStatus === 'pending';
+        },
+        canApproveFieldAction() {
+            return ['in_review', 'review'].includes(this.governanceStateKey) && this.fieldReviewStatus === 'pending';
+        },
+        canEndPublicFeedbackAction() {
+            return this.governanceStateKey === 'public_feedback';
+        },
+        canPublishActionState() {
+            return this.governanceStateKey === 'final_edit';
+        },
+        canPublishAction() {
+            return this.canPublishActionState && this.canApproveOrReject && this.unresolvedFeedbackCount === 0;
+        },
+        publishActionDisabledReason() {
+            if (!this.canPublishActionState) return '';
+            if (!this.canApproveOrReject) return '승인 권한이 없습니다.';
+            if (this.unresolvedFeedbackCount > 0) {
+                return `미해결 피드백 ${this.unresolvedFeedbackCount}건을 해결해야 배포할 수 있습니다.`;
+            }
+            return '';
+        },
+        governanceActionNotice() {
+            if (!this.approvalState || this.isGovernanceFinished) return '';
+            if (this.isSelfSubmitter) {
+                return '본인이 상신한 리뷰 라운드는 직접 승인할 수 없습니다.';
+            }
+            if (this.assignedReviewerName && !this.canApproveOrReject) {
+                return `현재 담당자는 ${this.assignedReviewerName}입니다. 지정 담당자만 승인/반려할 수 있습니다.`;
+            }
+            if (this.canEndPublicFeedbackAction) {
+                return '공람을 조기 종료하면 즉시 Final Edit 단계로 이동합니다.';
+            }
+            return '';
+        },
+        minorPatchDescription() {
+            if (this.governanceStateKey === 'published') {
+                return '현재 저장은 배포본을 바로 갈아엎지 않고 minor patch 검토 경로로 누적됩니다.';
+            }
+            if (['draft', 'in_review', 'public_feedback', 'final_edit'].includes(this.governanceStateKey)) {
+                return `현재 ${this.governanceStateLabel} 사이클 안에서 변경분을 계속 축적합니다.`;
+            }
+            return '저장된 변경분은 minor draft로 누적되고 필요 시 검토 요청으로 이어집니다.';
+        },
+        majorUpgradeTitle() {
+            if (this.canRequestMajorUpgrade) {
+                return '배포본 유지 + 차기 v(N+1).0 Draft 요청';
+            }
+            if (this.hasPendingMajorUpgrade) {
+                return 'Master 승인 후 차기 major draft 생성 예정';
+            }
+            if (['draft', 'in_review', 'public_feedback', 'final_edit'].includes(this.governanceStateKey)) {
+                return '이미 다음 변경 사이클 진행 중';
+            }
+            return '별도 major 경로 준비 필요';
+        },
+        majorUpgradeDescription() {
+            if (this.canRequestMajorUpgrade) {
+                return '정책 변경이나 구조 개편처럼 배포본과 분리된 큰 변경은 reopen 요청으로 분기해야 합니다.';
+            }
+            if (this.hasPendingMajorUpgrade) {
+                return 'Review Board에서 승인되면 현재 배포본과 병렬로 차기 major 초안이 생성됩니다.';
+            }
+            if (['draft', 'in_review', 'public_feedback', 'final_edit'].includes(this.governanceStateKey)) {
+                return '현재 프로세스는 이미 draft/review 파이프라인 안에 있습니다. 별도 major 요청보다 현재 사이클 완료가 우선입니다.';
+            }
+            return '거버넌스 상태가 확정되면 major upgrade 분기를 열 수 있습니다.';
         },
         // Timeline entries built from approvalHistory
         timelineEntries() {
@@ -1137,6 +1678,16 @@ export default {
         },
     },
     watch: {
+        initialTopTab: {
+            handler(val) {
+                if (val === 'governance') {
+                    this.topTab = 'governance';
+                } else if (val === 'properties' || val === 'ai-guide') {
+                    this.topTab = 'properties';
+                }
+            },
+            immediate: true,
+        },
         processDefinition: {
             handler(val) {
                 if (val) {
@@ -1180,6 +1731,7 @@ export default {
         },
     },
     async mounted() {
+        await this.ensureCurrentUser();
         await this.catalogStore.loadSchemas();
     },
     methods: {
@@ -1197,14 +1749,49 @@ export default {
             if (url) window.open(url, '_blank');
         },
 
+        async ensureCurrentUser() {
+            if (this.currentUserId || this.currentUserName) return;
+
+            const supabase = window.$supabase;
+            if (!supabase) return;
+
+            try {
+                const { data: authData } = await supabase.auth.getUser();
+                const user = authData?.user;
+                if (!user) return;
+
+                this.currentUserId = user.id || '';
+                let resolvedName = user.user_metadata?.full_name || user.email || '';
+
+                try {
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('username, email')
+                        .eq('id', user.id)
+                        .limit(1)
+                        .maybeSingle();
+                    resolvedName = userData?.username || userData?.email || resolvedName;
+                } catch (e) {
+                    console.warn('Current user profile lookup failed:', e);
+                }
+
+                this.currentUserName = resolvedName || '';
+            } catch (e) {
+                console.warn('Failed to resolve current governance user:', e);
+            }
+        },
+
         // ---- Governance data loading ----
         async loadGovernanceData(procDefId) {
             if (!procDefId) return;
             try {
-                const backend = BackendFactory.createBackend();
+                await this.ensureCurrentUser();
+                const useReviewContext = this.hasReviewContext && typeof backend.getApprovalStateById === 'function';
+                const reviewState = useReviewContext ? await backend.getApprovalStateById(this.reviewId).catch(() => null) : null;
+                const matchesReviewContext = !!reviewState && reviewState.proc_def_id === procDefId;
                 const [state, history] = await Promise.all([
-                    backend.getApprovalState(procDefId).catch(() => null),
-                    backend.getApprovalHistory(procDefId).catch(() => []),
+                    matchesReviewContext ? reviewState : backend.getApprovalState(procDefId).catch(() => null),
+                    matchesReviewContext ? backend.getApprovalHistory(this.reviewId, true).catch(() => []) : backend.getApprovalHistory(procDefId).catch(() => []),
                 ]);
                 this.approvalState = state;
                 this.approvalHistory = history || [];
@@ -1223,6 +1810,24 @@ export default {
             } catch (e) {
                 console.warn('Governance data load failed:', e);
             }
+        },
+
+        getReviewerStatusLabel(status) {
+            const labelMap = {
+                approved: 'Approved',
+                rejected: 'Rejected',
+                pending: 'Pending',
+            };
+            return labelMap[status] || 'Pending';
+        },
+
+        getReviewerStatusColor(status) {
+            const colorMap = {
+                approved: 'success',
+                rejected: 'error',
+                pending: 'warning',
+            };
+            return colorMap[status] || 'grey';
         },
 
         buildTimelineFromState() {
@@ -1314,7 +1919,7 @@ export default {
             return label + comment;
         },
 
-        getRoleTag(action, item) {
+        getRoleTag(action) {
             if (action.includes('hq')) return { label: '본사', color: ROLE_COLORS.hq };
             if (action.includes('field')) return { label: '현업', color: ROLE_COLORS.field };
             if (action === 'submit') return { label: '발의', color: ROLE_COLORS.submitter };
@@ -1325,6 +1930,175 @@ export default {
             this.resolvingFeedback = fb;
             this.resolveDialog = true;
             this.resolveActionText = '';
+        },
+
+        openMajorUpgradeDialog() {
+            if (!this.canRequestMajorUpgrade) return;
+            this.majorUpgradeReason = '';
+            this.majorUpgradeDialog = true;
+        },
+
+        openReviewDetail() {
+            if (!this.reviewId) return;
+            this.$router.push(`/review-board/${this.reviewId}`);
+        },
+
+        openReviewBoard() {
+            this.$router.push('/review-board');
+        },
+
+        async openPublishedBaselineDiff() {
+            if (!this.definitionPath || !this.currentReviewVersion) return;
+
+            try {
+                const versions = await backend.getDefinitionVersions(this.definitionPath, {
+                    sort: 'desc',
+                    orderBy: 'version',
+                });
+                const publishedVersion = (versions || []).find((row) => row.version_tag === 'published');
+                if (!publishedVersion?.version) {
+                    this.$toast?.warning('Published baseline 버전을 찾지 못했습니다.');
+                    return;
+                }
+
+                this.$router.push({
+                    path: '/version-comparison',
+                    query: {
+                        processId: this.definitionPath,
+                        versionA: this.currentReviewVersion,
+                        versionB: String(publishedVersion.version)
+                    }
+                });
+            } catch (e) {
+                console.error('Open published baseline diff failed:', e);
+                this.$toast?.error('Published baseline 비교 화면을 열지 못했습니다.');
+            }
+        },
+
+        async requestMajorUpgrade() {
+            if (!this.canRequestMajorUpgrade || !this.definitionPath || !this.majorUpgradeReason.trim()) return;
+
+            this.requestingMajorUpgrade = true;
+            try {
+                await backend.requestReopen(this.definitionPath, this.majorUpgradeReason.trim());
+                await this.loadGovernanceData(this.definitionPath);
+                this.majorUpgradeDialog = false;
+                this.majorUpgradeReason = '';
+                this.$toast?.success('차기 Major Draft 요청이 등록되었습니다.');
+            } catch (e) {
+                console.error('Major upgrade request failed:', e);
+                this.$toast?.error('차기 Major Draft 요청에 실패했습니다.');
+            } finally {
+                this.requestingMajorUpgrade = false;
+            }
+        },
+
+        async executeGovernanceAction(action) {
+            if (!this.approvalState?.id || !this.definitionPath) return;
+
+            const reviewId = this.approvalState.id;
+            const trimmedComment = this.governanceActionComment.trim();
+            const supabase = window.$supabase;
+
+            if (action === 'reject' && !trimmedComment) {
+                this.$toast?.warning('반려 사유를 입력하세요.');
+                return;
+            }
+
+            if (action === 'comment' && !trimmedComment) {
+                this.$toast?.warning('코멘트를 입력하세요.');
+                return;
+            }
+
+            this.governanceActionLoading = true;
+            try {
+                await this.ensureCurrentUser();
+
+                if (action === 'approve_hq') {
+                    await backend.approveHQ(reviewId, trimmedComment || undefined);
+                } else if (action === 'approve_field') {
+                    await backend.approveField(reviewId, trimmedComment || undefined);
+                } else if (action === 'end_public_feedback') {
+                    await backend.endPublicFeedback(reviewId, trimmedComment || '공람 조기 종료');
+                } else if (action === 'publish') {
+                    await backend.publishDefinition(reviewId, trimmedComment || undefined);
+                } else if (action === 'reject') {
+                    await backend.rejectDefinition(reviewId, trimmedComment);
+                } else if (action === 'comment') {
+                    if (!supabase) throw new Error('Supabase not initialized');
+                    await supabase.from('proc_def_approval_history').insert({
+                        proc_def_id: this.definitionPath,
+                        review_id: reviewId,
+                        action: 'comment',
+                        from_state: this.governanceStateKey,
+                        to_state: this.governanceStateKey,
+                        actor_id: this.currentUserId || 'anonymous',
+                        actor_name: this.currentUserName || 'Anonymous',
+                        comment: trimmedComment,
+                        tenant_id: window.$tenantName
+                    });
+                }
+
+                await this.loadGovernanceData(this.definitionPath);
+                this.$emit('governanceUpdated', {
+                    reviewId: this.approvalState?.id || reviewId,
+                    state: this.approvalState?.state || this.governanceStateKey
+                });
+
+                this.governanceActionComment = '';
+
+                const successMessages = {
+                    approve_hq: 'HQ 승인 완료',
+                    approve_field: 'Field 승인 완료',
+                    end_public_feedback: '공람 종료 후 Final Edit로 이동했습니다.',
+                    publish: '배포 완료되었습니다.',
+                    reject: '반려 처리되었습니다.',
+                    comment: '코멘트가 등록되었습니다.'
+                };
+                this.$toast?.success(successMessages[action] || '거버넌스 액션이 처리되었습니다.');
+            } catch (e) {
+                console.error(`Governance action failed: ${action}`, e);
+                const errorMessages = {
+                    approve_hq: 'HQ 승인에 실패했습니다.',
+                    approve_field: 'Field 승인에 실패했습니다.',
+                    end_public_feedback: '공람 종료 처리에 실패했습니다.',
+                    publish: '배포 처리에 실패했습니다.',
+                    reject: '반려 처리에 실패했습니다.',
+                    comment: '코멘트 등록에 실패했습니다.'
+                };
+                this.$toast?.error(errorMessages[action] || '거버넌스 액션 처리에 실패했습니다.');
+            } finally {
+                this.governanceActionLoading = false;
+            }
+        },
+
+        handleGovernanceApproveHQ() {
+            if (!this.canApproveHQAction || !this.canApproveOrReject) return;
+            this.executeGovernanceAction('approve_hq');
+        },
+
+        handleGovernanceApproveField() {
+            if (!this.canApproveFieldAction || !this.canApproveOrReject) return;
+            this.executeGovernanceAction('approve_field');
+        },
+
+        handleGovernanceEndPublicFeedback() {
+            if (!this.canEndPublicFeedbackAction) return;
+            this.executeGovernanceAction('end_public_feedback');
+        },
+
+        handleGovernancePublish() {
+            if (!this.canPublishAction) return;
+            this.executeGovernanceAction('publish');
+        },
+
+        handleGovernanceReject() {
+            if (!this.canApproveOrReject || this.isGovernanceFinished) return;
+            this.executeGovernanceAction('reject');
+        },
+
+        handleGovernanceComment() {
+            this.executeGovernanceAction('comment');
         },
 
         async confirmResolve() {
@@ -1428,7 +2202,11 @@ export default {
 
             let uengineProps = {};
             if (bo?.extensionElements?.values?.[0]?.json) {
-                try { uengineProps = JSON.parse(bo.extensionElements.values[0].json); } catch {}
+                try {
+                    uengineProps = JSON.parse(bo.extensionElements.values[0].json);
+                } catch (parseError) {
+                    console.warn('Failed to parse task uengineProps:', parseError);
+                }
             }
 
             this.taskForm.description = uengineProps.description || '';
@@ -1489,7 +2267,11 @@ export default {
             let existingProps = {};
             const bo = this.element.businessObject;
             if (bo?.extensionElements?.values?.[0]?.json) {
-                try { existingProps = JSON.parse(bo.extensionElements.values[0].json); } catch {}
+                try {
+                    existingProps = JSON.parse(bo.extensionElements.values[0].json);
+                } catch (parseError) {
+                    console.warn('Failed to parse existing task props:', parseError);
+                }
             }
 
             const uengineProps = {
@@ -1556,6 +2338,198 @@ export default {
     background: #fafafa;
 }
 
+.governance-status-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.governance-context-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.governance-review-summary {
+    padding: 14px;
+    border: 1px solid #dbe4f0;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.governance-review-summary__headline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.governance-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+.governance-review-summary__title {
+    margin-top: 6px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.governance-review-summary__stat {
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid #dbe4f0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.governance-review-summary__meta {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #64748b;
+}
+
+.review-status-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.review-status-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.review-status-pill__title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.review-status-pill__meta {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.review-status-progress {
+    margin-top: 12px;
+}
+
+.governance-action-box {
+    padding: 14px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    background: #fcfdff;
+}
+
+.governance-action-box__title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.governance-action-box__subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #64748b;
+}
+
+.governance-action-notice {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    background: #fff7ed;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #9a3412;
+}
+
+.release-strategy-panel {
+    padding: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.release-strategy-panel__title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.release-strategy-panel__subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #64748b;
+}
+
+.release-lanes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.release-lane {
+    padding: 13px 14px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+}
+
+.release-lane--accent {
+    border-color: #fdba74;
+    background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+}
+
+.release-lane__eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.release-lane__title {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.release-lane__desc {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #4b5563;
+}
+
 /* Top-level tabs */
 .top-level-tabs { min-height: 36px; }
 .top-level-tabs :deep(.v-tab) {
@@ -1565,6 +2539,16 @@ export default {
     min-width: 0;
     padding: 0 16px;
     font-weight: 600;
+}
+
+@media (max-width: 880px) {
+    .governance-review-summary__headline {
+        align-items: flex-start;
+    }
+
+    .governance-context-banner {
+        align-items: flex-start;
+    }
 }
 
 /* [2.4.2] Validation Banner */

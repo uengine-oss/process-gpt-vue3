@@ -2,18 +2,48 @@
     <div class="hierarchy-designer">
         <!-- Header Toolbar -->
         <div class="designer-toolbar">
-            <div class="toolbar-left">
-                <template v-if="processName">
-                    <span class="process-name font-weight-bold">{{ processName }}</span>
-                    <ProgressBadge v-if="currentStatus" type="status" :status="currentStatus" size="x-small" class="ml-2" />
-                    <span v-if="currentVersion" class="text-caption text-medium-emphasis ml-2"> v{{ currentVersion }} </span>
-                    <v-chip v-if="toBeMode" color="purple" variant="flat" size="small" class="ml-3"> To-Be Mode </v-chip>
-                </template>
-                <span v-else class="text-medium-emphasis">
-                    {{ $t('processHierarchy.selectProcess') || '왼쪽 트리에서 프로세스를 선택하세요' }}
-                </span>
+            <div v-if="processName && breadcrumbItems.length > 0" class="toolbar-breadcrumb-row">
+                <div class="toolbar-breadcrumb" :title="breadcrumbItems.join(' > ')">
+                    <template v-for="(item, index) in breadcrumbItems" :key="`${item}-${index}`">
+                        <span class="toolbar-breadcrumb__item" :title="item">{{ item }}</span>
+                        <v-icon v-if="index < breadcrumbItems.length - 1" size="12" class="mx-1 text-medium-emphasis"> mdi-chevron-right </v-icon>
+                    </template>
+                </div>
             </div>
-            <div class="toolbar-right">
+            <!-- Row 1: Title + Mode Toggle -->
+            <div class="toolbar-main-row">
+                <div class="toolbar-left">
+                    <template v-if="processName">
+                        <div class="toolbar-title-group">
+                            <div class="toolbar-meta-row">
+                                <span class="process-name font-weight-bold" :title="processName">{{ processName }}</span>
+                                <ProgressBadge v-if="currentStatus" type="status" :status="currentStatus" size="x-small" />
+                                <span v-if="currentVersion" class="text-caption text-medium-emphasis">v{{ currentVersion }}</span>
+                                <v-chip v-if="toBeMode" color="purple" variant="flat" size="small"> To-Be Mode </v-chip>
+                            </div>
+                        </div>
+                    </template>
+                    <span v-else class="text-medium-emphasis">
+                        {{ $t('processHierarchy.selectProcess') || '왼쪽 트리에서 프로세스를 선택하세요' }}
+                    </span>
+                </div>
+                <div class="mode-pill-track" v-if="processName">
+                    <div class="mode-pill-slider" :style="pillSliderStyle"></div>
+                    <button
+                        v-for="m in modeOptions"
+                        :key="m.value"
+                        class="mode-pill-item"
+                        :class="{ 'mode-pill-item--active': editorMode === m.value, 'mode-pill-item--disabled': m.disabled }"
+                        :disabled="m.disabled"
+                        @click="!m.disabled && $emit('changeMode', m.value)"
+                    >
+                        <v-icon size="14" class="mode-pill-icon">{{ m.icon }}</v-icon>
+                        <span>{{ m.label }}</span>
+                    </button>
+                </div>
+            </div>
+            <!-- Row 2: Action Buttons -->
+            <div class="toolbar-actions-row">
                 <!-- As-Is / To-Be Mode Toggle -->
                 <v-btn-toggle v-model="activeMode" mandatory density="compact" variant="outlined" divided color="purple" class="mr-2">
                     <v-btn value="as-is" size="small" :disabled="!processName || isViewMode"> As-Is </v-btn>
@@ -56,9 +86,15 @@
                     <v-icon start size="16">mdi-delete-outline</v-icon>
                     {{ $t('common.delete') || 'Delete' }}
                 </v-btn>
-                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('versionHistory')">
-                    <v-icon start size="16">mdi-history</v-icon>
-                    {{ $t('processHierarchy.versionHistory') || 'Version History' }}
+                <v-btn
+                    :variant="showCopilotPanel ? 'flat' : 'tonal'"
+                    color="primary"
+                    size="small"
+                    :disabled="!processName"
+                    @click="$emit('toggleCopilot')"
+                >
+                    <v-icon start size="16">mdi-robot-outline</v-icon>
+                    AI Copilot
                 </v-btn>
             </div>
         </div>
@@ -243,8 +279,12 @@ export default {
         loading: { type: Boolean, default: false },
         recoveryBackup: { type: Object, default: null },
         isViewMode: { type: Boolean, default: false },
+        editorMode: { type: String, default: 'edit' },
+        breadcrumbItems: { type: Array, default: () => [] },
         lockInfo: { type: Object, default: null },
-        readOnlyMessage: { type: String, default: '' }
+        readOnlyMessage: { type: String, default: '' },
+        showCopilotPanel: { type: Boolean, default: false },
+        hasEditAccess: { type: Boolean, default: true }
     },
     emits: [
         'openPanel',
@@ -258,7 +298,9 @@ export default {
         'validationDone',
         'dismissBackup',
         'recoverBackup',
-        'replaceXml'
+        'replaceXml',
+        'toggleCopilot',
+        'changeMode'
     ],
     beforeUnmount() {
         // 전역 상태 정리 — 다른 페이지에 영향 방지
@@ -325,6 +367,32 @@ export default {
             if (!this.definitionPath || !this.definitionList) return false;
             const def = this.definitionList.find((d) => (d.file_name || d.id) === this.definitionPath);
             return def?.approval_state === 'wip' || def?.status === 'wip';
+        },
+        modeOptions() {
+            return [
+                { value: 'view', label: 'View', icon: 'mdi-eye-outline', disabled: false },
+                { value: 'edit', label: 'Edit', icon: 'mdi-pencil-outline', disabled: !this.hasEditAccess },
+                { value: 'history', label: 'History', icon: 'mdi-history', disabled: false }
+            ];
+        },
+        pillSliderStyle() {
+            const idx = this.modeOptions.findIndex((m) => m.value === this.editorMode);
+            const activeIdx = idx >= 0 ? idx : 0;
+            const pct = 100 / 3;
+            return {
+                left: `calc(${activeIdx * pct}% + 3px)`,
+                width: `calc(${pct}% - 6px)`
+            };
+        },
+        editorModeLabel() {
+            if (this.editorMode === 'history') return 'Version History';
+            if (this.editorMode === 'view') return 'View Mode';
+            return 'Edit Mode';
+        },
+        editorModeColor() {
+            if (this.editorMode === 'history') return 'info';
+            if (this.editorMode === 'view') return 'grey';
+            return 'primary';
         },
         hasXmlChanges() {
             return this.xmlPreview !== this.xmlOriginal;
@@ -1000,27 +1068,144 @@ export default {
 
 .designer-toolbar {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 6px 16px;
     border-bottom: 1px solid #e0e0e0;
     background: #fafafa;
     flex-shrink: 0;
-    min-height: 48px;
+}
+
+.toolbar-breadcrumb-row {
+    min-width: 0;
+}
+
+.toolbar-main-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+
+.mode-pill-track {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: #eef0f4;
+    border-radius: 10px;
+    padding: 3px;
+    flex-shrink: 0;
+    height: 32px;
+}
+
+.mode-pill-slider {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    background: #fff;
+    border-radius: 7px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+}
+
+.mode-pill-item {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+    padding: 0 10px;
+    line-height: 1;
+}
+
+.mode-pill-item--active {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.mode-pill-item--disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.mode-pill-item:not(.mode-pill-item--disabled):not(.mode-pill-item--active):hover {
+    color: #475569;
+}
+
+.toolbar-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
 }
 
 .toolbar-left {
     display: flex;
     align-items: center;
+    flex: 1 1 auto;
     min-width: 0;
+    overflow: hidden;
+}
+
+.toolbar-title-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.toolbar-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.toolbar-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-width: 0;
+    white-space: nowrap;
+    color: rgba(60, 60, 67, 0.7);
+    font-size: 12px;
+    scrollbar-width: thin;
+}
+
+.toolbar-breadcrumb__item {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .process-name {
     font-size: 14px;
+    flex: 0 1 auto;
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 300px;
 }
 
 .toolbar-right {
@@ -1028,6 +1213,10 @@ export default {
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
 }
 
 .designer-canvas {

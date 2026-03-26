@@ -66,7 +66,6 @@ import ModelerImageGenerator from '@/components/designer/ModelerImageGenerator.v
 import type { KeycloakOnLoad } from 'keycloak-js';
 import Keycloak from 'keycloak-js';
 import loadbpmnComponents from './components/designer/bpmnModeling/bpmn';
-import loadOpengraphComponents from './opengraph';
 import DetailComponent from './components/ui-components/details/DetailComponent.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -149,7 +148,6 @@ const i18n = createI18n({
 // EventBus
 import mitt from 'mitt';
 const emitter = mitt();
-const OpenGraphEmitter = mitt();
 const ModelingEmitter = mitt();
 
 declare global {
@@ -314,7 +312,7 @@ async function setupTenant() {
         Object.defineProperty(window, '$tenantName', {
             // uengine supabase 운영기 연결할때 사용
             // value: 'uengine',
-            value: 'skt',
+            value: 'localhost',
             writable: false,
             configurable: false
         });
@@ -381,7 +379,6 @@ async function initializeApp() {
     // @ts-ignore
     window.$try = app._component.methods.try;
     app.config.globalProperties.EventBus = emitter;
-    app.config.globalProperties.OGBus = OpenGraphEmitter;
     app.config.globalProperties.ModelingBus = ModelingEmitter;
     // 전역 상태 관리자를 전역 속성으로 추가
     app.config.globalProperties.$globalState = globalState;
@@ -424,7 +421,6 @@ async function initializeApp() {
     // modeler-image-generator
     // Use plugins
 
-    loadOpengraphComponents(app);
     loadbpmnComponents(app);
 
     app.use(router);
