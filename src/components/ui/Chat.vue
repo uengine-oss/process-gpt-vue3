@@ -409,8 +409,7 @@
                                                                             v-if="
                                                                                 message.image ||
                                                                                 (message.images && message.images.length > 0) ||
-                                                                                (message.pdfFile &&
-                                                                                    (message.pdfFile.url || message.pdfFile.fileUrl))
+                                                                                getMessageFiles(message).length > 0
                                                                             "
                                                                             class="mb-2"
                                                                         >
@@ -447,15 +446,15 @@
                                                                                 </v-sheet>
                                                                             </div>
 
-                                                                            <!-- 파일 첨부 -->
+                                                                            <!-- 파일 첨부(다중 지원) -->
                                                                             <div
-                                                                                v-if="
-                                                                                    message.pdfFile &&
-                                                                                    (message.pdfFile.url || message.pdfFile.fileUrl)
-                                                                                "
-                                                                                class="mb-1 d-flex justify-end"
+                                                                                v-if="getMessageFiles(message).length > 0"
+                                                                                class="mb-1 d-flex justify-end flex-column"
+                                                                                style="gap: 8px"
                                                                             >
                                                                                 <v-sheet
+                                                                                    v-for="(attachedFile, fileIdx) in getMessageFiles(message)"
+                                                                                    :key="`msg-file-${index}-${fileIdx}`"
                                                                                     rounded="lg"
                                                                                     class="pa-2 d-inline-flex align-center"
                                                                                     style="
@@ -467,7 +466,10 @@
                                                                                     "
                                                                                     @click="
                                                                                         emitOpenExternalUrl(
-                                                                                            message.pdfFile.url || message.pdfFile.fileUrl
+                                                                                            attachedFile.url ||
+                                                                                                attachedFile.fileUrl ||
+                                                                                                attachedFile.publicUrl ||
+                                                                                                attachedFile.signedUrl
                                                                                         )
                                                                                     "
                                                                                 >
@@ -498,8 +500,8 @@
                                                                                             "
                                                                                         >
                                                                                             {{
-                                                                                                message.pdfFile.name ||
-                                                                                                message.pdfFile.fileName ||
+                                                                                                attachedFile.name ||
+                                                                                                attachedFile.fileName ||
                                                                                                 '첨부파일'
                                                                                             }}
                                                                                         </div>
@@ -512,7 +514,7 @@
                                                                                                 white-space: nowrap;
                                                                                             "
                                                                                         >
-                                                                                            {{ formatAttachmentSub(message.pdfFile) }}
+                                                                                            {{ formatAttachmentSub(attachedFile) }}
                                                                                         </div>
                                                                                     </div>
                                                                                     <v-btn
@@ -521,16 +523,20 @@
                                                                                         variant="tonal"
                                                                                         :disabled="
                                                                                             !(
-                                                                                                message.pdfFile.url ||
-                                                                                                message.pdfFile.fileUrl
+                                                                                                attachedFile.url ||
+                                                                                                attachedFile.fileUrl ||
+                                                                                                attachedFile.publicUrl ||
+                                                                                                attachedFile.signedUrl
                                                                                             )
                                                                                         "
                                                                                         @click.stop="
                                                                                             downloadAttachment(
-                                                                                                message.pdfFile.url ||
-                                                                                                    message.pdfFile.fileUrl,
-                                                                                                message.pdfFile.name ||
-                                                                                                    message.pdfFile.fileName
+                                                                                                attachedFile.url ||
+                                                                                                    attachedFile.fileUrl ||
+                                                                                                    attachedFile.publicUrl ||
+                                                                                                    attachedFile.signedUrl,
+                                                                                                attachedFile.name ||
+                                                                                                    attachedFile.fileName
                                                                                             )
                                                                                         "
                                                                                     >
@@ -617,8 +623,7 @@
                                                                             v-if="
                                                                                 message.image ||
                                                                                 (message.images && message.images.length > 0) ||
-                                                                                (message.pdfFile &&
-                                                                                    (message.pdfFile.url || message.pdfFile.fileUrl))
+                                                                                getMessageFiles(message).length > 0
                                                                             "
                                                                             class="mb-2"
                                                                         >
@@ -652,13 +657,13 @@
                                                                                 </v-sheet>
                                                                             </div>
                                                                             <div
-                                                                                v-if="
-                                                                                    message.pdfFile &&
-                                                                                    (message.pdfFile.url || message.pdfFile.fileUrl)
-                                                                                "
-                                                                                class="mb-1 d-flex justify-end"
+                                                                                v-if="getMessageFiles(message).length > 0"
+                                                                                class="mb-1 d-flex justify-end flex-column"
+                                                                                style="gap: 8px"
                                                                             >
                                                                                 <v-sheet
+                                                                                    v-for="(attachedFile, fileIdx) in getMessageFiles(message)"
+                                                                                    :key="`msg-file-mine-${index}-${fileIdx}`"
                                                                                     rounded="lg"
                                                                                     class="pa-2 d-inline-flex align-center"
                                                                                     style="
@@ -670,7 +675,10 @@
                                                                                     "
                                                                                     @click="
                                                                                         emitOpenExternalUrl(
-                                                                                            message.pdfFile.url || message.pdfFile.fileUrl
+                                                                                            attachedFile.url ||
+                                                                                                attachedFile.fileUrl ||
+                                                                                                attachedFile.publicUrl ||
+                                                                                                attachedFile.signedUrl
                                                                                         )
                                                                                     "
                                                                                 >
@@ -701,8 +709,8 @@
                                                                                             "
                                                                                         >
                                                                                             {{
-                                                                                                message.pdfFile.name ||
-                                                                                                message.pdfFile.fileName ||
+                                                                                                attachedFile.name ||
+                                                                                                attachedFile.fileName ||
                                                                                                 '첨부파일'
                                                                                             }}
                                                                                         </div>
@@ -715,7 +723,7 @@
                                                                                                 white-space: nowrap;
                                                                                             "
                                                                                         >
-                                                                                            {{ formatAttachmentSub(message.pdfFile) }}
+                                                                                            {{ formatAttachmentSub(attachedFile) }}
                                                                                         </div>
                                                                                     </div>
                                                                                     <v-btn
@@ -724,16 +732,20 @@
                                                                                         variant="tonal"
                                                                                         :disabled="
                                                                                             !(
-                                                                                                message.pdfFile.url ||
-                                                                                                message.pdfFile.fileUrl
+                                                                                                attachedFile.url ||
+                                                                                                attachedFile.fileUrl ||
+                                                                                                attachedFile.publicUrl ||
+                                                                                                attachedFile.signedUrl
                                                                                             )
                                                                                         "
                                                                                         @click.stop="
                                                                                             downloadAttachment(
-                                                                                                message.pdfFile.url ||
-                                                                                                    message.pdfFile.fileUrl,
-                                                                                                message.pdfFile.name ||
-                                                                                                    message.pdfFile.fileName
+                                                                                                attachedFile.url ||
+                                                                                                    attachedFile.fileUrl ||
+                                                                                                    attachedFile.publicUrl ||
+                                                                                                    attachedFile.signedUrl,
+                                                                                                attachedFile.name ||
+                                                                                                    attachedFile.fileName
                                                                                             )
                                                                                         "
                                                                                     >
@@ -1162,8 +1174,7 @@
                                                                             v-if="
                                                                                 message.image ||
                                                                                 (message.images && message.images.length > 0) ||
-                                                                                (message.pdfFile &&
-                                                                                    (message.pdfFile.url || message.pdfFile.fileUrl))
+                                                                                getMessageFiles(message).length > 0
                                                                             "
                                                                             class="mb-2"
                                                                         >
@@ -1200,15 +1211,15 @@
                                                                                 </v-sheet>
                                                                             </div>
 
-                                                                            <!-- 파일 첨부 -->
+                                                                            <!-- 파일 첨부(다중 지원) -->
                                                                             <div
-                                                                                v-if="
-                                                                                    message.pdfFile &&
-                                                                                    (message.pdfFile.url || message.pdfFile.fileUrl)
-                                                                                "
-                                                                                class="mb-1"
+                                                                                v-if="getMessageFiles(message).length > 0"
+                                                                                class="mb-1 d-flex flex-column"
+                                                                                style="gap: 8px"
                                                                             >
                                                                                 <v-sheet
+                                                                                    v-for="(attachedFile, fileIdx) in getMessageFiles(message)"
+                                                                                    :key="`msg-file-other-${index}-${fileIdx}`"
                                                                                     rounded="lg"
                                                                                     class="pa-2 d-inline-flex align-center"
                                                                                     style="
@@ -1220,7 +1231,10 @@
                                                                                     "
                                                                                     @click="
                                                                                         emitOpenExternalUrl(
-                                                                                            message.pdfFile.url || message.pdfFile.fileUrl
+                                                                                            attachedFile.url ||
+                                                                                                attachedFile.fileUrl ||
+                                                                                                attachedFile.publicUrl ||
+                                                                                                attachedFile.signedUrl
                                                                                         )
                                                                                     "
                                                                                 >
@@ -1251,8 +1265,8 @@
                                                                                             "
                                                                                         >
                                                                                             {{
-                                                                                                message.pdfFile.name ||
-                                                                                                message.pdfFile.fileName ||
+                                                                                                attachedFile.name ||
+                                                                                                attachedFile.fileName ||
                                                                                                 '첨부파일'
                                                                                             }}
                                                                                         </div>
@@ -1265,7 +1279,7 @@
                                                                                                 white-space: nowrap;
                                                                                             "
                                                                                         >
-                                                                                            {{ formatAttachmentSub(message.pdfFile) }}
+                                                                                            {{ formatAttachmentSub(attachedFile) }}
                                                                                         </div>
                                                                                     </div>
                                                                                     <v-btn
@@ -1274,16 +1288,20 @@
                                                                                         variant="tonal"
                                                                                         :disabled="
                                                                                             !(
-                                                                                                message.pdfFile.url ||
-                                                                                                message.pdfFile.fileUrl
+                                                                                                attachedFile.url ||
+                                                                                                attachedFile.fileUrl ||
+                                                                                                attachedFile.publicUrl ||
+                                                                                                attachedFile.signedUrl
                                                                                             )
                                                                                         "
                                                                                         @click.stop="
                                                                                             downloadAttachment(
-                                                                                                message.pdfFile.url ||
-                                                                                                    message.pdfFile.fileUrl,
-                                                                                                message.pdfFile.name ||
-                                                                                                    message.pdfFile.fileName
+                                                                                                attachedFile.url ||
+                                                                                                    attachedFile.fileUrl ||
+                                                                                                    attachedFile.publicUrl ||
+                                                                                                    attachedFile.signedUrl,
+                                                                                                attachedFile.name ||
+                                                                                                    attachedFile.fileName
                                                                                             )
                                                                                         "
                                                                                     >
@@ -2265,6 +2283,7 @@
                 accept="image/*,.pdf,.doc,.docx,.hwpx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
                 ref="unifiedFileInput"
                 class="d-none"
+                multiple
                 @change="changeImage"
             />
             <div style="z-index: 9999" class="d-flex flex-wrap">
@@ -2286,11 +2305,16 @@
                         <v-icon color="white" size="14">mdi-close</v-icon>
                     </v-btn>
                 </div>
-                <!-- PDF 미리보기(선택된 파일) -->
-                <div v-if="selectedPdfFile" class="pdf-preview-item" style="position: relative; margin: 8px">
-                    <v-chip closable color="primary" variant="tonal" @click:close="clearSelectedPdf">
+                <!-- 문서 미리보기(다중 선택 지원) -->
+                <div
+                    v-for="(docFile, fileIdx) in selectedPdfFiles"
+                    :key="`doc-${fileIdx}-${docFile?.name || 'file'}`"
+                    class="pdf-preview-item"
+                    style="position: relative; margin: 8px"
+                >
+                    <v-chip closable color="primary" variant="tonal" @click:close="clearSelectedPdf(fileIdx)">
                         <v-icon start size="16">mdi-file-outline</v-icon>
-                        {{ selectedPdfFile.name }}
+                        {{ docFile?.name || '첨부파일' }}
                     </v-chip>
                 </div>
             </div>
@@ -2823,7 +2847,9 @@ export default {
             delImgBtn: false,
             // PDF 업로드(정의체계도/패널 공통)
             selectedPdfFile: null,
+            selectedPdfFiles: [],
             uploadedPdfInfo: null,
+            uploadedPdfInfos: [],
             isPdfUploading: false,
             isDragOverTextarea: false,
             showNewMessageNoti: false,
@@ -3020,8 +3046,8 @@ export default {
                     const hasText = !!data.content || !!data.jsonContent || !!data.htmlContent;
                     const hasImage = !!data.image;
                     const hasImages = Array.isArray(data.images) && data.images.length > 0;
-                    const f = data.pdfFile;
-                    const hasFile = !!f && !!(f.url || f.fileUrl || f.publicUrl || f.signedUrl || f.name || f.fileName);
+                    const files = this.getMessageFiles(data);
+                    const hasFile = files.length > 0;
 
                     if (hasText || hasImage || hasImages || hasFile) {
                         list.push(data);
@@ -3097,7 +3123,7 @@ export default {
                 // workAssistantAgentMode에서는 "텍스트/이미지/PDF" 중 하나라도 있으면 전송 활성화
                 const hasText = !!this.newMessage && this.newMessage.trim() !== '';
                 const hasImages = !!this.attachedImages && this.attachedImages.length > 0;
-                const hasPdf = !!this.selectedPdfFile;
+                const hasPdf = Array.isArray(this.selectedPdfFiles) ? this.selectedPdfFiles.length > 0 : !!this.selectedPdfFile;
                 return !(hasText || hasImages || hasPdf);
             }
             if (this.disableChat) {
@@ -3246,14 +3272,34 @@ export default {
                 return ' ';
             }
         },
+        getMessageFiles(message) {
+            const list = [];
+            const arr = Array.isArray(message?.pdfFiles) ? message.pdfFiles : [];
+            const single = message?.pdfFile ? [message.pdfFile] : [];
+            for (const f of [...arr, ...single]) {
+                if (!f) continue;
+                const url = f.url || f.fileUrl || f.publicUrl || f.signedUrl || '';
+                const name = f.name || f.fileName || '';
+                if (!url && !name) continue;
+                list.push(f);
+            }
+            const uniq = [];
+            const seen = new Set();
+            for (const f of list) {
+                const key = `${f.url || f.fileUrl || f.publicUrl || f.signedUrl || ''}|${f.name || f.fileName || ''}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                uniq.push(f);
+            }
+            return uniq;
+        },
         shouldRenderMessageBubble(message) {
             try {
                 const text = (message?.content ?? '').toString().trim();
                 const hasText = !!text || !!message?.htmlContent || !!message?.jsonContent;
                 const hasImage = !!message?.image;
                 const hasImages = Array.isArray(message?.images) && message.images.length > 0;
-                const f = message?.pdfFile;
-                const hasFile = !!f && !!(f.url || f.fileUrl || f.publicUrl || f.signedUrl || f.name || f.fileName);
+                const hasFile = this.getMessageFiles(message).length > 0;
                 return hasText || hasImage || hasImages || hasFile;
             } catch (e) {
                 return !!message?.content;
@@ -4013,8 +4059,12 @@ export default {
             try {
                 const text = (message?.content || '').toString().trim();
                 if (text) return text;
-                const f = message?.pdfFile;
-                if (f && (f.name || f.fileName)) return `[첨부파일] ${(f.name || f.fileName).toString()}`;
+                const files = this.getMessageFiles(message);
+                if (files.length > 0) {
+                    const first = files[0];
+                    const firstName = (first?.name || first?.fileName || '첨부파일').toString();
+                    return files.length > 1 ? `[첨부파일] ${firstName} 외 ${files.length - 1}개` : `[첨부파일] ${firstName}`;
+                }
                 const images = Array.isArray(message?.images) ? message.images : [];
                 if (images.length > 0) return `[이미지] ${images.length}장`;
                 if (message?.image) return `[이미지] 1장`;
@@ -4088,7 +4138,7 @@ export default {
                     this.$emit('stopMessage');
                 }
                 var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
-                const hasPdf = !!this.selectedPdfFile;
+                const hasPdf = Array.isArray(this.selectedPdfFiles) ? this.selectedPdfFiles.length > 0 : !!this.selectedPdfFile;
                 if (copyMsg.length > 0 || this.attachedImages.length > 0 || hasPdf) {
                     this.isSending = true;
                     this.send();
@@ -4119,17 +4169,23 @@ export default {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;
             } else {
-                // PDF가 선택된 경우: 전송 직전 업로드하여 fileInfo 생성
-                if (this.selectedPdfFile && !this.uploadedPdfInfo) {
-                    await this.ensurePdfUploaded();
+                // 파일이 선택된 경우: 전송 직전 업로드하여 fileInfo 배열 생성
+                if (
+                    Array.isArray(this.selectedPdfFiles) &&
+                    this.selectedPdfFiles.length > 0 &&
+                    (!Array.isArray(this.uploadedPdfInfos) || this.uploadedPdfInfos.length === 0)
+                ) {
+                    await this.ensurePdfUploadedFiles();
                 }
+                const uploadedFiles = Array.isArray(this.uploadedPdfInfos) ? this.uploadedPdfInfos : [];
                 // 부모 컴포넌트로 메시지 전달 (기존 방식 유지: images에 url(base64 가능) 포함)
                 this.$emit('sendMessage', {
                     images: this.attachedImages,
                     text: this.newMessage,
                     mentionedUsers: this.mentionedUsers,
-                    // PDF는 전송 직전 업로드된 fileInfo 형태로 전달
-                    file: this.uploadedPdfInfo,
+                    // 하위 호환: 첫 파일은 file에 유지, 다중은 files로 전달
+                    file: uploadedFiles[0] || this.uploadedPdfInfo,
+                    files: uploadedFiles,
                     // reply 메타데이터 (ChatRoomPage에서 저장/표시)
                     reply: this.isReply
                         ? {
@@ -4143,7 +4199,9 @@ export default {
             if (this.isReply) this.isReply = false;
             this.attachedImages = [];
             this.selectedPdfFile = null;
+            this.selectedPdfFiles = [];
             this.uploadedPdfInfo = null;
+            this.uploadedPdfInfos = [];
             this.delImgBtn = false;
             this.isAtBottom = true;
             setTimeout(() => {
@@ -4165,11 +4223,10 @@ export default {
             }
         },
         handlePdfSelect(e) {
-            const file = e.target.files?.[0];
-            if (!file) return;
+            const selected = Array.from(e?.target?.files || []);
+            if (!selected.length) return;
 
             // Allow PDF + common Office + image formats (stored to Supabase, converted/OCR’d server-side).
-            const name = (file.name || '').toLowerCase();
             const allowedExt = [
                 '.pdf',
                 '.doc',
@@ -4189,44 +4246,113 @@ export default {
                 '.bmp',
                 '.tiff'
             ];
-            const ok = allowedExt.some((ext) => name.endsWith(ext));
-            if (!ok) {
+            const invalid = selected.find((f) => {
+                const name = (f?.name || '').toLowerCase();
+                return !allowedExt.some((ext) => name.endsWith(ext));
+            });
+            if (invalid) {
                 alert('지원되는 파일 형식이 아닙니다. (PDF/Office/Image/Text)');
                 if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
+                if (this.$refs.unifiedFileInput) this.$refs.unifiedFileInput.value = '';
                 return;
             }
-            this.selectedPdfFile = file;
-            this.uploadedPdfInfo = null; // 새 파일 선택 시 업로드 정보 초기화
-        },
-        clearSelectedPdf() {
-            this.selectedPdfFile = null;
+            const current = Array.isArray(this.selectedPdfFiles) ? this.selectedPdfFiles : [];
+            const merged = [...current];
+            for (const f of selected) {
+                const key = `${f.name}|${f.size}|${f.lastModified}`;
+                const exists = merged.some((x) => `${x.name}|${x.size}|${x.lastModified}` === key);
+                if (!exists) merged.push(f);
+            }
+            this.selectedPdfFiles = merged;
+            this.selectedPdfFile = merged[0] || null;
             this.uploadedPdfInfo = null;
-            if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
+            this.uploadedPdfInfos = [];
         },
-        async ensurePdfUploaded() {
-            if (!this.selectedPdfFile) return null;
-            if (this.uploadedPdfInfo) return this.uploadedPdfInfo;
-            if (this.isPdfUploading) return null;
+        clearSelectedPdf(index) {
+            if (typeof index === 'number') {
+                const list = Array.isArray(this.selectedPdfFiles) ? [...this.selectedPdfFiles] : [];
+                if (index >= 0 && index < list.length) list.splice(index, 1);
+                this.selectedPdfFiles = list;
+            } else {
+                this.selectedPdfFiles = [];
+            }
+            this.selectedPdfFile = this.selectedPdfFiles[0] || null;
+            this.uploadedPdfInfo = null;
+            this.uploadedPdfInfos = [];
+            if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
+            if (this.$refs.unifiedFileInput) this.$refs.unifiedFileInput.value = '';
+        },
+        async ensurePdfUploadedFiles() {
+            const files = Array.isArray(this.selectedPdfFiles) ? this.selectedPdfFiles : [];
+            if (!files.length) return [];
+            if (Array.isArray(this.uploadedPdfInfos) && this.uploadedPdfInfos.length === files.length) {
+                return this.uploadedPdfInfos;
+            }
+            if (this.isPdfUploading) return [];
 
             this.isPdfUploading = true;
             try {
-                const uploadResult = await backend.uploadFile(this.selectedPdfFile.name, this.selectedPdfFile);
-                if (uploadResult && uploadResult.publicUrl) {
-                    this.uploadedPdfInfo = {
-                        fileName: this.selectedPdfFile.name,
-                        fileUrl: uploadResult.publicUrl,
-                        fileType: this.selectedPdfFile.type,
-                        fileSize: this.selectedPdfFile.size
-                    };
-                    return this.uploadedPdfInfo;
+                const uploaded = [];
+                for (const f of files) {
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        const uploadResult = await backend.uploadFile(f.name, f);
+                        const resolvedUrl =
+                            uploadResult?.publicUrl ||
+                            uploadResult?.fullPath ||
+                            uploadResult?.fileUrl ||
+                            uploadResult?.url ||
+                            uploadResult?.path ||
+                            null;
+                        if (uploadResult && resolvedUrl) {
+                            uploaded.push({
+                                fileName: f.name,
+                                fileUrl: resolvedUrl,
+                                publicUrl: uploadResult?.publicUrl || resolvedUrl,
+                                fullPath: uploadResult?.fullPath || resolvedUrl,
+                                path: uploadResult?.path || '',
+                                fileType: f.type,
+                                fileSize: f.size
+                            });
+                        } else {
+                            // 업로드 실패해도 UI에는 선택 파일을 유지해서 "몇 개 선택되었는지" 보이게 함
+                            uploaded.push({
+                                fileName: f.name,
+                                fileUrl: '',
+                                publicUrl: '',
+                                fullPath: '',
+                                path: '',
+                                fileType: f.type,
+                                fileSize: f.size,
+                                uploadError: true
+                            });
+                        }
+                    } catch (e) {
+                        uploaded.push({
+                            fileName: f.name,
+                            fileUrl: '',
+                            publicUrl: '',
+                            fullPath: '',
+                            path: '',
+                            fileType: f.type,
+                            fileSize: f.size,
+                            uploadError: true
+                        });
+                    }
                 }
-                return null;
+                this.uploadedPdfInfos = uploaded;
+                this.uploadedPdfInfo = uploaded[0] || null;
+                return uploaded;
             } catch (error) {
-                console.error('[Chat] PDF 업로드 오류:', error);
-                return null;
+                console.error('[Chat] 파일 업로드 오류:', error);
+                return [];
             } finally {
                 this.isPdfUploading = false;
             }
+        },
+        async ensurePdfUploaded() {
+            const uploaded = await this.ensurePdfUploadedFiles();
+            return uploaded[0] || null;
         },
         cancel() {
             // eslint-disable-next-line vue/no-mutating-props
@@ -4271,63 +4397,29 @@ export default {
         },
         async changeImage(e) {
             const me = this;
-            const imageFile = e?.target?.files?.[0];
-            if (!imageFile) return;
+            const selectedFiles = Array.from(e?.target?.files || []);
+            if (!selectedFiles.length) return;
 
-            if (!imageFile.type.startsWith('image/')) {
-                this.handlePdfSelect(e);
-                return;
+            const imageFiles = selectedFiles.filter((f) => (f?.type || '').startsWith('image/'));
+            const docFiles = selectedFiles.filter((f) => !(f?.type || '').startsWith('image/'));
+
+            // 문서/오피스 파일은 기존 PDF 선택 경로로 일괄 처리
+            if (docFiles.length > 0) {
+                this.handlePdfSelect({ target: { files: docFiles } });
             }
 
-            if (window.location.hostname !== 'localhost') {
-                const originalName = imageFile.name || '';
-                const lastDot = originalName.lastIndexOf('.');
-                const extRaw = lastDot > -1 ? originalName.slice(lastDot) : '';
-                const ext = /^\.[0-9A-Za-z]+$/.test(extRaw) ? extRaw : '';
-                // supabase 저장 경로에 한글/특수문자(공백 포함)가 있으면 400 오류가 발생할 수 있어 UUID로 대체
-                const hasUnsafeChars = !originalName || /[^0-9A-Za-z._-]/.test(originalName);
-                const uuid = (() => {
-                    try {
-                        if (typeof crypto !== 'undefined') {
-                            if (crypto.randomUUID) return crypto.randomUUID();
-                            if (crypto.getRandomValues) {
-                                const buf = new Uint8Array(16);
-                                crypto.getRandomValues(buf);
-                                // RFC4122 v4
-                                buf[6] = (buf[6] & 0x0f) | 0x40;
-                                buf[8] = (buf[8] & 0x3f) | 0x80;
-                                const hex = Array.from(buf, (b) => b.toString(16).padStart(2, '0'));
-                                return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex
-                                    .slice(8, 10)
-                                    .join('')}-${hex.slice(10, 16).join('')}`;
-                            }
-                        }
-                    } catch (err) {
-                        // ignore
-                    }
-                    // 최후 fallback (형식만 UUID v4 형태)
-                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-                        const r = (Math.random() * 16) | 0;
-                        const v = c === 'x' ? r : (r & 0x3) | 0x8;
-                        return v.toString(16);
-                    });
-                })();
+            const toDataUrl = (file) =>
+                new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => resolve(event?.target?.result || '');
+                    reader.onerror = (err) => reject(err);
+                    reader.readAsDataURL(file);
+                });
 
-                const fileName = hasUnsafeChars ? `uploads/${uuid}${ext}` : `uploads/${originalName}`;
-                const data = await backend.uploadImage(fileName, imageFile);
-                if (data && data.path) {
-                    const imageUrl = await backend.getImageUrl(data.path);
-                    me.attachedImages.push({
-                        id: Date.now(),
-                        url: imageUrl,
-                        file: imageFile
-                    });
-                }
-            } else {
-                const reader = new FileReader();
-                reader.onload = (event) => {
+            const toCompressedPreview = (src) =>
+                new Promise((resolve) => {
                     const imgElement = document.createElement('img');
-                    imgElement.src = event.target.result;
+                    imgElement.src = src;
                     imgElement.onload = () => {
                         const canvas = document.createElement('canvas');
                         // AI Vision 분석을 위해 고해상도 유지 (최대 2048px)
@@ -4338,19 +4430,72 @@ export default {
 
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-                        // AI가 이미지를 제대로 인식할 수 있도록 높은 품질 유지 (0.9 = 90% 품질)
-                        const srcEncoded = ctx.canvas.toDataURL('image/jpeg', 0.9);
+                        resolve(ctx.canvas.toDataURL('image/jpeg', 0.9));
+                    };
+                    imgElement.onerror = () => resolve(src);
+                });
 
-                        // 이미지 배열에 추가
+            for (const imageFile of imageFiles) {
+                if (window.location.hostname !== 'localhost') {
+                    const originalName = imageFile.name || '';
+                    const lastDot = originalName.lastIndexOf('.');
+                    const extRaw = lastDot > -1 ? originalName.slice(lastDot) : '';
+                    const ext = /^\.[0-9A-Za-z]+$/.test(extRaw) ? extRaw : '';
+                    // supabase 저장 경로에 한글/특수문자(공백 포함)가 있으면 400 오류가 발생할 수 있어 UUID로 대체
+                    const hasUnsafeChars = !originalName || /[^0-9A-Za-z._-]/.test(originalName);
+                    const uuid = (() => {
+                        try {
+                            if (typeof crypto !== 'undefined') {
+                                if (crypto.randomUUID) return crypto.randomUUID();
+                                if (crypto.getRandomValues) {
+                                    const buf = new Uint8Array(16);
+                                    crypto.getRandomValues(buf);
+                                    // RFC4122 v4
+                                    buf[6] = (buf[6] & 0x0f) | 0x40;
+                                    buf[8] = (buf[8] & 0x3f) | 0x80;
+                                    const hex = Array.from(buf, (b) => b.toString(16).padStart(2, '0'));
+                                    return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex
+                                        .slice(8, 10)
+                                        .join('')}-${hex.slice(10, 16).join('')}`;
+                                }
+                            }
+                        } catch (err) {
+                            // ignore
+                        }
+                        // 최후 fallback (형식만 UUID v4 형태)
+                        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                            const r = (Math.random() * 16) | 0;
+                            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                            return v.toString(16);
+                        });
+                    })();
+
+                    const fileName = hasUnsafeChars ? `uploads/${uuid}${ext}` : `uploads/${originalName}`;
+                    // eslint-disable-next-line no-await-in-loop
+                    const data = await backend.uploadImage(fileName, imageFile);
+                    if (data && data.path) {
+                        // eslint-disable-next-line no-await-in-loop
+                        const imageUrl = await backend.getImageUrl(data.path);
                         me.attachedImages.push({
-                            id: Date.now(),
+                            id: `${Date.now()}-${Math.random()}`,
+                            url: imageUrl,
+                            file: imageFile
+                        });
+                    }
+                } else {
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        const src = await toDataUrl(imageFile);
+                        // eslint-disable-next-line no-await-in-loop
+                        const srcEncoded = await toCompressedPreview(src);
+                        me.attachedImages.push({
+                            id: `${Date.now()}-${Math.random()}`,
                             url: srcEncoded,
                             file: imageFile
                         });
-                    };
-                };
-                if (imageFile) {
-                    reader.readAsDataURL(imageFile);
+                    } catch (err) {
+                        // ignore per-file preview error
+                    }
                 }
             }
         },

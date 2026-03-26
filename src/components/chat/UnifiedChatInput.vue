@@ -147,11 +147,18 @@ export default {
             });
         },
         forwardSendMessage(message) {
-            if (!message || (!message.text && !message.file && (!message.images || message.images.length === 0))) return;
+            const messageFiles = Array.isArray(message?.files)
+                ? message.files
+                : Array.isArray(message?.file)
+                  ? message.file
+                  : [];
+            const hasFiles = messageFiles.length > 0;
+            if (!message || (!message.text && !message.file && !hasFiles && (!message.images || message.images.length === 0))) return;
             this.$emit('sendMessage', {
                 text: (message.text || '').trim(),
                 timestamp: new Date().toISOString(),
                 file: message.file || null,
+                files: hasFiles ? messageFiles : null,
                 images: message.images || null,
                 // mention 메타데이터 pass-through (Chat.vue -> ChatRoomPage 라우팅)
                 mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],

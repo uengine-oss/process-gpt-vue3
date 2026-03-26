@@ -1375,7 +1375,13 @@ export default {
 
             const text = (message?.text || '').toString().trim();
             const hasImages = Array.isArray(message?.images) && message.images.length > 0;
-            const hasFile = !!message?.file;
+            const messageFiles = Array.isArray(message?.files)
+                ? message.files.filter(Boolean)
+                : message?.file
+                  ? [message.file]
+                  : [];
+            const hasFile = messageFiles.length > 0;
+            const primaryFile = messageFiles[0] || null;
 
             const roomId = this.uuid();
             const nowIso = new Date().toISOString();
@@ -1408,15 +1414,16 @@ export default {
                 name: userInfo?.username || userInfo?.name || userInfo?.email || '',
                 userName: userInfo?.username || userInfo?.name || userInfo?.email || '',
                 images: message?.images || [],
-                pdfFile: message?.file || null
+                pdfFile: primaryFile,
+                pdfFiles: messageFiles
             };
 
             await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
             // last message preview는 첨부 요약을 사용 (content는 비워둠)
-            const fileName = (message?.file?.name || message?.file?.fileName || '').toString();
+            const fileName = (primaryFile?.name || primaryFile?.fileName || '').toString();
             const preview =
                 (text || '').substring(0, 50) ||
-                (hasFile ? fileName.substring(0, 50) : '') ||
+                (hasFile ? (messageFiles.length > 1 ? `${fileName} 외 ${messageFiles.length - 1}개` : fileName).substring(0, 50) : '') ||
                 (hasImages ? `이미지 ${(message?.images || []).length || 0}장` : '');
             room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
             await backend.putObject('db://chat_rooms', room);
@@ -1430,7 +1437,8 @@ export default {
                         msgUuid,
                         text,
                         images: message?.images || [],
-                        file: message?.file || null,
+                        file: primaryFile,
+                        files: messageFiles,
                         createdAt: nowIso
                     })
                 );
@@ -1667,7 +1675,10 @@ export default {
         async handleMainChatSubmit(message) {
             console.log('[ProcessDefinitionMap] handleMainChatSubmit 받음:', message);
             // 파일만 있거나 텍스트만 있거나 둘 다 있는 경우 처리
-            if (!message || (!message.text && !message.file && !message.images)) return;
+            const files = Array.isArray(message?.files) ? message.files : message?.file ? [message.file] : [];
+            const hasFiles = files.length > 0;
+            const hasImages = Array.isArray(message?.images) && message.images.length > 0;
+            if (!message || (!message.text && !hasFiles && !hasImages)) return;
 
             // 메인 채팅 전송 시: process-gpt-agent(가상) + 나 로 방 생성 후 /chat으로 이동
             await this.createRoomAndNavigateFromMainChat(message);

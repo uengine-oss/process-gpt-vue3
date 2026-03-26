@@ -1366,6 +1366,61 @@ export default {
                 this.$refs.chatView?.scrollToBottom?.();
             } catch (e) {}
         },
+        normalizePayloadFiles(payload) {
+            const files = [];
+            const pushIfFile = (candidate) => {
+                if (!candidate) return;
+                if (Array.isArray(candidate)) {
+                    for (const c of candidate) pushIfFile(c);
+                    return;
+                }
+                if (
+                    candidate.fileUrl ||
+                    candidate.url ||
+                    candidate.publicUrl ||
+                    candidate.fullPath ||
+                    candidate.path ||
+                    candidate.fileName ||
+                    candidate.name
+                ) {
+                    files.push(candidate);
+                }
+            };
+
+            const single = payload?.file;
+            pushIfFile(single);
+            pushIfFile(payload?.files);
+            pushIfFile(payload?.attachments);
+            pushIfFile(payload?.fileList);
+            pushIfFile(payload?.uploadedFiles);
+            // 일부 payload는 file 객체 안에 다시 files 배열을 담는다.
+            pushIfFile(single?.files);
+            pushIfFile(single?.attachments);
+
+            for (const f of files) {
+                if (!f) continue;
+            }
+            const uniq = [];
+            const seen = new Set();
+            for (const f of files) {
+                const key = `${f.fileUrl || f.url || f.publicUrl || f.fullPath || f.path || ''}|${f.fileName || f.name || ''}`;
+                if (!key || seen.has(key)) continue;
+                seen.add(key);
+                uniq.push(f);
+            }
+            return uniq;
+        },
+        getPayloadFileSummary(payload) {
+            const files = this.normalizePayloadFiles(payload);
+            const primary = files[0] || null;
+            return {
+                files,
+                primary,
+                hasFile: files.length > 0,
+                fileCount: files.length,
+                firstFileName: (primary?.name || primary?.fileName || '').toString()
+            };
+        },
         async bootstrapTargetUser(userId) {
             this.isLoadingTargetUser = true;
             try {
@@ -1385,13 +1440,14 @@ export default {
         },
         // userId 컨텍스트에서 드래프트 첫 전송 -> 방 생성 후 (라우팅 없이) 탭/방으로 전환
         async handleSendMessageUserContextDraft(payload) {
-            if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !payload.file)) return;
+            const fileMeta = this.getPayloadFileSummary(payload);
+            if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !fileMeta.hasFile)) return;
             if (!this.userInfo || !this.targetUser) return;
             if (this.isSending) return;
 
             const text = (payload.text || '').trim();
             const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
-            const hasFile = !!payload.file;
+            const hasFile = fileMeta.hasFile;
             if (!text && !hasImages && !hasFile) return;
 
             this.isSending = true;
@@ -1426,15 +1482,16 @@ export default {
                     name: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
                     userName: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
                     images: payload.images || [],
-                    pdfFile: payload.file || null
+                    pdfFile: fileMeta.primary || null,
+                    pdfFiles: fileMeta.files
                 };
                 await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
 
                 // room last message
-                const fileName = (payload?.file?.name || payload?.file?.fileName || '').toString();
+                const fileName = (fileMeta.firstFileName || '').toString();
                 const preview =
                     (text || '').substring(0, 50) ||
-                    (hasFile ? fileName.substring(0, 50) : '') ||
+                    (hasFile ? (fileMeta.fileCount > 1 ? `${fileName} 외 ${fileMeta.fileCount - 1}개` : fileName).substring(0, 50) : '') ||
                     (hasImages ? `이미지 ${(payload?.images || []).length || 0}장` : '');
                 room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 await backend.putObject('db://chat_rooms', room);
@@ -1454,13 +1511,14 @@ export default {
             }
         },
         async handleSendMessageContextDraft(payload) {
-            if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !payload.file)) return;
+            const fileMeta = this.getPayloadFileSummary(payload);
+            if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !fileMeta.hasFile)) return;
             if (!this.userInfo || !this.contextAgentId) return;
             if (this.isSending) return;
 
             const text = (payload.text || '').trim();
             const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
-            const hasFile = !!payload.file;
+            const hasFile = fileMeta.hasFile;
             if (!text && !hasImages && !hasFile) return;
 
             this.isSending = true;
@@ -1500,14 +1558,15 @@ export default {
                     name: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
                     userName: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
                     images: payload.images || [],
-                    pdfFile: payload.file || null
+                    pdfFile: fileMeta.primary || null,
+                    pdfFiles: fileMeta.files
                 };
                 await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
 
-                const fileName = (payload?.file?.name || payload?.file?.fileName || '').toString();
+                const fileName = (fileMeta.firstFileName || '').toString();
                 const preview =
                     (text || '').substring(0, 50) ||
-                    (hasFile ? fileName.substring(0, 50) : '') ||
+                    (hasFile ? (fileMeta.fileCount > 1 ? `${fileName} 외 ${fileMeta.fileCount - 1}개` : fileName).substring(0, 50) : '') ||
                     (hasImages ? `이미지 ${(payload?.images || []).length || 0}장` : '');
                 room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 await backend.putObject('db://chat_rooms', room);
@@ -1682,9 +1741,11 @@ export default {
 
                 const agentTargets = await this.resolveAgentTargetsForMessage(payload.text || '');
                 if (agentTargets.length > 0) {
+                    const kickoffFiles = this.normalizePayloadFiles(payload);
                     await this.streamAgents(agentTargets, payload.text || '', {
                         images: payload.images || [],
-                        file: payload.file || null
+                        file: kickoffFiles[0] || null,
+                        files: kickoffFiles
                     });
                 }
             } catch (e) {}
@@ -1729,7 +1790,7 @@ export default {
                     m.rowUuid = row?.uuid || null;
                     m.uuid = m.uuid || m.clientUuid || m.rowUuid || this.uuid();
                     m.clientUuid = m.clientUuid || m.uuid;
-                    return m;
+                    return this.normalizeAssistantMessageForDisplay(m);
                 });
                 // desc로 받아왔으니 asc로 정렬된 형태가 되도록 reverse
                 const asc = mapped.reverse();
@@ -1796,7 +1857,7 @@ export default {
                         m.rowUuid = row?.uuid || null;
                         m.uuid = m.uuid || m.clientUuid || m.rowUuid || this.uuid();
                         m.clientUuid = m.clientUuid || m.uuid;
-                        return m;
+                        return this.normalizeAssistantMessageForDisplay(m);
                     })
                     .reverse(); // asc
 
@@ -1870,6 +1931,7 @@ export default {
                     incoming.rowUuid = rowUuid || incoming.rowUuid || null;
                     incoming.uuid = incoming.uuid || logicalUuid;
                     incoming.clientUuid = incoming.clientUuid || incoming.uuid;
+                    this.normalizeAssistantMessageForDisplay(incoming);
                 }
 
                 const keys = new Set([logicalUuid, rowUuid, incoming?.uuid, incoming?.clientUuid].filter(Boolean));
@@ -1879,7 +1941,10 @@ export default {
                 });
                 if (exists !== -1) {
                     // 기존 optimistic 메시지를 실시간 데이터로 최신화(필드 merge)
-                    this.messages[exists] = typeof incoming === 'object' ? { ...(this.messages[exists] || {}), ...incoming } : incoming;
+                    this.messages[exists] =
+                        typeof incoming === 'object'
+                            ? this.normalizeAssistantMessageForDisplay({ ...(this.messages[exists] || {}), ...incoming })
+                            : incoming;
                     return;
                 }
                 // uuid가 다르게 들어오는 경우(또는 이중 submit)로 인한 중복 방지: 내용/작성자/시간이 거의 동일하면 덮어쓰기
@@ -1899,7 +1964,7 @@ export default {
                     if (dupIdx !== -1) {
                         // 들어온 것을 기준으로 최신화(단, uuid는 메시지 uuid를 유지)
                         if (typeof incoming === 'object') {
-                            this.messages[dupIdx] = { ...(this.messages[dupIdx] || {}), ...incoming };
+                            this.messages[dupIdx] = this.normalizeAssistantMessageForDisplay({ ...(this.messages[dupIdx] || {}), ...incoming });
                         } else {
                             this.messages[dupIdx] = incoming;
                         }
@@ -2258,18 +2323,21 @@ export default {
         // ===== 데스크탑 음성 에이전트 끝 =====
 
         async handleSendMessage(payload) {
-            if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !payload.file)) return;
+            const fileMeta = this.getPayloadFileSummary(payload);
+            if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !fileMeta.hasFile)) return;
             if (!this.currentChatRoom?.id) return;
             const text = (payload.text || '').trim();
             const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
-            const hasFile = !!payload.file;
+            const hasFile = fileMeta.hasFile;
             if (!text && !hasImages && !hasFile) return;
 
             try {
                 const keyObj = {
                     text: text || '',
                     imgCount: hasImages ? (payload.images || []).length : 0,
-                    fileName: hasFile ? payload.file?.name || payload.file?.fileName || '' : ''
+                    fileNames: hasFile
+                        ? fileMeta.files.map((f) => f?.name || f?.fileName || '').filter(Boolean)
+                        : []
                 };
                 const key = JSON.stringify(keyObj);
                 const now = Date.now();
@@ -2296,7 +2364,8 @@ export default {
                     name: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
                     userName: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
                     images: payload.images || [],
-                    pdfFile: payload.file || null,
+                    pdfFile: fileMeta.primary || null,
+                    pdfFiles: fileMeta.files,
                     // mention 메타데이터 (UI 표시 + 라우팅에 사용)
                     mentionedUsers: Array.isArray(payload?.mentionedUsers) ? payload.mentionedUsers : [],
                     // reply 메타데이터 (UI에서 표시)
@@ -2307,10 +2376,10 @@ export default {
                 await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: this.currentChatRoom.id, messages: msg });
 
                 // last message update
-                const fileName = (payload?.file?.name || payload?.file?.fileName || '').toString();
+                const fileName = (fileMeta.firstFileName || '').toString();
                 const preview =
                     (text || '').substring(0, 50) ||
-                    (hasFile ? fileName.substring(0, 50) : '') ||
+                    (hasFile ? (fileMeta.fileCount > 1 ? `${fileName} 외 ${fileMeta.fileCount - 1}개` : fileName).substring(0, 50) : '') ||
                     (hasImages ? `이미지 ${(payload?.images || []).length || 0}장` : '');
                 this.currentChatRoom.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 await backend.putObject('db://chat_rooms', this.currentChatRoom);
@@ -2497,9 +2566,15 @@ export default {
                 }
 
                 const userText = (triggerMsg?.content || '').toString();
+                const triggerFiles = Array.isArray(triggerMsg?.pdfFiles)
+                    ? triggerMsg.pdfFiles
+                    : triggerMsg?.pdfFile
+                      ? [triggerMsg.pdfFile]
+                      : [];
                 const resendPayload = {
                     images: Array.isArray(triggerMsg?.images) ? triggerMsg.images : [],
-                    file: triggerMsg?.pdfFile || null
+                    file: triggerFiles[0] || null,
+                    files: triggerFiles
                 };
 
                 const agentTarget = {
@@ -2969,10 +3044,15 @@ export default {
         buildMessageForAgent(userText, payload, policy) {
             let messageForAgent = (userText || '').toString();
             // 첨부 정보는 기존 방식처럼 [InputData]로 전달
-            if ((payload?.images && payload.images.length > 0) || payload?.file) {
+            const normalizedFiles = this.normalizePayloadFiles(payload);
+            if ((payload?.images && payload.images.length > 0) || normalizedFiles.length > 0) {
                 const inputData = {};
                 if (payload?.images && payload.images.length > 0) inputData.images = payload.images;
-                if (payload?.file) inputData.file = payload.file;
+                if (normalizedFiles.length > 0) {
+                    // 하위 호환: 첫 파일은 file, 전체는 files
+                    inputData.file = normalizedFiles[0];
+                    inputData.files = normalizedFiles;
+                }
                 messageForAgent += `\n\n[InputData]\n${JSON.stringify(inputData)}`;
             }
 
@@ -2983,6 +3063,8 @@ export default {
         async streamAgents(agentTargets, userText, payload) {
             const userJwt = (await getValidToken()) || '';
             const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+            const requestFiles = this.normalizePayloadFiles(payload);
+            const requestPrimaryFile = requestFiles[0] || null;
 
             // remove routing loading bubble once we start calling agents
             const routingUuid = (agentTargets || []).find((t) => t?.__routingLoadingUuid)?.__routingLoadingUuid || null;
@@ -3073,11 +3155,20 @@ export default {
                     user_name: this.userInfo?.name || this.userInfo?.username,
                     user_jwt: userJwt,
                     conversation_id: this.currentChatRoom?.id,
+                    // 텍스트([InputData]) 파싱 실패를 대비해 구조화 파일 정보를 함께 전달
+                    file: requestPrimaryFile,
+                    files: requestFiles,
+                    file_count: requestFiles.length,
                     metadata: {
                         ...(agentTarget?.__routingDecision ? { routing: agentTarget.__routingDecision } : {}),
                         room_recent_history,
                         assigned_skills: assignedSkills,
                         agent_profile: agentProfileForRuntime,
+                        input_data: {
+                            file: requestPrimaryFile,
+                            files: requestFiles,
+                            fileCount: requestFiles.length
+                        }
                     }
                 };
 
@@ -3144,10 +3235,11 @@ export default {
                         const finalContent = (content || full || '').toString().trim();
                         // 침묵 정책 제거: NO_RESPONSE도 그대로 텍스트로 표시하지 않도록 빈 값 처리
                         const safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
+                        const displayContent = this.extractDisplayAssistantContent(safeFinal || full || '');
 
                         const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                         if (idx !== -1) {
-                            this.messages[idx].content = safeFinal || full || '';
+                            this.messages[idx].content = displayContent;
                             this.messages[idx].isLoading = false;
                             this.messages[idx].contentType = 'text';
                         }
@@ -3157,13 +3249,13 @@ export default {
                         await backend.putObject(`db://chats/${assistantUuid}`, {
                             uuid: assistantUuid,
                             id: this.currentChatRoom?.id,
-                            messages: { ...(this.messages[idx] || assistantMsgBase), content: safeFinal || full || '', isLoading: false }
+                            messages: { ...(this.messages[idx] || assistantMsgBase), content: displayContent, isLoading: false }
                         });
 
                         // last message 업데이트(가장 마지막 완료 응답 기준으로 덮어쓰기)
                         if (this.currentChatRoom) {
                             this.currentChatRoom.message = {
-                                msg: (safeFinal || '').substring(0, 50),
+                                msg: displayContent.substring(0, 50),
                                 type: 'text',
                                 createdAt: new Date().toISOString()
                             };
@@ -4264,6 +4356,62 @@ export default {
                     delete map[k];
                 }
             });
+        },
+
+        extractDisplayAssistantContent(rawContent) {
+            const text = (rawContent ?? '').toString().trim();
+            if (!text) return '';
+
+            const parseCandidate = (candidate) => {
+                if (!candidate) return null;
+                try {
+                    return JSON.parse(candidate);
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            // 코드펜스(JSON) 제거 후 파싱 시도
+            const fencedMatch = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+            const candidate = fencedMatch ? fencedMatch[1].trim() : text;
+
+            let parsed = parseCandidate(candidate);
+            if (!parsed) {
+                // JSON 문자열 앞뒤에 문장이 섞여있는 경우를 대비해 첫/마지막 중괄호 범위를 재시도
+                const startIdx = candidate.indexOf('{');
+                const endIdx = candidate.lastIndexOf('}');
+                if (startIdx >= 0 && endIdx > startIdx) {
+                    parsed = parseCandidate(candidate.substring(startIdx, endIdx + 1));
+                }
+            }
+
+            if (parsed && typeof parsed === 'object') {
+                const requestType = (parsed.user_request_type || '').toString();
+                const question = typeof parsed.question === 'string' ? parsed.question.trim() : '';
+                if (requestType === 'ask_user' && question) {
+                    return question;
+                }
+                if (parsed.waiting_for_user_input === true && question) {
+                    return question;
+                }
+            }
+
+            return text;
+        },
+
+        normalizeAssistantMessageForDisplay(message) {
+            if (!message || typeof message !== 'object') return message;
+            const role = (message.role || '').toString();
+            const content = message.content;
+            if (role !== 'assistant' || typeof content !== 'string') return message;
+            const normalized = this.extractDisplayAssistantContent(content);
+            if (normalized !== content) {
+                message.content = normalized;
+                if (!message.contentType) {
+                    message.contentType = 'text';
+                }
+            }
+            return message;
         },
 
         // MCP 도구 output 파싱 (WorkAssistantChatPanel의 구현을 동일하게 사용)
