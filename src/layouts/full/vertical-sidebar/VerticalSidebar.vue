@@ -1131,8 +1131,8 @@ export default {
 
 .pc-sidebar-open-btn {
     position: fixed;
-    left: 8px;
-    top: 16px;
+    left: 4px;
+    top: 4px;
     z-index: 999;
     opacity: 0.7;
     transition: opacity 0.2s;
