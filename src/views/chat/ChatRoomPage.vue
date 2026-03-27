@@ -4417,6 +4417,7 @@ export default {
         // MCP 도구 output 파싱 (WorkAssistantChatPanel의 구현을 동일하게 사용)
         parseToolOutput(outputStr) {
             if (!outputStr) return null;
+            if (typeof outputStr === 'object') return outputStr;
 
             const sanitizeForJsonParse = (s) => {
                 if (typeof s !== 'string') return s;
@@ -4461,71 +4462,86 @@ export default {
                 return out.trim();
             };
 
-            // content='...' name=... 형식 처리 (Python ToolMessage repr 형식)
-            if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
-                try {
-                    const contentStart = "content='".length;
-                    const endMarkers = [/' name=/, /' tool_call_id=/];
-                    let endIdx = -1;
+            const normalizeNewlines = (val) => {
+                if (typeof val !== 'string') return val;
+                return val.replace(/\\\\\\\\n/g, '\\\\n').replace(/\\\\n/g, '\n');
+            };
 
-                    for (const marker of endMarkers) {
-                        const match = outputStr.match(marker);
-                        if (match && (endIdx === -1 || match.index < endIdx)) {
-                            endIdx = match.index;
-                        }
-                    }
-
-                    if (endIdx > contentStart) {
-                        const raw = outputStr.substring(contentStart, endIdx);
-
-                        const normalizeNewlines = (val) => {
-                            if (typeof val !== 'string') return val;
-                            return val.replace(/\\\\\\\\n/g, '\\\\n').replace(/\\\\n/g, '\n');
-                        };
-
-                        const rawSanitized = sanitizeForJsonParse(raw);
-                        try {
-                            const parsed = JSON.parse(rawSanitized);
-                            if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
-                                parsed.image_analysis_result = normalizeNewlines(parsed.image_analysis_result);
-                            }
-                            return parsed;
-                        } catch (e1) {
-                            let jsonStr = raw.replace(/\\\\\\\\/g, '\\\\').replace(/\\\\"/g, '\\"');
-                            try {
-                                const parsed = JSON.parse(sanitizeForJsonParse(jsonStr));
-                                if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
-                                    parsed.image_analysis_result = normalizeNewlines(parsed.image_analysis_result);
-                                }
-                                return parsed;
-                            } catch (e2) {
-                                if (outputStr.includes('"user_request_type": "start_process_consulting"')) {
-                                    return { user_request_type: 'start_process_consulting' };
-                                }
-                                if (outputStr.includes('"user_request_type": "generate_process"')) {
-                                    return { user_request_type: 'generate_process' };
-                                }
-                                throw e2;
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.warn('[ChatRoomPage.parseToolOutput] content= 형식 파싱 실패:', e.message);
+            const normalizeParsedObject = (parsed) => {
+                if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
+                    parsed.image_analysis_result = normalizeNewlines(parsed.image_analysis_result);
                 }
+                return parsed;
+            };
+
+            const tryParseJsonSafely = (source) => {
+                if (typeof source !== 'string') return null;
+                const trimmed = source.trim();
+                if (!trimmed) return null;
+
+                const candidates = [
+                    trimmed,
+                    sanitizeForJsonParse(trimmed),
+                    trimmed.replace(/\\'/g, "'"),
+                    sanitizeForJsonParse(trimmed.replace(/\\'/g, "'")),
+                    trimmed.replace(/\\\\/g, '\\').replace(/\\'/g, "'"),
+                    sanitizeForJsonParse(trimmed.replace(/\\\\/g, '\\').replace(/\\'/g, "'"))
+                ];
+
+                for (const candidate of candidates) {
+                    try {
+                        return normalizeParsedObject(JSON.parse(candidate));
+                    } catch (e) {
+                        // 다음 후보로 재시도
+                    }
+                }
+                return null;
+            };
+
+            const extractContentField = (rawText) => {
+                if (typeof rawText !== 'string') return null;
+                const matched = rawText.match(/^content=(['"])((?:\\.|(?!\1)[\s\S])*)\1(?:\s+\w+=|$)/);
+                if (matched && matched[2]) {
+                    return matched[2];
+                }
+                return null;
+            };
+
+            const tryParseFromText = (rawText) => {
+                if (typeof rawText !== 'string') return null;
+
+                const directParsed = tryParseJsonSafely(rawText);
+                if (directParsed) return directParsed;
+
+                const contentField = extractContentField(rawText);
+                if (contentField) {
+                    const parsedFromContent = tryParseJsonSafely(contentField);
+                    if (parsedFromContent) return parsedFromContent;
+                }
+
+                const firstBrace = rawText.indexOf('{');
+                const lastBrace = rawText.lastIndexOf('}');
+                if (firstBrace >= 0 && lastBrace > firstBrace) {
+                    const jsonSlice = rawText.substring(firstBrace, lastBrace + 1);
+                    const parsedFromSlice = tryParseJsonSafely(jsonSlice);
+                    if (parsedFromSlice) return parsedFromSlice;
+                }
+
+                return null;
+            };
+
+            const parsed = tryParseFromText(outputStr);
+            if (parsed) return parsed;
+
+            if (outputStr.includes('"user_request_type": "start_process_consulting"')) {
+                return { user_request_type: 'start_process_consulting' };
+            }
+            if (outputStr.includes('"user_request_type": "generate_process"')) {
+                return { user_request_type: 'generate_process' };
             }
 
-            // 일반 JSON 문자열
-            if (typeof outputStr === 'string') {
-                try {
-                    return JSON.parse(sanitizeForJsonParse(outputStr));
-                } catch (e) {
-                    console.warn('[ChatRoomPage.parseToolOutput] JSON 파싱 실패:', e.message);
-                    return null;
-                }
-            }
-
-            // 이미 객체인 경우
-            return outputStr;
+            console.warn('[ChatRoomPage.parseToolOutput] JSON 파싱 실패');
+            return null;
         }
     }
 };
