@@ -137,9 +137,11 @@
                 :selectedVersionMeta="historySelectedVersionMeta"
                 :diffRows="historyDiffRows"
                 :compareLabel="historyCompareLabel"
+                :currentBpmnXml="bpmnXml"
                 @close="showHistoryPanel = false"
                 @selectVersion="selectHistoryVersion"
                 @update:compareVersion="updateHistoryCompareVersion"
+                @rollback="handleVersionRollback"
             />
         </div>
 
@@ -161,29 +163,29 @@
             <v-card rounded="lg">
                 <v-card-title class="d-flex align-center pa-4 pb-2">
                     <v-icon class="mr-2" color="warning">mdi-alert-circle</v-icon>
-                    {{ $t('approval.inProgressTitle') || '승인 진행 중' }}
+                    승인 진행 중
                 </v-card-title>
                 <v-card-text class="px-4 pb-2">
-                    <p class="mb-3">{{ $t('approval.inProgressMessage') || '현재 이 프로세스에 대해 승인이 진행 중입니다. 저장하면 기존 승인이 취소되고 새로 검토 요청됩니다.' }}</p>
+                    <p class="mb-3">현재 이 프로세스에 대해 승인이 진행 중입니다. 저장하면 기존 승인이 취소되고 새로 검토 요청됩니다.</p>
                     <v-alert v-if="activeApprovalState" type="info" variant="tonal" density="compact">
                         <div class="text-body-2">
-                            <strong>{{ $t('approval.currentState') || '현재 상태' }}:</strong> {{ activeApprovalState.state }}
+                            <strong>현재 상태:</strong> {{ activeApprovalState.state }}
                         </div>
                         <div v-if="activeApprovalState.version" class="text-body-2">
-                            <strong>{{ $t('approval.version') || '버전' }}:</strong> v{{ activeApprovalState.version }}
+                            <strong>버전:</strong> v{{ activeApprovalState.version }}
                         </div>
                         <div v-if="activeApprovalState.submitted_by" class="text-body-2">
-                            <strong>{{ $t('approval.submittedBy') || '제출자' }}:</strong> {{ activeApprovalState.submitted_by }}
+                            <strong>제출자:</strong> {{ activeApprovalState.submitted_by }}
                         </div>
                     </v-alert>
                 </v-card-text>
                 <v-card-actions class="pa-4 pt-2">
                     <v-spacer />
                     <v-btn variant="text" @click="approvalWarningDialog = false; activeApprovalState = null; forceReviewSubmission = false;">
-                        {{ $t('common.cancel') || '취소' }}
+                        취소
                     </v-btn>
                     <v-btn color="warning" variant="flat" @click="proceedAfterApprovalWarning">
-                        {{ $t('approval.cancelAndSave') || '기존 승인 취소 후 저장' }}
+                        기존 승인 취소 후 저장
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -194,7 +196,7 @@
             <v-card rounded="lg">
                 <v-card-title class="d-flex align-center pa-4 pb-2">
                     <v-icon class="mr-2" color="primary">mdi-content-save-check</v-icon>
-                    {{ $t('processHierarchy.saveVersion') || '버전 저장' }}
+                    버전 저장
                     <v-spacer />
                     <v-btn icon variant="text" size="small" @click="saveVersionDialog = false">
                         <v-icon>mdi-close</v-icon>
@@ -203,7 +205,7 @@
                 <v-card-text class="px-4 pb-2">
                     <div class="d-flex align-center mb-4 pa-3 rounded-lg" style="background: #f5f7fa;">
                         <v-icon size="18" class="mr-2" color="grey-darken-1">mdi-tag-outline</v-icon>
-                        <span class="text-body-2 text-medium-emphasis">{{ $t('processHierarchy.currentVersion') || '현재 버전' }}:</span>
+                        <span class="text-body-2 text-medium-emphasis">현재 버전:</span>
                         <v-chip size="small" color="primary" variant="flat" class="ml-2">v{{ saveVersion }}</v-chip>
                     </div>
                     <v-alert density="compact" variant="tonal" type="info" class="mb-3">
@@ -223,14 +225,14 @@
                         class="mb-3"
                     />
                     <div class="text-subtitle-2 mb-2">
-                        {{ $t('processHierarchy.saveStrategy') || '저장 전략' }}
+                        저장 전략
                     </div>
                     <v-btn-toggle v-model="saveSubmissionMode" mandatory divided class="mb-2">
                         <v-btn value="draft" size="small" :disabled="forceReviewSubmission">
-                            {{ $t('processHierarchy.saveDraftOnly') || 'Draft만 저장' }}
+                            Draft만 저장
                         </v-btn>
                         <v-btn value="review" size="small">
-                            {{ $t('processHierarchy.saveAndRequestReview') || '저장 후 검토 요청' }}
+                            저장 후 검토 요청
                         </v-btn>
                     </v-btn-toggle>
                     <div class="text-caption text-medium-emphasis">
@@ -240,7 +242,7 @@
                 <v-card-actions class="pa-4 pt-2">
                     <v-spacer />
                     <v-btn variant="text" @click="saveVersionDialog = false" :disabled="savingVersion">
-                        {{ $t('common.cancel') || '취소' }}
+                        취소
                     </v-btn>
                     <v-btn color="primary" variant="flat" @click="confirmSaveVersion" :loading="savingVersion">
                         <v-icon start>mdi-content-save</v-icon>
@@ -255,18 +257,18 @@
             <v-card rounded="lg">
                 <v-card-title class="d-flex align-center pa-4 pb-2">
                     <v-icon class="mr-2" color="error">mdi-alert-decagram</v-icon>
-                    {{ $t('processHierarchy.versionConflict') || '버전 충돌' }}
+                    버전 충돌
                 </v-card-title>
                 <v-card-text class="px-4 pb-2">
-                    {{ $t('processHierarchy.conflictMessage') || '다른 사용자가 이미 같은 버전을 저장했습니다. 새 Draft(v0.1)로 저장하시겠습니까?' }}
+                    다른 사용자가 이미 같은 버전을 저장했습니다. 새 Draft(v0.1)로 저장하시겠습니까?
                 </v-card-text>
                 <v-card-actions class="pa-4 pt-2">
                     <v-spacer />
                     <v-btn variant="text" @click="conflictDialog = false">
-                        {{ $t('common.cancel') || '취소' }}
+                        취소
                     </v-btn>
                     <v-btn color="primary" variant="flat" @click="forceSaveAsNewDraft">
-                        {{ $t('processHierarchy.saveAsNewDraft') || '새 Draft로 저장' }}
+                        새 Draft로 저장
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -576,27 +578,21 @@ export default {
         },
         saveSubmissionDescription() {
             if (this.forceReviewSubmission) {
-                return (
-                    this.$t('processHierarchy.saveSubmissionForcedReviewDesc') ||
-                    '진행 중인 review를 갱신해야 하므로 이번 저장은 검토 요청 경로로만 진행됩니다.'
-                );
+                return '진행 중인 review를 갱신해야 하므로 이번 저장은 검토 요청 경로로만 진행됩니다.';
             }
             if (this.saveSubmissionMode === 'review') {
-                return this.$t('processHierarchy.saveSubmissionReviewDesc') || '저장 후 Review Board의 검토 파이프라인으로 바로 올립니다.';
+                return '저장 후 Review Board의 검토 파이프라인으로 바로 올립니다.';
             }
             if (this.currentGovernanceStatus === 'published') {
-                return (
-                    this.$t('processHierarchy.saveSubmissionDraftPublishedDesc') ||
-                    '배포본은 유지하고 minor draft만 저장합니다. major 변경은 Governance 탭에서 별도 요청해야 합니다.'
-                );
+                return '배포본은 유지하고 minor draft만 저장합니다. major 변경은 Governance 탭에서 별도 요청해야 합니다.';
             }
-            return this.$t('processHierarchy.saveSubmissionDraftDesc') || '현재 편집본만 저장하고, 검토 요청은 나중에 별도로 진행합니다.';
+            return '현재 편집본만 저장하고, 검토 요청은 나중에 별도로 진행합니다.';
         },
         saveConfirmButtonLabel() {
             if (this.saveSubmissionMode === 'review') {
-                return this.$t('processHierarchy.saveAndRequestReview') || '저장 후 검토 요청';
+                return '저장 후 검토 요청';
             }
-            return this.$t('processHierarchy.saveAndContinue') || '저장';
+            return '저장';
         }
     },
     watch: {
@@ -1671,6 +1667,43 @@ export default {
         async updateHistoryCompareVersion(version) {
             this.historyCompareVersion = String(version || '__current__');
             await this.runHistoryDiff();
+        },
+
+        async handleVersionRollback({ xml, versionLabel }) {
+            if (!xml || !this.selectedProcessId) return;
+            try {
+                await backend.putRawDefinition(xml, this.selectedProcessId, {
+                    name: this.selectedProcessName,
+                    version: versionLabel,
+                });
+                if (this.$toast) {
+                    this.$toast.success(`v${versionLabel} 버전으로 되돌렸습니다.`);
+                }
+                this.showHistoryPanel = false;
+                await this.loadProcess(this.selectedProcessId);
+
+                // loadProcess 후에도 proc_def.version이 갱신되지 않을 수 있어 로컬 동기화
+                if (this.processDefinition) {
+                    this.processDefinition.version = versionLabel;
+                }
+                const listIndex = this.definitionList.findIndex(
+                    (d) => (d.id || d.file_name) === this.selectedProcessId
+                );
+                if (listIndex >= 0) {
+                    this.definitionList.splice(listIndex, 1, {
+                        ...this.definitionList[listIndex],
+                        version: versionLabel,
+                    });
+                }
+
+                this.showHistoryPanel = true;
+                await this.loadHistoryPanelData();
+            } catch (e) {
+                console.error('Rollback failed:', e);
+                if (this.$toast) {
+                    this.$toast.error('되돌리기에 실패했습니다.');
+                }
+            }
         },
 
         handleChangeMode(newMode) {

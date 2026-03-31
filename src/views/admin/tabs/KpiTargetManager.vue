@@ -409,6 +409,7 @@ export default defineComponent({
     padding: 24px;
     background: #ffffff;
     position: relative;
+    height: 100%;
 }
 
 /* ============================================================
@@ -592,8 +593,9 @@ export default defineComponent({
 .table-wrapper {
     border: 1px solid #e5e7eb;
     border-radius: 8px;
-    overflow: hidden;
+    overflow: auto;
     position: relative;
+    max-height: calc(100vh - 240px);
 }
 
 .table-loading {
@@ -626,6 +628,10 @@ export default defineComponent({
     text-transform: uppercase;
     letter-spacing: 0.4px;
     white-space: nowrap;
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    z-index: 2;
 }
 
 .kpi-table td {

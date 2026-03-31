@@ -73,56 +73,54 @@ onMounted(async () => {
             </div>
 
             <!-- Global Filters -->
-            <v-card variant="flat" class="filter-bar mb-5" rounded="lg">
-                <v-card-text class="py-3 px-4">
-                    <v-row align="center" dense>
-                        <v-col cols="12" sm="3">
-                            <v-select
-                                v-model="selectedDomains"
-                                :items="domainOptions"
-                                item-title="name"
-                                item-value="id"
-                                :label="t('analysisDashboard.domainScope')"
-                                multiple
-                                chips
-                                closable-chips
-                                density="compact"
-                                variant="outlined"
-                                hide-details
-                                :placeholder="t('analysisDashboard.allDomains')"
-                            />
-                        </v-col>
-                        <v-col cols="12" sm="3">
-                            <v-select
-                                v-model="selectedOrg"
-                                :items="[{ title: t('analysisDashboard.allOrgs'), value: 'all' }]"
-                                :label="t('analysisDashboard.organization')"
-                                density="compact"
-                                variant="outlined"
-                                hide-details
-                            />
-                        </v-col>
-                        <v-col cols="12" sm="3">
-                            <v-select
-                                v-model="dateRange"
-                                :items="dateRangeOptions"
-                                :label="t('analysisDashboard.dateRange')"
-                                density="compact"
-                                variant="outlined"
-                                hide-details
-                            />
-                        </v-col>
-                        <v-col cols="12" sm="3">
-                            <v-checkbox
-                                v-model="comparisonMode"
-                                :label="t('analysisDashboard.vsLastQuarter')"
-                                density="compact"
-                                hide-details
-                            />
-                        </v-col>
-                    </v-row>
-                </v-card-text>
-            </v-card>
+            <div class="mb-4">
+                <v-row align="center" dense>
+                    <v-col cols="12" sm="3">
+                        <v-select
+                            v-model="selectedDomains"
+                            :items="domainOptions"
+                            item-title="name"
+                            item-value="id"
+                            :label="t('analysisDashboard.domainScope')"
+                            multiple
+                            chips
+                            closable-chips
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            :placeholder="t('analysisDashboard.allDomains')"
+                        />
+                    </v-col>
+                    <v-col cols="12" sm="3">
+                        <v-select
+                            v-model="selectedOrg"
+                            :items="[{ title: t('analysisDashboard.allOrgs'), value: 'all' }]"
+                            :label="t('analysisDashboard.organization')"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                        />
+                    </v-col>
+                    <v-col cols="12" sm="3">
+                        <v-select
+                            v-model="dateRange"
+                            :items="dateRangeOptions"
+                            :label="t('analysisDashboard.dateRange')"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                        />
+                    </v-col>
+                    <v-col cols="12" sm="3">
+                        <v-checkbox
+                            v-model="comparisonMode"
+                            :label="t('analysisDashboard.vsLastQuarter')"
+                            density="compact"
+                            hide-details
+                        />
+                    </v-col>
+                </v-row>
+            </div>
 
             <!-- Tabs -->
             <v-card variant="flat" rounded="lg" class="tab-card">
@@ -143,7 +141,9 @@ onMounted(async () => {
 
                 <v-divider />
 
-                <v-window v-model="activeTab">
+                <v-window v-model="activeTab"
+                    style="height: calc(100vh - 270px); overflow-y: auto;"
+                >
                     <v-window-item value="strategy">
                         <StrategyBoard v-if="!loading" :filters="filters" />
                         <div v-else class="d-flex justify-center align-center" style="min-height: 400px">
@@ -178,11 +178,6 @@ onMounted(async () => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-}
-
-.filter-bar {
-    background: #fff;
-    border: 1px solid #e8eaed;
 }
 
 .tab-card {

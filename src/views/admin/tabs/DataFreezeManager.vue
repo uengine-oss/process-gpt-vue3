@@ -452,6 +452,7 @@ export default defineComponent({
 .data-freeze-manager {
     background: #ffffff;
     position: relative;
+    height: 100%;
 }
 
 /* Section Header */
@@ -660,7 +661,7 @@ export default defineComponent({
     flex: 1;
     overflow-y: auto;
     min-height: 0;
-    max-height: 320px;
+    max-height: calc(100vh - 312px);
 }
 
 .list-item {

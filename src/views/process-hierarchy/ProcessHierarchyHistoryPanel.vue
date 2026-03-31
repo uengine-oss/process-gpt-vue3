@@ -58,6 +58,17 @@
                         </div>
                     </div>
                     <div class="history-panel__toolbar-actions">
+                        <v-btn
+                            variant="outlined"
+                            size="small"
+                            color="primary"
+                            :disabled="!selectedVersion || !currentBpmnXml"
+                            class="history-panel__visual-diff-btn"
+                            @click="openVisualDiffDialog"
+                        >
+                            <v-icon start size="14">mdi-compare-horizontal</v-icon>
+                            버전비교
+                        </v-btn>
                         <span class="history-panel__toolbar-label">비교 버전</span>
                         <v-select
                             :model-value="compareVersion"
@@ -103,9 +114,21 @@
             </section>
         </div>
     </div>
+
+    <SktVersionComparisonDialog
+        v-model="visualDiffDialogOpen"
+        :selectedVersionLabel="selectedVersion"
+        :selectedVersionXml="visualDiffSelectedXml"
+        :currentBpmnXml="currentBpmnXml"
+        :versions="versions"
+        @rollback="(payload) => $emit('rollback', payload)"
+    />
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
+import SktVersionComparisonDialog from './SktVersionComparisonDialog.vue';
+
 type VersionItem = Record<string, any>;
 type DiffRow = {
     key: string;
@@ -114,7 +137,7 @@ type DiffRow = {
     section: string;
 };
 
-defineProps<{
+const props = defineProps<{
     loading: boolean;
     versions: VersionItem[];
     selectedVersion: string;
@@ -123,13 +146,31 @@ defineProps<{
     selectedVersionMeta: VersionItem | null;
     diffRows: DiffRow[];
     compareLabel: string;
+    currentBpmnXml: string;
 }>();
 
 defineEmits<{
     (e: 'close'): void;
     (e: 'selectVersion', version: string): void;
     (e: 'update:compareVersion', version: string): void;
+    (e: 'rollback', payload: { xml: string; versionLabel: string }): void;
 }>();
+
+const visualDiffDialogOpen = ref(false);
+const visualDiffSelectedXml = ref('');
+
+function openVisualDiffDialog() {
+    if (!props.selectedVersion || !props.currentBpmnXml) return;
+
+    const matched = props.versions.find(
+        (v) => String(v.version) === String(props.selectedVersion)
+    );
+    const selectedXml = matched?.snapshot || '';
+    if (!selectedXml) return;
+
+    visualDiffSelectedXml.value = selectedXml;
+    visualDiffDialogOpen.value = true;
+}
 
 function formatTimestamp(value: string) {
     if (!value) return '-';
@@ -347,6 +388,12 @@ function formatTimestamp(value: string) {
 .history-panel__empty-row {
     text-align: center;
     color: #64748b;
+}
+
+/* 버전비교 버튼 */
+.history-panel__visual-diff-btn {
+    font-size: 12px;
+    letter-spacing: 0;
 }
 
 @media (max-width: 1100px) {

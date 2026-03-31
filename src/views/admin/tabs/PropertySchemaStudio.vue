@@ -9,10 +9,9 @@
                     <div class="studio-subtitle">{{ $t('adminConsole.tabSchemas') }}</div>
                 </div>
             </div>
-            <button class="add-btn" @click="openAddForm">
-                <v-icon size="16">mdi-plus</v-icon>
+            <v-btn color="primary" size="small" prepend-icon="mdi-plus" @click="openAddForm">
                 {{ $t('adminConsole.propertySchema.addField') }}
-            </button>
+            </v-btn>
         </div>
 
         <!-- Add / Edit Form Card -->
@@ -169,15 +168,18 @@
 
                     <!-- Form actions -->
                     <div class="form-actions">
-                        <button
-                            class="btn-primary"
+                        <v-btn
+                            color="primary"
+                            size="small"
                             :disabled="!formData.property_label || !formData.property_key || saving"
+                            :loading="saving"
                             @click="saveField"
                         >
-                            <v-progress-circular v-if="saving" indeterminate size="14" width="2" class="mr-1" />
                             {{ editingSchema ? $t('taskCatalog.save') : $t('adminConsole.propertySchema.addField') }}
-                        </button>
-                        <button class="btn-text" @click="cancelForm">{{ $t('taskCatalog.cancel') }}</button>
+                        </v-btn>
+                        <v-btn variant="text" color="grey" size="small" @click="cancelForm">
+                            {{ $t('taskCatalog.cancel') }}
+                        </v-btn>
                     </div>
                 </div>
             </div>
@@ -216,7 +218,7 @@
                             <th style="width: 90px; text-align: right;">{{ $t('taskCatalog.actions') }}</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody style="height: calc(100vh - 264px); overflow-y: auto;">
                         <tr v-if="loading">
                             <td colspan="10" class="loading-cell">
                                 <v-progress-circular indeterminate size="24" color="primary" />
@@ -930,60 +932,6 @@ export default defineComponent({
 .form-actions {
     display: flex;
     gap: 10px;
-}
-
-.btn-primary {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 20px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.15s;
-}
-.btn-primary:hover:not(:disabled) {
-    background: #2563eb;
-}
-.btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.btn-text {
-    padding: 8px 16px;
-    background: none;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    color: #6b7280;
-    cursor: pointer;
-}
-.btn-text:hover {
-    background: #f3f4f6;
-}
-
-/* ── Add Button (header) ── */
-.add-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 18px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.15s;
-}
-.add-btn:hover {
-    background: #2563eb;
 }
 
 /* ── Filter Row ── */
