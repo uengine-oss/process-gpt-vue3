@@ -125,6 +125,7 @@
                         :hideInput="true"
                         :pdf2bpmnProgress="currentPdf2bpmnProgress"
                         @preview-bpmn="showBpmnPreview"
+                        @preview-integrated-graph="showIntegratedGraphByTask"
                         @preview-image="openImagePreview"
                         @open-external-url="openExternalUrl"
                         @beforeReply="handleBeforeReply"
@@ -251,6 +252,7 @@
                             :hideInput="true"
                             :pdf2bpmnProgress="currentPdf2bpmnProgress"
                             @preview-bpmn="showBpmnPreview"
+                            @preview-integrated-graph="showIntegratedGraphByTask"
                             @preview-image="openImagePreview"
                             @open-external-url="openExternalUrl"
                             @beforeReply="handleBeforeReply"
@@ -375,6 +377,7 @@
                         :hideInput="true"
                         :pdf2bpmnProgress="currentPdf2bpmnProgress"
                         @preview-bpmn="showBpmnPreview"
+                        @preview-integrated-graph="showIntegratedGraphByTask"
                         @preview-image="openImagePreview"
                         @open-external-url="openExternalUrl"
                         @beforeReply="handleBeforeReply"
@@ -613,7 +616,7 @@
                     <v-icon class="mr-2">mdi-sitemap</v-icon>
                     {{ selectedBpmn?.process_name || 'BPMN Preview' }}
                     <v-spacer></v-spacer>
-                    <v-btn-toggle v-model="bpmnViewMode" mandatory density="compact" class="mr-2">
+                    <v-btn-toggle v-if="!isIntegratedGraphPreview" v-model="bpmnViewMode" mandatory density="compact" class="mr-2">
                         <v-btn value="diagram" size="small">
                             <v-icon size="18" :color="bpmnViewMode === 'diagram' ? 'primary' : undefined">mdi-sitemap</v-icon>
                         </v-btn>
@@ -630,7 +633,17 @@
                 </v-card-title>
                 <v-divider></v-divider>
                 <v-card-text class="pa-0">
-                    <div v-if="bpmnViewMode === 'diagram'" class="bpmn-diagram-container">
+                    <div v-if="isIntegratedGraphPreview" class="bpmn-ontology-container">
+                        <div v-if="neo4jGraphLoading" class="bpmn-ontology-state">
+                            <v-progress-circular indeterminate size="22" class="mr-2" />
+                            통합 그래프 로딩 중...
+                        </div>
+                        <div v-else-if="neo4jGraphError" class="bpmn-ontology-state">
+                            {{ neo4jGraphError }}
+                        </div>
+                        <OntologyGraphViewer v-else :elements="neo4jGraphElements" />
+                    </div>
+                    <div v-else-if="bpmnViewMode === 'diagram'" class="bpmn-diagram-container">
                         <ProcessDefinition
                             v-if="selectedBpmn?.bpmn_xml"
                             :bpmn="selectedBpmn.bpmn_xml"
@@ -654,11 +667,11 @@
                     </div>
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn v-if="bpmnViewMode === 'xml'" variant="tonal" @click="copyBpmnToClipboard">
+                    <v-btn v-if="!isIntegratedGraphPreview && bpmnViewMode === 'xml'" variant="tonal" @click="copyBpmnToClipboard">
                         <v-icon class="mr-1">mdi-content-copy</v-icon>
                         XML 복사
                     </v-btn>
-                    <v-btn v-if="bpmnViewMode === 'diagram'" variant="tonal" @click="openInModeler">
+                    <v-btn v-if="!isIntegratedGraphPreview && bpmnViewMode === 'diagram'" variant="tonal" @click="openInModeler">
                         <v-icon class="mr-1">mdi-pencil</v-icon>
                         프로세스 수정
                     </v-btn>
@@ -983,6 +996,9 @@ export default {
         hasAgentFailure() {
             return (this.failedAgentParticipants || []).length > 0;
         },
+        isIntegratedGraphPreview() {
+            return !!this.selectedBpmn?.isIntegratedGraph;
+        },
         // 실제로 "중지(Abort)" 가능한 스트림이 현재 방에 존재하는가
         hasAbortableStream() {
             const rid = this.currentChatRoom?.id || this.roomId || null;
@@ -1176,6 +1192,7 @@ export default {
         },
         bpmnViewMode(newVal) {
             if (newVal === 'ontology') {
+                if (this.isIntegratedGraphPreview) return;
                 this.ensureNeo4jGraphLoaded();
             }
         }
@@ -1805,9 +1822,61 @@ export default {
             } finally {
                 this.isLoadingHistory = false;
             }
+            await this.backfillPdf2bpmnTaskIds(roomId);
             // 기존 채팅방 재진입 시: 이전 pdf2bpmn 작업 감지/구독 복구
             await this.checkExistingPdf2BpmnTask(roomId);
             this.$nextTick(() => this.scrollToBottomSafe());
+        },
+
+        _extractTaskIdFromRunId(runId) {
+            const text = String(runId || '').trim();
+            if (!text) return '';
+            const m = text.match(/^([a-f0-9-]{36})(?:-|$)/i);
+            return m ? String(m[1]).trim() : '';
+        },
+
+        async backfillPdf2bpmnTaskIds(roomId) {
+            const me = this;
+            const targetRoomId = roomId || me.currentChatRoom?.id;
+            if (!targetRoomId) return;
+            if (!window.$supabase) return;
+            if (!Array.isArray(me.messages) || me.messages.length === 0) return;
+
+            for (const msg of me.messages) {
+                try {
+                    const result = msg?.pdf2bpmnResult;
+                    if (!result) continue;
+                    if (String(result.taskId || '').trim()) continue;
+                    const saved = Array.isArray(result.savedProcesses) ? result.savedProcesses : [];
+                    const firstProcId = String(saved?.[0]?.id || '').trim();
+                    if (!firstProcId) continue;
+
+                    const { data: procDef, error } = await window.$supabase
+                        .from('proc_def')
+                        .select('id, definition')
+                        .eq('id', firstProcId)
+                        .single();
+                    if (error || !procDef) continue;
+
+                    const def = procDef.definition || {};
+                    const ex = def.extraction || {};
+                    const runId =
+                        ex?.integrated_graph_ref?.run_id ||
+                        ex?.graph_run_id ||
+                        ex?.graph_snapshot_ref?.run_id ||
+                        '';
+                    const taskId = me._extractTaskIdFromRunId(runId);
+                    if (!taskId) continue;
+
+                    result.taskId = taskId;
+                    me.pdf2bpmnTaskIdByRoomId[targetRoomId] = taskId;
+                    const st = me._getOrInitPdf2bpmnProgress(targetRoomId);
+                    if (st && !st.taskId) st.taskId = taskId;
+                    await me.saveMessageToRoom(msg, targetRoomId);
+                } catch (e) {
+                    // ignore
+                }
+            }
         },
 
         resetHistoryPagination() {
@@ -3415,7 +3484,8 @@ export default {
             // 2) 생성 확정 → definitions 생성 화면으로 전환
             if (generateProcessToolCall?.name?.includes('generate_process')) {
                 if (agentId && agentId !== PROCESS_GPT_AGENT_ID) return;
-                this.$store.dispatch('updateMessages', this.messages);
+                const messagesForDefinition = this.buildMessagesForDefinitionGeneration();
+                this.$store.dispatch('updateMessages', messagesForDefinition);
                 this.$router.push('/definitions/chat');
             }
         },
@@ -3474,6 +3544,58 @@ export default {
 
         async saveMessage(msg) {
             await this.saveMessageToRoom(msg, this.currentChatRoom?.id);
+        },
+
+        removeBase64ImageData(text) {
+            const raw = (text ?? '').toString();
+            if (!raw) return '';
+            return raw.replace(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=\r\n]+/g, '[이미지 데이터 생략]');
+        },
+
+        buildMessagesForDefinitionGeneration() {
+            const generationPrompt = '위 내용대로 프로세스 생성해줘';
+            const sourceMessages = Array.isArray(this.messages) ? this.messages : [];
+            const msgs = sourceMessages
+                .map((msg) => {
+                    if (!msg || typeof msg !== 'object') return null;
+
+                    let content = '';
+                    if (typeof msg.content === 'string') {
+                        content = msg.content;
+                    } else if (Array.isArray(msg.content)) {
+                        // 멀티모달 content에서 텍스트만 유지하고 이미지는 플레이스홀더로 치환
+                        content = msg.content
+                            .map((part) => {
+                                if (!part || typeof part !== 'object') return '';
+                                if (part.type === 'text') return part.text || '';
+                                if (part.type === 'image_url') return '[이미지 첨부]';
+                                return '';
+                            })
+                            .filter(Boolean)
+                            .join(' ');
+                    } else if (msg.content !== null && msg.content !== undefined) {
+                        content = JSON.stringify(msg.content);
+                    }
+
+                    content = this.removeBase64ImageData(content).trim();
+                    if (!content) return null;
+
+                    return {
+                        role: (msg.role || '').toString(),
+                        content,
+                        timeStamp: msg.timeStamp || new Date().toISOString()
+                    };
+                })
+                .filter((m) => m && (m.role === 'user' || m.role === 'assistant' || m.role === 'system'));
+
+            const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+            const lastContent = (lastMsg?.content ?? '').toString().trim();
+
+            if (!(lastMsg?.role === 'user' && lastContent === generationPrompt)) {
+                msgs.push(this.createMessageObj(generationPrompt, 'user'));
+            }
+
+            return msgs;
         },
 
         // 컨설팅 모드로 전환 (프로세스 생성용) - start_process_consulting 도구 호출 시마다 1회 실행
@@ -3695,7 +3817,8 @@ export default {
                 }
 
                 if (responseObj.answerType === 'generateProcessDef') {
-                    me.$store.dispatch('updateMessages', me.messages);
+                    const messagesForDefinition = me.buildMessagesForDefinitionGeneration();
+                    me.$store.dispatch('updateMessages', messagesForDefinition);
                     me.$router.push('/definitions/chat');
                     return;
                 }
@@ -3784,7 +3907,7 @@ export default {
 
                 if (completedEvent && !eventError) {
                     const resultData = typeof completedEvent.data === 'string' ? JSON.parse(completedEvent.data) : completedEvent.data;
-                    await me.showCompletedTaskResult(resultData, targetRoomId);
+                    await me.showCompletedTaskResult(resultData, targetRoomId, taskId);
                     return;
                 }
 
@@ -3826,7 +3949,7 @@ export default {
             }
         },
 
-        async showCompletedTaskResult(resultData, roomId) {
+        async showCompletedTaskResult(resultData, roomId, explicitTaskId = '') {
             const me = this;
             const targetRoomId = roomId || me.currentChatRoom?.id;
             if (!targetRoomId) return;
@@ -3847,6 +3970,7 @@ export default {
                     const hasResult = me.messages.some((m) => m.pdf2bpmnResult);
                     if (!hasResult && generatedBpmns.length > 0) {
                         const processCount = resultData.process_count || generatedBpmns.length;
+                        const taskId = String(explicitTaskId || me._resolvePdf2bpmnTaskId(resultData, targetRoomId) || '').trim();
                         let content = `✅ **PDF2BPMN 변환 완료**\n\n`;
                         content += `${processCount}개의 프로세스가 생성되었습니다.`;
 
@@ -3854,7 +3978,8 @@ export default {
                         msgObj.pdf2bpmnResult = {
                             processCount,
                             savedProcesses: resultData.saved_processes || [],
-                            generatedBpmns
+                            generatedBpmns,
+                            taskId
                         };
                         if (me.currentChatRoom?.id === targetRoomId) {
                             me.messages.push(msgObj);
@@ -3876,11 +4001,14 @@ export default {
 
             try {
                 const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+                // 중요: room 무관 "최신 1건" 구독은 다른 채팅방 작업을 잘못 연결할 수 있어
+                // query에 roomId가 포함된 건만 제한적으로 복구한다.
                 const { data, error } = await window.$supabase
                     .from('todolist')
                     .select('id, query, agent_orch, start_date')
                     .eq('agent_orch', 'pdf2bpmn')
                     .gte('start_date', fiveMinAgo)
+                    .ilike('query', `%${targetRoomId}%`)
                     .order('start_date', { ascending: false })
                     .limit(1);
 
@@ -3980,6 +4108,11 @@ export default {
                 const eventType = event?.event_type;
                 const crewType = event?.crew_type;
                 if (crewType && crewType !== 'pdf2bpmn') return;
+                const eventTaskId = String(event?.todo_id || '').trim();
+                if (eventTaskId) {
+                    me.pdf2bpmnTaskIdByRoomId[targetRoomId] = eventTaskId;
+                    progressState.taskId = eventTaskId;
+                }
 
                 let messageData = {};
                 try {
@@ -4026,7 +4159,7 @@ export default {
                         progressState.status = 'completed';
                         progressState.progress = 100;
                         progressState.message = message || '변환 완료!';
-                        me.addPdf2BpmnResultMessage(messageData, targetRoomId);
+                        me.addPdf2BpmnResultMessage(messageData, targetRoomId, eventTaskId);
                         setTimeout(() => {
                             const st = me._getOrInitPdf2bpmnProgress(targetRoomId);
                             if (st) st.isActive = false;
@@ -4052,7 +4185,7 @@ export default {
             }
         },
 
-        async addPdf2BpmnResultMessage(resultData, roomId) {
+        async addPdf2BpmnResultMessage(resultData, roomId, explicitTaskId = '') {
             const me = this;
             const targetRoomId = roomId || me.currentChatRoom?.id;
             if (!targetRoomId) return;
@@ -4061,6 +4194,7 @@ export default {
 
             const processCount = resultData.process_count || progressState.generatedBpmns.length;
             const savedProcesses = resultData.saved_processes || [];
+            const taskId = String(explicitTaskId || me._resolvePdf2bpmnTaskId(resultData, targetRoomId) || '').trim();
 
             let content = `✅ **PDF2BPMN 변환 완료**\n\n`;
             content += `${processCount}개의 프로세스가 생성되었습니다.\n\n`;
@@ -4070,7 +4204,8 @@ export default {
             msgObj.pdf2bpmnResult = {
                 processCount,
                 savedProcesses,
-                generatedBpmns: progressState.generatedBpmns
+                generatedBpmns: progressState.generatedBpmns,
+                taskId
             };
 
             if (me.currentChatRoom?.id === targetRoomId) {
@@ -4177,6 +4312,70 @@ export default {
             me.neo4jGraphError = '';
             me.neo4jGraphElements = [];
             me.bpmnPreviewDialog = true;
+        },
+        _resolvePdf2bpmnTaskId(resultData, roomId) {
+            const fromResult = String(
+                resultData?.task_id || resultData?.taskId || resultData?.todo_id || resultData?.todoId || resultData?.id || ''
+            ).trim();
+            if (fromResult) return fromResult;
+
+            const fromProgress = String(this.pdf2bpmnProgressByRoomId?.[roomId]?.taskId || '').trim();
+            if (fromProgress) return fromProgress;
+
+            const fromRoomMap = String(this.pdf2bpmnTaskIdByRoomId?.[roomId] || '').trim();
+            if (fromRoomMap) return fromRoomMap;
+
+            return '';
+        },
+        async showIntegratedGraphByTask(taskId) {
+            const me = this;
+            const resolvedTaskId = String(taskId || '').trim();
+            if (!resolvedTaskId) return;
+
+            me.selectedBpmn = {
+                process_name: 'PDF2BPMN 통합 그래프',
+                isIntegratedGraph: true,
+                task_id: resolvedTaskId
+            };
+            me.bpmnViewMode = 'ontology';
+            me.neo4jGraphLoading = true;
+            me.neo4jGraphError = '';
+            me.neo4jGraphElements = [];
+            me.bpmnPreviewDialog = true;
+
+            try {
+                const base = await me._resolvePdf2BpmnApiBase();
+                const url = `${base}/graph/requests/${encodeURIComponent(resolvedTaskId)}`;
+                const res = await fetch(url, { method: 'GET' });
+                if (!res.ok) throw new Error(`status=${res.status}`);
+
+                const ct = String(res.headers.get('content-type') || '').toLowerCase();
+                if (!ct.includes('application/json')) {
+                    const text = await res.text().catch(() => '');
+                    const head = String(text || '')
+                        .slice(0, 120)
+                        .replace(/\s+/g, ' ');
+                    throw new Error(`non-json response (content-type=${ct || 'unknown'}): ${head}`);
+                }
+
+                const data = await res.json();
+                const elements = Array.isArray(data?.elements)
+                    ? data.elements
+                    : Array.isArray(data?.data?.elements)
+                      ? data.data.elements
+                      : Array.isArray(data?.graph?.elements)
+                        ? data.graph.elements
+                        : [];
+
+                me.neo4jGraphElements = elements;
+                if (elements.length === 0) {
+                    me.neo4jGraphError = '통합 그래프 데이터가 비어있습니다.';
+                }
+            } catch (e) {
+                me.neo4jGraphError = `통합 그래프 조회 실패: ${e?.message || e}`;
+            } finally {
+                me.neo4jGraphLoading = false;
+            }
         },
 
         _getPdf2BpmnApiBase() {

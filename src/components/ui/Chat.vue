@@ -1358,6 +1358,21 @@
                                                                                         message.pdf2bpmnResult.generatedBpmns.length
                                                                                     }}개)
                                                                                 </span>
+                                                                                <v-spacer />
+                                                                                <v-btn
+                                                                                    v-if="message.pdf2bpmnResult.taskId"
+                                                                                    size="x-small"
+                                                                                    variant="tonal"
+                                                                                    color="primary"
+                                                                                    @click.stop="
+                                                                                        emitPreviewIntegratedGraph(
+                                                                                            message.pdf2bpmnResult.taskId
+                                                                                        )
+                                                                                    "
+                                                                                >
+                                                                                    <v-icon start size="14">mdi-graph-outline</v-icon>
+                                                                                    전체 그래프
+                                                                                </v-btn>
                                                                             </div>
                                                                             <div class="d-flex flex-column" style="gap: 8px">
                                                                                 <v-card
@@ -2807,6 +2822,7 @@ export default {
         'requestFile',
         // 미리보기/외부 링크 오픈 (ChatRoomPage에서 다이얼로그 처리)
         'preview-bpmn',
+        'preview-integrated-graph',
         'preview-image',
         'open-external-url',
         // 데스크탑 음성 에이전트 모드 토글
@@ -3223,6 +3239,11 @@ export default {
         emitPreviewBpmn(bpmn) {
             if (!bpmn) return;
             this.$emit('preview-bpmn', bpmn);
+        },
+        emitPreviewIntegratedGraph(taskId) {
+            const resolvedTaskId = String(taskId || '').trim();
+            if (!resolvedTaskId) return;
+            this.$emit('preview-integrated-graph', resolvedTaskId);
         },
         emitOpenExternalUrl(url) {
             if (!url) return;
