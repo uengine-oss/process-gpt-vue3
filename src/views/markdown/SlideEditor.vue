@@ -44,7 +44,7 @@
 
         <v-row class="editor-container ma-0">
             <!-- 에디터 영역 -->
-            <v-col cols="12" md="7" class="pa-0 editor-section">
+            <v-col cols="12" md="12" class="pa-0 editor-section">
                 <markdown-editor
                     v-model="markdownContent"
                     :updateKey="markdownContent"
@@ -53,9 +53,9 @@
                 />
             </v-col>
 
-            <!-- 프리뷰 영역 -->
+            <!-- 프리뷰 영역 (임시 주석 처리) -->
+            <!--
             <v-col cols="12" md="5" class="pa-0 preview-section">
-                <!-- 미리보기 안내 텍스트 -->
                 <div class="d-flex align-center ml-1 mt-1">
                     <v-icon style="font-size: 18px; color: #888">mdi-alert-circle</v-icon>
                     <div class="ml-1" style="font-size: 14px; color: #888">{{ i18n.global.t('SlideEditor.preview') }}</div>
@@ -69,6 +69,7 @@
                     class="editor-preview"
                 />
             </v-col>
+            -->
         </v-row>
 
         <pdf-export-helper ref="pdfExportHelper" v-model="markdownContent" />

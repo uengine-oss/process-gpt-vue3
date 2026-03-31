@@ -2679,6 +2679,7 @@ import partialParse from 'partial-json-parser';
 import ProgressAnimated from '@/components/ui/ProgressAnimated.vue';
 import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
+import HumanFeedbackPanel from './HumanFeedbackPanel.vue';
 import axios from 'axios';
 import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
@@ -2699,6 +2700,7 @@ export default {
         Icon,
         RetrievalBox,
         AgentsChat,
+        HumanFeedbackPanel,
         Record,
         DynamicForm,
         SummaryButton,
@@ -2828,7 +2830,9 @@ export default {
         // 데스크탑 음성 에이전트 모드 토글
         'desktop-voice-toggle',
         'recording-mode-change',
-        'invite-agent'
+        'invite-agent',
+        'human-feedback-submit',
+        'human-feedback-skip'
     ],
     data() {
         return {

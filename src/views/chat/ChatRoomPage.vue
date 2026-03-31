@@ -13,9 +13,11 @@
             </div>
 
             <div v-else-if="roomId" class="chat-container">
-                <div class="messages-area">
-                    <div class="header-bar">
-                        <div class="header-left">
+                <div class="chat-body">
+                    <div class="chat-main">
+                        <div class="messages-area">
+                            <div class="header-bar">
+                                <div class="header-left">
                             <div class="avatar-wrap">
                                 <template v-if="displayParticipants.length === 1">
                                     <v-avatar size="28" color="grey-lighten-3">
@@ -67,113 +69,161 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="header-right">
-                            <v-menu v-model="settingsMenu" location="bottom end" :close-on-content-click="true">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" density="comfortable" size="small">
-                                        <v-icon size="18">mdi-cog-outline</v-icon>
+                                <div class="header-right">
+                                    <v-btn
+                                        v-if="hasArtifactPanel"
+                                        icon
+                                        variant="text"
+                                        density="comfortable"
+                                        size="small"
+                                        :color="artifactSidebarVisible ? 'primary' : undefined"
+                                        @click="toggleArtifactSidebar"
+                                    >
+                                        <v-icon size="18">mdi-file-document-outline</v-icon>
                                     </v-btn>
-                                </template>
-                                <v-card min-width="260" class="pa-2">
-                                    <div class="text-caption text-medium-emphasis px-2 pt-1 pb-1">
-                                        {{ $t('chatListing.setting') || '설정' }}
-                                    </div>
-                                    <v-list density="compact" class="pa-0">
-                                        <v-list-item @click="openRenameDialog">
-                                            <template v-slot:prepend>
-                                                <v-icon size="18">mdi-pencil-outline</v-icon>
-                                            </template>
-                                            <v-list-item-title>
-                                                {{ $t('chatListing.chatRoomName') || '채팅방 이름 변경' }}
-                                            </v-list-item-title>
-                                        </v-list-item>
-                                        <v-list-item @click="openParticipantsDialog">
-                                            <template v-slot:prepend>
-                                                <v-icon size="18">mdi-account-multiple-plus-outline</v-icon>
-                                            </template>
-                                            <v-list-item-title>
-                                                {{ $t('chatListing.selectParticipants') || '참여자 변경' }}
-                                            </v-list-item-title>
-                                        </v-list-item>
-                                        <v-divider class="my-1" />
-                                        <v-list-item @click="openDeleteConfirm">
-                                            <template v-slot:prepend>
-                                                <v-icon size="18" color="error">mdi-delete-outline</v-icon>
-                                            </template>
-                                            <v-list-item-title class="text-error">
-                                                {{ $t('chatListing.delete') || '삭제' }}
-                                            </v-list-item-title>
-                                        </v-list-item>
-                                    </v-list>
-                                </v-card>
-                            </v-menu>
+                                    <v-menu v-model="settingsMenu" location="bottom end" :close-on-content-click="true">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn v-bind="props" icon variant="text" density="comfortable" size="small">
+                                                <v-icon size="18">mdi-cog-outline</v-icon>
+                                            </v-btn>
+                                        </template>
+                                        <v-card min-width="260" class="pa-2">
+                                            <div class="text-caption text-medium-emphasis px-2 pt-1 pb-1">
+                                                {{ $t('chatListing.setting') || '설정' }}
+                                            </div>
+                                            <v-list density="compact" class="pa-0">
+                                                <v-list-item @click="openRenameDialog">
+                                                    <template v-slot:prepend>
+                                                        <v-icon size="18">mdi-pencil-outline</v-icon>
+                                                    </template>
+                                                    <v-list-item-title>
+                                                        {{ $t('chatListing.chatRoomName') || '채팅방 이름 변경' }}
+                                                    </v-list-item-title>
+                                                </v-list-item>
+                                                <v-list-item @click="openParticipantsDialog">
+                                                    <template v-slot:prepend>
+                                                        <v-icon size="18">mdi-account-multiple-plus-outline</v-icon>
+                                                    </template>
+                                                    <v-list-item-title>
+                                                        {{ $t('chatListing.selectParticipants') || '참여자 변경' }}
+                                                    </v-list-item-title>
+                                                </v-list-item>
+                                                <v-divider class="my-1" />
+                                                <v-list-item @click="openDeleteConfirm">
+                                                    <template v-slot:prepend>
+                                                        <v-icon size="18" color="error">mdi-delete-outline</v-icon>
+                                                    </template>
+                                                    <v-list-item-title class="text-error">
+                                                        {{ $t('chatListing.delete') || '삭제' }}
+                                                    </v-list-item-title>
+                                                </v-list-item>
+                                            </v-list>
+                                        </v-card>
+                                    </v-menu>
+                                </div>
+                            </div>
+                            <v-divider class="header-divider" />
+
+                            <Chat
+                                ref="chatView"
+                                :messages="messages"
+                                :userInfo="userInfo"
+                                :userList="userList"
+                                :currentChatRoom="currentChatRoom"
+                                :chatRoomId="roomId || ''"
+                                type="chats"
+                                :disableChat="false"
+                                :markdownEnabled="false"
+                                :chatRoomMode="true"
+                                :hideInput="true"
+                                :pdf2bpmnProgress="currentPdf2bpmnProgress"
+                                @preview-bpmn="showBpmnPreview"
+                                @preview-image="openImagePreview"
+                                @open-external-url="openExternalUrl"
+                                @beforeReply="handleBeforeReply"
+                                @invite-agent="handleInviteAgent"
+                                @getMoreChat="loadMoreMessages"
+                                @human-feedback-submit="handleHumanFeedbackSubmit"
+                            />
+                        </div>
+
+                        <!-- 입력 영역 -->
+                        <div class="input-area">
+                            <!-- Human Feedback 패널 (입력부 상단) -->
+                            <HumanFeedbackPanel
+                                v-if="pendingHumanFeedback && !pendingHumanFeedback.__submitted"
+                                :feedbackType="pendingHumanFeedback.user_request_type || 'select_items'"
+                                :question="pendingHumanFeedback.question || '선택해 주세요.'"
+                                :context="pendingHumanFeedback.context || ''"
+                                :items="pendingHumanFeedback.items || []"
+                                :suggestions="pendingHumanFeedback.suggestions || []"
+                                :allowMultiple="pendingHumanFeedback.allow_multiple !== false"
+                                :minSelect="pendingHumanFeedback.min_select || 1"
+                                :allowSkip="pendingHumanFeedback.allow_skip || false"
+                                :submitted="false"
+                                :headerIcon="'mdi-file-document-multiple-outline'"
+                                :submitLabel="'선택 완료'"
+                                class="ml-3 mb-2"
+                                @submit="handleHumanFeedbackSubmit(pendingHumanFeedbackMessage, $event)"
+                                @skip="handleHumanFeedbackSkip(pendingHumanFeedbackMessage)"
+                            />
+                            <!-- 음성 상태 바 (공용 컴포넌트가 위에서 렌더링) -->
+                            <div v-if="isDesktopVoiceActive" class="voice-mode-bar" :class="{ 'is-error': voiceStatus === 'error' }">
+                                <div
+                                    class="voice-pulse-dot"
+                                    :class="{
+                                        'is-speaking': voiceUserSpeaking,
+                                        'is-responding': voiceStatus === 'responding',
+                                        'is-playing': voiceStatus === 'playing',
+                                        'is-connecting': voiceStatus === 'connecting',
+                                        'is-error': voiceStatus === 'error'
+                                    }"
+                                ></div>
+                                <span class="voice-status-label" :class="{ 'is-error-text': voiceStatus === 'error' }">
+                                    <template v-if="voiceStatus === 'error'">서버에 연결할 수 없습니다</template>
+                                    <template v-else-if="voiceStatus === 'connecting'">서버 연결 중...</template>
+                                    <template v-else-if="voiceStatus === 'playing'">AI 말하는 중...</template>
+                                    <template v-else-if="voiceStatus === 'responding'">AI 응답 생성 중...</template>
+                                    <template v-else-if="voiceUserSpeaking">음성 인식 중...</template>
+                                    <template v-else>음성 대기 중 — 말씀해 주세요</template>
+                                </span>
+                                <v-btn icon variant="text" density="compact" size="small" class="ml-auto" @click="stopDesktopVoice">
+                                    <v-icon size="16">mdi-close</v-icon>
+                                </v-btn>
+                            </div>
+                            <UnifiedChatInput
+                                ref="composer"
+                                variant="inline"
+                                :showExamples="false"
+                                :disableChat="false"
+                                :showStopButton="hasAbortableStream"
+                                :userList="userList"
+                                :currentChatRoom="currentChatRoom"
+                                :desktopVoiceActive="isDesktopVoiceActive"
+                                :enableDesktopVoice="isVoiceEnabled"
+                                @sendMessage="handleSendMessage"
+                                @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
+                                @desktop-voice-toggle="toggleDesktopVoice"
+                            />
                         </div>
                     </div>
-                    <v-divider class="header-divider" />
 
-                    <Chat
-                        ref="chatView"
-                        :messages="messages"
-                        :userInfo="userInfo"
-                        :userList="userList"
-                        :currentChatRoom="currentChatRoom"
-                        :chatRoomId="roomId || ''"
-                        type="chats"
-                        :disableChat="false"
-                        :markdownEnabled="false"
-                        :chatRoomMode="true"
-                        :hideInput="true"
-                        :pdf2bpmnProgress="currentPdf2bpmnProgress"
-                        @preview-bpmn="showBpmnPreview"
-                        @preview-integrated-graph="showIntegratedGraphByTask"
-                        @preview-image="openImagePreview"
-                        @open-external-url="openExternalUrl"
-                        @beforeReply="handleBeforeReply"
-                        @invite-agent="handleInviteAgent"
-                        @getMoreChat="loadMoreMessages"
-                    />
-                </div>
-
-                <!-- 입력 영역 -->
-                <div class="input-area">
-                    <!-- 음성 상태 바 (공용 컴포넌트가 위에서 렌더링) -->
-                    <div v-if="isDesktopVoiceActive" class="voice-mode-bar" :class="{ 'is-error': voiceStatus === 'error' }">
-                        <div
-                            class="voice-pulse-dot"
-                            :class="{
-                                'is-speaking': voiceUserSpeaking,
-                                'is-responding': voiceStatus === 'responding',
-                                'is-playing': voiceStatus === 'playing',
-                                'is-connecting': voiceStatus === 'connecting',
-                                'is-error': voiceStatus === 'error'
-                            }"
-                        ></div>
-                        <span class="voice-status-label" :class="{ 'is-error-text': voiceStatus === 'error' }">
-                            <template v-if="voiceStatus === 'error'">서버에 연결할 수 없습니다</template>
-                            <template v-else-if="voiceStatus === 'connecting'">서버 연결 중...</template>
-                            <template v-else-if="voiceStatus === 'playing'">AI 말하는 중...</template>
-                            <template v-else-if="voiceStatus === 'responding'">AI 응답 생성 중...</template>
-                            <template v-else-if="voiceUserSpeaking">음성 인식 중...</template>
-                            <template v-else>음성 대기 중 — 말씀해 주세요</template>
-                        </span>
-                        <v-btn icon variant="text" density="compact" size="small" class="ml-auto" @click="stopDesktopVoice">
-                            <v-icon size="16">mdi-close</v-icon>
-                        </v-btn>
+                    <div
+                        v-if="hasArtifactPanel && artifactSidebarVisible"
+                        class="right-sidebar is-open"
+                        :style="{ width: `${artifactSidebarWidth}px` }"
+                    >
+                        <div class="right-sidebar__resizer" @mousedown.prevent="startArtifactSidebarResize"></div>
+                        <ArtifactPanel
+                            ref="artifactPanel"
+                            :panels="artifactPanels"
+                            :activeId="activeArtifactId"
+                            @update:activeId="activeArtifactId = $event"
+                            @close="closeArtifactSidebar"
+                            @close-panel="closeArtifactPanel"
+                            @panel-action="handleArtifactAction"
+                        />
                     </div>
-                    <UnifiedChatInput
-                        ref="composer"
-                        variant="inline"
-                        :showExamples="false"
-                        :disableChat="false"
-                        :showStopButton="hasAbortableStream"
-                        :userList="userList"
-                        :currentChatRoom="currentChatRoom"
-                        :desktopVoiceActive="isDesktopVoiceActive"
-                        :enableDesktopVoice="isVoiceEnabled"
-                        @sendMessage="handleSendMessage"
-                        @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
-                        @desktop-voice-toggle="toggleDesktopVoice"
-                    />
                 </div>
             </div>
 
@@ -258,10 +308,29 @@
                             @beforeReply="handleBeforeReply"
                             @invite-agent="handleInviteAgent"
                             @getMoreChat="loadMoreMessages"
+                            @human-feedback-submit="handleHumanFeedbackSubmit"
                         />
                     </div>
 
                     <div class="input-area">
+                        <!-- Human Feedback 패널 (입력부 상단) -->
+                        <HumanFeedbackPanel
+                            v-if="pendingHumanFeedback && !pendingHumanFeedback.__submitted"
+                            :feedbackType="pendingHumanFeedback.user_request_type || 'select_items'"
+                            :question="pendingHumanFeedback.question || '선택해 주세요.'"
+                            :context="pendingHumanFeedback.context || ''"
+                            :items="pendingHumanFeedback.items || []"
+                            :suggestions="pendingHumanFeedback.suggestions || []"
+                            :allowMultiple="pendingHumanFeedback.allow_multiple !== false"
+                            :minSelect="pendingHumanFeedback.min_select || 1"
+                            :allowSkip="pendingHumanFeedback.allow_skip || false"
+                            :submitted="false"
+                            :headerIcon="'mdi-file-document-multiple-outline'"
+                            :submitLabel="'선택 완료'"
+                            class="mx-3 mb-2"
+                            @submit="handleHumanFeedbackSubmit(pendingHumanFeedbackMessage, $event)"
+                            @skip="handleHumanFeedbackSkip(pendingHumanFeedbackMessage)"
+                        />
                         <div v-if="isDesktopVoiceActive" class="voice-mode-bar" :class="{ 'is-error': voiceStatus === 'error' }">
                             <div
                                 class="voice-pulse-dot"
@@ -703,10 +772,12 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import Chat from '@/components/ui/Chat.vue';
+import HumanFeedbackPanel from '@/components/ui/HumanFeedbackPanel.vue';
 import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
+import ArtifactPanel from '@/components/ArtifactPanel.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import agentRouterService from '@/services/AgentRouterService';
 import workAssistantAgentService from '@/services/WorkAssistantAgentService.js';
@@ -747,7 +818,9 @@ export default {
         Chat,
         ProcessDefinition,
         OntologyGraphViewer,
-        VoiceAgentDesktopMode
+        VoiceAgentDesktopMode,
+        ArtifactPanel,
+        HumanFeedbackPanel
     },
     data() {
         return {
@@ -820,6 +893,16 @@ export default {
             imagePreviewDialog: false,
             previewImageUrl: null,
 
+            // 산출물 미리보기 패널 (공통)
+            artifactPanels: [],       // [{ id, type, label, data: { htmlUrl, fileUrl, messageId } }]
+            activeArtifactId: null,   // 현재 활성 탭 ID
+            artifactSidebarVisible: false,
+            artifactSidebarWidth: 820,
+            artifactSidebarResizing: false,
+            artifactSidebarResizeStartX: 0,
+            artifactSidebarResizeStartWidth: 0,
+            artifactDownloadLoading: false,
+
             // 스트리밍 중지(Abort) 컨트롤러: roomId:agentId 단위
             agentAbortControllers: {},
 
@@ -840,6 +923,34 @@ export default {
         };
     },
     computed: {
+        /**
+         * 마지막 메시지에서 미제출 __humanFeedback 추출
+         * 입력부 상단에 표시할 human feedback 데이터
+         */
+        pendingHumanFeedback() {
+            if (!this.messages || this.messages.length === 0) return null;
+            // 마지막부터 역순으로 찾기
+            for (let i = this.messages.length - 1; i >= 0; i--) {
+                const msg = this.messages[i];
+                if (msg && msg.__humanFeedback && msg.__humanFeedback.items && msg.__humanFeedback.items.length > 0 && !msg.__humanFeedback.__submitted) {
+                    return msg.__humanFeedback;
+                }
+            }
+            return null;
+        },
+        /**
+         * pendingHumanFeedback가 속한 메시지 객체 (submit 시 참조)
+         */
+        pendingHumanFeedbackMessage() {
+            if (!this.messages || this.messages.length === 0) return null;
+            for (let i = this.messages.length - 1; i >= 0; i--) {
+                const msg = this.messages[i];
+                if (msg && msg.__humanFeedback && msg.__humanFeedback.items && msg.__humanFeedback.items.length > 0 && !msg.__humanFeedback.__submitted) {
+                    return msg;
+                }
+            }
+            return null;
+        },
         roomId() {
             if (this.embedded) return this.activeRoomId || null;
             const rid = this.$route?.query?.roomId || null;
@@ -870,6 +981,9 @@ export default {
         },
         isContextTabsMode() {
             return this.isAgentContextEmbedded || this.isUserContextRouted;
+        },
+        hasArtifactPanel() {
+            return this.artifactPanels.length > 0;
         },
         isDraftContextView() {
             // embedded agent 컨텍스트에서 roomId가 없으면 드래프트 화면
@@ -1212,6 +1326,10 @@ export default {
 
         // 진행 중인 스트리밍 중지
         this.abortAllAgentStreams();
+
+        // 사이드바 리사이즈 리스너 해제
+        window.removeEventListener('mousemove', this.onArtifactSidebarResizeMove);
+        window.removeEventListener('mouseup', this.stopArtifactSidebarResize);
     },
     methods: {
         focusComposerInput() {
@@ -1710,6 +1828,10 @@ export default {
 
         async bootstrapRoom(roomId) {
             this.isLoadingRoom = true;
+            // 방 전환 시 아티팩트 패널 초기화
+            this.artifactPanels = [];
+            this.activeArtifactId = null;
+            this.artifactSidebarVisible = false;
             try {
                 // 방 전환 시 히스토리 페이지네이션 상태 초기화
                 this.resetHistoryPagination();
@@ -1825,6 +1947,8 @@ export default {
             await this.backfillPdf2bpmnTaskIds(roomId);
             // 기존 채팅방 재진입 시: 이전 pdf2bpmn 작업 감지/구독 복구
             await this.checkExistingPdf2BpmnTask(roomId);
+            this.processLoadedHwpxMessages();
+            this.checkExistingArtifactPanels();
             this.$nextTick(() => this.scrollToBottomSafe());
         },
 
@@ -1942,6 +2066,7 @@ export default {
                 }
 
                 this.hasMoreHistory = list.length >= this.historyPageSize;
+                this.processLoadedHwpxMessages();
 
                 // prepend 후 스크롤 위치 복구
                 this.$nextTick(() => {
@@ -2391,6 +2516,43 @@ export default {
         },
         // ===== 데스크탑 음성 에이전트 끝 =====
 
+        /**
+         * HumanFeedbackPanel에서 사용자가 선택을 완료했을 때 호출
+         * 선택 결과를 사용자 메시지로 변환하여 에이전트에게 전송
+         */
+        handleHumanFeedbackSkip(message) {
+            if (message && message.__humanFeedback) {
+                message.__humanFeedback.__submitted = true;
+                message.__humanFeedback.__submittedText = '건너뜀';
+            }
+        },
+
+        async handleHumanFeedbackSubmit(message, feedbackResult) {
+            if (!feedbackResult) return;
+            console.log('[HumanFeedback] handleHumanFeedbackSubmit:', feedbackResult);
+
+            // 메시지를 제출 완료 상태로 변경
+            if (message && message.__humanFeedback) {
+                message.__humanFeedback.__submitted = true;
+                message.__humanFeedback.__submittedText = feedbackResult.type === 'select_items'
+                    ? `${feedbackResult.selectedItems?.length || 0}개 문서 선택됨`
+                    : '응답 완료';
+            }
+
+            let userText = '';
+            if (feedbackResult.type === 'select_items') {
+                const selectedLabels = feedbackResult.selectedItems.map(item => item.label);
+                userText = `다음 문서를 참고해서 작성해 주세요: ${selectedLabels.join(', ')}`;
+            } else if (feedbackResult.type === 'suggestions') {
+                userText = feedbackResult.selected;
+            } else {
+                userText = '확인';
+            }
+
+            // handleSendMessage를 통해 에이전트에 전송
+            await this.handleSendMessage({ text: userText });
+        },
+
         async handleSendMessage(payload) {
             const fileMeta = this.getPayloadFileSummary(payload);
             if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !fileMeta.hasFile)) return;
@@ -2458,6 +2620,18 @@ export default {
                 this.$nextTick(() => this.scrollToBottomSafe());
                 this.focusComposerInput();
                 this.updateChatAccessPage(this.currentChatRoom?.id);
+
+                const pageEdit = this.parseHwpxPageInstruction(msg.content || '');
+                if (pageEdit) {
+                    const hwpxPanel = [...this.artifactPanels].reverse().find((p) => p.type === 'hwpx' && p.data?.fileUrl);
+                    if (hwpxPanel) {
+                        payload.hwpxUrl = hwpxPanel.data.fileUrl;
+                        payload.hwpxEdit = {
+                            page_number: pageEdit.pageNumber,
+                            instruction: pageEdit.instruction
+                        };
+                    }
+                }
 
                 // ---- 멀티 에이전트 라우팅/스트리밍 ----
                 const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', msg.mentionedUsers || []);
@@ -3114,7 +3288,12 @@ export default {
             let messageForAgent = (userText || '').toString();
             // 첨부 정보는 기존 방식처럼 [InputData]로 전달
             const normalizedFiles = this.normalizePayloadFiles(payload);
-            if ((payload?.images && payload.images.length > 0) || normalizedFiles.length > 0) {
+            if (
+                (payload?.images && payload.images.length > 0) ||
+                normalizedFiles.length > 0 ||
+                payload?.hwpxUrl ||
+                payload?.hwpxEdit
+            ) {
                 const inputData = {};
                 if (payload?.images && payload.images.length > 0) inputData.images = payload.images;
                 if (normalizedFiles.length > 0) {
@@ -3122,11 +3301,704 @@ export default {
                     inputData.file = normalizedFiles[0];
                     inputData.files = normalizedFiles;
                 }
+                if (payload?.hwpxUrl) inputData.hwpx_url = payload.hwpxUrl;
+                if (payload?.hwpxEdit) inputData.hwpx_edit = payload.hwpxEdit;
                 messageForAgent += `\n\n[InputData]\n${JSON.stringify(inputData)}`;
             }
 
             // must_reply (침묵 정책 제거)
             return messageForAgent;
+        },
+
+        normalizeInputFile(file) {
+            if (!file || typeof file !== 'object') return file || null;
+            const url = file.url || file.fileUrl || file.publicUrl || file.signedUrl || '';
+            const name = file.name || file.fileName || '';
+            const contentType = file.contentType || file.fileType || '';
+            const size = file.size || file.fileSize || null;
+            if (!url && !name && !contentType && !size) return file;
+            const normalized = { url, name, contentType };
+            if (size) normalized.size = size;
+            return normalized;
+        },
+
+        extractHwpxPayload(content) {
+            const raw = (content || '').toString().trim();
+            if (!raw) return null;
+            // 마크다운 코드블록(```json ... ```) 안의 JSON도 추출
+            const stripped = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+            // content 전체 or 코드블록 내부에서 { ... } JSON 객체 추출
+            const match = stripped.match(/\{[\s\S]*\}/);
+            if (!match) return null;
+            try {
+                const parsed = JSON.parse(match[0]);
+                if (!parsed || typeof parsed !== 'object') return null;
+                const hasPdfUrl = !!(parsed.pdf_url || parsed.pdfUrl);
+                const hasFileUrl = !!(parsed.file_url || parsed.fileUrl);
+                const hasBase64 = !!(parsed.base64_data || parsed.base64Data);
+                const hasHtmlUrl = !!(parsed.html_url || parsed.htmlUrl || parsed.hwpx_html_url || parsed.hwpxHtmlUrl);
+                const hasSlideMarkdown = !!(parsed.slide_markdown);
+                if (hasPdfUrl || hasFileUrl || hasBase64 || hasHtmlUrl || hasSlideMarkdown) return parsed;
+                return null;
+            } catch (e) {
+                return null;
+            }
+        },
+
+        toggleArtifactSidebar() {
+            if (!this.hasArtifactPanel) return;
+            this.artifactSidebarVisible = !this.artifactSidebarVisible;
+        },
+
+        closeArtifactSidebar() {
+            this.artifactSidebarVisible = false;
+        },
+
+        closeArtifactPanel(panelId) {
+            const idx = this.artifactPanels.findIndex((p) => p.id === panelId);
+            if (idx === -1) return;
+            this.artifactPanels.splice(idx, 1);
+            if (this.activeArtifactId === panelId) {
+                this.activeArtifactId = this.artifactPanels[Math.max(0, idx - 1)]?.id || this.artifactPanels[0]?.id || null;
+            }
+            if (this.artifactPanels.length === 0) {
+                this.artifactSidebarVisible = false;
+            }
+        },
+
+        /**
+         * 패널 등록/갱신. 같은 type+htmlUrl이 있으면 데이터를 업데이트하고 활성화.
+         * 새 URL이면 새 탭 추가.
+         */
+        pushArtifactPanel({ type, label, data }) {
+            const existingIdx = this.artifactPanels.findIndex(
+                (p) => p.type === type && (
+                    type === 'slide'
+                        ? p.data?.messageId === data?.messageId
+                        : p.data?.htmlUrl === data?.htmlUrl
+                )
+            );
+            if (existingIdx !== -1) {
+                this.artifactPanels[existingIdx] = { ...this.artifactPanels[existingIdx], label, data };
+                this.activeArtifactId = this.artifactPanels[existingIdx].id;
+            } else {
+                const id = `${type}-${this.uuid()}`;
+                this.artifactPanels.push({ id, type, label, data });
+                this.activeArtifactId = id;
+            }
+            this.artifactSidebarVisible = true;
+        },
+
+        /** ArtifactPanel의 panel-action 이벤트 중앙 처리 */
+        handleArtifactAction({ type, action, panelId, payload }) {
+            if (type === 'hwpx') {
+                if (action === 'page-edit-request') {
+                    this.handleHwpxSectionEdit(panelId, payload);
+                } else if (action === 'download') {
+                    this.handleHwpxDownload(panelId, payload);
+                }
+            } else if (type === 'docx') {
+                if (action === 'page-edit-request') {
+                    this.handleDocxSectionEdit(panelId, payload);
+                } else if (action === 'download') {
+                    this.handleDocxDownload(panelId, payload);
+                }
+            }
+        },
+
+        extractHwpxHtmlUrl(payload) {
+            if (!payload || typeof payload !== 'object') return '';
+            return (
+                payload.html_url ||
+                payload.htmlUrl ||
+                payload.hwpx_html_url ||
+                payload.hwpxHtmlUrl ||
+                ''
+            );
+        },
+
+        extractHwpxHtmlUrlFromText(text) {
+            const raw = (text || '').toString();
+            if (!raw) return '';
+            const matches = raw.match(/https?:\/\/[^\s)]+\.html/gi) || [];
+            if (matches.length === 0) return '';
+            const filled = matches.find((url) => url.includes('filled-'));
+            return filled || '';
+        },
+
+        extractHwpxFileUrlFromText(text) {
+            const raw = (text || '').toString();
+            if (!raw) return '';
+            const matches = raw.match(/https?:\/\/[^\s)]+\.hwpx/gi) || [];
+            return matches[0] || '';
+        },
+
+        /**
+         * 텍스트 메시지에 raw hwpx/html 마크다운 링크가 있는 경우:
+         * - 링크 줄 제거 (정제된 텍스트 반환)
+         * - message.pdfFile 세팅 (hwpx 파일 카드)
+         * - safeFinal 업데이트용으로 정제 문자열 반환
+         */
+        cleanupHwpxMessageContent(idx) {
+            const msg = this.messages[idx];
+            if (!msg) return null;
+            const content = (msg.content || '').toString();
+            const hwpxFileUrl = this.extractHwpxFileUrlFromText(content);
+            // 리스트 마커(- / *) 포함 줄 전체 제거 → 마커만 남는 현상 방지
+            // .hwpx: 무조건 제거 / filled-*.html: 미리보기 전용이므로 제거
+            const cleaned = content
+                // 리스트 항목 전체 줄 (- [text](url) 또는 * [text](url))
+                .replace(/^[ \t]*[-*][ \t]*\[.+?\]\(https?:\/\/[^\s)]+\.hwpx[^\s)]*\)[ \t]*$/gim, '')
+                .replace(/^[ \t]*[-*][ \t]*\[.+?\]\(https?:\/\/[^\s)]*filled-[^\s)]+\.html[^\s)]*\)[ \t]*$/gim, '')
+                // 리스트 항목 전체 줄 (베어 URL)
+                .replace(/^[ \t]*[-*][ \t]*https?:\/\/\S+\.hwpx[ \t]*$/gim, '')
+                .replace(/^[ \t]*[-*][ \t]*https?:\/\/\S*filled-\S+\.html[ \t]*$/gim, '')
+                // 인라인 마크다운 링크 (리스트 아닌 경우)
+                .replace(/\[.+?\]\(https?:\/\/[^\s)]+\.hwpx[^\s)]*\)/gi, '')
+                .replace(/\[.+?\]\(https?:\/\/[^\s)]*filled-[^\s)]+\.html[^\s)]*\)/gi, '')
+                // 베어 URL (인라인)
+                .replace(/https?:\/\/\S+\.hwpx/gi, '')
+                .replace(/https?:\/\/\S*filled-\S+\.html/gi, '')
+                // 빈 줄 3개 이상 → 2개로 정리
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+            if (hwpxFileUrl && !msg.pdfFile) {
+                const fileName = decodeURIComponent(hwpxFileUrl.split('/').pop() || 'document.hwpx');
+                msg.pdfFile = {
+                    url: hwpxFileUrl,
+                    fileUrl: hwpxFileUrl,
+                    name: fileName,
+                    fileName: fileName,
+                    contentType: 'application/vnd.hancom.hwpx'
+                };
+            }
+            return cleaned;
+        },
+
+        /**
+         * DB에서 불러온 메시지 중 hwpx 관련 raw 링크가 남아있는 경우 일괄 정리.
+         * - content에 raw 마크다운 hwpx/html 링크 → 제거
+         * - hwpxFileUrl이 있는데 pdfFile이 없는 경우 → pdfFile 세팅
+         * DB를 건드리지 않고 in-memory 메시지만 수정 (표시용).
+         */
+        processLoadedHwpxMessages() {
+            if (!Array.isArray(this.messages)) return;
+            for (let i = 0; i < this.messages.length; i++) {
+                const msg = this.messages[i];
+                if (!msg || msg.role === 'user') continue;
+                const content = (msg.content || '').toString();
+
+                // ① 이미 hwpxFileUrl이 확인된 메시지: pdfFile 세팅
+                if (msg.hwpxFileUrl && !msg.pdfFile) {
+                    const fileName = decodeURIComponent(msg.hwpxFileUrl.split('/').pop() || 'document.hwpx');
+                    msg.pdfFile = {
+                        url: msg.hwpxFileUrl,
+                        fileUrl: msg.hwpxFileUrl,
+                        name: fileName,
+                        fileName,
+                        contentType: 'application/vnd.hancom.hwpx'
+                    };
+                }
+
+                // ② content 클린업은 hwpx 전용 URL이 있는 경우만 실행
+                // 조건: msg.hwpxHtmlUrl이 세팅되어 있거나(스트리밍 시 이미 확인된 경우)
+                //       OR content에 .hwpx URL이 있거나
+                //       OR content에 filled- 포함 .html URL이 있는 경우
+                const isHwpxMessage =
+                    !!msg.hwpxHtmlUrl ||
+                    /https?:\/\/\S+\.hwpx/i.test(content) ||
+                    /https?:\/\/\S*filled-\S+\.html/i.test(content);
+                if (!isHwpxMessage) continue;
+
+                const cleaned = this.cleanupHwpxMessageContent(i);
+                if (cleaned !== null && cleaned !== content) {
+                    msg.content = cleaned;
+                }
+            }
+        },
+
+        pushHwpxArtifact(parsed, msgIdx) {
+            const url = this.extractHwpxHtmlUrl(parsed);
+            if (!url) return;
+            const name =
+                (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
+            const isFilled = name.startsWith('filled-') || url.includes('filled-');
+            if (!isFilled) return;
+            const msg = this.messages?.[msgIdx];
+            const fileUrl = parsed?.file_url || parsed?.fileUrl || msg?.hwpxFileUrl || '';
+            if (msg) {
+                msg.hwpxHtmlUrl = url;
+                msg.hwpxFileUrl = fileUrl;
+                msg.hwpxHtmlName = name;
+            }
+            this.pushArtifactPanel({
+                type: 'hwpx',
+                label: name || 'document.hwpx',
+                data: { htmlUrl: url, fileUrl, messageId: msg?.uuid || null }
+            });
+        },
+
+        pushDocxArtifact(parsed, msgIdx) {
+            const url = this.extractHwpxHtmlUrl(parsed);
+            if (!url) return;
+            const name =
+                (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
+            const msg = this.messages?.[msgIdx];
+            const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
+            this.pushArtifactPanel({
+                type: 'docx',
+                label: name || 'document.docx',
+                data: { htmlUrl: url, fileUrl, messageId: msg?.uuid || null }
+            });
+        },
+
+        /** slide_markdown이 있는 JSON인지 판별 */
+        isSlidePayload(parsed) {
+            return !!(parsed && typeof parsed === 'object' && parsed.slide_markdown);
+        },
+
+        /** generate_slides 결과를 슬라이드 아티팩트 패널로 등록 */
+        pushSlideArtifact(parsed, msgIdx) {
+            const md = parsed?.slide_markdown;
+            if (!md) return;
+            const msg = this.messages?.[msgIdx];
+            const title = parsed?.deck_title || '슬라이드';
+            const imageUrls = parsed?.image_urls || [];
+            if (msg) {
+                msg.slideMarkdown = md;
+                msg.slideImageUrls = imageUrls;
+            }
+            this.pushArtifactPanel({
+                type: 'slide',
+                label: title,
+                data: { slideMarkdown: md, imageUrls, reportId: parsed?.report_id || '', messageId: msg?.uuid || null }
+            });
+        },
+
+        isDocxPayload(parsed) {
+            if (!parsed || typeof parsed !== 'object') return false;
+            const ct = (parsed.content_type || parsed.contentType || '').toString();
+            const fn = (parsed.file_name || parsed.fileName || '').toString();
+            return ct.includes('wordprocessingml') || fn.toLowerCase().endsWith('.docx');
+        },
+
+        startArtifactSidebarResize(event) {
+            if (this.artifactSidebarResizing) return;
+            this.artifactSidebarResizing = true;
+            this.artifactSidebarResizeStartX = event.clientX;
+            this.artifactSidebarResizeStartWidth = this.artifactSidebarWidth || 420;
+            window.addEventListener('mousemove', this.onArtifactSidebarResizeMove);
+            window.addEventListener('mouseup', this.stopArtifactSidebarResize);
+        },
+
+        onArtifactSidebarResizeMove(event) {
+            if (!this.artifactSidebarResizing) return;
+            const delta = this.artifactSidebarResizeStartX - event.clientX;
+            const nextWidth = this.artifactSidebarResizeStartWidth + delta;
+            const minWidth = 320;
+            const maxWidth = 960;
+            this.artifactSidebarWidth = Math.max(minWidth, Math.min(maxWidth, nextWidth));
+        },
+
+        stopArtifactSidebarResize() {
+            if (!this.artifactSidebarResizing) return;
+            this.artifactSidebarResizing = false;
+            window.removeEventListener('mousemove', this.onArtifactSidebarResizeMove);
+            window.removeEventListener('mouseup', this.stopArtifactSidebarResize);
+        },
+
+        applyHwpxViewerFromToolCalls(toolCalls, msgIdx) {
+            if (!Array.isArray(toolCalls) || toolCalls.length === 0) return;
+            for (let i = toolCalls.length - 1; i >= 0; i--) {
+                const outputStr = toolCalls[i]?.output;
+                if (!outputStr) continue;
+                const parsed = this.parseToolOutput(outputStr);
+                // 슬라이드 아티팩트 감지
+                if (this.isSlidePayload(parsed)) {
+                    this.pushSlideArtifact(parsed, msgIdx);
+                    return;
+                }
+                const url = this.extractHwpxHtmlUrl(parsed);
+                if (url) {
+                    if (this.isDocxPayload(parsed)) {
+                        this.pushDocxArtifact(parsed, msgIdx);
+                    } else {
+                        this.pushHwpxArtifact(parsed, msgIdx);
+                    }
+                    return;
+                }
+                const textUrl = this.extractHwpxHtmlUrlFromText(outputStr);
+                if (textUrl) {
+                    this.pushHwpxArtifact({ html_url: textUrl }, msgIdx);
+                    return;
+                }
+            }
+        },
+
+        checkExistingArtifactPanels() {
+            for (let i = this.messages.length - 1; i >= 0; i--) {
+                const msg = this.messages[i];
+                if (!msg) continue;
+                // 슬라이드 아티팩트 복원
+                if (msg?.slideMarkdown) {
+                    this.pushArtifactPanel({
+                        type: 'slide',
+                        label: '슬라이드',
+                        data: { slideMarkdown: msg.slideMarkdown, imageUrls: msg.slideImageUrls || [], messageId: msg?.uuid || null }
+                    });
+                    return;
+                }
+                if (msg?.hwpxHtmlUrl) {
+                    this.pushArtifactPanel({
+                        type: 'hwpx',
+                        label: msg.hwpxHtmlName || 'document.hwpx',
+                        data: { htmlUrl: msg.hwpxHtmlUrl, fileUrl: msg.hwpxFileUrl || '', messageId: msg?.uuid || null }
+                    });
+                    return;
+                }
+                const urlFromText = this.extractHwpxHtmlUrlFromText(msg?.content);
+                if (urlFromText) {
+                    this.pushHwpxArtifact({ html_url: urlFromText }, i);
+                    return;
+                }
+                const toolCalls = Array.isArray(msg?.toolCalls) ? msg.toolCalls : [];
+                if (toolCalls.length === 0) continue;
+                this.applyHwpxViewerFromToolCalls(toolCalls, i);
+                if (this.hasArtifactPanel) return;
+            }
+        },
+
+        parseHwpxPageInstruction(text) {
+            const raw = (text || '').toString().trim();
+            if (!raw) return null;
+            const match = raw.match(/(\d+)\s*페이지\s*(?:에|에서)?\s*(.*)/);
+            if (!match) return null;
+            const pageNumber = Number(match[1]);
+            const instruction = (match[2] || '').trim() || raw;
+            if (!pageNumber) return null;
+            return { pageNumber, instruction };
+        },
+
+        async requestHwpxPageEdit({ hwpxUrl, pageNumber, instruction }) {
+            const baseUrl = this.resolveHwpxMcpUrl();
+            const payload = {
+                jsonrpc: '2.0',
+                id: Date.now(),
+                method: 'tools/call',
+                params: {
+                    name: 'edit_hwpx_page_html',
+                    arguments: {
+                        hwpx_url: hwpxUrl,
+                        page_number: pageNumber,
+                        instruction
+                    }
+                }
+            };
+            const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                throw new Error(`HWPX MCP error: ${response.status}`);
+            }
+            const data = await response.json();
+            return this.parseMcpToolResult(data);
+        },
+
+        async handleHwpxSectionEdit(panelId, payload) {
+            const pageNumber = Number(payload?.pageNumber || 0);
+            const instruction = (payload?.instruction || '').toString().trim();
+            const contextText = (payload?.contextText || '').toString().trim();
+            if (!pageNumber || !instruction) return;
+            const panel = this.artifactPanels.find((p) => p.id === panelId);
+            const hwpxFileUrl = panel?.data?.fileUrl || '';
+            const callMethod = (method, ...args) => this.$refs.artifactPanel?.callPanelMethod?.(panelId, method, ...args);
+            if (!hwpxFileUrl) {
+                callMethod('showEditNotice', 'HWPX 파일 정보가 없어 수정할 수 없습니다.', 'error');
+                return;
+            }
+            const finalInstruction = contextText ? `${instruction}\n\n선택 영역: ${contextText}` : instruction;
+            try {
+                const output = await this.requestHwpxPageEdit({
+                    hwpxUrl: hwpxFileUrl,
+                    pageNumber,
+                    instruction: finalInstruction
+                });
+                const edits = Array.isArray(output?.edits) ? output.edits : [];
+                const editedHtml = output?.edited_page_html || output?.editedPageHtml || '';
+                const applied = edits.length
+                    ? callMethod('applyPageEdits', Number(pageNumber), edits)
+                    : callMethod('applyPageEdit', Number(pageNumber), editedHtml);
+                if (applied) {
+                    if (edits.length) {
+                        const ids = edits.map((e) => e?.id).filter(Boolean);
+                        callMethod('highlightEdits', ids, Number(pageNumber));
+                    }
+                    callMethod('showEditNotice', `${pageNumber}페이지 수정 완료`, 'success');
+                } else {
+                    callMethod('showEditNotice', '페이지 수정에 실패했습니다.', 'error');
+                }
+            } catch (e) {
+                callMethod('showEditNotice', '페이지 수정 중 오류가 발생했습니다.', 'error');
+            }
+        },
+
+        appendAssistantNotice(text) {
+            const nowIso = new Date().toISOString();
+            this.messages.push({
+                uuid: this.uuid(),
+                role: 'assistant',
+                content: text,
+                contentType: 'text',
+                isLoading: false,
+                timeStamp: nowIso,
+                email: this.contextAgent?.email || 'agent:system',
+                name: this.contextAgent?.username || 'assistant',
+                userName: this.contextAgent?.username || 'assistant'
+            });
+            this.$nextTick(() => this.scrollToBottomSafe());
+        },
+
+        async handleHwpxDownload(panelId, payload) {
+            if (this.artifactDownloadLoading) return;
+            const html = payload?.html || '';
+            if (!html) return;
+            const panel = this.artifactPanels.find((p) => p.id === panelId);
+            const hwpxUrl = panel?.data?.fileUrl || this.findLatestHwpxFileUrl();
+            if (!hwpxUrl) return;
+
+            this.artifactDownloadLoading = true;
+            try {
+                const result = await this.requestHwpxSave({ hwpxUrl, html });
+                const fileUrl = result?.file_url || result?.fileUrl || '';
+                const fileName = result?.file_name || result?.fileName || 'output.hwpx';
+                if (fileUrl) {
+                    this.triggerFileDownload(fileUrl, fileName);
+                }
+            } catch (e) {
+                console.warn('[ChatRoomPage] HWPX 다운로드 실패:', e);
+            } finally {
+                this.artifactDownloadLoading = false;
+            }
+        },
+
+        findLatestHwpxFileUrl() {
+            for (let i = this.artifactPanels.length - 1; i >= 0; i--) {
+                const url = this.artifactPanels[i]?.data?.fileUrl || '';
+                if (url) return url;
+            }
+            for (let i = this.messages.length - 1; i >= 0; i--) {
+                const url = this.messages[i]?.hwpxFileUrl || '';
+                if (url) return url;
+            }
+            return '';
+        },
+
+        async requestHwpxSave({ hwpxUrl, html }) {
+            const baseUrl = this.resolveHwpxMcpUrl();
+            const payload = {
+                jsonrpc: '2.0',
+                id: Date.now(),
+                method: 'tools/call',
+                params: {
+                    name: 'save_hwpx_from_html',
+                    arguments: {
+                        hwpx_url: hwpxUrl,
+                        edited_html: html
+                    }
+                }
+            };
+
+            const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HWPX MCP error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return this.parseMcpToolResult(data);
+        },
+
+        async requestDocxPageEdit({ docxUrl, pageNumber, instruction }) {
+            const baseUrl = this.resolveHwpxMcpUrl();
+            const payload = {
+                jsonrpc: '2.0',
+                id: Date.now(),
+                method: 'tools/call',
+                params: {
+                    name: 'edit_docx_page_html',
+                    arguments: {
+                        docx_url: docxUrl,
+                        page_number: pageNumber,
+                        instruction
+                    }
+                }
+            };
+            const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error(`DOCX MCP error: ${response.status}`);
+            const data = await response.json();
+            return this.parseMcpToolResult(data);
+        },
+
+        async handleDocxSectionEdit(panelId, payload) {
+            const pageNumber = Number(payload?.pageNumber || 0);
+            const instruction = (payload?.instruction || '').toString().trim();
+            const contextText = (payload?.contextText || '').toString().trim();
+            if (!pageNumber || !instruction) return;
+            const panel = this.artifactPanels.find((p) => p.id === panelId);
+            const docxFileUrl = panel?.data?.fileUrl || '';
+            const callMethod = (method, ...args) => this.$refs.artifactPanel?.callPanelMethod?.(panelId, method, ...args);
+            if (!docxFileUrl) {
+                callMethod('showEditNotice', 'DOCX 파일 정보가 없어 수정할 수 없습니다.', 'error');
+                return;
+            }
+            const finalInstruction = contextText ? `${instruction}\n\n선택 영역: ${contextText}` : instruction;
+            try {
+                const output = await this.requestDocxPageEdit({
+                    docxUrl: docxFileUrl,
+                    pageNumber,
+                    instruction: finalInstruction
+                });
+                const edits = Array.isArray(output?.edits) ? output.edits : [];
+                const editedHtml = output?.edited_page_html || output?.editedPageHtml || '';
+                const applied = edits.length
+                    ? callMethod('applyPageEdits', Number(pageNumber), edits)
+                    : callMethod('applyPageEdit', Number(pageNumber), editedHtml);
+                if (applied) {
+                    if (edits.length) {
+                        const ids = edits.map((e) => e?.id).filter(Boolean);
+                        callMethod('highlightEdits', ids, Number(pageNumber));
+                    }
+                    callMethod('showEditNotice', `${pageNumber}페이지 수정 완료`, 'success');
+                } else {
+                    callMethod('showEditNotice', '페이지 수정에 실패했습니다.', 'error');
+                }
+            } catch (e) {
+                callMethod('showEditNotice', '페이지 수정 중 오류가 발생했습니다.', 'error');
+            }
+        },
+
+        async handleDocxDownload(panelId, payload) {
+            if (this.artifactDownloadLoading) return;
+            const html = payload?.html || '';
+            if (!html) return;
+            const panel = this.artifactPanels.find((p) => p.id === panelId);
+            const docxUrl = panel?.data?.fileUrl || '';
+            if (!docxUrl) return;
+            this.artifactDownloadLoading = true;
+            try {
+                const result = await this.requestDocxSave({ docxUrl, html });
+                const fileUrl = result?.file_url || result?.fileUrl || '';
+                const fileName = result?.file_name || result?.fileName || 'output.docx';
+                const newHtmlUrl = result?.html_url || result?.htmlUrl || '';
+                if (fileUrl) {
+                    // 패널의 fileUrl/htmlUrl을 저장된 파일로 업데이트 (이후 편집에서도 동일 버전 사용)
+                    if (panel) {
+                        panel.data.fileUrl = fileUrl;
+                        if (newHtmlUrl) panel.data.htmlUrl = newHtmlUrl;
+                    }
+                    this.triggerFileDownload(fileUrl, fileName);
+                }
+            } catch (e) {
+                console.warn('[ChatRoomPage] DOCX 다운로드 실패:', e);
+            } finally {
+                this.artifactDownloadLoading = false;
+            }
+        },
+
+        async requestDocxSave({ docxUrl, html }) {
+            const baseUrl = this.resolveHwpxMcpUrl();
+            const payload = {
+                jsonrpc: '2.0',
+                id: Date.now(),
+                method: 'tools/call',
+                params: {
+                    name: 'save_docx_from_html',
+                    arguments: {
+                        docx_url: docxUrl,
+                        edited_html: html
+                    }
+                }
+            };
+            const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error(`DOCX MCP error: ${response.status}`);
+            const data = await response.json();
+            return this.parseMcpToolResult(data);
+        },
+
+        resolveHwpxMcpUrl() {
+            const raw = (import.meta.env.PROCESS_GPT_OFFICE_MCP_URL || '').toString().trim();
+            if (!raw) return 'http://127.0.0.1:1192/mcp';
+            return raw.endsWith('/') ? `${raw}mcp` : raw;
+        },
+
+        parseMcpToolResult(result) {
+            if (!result) return null;
+            const res = result.result || result.data || result;
+            if (typeof res === 'string') {
+                const parsed = this.parseToolOutput(res);
+                return parsed && typeof parsed === 'object' ? parsed : null;
+            }
+            const content = Array.isArray(res?.content) ? res.content : [];
+            for (const item of content) {
+                if (!item) continue;
+                const text = item.text || item.data || item.json || '';
+                if (!text) continue;
+                const parsed = this.parseToolOutput(text);
+                if (parsed && typeof parsed === 'object') return parsed;
+            }
+            if (res && typeof res === 'object') return res;
+            return null;
+        },
+
+        triggerFileDownload(url, filename) {
+            try {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename || 'output.hwpx';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                try {
+                    window.open(url, '_blank');
+                } catch (e2) {}
+            }
+        },
+
+        createBlobUrlFromBase64(base64, contentType) {
+            try {
+                if (!base64) return '';
+                const binary = atob(base64);
+                const len = binary.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i += 1) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                const blob = new Blob([bytes], { type: contentType || 'application/octet-stream' });
+                return URL.createObjectURL(blob);
+            } catch (e) {
+                return '';
+            }
         },
 
         async streamAgents(agentTargets, userText, payload) {
@@ -3247,12 +4119,19 @@ export default {
                 const abortKey = `${targetRoomId}:${agentId}:${assistantUuid}`;
                 this.agentAbortControllers[abortKey] = abortController;
 
+                let hasHumanFeedback = false;
+
                 const callbacks = {
                     onToken: (token) => {
                         full += token;
                         const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                         if (idx !== -1) {
-                            this.messages[idx].content = full.length === 0 ? '생각 중...' : full;
+                            // human feedback이 감지된 경우 간결한 안내만 표시
+                            if (hasHumanFeedback) {
+                                this.messages[idx].content = '참고할 문서를 검색했습니다. 아래에서 선택해 주세요.';
+                            } else {
+                                this.messages[idx].content = full.length === 0 ? '생각 중...' : full;
+                            }
                             this.messages[idx].isLoading = true;
                         }
                         this.setAgentStatus(agentId, { state: 'streaming', message: '' });
@@ -3285,6 +4164,7 @@ export default {
                             const cur = this.messages[idx];
                             const toolCalls = Array.isArray(cur.toolCalls) ? cur.toolCalls : [];
                             // 마지막 running tool을 done 처리
+                            let lastRunningTool = null;
                             for (let i = toolCalls.length - 1; i >= 0; i--) {
                                 if (toolCalls[i]?.status === 'running') {
                                     toolCalls[i] = {
@@ -3293,24 +4173,144 @@ export default {
                                         output: output ?? null,
                                         endedAt: new Date().toISOString()
                                     };
+                                    lastRunningTool = toolCalls[i];
                                     break;
                                 }
                             }
                             this.messages[idx].toolCalls = toolCalls;
+
+                            // list_reference_documents 등 human feedback 도구 결과 감지
+                            if (lastRunningTool && lastRunningTool.name && lastRunningTool.name.includes('list_reference_documents')) {
+                                try {
+                                    const fbParsed = typeof output === 'string' ? JSON.parse(output) : output;
+                                    if (fbParsed && fbParsed.user_request_type === 'select_items' && fbParsed.items) {
+                                        lastRunningTool.__humanFeedback = fbParsed;
+                                        hasHumanFeedback = true;
+                                        // 즉시 메시지 내용을 간결하게 교체
+                                        const msgIdx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+                                        if (msgIdx !== -1) {
+                                            this.messages[msgIdx].content = '참고할 문서를 검색했습니다. 아래에서 선택해 주세요.';
+                                        }
+                                    }
+                                } catch (e) {
+                                    // 파싱 실패 시 무시
+                                }
+                            }
+
+                            const parsed = this.parseToolOutput(output);
+                            // 슬라이드 아티팩트 감지
+                            if (this.isSlidePayload(parsed)) {
+                                this.pushSlideArtifact(parsed, idx);
+                            } else {
+                                this.pushHwpxArtifact(parsed, idx);
+                                if (!this.hasArtifactPanel) {
+                                    const urlFromText = this.extractHwpxHtmlUrlFromText(output);
+                                    if (urlFromText) {
+                                        this.pushHwpxArtifact({ html_url: urlFromText }, idx);
+                                    }
+                                }
+                            }
                             maybeScroll();
                         } catch (e) {}
                     },
                     onDone: async (content) => {
                         const finalContent = (content || full || '').toString().trim();
                         // 침묵 정책 제거: NO_RESPONSE도 그대로 텍스트로 표시하지 않도록 빈 값 처리
-                        const safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
-                        const displayContent = this.extractDisplayAssistantContent(safeFinal || full || '');
+                        let safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
 
                         const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                         if (idx !== -1) {
-                            this.messages[idx].content = displayContent;
+                            // human feedback 도구 결과가 있으면 메시지에 첨부
+                            const msgToolCalls = Array.isArray(this.messages[idx].toolCalls) ? this.messages[idx].toolCalls : [];
+                            const feedbackTC = msgToolCalls.find(tc => tc?.__humanFeedback);
+                            if (feedbackTC) {
+                                this.messages[idx].__humanFeedback = feedbackTC.__humanFeedback;
+                                // AI가 문서 목록을 텍스트로 나열한 부분 제거 → 간결한 안내만 표시
+                                safeFinal = '참고할 문서를 검색했습니다. 아래에서 선택해 주세요.';
+                                console.log('[HumanFeedback] ✅ 메시지에 __humanFeedback 첨부됨, items:', feedbackTC.__humanFeedback?.items?.length);
+                            }
+
+                            const hwpxPayload = this.extractHwpxPayload(safeFinal || full || '');
+                            if (hwpxPayload && this.isSlidePayload(hwpxPayload)) {
+                                // 슬라이드 아티팩트 처리
+                                this.pushSlideArtifact(hwpxPayload, idx);
+                                safeFinal = '슬라이드를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
+                            } else if (hwpxPayload) {
+                                const pdfUrl = hwpxPayload.pdf_url || hwpxPayload.pdfUrl || '';
+                                const pdfName = (hwpxPayload.pdf_name || hwpxPayload.pdfName || '').toString();
+                                const fileUrl = hwpxPayload.file_url || hwpxPayload.fileUrl || '';
+                                const fileName = (hwpxPayload.file_name || hwpxPayload.fileName || 'filled.hwpx').toString();
+                                const contentType =
+                                    (hwpxPayload.content_type || hwpxPayload.contentType || 'application/vnd.hancom.hwpx').toString();
+                                const htmlUrl = this.extractHwpxHtmlUrl(hwpxPayload);
+
+                                if (pdfUrl) {
+                                    this.messages[idx].pdfFile = {
+                                        url: pdfUrl,
+                                        fileUrl: pdfUrl,
+                                        name: pdfName || 'filled.pdf',
+                                        fileName: pdfName || 'filled.pdf',
+                                        contentType: hwpxPayload.pdf_content_type || 'application/pdf'
+                                    };
+                                    safeFinal = 'PDF 미리보기가 준비되었습니다. 아래 첨부 파일을 확인해주세요.';
+                                } else if (hwpxPayload.base64_data || hwpxPayload.base64Data) {
+                                    const base64 = hwpxPayload.base64_data || hwpxPayload.base64Data;
+                                    const blobUrl = this.createBlobUrlFromBase64(base64, contentType);
+                                    if (blobUrl) {
+                                        this.messages[idx].pdfFile = {
+                                            url: blobUrl,
+                                            fileUrl: blobUrl,
+                                            name: fileName,
+                                            fileName,
+                                            contentType
+                                        };
+                                    }
+                                    safeFinal = 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
+                                } else if (fileUrl) {
+                                    this.messages[idx].pdfFile = {
+                                        url: fileUrl,
+                                        fileUrl,
+                                        name: fileName,
+                                        fileName,
+                                        contentType
+                                    };
+                                    safeFinal = this.isDocxPayload(hwpxPayload)
+                                        ? 'DOCX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.'
+                                        : 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
+                                }
+
+                                if (htmlUrl) {
+                                    if (this.isDocxPayload(hwpxPayload)) {
+                                        this.pushDocxArtifact(hwpxPayload, idx);
+                                    } else {
+                                        this.pushHwpxArtifact(hwpxPayload, idx);
+                                    }
+                                }
+                            }
+
+                            this.messages[idx].content = safeFinal || full || '';
+                            const displayContent = this.extractDisplayAssistantContent(this.messages[idx].content);
                             this.messages[idx].isLoading = false;
                             this.messages[idx].contentType = 'text';
+                            this.applyHwpxViewerFromToolCalls(this.messages[idx].toolCalls, idx);
+                            if (!this.hasArtifactPanel) {
+                                const urlFromText = this.extractHwpxHtmlUrlFromText(this.messages[idx].content);
+                                if (urlFromText) {
+                                    this.pushHwpxArtifact({ html_url: urlFromText }, idx);
+                                }
+                            }
+                            // 패널 열림 여부와 무관하게 content에 raw hwpx 링크가 있으면 항상 정리
+                            // (tool_end로 패널이 이미 열려있어도 LLM 텍스트에 URL이 남아있을 수 있음)
+                            const hasRawHwpxInContent =
+                                /https?:\/\/\S+\.hwpx/i.test(this.messages[idx].content) ||
+                                /https?:\/\/\S*filled-\S+\.html/i.test(this.messages[idx].content);
+                            if (hasRawHwpxInContent) {
+                                const cleaned = this.cleanupHwpxMessageContent(idx);
+                                if (cleaned !== null && cleaned !== this.messages[idx].content) {
+                                    this.messages[idx].content = cleaned;
+                                    safeFinal = cleaned;
+                                }
+                            }
                         }
                         this.setAgentStatus(agentId, { state: 'ready', message: '' });
 
@@ -3318,7 +4318,7 @@ export default {
                         await backend.putObject(`db://chats/${assistantUuid}`, {
                             uuid: assistantUuid,
                             id: this.currentChatRoom?.id,
-                            messages: { ...(this.messages[idx] || assistantMsgBase), content: displayContent, isLoading: false }
+                            messages: { ...(this.messages[idx] || assistantMsgBase), content: displayContent || safeFinal || full || '', isLoading: false }
                         });
 
                         // last message 업데이트(가장 마지막 완료 응답 기준으로 덮어쓰기)
@@ -3420,13 +4420,44 @@ export default {
             const toolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
             if (toolCalls.length === 0) return;
 
+            const pageEditToolCall = [...toolCalls]
+                .reverse()
+                .find((tc) => typeof tc?.name === 'string' && tc.name.includes('edit_hwpx_page_html'));
+
             const startConsultingToolCall = [...toolCalls]
                 .reverse()
                 .find((tc) => typeof tc?.name === 'string' && tc.name.includes('start_process_consulting'));
             const generateProcessToolCall = [...toolCalls]
                 .reverse()
                 .find((tc) => typeof tc?.name === 'string' && tc.name.includes('generate_process'));
-            if (!startConsultingToolCall?.name && !generateProcessToolCall?.name) return;
+            if (!pageEditToolCall?.name && !startConsultingToolCall?.name && !generateProcessToolCall?.name) return;
+
+            if (pageEditToolCall?.name) {
+                try {
+                    const output = this.parseToolOutput(pageEditToolCall.output);
+                    const pageNumber =
+                        output?.page_number ||
+                        output?.pageNumber ||
+                        pageEditToolCall?.input?.page_number ||
+                        pageEditToolCall?.input?.pageNumber;
+                    const edits = Array.isArray(output?.edits) ? output.edits : [];
+                    const editedHtml = output?.edited_page_html || output?.editedPageHtml || '';
+                    const applied = edits.length
+                        ? this.$refs.hwpxViewer?.applyPageEdits?.(Number(pageNumber), edits)
+                        : this.$refs.hwpxViewer?.applyPageEdit?.(Number(pageNumber), editedHtml);
+                    if (applied) {
+                        if (edits.length) {
+                            const ids = edits.map((e) => e?.id).filter(Boolean);
+                            this.$refs.hwpxViewer?.highlightEdits?.(ids, Number(pageNumber));
+                        }
+                        this.$refs.hwpxViewer?.showEditNotice?.(`${pageNumber}페이지 수정 완료`, 'success');
+                    } else {
+                        this.$refs.hwpxViewer?.showEditNotice?.('페이지 수정에 실패했습니다.', 'error');
+                    }
+                } catch (e) {
+                    this.$refs.hwpxViewer?.showEditNotice?.('페이지 수정 중 오류가 발생했습니다.', 'error');
+                }
+            }
 
             // 1) 프로세스 컨설팅 시작 → 컨설팅 다이얼로그 오픈 + 초기 메시지 전달
             if (startConsultingToolCall?.name?.includes('start_process_consulting')) {
@@ -4783,6 +5814,21 @@ export default {
     min-height: 0;
 }
 
+.chat-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    position: relative;
+}
+
+.chat-main {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 .messages-area {
     flex: 1;
     min-height: 0;
@@ -4790,6 +5836,48 @@ export default {
     display: flex;
     flex-direction: column;
     padding-bottom: 24px; /* 내부 스크롤 여유(추가 여유는 Chat.vue chat-view-box padding으로 보강) */
+}
+
+.right-sidebar {
+    width: 380px;
+    border-left: 1px solid rgb(var(--v-theme-borderColor));
+    background: rgb(var(--v-theme-surface));
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+}
+
+.right-sidebar__resizer {
+    position: absolute;
+    left: -6px;
+    top: 0;
+    width: 12px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 4;
+}
+
+.right-sidebar__resizer::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 960px) {
+    .right-sidebar {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        z-index: 3;
+        box-shadow: 2px 1px 20px rgba(0, 0, 0, 0.12);
+    }
 }
 
 .header-bar {

@@ -215,8 +215,11 @@
 </template>
 
 <script>
+import HumanFeedbackPanel from '@/components/ui/HumanFeedbackPanel.vue';
+
 export default {
     name: 'ChatThread',
+    components: { HumanFeedbackPanel },
     props: {
         messages: { type: Array, default: () => [] },
         currentUserEmail: { type: String, default: '' },
@@ -227,7 +230,7 @@ export default {
         loadingHistoryText: { type: String, default: '대화 내역을 불러오는 중...' },
         emptyText: { type: String, default: '무엇을 도와드릴까요?' }
     },
-    emits: ['preview-image', 'preview-bpmn', 'open-external-url'],
+    emits: ['preview-image', 'preview-bpmn', 'open-external-url', 'human-feedback-submit', 'human-feedback-skip'],
     methods: {
         isMyMessage(msg) {
             const myEmail = (this.currentUserEmail || '').toString();

@@ -175,6 +175,8 @@ export default {
 
             events: [],
             channel: null,
+            eventsPollingTimer: null,
+            isPollingEvents: false,
             slideIndexes: {},
             expandedTasks: {},
             errorMessage: null,
@@ -499,6 +501,24 @@ export default {
             },
             immediate: true
         },
+        isQueued: {
+            handler(newVal) {
+                if (newVal && this.events.length === 0) {
+                    this.startEventsPolling();
+                } else {
+                    this.stopEventsPolling();
+                }
+            },
+            immediate: true
+        },
+        events: {
+            handler(newVal) {
+                if (Array.isArray(newVal) && newVal.length > 0) {
+                    this.stopEventsPolling();
+                }
+            },
+            deep: true
+        },
         workItem: {
             deep: true,
             async handler(newVal) {
@@ -530,6 +550,28 @@ export default {
         }
     },
     methods: {
+        startEventsPolling() {
+            if (this.eventsPollingTimer) return;
+            this.eventsPollingTimer = setInterval(async () => {
+                if (this.isPollingEvents) return;
+                if (!this.isQueued || this.events.length > 0) {
+                    this.stopEventsPolling();
+                    return;
+                }
+                this.isPollingEvents = true;
+                try {
+                    await this.loadData();
+                } finally {
+                    this.isPollingEvents = false;
+                }
+            }, 3000);
+        },
+        stopEventsPolling() {
+            if (this.eventsPollingTimer) {
+                clearInterval(this.eventsPollingTimer);
+                this.eventsPollingTimer = null;
+            }
+        },
         // ========================================
         // 🔧 공통 유틸리티 메서드들
         // ========================================
@@ -1181,6 +1223,7 @@ export default {
             if (this.todolistChannel) {
                 window.$supabase.removeChannel(this.todolistChannel);
             }
+            this.stopEventsPolling();
         },
 
         // ========================================
