@@ -13,6 +13,14 @@ export const useAuthStore = defineStore({
         async logout() {
             try {
                 await storage?.signOut();
+
+                const keycloak = (window as any).$keycloak;
+                if (keycloak?.logout) {
+                    const redirectUri = `${window.location.origin}/`;
+                    keycloak.logout({ redirectUri });
+                    return;
+                }
+
                 if (router.currentRoute.value.path === '/') {
                     window.location.reload();
                 } else {

@@ -12,12 +12,57 @@
                     {{ $t('processHierarchy.selectProcess') || '왼쪽 트리에서 프로세스를 선택하세요' }}
                 </span>
             </div>
-            <div class="toolbar-right">
-                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('save')">
-                    <v-icon start size="16">mdi-content-save</v-icon>
-                    {{ $t('processHierarchy.save') || 'Save' }}
-                </v-btn>
-                <v-btn variant="text" size="small" :disabled="!processName" @click="handleValidate">
+            <div class="toolbar-right d-flex align-center">
+                <!-- useLock: 기본(보기 전용)은 연필, 편집 중은 잠금 해제 + 저장. 주변 툴바와 동일하게 아이콘 + 텍스트 -->
+                <template v-if="useLock && processName">
+                    <!-- 기본/잠금 상태(보기 전용): 연필 + "편집" -->
+                    <template v-if="!canEdit">
+                        <v-tooltip location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn
+                                    v-bind="props"
+                                    variant="text"
+                                    size="small"
+                                    @click="$emit('requestLock')"
+                                >
+                                    <v-icon start size="16">mdi-pencil</v-icon>
+                                    {{ $t('processHierarchy.edit') || '편집' }}
+                                </v-btn>
+                            </template>
+                            <span v-if="lockedByOther">{{ checkoutTooltip }}</span>
+                            <span v-else>{{ $t('chat.unlock') }}</span>
+                        </v-tooltip>
+                    </template>
+                    <!-- 편집 중: 잠금 해제 + 저장 (아이콘 + 텍스트) -->
+                    <template v-else>
+                        <v-tooltip location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" variant="text" size="small" @click="$emit('releaseLock')">
+                                    <v-icon start size="16">mdi-lock-open-outline</v-icon>
+                                    {{ $t('chat.lockOnly') }}
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('chat.lockOnly') }}</span>
+                        </v-tooltip>
+                        <v-tooltip location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" variant="text" size="small" @click="$emit('save')">
+                                    <v-icon start size="16">mdi-content-save</v-icon>
+                                    {{ $t('chat.processDefinitionSave') }}
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('chat.processDefinitionSave') }}</span>
+                        </v-tooltip>
+                    </template>
+                </template>
+                <template v-else-if="processName">
+                    <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('save')">
+                        <v-icon start size="16">mdi-content-save</v-icon>
+                        {{ $t('processHierarchy.save') || 'Save' }}
+                    </v-btn>
+                </template>
+                <v-divider v-if="processName" vertical class="mx-1" />
+                <v-btn variant="text" size="small" :disabled="!processName || !canEdit" @click="handleValidate">
                     <v-icon start size="16">mdi-check-circle-outline</v-icon>
                     {{ $t('processHierarchy.validate') || 'Validate' }}
                 </v-btn>
@@ -26,7 +71,7 @@
                     :variant="isWip ? 'flat' : 'text'"
                     :color="isWip ? 'purple' : undefined"
                     size="small"
-                    :disabled="!processName"
+                    :disabled="!processName || !canEdit"
                     @click="$emit('toggleWip')"
                 >
                     <v-icon start size="16">{{ isWip ? 'mdi-progress-wrench' : 'mdi-progress-wrench' }}</v-icon>
@@ -50,11 +95,19 @@
                 ref="bpmnVue"
                 :key="bpmnKey"
                 :bpmn="bpmn"
-                :isViewMode="false"
+                :isViewMode="!canEdit"
+                :show-read-only-label="!canEdit"
+                :lock-holder-name="bpmnLockHolderName"
                 @openPanel="(id) => $emit('openPanel', id)"
                 @update-xml="(val) => $emit('updateXml', val)"
                 @definition="(def) => $emit('definition', def)"
                 @done="onBpmnDone"
+            />
+            <ValidationConsolePanel
+                :show="showValidationConsole"
+                :items="validationConsoleItems"
+                @close="onValidationConsoleClose"
+                @focusElement="focusElement"
             />
         </div>
 
@@ -75,68 +128,39 @@
             <div class="text-body-2 text-medium-emphasis mt-4">Loading...</div>
         </div>
 
-        <!-- Validation Results Dialog -->
-        <v-dialog v-model="validationDialog" max-width="500">
-            <v-card>
-                <v-card-title class="d-flex align-center">
-                    <v-icon color="warning" class="mr-2">mdi-alert-circle-outline</v-icon>
-                    {{ $t('validation.title') || 'BPMN 검증 결과' }}
-                </v-card-title>
-                <v-card-text>
-                    <div class="text-body-2 mb-3">{{ $t('validation.warningMessage') || '다음 문제가 발견되었습니다:' }}</div>
-                    <v-list density="compact">
-                        <v-list-item
-                            v-for="(result, i) in validationResults"
-                            :key="i"
-                            @click="focusElement(result.elementId)"
-                            :class="{ 'cursor-pointer': result.elementId }"
-                        >
-                            <template v-slot:prepend>
-                                <v-icon :color="result.level === 'error' ? 'error' : 'warning'" size="18">
-                                    {{ result.level === 'error' ? 'mdi-alert-circle' : 'mdi-alert' }}
-                                </v-icon>
-                            </template>
-                            <v-list-item-title class="text-body-2">{{ result.message }}</v-list-item-title>
-                            <v-list-item-subtitle v-if="result.elementName" class="text-caption">
-                                {{ result.elementName }}
-                            </v-list-item-subtitle>
-                        </v-list-item>
-                    </v-list>
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn variant="text" @click="clearValidation">
-                        {{ $t('validation.clearOverlays') || 'Clear Overlays' }}
-                    </v-btn>
-                    <v-btn @click="validationDialog = false">{{ $t('common.close') || 'Close' }}</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
     </div>
 </template>
 
 <script>
 import BpmnuEngine from '@/components/BpmnUengine.vue';
 import ProgressBadge from '@/components/ui/ProgressBadge.vue';
+import ValidationConsolePanel from '@/components/ui/ValidationConsolePanel.vue';
 import { useBpmnStore } from '@/stores/bpmn';
+import { validateBpmnModel } from '@/utils/bpmnModelValidation';
+import { createBpmnValidationOverlayElement } from '@/utils/bpmnValidationOverlayHtml.js';
 
 export default {
     name: 'ProcessHierarchyDesigner',
-    components: { BpmnuEngine, ProgressBadge },
+    components: { BpmnuEngine, ProgressBadge, ValidationConsolePanel },
     props: {
         bpmn: { type: String, default: '' },
         processName: { type: String, default: '' },
         processDefinition: { type: Object, default: null },
         definitionPath: { type: String, default: '' },
         definitionList: { type: Array, default: () => [] },
-        loading: { type: Boolean, default: false }
+        loading: { type: Boolean, default: false },
+        useLock: { type: Boolean, default: false },
+        lock: { type: Boolean, default: false },
+        editUser: { type: String, default: '' },
+        editUserDisplayName: { type: String, default: '' },
+        currentUserId: { type: String, default: '' }
     },
-    emits: ['openPanel', 'updateXml', 'save', 'clone', 'versionHistory', 'definition', 'toggleWip'],
+    emits: ['openPanel', 'updateXml', 'save', 'clone', 'versionHistory', 'definition', 'toggleWip', 'requestLock', 'releaseLock'],
     data() {
         return {
             bpmnKey: 0,
-            validationDialog: false,
-            validationResults: [],
+            showValidationConsole: false,
+            validationConsoleItems: [],
             validationOverlayIds: [],
             validationMarkerIds: []
         };
@@ -156,15 +180,44 @@ export default {
             if (!this.definitionPath || !this.definitionList) return false;
             const def = this.definitionList.find((d) => (d.file_name || d.id) === this.definitionPath);
             return def?.approval_state === 'wip' || def?.status === 'wip';
+        },
+        lockedByOther() {
+            return !!(
+                this.useLock &&
+                this.lock &&
+                this.editUser &&
+                this.currentUserId &&
+                this.editUser !== this.currentUserId
+            );
+        },
+        /** useLock일 때 lock을 보유한 경우에만 편집 가능, 그 전에는 기본 viewMode */
+        canEdit() {
+            if (!this.useLock) return true;
+            return !!(this.lock && this.editUser && this.currentUserId && this.editUser === this.currentUserId);
+        },
+        lockHeldByCurrentUser() {
+            return this.canEdit && this.useLock && this.lock;
+        },
+        /** 다른 사용자가 잠금 보유 시 BPMN 캔버스에 표시 */
+        bpmnLockHolderName() {
+            if (!this.useLock || !this.lockedByOther) return '';
+            return (this.editUserDisplayName || this.editUser || '').trim();
+        },
+        checkoutTooltip() {
+            const name = this.editUserDisplayName || this.editUser || '';
+            const fallback =
+                '현재 {name} 님께서 수정 중입니다. 체크아웃 하는 경우 해당 사용자가 수정한 내용은 저장되지 않습니다. 체크아웃 하시겠습니까?';
+            return this.$t('processHierarchy.checkoutTooltip', { name: name || '—' }) || fallback.replace('{name}', name || '—');
         }
     },
     watch: {
         bpmn(newVal, oldVal) {
             if (newVal !== oldVal && newVal) {
                 this.bpmnKey++;
-                // BPMN이 바뀌면 이전 validation overlay 초기화
                 this.validationOverlayIds = [];
                 this.validationMarkerIds = [];
+                this.showValidationConsole = false;
+                this.validationConsoleItems = [];
             }
         }
     },
@@ -241,12 +294,21 @@ export default {
 
         clearValidation() {
             this.clearValidationOverlays();
-            this.validationResults = [];
-            this.validationDialog = false;
+            this.validationConsoleItems = [];
+            this.showValidationConsole = false;
+        },
+
+        onValidationConsoleClose() {
+            this.clearValidation();
         },
 
         focusElement(elementId) {
             if (!elementId) return;
+            const bpmnVue = this.$refs.bpmnVue;
+            if (bpmnVue?.focusElement) {
+                bpmnVue.focusElement(elementId);
+                return;
+            }
             const store = useBpmnStore();
             const modeler = store.getModeler;
             if (!modeler) return;
@@ -256,70 +318,17 @@ export default {
                 const elementRegistry = modeler.get('elementRegistry');
                 const element = elementRegistry.get(elementId);
                 if (element) {
-                    // 해당 element로 뷰포트 이동
                     canvas.scrollToElement(element);
-                    // 선택
                     const selection = modeler.get('selection');
                     if (selection) selection.select(element);
                 }
             } catch (e) {
-                // ignore
+                /* ignore */
             }
         },
 
         createOverlayHtml(errors) {
-            const isWarningOnly = errors.length > 0 && errors.every((e) => e.level === 'warning');
-            const borderColor = isWarningOnly ? '#ffb74d' : '#ffcdd2';
-            const dotColor = isWarningOnly ? '#ff9800' : '#f44336';
-            const titleColor = isWarningOnly ? '#ed6c02' : '#f44336';
-            const titleText = isWarningOnly
-                ? this.$t('validation.validationWarning') || '검증 경고'
-                : this.$t('validation.validationError') || '검증 오류';
-
-            const container = document.createElement('div');
-            container.style.cssText = `
-                display: flex;
-                align-items: flex-start;
-                gap: 8px;
-                background: #fff;
-                border: 1px solid ${borderColor};
-                border-radius: 8px;
-                padding: 8px 12px;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-                white-space: nowrap;
-                pointer-events: auto;
-                cursor: pointer;
-                min-width: 140px;
-                z-index: 100;
-            `;
-
-            const dot = document.createElement('div');
-            dot.style.cssText = `
-                width: 12px;
-                height: 12px;
-                border-radius: 50%;
-                background: ${dotColor};
-                margin-top: 2px;
-                flex-shrink: 0;
-            `;
-            container.appendChild(dot);
-
-            const content = document.createElement('div');
-
-            const title = document.createElement('div');
-            title.style.cssText = `font-size: 12px; font-weight: 600; color: ${titleColor}; line-height: 1.3;`;
-            title.textContent = titleText;
-            content.appendChild(title);
-
-            errors.forEach((err) => {
-                const msg = document.createElement('div');
-                msg.style.cssText = 'font-size: 11px; color: #666; line-height: 1.4;';
-                msg.textContent = err.shortMessage || err.message;
-                content.appendChild(msg);
-            });
-
-            container.appendChild(content);
-            return container;
+            return createBpmnValidationOverlayElement(errors, this.$t.bind(this));
         },
 
         async handleValidate() {
@@ -327,237 +336,66 @@ export default {
             const modeler = store.getModeler;
             if (!modeler) return;
 
-            // 이전 오버레이 제거
             this.clearValidationOverlays();
 
-            const results = [];
+            const issues = validateBpmnModel(modeler);
 
             try {
                 const elementRegistry = modeler.get('elementRegistry');
                 const overlays = modeler.get('overlays');
                 const canvas = modeler.get('canvas');
-                // label 요소와 root 요소를 필터링하여 중복 오버레이 방지
-                const allElements = elementRegistry.getAll().filter((el) => el.type !== 'label' && !el.labelTarget);
 
-                let hasStartEvent = false;
-                let hasEndEvent = false;
-
-                // connections map 생성
-                const connections = new Map();
-                allElements.forEach((el) => {
-                    if (el.id) {
-                        connections.set(el.id, {
-                            incoming: (el.incoming || []).map((c) => c.source?.id).filter(Boolean),
-                            outgoing: (el.outgoing || []).map((c) => c.target?.id).filter(Boolean)
-                        });
-                    }
+                const byElement = new Map();
+                issues.forEach((issue) => {
+                    if (!issue.elementId) return;
+                    if (!byElement.has(issue.elementId)) byElement.set(issue.elementId, []);
+                    byElement.get(issue.elementId).push(issue);
                 });
 
-                const processedIds = new Set();
-                allElements.forEach((element) => {
-                    // 같은 ID 중복 처리 방지
-                    if (processedIds.has(element.id)) return;
-                    processedIds.add(element.id);
-                    const type = element.type;
-                    if (type === 'bpmn:StartEvent') hasStartEvent = true;
-                    if (type === 'bpmn:EndEvent') hasEndEvent = true;
+                byElement.forEach((elementErrors, elementId) => {
+                    const element = elementRegistry.get(elementId);
+                    if (!element) return;
 
-                    const elementErrors = [];
+                    const isWarningOnly = elementErrors.every((e) => e.level === 'warning');
+                    const markerClass = isWarningOnly ? 'validation-warning-element' : 'validation-error-element';
+                    const overlayType = isWarningOnly ? 'validation-warning' : 'validation-error';
 
-                    // W001: 이름 없는 태스크
-                    if (type?.includes('Task')) {
-                        const name = element.businessObject?.name;
-                        if (!name || !name.trim()) {
-                            elementErrors.push({
-                                level: 'warning',
-                                message: this.$t('validation.unnamedTask') || 'Task has no name.',
-                                shortMessage: this.$t('validation.nameRequired') || 'Name Required'
-                            });
-                        }
+                    try {
+                        canvas.addMarker(elementId, markerClass);
+                        this.validationMarkerIds.push(elementId);
+                    } catch (e) {
+                        /* ignore */
                     }
 
-                    // W002: 들어오는 연결 없음
-                    if ((type?.includes('Task') || type?.includes('Gateway')) && type !== 'bpmn:StartEvent') {
-                        const conn = connections.get(element.id);
-                        if (!conn || conn.incoming.length === 0) {
-                            elementErrors.push({
-                                level: 'warning',
-                                message: this.$t('validation.noIncomingConnection') || 'No incoming connection.',
-                                shortMessage: this.$t('validation.connectionMissing') || 'Connection Missing'
-                            });
-                        }
-                    }
-
-                    // W003: 나가는 연결 없음
-                    if ((type?.includes('Task') || type?.includes('Gateway')) && type !== 'bpmn:EndEvent') {
-                        const conn = connections.get(element.id);
-                        if (!conn || conn.outgoing.length === 0) {
-                            elementErrors.push({
-                                level: 'warning',
-                                message: this.$t('validation.noOutgoingConnection') || 'No outgoing connection.',
-                                shortMessage: this.$t('validation.connectionMissing') || 'Connection Missing'
-                            });
-                        }
-                    }
-
-                    // W004: 게이트웨이 분기 부족
-                    if (type?.includes('Gateway')) {
-                        const conn = connections.get(element.id);
-                        if (conn) {
-                            const isJoin = conn.incoming.length > 1;
-                            const isSplit = conn.outgoing.length > 1;
-                            if (!isJoin && !isSplit) {
-                                elementErrors.push({
-                                    level: 'warning',
-                                    message: this.$t('validation.gatewayNeedsBranches') || 'Gateway needs at least 2 branches.',
-                                    shortMessage: this.$t('validation.branchingRequired') || 'Branching Required'
-                                });
-                            }
-                        }
-                    }
-
-                    // W005: 레인 담당자 없음 (PAL 모드에서는 BPMN 모델만 검사하므로 스킵)
-                    if (!(typeof window !== 'undefined' && window.$pal) && type === 'bpmn:Lane') {
-                        const name = element.businessObject?.name || '';
-                        if (!name.trim() || name === 'Lane' || name === 'Lane 1') {
-                            elementErrors.push({
-                                level: 'warning',
-                                message: this.$t('validation.noLaneAssignee') || 'Lane has no assignee.',
-                                shortMessage: this.$t('validation.assigneeRequired') || 'Assignee Required'
-                            });
-                        }
-                    }
-
-                    // W006: 게이트웨이 분기 조건 누락 (PAL 모드에서는 BPMN 모델만 검사하므로 스킵)
-                    if (!(typeof window !== 'undefined' && window.$pal) && type === 'bpmn:SequenceFlow') {
-                        const source = element.source;
-                        if (source?.type === 'bpmn:ExclusiveGateway' || source?.type === 'bpmn:InclusiveGateway') {
-                            const isDefault = source.businessObject?.default?.id === element.id;
-                            if (!isDefault) {
-                                const condition = element.businessObject?.conditionExpression;
-                                if (!condition) {
-                                    elementErrors.push({
-                                        level: 'warning',
-                                        message: this.$t('validation.missingCondition') || 'Condition expression is missing.',
-                                        shortMessage: this.$t('validation.conditionMissing') || 'Condition Missing'
-                                    });
-                                }
-                            }
-                        }
-                    }
-
-                    // PAL 전용: 태스크에 description(매뉴얼) 없으면 경고
-                    const isPal = typeof window !== 'undefined' && window.$pal;
-                    if (isPal && type?.includes('Task')) {
-                        let description = '';
-                        const bo = element.businessObject;
-                        if (bo?.documentation?.[0]?.text) description = bo.documentation[0].text;
-                        if (!description?.trim() && bo?.extensionElements?.values) {
-                            const uengineProps = bo.extensionElements.values.find((v) => v.$type === 'uengine:Properties');
-                            if (uengineProps?.json) {
-                                try {
-                                    const parsed = JSON.parse(uengineProps.json);
-                                    description = parsed && parsed.description ? String(parsed.description) : '';
-                                } catch (e) {
-                                    /* ignore */
-                                }
-                            }
-                        }
-                        if (!description?.trim()) {
-                            elementErrors.push({
-                                level: 'warning',
-                                message: this.$t('validation.noManual') || '매뉴얼이 없습니다.',
-                                shortMessage: this.$t('validation.noManual') || '매뉴얼이 없습니다.'
-                            });
-                        }
-                    }
-
-                    // uEngine 모드: Call Activity에 선택된 프로세스가 없으면 에러
-                    const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
-                    if (isUEngine && (type === 'bpmn:CallActivity' || type?.includes('CallActivity'))) {
-                        let definitionId = '';
-                        const bo = element.businessObject;
-                        if (bo?.extensionElements?.values) {
-                            const uengineProps = bo.extensionElements.values.find((v) => v.$type === 'uengine:Properties');
-                            if (uengineProps?.json) {
-                                try {
-                                    const parsed = JSON.parse(uengineProps.json);
-                                    definitionId = parsed && parsed.definitionId ? String(parsed.definitionId).trim() : '';
-                                } catch (e) {
-                                    /* ignore */
-                                }
-                            }
-                        }
-                        if (!definitionId) {
-                            elementErrors.push({
-                                level: 'error',
-                                message: this.$t('validation.callActivityNoProcess') || '선택된 프로세스가 없습니다.',
-                                shortMessage: this.$t('validation.callActivityNoProcess') || '선택된 프로세스가 없습니다.'
-                            });
-                        }
-                    }
-
-                    // element에 에러/경고가 있으면 오버레이 추가
-                    if (elementErrors.length > 0) {
-                        const isWarningOnly = elementErrors.every((e) => e.level === 'warning');
-                        const markerClass = isWarningOnly ? 'validation-warning-element' : 'validation-error-element';
-                        const overlayType = isWarningOnly ? 'validation-warning' : 'validation-error';
-
-                        // 마커 추가 (에러: 빨간 테두리, 경고: 주황 테두리)
-                        try {
-                            canvas.addMarker(element.id, markerClass);
-                            this.validationMarkerIds.push(element.id);
-                        } catch (e) {
-                            /* ignore */
-                        }
-
-                        // 오버레이 추가 (에러/경고 메시지 말풍선)
-                        try {
-                            const overlayHtml = this.createOverlayHtml(elementErrors);
-                            const overlayId = overlays.add(element.id, overlayType, {
-                                position: {
-                                    top: -12,
-                                    left: (element.width || 100) + 8
-                                },
-                                html: overlayHtml
-                            });
-                            this.validationOverlayIds.push(overlayId);
-                        } catch (e) {
-                            console.warn('Failed to add overlay for', element.id, e);
-                        }
-
-                        // 결과 목록에 추가
-                        elementErrors.forEach((err) => {
-                            results.push({
-                                ...err,
-                                elementName: element.businessObject?.name || element.id,
-                                elementId: element.id
-                            });
+                    try {
+                        const overlayHtml = this.createOverlayHtml(elementErrors);
+                        const overlayId = overlays.add(elementId, overlayType, {
+                            position: {
+                                top: -12,
+                                left: (element.width || 100) + 8
+                            },
+                            html: overlayHtml
                         });
+                        this.validationOverlayIds.push(overlayId);
+                    } catch (e) {
+                        console.warn('Failed to add overlay for', elementId, e);
                     }
                 });
-
-                // 프로세스 레벨 에러
-                if (!hasStartEvent) {
-                    results.push({
-                        level: 'error',
-                        message: this.$t('validation.noStartEvent') || 'No start event found.'
-                    });
-                }
-                if (!hasEndEvent) {
-                    results.push({
-                        level: 'error',
-                        message: this.$t('validation.noEndEvent') || 'No end event found.'
-                    });
-                }
             } catch (e) {
                 console.error('Validation error:', e);
             }
 
-            if (results.length > 0) {
-                this.validationResults = results;
-                this.validationDialog = true;
+            if (issues.length > 0) {
+                this.validationConsoleItems = issues.map((issue) => ({
+                    level: issue.level,
+                    message: issue.message,
+                    elementName: issue.elementName,
+                    elementId: issue.elementId
+                }));
+                this.showValidationConsole = true;
             } else {
+                this.showValidationConsole = false;
+                this.validationConsoleItems = [];
                 if (this.$toast) {
                     this.$toast.success(this.$t('processHierarchy.validationPassed') || '검증 통과');
                 }
@@ -629,21 +467,21 @@ export default {
 <style>
 /* 검증 에러 마커 - scoped가 아닌 global CSS (bpmn-js DOM에 적용) */
 .validation-error-element .djs-visual > :nth-child(1) {
-    stroke: #f44336 !important;
+    stroke: rgb(var(--v-theme-error)) !important;
     stroke-width: 2.5px !important;
 }
 .validation-error-element .djs-outline {
-    stroke: #f44336 !important;
+    stroke: rgb(var(--v-theme-error)) !important;
     stroke-width: 1px !important;
     stroke-dasharray: 4 3;
 }
 /* 검증 경고 마커 */
 .validation-warning-element .djs-visual > :nth-child(1) {
-    stroke: #ff9800 !important;
+    stroke: rgb(var(--v-theme-warning)) !important;
     stroke-width: 2.5px !important;
 }
 .validation-warning-element .djs-outline {
-    stroke: #ff9800 !important;
+    stroke: rgb(var(--v-theme-warning)) !important;
     stroke-width: 1px !important;
     stroke-dasharray: 4 3;
 }

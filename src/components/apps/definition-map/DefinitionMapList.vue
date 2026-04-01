@@ -1,7 +1,7 @@
 <template>
     <div class="pa-5">
         <draggable
-            v-if="enableEdit"
+            v-if="enableEditMega"
             class="v-row dragArea list-group"
             :list="value.mega_proc_list"
             :animation="200"
@@ -24,6 +24,7 @@
                         :value="item"
                         :parent="value"
                         :enableEdit="enableEdit"
+                        :enableEditMega="enableEditMega"
                         @clickProcess="clickProcess"
                         :isExecutionByProject="isExecutionByProject"
                         @clickPlayBtn="clickPlayBtn"
@@ -32,8 +33,8 @@
                         :filteredProcDefIds="filteredProcDefIds"
                     />
                 </v-col>
-                <!-- MegaProcess 추가 카드 -->
-                <v-col v-if="selectedDomain || isPalUengine" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
+                <!-- MegaProcess 추가 카드 (admin만 표시) -->
+                <v-col v-if="(selectedDomain || isPalUengine) && enableEditMega" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
                     <v-card
                         v-if="!processDialogStatus"
                         @click="openProcessDialog('add')"
@@ -50,7 +51,7 @@
                     </v-card>
                     <ProcessDialog
                         v-if="processDialogStatus"
-                        :enableEdit="enableEdit"
+                        :enableEdit="enableEditMega"
                         :process="value"
                         :processType="processType"
                         :type="'map'"
@@ -74,6 +75,7 @@
                     :value="item"
                     :parent="value"
                     :enableEdit="enableEdit"
+                    :enableEditMega="enableEditMega"
                     @clickProcess="clickProcess"
                     :isExecutionByProject="isExecutionByProject"
                     @clickPlayBtn="clickPlayBtn"
@@ -84,7 +86,11 @@
             </v-col>
         </v-row>
         <v-dialog v-model="permissionDialogStatus" max-width="500" persistent>
-            <permission-dialog :processMap="value" :procDef="permissionProcess" @close:permissionDialog="closePermissionDialog" />
+            <permission-dialog
+                :processMap="value"
+                :procDef="permissionProcess"
+                @close:permissionDialog="closePermissionDialog"
+            />
         </v-dialog>
     </div>
 </template>
@@ -95,6 +101,7 @@ import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue';
 import PermissionDialog from './PermissionDialog.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import { isAdminUser } from '@/utils/processManagement';
 
 export default {
     components: {
@@ -116,6 +123,10 @@ export default {
         }
     },
     computed: {
+        /** MegaProcess 추가/수정/삭제·드래그는 admin만 가능 */
+        enableEditMega() {
+            return this.enableEdit && isAdminUser();
+        },
         isPalUengine() {
             return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
         },
@@ -127,12 +138,11 @@ export default {
 
             const query = this.searchQuery.toLowerCase().trim();
             const filtered = JSON.parse(JSON.stringify(this.value)); // deep copy
-
             if (!filtered || !filtered.mega_proc_list) {
                 return filtered;
             }
 
-            // mega_proc_list 필터링
+            // mega_proc_list 필터링 (검색어만)
             filtered.mega_proc_list = filtered.mega_proc_list
                 .map((megaProc) => {
                     const filteredMajorList = [];
@@ -140,12 +150,9 @@ export default {
                     if (megaProc.major_proc_list) {
                         megaProc.major_proc_list.forEach((majorProc) => {
                             if (majorProc.sub_proc_list) {
-                                // sub_proc_list에서 검색어가 포함된 프로세스만 필터링
                                 const filteredSubList = majorProc.sub_proc_list.filter((subProc) => {
                                     return subProc.name && subProc.name.toLowerCase().includes(query);
                                 });
-
-                                // 필터링된 sub_proc_list가 있으면 majorProc 유지
                                 if (filteredSubList.length > 0) {
                                     filteredMajorList.push({
                                         ...majorProc,
@@ -156,7 +163,6 @@ export default {
                         });
                     }
 
-                    // 필터링된 major_proc_list가 있으면 megaProc 유지
                     if (filteredMajorList.length > 0) {
                         return {
                             ...megaProc,
@@ -165,7 +171,7 @@ export default {
                     }
                     return null;
                 })
-                .filter(Boolean); // null 제거
+                .filter(Boolean);
 
             return filtered;
         },

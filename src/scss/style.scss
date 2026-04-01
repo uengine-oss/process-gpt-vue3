@@ -1,4 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap");
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
 @import './variables';
 @import 'vuetify/styles/main.sass';
 @import './override';
@@ -31,6 +33,9 @@
 @import './components/VExpansionpanel';
 @import './components/VTimeline';
 @import './components/VDialog';
+@import './components/PropertyPanel';
+@import './components/bpmn-ui-standard-icons';
+
 /*Landing page css*/
 @import 'landingpage/header';
 @import 'landingpage/general';
@@ -42,3 +47,4 @@
 @import './pages/authentication';
 @import './pages/apps';
 
+@import 'vue3-perfect-scrollbar/style.css';

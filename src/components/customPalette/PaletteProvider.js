@@ -1,5 +1,18 @@
 import { assign } from 'min-dash';
 import { i18n } from '@/main';
+import BackendFactory from '@/components/api/BackendFactory';
+
+function __bpmnModelingPolicy() {
+    try {
+        return BackendFactory.createBackend().getBpmnModelingPolicy();
+    } catch (e) {
+        return {
+            defaultAppendTaskBpmnType: 'bpmn:ManualTask',
+            paletteVisibleTaskBpmnTypes: null,
+            multiReplaceTaskBpmnTypes: null
+        };
+    }
+}
 import '@/components/autoLayout/graph-algorithm.js';
 import '@/components/autoLayout/enhancedSugiyamaLayout.js';
 import '@/components/autoLayout/bpmn-auto-layout.js';
@@ -777,17 +790,15 @@ PaletteProvider.prototype.getPaletteEntries = function (element) {
         // Check window.$paletteSettings for visible task types
     });
 
-    // Add task types based on palette settings
-    // uEngine·PAL 모드: 팔레트에는 "사용자 작업"만 표시 (ManualTask 대신 UserTask 사용)
-    var isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
+    // Add task types: Backend 정책이 있으면 우선, 없으면 window.$paletteSettings 등
+    var policy = __bpmnModelingPolicy();
     var enabledTaskTypes = window.$enabledPaletteTaskTypes || [];
     var visibleTaskTypes =
-        enabledTaskTypes.length > 0
-            ? enabledTaskTypes.map((t) => t.task_type)
-            : window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask'];
-    if (isUEngineOrPal) {
-        visibleTaskTypes = ['bpmn:UserTask'];
-    }
+        policy.paletteVisibleTaskBpmnTypes && policy.paletteVisibleTaskBpmnTypes.length > 0
+            ? policy.paletteVisibleTaskBpmnTypes
+            : enabledTaskTypes.length > 0
+              ? enabledTaskTypes.map((t) => t.task_type)
+              : window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask'];
 
     if (visibleTaskTypes.includes('bpmn:ManualTask')) {
         actions['create.manual-task'] = createAction(

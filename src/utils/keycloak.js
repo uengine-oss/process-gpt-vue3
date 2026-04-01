@@ -87,6 +87,78 @@ export function getKeycloakTokenParsed() {
     return null;
 }
 
+/** JWT 문자열에서 payload 객체만 파싱 (sub 등) */
+function parseJwtPayloadString(jwt) {
+    if (!jwt || typeof jwt !== 'string') return null;
+    try {
+        const base64Url = jwt.split('.')[1];
+        if (!base64Url) return null;
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+            atob(base64)
+                .split('')
+                .map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                })
+                .join('')
+        );
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Keycloak 사용자 고유 ID (OIDC `sub` 클레임). Admin API UserRepresentation.`id`와 동일한 UUID.
+ * 액세스/ID 토큰·인스턴스·localStorage uid 순으로 시도.
+ * @returns {string} 사용자 UUID 또는 빈 문자열
+ */
+export function getKeycloakSubject() {
+    const keycloak = getKeycloakInstance();
+    if (keycloak?.tokenParsed?.sub) return String(keycloak.tokenParsed.sub).trim();
+    if (keycloak?.idTokenParsed?.sub) return String(keycloak.idTokenParsed.sub).trim();
+
+    const fromAccess = getKeycloakTokenParsed();
+    if (fromAccess?.sub) return String(fromAccess.sub).trim();
+
+    const idTok = getKeycloakIdToken();
+    const idPayload = parseJwtPayloadString(idTok);
+    if (idPayload?.sub) return String(idPayload.sub).trim();
+
+    const at = getKeycloakToken();
+    const accessPayload = parseJwtPayloadString(at);
+    if (accessPayload?.sub) return String(accessPayload.sub).trim();
+
+    if (typeof localStorage !== 'undefined') {
+        const uid = localStorage.getItem('uid');
+        if (uid) return uid.trim();
+    }
+    return '';
+}
+
+/** UUID 형태면 true (Keycloak user id) */
+function looksLikeKeycloakUserId(s) {
+    const t = String(s || '').trim();
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(t);
+}
+
+/**
+ * Keycloak 사용자 `id` (Admin API 사용자 목록의 id 컬럼, OIDC sub와 동일한 UUID).
+ * 로그인 후 localStorage `uid`에 두는 값과 일치시키는 것을 우선한다.
+ * BPMN PUT `updatedByName`·X-User-Id 헤더 등 저장용.
+ * @returns {string}
+ */
+export function getKeycloakUserIdForSave() {
+    if (typeof localStorage !== 'undefined') {
+        const fromLs = localStorage.getItem('uid');
+        if (fromLs && looksLikeKeycloakUserId(fromLs)) {
+            return fromLs.trim();
+        }
+    }
+    const sub = getKeycloakSubject();
+    return sub ? sub.trim() : '';
+}
+
 /**
  * Keycloak Admin API를 통해 전체 그룹 목록 가져오기
  * @param {string} token - Keycloak 액세스 토큰
@@ -152,6 +224,157 @@ async function getGroupsFromAdminAPI(token, keycloakUrl, realm) {
     } catch (error) {
         console.warn('Failed to fetch from Admin API:', error);
         return null;
+    }
+}
+
+/**
+ * Keycloak Admin API를 통해 전체 그룹 목록을 id, name 포함해 가져오기 (접근 권한 등에서 사용)
+ * @param {string} token - Keycloak 액세스 토큰
+ * @param {string} keycloakUrl - Keycloak 서버 URL
+ * @param {string} realm - Realm 이름
+ * @returns {Promise<Array<{ id: string, name: string, path?: string }>>} 그룹 객체 배열
+ */
+async function getGroupsWithIdsFromAdminAPI(token, keycloakUrl, realm) {
+    try {
+        const adminUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/groups?populateHierarchy=true`;
+        const response = await fetch(adminUrl, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const groups = await response.json();
+            const flatten = (groupList, pathPrefix = '') => {
+                const result = [];
+                groupList.forEach((g) => {
+                    const path = pathPrefix ? `${pathPrefix}/${g.name}` : (g.path || `/${g.name || ''}`);
+                    const name = g.name || g.path?.replace(/^\//, '') || g.id || '';
+                    if (g.id && name) {
+                        result.push({ id: g.id, name, path: g.path || path });
+                    }
+                    if (g.subGroups && g.subGroups.length > 0) {
+                        result.push(...flatten(g.subGroups, path));
+                    }
+                });
+                return result;
+            };
+            return flatten(groups).filter((g) => g.id && g.name);
+        }
+        if (response.status === 403 || response.status === 401) {
+            console.warn(
+                'Keycloak Admin API 그룹 조회 실패: query-groups 등 Realm Management 역할이 필요합니다.'
+            );
+        }
+        return [];
+    } catch (error) {
+        console.warn('Failed to fetch groups with ids from Admin API:', error);
+        return [];
+    }
+}
+
+/**
+ * Keycloak 루트(최상위) 그룹만 반환. 조직 탭에서만 사용.
+ * @returns {Promise<Array<{ id: string, name: string }>>}
+ */
+export async function getKeycloakRootGroups() {
+    try {
+        if (typeof window === 'undefined' || (window.$mode && window.$mode !== 'uEngine')) {
+            return [];
+        }
+        const keycloakUrl =
+            window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080/';
+        const realm =
+            window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || 'uengine';
+        const token = getKeycloakToken();
+        if (!token) return [];
+        const adminUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/groups`;
+        const response = await fetch(adminUrl, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) return [];
+        const groups = await response.json();
+        return (groups || []).map((g) => ({ id: g.id, name: g.name || g.path?.replace(/^\//, '') || g.id || '' })).filter((g) => g.id && g.name);
+    } catch (e) {
+        console.warn('getKeycloakRootGroups error:', e);
+        return [];
+    }
+}
+
+/**
+ * Keycloak 그룹 계층 구조(트리) 반환. 권한 다이얼로그 등에서 "조직" 루트 아래 트리 표시용.
+ * @returns {Promise<Array<{ id: string, name: string, path?: string, children: Array }>>}
+ */
+export async function getKeycloakGroupsHierarchy() {
+    try {
+        if (typeof window === 'undefined' || (window.$mode && window.$mode !== 'uEngine')) {
+            return [];
+        }
+        const keycloakUrl =
+            window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080/';
+        const realm =
+            window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || 'uengine';
+        const token = getKeycloakToken();
+        if (!token) return [];
+        const adminUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/groups?populateHierarchy=true`;
+        const response = await fetch(adminUrl, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) return [];
+        const groups = await response.json();
+        const toNode = (g) => {
+            const name = g.name || g.path?.replace(/^\//, '') || g.id || '';
+            const node = { id: g.id, name, path: g.path };
+            // Keycloak GroupRepresentation: subGroups (일부 프록시/버전은 필드명이 다를 수 있음)
+            const sub =
+                g.subGroups ||
+                g.subgroups ||
+                (Array.isArray(g.children) ? g.children : null) ||
+                [];
+            if (Array.isArray(sub) && sub.length > 0) {
+                node.children = sub.map(toNode).filter((n) => n.id && n.name);
+            } else {
+                node.children = [];
+            }
+            return node;
+        };
+        return (groups || []).map(toNode).filter((n) => n.id && n.name);
+    } catch (e) {
+        console.warn('getKeycloakGroupsHierarchy error:', e);
+        return [];
+    }
+}
+
+/**
+ * 접근 권한 설정용 Keycloak 그룹 목록 (id, name) - uEngine 모드에서 조직/조직 그룹 드롭다운에 사용
+ * @returns {Promise<Array<{ id: string, name: string }>>}
+ */
+export async function getKeycloakGroupsForPermission() {
+    try {
+        if (typeof window === 'undefined' || (window.$mode && window.$mode !== 'uEngine')) {
+            return [];
+        }
+        const keycloakUrl =
+            window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080/';
+        const realm =
+            window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || 'uengine';
+        const token = getKeycloakToken();
+        if (!token) return [];
+        const list = await getGroupsWithIdsFromAdminAPI(token, keycloakUrl, realm);
+        return list.map((g) => ({ id: g.id, name: g.name }));
+    } catch (e) {
+        console.warn('getKeycloakGroupsForPermission error:', e);
+        return [];
     }
 }
 
@@ -482,6 +705,63 @@ export function getGroupsFromToken() {
 }
 
 /**
+ * Keycloak Admin API GET /admin/realms/{realm}/users 응답 배열을 변환 없이 그대로 반환.
+ * (필드명·중첩 구조 보존 — 관리/디버그 UI용)
+ * @param {Object} options
+ * @param {number} [options.max=100]
+ * @param {number} [options.first=0]
+ * @param {string} [options.search='']
+ * @param {boolean} [options.briefRepresentation=false]
+ * @returns {Promise<Object[]>}
+ */
+export async function fetchKeycloakUsersRaw(options = {}) {
+    try {
+        if (typeof window !== 'undefined' && window.$mode !== 'uEngine') {
+            return [];
+        }
+
+        const keycloakUrl = window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080/';
+        const realm = window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || 'uengine';
+        const token = getKeycloakToken();
+
+        if (!token) {
+            console.warn('Keycloak token not found');
+            return [];
+        }
+
+        const { max = 100, first = 0, search = '', briefRepresentation = false } = options;
+
+        let usersUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/users?max=${Math.min(max, 100)}&first=${first}`;
+
+        if (search) {
+            usersUrl += `&search=${encodeURIComponent(search)}`;
+        }
+
+        if (briefRepresentation) {
+            usersUrl += `&briefRepresentation=true`;
+        }
+
+        const response = await fetch(usersUrl, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            return [];
+        }
+
+        const users = await response.json();
+        return Array.isArray(users) ? users : [];
+    } catch (error) {
+        console.error('fetchKeycloakUsersRaw:', error);
+        return [];
+    }
+}
+
+/**
  * Keycloak Admin API를 통해 전체 사용자 목록을 가져오는 함수
  * @param {Object} options - 옵션 객체
  * @param {number} options.max - 최대 사용자 수 (기본값: 100, 최대: 100)
@@ -569,6 +849,161 @@ export async function getAllUsers(options = {}) {
         console.error('Error fetching all users from Keycloak Admin API:', error);
         return [];
     }
+}
+
+/**
+ * 특정 Realm 역할(process-manager, admin 등)을 가진 사용자 목록 조회.
+ * Keycloak Admin API: GET /admin/realms/{realm}/roles/{role-name}/users
+ * @param {string[]} roleNames - 역할 이름 배열 (예: ['process-manager', 'admin'])
+ * @param {Object} options - 옵션 (max: 역할별 최대 사용자 수, 기본 100)
+ * @returns {Promise<Object[]>} 사용자 객체 배열 (id, username, email 등, 중복 제거됨)
+ */
+export async function getUsersByRoles(roleNames = [], options = {}) {
+    try {
+        if (window.$mode !== 'uEngine') {
+            return [];
+        }
+        if (!roleNames || !Array.isArray(roleNames) || roleNames.length === 0) {
+            return [];
+        }
+
+        const keycloakUrl = window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080/';
+        const realm = window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || 'uengine';
+        const token = getKeycloakToken();
+
+        if (!token) {
+            console.warn('Keycloak token not found');
+            return [];
+        }
+
+        const max = options.max != null ? Math.min(options.max, 100) : 100;
+        const seen = new Set();
+        const result = [];
+
+        for (const roleName of roleNames) {
+            if (!roleName || typeof roleName !== 'string') continue;
+            const encodedRole = encodeURIComponent(roleName);
+            const url = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/roles/${encodedRole}/users?max=${max}&first=0`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) continue;
+
+                const users = await response.json();
+                for (const user of users) {
+                    if (user.id && !seen.has(user.id)) {
+                        seen.add(user.id);
+                        result.push({
+                            id: user.id,
+                            username: user.username || user.preferred_username || '',
+                            email: user.email || '',
+                            firstName: user.firstName || '',
+                            lastName: user.lastName || '',
+                            enabled: user.enabled !== false
+                        });
+                    }
+                }
+            } catch (err) {
+                console.warn(`[getUsersByRoles] role "${roleName}" failed:`, err);
+            }
+        }
+
+        return result;
+    } catch (error) {
+        console.error('Error fetching users by roles from Keycloak:', error);
+        return [];
+    }
+}
+
+/**
+ * user_id(Keycloak sub)로 사용자 객체 조회. id로 검색된 사용자가 있을 때만 반환.
+ * - Keycloak Admin API GET user 조회, 실패 시 getAllUsers 목록에서 id로 검색 (최대 500명)
+ * @param {string} userId - Keycloak user id (sub)
+ * @returns {Promise<Object|null>} 사용자 객체 또는 없으면 null
+ */
+export async function getKeycloakUserById(userId) {
+    if (!userId) return null;
+    if (window.$mode !== 'uEngine') return null;
+    const keycloakUrl = window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080/';
+    const realm = window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || 'uengine';
+    const token = getKeycloakToken();
+    if (!token) return null;
+    try {
+        const url = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/users/${encodeURIComponent(userId)}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (_) {}
+    try {
+        for (let first = 0; first < 500; first += 100) {
+            const users = await getAllUsers({ max: 100, first });
+            if (!users.length) break;
+            const found = users.find((u) => u.id === userId);
+            if (found) return found;
+        }
+    } catch (_) {}
+    return null;
+}
+
+/**
+ * user_id(Keycloak sub)를 표시 이름으로 변환. lock 메시지 등에 사용.
+ * - 현재 사용자면 localStorage의 userName 반환
+ * - 그 외 1) Keycloak Admin API GET user 조회, 2) 실패 시 getAllUsers 목록에서 id로 검색 (최대 500명)
+ * @param {string} userId - Keycloak user id (sub)
+ * @returns {Promise<string>} 표시 이름
+ */
+export async function getKeycloakUserDisplayName(userId) {
+    if (!userId) return '';
+    if (window.$mode !== 'uEngine') return userId;
+    const uid = localStorage.getItem('uid');
+    const userName = localStorage.getItem('userName');
+    if (uid && userId === uid) {
+        return userName || localStorage.getItem('email') || userId;
+    }
+    if (userName && userId === userName) return userId;
+
+    const keycloakUrl = window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080/';
+    const realm = window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || 'uengine';
+    const token = getKeycloakToken();
+    if (!token) return userId;
+
+    try {
+        const url = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/users/${encodeURIComponent(userId)}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+        });
+        if (response.ok) {
+            const user = await response.json();
+            const name = user.username || user.email || [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+            return name || userId;
+        }
+    } catch (_) {}
+
+    try {
+        for (let first = 0; first < 500; first += 100) {
+            const users = await getAllUsers({ max: 100, first });
+            if (!users.length) break;
+            const found = users.find((u) => u.id === userId);
+            if (found) {
+                const name = found.username || found.email || [found.firstName, found.lastName].filter(Boolean).join(' ').trim();
+                return name || userId;
+            }
+        }
+    } catch (_) {}
+
+    return userId;
 }
 
 /**

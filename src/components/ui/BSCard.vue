@@ -287,6 +287,7 @@
 <script>
 import Diagram from 'diagram-js';
 import 'diagram-js/assets/diagram-js.css';
+import 'bpmn-js/dist/assets/bpmn-js.css';
 import ChatGenerator from '@/components/ai/BSGenerator.js';
 import modelingModule from 'diagram-js/lib/features/modeling';
 import CustomRenderer from '@/components/diagram/CustomRenderer';

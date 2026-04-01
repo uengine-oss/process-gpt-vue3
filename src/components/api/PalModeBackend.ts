@@ -2,6 +2,7 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 
 import ProcessGPTBackend from './ProcessGPTBackend';
+import type { BpmnModelingPolicy } from './Backend';
 import axios from 'axios';
 const axiosInstance = axios.create();
 
@@ -232,6 +233,14 @@ class PalModeBackend extends ProcessGPTBackend {
             //@ts-ignore
             throw new Error(e.message);
         }
+    }
+
+    getBpmnModelingPolicy(): BpmnModelingPolicy {
+        return {
+            defaultAppendTaskBpmnType: 'bpmn:UserTask',
+            paletteVisibleTaskBpmnTypes: ['bpmn:UserTask'],
+            multiReplaceTaskBpmnTypes: ['bpmn:UserTask']
+        };
     }
 }
 
