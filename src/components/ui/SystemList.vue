@@ -3,7 +3,12 @@
         <v-row class="ma-0 pa-0">
             <v-col v-for="system in systemList" :key="system.name" cols="12" sm="6" md="4" lg="3">
                 <template v-if="systemList">
-                    <System :system="system.name" v-on:edit-system="($evt) => editSystem($evt)" @systemDeleted="loadSystems" />
+                    <System
+                        :system="system.name"
+                        :list-updated-by-name="system.updatedByName"
+                        v-on:edit-system="($evt) => editSystem($evt)"
+                        @systemDeleted="loadSystems"
+                    />
                 </template>
             </v-col>
             <v-col cols="12" sm="6" md="4" lg="3">

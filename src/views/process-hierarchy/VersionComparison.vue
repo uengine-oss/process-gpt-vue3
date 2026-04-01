@@ -91,11 +91,22 @@
                                     {{ selectedProcessName }}
                                 </span>
                             </div>
-                            <div class="version-bar-right text-caption text-medium-emphasis">
+                            <div class="version-bar-right text-caption text-medium-emphasis d-flex align-center flex-wrap ga-2">
                                 <template v-if="versionAData">
-                                    <v-icon size="14" class="mr-1">mdi-calendar</v-icon>
-                                    {{ formatDate(versionAData.timeStamp) }}
-                                    <span class="ml-3">{{ versionAData.owner || '' }}</span>
+                                    <span
+                                        v-if="!isUEngineMode && formatDate(versionAData.timeStamp)"
+                                        class="d-inline-flex align-center"
+                                    >
+                                        <v-icon size="14" class="mr-1">mdi-calendar</v-icon>
+                                        {{ formatDate(versionAData.timeStamp) }}
+                                    </span>
+                                    <span v-if="versionAData.owner && String(versionAData.owner).trim()">{{
+                                        versionAData.owner
+                                    }}</span>
+                                    <span v-if="versionAUpdatedByLine">{{ versionAUpdatedByLine }}</span>
+                                    <span v-if="!hasVersionBarMeta(versionAData) && !isUEngineMode" class="text-disabled">{{
+                                        $t('versionComparison.noSavedVersionMeta')
+                                    }}</span>
                                 </template>
                             </div>
                         </div>
@@ -143,11 +154,22 @@
                                     {{ selectedProcessName }}
                                 </span>
                             </div>
-                            <div class="version-bar-right text-caption text-medium-emphasis">
+                            <div class="version-bar-right text-caption text-medium-emphasis d-flex align-center flex-wrap ga-2">
                                 <template v-if="versionBData">
-                                    <v-icon size="14" class="mr-1">mdi-calendar</v-icon>
-                                    {{ formatDate(versionBData.timeStamp) }}
-                                    <span class="ml-3">{{ versionBData.owner || '' }}</span>
+                                    <span
+                                        v-if="!isUEngineMode && formatDate(versionBData.timeStamp)"
+                                        class="d-inline-flex align-center"
+                                    >
+                                        <v-icon size="14" class="mr-1">mdi-calendar</v-icon>
+                                        {{ formatDate(versionBData.timeStamp) }}
+                                    </span>
+                                    <span v-if="versionBData.owner && String(versionBData.owner).trim()">{{
+                                        versionBData.owner
+                                    }}</span>
+                                    <span v-if="versionBUpdatedByLine">{{ versionBUpdatedByLine }}</span>
+                                    <span v-if="!hasVersionBarMeta(versionBData) && !isUEngineMode" class="text-disabled">{{
+                                        $t('versionComparison.noSavedVersionMeta')
+                                    }}</span>
                                 </template>
                             </div>
                         </div>
@@ -237,6 +259,13 @@ import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import ProcessHierarchyTree from './ProcessHierarchyTree.vue';
 import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
+import {
+    hasActorValue,
+    looksLikeKeycloakUid,
+    resolveUpdatedByForDisplay,
+    trimmedActorId
+} from '@/utils/definitionActorDisplay';
+import { fetchDefinitionRowMeta } from '@/utils/procDefListMeta';
 
 const backend = BackendFactory.createBackend();
 const storage = StorageBaseFactory.getStorage();
@@ -520,10 +549,16 @@ export default {
             leftPanelWidth: 240,
             resizing: false,
             resizeStartX: 0,
-            resizeStartWidth: 0
+            resizeStartWidth: 0,
+
+            versionAUpdatedByLine: '',
+            versionBUpdatedByLine: ''
         };
     },
     computed: {
+        isUEngineMode() {
+            return typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$oracle === true);
+        },
         versionItems() {
             const items = [];
             // "Current (latest saved)" 항목
@@ -533,9 +568,10 @@ export default {
             });
             // 버전 목록 (최신순)
             this.versions.forEach((v) => {
+                const ver = v.version != null ? String(v.version) : '';
                 items.push({
-                    title: `v${v.version}${v.version_tag === 'major' ? ' (major)' : ''}`,
-                    value: v.version
+                    title: `v${ver}${v.version_tag === 'major' ? ' (major)' : ''}`,
+                    value: ver
                 });
             });
             return items;
@@ -560,6 +596,46 @@ export default {
         window.removeEventListener('mouseup', this.stopResize);
     },
     methods: {
+        versionActorRaw(data) {
+            if (!data) return '';
+            const uidRaw =
+                data.updatedBySub ??
+                data.updatedBy ??
+                data.updated_by ??
+                data.updatedByUserId ??
+                data.updated_by_user_id ??
+                data.modifierUserId ??
+                data.modifier_id;
+            if (hasActorValue(uidRaw) && looksLikeKeycloakUid(trimmedActorId(uidRaw))) {
+                return trimmedActorId(uidRaw);
+            }
+            const raw =
+                data.updatedByName ??
+                data.updated_by_name ??
+                data.UPDATED_BY_NAME ??
+                data.modifiedBy ??
+                data.MODIFIED_BY;
+            return hasActorValue(raw) ? trimmedActorId(raw) : '';
+        },
+        async refreshVersionUpdatedByLine(side) {
+            const key = side === 'A' ? 'versionAUpdatedByLine' : 'versionBUpdatedByLine';
+            this[key] = '';
+            const data = side === 'A' ? this.versionAData : this.versionBData;
+            const raw = this.versionActorRaw(data);
+            if (!raw) return;
+            const label = await resolveUpdatedByForDisplay(raw);
+            this[key] = this.$t('versionComparison.versionModifiedBy', { actor: label });
+        },
+        /** 날짜·담당·변경자 중 하나라도 있으면 true (빈 캘린더만 두지 않기 위함). uEngine은 저장 시각을 쓰지 않아 날짜는 제외 */
+        hasVersionBarMeta(data) {
+            if (!data) return false;
+            const ts = data.timeStamp ?? data.time_stamp ?? data.TIME_STAMP;
+            const hasDate =
+                !this.isUEngineMode && !!(ts && this.formatDate(ts));
+            const hasOwner = !!(data.owner && String(data.owner).trim());
+            const hasActor = !!this.versionActorRaw(data);
+            return hasDate || hasOwner || hasActor;
+        },
         goBack() {
             if (this.dialogMode) {
                 this.$emit('close');
@@ -570,24 +646,38 @@ export default {
 
         async loadInitialData() {
             try {
-                const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
+                const isUEngine = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$oracle === true);
                 const [procMapResult, metricsResult, defList, versionList] = await Promise.all([
                     backend.getProcessDefinitionMap(),
                     backend.getMetricsMap(),
                     backend.listDefinition('', { match: { tenant_id: window.$tenantName } }),
-                    storage.list('proc_def_version', {
-                        sort: 'desc',
-                        orderBy: 'timeStamp'
-                    })
+                    isUEngine
+                        ? Promise.resolve([])
+                        : storage.list('proc_def_version', {
+                              sort: 'desc',
+                              orderBy: 'timeStamp'
+                          })
                 ]);
-                this.procMap = procMapResult;
+                let procMap = procMapResult;
+                // uEngine: 권한 사용 시 읽기 권한 없는 프로세스는 리스트에 표시하지 않음
+                if (isUEngine && typeof backend.checkUsePermissions === 'function' && typeof backend.filterProcDefMap === 'function') {
+                    try {
+                        const usePerm = await backend.checkUsePermissions();
+                        if (usePerm && procMap) {
+                            procMap = await backend.filterProcDefMap(procMap);
+                        }
+                    } catch (e) {
+                        console.warn('[VersionComparison] permission filter skip:', e);
+                    }
+                }
+                this.procMap = procMap;
                 this.metricsMap = metricsResult;
 
                 // uEngine: 트리와 id 일치시키기 위해 procMap에서 리프만 평면 목록으로 구성
                 let listForVersion = defList || [];
-                if (isUEngine && procMapResult?.mega_proc_list?.length > 0) {
+                if (isUEngine && procMap?.mega_proc_list?.length > 0) {
                     const flatFromMap = [];
-                    procMapResult.mega_proc_list.forEach((mega) => {
+                    procMap.mega_proc_list.forEach((mega) => {
                         (mega.major_proc_list || []).forEach((major) => {
                             (major.sub_proc_list || []).forEach((sub) => {
                                 const sid = sub.id ?? sub.path ?? sub.name;
@@ -641,6 +731,90 @@ export default {
             }
         },
 
+        /** 버전 API 호출용 id ( .bpmn 접미사 제거 ) */
+        getVersionId(id) {
+            if (id == null) return id;
+            const s = String(id).trim();
+            return s.replace(/\.bpmn$/i, '') || s;
+        },
+
+        /**
+         * API 응답 버전 목록 정규화.
+         * - Oracle(TB_BPM_PDEF_VER) 등에서 version이 동일하게 내려오는 경우 arcv_id에서 버전 추출.
+         * - arcv_id가 있으면 버전은 arcv_id 우선 (예: proc_def_0.1 → 0.1).
+         * - snake_case(time_stamp 등) 지원.
+         */
+        normalizeVersionList(list) {
+            if (!list || !Array.isArray(list)) return [];
+            const seen = new Set();
+            return list
+                .map((item, index) => {
+                    const rawVersion = item.version ?? item.VERSION;
+                    const arcvId = item.arcv_id ?? item.ARCV_ID ?? '';
+                    const fromArcv =
+                        arcvId && String(arcvId).includes('_') ? String(arcvId).split('_').pop() : null;
+                    // arcv_id가 있으면 그걸 버전으로 사용(서버가 모든 행에 최신 version만 넣는 경우 대비)
+                    const version =
+                        fromArcv != null && fromArcv !== ''
+                            ? String(fromArcv)
+                            : rawVersion != null && rawVersion !== ''
+                              ? String(rawVersion)
+                              : `${index}`;
+                    const timeStamp =
+                        item.timeStamp ??
+                        item.time_stamp ??
+                        item.TIME_STAMP ??
+                        item.updatedAt ??
+                        item.updated_at ??
+                        item.UPDATED_AT ??
+                        item.modifiedAt ??
+                        item.modified_at;
+                    const updatedByUidRaw =
+                        item.updatedBy ??
+                        item.updated_by ??
+                        item.updatedByUserId ??
+                        item.updated_by_user_id ??
+                        item.modifierUserId ??
+                        item.modifier_id ??
+                        item.lastModifiedByUserId ??
+                        item.LAST_MODIFIED_BY_USER_ID;
+                    let updatedBySub;
+                    if (updatedByUidRaw != null && String(updatedByUidRaw).trim() !== '') {
+                        const uidStr = String(updatedByUidRaw).trim();
+                        if (looksLikeKeycloakUid(uidStr)) updatedBySub = uidStr;
+                    }
+                    const updatedByRaw =
+                        item.updatedByName ??
+                        item.updated_by_name ??
+                        item.UPDATED_BY_NAME ??
+                        item.modifiedBy ??
+                        item.MODIFIED_BY;
+                    const updatedByName =
+                        updatedByRaw != null && String(updatedByRaw).trim() !== ''
+                            ? String(updatedByRaw).trim()
+                            : undefined;
+                    return {
+                        ...item,
+                        version,
+                        timeStamp,
+                        ...(updatedByName && { updatedByName }),
+                        ...(updatedBySub && { updatedBySub })
+                    };
+                })
+                .filter((item) => {
+                    const key = item.arcv_id ?? item.ARCV_ID ?? String(item.version);
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                })
+                .sort((a, b) => {
+                    const [aMajor, aMinor] = String(a.version).split('.').map((p) => (p === '' || Number.isNaN(Number(p)) ? 0 : Number(p)));
+                    const [bMajor, bMinor] = String(b.version).split('.').map((p) => (p === '' || Number.isNaN(Number(p)) ? 0 : Number(p)));
+                    if (bMajor !== aMajor) return bMajor - aMajor;
+                    return (bMinor || 0) - (aMinor || 0);
+                });
+        },
+
         async handleSelectProcess(id, name) {
             if (this.selectedProcessId === id) return;
 
@@ -658,22 +832,19 @@ export default {
             this.changes = [];
             this.diffActivitiesA = {};
             this.diffActivitiesB = {};
+            this.versionAUpdatedByLine = '';
+            this.versionBUpdatedByLine = '';
 
             // 버전 목록 로드
             try {
-                const versionList = await backend.getDefinitionVersions(id, {
+                const versionList = await backend.getDefinitionVersions(this.getVersionId(id), {
                     sort: 'desc',
-                    orderBy: 'version'
+                    orderBy: 'version',
+                    size: 999
                 });
 
                 if (versionList && versionList.length > 0) {
-                    // 버전 내림차순 정렬 (major.minor 각각 정수 비교)
-                    this.versions = versionList.sort((a, b) => {
-                        const [aMajor, aMinor] = String(a.version).split('.').map(Number);
-                        const [bMajor, bMinor] = String(b.version).split('.').map(Number);
-                        if (bMajor !== aMajor) return bMajor - aMajor;
-                        return (bMinor || 0) - (aMinor || 0);
-                    });
+                    this.versions = this.normalizeVersionList(versionList);
 
                     // 기본 선택: A = current, B = 가장 최신 버전
                     this.selectedVersionA = '__current__';
@@ -692,7 +863,7 @@ export default {
         async loadVersionA() {
             if (!this.selectedVersionA || !this.selectedProcessId) return;
 
-            const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
+            const isUEngine = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$oracle === true);
             try {
                 if (this.selectedVersionA === '__current__') {
                     const def = this.definitionList.find((d) => d.id === this.selectedProcessId || d.file_name === this.selectedProcessId);
@@ -701,17 +872,31 @@ export default {
                         xml = (await backend.getRawDefinition(this.selectedProcessId, { type: 'bpmn' })) || '';
                     }
                     this.versionAXml = xml;
+                    let currentUpdatedBy = '';
+                    let listMetaAt = '';
+                    if (isUEngine) {
+                        try {
+                            const row = await fetchDefinitionRowMeta((p) => backend.listDefinition(p), this.selectedProcessId);
+                            if (row?.updatedByName && hasActorValue(row.updatedByName)) {
+                                currentUpdatedBy = trimmedActorId(row.updatedByName);
+                            }
+                            if (row?.updatedAt) listMetaAt = row.updatedAt;
+                        } catch {
+                            /* ignore */
+                        }
+                    }
                     this.versionAData = {
                         version: 'current',
-                        timeStamp: def?.updated_at || def?.created_at || '',
-                        owner: def?.owner || ''
+                        timeStamp: def?.updated_at || def?.created_at || listMetaAt || '',
+                        owner: def?.owner || '',
+                        updatedByName: currentUpdatedBy
                     };
                 } else {
                     const v = this.versions.find((ver) => String(ver.version) === String(this.selectedVersionA));
                     if (v) {
                         let xml = v.snapshot || '';
                         if (isUEngine && !xml) {
-                            const snap = await backend.getDefinitionVersions(this.selectedProcessId, {
+                            const snap = await backend.getDefinitionVersions(this.getVersionId(this.selectedProcessId), {
                                 key: 'snapshot',
                                 match: { version: v.version }
                             });
@@ -721,6 +906,7 @@ export default {
                         this.versionAData = v;
                     }
                 }
+                await this.refreshVersionUpdatedByLine('A');
                 this.runDiff();
             } catch (e) {
                 console.error('Failed to load version A:', e);
@@ -730,7 +916,7 @@ export default {
         async loadVersionB() {
             if (!this.selectedVersionB || !this.selectedProcessId) return;
 
-            const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
+            const isUEngine = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$oracle === true);
             try {
                 if (this.selectedVersionB === '__current__') {
                     const def = this.definitionList.find((d) => d.id === this.selectedProcessId || d.file_name === this.selectedProcessId);
@@ -739,17 +925,31 @@ export default {
                         xml = (await backend.getRawDefinition(this.selectedProcessId, { type: 'bpmn' })) || '';
                     }
                     this.versionBXml = xml;
+                    let currentUpdatedByB = '';
+                    let listMetaBt = '';
+                    if (isUEngine) {
+                        try {
+                            const row = await fetchDefinitionRowMeta((p) => backend.listDefinition(p), this.selectedProcessId);
+                            if (row?.updatedByName && hasActorValue(row.updatedByName)) {
+                                currentUpdatedByB = trimmedActorId(row.updatedByName);
+                            }
+                            if (row?.updatedAt) listMetaBt = row.updatedAt;
+                        } catch {
+                            /* ignore */
+                        }
+                    }
                     this.versionBData = {
                         version: 'current',
-                        timeStamp: def?.updated_at || def?.created_at || '',
-                        owner: def?.owner || ''
+                        timeStamp: def?.updated_at || def?.created_at || listMetaBt || '',
+                        owner: def?.owner || '',
+                        updatedByName: currentUpdatedByB
                     };
                 } else {
                     const v = this.versions.find((ver) => String(ver.version) === String(this.selectedVersionB));
                     if (v) {
                         let xml = v.snapshot || '';
                         if (isUEngine && !xml) {
-                            const snap = await backend.getDefinitionVersions(this.selectedProcessId, {
+                            const snap = await backend.getDefinitionVersions(this.getVersionId(this.selectedProcessId), {
                                 key: 'snapshot',
                                 match: { version: v.version }
                             });
@@ -759,6 +959,7 @@ export default {
                         this.versionBData = v;
                     }
                 }
+                await this.refreshVersionUpdatedByLine('B');
                 this.runDiff();
             } catch (e) {
                 console.error('Failed to load version B:', e);
@@ -857,6 +1058,25 @@ export default {
         async applyChanges() {
             // Version B(이전)의 XML로 현재 프로세스를 롤백
             if (!this.versionBXml || !this.selectedProcessId) return;
+
+            // 수정 권한 확인
+            if (typeof backend.checkProcessPermission === 'function') {
+                try {
+                    const perm = await backend.checkProcessPermission(this.selectedProcessId);
+                    if (!perm.writable && !perm.isPublic) {
+                        if (this.$toast) {
+                            this.$toast.error(this.$t('versionComparison.noWritePermission') || '이 프로세스를 수정할 권한이 없습니다.');
+                        }
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('[VersionComparison] checkProcessPermission:', e);
+                    if (this.$toast) {
+                        this.$toast.error(this.$t('versionComparison.noWritePermission') || '이 프로세스를 수정할 권한이 없습니다.');
+                    }
+                    return;
+                }
+            }
 
             const versionLabel =
                 this.selectedVersionB === '__current__'

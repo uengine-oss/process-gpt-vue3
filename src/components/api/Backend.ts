@@ -1,3 +1,13 @@
+/** BPMN 모델러(컨텍스트 패드·팔레트) 모드별 정책 — window.$mode 분기 대신 Strategy 사용 */
+export interface BpmnModelingPolicy {
+    /** 컨텍스트 패드에서 플로우에 붙이는 기본 태스크 타입 */
+    defaultAppendTaskBpmnType: 'bpmn:UserTask' | 'bpmn:ManualTask';
+    /** null이면 ProcessGPT: window.$paletteSettings 등 클라이언트 설정 사용 */
+    paletteVisibleTaskBpmnTypes: string[] | null;
+    /** null이면 팔레트와 동일하게 window 기반; 다중 태스크 교체 메뉴용 */
+    multiReplaceTaskBpmnTypes: string[] | null;
+}
+
 export interface Backend {
     listDefinition(basePath: string): Promise<any>;
     listVersionDefinitions(version: string, basePath: string): Promise<any>;
@@ -13,7 +23,22 @@ export interface Backend {
     deleteDefinition(requestPath: string, options: any): Promise<any>;
     restoreDefinition(defId: string, options: any): Promise<boolean | undefined>;
     getRawDefinition(defId: string, options: any): Promise<any>;
+    /**
+     * Raw 정의 저장 (PUT /definition/raw).
+     * options에 선택 `name?: string` — 표시용 이름(trim, 최대 255자). Oracle 프로필에서 TB_BPM_PROCDEF.name 갱신.
+     * 생략·공백만이면 서버가 경로 기반 이름을 유지한다.
+     * options `updatedByName?: string` — 수동 지정 시 본문에 그대로(정규화 후) 실음.
+     * uEngine BPMN이면 미지정 시 `updatedByName`에 Keycloak 사용자 **id**(UUID) 자동 설정. UI는 id로 사용자 조회 후 표시.
+     */
     putRawDefinition(definition: any, requestPath: string, options: any): Promise<any>;
+    /** 프로세스 정의 복제 (정의체계도 등). desiredNewId 있으면 해당 ID로 저장, 없으면 _copy 자동 생성. */
+    duplicateLocalProcess?(
+        sourceId: string,
+        newName: string,
+        bpmn: string,
+        definition?: any,
+        desiredNewId?: string
+    ): Promise<{ success: boolean; newId: string }>;
     start(command: any): Promise<any>;
     stop(instanceId: string): Promise<any>;
     suspend(instanceId: string): Promise<any>;
@@ -66,6 +91,10 @@ export interface Backend {
     getWorkList(options?: any): Promise<any>;
     getProcessDefinitionMap(): Promise<any>;
     putProcessDefinitionMap(definitionMap: any): Promise<any>;
+    /** uEngine 모드: 맵 JSON proc_def_owners에서 해당 프로세스 담당자 조회 */
+    getOwnerByProcDef?(procDefId: string): Promise<string | null>;
+    /** uEngine 모드: 맵 JSON proc_def_owners에 담당자 저장 */
+    putOwner?(procDefId: string, owner: string | null): Promise<void>;
     getMetricsMap(): Promise<any>;
     putMetricsMap(metricsMap: any): Promise<any>;
     getPendingList(): Promise<any>;
@@ -145,9 +174,10 @@ export interface Backend {
     getData(path: string, options: any): Promise<any>;
     delegateSuperAdmin?(targetUserId: string): Promise<any>;
 
-    // User & Data API
-    getUserInfo(): Promise<any>;
-    getData(path: string, options: any): Promise<any>;
+    // Lock API (동시 수정 방지: 체크아웃/체크인)
+    getLock(id: string): Promise<{ id: string; user_id: string } | null>;
+    setLock(lockObj: { id: string; user_id: string }): Promise<any>;
+    deleteLock(id: string): Promise<void>;
 
     // Task Catalog API
     getTaskSystems(): Promise<any>;
@@ -196,6 +226,34 @@ export interface Backend {
 
     // Agent Knowledge API
     setupAgentKnowledge(params: { agent_id: string; goal?: string | null; persona?: string | null }): Promise<any>;
+
+    /**
+     * BPMN XML 파싱 시 게이트웨이 export용 condition (ProcessGPT vs uEngine 규약 위임)
+     */
+    getGatewayExportCondition(gateway: any): string;
+    /**
+     * BPMN XML 파싱 시 시퀀스 플로우 export용 condition
+     */
+    getSequenceFlowExportCondition(flow: any): string;
+
+    /**
+     * 모델러 저장(saveModel): raw BPMN/XML을 모드별 규약으로 반영
+     * - uEngine: putRawDefinition + 선택적 release
+     * - ProcessGPT: 폼 draft·활동 tool 동기화 후 최종 putRawDefinition (processDefinition 필수)
+     */
+    saveProcessDefinitionFromModeler(params: { info: any; xml: string; processDefinition?: any }): Promise<void>;
+
+    /**
+     * /instancelist/:instId 경로 세그먼트 (ProcessGPT: 점 → _DOT_, uEngine: 원문 유지)
+     */
+    encodeInstanceIdForInstancelistRoute(instId: string): string;
+    /**
+     * 라우트 파라미터 instId → API/백엔드용 인스턴스 ID
+     */
+    decodeInstanceIdFromInstancelistRouteParam(routeParam: string): string;
+
+    /** BPMN 편집기: 태스크 추가/팔레트/다중 교체 정책 */
+    getBpmnModelingPolicy(): BpmnModelingPolicy;
 
     // 프로세스 정의 요소별 댓글 API (ElementCommentPanel)
     getElementComments(procDefId: string, elementId?: string): Promise<any[]>;

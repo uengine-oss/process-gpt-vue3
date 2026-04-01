@@ -23,7 +23,7 @@
                                 density="comfortable"
                                 @click="showXML = !showXML"
                             >
-                                <Icons :icon="'code-xml'" :color="showXML ? 'primary' : ''" />
+                                <Icons :icon="'code-xml'" :color="showXML ? '#1976D2' : '#666666'" />
                             </v-btn>
                         </template>
                         <span>{{ showXML ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
@@ -178,6 +178,13 @@
                                             <div>
                                                 {{ formatVersionTime(item.timeStamp) }}
                                             </div>
+                                            <div v-if="hasActorValue(item.updatedByName)" class="text-caption">
+                                                {{
+                                                    $t('ProcessDefinitionVersionManager.lastModifiedByActor', {
+                                                        actor: item._updatedByDisplay || trimActorId(item.updatedByName)
+                                                    })
+                                                }}
+                                            </div>
                                             <div v-if="item.message" class="version-list-desc-inline">
                                                 {{ item.message }}
                                             </div>
@@ -237,6 +244,7 @@ import customBpmnModule from '@/components/customBpmn';
 const backend = BackendFactory.createBackend();
 import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
+import { hasActorValue, resolveUpdatedByForDisplay, trimmedActorId as trimActorId } from '@/utils/definitionActorDisplay';
 
 // import 'vue-diff/dist/index.css';
 export default {
@@ -406,6 +414,8 @@ export default {
     },
     created() {},
     methods: {
+        hasActorValue,
+        trimActorId,
         debugProd() {
             try {
                 // eslint-disable-next-line no-console
@@ -534,7 +544,14 @@ export default {
                 });
             }
             if (result && result.length > 0) {
-                me.lists = result.map((item) => ({ ...item, xml: null, message: null }));
+                me.lists = result.map((item) => ({ ...item, xml: null, message: null, _updatedByDisplay: '' }));
+                await Promise.all(
+                    me.lists.map(async (item) => {
+                        if (me.hasActorValue(item.updatedByName)) {
+                            item._updatedByDisplay = await resolveUpdatedByForDisplay(me.trimActorId(item.updatedByName));
+                        }
+                    })
+                );
                 me.currentIndex = me.lists.length - 1;
                 // 최신 버전 XML 로드(실패 시 최신 snapshot fallback)
                 me.lists[me.currentIndex].xml = await me.loadXMLOfVer(me.lists[me.currentIndex].version);

@@ -57,6 +57,26 @@
 <script lang="ts">
 import { defineComponent, ref, computed, watch, onMounted } from 'vue';
 import { getOrganizationProvider, type OrganizationMember } from '@/providers/organization';
+import { getAllUsers, getKeycloakUserById } from '@/utils/keycloak';
+
+function keycloakUserToMember(u: {
+    id: string;
+    username?: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+}): OrganizationMember {
+    const name =
+        [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username || u.email || u.id || '';
+    return {
+        id: u.id,
+        name,
+        email: u.email,
+        department: undefined,
+        position: undefined,
+        avatar: undefined
+    };
+}
 
 export default defineComponent({
     name: 'OwnerSelect',
@@ -110,6 +130,11 @@ export default defineComponent({
         minSearchLength: {
             type: Number,
             default: 0
+        },
+        // Keycloak 유저 목록 사용 (uEngine 모드에서 담당자 설정 등)
+        useKeycloakUsers: {
+            type: Boolean,
+            default: false
         }
     },
     emits: ['update:modelValue', 'select'],
@@ -143,25 +168,51 @@ export default defineComponent({
             return name.substring(0, 2).toUpperCase();
         };
 
-        // 멤버 목록 로드
+        // 멤버 목록 로드 (조직도 또는 Keycloak 유저)
         const loadMembers = async (query?: string) => {
             loading.value = true;
             try {
-                if (provider.initialize) {
-                    await provider.initialize();
-                }
+                const useKeycloak = props.useKeycloakUsers && (window as any).$mode === 'uEngine';
 
-                if (query && query.length >= props.minSearchLength) {
-                    members.value = await provider.searchMembers(query, { limit: 20 });
-                } else if (props.loadAllOnMount || !query) {
-                    members.value = await provider.getMembers({ limit: 50 });
-                }
+                if (useKeycloak) {
+                    const options = {
+                        max: 100,
+                        first: 0,
+                        search: query && query.length >= props.minSearchLength ? query : '',
+                        briefRepresentation: false
+                    };
+                    const users = await getAllUsers(options);
+                    members.value = users.map(keycloakUserToMember);
 
-                // 선택된 값이 있는데 목록에 없으면 해당 멤버 추가
-                if (selectedOwner.value && !members.value.find((m) => m.id === selectedOwner.value)) {
-                    const selectedMember = await provider.getMember(selectedOwner.value);
-                    if (selectedMember) {
-                        members.value = [selectedMember, ...members.value];
+                    // 선택된 값이 있는데 목록에 없으면 해당 유저 조회 후 추가
+                    if (
+                        selectedOwner.value &&
+                        !members.value.find((m) => m.id === selectedOwner.value)
+                    ) {
+                        const u = await getKeycloakUserById(selectedOwner.value);
+                        if (u) {
+                            members.value = [keycloakUserToMember(u), ...members.value];
+                        }
+                    }
+                } else {
+                    if (provider.initialize) {
+                        await provider.initialize();
+                    }
+
+                    if (query && query.length >= props.minSearchLength) {
+                        members.value = await provider.searchMembers(query, { limit: 20 });
+                    } else if (props.loadAllOnMount || !query) {
+                        members.value = await provider.getMembers({ limit: 50 });
+                    }
+
+                    if (
+                        selectedOwner.value &&
+                        !members.value.find((m) => m.id === selectedOwner.value)
+                    ) {
+                        const selectedMember = await provider.getMember(selectedOwner.value);
+                        if (selectedMember) {
+                            members.value = [selectedMember, ...members.value];
+                        }
                     }
                 }
             } catch (error) {
@@ -203,9 +254,15 @@ export default defineComponent({
             () => props.modelValue,
             async (newVal) => {
                 selectedOwner.value = newVal;
-                // 새 값이 목록에 없으면 해당 멤버 로드
-                if (newVal && !members.value.find((m) => m.id === newVal)) {
-                    try {
+                if (!newVal || members.value.find((m) => m.id === newVal)) return;
+                try {
+                    const useKeycloak = props.useKeycloakUsers && (window as any).$mode === 'uEngine';
+                    if (useKeycloak) {
+                        const u = await getKeycloakUserById(newVal);
+                        if (u) {
+                            members.value = [keycloakUserToMember(u), ...members.value];
+                        }
+                    } else {
                         if (provider.initialize) {
                             await provider.initialize();
                         }
@@ -213,9 +270,9 @@ export default defineComponent({
                         if (member) {
                             members.value = [member, ...members.value];
                         }
-                    } catch (error) {
-                        console.warn('[OwnerSelect] 멤버 로드 실패:', error);
                     }
+                } catch (error) {
+                    console.warn('[OwnerSelect] 멤버 로드 실패:', error);
                 }
             }
         );

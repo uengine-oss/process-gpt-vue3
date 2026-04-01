@@ -16,8 +16,15 @@
                             opacity: 0.7;
                         "
                     >
-                        <v-icon>mdi-alert-circle</v-icon>
-                        <div class="ml-1">{{ $t('processDefinition.isReadOnlyMode') }}</div>
+                        <v-icon>{{ lockHolderDisplayName ? 'mdi-lock-outline' : 'mdi-alert-circle' }}</v-icon>
+                        <div class="ml-1">
+                            <template v-if="lockHolderDisplayName">
+                                {{ $t('processDefinitionMap.editingUser', { name: lockHolderDisplayName }) }}
+                            </template>
+                            <template v-else>
+                                {{ $t('processDefinition.isReadOnlyMode') }}
+                            </template>
+                        </div>
                     </v-row>
                     <div v-show="isBpmnLoading">
                         <v-skeleton-loader type="image" class="mx-auto process-definition-skeleton-loader"></v-skeleton-loader>
@@ -34,10 +41,14 @@
                                 :bpmn="bpmn"
                                 :options="options"
                                 :isViewMode="isViewMode"
+                                :lock-holder-name="viewModeStatusOnCanvas ? lockHolderDisplayName : ''"
+                                :show-read-only-label="viewModeStatusOnCanvas && !lockHolderDisplayName"
                                 :isPreviewMode="isPreviewMode"
                                 :currentActivities="currentActivities"
                                 :generateFormTask="generateFormTask"
                                 :isPreviewPDFDialog="isPreviewPDFDialog"
+                                :pdf-include-pal-manuals="pdfIncludePalManuals"
+                                :pdf-process-definition="processDefinition"
                                 :isAIGenerated="isAIGenerated"
                                 :commentCounts="commentCounts"
                                 @closePDFDialog="closePDFDialog"
@@ -63,7 +74,7 @@
                                 <!-- Extra controls in BpmnUengine toolbar -->
                                 <template #extra-controls>
                                     <!-- 프로세스 변수 추가 버튼 -->
-                                    <v-tooltip location="bottom">
+                                    <v-tooltip v-if="!isPal" location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <v-icon
                                                 v-bind="props"
@@ -75,6 +86,43 @@
                                             >
                                         </template>
                                         <span>{{ $t('processDefinition.processVariables') }}</span>
+                                    </v-tooltip>
+                                    <!-- 승인 상태 버튼 -->
+                                    <v-tooltip v-if="!isPal" location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-icon
+                                                v-bind="props"
+                                                @click="showApprovalPanel = !showApprovalPanel"
+                                                style="cursor: pointer"
+                                                :color="showApprovalPanel ? 'primary' : ''"
+                                                size="small"
+                                                >mdi-clipboard-check-outline</v-icon
+                                            >
+                                        </template>
+                                        <span>{{ $t('processDefinition.approvalState') }}</span>
+                                    </v-tooltip>
+                                    <!-- 댓글 버튼 -->
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-badge
+                                                :content="totalCommentCount"
+                                                :model-value="totalCommentCount > 0"
+                                                color="error"
+                                                overlap
+                                                offset-x="-2"
+                                                offset-y="-2"
+                                            >
+                                                <v-icon
+                                                    v-bind="props"
+                                                    @click="toggleCommentPanel"
+                                                    style="cursor: pointer"
+                                                    :color="showCommentPanel ? 'primary' : ''"
+                                                    size="small"
+                                                    >mdi-comment-text-multiple-outline</v-icon
+                                                >
+                                            </v-badge>
+                                        </template>
+                                        <span>{{ $t('processDefinition.comments') }}</span>
                                     </v-tooltip>
                                     <!-- 채팅창 열기/닫기 토글 버튼 -->
                                     <v-tooltip v-if="!isMobile" location="bottom">
@@ -128,7 +176,7 @@
                         <ValidationConsolePanel
                             :show="showValidationConsole"
                             :items="consoleValidationItems"
-                            @close="showValidationConsole = false"
+                            @close="$emit('close-validation-console')"
                             @focusElement="(id) => $refs.bpmnVue && $refs.bpmnVue.focusElement(id)"
                         />
 
@@ -171,8 +219,8 @@
                     </template>
                 </v-card>
             </v-col>
-            <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
-                <v-card elevation="1">
+            <div v-if="panel && !isViewMode" class="bpmn-edit-mode-panel-wrapper">
+                <v-card elevation="1" class="bpmn-property-panel-card-fullheight">
                     <bpmn-property-panel
                         ref="bpmnPropertyPanel"
                         :element="element"
@@ -318,7 +366,7 @@
                                     "
                                 >
                                     <div style="display: flex; justify-content: center; align-items: center">
-                                        <Icons class="cp-variables-add" :icon="'plus'" />
+                                        <Icons class="cp-variables-add" :icon="'plus'" :color="'#5eb2e8'" />
                                     </div>
                                 </v-card>
                             </v-row>
@@ -380,6 +428,7 @@ import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
 import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
 import ValidationConsolePanel from '@/components/ui/ValidationConsolePanel.vue';
 import MultiSelectPanel from '@/components/ui/MultiSelectPanel.vue';
+import { clearBpmnLoadingTimeout, startBpmnLoadingTimeout } from '@/utils/bpmnLoadingTimeout.js';
 
 const backend = BackendFactory.createBackend();
 export default {
@@ -415,11 +464,20 @@ export default {
         isAdmin: Boolean,
         generateFormTask: Object,
         isPreviewPDFDialog: Boolean,
+        /** PAL: true면 PDF에 activities 매뉴얼 페이지 포함 */
+        pdfIncludePalManuals: {
+            type: Boolean,
+            default: false
+        },
         isAIGenerated: Boolean,
         showValidationConsole: Boolean,
         consoleValidationItems: {
             type: Array,
             default: () => []
+        },
+        lockHolderDisplayName: {
+            type: String,
+            default: ''
         }
     },
     data: () => ({
@@ -528,6 +586,12 @@ export default {
             } else {
                 return Object.values(this.commentCounts).reduce((sum, item) => sum + (item.unresolved || 0), 0);
             }
+        },
+        /** 관리자·데스크톱은 좌측 상단 배너에 읽기/잠금 표시 → 캔버스 우측에 동일 문구 중복 안 함 */
+        viewModeStatusOnCanvas() {
+            if (!this.isViewMode) return false;
+            if (this.isAdmin && !this.isMobile) return false;
+            return true;
         }
     },
     watch: {
@@ -674,7 +738,23 @@ export default {
             this.applyAutoLayout();
         });
     },
+    beforeUnmount() {
+        this.bpmnLoadingTimer = clearBpmnLoadingTimeout(this.bpmnLoadingTimer);
+    },
     methods: {
+        startBpmnLoadingState() {
+            this.bpmnLoadingTimer = startBpmnLoadingTimeout({
+                currentTimerId: this.bpmnLoadingTimer,
+                setLoading: (value) => {
+                    this.isBpmnLoading = value;
+                },
+                timeoutMs: 3000
+            });
+        },
+        stopBpmnLoadingState() {
+            this.bpmnLoadingTimer = clearBpmnLoadingTimeout(this.bpmnLoadingTimer);
+            this.isBpmnLoading = false;
+        },
         // 댓글 관련 메서드
         toggleCommentPanel() {
             this.showCommentPanel = !this.showCommentPanel;
@@ -788,10 +868,10 @@ export default {
             console.log('Saved to catalog:', catalogItem);
         },
         onBpmnLoadStart() {
-            this.isBpmnLoading = true;
+            this.startBpmnLoadingState();
         },
         onBpmnLoadEnd() {
-            this.isBpmnLoading = false;
+            this.stopBpmnLoadingState();
         },
         applyAutoLayout() {
             // PAL 모드에서도 엑셀→BPMN 로드 후 자동 레이아웃 허용
@@ -989,8 +1069,7 @@ export default {
                     };
                     const data = await backend.start(input);
                     if (data.instanceId) {
-                        const path = `/instancelist/${data.instanceId.replace(/\./g, '_DOT_')}`;
-                        me.$router.push({ path, query: { tab: 'todo' } });
+                        me.$router.push(`/instancelist/${data.instanceId.replace(/\./g, '_DOT_')}`);
                     }
                     me.EventBus.emit('instances-updated');
                 },
@@ -1317,20 +1396,21 @@ export default {
             // BpmnUengine.vue에서 import 실패 시 error 이벤트로 전달되는 에러를 받는다.
             // 여기서 err 미정의로 크래시 나면 로딩이 영원히 끝나지 않을 수 있음.
             console.error('failed to show diagram', err);
-            this.onBpmnLoadEnd();
+            this.stopBpmnLoadingState();
         },
         handleShown() {
             console.log('diagram shown');
         },
         handleBpmnShown() {
-            this.onBpmnLoadEnd();
+            this.stopBpmnLoadingState();
         },
         handleBpmnDone() {
             this.setDefinition();
-            this.onBpmnLoadEnd();
+            this.stopBpmnLoadingState();
         },
         handleLoading() {
             console.log('diagram loading');
+            this.startBpmnLoadingState();
         },
         taskMapping(activity) {
             switch (activity) {
@@ -1432,8 +1512,8 @@ export default {
 /* Task Catalog Floating Panel */
 .task-catalog-floating-panel {
     position: absolute;
-    right: 8px;
-    bottom: 40px;
+    left: 0;
+    bottom: 0;
     width: 280px;
     z-index: 10;
     background: white;
@@ -1560,8 +1640,8 @@ export default {
 /* Task Catalog Floating Panel */
 .task-catalog-floating-panel {
     position: absolute;
-    right: 8px;
-    bottom: 40px;
+    left: 0;
+    bottom: 0;
     width: 280px;
     z-index: 10;
     background: white;
@@ -1605,6 +1685,26 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
+}
+
+/* 편집 모드: 속성 패널을 BPMN 편집 영역(is-work-height)과 같은 높이로 맞춤 */
+.bpmn-edit-mode-panel-wrapper {
+    position: fixed;
+    z-index: 999;
+    right: 0;
+    top: 131px;
+    bottom: 0;
+    height: calc(100vh - 131px);
+}
+.bpmn-property-panel-card-fullheight {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.bpmn-property-panel-card-fullheight #property-panel {
+    flex: 1;
+    min-height: 0;
 }
 
 .pal-view-mode-panel {

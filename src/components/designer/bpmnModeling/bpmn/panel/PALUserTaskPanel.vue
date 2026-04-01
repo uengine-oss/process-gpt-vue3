@@ -26,7 +26,7 @@
                 <a :href="link" target="_blank">{{ link }}</a>
             </div>
         </div>
-        <div class="pb-10 attachment-container">
+        <div v-if="false" class="pb-10 attachment-container">
             <v-row class="ma-0 pa-0 align-center">
                 <h6 class="text-body-1">첨부파일</h6>
                 <v-spacer></v-spacer>

@@ -1,7 +1,7 @@
 import axios from '@/utils/axios';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
-import type { Backend } from './Backend';
+import type { Backend, BpmnModelingPolicy } from './Backend';
 import defaultProcessesData from './defaultProcesses.json';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { runValidation } from '@/utils/bpmnValidationRules';
@@ -15,6 +15,145 @@ enum ErrorCode {
 
 class ProcessGPTBackend implements Backend {
     private hasWarnedMissingElementCommentCountView = false;
+
+    getGatewayExportCondition(gateway: any): string {
+        return gateway?.condition || '';
+    }
+
+    getSequenceFlowExportCondition(flow: any): string {
+        return flow?.condition || '';
+    }
+
+    encodeInstanceIdForInstancelistRoute(instId: string): string {
+        if (instId == null || instId === '') return '';
+        return String(instId).replace(/\./g, '_DOT_');
+    }
+
+    decodeInstanceIdFromInstancelistRouteParam(routeParam: string): string {
+        if (routeParam == null || routeParam === '') return '';
+        return String(routeParam).replace(/_DOT_/g, '.');
+    }
+
+    getBpmnModelingPolicy(): BpmnModelingPolicy {
+        return {
+            defaultAppendTaskBpmnType: 'bpmn:ManualTask',
+            paletteVisibleTaskBpmnTypes: null,
+            multiReplaceTaskBpmnTypes: null
+        };
+    }
+
+    async saveProcessDefinitionFromModeler(params: { info: any; xml: string; processDefinition?: any }): Promise<void> {
+        const { info, xml } = params;
+        const pd = params.processDefinition;
+
+        if (!pd) {
+            throw new Error('[ProcessGPT] saveProcessDefinitionFromModeler: processDefinition가 필요합니다.');
+        }
+
+        if (pd.processDefinitionId == 'definition-map') {
+            pd.processDefinitionId = info.proc_def_id;
+        }
+
+        const normalizeIdPart = (id: string | undefined) =>
+            (id || '').toString().toLowerCase().replace(/[/.]/g, '_').replace(/#/g, '_');
+        const procIdForForm = normalizeIdPart(info.proc_def_id || pd.processDefinitionId);
+        const formDrafts = Array.isArray(pd.formDrafts) ? pd.formDrafts : [];
+        const activities = Array.isArray(pd.activities) ? pd.activities : [];
+        console.log('[FORM_DEBUG] saveModel formDrafts check', {
+            formDraftsCount: formDrafts.length,
+            activitiesCount: activities.length,
+            procIdForForm,
+            drafts: formDrafts.map((d: any) => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })),
+            activityTools: activities.map((a: any) => ({ id: a?.id, tool: a?.tool }))
+        });
+
+        if (formDrafts.length > 0) {
+            await Promise.all(
+                formDrafts
+                    .filter((draft: any) => draft && draft.id && draft.html)
+                    .map(async (draft: any) => {
+                        const draftId = normalizeIdPart(draft.id);
+                        const draftActivityId = draft.activity_id ? String(draft.activity_id) : null;
+
+                        let targetActivity = activities.find((a: any) => a && a.id === draftActivityId) || null;
+
+                        if (!targetActivity) {
+                            targetActivity =
+                                activities.find((a: any) => {
+                                    if (!a || !a.id) return false;
+                                    return `${procIdForForm}_${normalizeIdPart(a.id)}_form` === draftId;
+                                }) || null;
+                        }
+
+                        let activityIdForSave = targetActivity?.id || draftActivityId;
+                        if (!activityIdForSave && draftId.startsWith(`${procIdForForm}_`) && draftId.endsWith('_form')) {
+                            activityIdForSave = draftId.slice(procIdForForm.length + 1, -5);
+                        }
+
+                        if (targetActivity) {
+                            targetActivity.tool = `formHandler:${draftId}`;
+                        }
+
+                        const options = {
+                            type: 'form',
+                            proc_def_id: info.proc_def_id,
+                            activity_id: activityIdForSave || draftActivityId || ''
+                        };
+                        console.log('[FORM_DEBUG] saving form to DB', { draftId, activityIdForSave, options, htmlLen: draft.html?.length });
+                        try {
+                            const result = await this.putRawDefinition(draft.html, draftId, options);
+                            console.log('[FORM_DEBUG] putRawDefinition result', { draftId, result });
+                        } catch (err) {
+                            console.error('[FORM_DEBUG] putRawDefinition FAILED', { draftId, error: err });
+                        }
+                    })
+            );
+
+            pd.formDrafts = [];
+        }
+
+        if (activities.length > 0) {
+            await Promise.all(
+                activities.map(async (activity: any) => {
+                    if (!activity || !activity.id || !activity.tool || !activity.tool.includes('formHandler:defaultform')) return;
+                    const activityId = normalizeIdPart(activity.id);
+                    const promotedFormId = `${procIdForForm}_${activityId}_form`;
+                    const draft = formDrafts.find(
+                        (item: any) =>
+                            item &&
+                            item.html &&
+                            (normalizeIdPart(item.id) === promotedFormId || String(item.activity_id || '') === String(activity.id))
+                    );
+                    if (!draft) return;
+
+                    activity.tool = `formHandler:${promotedFormId}`;
+                    await this.putRawDefinition(draft.html, promotedFormId, {
+                        type: 'form',
+                        proc_def_id: info.proc_def_id,
+                        activity_id: activity.id
+                    });
+                })
+            );
+        }
+
+        pd.processDefinitionId = info.proc_def_id
+            ? info.proc_def_id
+            : ((typeof window !== 'undefined' && window.prompt && window.prompt('please give a ID for the process definition')) as string);
+
+        if (!pd.processDefinitionName && info.name) {
+            pd.processDefinitionName = info.name;
+        } else if (!pd.processDefinitionName && !info.name) {
+            pd.processDefinitionName =
+                (typeof window !== 'undefined' && window.prompt && window.prompt('please give a name for the process definition')) || '';
+        }
+
+        if (!pd.processDefinitionId || !pd.processDefinitionName) {
+            throw new Error('processDefinitionId or processDefinitionName is missing');
+        }
+
+        info.definition = pd;
+        await this.putRawDefinition(xml, info.proc_def_id, info);
+    }
 
     // =========================
     // Business Rule raw-definition mock store (ProcessGPT 모드)
@@ -3220,6 +3359,31 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * 담당자 설정 다이얼로그 등에서 표시할 담당자 후보 목록.
+     * ProcessGPT: tenant 사용자 목록에서 반환 (조직도 fallback 시 사용).
+     */
+    async getOwnerCandidateUsers(): Promise<Array<{ id: string; name?: string; username?: string; email?: string }>> {
+        try {
+            const users = await this.getUserList({
+                orderBy: 'username',
+                sort: 'asc',
+                match: { tenant_id: window.$tenantName },
+                range: { from: 0, to: 49 }
+            });
+            if (!users || !Array.isArray(users)) return [];
+            return users.map((u: any) => ({
+                id: u.id || u.email,
+                username: u.username,
+                email: u.email,
+                name: u.username || u.name || u.email || u.id
+            }));
+        } catch (e) {
+            console.warn('[ProcessGPTBackend] getOwnerCandidateUsers failed:', e);
+            return [];
+        }
+    }
+
     async getGroupList() {
         try {
             const options = {
@@ -4370,6 +4534,28 @@ class ProcessGPTBackend implements Backend {
     }
 
     /**
+     * 조직 그룹 계층 트리 조회. 루트는 "조직", 그 아래 플랫 목록을 1단계 자식으로.
+     */
+    async getOrgChartGroupListTree(): Promise<{
+        id: string;
+        name: string;
+        children: Array<{ id: string; name: string; children: any[] }>;
+    }> {
+        try {
+            const list = await this.getOrgChartGroupList();
+            const children = (list || []).map((g: any) => ({
+                id: g.id,
+                name: g.name || g.id,
+                children: []
+            }));
+            return { id: 'org-root', name: '조직', children };
+        } catch (e) {
+            console.warn('[ProcessGPTBackend] getOrgChartGroupListTree failed:', e);
+            return { id: 'org-root', name: '조직', children: [] };
+        }
+    }
+
+    /**
      * 프로세스에 대한 병합된 권한 조회 (사용자의 모든 권한 OR 병합)
      * @param options proc_def_id, user_id, user_organizations
      * @returns { has_readable, has_executable, has_writable }
@@ -4943,21 +5129,27 @@ class ProcessGPTBackend implements Backend {
         sourceId: string,
         newName: string,
         bpmn: string,
-        definition?: any
+        definition?: any,
+        desiredNewId?: string
     ): Promise<{ success: boolean; newId: string }> {
         try {
-            // Generate new ID from source ID with _copy suffix
-            let newId = `${sourceId}_copy`;
-            let counter = 1;
-
-            // Check if ID already exists and find unique ID
-            let existing = await storage.getObject('proc_def', { match: { id: newId } });
-            while (existing) {
-                newId = `${sourceId}_copy${counter++}`;
-                existing = await storage.getObject('proc_def', { match: { id: newId } });
+            let newId: string;
+            if (desiredNewId != null && String(desiredNewId).trim() !== '') {
+                newId = String(desiredNewId).trim().replace(/\s+/g, '_');
+                const existing = await storage.getObject('proc_def', { match: { id: newId } });
+                if (existing) {
+                    throw new Error('이미 존재하는 ID입니다. 다른 ID를 입력해 주세요.');
+                }
+            } else {
+                newId = `${sourceId}_copy`;
+                let counter = 1;
+                let existing = await storage.getObject('proc_def', { match: { id: newId } });
+                while (existing) {
+                    newId = `${sourceId}_copy${counter++}`;
+                    existing = await storage.getObject('proc_def', { match: { id: newId } });
+                }
             }
 
-            // Create new process definition
             const newProcDef = {
                 id: newId,
                 name: newName,

@@ -2,6 +2,20 @@
  * Custom Replace Menu Provider
  * Filters task types based on enabled palette task types
  */
+import BackendFactory from '@/components/api/BackendFactory';
+
+function __bpmnModelingPolicy() {
+    try {
+        return BackendFactory.createBackend().getBpmnModelingPolicy();
+    } catch (e) {
+        return {
+            defaultAppendTaskBpmnType: 'bpmn:ManualTask',
+            paletteVisibleTaskBpmnTypes: null,
+            multiReplaceTaskBpmnTypes: null
+        };
+    }
+}
+
 export default function CustomReplaceMenuProvider(popupMenu, bpmnReplace, rules) {
     this._popupMenu = popupMenu;
     this._bpmnReplace = bpmnReplace;
@@ -17,10 +31,9 @@ CustomReplaceMenuProvider.$inject = ['popupMenu', 'bpmnReplace', 'rules'];
  * Get enabled task types from window global
  */
 CustomReplaceMenuProvider.prototype._getEnabledTaskTypes = function () {
-    // uEngine·PAL 모드: UserTask만 사용
-    const isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
-    if (isUEngineOrPal) {
-        return ['bpmn:UserTask'];
+    const policy = __bpmnModelingPolicy();
+    if (policy.multiReplaceTaskBpmnTypes && policy.multiReplaceTaskBpmnTypes.length > 0) {
+        return policy.multiReplaceTaskBpmnTypes;
     }
     const enabledTypes = window.$enabledPaletteTaskTypes || [];
     if (enabledTypes.length > 0) {

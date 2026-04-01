@@ -24,6 +24,9 @@ const globalIsMobile = computed(() => {
     return (window as any).$globalIsMobile || false;
 });
 
+// PAL 모드 여부 (알림 등 PAL에서 숨길 요소용)
+const isPal = computed(() => !!(window as any).$pal);
+
 const workItemNotiBadge = ref(localStorage.getItem('notificationBadge_workitem') === 'true');
 
 interface SidebarItem {
@@ -58,7 +61,7 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'overview',
         to: '/todolist',
         disable: false,
-        isVisible: true
+        isVisible: !(window as any).$pal // PAL 모드에서는 숨김
     },
     // {
     //     title: 'headerMenu.schedule',
@@ -225,7 +228,7 @@ function handleNotificationBadgeUpdate(event: Event) {
                     <Searchbar />
                     <v-spacer></v-spacer>
                     <ProfileDD />
-                    <NotificationDD @newNotification="newNotification" />
+                    <NotificationDD v-if="!isPal" @newNotification="newNotification" />
                 </v-row>
                 <!-- 네비게이션 버튼들 - 세로 배치 -->
                 <v-row class="ma-0 mt-2">
@@ -297,7 +300,7 @@ function handleNotificationBadgeUpdate(event: Event) {
                 <div class="mr-sm-6 mr-4">
                     <Searchbar />
                 </div>
-                <div class="mr-sm-6 mr-4">
+                <div v-if="!isPal" class="mr-sm-6 mr-4">
                     <NotificationDD @newNotification="newNotification" />
                 </div>
                 <div>

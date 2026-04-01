@@ -16,6 +16,7 @@
                         :isXmlMode="isXmlMode"
                         :definitionPath="fullPath"
                         :definitionChat="this"
+                        :lock-holder-display-name="bpmnLockHolderDisplayName"
                         @update="updateDefinition"
                         @update:processVariables="(val) => (processVariables = val)"
                     ></process-definition>
@@ -64,6 +65,8 @@
                     :isPreviewPDFDialog="isPreviewPDFDialog"
                     :showValidationConsole="showValidationConsole"
                     :consoleValidationItems="consoleValidationItems"
+                    :lock-holder-display-name="bpmnLockHolderDisplayName"
+                    @close-validation-console="onValidationConsoleClose"
                     @closePDFDialog="isPreviewPDFDialog = false"
                     @update="updateDefinition"
                     @changeBpmn="changeBpmn"
@@ -256,7 +259,9 @@
                                 :bpmn="bpmn"
                                 :fullPath="fullPath"
                                 :lock="lock"
+                                :canManageProcess="canManageProcess"
                                 :editUser="editUser"
+                                :editUserDisplayLabel="editUserDisplayLabel"
                                 :userInfo="userInfo"
                                 :isXmlMode="isXmlMode"
                                 :isEditable="isEditable"
@@ -270,6 +275,7 @@
                                 @executeProcess="executeProcess"
                                 @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock"
+                                @lockOnly="lockOnly"
                                 @showXmlMode="showXmlMode"
                                 @beforeDelete="beforeDelete"
                                 @beforeRestore="beforeRestore"
@@ -312,7 +318,9 @@
                                 :bpmn="bpmn"
                                 :fullPath="fullPath"
                                 :lock="lock"
+                                :canManageProcess="canManageProcess"
                                 :editUser="editUser"
+                                :editUserDisplayLabel="editUserDisplayLabel"
                                 :userInfo="userInfo"
                                 :isXmlMode="isXmlMode"
                                 :isEditable="isEditable"
@@ -325,6 +333,7 @@
                                 @executeProcess="executeProcess"
                                 @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock"
+                                @lockOnly="lockOnly"
                                 @showXmlMode="showXmlMode"
                                 @beforeDelete="beforeDelete"
                                 @savePDF="savePDF"
@@ -436,6 +445,9 @@ import Chat from './ui/Chat.vue';
 
 import FormGenerator from './ai/FormDesignGenerator';
 import BackendFactory from '@/components/api/BackendFactory';
+import { getKeycloakUserById } from '@/utils/keycloak';
+import { canManageProcess as hasProcessManagementAccess, canBypassLock } from '@/utils/processManagement';
+import { formatKeycloakUserAsNameAndLoginId, resolveUidToNameWithIdLabel } from '@/utils/definitionActorDisplay';
 
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
@@ -445,6 +457,8 @@ import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
 import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { hasSubstantialChanges } from '@/utils/xmlDiff';
+import { validateBpmnModel } from '@/utils/bpmnModelValidation';
+import { readAutoBpmnValidation } from '@/utils/bpmnValidationPrefs';
 import { useBpmnExport } from '@/composables/useBpmnExport';
 const storage = StorageBaseFactory.getStorage();
 
@@ -560,7 +574,10 @@ export default {
         resetWarningResolver: null,
         // Phase 4-5: AI Copilot URL input
         showUrlInput: false,
-        aiCopilotUrl: ''
+        aiCopilotUrl: '',
+        bpmnLockHolderDisplayName: '',
+        /** uEngine: 잠금 보유자 uid → 이름(uid) 표기용 */
+        editUserDisplayLabel: ''
     }),
     async created() {
         $try(async () => {
@@ -573,6 +590,7 @@ export default {
                 this.userInfo = await this.backend.getUserInfo();
 
                 this.processDefinitionMap = await backend.getProcessDefinitionMap();
+                this.syncDisplayedProcessDefinitionName();
 
                 this.messages.push({
                     role: 'system',
@@ -675,15 +693,43 @@ export default {
                     this.$emit('closeExecuteDialog');
                 }
             }
+        },
+        editUser: {
+            immediate: true,
+            async handler() {
+                await this.refreshEditUserDisplayLabel();
+                this.refreshBpmnLockHolderDisplay();
+            }
+        },
+        lock: {
+            immediate: true,
+            handler() {
+                this.refreshBpmnLockHolderDisplay();
+            }
+        },
+        isViewMode: {
+            immediate: true,
+            handler() {
+                this.refreshBpmnLockHolderDisplay();
+            }
+        },
+        versionDialog(val) {
+            if (val && readAutoBpmnValidation()) {
+                this.$nextTick(() => this.runValidationWhenSaveDialogOpens());
+            }
         }
     },
     computed: {
         fullPath() {
+            const p = this.$route.path || '';
+            if (p.startsWith('/definition-map/mega/') || p.startsWith('/definition-map/major/')) {
+                return '';
+            }
             let path;
             if (this.$route.params.pathMatch) {
                 path = this.$route.params.pathMatch.join('/');
                 if (path.startsWith('/')) {
-                    path = fullPath.substring(1);
+                    path = path.substring(1);
                 }
             } else if (this.$route.params.id) {
                 path = this.$route.params.id;
@@ -696,9 +742,12 @@ export default {
             const isAdmin = localStorage.getItem('isAdmin') === 'true';
             return isAdmin;
         },
-        // 편집 가능 여부: 관리자이거나 수정 권한이 있는 경우
+        canManageProcess() {
+            return hasProcessManagementAccess();
+        },
+        // 편집 가능 여부: process-manager/admin 또는 수정 권한
         canEdit() {
-            return this.isAdmin || this.hasWritePermission;
+            return this.canManageProcess || this.hasWritePermission;
         },
         mode() {
             return window.$mode;
@@ -732,7 +781,10 @@ export default {
             return this.isConsultingMode ? 10 : 3;
         },
         hasValidationErrors() {
-            return this.validationResults.some((item) => item.level === 'error');
+            return (
+                this.validationResults.some((item) => item.level === 'error') ||
+                this.consoleValidationItems.some((item) => item.level === 'error')
+            );
         }
     },
     async beforeRouteUpdate(to, from, next) {
@@ -742,6 +794,62 @@ export default {
         await this.handleRouteChangeConfirmation(to, from, next, 'leave');
     },
     methods: {
+        buildDefinitionMapNameById(map) {
+            const out = {};
+            const megas = Array.isArray(map?.mega_proc_list) ? map.mega_proc_list : [];
+            megas.forEach((mega) => {
+                (mega?.major_proc_list || []).forEach((major) => {
+                    (major?.sub_proc_list || []).forEach((sub) => {
+                        const id = sub?.id != null ? String(sub.id).trim() : '';
+                        const name = sub?.name != null ? String(sub.name).trim() : '';
+                        if (!id || !name) return;
+                        out[id] = name;
+                    });
+                });
+            });
+            return out;
+        },
+        findDefinitionMapMatch(definitionPath) {
+            const raw = String(definitionPath || '').trim();
+            if (!raw || !this.processDefinitionMap) return null;
+
+            const defaultFolderPrefix = 'default/';
+            const normalizedDefaultPath = raw.toLowerCase().startsWith(defaultFolderPrefix)
+                ? raw.slice(defaultFolderPrefix.length)
+                : '';
+            const nameById = this.buildDefinitionMapNameById(this.processDefinitionMap);
+            const basename = raw.split('/').pop() || '';
+            const normalizedBasename = normalizedDefaultPath.split('/').pop() || '';
+            const basenameWithoutExtension = basename.replace(/\.bpmn$/i, '');
+            const normalizedBasenameWithoutExtension = normalizedBasename.replace(/\.bpmn$/i, '');
+            const candidates = Array.from(
+                new Set(
+                    [
+                        raw,
+                        !raw.toLowerCase().endsWith('.bpmn') ? `${raw}.bpmn` : '',
+                        normalizedDefaultPath,
+                        normalizedDefaultPath && !normalizedDefaultPath.toLowerCase().endsWith('.bpmn')
+                            ? `${normalizedDefaultPath}.bpmn`
+                            : '',
+                        basename,
+                        basenameWithoutExtension,
+                        normalizedBasename,
+                        normalizedBasenameWithoutExtension
+                    ].filter(Boolean)
+                )
+            );
+            const matchedId = candidates.find((candidate) => nameById[candidate]);
+            return matchedId ? { id: matchedId, name: nameById[matchedId] } : null;
+        },
+        syncDisplayedProcessDefinitionName() {
+            const definitionPath = this.fullPath || this.processDefinition?.processDefinitionId;
+            const matched = this.findDefinitionMapMatch(definitionPath);
+            if (!matched?.name) return;
+
+            this.projectName = matched.name;
+            if (!this.processDefinition) this.processDefinition = {};
+            this.processDefinition.processDefinitionName = matched.name;
+        },
         async handleRouteChangeConfirmation(to, from, next, type) {
             if (this.bpmn && this.bpmn.length > 0) {
                 if (this.useLock && this.lock) {
@@ -1071,139 +1179,111 @@ export default {
                 }
             }
 
-            // Run BPMN validation before save
-            const validationResults = await this.validateBpmn();
-            if (validationResults.length > 0) {
-                this.validationResults = validationResults;
-                this.pendingSaveInfo = info;
-                this.validationDialog = true;
-                return;
+            // 저장 전 검증 (자동검증 ON일 때만) — 하단 패널 + 캔버스 마커 + 확인 다이얼로그
+            if (readAutoBpmnValidation()) {
+                const validationResults = await this.validateBpmn();
+                if (validationResults.length > 0) {
+                    this.validationResults = validationResults;
+                    this.consoleValidationItems = validationResults.map((r) => ({
+                        level: r.level,
+                        message: r.message,
+                        elementName: r.elementName ?? null,
+                        elementId: r.elementId
+                    }));
+                    this.pendingSaveInfo = info;
+                    this.showValidationConsole = true;
+                    this.validationDialog = true;
+                    this.$nextTick(() => this.applyBpmnValidationMarkersToCanvas(validationResults));
+                    return;
+                }
             }
 
             this.saveDefinition(info);
         },
         async validateBpmn() {
-            const results = [];
             const store = useBpmnStore();
             const modeler = store.getModeler;
-
-            if (!modeler) return results;
+            if (!modeler) return [];
 
             try {
-                const elementRegistry = modeler.get('elementRegistry');
-                const elements = elementRegistry.getAll();
-
-                let hasStartEvent = false;
-                let hasEndEvent = false;
-                const connectedElements = new Set();
-                const gateways = [];
-                const tasks = [];
-
-                // Analyze elements
-                elements.forEach((element) => {
-                    const type = element.type;
-
-                    if (type === 'bpmn:StartEvent') {
-                        hasStartEvent = true;
-                    }
-                    if (type === 'bpmn:EndEvent') {
-                        hasEndEvent = true;
-                    }
-                    if (type?.includes('Gateway')) {
-                        gateways.push(element);
-                    }
-                    if (type?.includes('Task')) {
-                        tasks.push(element);
-                    }
-
-                    // Track connected elements
-                    if (element.incoming) {
-                        element.incoming.forEach((conn) => {
-                            if (conn.source) connectedElements.add(conn.source.id);
-                        });
-                    }
-                    if (element.outgoing) {
-                        element.outgoing.forEach((conn) => {
-                            if (conn.target) connectedElements.add(conn.target.id);
-                        });
-                    }
-                });
-
-                // Check for start event
-                if (!hasStartEvent) {
-                    results.push({
-                        level: 'error',
-                        message: this.$t('validation.noStartEvent'),
-                        elementName: null
-                    });
-                }
-
-                // Check for end event
-                if (!hasEndEvent) {
-                    results.push({
-                        level: 'error',
-                        message: this.$t('validation.noEndEvent'),
-                        elementName: null
-                    });
-                }
-
-                // Check for unconnected tasks
-                tasks.forEach((task) => {
-                    const hasIncoming = task.incoming && task.incoming.length > 0;
-                    const hasOutgoing = task.outgoing && task.outgoing.length > 0;
-
-                    if (!hasIncoming && !hasOutgoing) {
-                        results.push({
-                            level: 'warning',
-                            message: this.$t('validation.unconnectedElement'),
-                            elementName: task.businessObject?.name || task.id,
-                            elementId: task.id
-                        });
-                    } else if (!hasIncoming) {
-                        results.push({
-                            level: 'warning',
-                            message: this.$t('validation.noIncomingConnection'),
-                            elementName: task.businessObject?.name || task.id,
-                            elementId: task.id
-                        });
-                    } else if (!hasOutgoing) {
-                        results.push({
-                            level: 'warning',
-                            message: this.$t('validation.noOutgoingConnection'),
-                            elementName: task.businessObject?.name || task.id,
-                            elementId: task.id
-                        });
-                    }
-                });
-
-                // Check gateways
-                gateways.forEach((gateway) => {
-                    const outgoing = gateway.outgoing || [];
-                    const incoming = gateway.incoming || [];
-
-                    if (outgoing.length < 2 && gateway.type !== 'bpmn:EventBasedGateway') {
-                        results.push({
-                            level: 'warning',
-                            message: this.$t('validation.gatewayNeedsBranches'),
-                            elementName: gateway.businessObject?.name || gateway.id,
-                            elementId: gateway.id
-                        });
-                    }
-
-                    if (incoming.length === 0) {
-                        results.push({
-                            level: 'warning',
-                            message: this.$t('validation.noIncomingConnection'),
-                            elementName: gateway.businessObject?.name || gateway.id,
-                            elementId: gateway.id
-                        });
-                    }
-                });
+                return validateBpmnModel(modeler).map((issue) => ({
+                    level: issue.level,
+                    message: issue.message,
+                    shortMessage: issue.shortMessage,
+                    elementName: issue.elementName ?? null,
+                    elementId: issue.elementId
+                }));
             } catch (error) {
                 console.error('Validation error:', error);
+                return [];
             }
-
-            return results;
+        },
+        applyBpmnValidationMarkersToCanvas(validationItems) {
+            const bpmnVue = this.$refs.definitionComponent?.$refs?.bpmnVue;
+            if (!bpmnVue?.applyValidationMarkers) return;
+            const items = (validationItems || []).filter((i) => i.elementId);
+            bpmnVue.applyValidationMarkers(items);
+        },
+        clearBpmnValidationMarkers() {
+            const bpmnVue = this.$refs.definitionComponent?.$refs?.bpmnVue;
+            if (!bpmnVue?.applyValidationMarkers) return;
+            bpmnVue.applyValidationMarkers([]);
+        },
+        onValidationConsoleClose() {
+            this.showValidationConsole = false;
+            this.clearBpmnValidationMarkers();
+        },
+        async refreshEditUserDisplayLabel() {
+            this.editUserDisplayLabel = '';
+            if (!this.editUser) return;
+            if (window.$mode === 'uEngine') {
+                try {
+                    this.editUserDisplayLabel = await resolveUidToNameWithIdLabel(this.editUser);
+                } catch {
+                    this.editUserDisplayLabel = this.editUser;
+                }
+            } else {
+                this.editUserDisplayLabel = this.editUser;
+            }
+        },
+        async refreshBpmnLockHolderDisplay() {
+            this.bpmnLockHolderDisplayName = '';
+            if (!this.isViewMode || !this.useLock || !this.lock || !this.editUser) return;
+            if (window.$mode === 'uEngine') {
+                const uid = localStorage.getItem('uid') || '';
+                if (this.editUser === uid) return;
+                try {
+                    this.bpmnLockHolderDisplayName = await resolveUidToNameWithIdLabel(this.editUser);
+                } catch {
+                    this.bpmnLockHolderDisplayName = this.editUser;
+                }
+                return;
+            }
+            if (window.$mode === 'ProcessGPT') {
+                const selfName = this.userInfo?.name || '';
+                if (this.editUser === selfName) return;
+                this.bpmnLockHolderDisplayName = this.editUser;
+                return;
+            }
+            this.bpmnLockHolderDisplayName = this.editUser;
+        },
+        /** 저장(버전) 다이얼로그를 열 때 자동검증이 켜져 있으면 하단 패널·마커 갱신 */
+        async runValidationWhenSaveDialogOpens() {
+            if (!readAutoBpmnValidation() || this.isXmlMode) return;
+            const results = await this.validateBpmn();
+            this.consoleValidationItems = results.map((r) => ({
+                level: r.level,
+                message: r.message,
+                elementName: r.elementName ?? null,
+                elementId: r.elementId
+            }));
+            if (results.length > 0) {
+                this.showValidationConsole = true;
+                this.applyBpmnValidationMarkersToCanvas(results);
+            } else {
+                this.showValidationConsole = false;
+                this.clearBpmnValidationMarkers();
+            }
         },
         saveIgnoringValidation() {
             this.validationDialog = false;
@@ -1211,6 +1291,7 @@ export default {
                 this.saveDefinition(this.pendingSaveInfo);
                 this.pendingSaveInfo = null;
             }
+            this.clearBpmnValidationMarkers();
         },
         // Phase 4-5: AI Copilot URL fetch (placeholder)
         fetchAiCopilotUrl() {
@@ -1245,16 +1326,12 @@ export default {
         // Phase 1-3: Standalone validation (from Validate button)
         async runStandaloneValidation() {
             const results = await this.validateBpmn();
-            // Add elementId to results for focusElement
             this.consoleValidationItems = results.map((r) => ({
                 ...r,
                 elementId: r.elementId || null
             }));
             this.showValidationConsole = true;
-            // Apply visual markers on canvas
-            if (this.$refs.definitionComponent && this.$refs.definitionComponent.$refs.bpmnVue) {
-                this.$refs.definitionComponent.$refs.bpmnVue.applyValidationMarkers(this.consoleValidationItems);
-            }
+            this.applyBpmnValidationMarkersToCanvas(results);
         },
         async beforeSavePALUserTasks(info) {
             var me = this;
@@ -1454,24 +1531,40 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    // 비관리자 writable 권한 사용자는 lock 메커니즘 없이 바로 편집 모드
-                    if (!me.isAdmin && me.hasWritePermission) {
-                        me.editUser = me.userInfo?.name || '';
+                    if (!me.canManageProcess && me.hasWritePermission) {
+                        me.editUser = me.mode === 'uEngine' ? (localStorage.getItem('uid') || '') : (me.userInfo?.name || '');
                         me.lock = false;
                         me.disableChat = false;
                         me.isViewMode = false;
                         return;
                     }
 
-                    // 관리자는 기존 lock 메커니즘 사용
                     try {
-                        const lockObj = await me.getData(`lock/${defId}`, { key: 'id' });
+                        const lockObj =
+                            me.mode === 'uEngine'
+                                ? await backend.getLock(defId)
+                                : await me.getData(`lock/${defId}`, { key: 'id' });
                         if (lockObj && lockObj.id && lockObj.user_id) {
                             me.editUser = lockObj.user_id;
-                            if (lockObj.user_id == this.userInfo.name) {
+                            const currentUserId = me.mode === 'uEngine' ? localStorage.getItem('uid') : this.userInfo?.name;
+                            if (lockObj.user_id == currentUserId) {
                                 me.lock = false;
                                 me.disableChat = false;
                                 me.isViewMode = false;
+                            } else if (canBypassLock()) {
+                                try {
+                                    await backend.deleteLock(defId);
+                                    await backend.setLock({ id: defId, user_id: currentUserId });
+                                    me.editUser = currentUserId;
+                                    me.lock = false;
+                                    me.disableChat = false;
+                                    me.isViewMode = false;
+                                } catch (e) {
+                                    console.warn('[checkedLock] admin deleteLock/setLock 실패:', e);
+                                    me.lock = true;
+                                    me.disableChat = true;
+                                    me.isViewMode = true;
+                                }
                             } else {
                                 me.lock = true;
                                 me.disableChat = true;
@@ -1485,9 +1578,12 @@ export default {
                         }
                     } catch (e) {
                         console.warn('[checkedLock] Lock 확인 실패:', e);
-                        // Lock 확인 실패 시 writable 권한이 있으면 편집 허용
+                        me.editUser = '';
+                        me.lock = true;
+                        me.disableChat = true;
+                        me.isViewMode = true;
                         if (me.hasWritePermission) {
-                            me.editUser = me.userInfo?.name || '';
+                            me.editUser = me.mode === 'uEngine' ? (localStorage.getItem('uid') || '') : (me.userInfo?.name || '');
                             me.lock = false;
                             me.disableChat = false;
                             me.isViewMode = false;
@@ -1502,27 +1598,127 @@ export default {
                 context: me,
                 action: async () => {
                     if (me.lock) {
-                        // 잠금 > 수정가능 하도록
-                        // 관리자만 lock 테이블에 접근 가능 (RLS 정책)
-                        // 비관리자 writable 권한 사용자는 lock 없이 편집
-                        if (me.processDefinition && me.useLock && me.isAdmin) {
-                            try {
-                                await backend.setLock({
-                                    id: me.processDefinition.processDefinitionId,
-                                    user_id: me.userInfo.name
-                                });
-                            } catch (e) {
-                                console.warn('[toggleLock] Lock 설정 실패 (권한 없음):', e);
+                        if (me.processDefinition && me.useLock && me.canManageProcess) {
+                            if (window.$mode === 'uEngine') {
+                                try {
+                                    const userId = localStorage.getItem('uid');
+                                    await backend.setLock({
+                                        id: me.processDefinition.processDefinitionId,
+                                        user_id: userId
+                                    });
+                                    me.editUser = localStorage.getItem('uid') || '';
+                                    me.hasWritePermission = true;
+                                    me.isEditable = true;
+                                    me.disableChat = false;
+                                    me.isViewMode = false;
+                                    me.lock = false;
+                                    me.definitionChangeCount++;
+                                } catch (e) {
+                                    const status = e?.response?.status;
+                                    const is409 = status === 409;
+                                    console.warn('[toggleLock] Lock 설정 실패:', e);
+                                    if (is409) {
+                                        try {
+                                            const defId = me.processDefinition?.processDefinitionId;
+                                            const lock = defId ? await backend.getLock(defId) : null;
+                                            if (lock?.user_id) {
+                                                const lockHolder = await getKeycloakUserById(lock.user_id);
+                                                const canForce = !lockHolder || canBypassLock();
+                                                if (lockHolder && !canForce) {
+                                                    const name =
+                                                        formatKeycloakUserAsNameAndLoginId(lockHolder) ||
+                                                        lockHolder.username ||
+                                                        lock.user_id;
+                                                    me.$toast?.warning?.(
+                                                        me.$t('processDefinitionMap.lockConflict', { name }) ||
+                                                            `${name}님이 이미 수정 중입니다. 편집할 수 없습니다.`
+                                                    );
+                                                } else if (canForce) {
+                                                    await backend.deleteLock(defId);
+                                                    await backend.setLock({ id: defId, user_id: localStorage.getItem('uid') });
+                                                    me.editUser = localStorage.getItem('uid') || '';
+                                                    me.hasWritePermission = true;
+                                                    me.isEditable = true;
+                                                    me.disableChat = false;
+                                                    me.isViewMode = false;
+                                                    me.lock = false;
+                                                    me.definitionChangeCount++;
+                                                }
+                                            }
+                                        } catch (_) {
+                                            me.$toast?.warning?.(
+                                                me.$t('processDefinitionMap.lockConflict', { name: '' }) ||
+                                                    '다른 사용자가 이미 수정 중입니다. 편집할 수 없습니다.'
+                                            );
+                                        }
+                                    }
+                                }
+                            } else {
+                                try {
+                                    await backend.setLock({
+                                        id: me.processDefinition.processDefinitionId,
+                                        user_id: me.userInfo?.name
+                                    });
+                                } catch (e) {
+                                    console.warn('[toggleLock] Lock 설정 실패 (권한 없음):', e);
+                                }
+                                me.editUser = me.userInfo?.name || '';
+                                me.disableChat = false;
+                                me.isViewMode = false;
+                                me.lock = false;
+                                me.definitionChangeCount++;
                             }
+                        } else {
+                            me.editUser = me.mode === 'uEngine' ? (localStorage.getItem('uid') || '') : (me.userInfo?.name || '');
+                            me.hasWritePermission = true;
+                            me.isEditable = true;
+                            me.disableChat = false;
+                            me.isViewMode = false;
+                            me.lock = false;
+                            me.definitionChangeCount++;
                         }
-                        me.editUser = me.userInfo.name;
-                        me.disableChat = false;
-                        me.isViewMode = false;
-                        me.lock = false;
-                        me.definitionChangeCount++;
                     } else {
-                        // 현재 수정가능 > 잠금 상태로 (저장)
                         me.toggleVersionDialog(true);
+                    }
+                }
+            });
+        },
+        /** uEngine 전용: 저장 없이 잠금만 수행 (lock 해제 후 읽기 전용으로 전환) */
+        lockOnly() {
+            const me = this;
+            if (window.$mode !== 'uEngine') return;
+            me.$try({
+                context: me,
+                action: async () => {
+                    const currentUserId = localStorage.getItem('uid');
+                    const pathId = me.fullPath;
+                    const defId = me.processDefinition?.processDefinitionId;
+                    const idsToTry = [pathId, defId].filter(Boolean);
+                    const seen = new Set();
+                    for (const lockId of idsToTry) {
+                        if (!lockId || seen.has(lockId)) continue;
+                        seen.add(lockId);
+                        try {
+                            const currentLock = await backend.getLock(lockId);
+                            if (currentLock && currentLock.user_id === currentUserId) {
+                                await backend.deleteLock(lockId);
+                            }
+                        } catch (e) {
+                            console.warn('[lockOnly] getLock/deleteLock 실패 (무시):', e);
+                        }
+                    }
+                    me.editUser = '';
+                    me.lock = true;
+                    me.disableChat = true;
+                    me.isViewMode = true;
+                    const pathToLoad = me.fullPath || me.processDefinition?.processDefinitionId;
+                    if (pathToLoad) {
+                        try {
+                            const bpmn = await backend.getRawDefinition(pathToLoad, { type: 'bpmn' });
+                            if (bpmn) me.loadBPMN(bpmn);
+                        } catch (e) {
+                            console.warn('[lockOnly] BPMN 재조회 실패:', e);
+                        }
                     }
                 }
             });
@@ -1631,25 +1827,34 @@ export default {
                     let isDeleted = await backend.getRawDefinition(fullPath, { type: 'deleted' });
                     me.isDefinitionDeleted = isDeleted;
                     if (me.useLock) {
-                        // ProcessGPT 모드
                         const value = await backend.getRawDefinition(fullPath);
-                        if (value) {
+                        if (value && value.definition) {
                             me.processDefinition = value.definition;
                             me.processDefinition.processDefinitionId = value.id;
                             me.processDefinition.processDefinitionName = value.name;
                             me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
                             me.oldProcDefId = me.processDefinition.processDefinitionId;
                             me.afterLoadBpmn();
+                        } else if (me.bpmn) {
+                            me.processDefinition = await me.convertXMLToJSON(me.bpmn);
+                            if (me.processDefinition) {
+                                me.processDefinition.processDefinitionId = fullPath;
+                                me.processDefinition.processDefinitionName =
+                                    me.processDefinition.processDefinitionName || me.projectName || fullPath;
+                                if (!me.projectName) {
+                                    me.projectName = me.processDefinition.processDefinitionName;
+                                }
+                                me.oldProcDefId = me.processDefinition.processDefinitionId;
+                            }
                         }
 
-                        // 수정 권한 체크
-                        const role = localStorage.getItem('role');
-                        if (role !== 'superAdmin' && !me.isAdmin) {
-                            const permission = await backend.checkProcessPermission(lastPath);
+                        if (!me.canManageProcess) {
+                            const permissionTarget = me.mode === 'uEngine' ? fullPath : lastPath;
+                            const permission = await backend.checkProcessPermission(permissionTarget);
                             me.hasWritePermission = permission.writable || permission.isPublic;
                             if (permission.writable || permission.isPublic) {
                                 me.isEditable = true;
-                                me.checkedLock(lastPath);
+                                me.checkedLock(me.mode === 'uEngine' ? fullPath : lastPath);
                             } else {
                                 me.isEditable = false;
                                 me.lock = true;
@@ -1659,10 +1864,9 @@ export default {
                         } else {
                             me.hasWritePermission = true;
                             me.isEditable = true;
-                            me.checkedLock(lastPath);
+                            me.checkedLock(me.mode === 'uEngine' ? fullPath : lastPath);
                         }
                     } else {
-                        // uEngine 모드
                         me.isEditable = true;
                     }
                 } else if (lastPath == 'chat') {
@@ -1713,6 +1917,7 @@ export default {
                     me.disableChat = true;
                 }
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
+                me.syncDisplayedProcessDefinitionName();
             } catch (e) {
                 console.log(e);
                 alert(e);

@@ -13,7 +13,8 @@ CustomPopupMenu.$inject = ['config', 'eventBus', 'canvas'];
 
 PopupMenu.prototype._getEntries = function (target, providers) {
     var entries = {};
-    var removedEntries = ['replace-with-conditional-intermediate-catch'];
+    // bpmn-js 표준 교체 항목은 숨기지 않음 (조건부 중간 잡기 등 전체 BPMN 2.0 옵션 유지)
+    var removedEntries = [];
 
     providers.forEach((provider) => {
         if (!provider.getPopupMenuEntries) {

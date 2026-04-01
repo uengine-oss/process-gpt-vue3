@@ -82,12 +82,17 @@ export default {
     },
     async created() {
         window.$app_ = this;
-        window.addEventListener('load', () => {
+        const showScreenWhenReady = () => {
             if (window.$mode !== 'ProcessGPT') {
                 this.loadScreen = true;
             }
-        });
-
+        };
+        window.addEventListener('load', showScreenWhenReady);
+        if (document.readyState === 'complete') {
+            showScreenWhenReady();
+        } else {
+            setTimeout(showScreenWhenReady, 3000);
+        }
         // 클릭 이벤트로 스낵바 닫기
         document.addEventListener('click', this.closeSnackbarOnEvent);
     },

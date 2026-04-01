@@ -79,7 +79,7 @@
                             </div>
                         </v-card>
                     </v-menu>
-                    <v-btn v-if="isAdmin" color="primary" size="small" prepend-icon="mdi-plus" @click="showNewProcessDialog = true">
+                    <v-btn v-if="canManageProcess" color="primary" size="small" prepend-icon="mdi-plus" @click="showNewProcessDialog = true">
                         {{ $t('processArchitecture.newProcess') }}
                     </v-btn>
                 </div>
@@ -106,8 +106,9 @@
                     </v-btn>
                 </v-btn-toggle>
 
-                <!-- To-Be Toggle -->
+                <!-- To-Be Toggle (PAL 모드에서 숨김) -->
                 <v-chip
+                    v-if="!isPalMode"
                     :color="showToBe ? 'deep-purple' : 'grey'"
                     :variant="showToBe ? 'flat' : 'outlined'"
                     size="small"
@@ -233,7 +234,7 @@
                     </v-chip>
                     <!-- 도메인 추가 (PAL 모드 + 관리자) — 주변 칩과 동일 스타일 -->
                     <v-chip
-                        v-if="isAdmin && isPalMode"
+                        v-if="canManageProcess && isPalMode"
                         size="small"
                         variant="outlined"
                         color="grey"
@@ -246,8 +247,8 @@
                     </v-chip>
                 </div>
 
-                <!-- Quick Filters -->
-                <div class="quick-filters d-flex align-center flex-wrap ga-1">
+                <!-- Quick Filters (시점 전환: 공람 중, WIL - PAL 모드에서 숨김) -->
+                <div v-if="!isPalMode" class="quick-filters d-flex align-center flex-wrap ga-1">
                     <span class="text-caption text-grey mr-1">{{ $t('processArchitecture.quickFilters.label') }}:</span>
                     <v-chip
                         :color="quickFilterNeedFeedback ? 'orange' : undefined"
@@ -334,7 +335,7 @@
                     :processStatuses="processStatuses"
                     :selectedDomain="selectedDomain"
                     :showToBe="showToBe"
-                    :isAdmin="isAdmin"
+                    :isAdmin="canManageProcess"
                     :favorites="favorites"
                     @navigate="navigateToProcess"
                     @toggleFavorite="toggleFavorite"
@@ -449,6 +450,7 @@ import ProcessArchHierarchyView from './ProcessArchHierarchyView.vue';
 import NewProcessDialog from './NewProcessDialog.vue';
 import AdvancedFilterPanel from './AdvancedFilterPanel.vue';
 import type { RecentlyViewedItem } from './useProcessArchitecture';
+import { canManageProcess as hasProcessManagementAccess } from '@/utils/processManagement';
 
 const instance = getCurrentInstance()!;
 const t = (key: string) => instance.proxy!.$t(key);
@@ -483,10 +485,7 @@ const {
     advancedFilters
 } = useProcessArchitecture();
 
-const isAdmin = computed(() => {
-    const role = localStorage.getItem('role');
-    return role === 'superAdmin' || localStorage.getItem('isAdmin') === 'true';
-});
+const canManageProcess = computed(() => hasProcessManagementAccess());
 
 const isPalMode = computed(() => typeof window !== 'undefined' && !!(window as any).$pal);
 

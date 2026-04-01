@@ -1,11 +1,15 @@
 <template>
-    <div class="definition-map-wrapper">
+    <div class="definition-map-wrapper" :class="{ 'definition-map-sub': componentName === 'SubProcessDetail' }">
         <!-- 좌측: 정의체계도 -->
         <v-card
             elevation="10"
-            :style="[!$globalState.state.isZoomed ? '' : 'height:100vh;', 'width: 100%']"
-            class="is-work-height definition-map-card"
-            style="overflow: auto; flex-shrink: 0"
+            :class="['definition-map-card', componentName === 'SubProcessDetail' ? 'definition-map-card-sub' : 'is-work-height']"
+            :style="{
+                width: '100%',
+                ...(!$globalState.state.isZoomed ? {} : { height: '100vh' }),
+                overflow: componentName === 'SubProcessDetail' ? 'hidden' : 'auto',
+                flexShrink: 0
+            }"
         >
             <div v-if="mode !== 'uEngine' && !gs && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
                 <MainChatInput :agentInfo="mainChatAgentInfo" :userId="userInfo.uid || userInfo.id" @submit="handleMainChatSubmit" />
@@ -22,7 +26,7 @@
                     :class="globalIsMobile.value ? 'flex-column' : 'align-center justify-space-between'"
                     :style="{ gap: globalIsMobile.value ? '8px' : '16px' }"
                 >
-                    <!-- 첫 번째 줄: 타이틀 + 디테일 + 마켓플레이스 -->
+                    <!-- 첫 번째 줄: 타이틀 + 편집 중 표시 + 디테일 + 마켓플레이스 -->
                     <div class="d-flex align-center flex-shrink-0" :style="{ gap: globalIsMobile.value ? '8px' : '12px' }">
                         <h5 v-if="!globalIsMobile.value" class="text-h5 font-weight-semibold ma-0 flex-shrink-0">
                             {{ $t('processDefinitionMap.title') }}
@@ -31,6 +35,29 @@
                             <img src="/process-gpt-favicon.png" alt="Process GPT Favicon" style="height: 24px; margin-right: 8px" />
                             <h5 class="text-h5 font-weight-semibold ma-0">{{ $t('processDefinitionMap.mobileTitle') }}</h5>
                         </v-row>
+                        <!-- 편집 중 표시: 아무도 편집 안 하면 안 보임, 내가 편집 중이면 "편집 중", 다른 사람이면 "○○○ 님이 수정 중" -->
+                        <v-chip
+                            v-if="useLock && lock && isLockHeldByCurrentUser"
+                            size="small"
+                            density="comfortable"
+                            color="primary"
+                            variant="tonal"
+                            class="flex-shrink-0"
+                        >
+                            <Icons :icon="'pencil'" :size="14" class="mr-1" />
+                            {{ $t('processDefinitionMap.editingInProgress') }}
+                        </v-chip>
+                        <v-chip
+                            v-else-if="useLock && lock && !isLockHeldByCurrentUser"
+                            size="small"
+                            density="comfortable"
+                            color="primary"
+                            variant="tonal"
+                            class="flex-shrink-0"
+                        >
+                            <Icons :icon="'pencil'" :size="14" class="mr-1" />
+                            {{ $t('processDefinitionMap.editingUser', { name: editUserDisplayName || editUser }) }}
+                        </v-chip>
                         <DetailComponent
                             class="flex-shrink-0"
                             :title="$t('processDefinitionMap.usageGuide.title')"
@@ -48,7 +75,7 @@
                             class="rounded-pill flex-shrink-0"
                         >
                             <template v-slot:prepend>
-                                <Icons :icon="card.icon" :size="16" />
+                                <Icons :icon="card.icon" color="white" :size="16" />
                             </template>
                             {{ card.title }}
                         </v-btn>
@@ -59,24 +86,22 @@
                         :class="globalIsMobile.value ? 'justify-end flex-shrink-0' : ''"
                         style="gap: 8px; flex: 1; min-width: 0; justify-content: flex-end"
                     >
-                        <!-- 검색 기능 -->
+                        <!-- 검색 기능: 아이콘 클릭 시 입력 필드 확대 (확대 전에는 아이콘만, 테두리 없음) -->
                         <div
                             v-if="!gs"
                             class="d-flex align-center header-search overflow-hidden"
                             :class="{
-                                'header-search-expanded border border-borderColor rounded-pill': isSearchExpanded || globalIsMobile.value
+                                'header-search-expanded border border-borderColor rounded-pill': isSearchExpanded
                             }"
                         >
                             <div
-                                v-if="!globalIsMobile.value"
                                 class="header-search-icon-wrap d-flex align-center justify-center flex-shrink-0"
                                 @click="toggleSearchExpand"
                             >
                                 <Icons :icon="'magnifer-linear'" :size="20" />
                             </div>
-                            <Icons v-else :icon="'magnifer-linear'" :size="20" class="ml-3 flex-shrink-0" />
                             <v-text-field
-                                v-show="isSearchExpanded || globalIsMobile.value"
+                                v-show="isSearchExpanded"
                                 ref="searchInput"
                                 :model-value="searchInputValue"
                                 @update:model-value="searchInputValue = $event"
@@ -101,163 +126,122 @@
                             <Icons :icon="'arrow-go-back'" />
                         </v-btn>
                     </div>
-                    <!-- PC: 툴팁 + 아이콘 버튼 -->
-                    <template v-if="!globalIsMobile.value">
-                        <v-tooltip
-                            v-if="enableEdit && orphanProcessCount > 0"
-                            :text="$t('processDefinitionMap.manageOrphans') || '미분류 프로세스 관리'"
-                        >
+                    <!-- 미분류 프로세스 관리 버튼 -->
+                    <v-tooltip
+                        v-if="enableEdit && orphanProcessCount > 0"
+                        :text="$t('processDefinitionMap.manageOrphans') || '미분류 프로세스 관리'"
+                    >
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" :size="24" class="ml-3" @click="openOrphanDialog">
+                                <v-badge :content="orphanProcessCount" color="warning" overlap>
+                                    <v-icon size="20">mdi-folder-question</v-icon>
+                                </v-badge>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+
+                    <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" class="ml-3" @click="closePDM()" icon variant="text" :size="24">
+                                <Icons :icon="'close'" :size="20" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+
+                    <!-- 보기 모드(미체크아웃): 편집 시작(체크아웃) -->
+                    <v-tooltip location="bottom" v-if="useLock && !lock && canManageProcess">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
+                                <Icons :icon="'pencil'" :size="18" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.checkOut') || $t('chat.unlock') || '편집' }}</span>
+                    </v-tooltip>
+
+                    <!-- uEngine: 편집 중 잠금만 / 저장 버튼 분리 (ProcessDefinitionChat과 동일) -->
+                    <template v-if="useLock && lock && canManageProcess && isLockHeldByCurrentUser && mode === 'uEngine'">
+                        <v-tooltip location="bottom">
                             <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" icon variant="text" :size="24" class="ml-3" @click="openOrphanDialog">
-                                    <v-badge :content="orphanProcessCount" color="warning" overlap>
-                                        <v-icon size="20">mdi-folder-question</v-icon>
-                                    </v-badge>
+                                <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="lockOnlyMap">
+                                    <Icons :icon="'lock'" :size="24" />
                                 </v-btn>
                             </template>
+                            <span>{{ $t('chat.lockOnly') }}</span>
                         </v-tooltip>
-
-                        <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
+                        <v-tooltip location="bottom">
                             <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" class="ml-3" @click="closePDM()" icon variant="text" :size="24">
-                                    <Icons :icon="'close'" :size="20" />
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-
-                        <v-tooltip v-if="!gs" :text="$t('processDefinitionMap.downloadImage')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" icon variant="text" size="24" @click="capturePng">
-                                    <Icons :icon="'image-download'" />
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-
-                        <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" @click="openAlertDialog" icon variant="text" size="24">
-                                    <Icons :icon="'pencil'" :size="18" />
-                                </v-btn>
-                            </template>
-                            <span>{{ $t('processDefinitionMap.unlock') }}</span>
-                        </v-tooltip>
-
-                        <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
+                                <v-btn v-bind="props" icon variant="text" size="24" @click="openSaveConfirmDialog">
                                     <Icons :icon="'save'" :size="24" />
-                                </v-btn>
-                            </template>
-                            <span>{{ $t('processDefinitionMap.lock') }}</span>
-                        </v-tooltip>
-
-                        <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName != editUser">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
-                                    <LockIcon width="24" height="24" />
-                                </v-btn>
-                            </template>
-                            <span>{{ $t('processDefinitionMap.unlock') }}</span>
-                        </v-tooltip>
-
-                        <v-tooltip location="bottom" v-if="!useLock">
-                            <template v-slot:activator="{ props }">
-                                <v-btn
-                                    v-bind="props"
-                                    icon
-                                    variant="text"
-                                    size="24"
-                                    @click="mode === 'uEngine' ? openSaveConfirmDialog() : saveProcess()"
-                                >
-                                    <Icons :icon="'save'" />
                                 </v-btn>
                             </template>
                             <span>{{ $t('processDefinitionMap.save') }}</span>
                         </v-tooltip>
                     </template>
+                    <v-tooltip location="bottom" v-else-if="useLock && lock && canManageProcess && isLockHeldByCurrentUser">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
+                                <Icons :icon="'save'" :size="24" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.lock') }}</span>
+                    </v-tooltip>
 
-                    <!-- 모바일: 텍스트 버튼 가로 배치, 우측 정렬 -->
-                    <div v-else class="d-flex align-center ga-2" style="justify-content: flex-end">
-                        <v-btn
-                            v-if="enableEdit && orphanProcessCount > 0"
-                            @click="openOrphanDialog"
-                            color="gray"
-                            rounded="pill"
-                            variant="flat"
-                            size="small"
-                            >{{ $t('processDefinitionMap.mobileOrphanBtn') }} ({{ orphanProcessCount }})</v-btn
-                        >
+                    <!-- 다른 사용자 수정 중일 때만 표시 (편집 중이면 isLockHeldByCurrentUser=true라서 숨겨짐), 아이콘은 연필 -->
+                    <v-tooltip location="bottom" v-if="useLock && lock && canManageProcess && !isLockHeldByCurrentUser">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
+                                <Icons :icon="'pencil'" :size="18" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.lockedByOtherMessage', { name: editUserDisplayName || editUser || '' }) }}</span>
+                    </v-tooltip>
 
-                        <v-btn v-if="!gs" @click="capturePng" color="gray" rounded="pill" variant="flat" size="small">{{
-                            $t('processDefinitionMap.mobileDownloadImageBtn')
-                        }}</v-btn>
+                    <v-tooltip location="bottom" v-if="!useLock && canManageProcess">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                size="24"
+                                @click="mode === 'uEngine' ? openSaveConfirmDialog() : saveProcess()"
+                            >
+                                <Icons :icon="'save'" />
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinitionMap.save') }}</span>
+                    </v-tooltip>
 
-                        <v-btn v-if="isExecutionByProject" @click="closePDM()" color="gray" rounded="pill" variant="flat" size="small">{{
-                            $t('processDefinitionMap.mobileCloseBtn')
-                        }}</v-btn>
+                    <v-tooltip v-if="!gs" :text="$t('processDefinitionMap.downloadImage')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" size="24" @click="capturePng">
+                                <Icons :icon="'image-download'" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
 
-                        <v-btn
-                            v-if="useLock && !lock && isAdmin && !isViewMode"
-                            @click="openAlertDialog"
-                            color="primary"
-                            rounded="pill"
-                            variant="flat"
-                            size="small"
-                            >{{ $t('processDefinitionMap.mobileEditBtn') }}</v-btn
-                        >
-
-                        <v-btn
-                            v-if="useLock && lock && isAdmin && userName == editUser"
-                            @click="openAlertDialog"
-                            color="primary"
-                            rounded="pill"
-                            variant="flat"
-                            size="small"
-                            class="cp-lock"
-                            >{{ $t('processDefinitionMap.save') }}</v-btn
-                        >
-
-                        <v-btn
-                            v-if="useLock && lock && isAdmin && userName != editUser"
-                            @click="openAlertDialog"
-                            color="gray"
-                            rounded="pill"
-                            variant="flat"
-                            size="small"
-                            >{{ $t('processDefinitionMap.mobileEditBtn') }}</v-btn
-                        >
-
-                        <v-btn
-                            v-if="!useLock"
-                            @click="mode === 'uEngine' ? openSaveConfirmDialog() : saveProcess()"
-                            color="primary"
-                            rounded="pill"
-                            variant="flat"
-                            size="small"
-                            >{{ $t('processDefinitionMap.save') }}</v-btn
-                        >
-                    </div>
+                    <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" size="24" @click="closePDM()">
+                                <Icons :icon="'close'" :size="20" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
                 </div>
-
-                <!-- 편집 사용자 표시 -->
-                <span v-if="useLock && lock && userName && userName != editUser" class="text-caption text-grey-darken-1 ml-2 flex-shrink-0">
-                    {{ $t('processDefinitionMap.editingUser', { name: editUser }) }}
-                </span>
             </div>
             <!-- route path 별 컴포넌트 호출 -->
-            <div id="processMap">
+            <div id="processMap" :class="{ 'process-map-sub': componentName === 'SubProcessDetail' }">
                 <div v-if="componentName == 'ViewProcessDetails'">
                     <ViewProcessDetails class="pa-5" :value="value" :enableEdit="enableEdit" />
                 </div>
                 <div v-else-if="componentName == 'SubProcessDetail'">
-                    <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" :isAdmin="isAdmin" />
+                    <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" :isAdmin="canManageProcess" />
                 </div>
                 <div v-else>
-                    <!-- 필터 및 탭 영역: 도메인 칩 + 도메인 추가. 편집 모드면 도메인 없어도 추가 버튼 표시 -->
-                    <!-- 도메인 및 조직필터 display: none 처리 필요시 display:none 제거-->
+                    <!-- 필터 및 탭 영역 -->
+                    <!-- 도메인 및 조직필터: 도메인이 없어도 편집 모드면 도메인 추가 버튼 표시 -->
                     <div
-                        v-if="viewMode === 'proc_map' && (enableEdit || (metricsValue?.domains && metricsValue.domains.length > 0))"
+                        v-if="viewMode === 'proc_map' && ((metricsValue?.domains?.length ?? 0) > 0 || enableEdit)"
                         class="filter-tab-section glass-tab-container"
-                        :style="isPalMode ? undefined : { display: 'none' }"
                     >
                         <div class="px-6 py-3 d-flex align-center" style="gap: 16px; flex-wrap: wrap">
                             <!-- 왼쪽: 조직 필터 + 도메인 탭 -->
@@ -492,7 +476,7 @@
                                     size="42"
                                     class="mr-4"
                                 >
-                                    <Icons :icon="card.icon" :size="24" />
+                                    <Icons :icon="card.icon" :size="24" color="white" />
                                 </v-avatar>
                                 <div>
                                     <v-card-title class="text-primary font-weight-bold pb-1" style="white-space: normal; line-height: 1.2;">
@@ -603,154 +587,52 @@
         </v-dialog>
 
         <!-- 미분류 프로세스 관리 다이얼로그 -->
-        <v-dialog v-model="orphanDialog.show" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '700px'" scrollable persistent>
-            <v-card>
-                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
-                    <div class="d-flex align-center">
-                        {{ $t('processDefinitionMap.orphanManagement') || '미분류 프로세스 관리' }}
-                        <v-chip size="small" color="warning" variant="tonal" class="ml-2">{{ orphanProcesses.length }}</v-chip>
-                    </div>
-                    <v-btn variant="text" density="compact" icon @click="orphanDialog.show = false">
+        <v-dialog v-model="orphanDialog.show" max-width="700" scrollable>
+            <v-card class="rounded-lg">
+                <v-card-title class="d-flex align-center pa-4">
+                    <v-icon class="mr-2" color="warning">mdi-folder-question</v-icon>
+                    {{ $t('processDefinitionMap.orphanManagement') || '미분류 프로세스 관리' }}
+                    <v-chip size="small" color="warning" class="ml-2">{{ orphanProcesses.length }}</v-chip>
+                    <v-spacer></v-spacer>
+                    <v-btn icon variant="text" size="small" @click="orphanDialog.show = false">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-card-title>
 
-                <v-card-text class="pa-0" style="overflow-y: auto">
+                <v-divider />
+
+                <v-card-text class="pa-0" style="max-height: 400px">
                     <v-list v-if="orphanProcesses.length > 0">
-                        <template v-for="proc in orphanProcesses" :key="proc.id">
-                            <v-list-item
-                                class="orphan-process-item"
-                                :style="assignDialog.expandedId === proc.id ? 'background: rgba(var(--v-theme-primary), 0.1);' : ''"
-                            >
-                                <template #prepend>
-                                    <v-checkbox v-model="orphanDialog.selectedProcesses" :value="proc.id" hide-details density="compact" />
-                                </template>
+                        <v-list-item v-for="proc in orphanProcesses" :key="proc.id" class="orphan-process-item">
+                            <template #prepend>
+                                <v-checkbox v-model="orphanDialog.selectedProcesses" :value="proc.id" hide-details density="compact" />
+                            </template>
 
-                                <v-list-item-title style="white-space: normal; word-break: break-word">{{ proc.name }}</v-list-item-title>
-                                <v-list-item-subtitle class="text-caption" style="white-space: normal; word-break: break-all"
-                                    >ID: {{ proc.id }}</v-list-item-subtitle
-                                >
+                            <v-list-item-title>{{ proc.name }}</v-list-item-title>
+                            <v-list-item-subtitle class="text-caption">ID: {{ proc.id }}</v-list-item-subtitle>
 
-                                <template #append>
-                                    <v-btn color="gray" rounded variant="flat" size="small" @click="toggleAssignPanel(proc)">
-                                        {{
-                                            assignDialog.expandedId === proc.id
-                                                ? $t('processDefinitionMap.closeAssign')
-                                                : $t('processDefinitionMap.assignCategory')
-                                        }}
-                                    </v-btn>
-                                </template>
-                            </v-list-item>
-                            <!-- 인라인 분류 패널 -->
-                            <div
-                                v-if="assignDialog.expandedId === proc.id"
-                                class="pa-4"
-                                style="background: rgba(var(--v-theme-primary), 0.1)"
-                            >
-                                <v-select
-                                    v-model="assignDialog.selectedMega"
-                                    :items="megaProcessOptions"
-                                    :label="$t('processDefinitionMap.selectMega')"
-                                    item-title="name"
-                                    item-value="id"
-                                    return-object
-                                    variant="outlined"
-                                    density="compact"
-                                    hide-details
-                                    class="mb-3"
-                                >
-                                    <template #prepend-item>
-                                        <v-list-item @click="showNewMegaInput = true">
-                                            <template #prepend><v-icon color="primary">mdi-plus</v-icon></template>
-                                            <v-list-item-title class="text-primary">{{
-                                                $t('processDefinitionMap.createNewMega')
-                                            }}</v-list-item-title>
-                                        </v-list-item>
-                                        <v-divider class="my-1" />
-                                    </template>
-                                </v-select>
-                                <v-text-field
-                                    v-if="showNewMegaInput"
-                                    v-model="assignDialog.newMegaName"
-                                    :label="$t('processDefinitionMap.newMegaName')"
-                                    variant="outlined"
-                                    density="compact"
-                                    hide-details
-                                    class="mb-3"
-                                    @keyup.enter="createNewMega"
-                                >
-                                    <template #append-inner>
-                                        <v-btn variant="text" color="primary" size="small" @click="createNewMega">{{
-                                            $t('processDefinitionMap.createBtn')
-                                        }}</v-btn>
-                                    </template>
-                                </v-text-field>
-                                <v-select
-                                    v-model="assignDialog.selectedMajor"
-                                    :items="majorProcessOptions"
-                                    :label="$t('processDefinitionMap.selectMajor')"
-                                    item-title="name"
-                                    item-value="id"
-                                    return-object
-                                    variant="outlined"
-                                    density="compact"
-                                    hide-details
-                                    :disabled="!assignDialog.selectedMega"
-                                >
-                                    <template #prepend-item>
-                                        <v-list-item @click="showNewMajorInput = true" :disabled="!assignDialog.selectedMega">
-                                            <template #prepend><v-icon color="primary">mdi-plus</v-icon></template>
-                                            <v-list-item-title class="text-primary">{{
-                                                $t('processDefinitionMap.createNewMajor')
-                                            }}</v-list-item-title>
-                                        </v-list-item>
-                                        <v-divider class="my-1" />
-                                    </template>
-                                </v-select>
-                                <v-text-field
-                                    v-if="showNewMajorInput && assignDialog.selectedMega"
-                                    v-model="assignDialog.newMajorName"
-                                    :label="$t('processDefinitionMap.newMajorName')"
-                                    variant="outlined"
-                                    density="compact"
-                                    hide-details
-                                    class="mt-3"
-                                    @keyup.enter="createNewMajor"
-                                >
-                                    <template #append-inner>
-                                        <v-btn variant="text" color="primary" size="small" @click="createNewMajor">{{
-                                            $t('processDefinitionMap.createBtn')
-                                        }}</v-btn>
-                                    </template>
-                                </v-text-field>
-                                <div class="d-flex justify-end mt-3">
-                                    <v-btn
-                                        color="primary"
-                                        rounded="pill"
-                                        variant="flat"
-                                        size="small"
-                                        :disabled="!assignDialog.selectedMega || !assignDialog.selectedMajor"
-                                        @click="assignProcessesToCategory"
-                                        >{{ $t('processDefinitionMap.confirmAssign') }}</v-btn
-                                    >
-                                </div>
-                            </div>
-                        </template>
+                            <template #append>
+                                <v-btn variant="tonal" color="primary" size="small" @click="openAssignDialog(proc)">
+                                    {{ $t('processDefinitionMap.assignCategory') || '분류하기' }}
+                                </v-btn>
+                            </template>
+                        </v-list-item>
                     </v-list>
                     <v-alert v-else type="info" variant="tonal" class="ma-4">
-                        {{ $t('processDefinitionMap.noOrphans') }}
+                        {{ $t('processDefinitionMap.noOrphans') || '미분류 프로세스가 없습니다.' }}
                     </v-alert>
                 </v-card-text>
 
-                <v-card-actions v-if="orphanProcesses.length > 0" class="d-flex justify-end align-center pa-4">
-                    <v-btn color="gray" rounded="pill" variant="flat" size="small" @click="selectAllOrphans">
-                        {{ $t('processDefinitionMap.selectAll') }}
+                <v-divider v-if="orphanProcesses.length > 0" />
+
+                <v-card-actions v-if="orphanProcesses.length > 0" class="pa-4">
+                    <v-btn variant="text" size="small" @click="selectAllOrphans">
+                        {{ $t('common.selectAll') || '전체 선택' }}
                     </v-btn>
+                    <v-spacer></v-spacer>
                     <v-btn
-                        color="primary"
-                        rounded="pill"
                         variant="flat"
-                        size="small"
+                        color="primary"
                         :disabled="orphanDialog.selectedProcesses.length === 0"
                         @click="openBulkAssignDialog"
                     >
@@ -761,37 +643,193 @@
             </v-card>
         </v-dialog>
 
-        <!-- 분류 다이얼로그 제거됨 - 인라인 확장 패널로 대체 -->
+        <!-- 분류 이동 다이얼로그 -->
+        <v-dialog v-model="assignDialog.show" max-width="500">
+            <v-card class="rounded-lg pa-4">
+                <v-card-title class="px-0 pt-0">
+                    {{ $t('processDefinitionMap.assignToCategory') || '카테고리 지정' }}
+                </v-card-title>
+
+                <v-card-text class="px-0">
+                    <div class="text-body-2 mb-3">
+                        {{
+                            assignDialog.processList.length > 1
+                                ? `${assignDialog.processList.length}개 프로세스를 분류합니다.`
+                                : `"${assignDialog.processList[0]?.name || ''}" 프로세스를 분류합니다.`
+                        }}
+                    </div>
+
+                    <!-- Mega Process 선택 -->
+                    <v-select
+                        v-model="assignDialog.selectedMega"
+                        :items="megaProcessOptions"
+                        :label="$t('processDefinitionMap.selectMega') || 'Mega Process 선택'"
+                        item-title="name"
+                        item-value="id"
+                        return-object
+                        variant="outlined"
+                        density="comfortable"
+                        class="mb-3"
+                    >
+                        <template #prepend-item>
+                            <v-list-item @click="showNewMegaInput = true">
+                                <template #prepend>
+                                    <v-icon color="primary">mdi-plus</v-icon>
+                                </template>
+                                <v-list-item-title class="text-primary">
+                                    {{ $t('processDefinitionMap.createNewMega') || '새 Mega Process 생성' }}
+                                </v-list-item-title>
+                            </v-list-item>
+                            <v-divider class="my-2" />
+                        </template>
+                    </v-select>
+
+                    <!-- 새 Mega 입력 -->
+                    <v-text-field
+                        v-if="showNewMegaInput"
+                        v-model="assignDialog.newMegaName"
+                        :label="$t('processDefinitionMap.newMegaName') || '새 Mega Process 이름'"
+                        variant="outlined"
+                        density="comfortable"
+                        class="mb-3"
+                        @keyup.enter="createNewMega"
+                    >
+                        <template #append>
+                            <v-btn variant="text" color="primary" @click="createNewMega">
+                                {{ $t('common.create') || '생성' }}
+                            </v-btn>
+                        </template>
+                    </v-text-field>
+
+                    <!-- Major Process 선택 -->
+                    <v-select
+                        v-model="assignDialog.selectedMajor"
+                        :items="majorProcessOptions"
+                        :label="$t('processDefinitionMap.selectMajor') || 'Major Process 선택'"
+                        item-title="name"
+                        item-value="id"
+                        return-object
+                        variant="outlined"
+                        density="comfortable"
+                        :disabled="!assignDialog.selectedMega"
+                    >
+                        <template #prepend-item>
+                            <v-list-item @click="showNewMajorInput = true" :disabled="!assignDialog.selectedMega">
+                                <template #prepend>
+                                    <v-icon color="primary">mdi-plus</v-icon>
+                                </template>
+                                <v-list-item-title class="text-primary">
+                                    {{ $t('processDefinitionMap.createNewMajor') || '새 Major Process 생성' }}
+                                </v-list-item-title>
+                            </v-list-item>
+                            <v-divider class="my-2" />
+                        </template>
+                    </v-select>
+
+                    <!-- 새 Major 입력 -->
+                    <v-text-field
+                        v-if="showNewMajorInput && assignDialog.selectedMega"
+                        v-model="assignDialog.newMajorName"
+                        :label="$t('processDefinitionMap.newMajorName') || '새 Major Process 이름'"
+                        variant="outlined"
+                        density="comfortable"
+                        class="mt-3"
+                        @keyup.enter="createNewMajor"
+                    >
+                        <template #append>
+                            <v-btn variant="text" color="primary" @click="createNewMajor">
+                                {{ $t('common.create') || '생성' }}
+                            </v-btn>
+                        </template>
+                    </v-text-field>
+                </v-card-text>
+
+                <v-card-actions class="px-0 pb-0">
+                    <v-spacer></v-spacer>
+                    <v-btn variant="text" @click="assignDialog.show = false">
+                        {{ $t('common.cancel') || '취소' }}
+                    </v-btn>
+                    <v-btn
+                        color="primary"
+                        variant="flat"
+                        :disabled="!assignDialog.selectedMega || !assignDialog.selectedMajor"
+                        @click="assignProcessesToCategory"
+                    >
+                        {{ $t('common.confirm') || '확인' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 <script>
 import domtoimage from 'dom-to-image';
 import DefinitionMapList from './DefinitionMapList.vue';
+import ProcessMenu from './ProcessMenu.vue';
 import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
+import Chat from '@/components/ui/Chat.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import MetricsView from './MetricsView.vue';
 import MainChatInput from '@/components/MainChatInput.vue';
+import AgentChatActions from '@/components/AgentChatActions.vue';
 import ChatModule from '@/components/ChatModule.vue';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import BackendFactory from '@/components/api/BackendFactory';
+import { getKeycloakUserDisplayName, getKeycloakUserById } from '@/utils/keycloak';
+import { formatKeycloakUserAsNameAndLoginId } from '@/utils/definitionActorDisplay';
+import { canManageProcess as hasProcessManagementAccess, canBypassLock } from '@/utils/processManagement';
 const backend = BackendFactory.createBackend();
+/** 정의체계도 lock 리소스 ID (definition-service /definition/lock API) */
+const LOCK_RESOURCE_ID = 'lock/definition_map';
 import { processGptAgent } from '@/constants/processGptAgent';
+
+import * as jsondiff from 'jsondiffpatch';
+var jsondiffpatch = jsondiff.create({
+    objectHash: function (obj, index) {
+        return '$$index:' + index;
+    }
+});
 
 export default {
     mixins: [ChatModule],
+    provide() {
+        const self = this;
+        return {
+            /** uEngine: 담당자 저장 시 맵(this.value).proc_def_owners 동기화 — 저장 버튼 누르기 전에 덮어쓰기 방지 */
+            updateProcDefOwner(procDefId, owner) {
+                if (!self.value) return;
+                if (!Array.isArray(self.value.proc_def_owners)) self.value.proc_def_owners = [];
+                const idx = self.value.proc_def_owners.findIndex((e) => e && e.proc_def_id === procDefId);
+                const payload = { proc_def_id: procDefId, owner: owner || null };
+                if (idx >= 0) self.value.proc_def_owners[idx] = payload;
+                else self.value.proc_def_owners.push(payload);
+            },
+            /** uEngine: 권한 저장 시 맵(this.value).user_permissions 동기화 — 정의 체계도 저장 버튼으로 덮어쓰기 방지 */
+            updateUserPermission(permission) {
+                self.syncUserPermissionToMap(permission);
+            },
+            /** uEngine: 권한 삭제 시 맵(this.value).user_permissions에서 제거 */
+            deleteUserPermissionFromMap(options) {
+                self.removeUserPermissionFromMap(options);
+            }
+        };
+    },
     components: {
+        ProcessMenu,
         ViewProcessDetails,
         SubProcessDetail,
         DefinitionMapList,
         ProcessDefinitionChat,
         ProcessDefinitionMarketPlace,
+        Chat,
         DetailComponent,
         MetricsView,
-        MainChatInput
+        MainChatInput,
+        AgentChatActions
     },
     props: {
         componentName: {
@@ -817,7 +855,10 @@ export default {
         userName: null,
         lock: null,
         editUser: null,
+        editUserDisplayName: null,
         lockSubscription: null,
+        lockPollingIntervalId: null,
+        lastLockData: null,
         isForceCheckoutInProgress: false,
         alertType: '',
         alertDialog: false,
@@ -825,7 +866,7 @@ export default {
         saveConfirmDialog: false,
         saveConfirmSaving: false,
         saveConfirmMessage: '저장하시겠습니까?',
-        isAdmin: false,
+        canManageProcess: false,
         versionHistory: [],
         openConsultingDialog: false,
         ProcessPreviewMode: false,
@@ -872,20 +913,6 @@ export default {
         messages: [], // ChatModule에서 필요한 메시지 배열
         chatRoomId: 'definition-map-main', // ChatModule에서 필요한 채팅방 ID
         userInfo: {}, // ChatModule에서 필요한 사용자 정보
-        usageGuideDetails: [
-            {
-                icon: 'pencil',
-                title: 'processDefinitionMap.usageGuide.details.0.title'
-            },
-            {
-                icon: 'image-download',
-                title: 'processDefinitionMap.usageGuide.details.1.title'
-            },
-            {
-                icon: 'market',
-                title: 'processDefinitionMap.usageGuide.details.2.title'
-            }
-        ],
         generator: null,
         initialConsultingMessage: null,
         mainChatAgentInfo: {
@@ -916,7 +943,6 @@ export default {
         },
         assignDialog: {
             show: false,
-            expandedId: null,
             processList: [],
             selectedMega: null,
             selectedMajor: null,
@@ -927,20 +953,37 @@ export default {
         showNewMajorInput: false
     }),
     computed: {
-        isPalMode() {
-            return !!(window.$pal && window.$mode === 'uEngine');
-        },
         useLock() {
-            if (window.$pal && window.$mode === 'uEngine') {
-                return false;
-            }
-            if (window.$mode == 'ProcessGPT') {
+            if (window.$mode == 'ProcessGPT' || window.$mode === 'uEngine') {
                 return true;
             }
             return this.isViewMode;
         },
+        /** lock 소유자 비교용: uEngine은 uid, ProcessGPT는 userName */
+        currentUserIdForLock() {
+            return window.$mode === 'uEngine' ? localStorage.getItem('uid') : this.userName;
+        },
+        /** 현재 사용자가 lock 보유 중인지 (uid 또는 userName 일치 시 true → 편집 중엔 "다른 사용자 수정 중" 버튼 숨김) */
+        isLockHeldByCurrentUser() {
+            if (!this.editUser) return false;
+            const uid = this.currentUserIdForLock;
+            return uid === this.editUser || this.userName === this.editUser;
+        },
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        isPal() {
+            return typeof window !== 'undefined' && window.$pal;
+        },
+        // pal 모드에서는 프로세스 컨설팅·마켓플레이스 가이드 제외
+        usageGuideDetails() {
+            const all = [
+                { icon: 'pencil', title: 'processDefinitionMap.usageGuide.details.0.title' },
+                { icon: 'image-download', title: 'processDefinitionMap.usageGuide.details.1.title' },
+                { icon: 'magic', title: 'processDefinitionMap.usageGuide.details.2.title' },
+                { icon: 'market', title: 'processDefinitionMap.usageGuide.details.3.title' }
+            ];
+            return this.isPal ? all.slice(0, 2) : all;
         },
         // 미분류 프로세스 목록
         orphanProcesses() {
@@ -1009,7 +1052,7 @@ export default {
                 //     }
                 // },
                 {
-                    show: this.componentName === 'DefinitionMapList' && this.mode === 'ProcessGPT' && this.isAdmin,
+                    show: this.componentName === 'DefinitionMapList' && this.mode === 'ProcessGPT' && this.canManageProcess && !this.isPal,
                     icon: 'market',
                     title: this.$t('processDefinitionMap.marketplace'),
                     description: this.$t('processDefinitionMap.marketplaceExplanation'),
@@ -1031,8 +1074,8 @@ export default {
         actionButtons() {
             return [
                 {
-                    // 취소 후 잠금
-                    show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
+                    // 취소 후 잠금 (uEngine: editUser는 uid 기준)
+                    show: this.alertType === 'checkin' && (window.$mode === 'uEngine' ? this.currentUserIdForLock === this.editUser : (this.userName && this.userName === this.editUser)),
                     text: this.$t('processDefinitionMap.cancelCheckIn'),
                     class: 'cp-check-in',
                     action: async () => {
@@ -1053,33 +1096,55 @@ export default {
                     action: this.checkOut // 잠금 해제
                 },
                 {
-                    // 저장 후 잠금
-                    show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
+                    // 저장 후 잠금 (uEngine: editUser는 uid 기준)
+                    show: this.alertType === 'checkin' && (window.$mode === 'uEngine' ? this.currentUserIdForLock === this.editUser : (this.userName && this.userName === this.editUser)),
                     text: this.$t('processDefinitionMap.saveCheckIn'),
                     color: 'primary',
                     class: 'cp-check-in',
-                    action: () => {
-                        this.checkIn();
-                        this.saveProcess();
+                    action: async () => {
+                        const saved = await this.saveProcess();
+                        if (!saved) return;
+                        if (this.useLock) await this.checkIn();
+                        this.closeAlertDialog();
                         if (this.pendingRoute) {
                             this.pendingRoute.next();
                             this.pendingRoute = null;
+                        } else {
+                            await this.getProcessMap();
                         }
                     }
                 },
                 {
-                    show: this.alertType === 'checkin' && this.userName && this.userName !== this.editUser,
-                    text: this.$t('processDefinitionMap.confirm'),
+                    show: this.alertType === 'lockedByOther' && !canBypassLock(),
+                    text: this.$t('processDefinitionMap.close'),
                     color: 'primary',
                     class: 'cp-check-in',
+                    action: () => this.closeAlertDialog()
+                },
+                {
+                    show: this.alertType === 'lockedByOther' && canBypassLock(),
+                    text: this.$t('processDefinitionMap.forceCheckout') || '강제 체크아웃',
+                    color: 'primary',
+                    class: 'cp-check-out',
                     action: async () => {
-                        // Notify the current editor via Realtime before taking over
-                        await backend.forceCheckout('process-map', this.userName);
-                        // Wait a moment for the other user to save and release
-                        await new Promise((resolve) => setTimeout(resolve, 2000));
-                        await this.getProcessMap();
-                        this.checkOut();
+                        try {
+                            await backend.deleteLock(LOCK_RESOURCE_ID);
+                            await backend.setLock({ id: LOCK_RESOURCE_ID, user_id: this.currentUserIdForLock });
+                            this.lock = true;
+                            this.editUser = this.currentUserIdForLock;
+                            this.enableEdit = true;
+                        } catch (e) {
+                            console.warn('[forceCheckout] deleteLock/setLock 실패:', e);
+                        }
+                        this.closeAlertDialog();
                     }
+                },
+                {
+                    show: this.alertType === 'lockedByOther' && canBypassLock(),
+                    text: this.$t('processDefinitionMap.close'),
+                    variant: 'text',
+                    class: 'cp-check-in',
+                    action: () => this.closeAlertDialog()
                 },
                 {
                     show: this.alertType === 'download',
@@ -1112,6 +1177,22 @@ export default {
         }
     },
     watch: {
+        async editUser(uid) {
+            if (window.$mode === 'uEngine' && uid) {
+                const holder = await getKeycloakUserById(uid);
+                if (holder) {
+                    const label = formatKeycloakUserAsNameAndLoginId(holder);
+                    if (label) {
+                        this.editUserDisplayName = label;
+                        return;
+                    }
+                }
+                const nm = (await getKeycloakUserDisplayName(uid)).trim();
+                this.editUserDisplayName = nm && nm !== uid ? nm : uid;
+            } else {
+                this.editUserDisplayName = uid || null;
+            }
+        },
         enableEdit(newVal, oldVal) {
             if (newVal && newVal !== oldVal) {
                 this.copyValue = JSON.parse(JSON.stringify(this.value));
@@ -1139,52 +1220,50 @@ export default {
         me.$try({
             action: async () => {
                 me.userName = localStorage.getItem('userName');
-                const isAdmin = localStorage.getItem('isAdmin');
-                if (isAdmin == 'true') {
-                    me.isAdmin = true;
-                }
-
-                const [,, userInfo] = await Promise.all([
-                    me.getProcessMap(),
-                    me.getMetricsMap().then(() => me.ensureUncategorizedDomainTab()),
-                    backend.getUserInfo(),
-                    me.loadOrganizationOptions(),
-                    me.useLock ? me.checkedLock() : Promise.resolve()
-                ]);
-
-                if (!me.useLock) {
+                me.canManageProcess = hasProcessManagementAccess();
+                await me.getProcessMap();
+                await me.getMetricsMap();
+                await me.ensureUncategorizedDomainTab(); // '미분류' 탭이 없으면 추가
+                await me.loadOrganizationOptions();
+                // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
+                if (me.useLock) {
+                    await me.checkedLock();
+                } else {
+                    // uEngine
                     me.editUser = me.userName;
                     me.enableEdit = true;
                 }
 
+                // WorkAssistantGenerator 초기화 (ChatModule 스타일)
                 me.generator = new WorkAssistantGenerator(me, {
-                    isStream: false,
+                    isStream: false, // 스트리밍 비활성화 (전체 응답을 받아야 intent 파싱 가능)
                     preferredLanguage: 'Korean'
                 });
 
-                me.userInfo = userInfo;
+                // ChatModule을 위한 userInfo 설정
+                me.userInfo = await backend.getUserInfo();
             }
         });
     },
     mounted() {
         window.addEventListener('localStorageChange', (event) => {
-            if (event.detail.key === 'isAdmin') {
-                this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
+            if (['isAdmin', 'role', 'roles'].includes(event.detail.key)) {
+                this.canManageProcess = hasProcessManagementAccess();
             }
         });
 
         // Subscribe to lock table changes for force checkout notifications
         this.subscribeLockChanges();
-
-        // PAL 전용: 서브프로세스 설정(공통 모듈) 저장 시 정의체계도 저장
-        this._onSaveProcessDefinitionMap = () => this.saveProcess();
-        this.EventBus.on('saveProcessDefinitionMap', this._onSaveProcessDefinitionMap);
     },
     beforeUnmount() {
-        // Unsubscribe from lock table changes
+        // Unsubscribe from lock table changes (ProcessGPT: Supabase / uEngine: 폴링)
         if (this.lockSubscription) {
             this.lockSubscription.unsubscribe();
             this.lockSubscription = null;
+        }
+        if (this.lockPollingIntervalId) {
+            clearInterval(this.lockPollingIntervalId);
+            this.lockPollingIntervalId = null;
         }
         if (this._onSaveProcessDefinitionMap) {
             this.EventBus.off('saveProcessDefinitionMap', this._onSaveProcessDefinitionMap);
@@ -1201,10 +1280,34 @@ export default {
     },
     methods: {
         subscribeLockChanges() {
-            const supabase = window.$supabase;
-            if (!supabase || !this.useLock) return;
+            if (!this.useLock) return;
 
-            // Subscribe to lock table changes for process-map
+            // uEngine 모드: Supabase 없음 → 폴링으로 lock 상태 갱신
+            if (window.$mode === 'uEngine') {
+                this.lastLockData = null;
+                this.lockPollingIntervalId = setInterval(async () => {
+                    try {
+                        const lockObj = await backend.getLock(LOCK_RESOURCE_ID);
+                        const prev = this.lastLockData;
+                        this.lastLockData = lockObj ? { id: lockObj.id, user_id: lockObj.user_id } : null;
+                        if (prev === null && lockObj && lockObj.user_id) {
+                            this.handleLockInserted(lockObj);
+                        } else if (prev !== null && lockObj === null) {
+                            this.handleLockDeleted(prev);
+                        } else if (prev && lockObj && prev.user_id !== lockObj.user_id) {
+                            this.handleLockInserted(lockObj);
+                        }
+                    } catch (e) {
+                        console.warn('[subscribeLockChanges] uEngine lock 폴링 오류:', e);
+                    }
+                }, 8000);
+                return;
+            }
+
+            const supabase = window.$supabase;
+            if (!supabase) return;
+
+            // ProcessGPT: Supabase Realtime 구독
             this.lockSubscription = supabase
                 .channel('lock-changes')
                 .on(
@@ -1213,7 +1316,7 @@ export default {
                         event: 'UPDATE',
                         schema: 'public',
                         table: 'lock',
-                        filter: `id=eq.process-map`
+                        filter: `id=eq.${LOCK_RESOURCE_ID}`
                     },
                     (payload) => {
                         this.handleLockChange(payload.new);
@@ -1225,7 +1328,7 @@ export default {
                         event: 'DELETE',
                         schema: 'public',
                         table: 'lock',
-                        filter: `id=eq.process-map`
+                        filter: `id=eq.${LOCK_RESOURCE_ID}`
                     },
                     (payload) => {
                         this.handleLockDeleted(payload.old);
@@ -1237,7 +1340,7 @@ export default {
                         event: 'INSERT',
                         schema: 'public',
                         table: 'lock',
-                        filter: `id=eq.process-map`
+                        filter: `id=eq.${LOCK_RESOURCE_ID}`
                     },
                     (payload) => {
                         this.handleLockInserted(payload.new);
@@ -1259,31 +1362,35 @@ export default {
                 await this.handleForceCheckout(lockData.force_checkout_by);
             }
         },
-        handleLockDeleted(oldLockData) {
+        async handleLockDeleted(oldLockData) {
             // 다른 사용자가 수정을 종료했을 때 (체크인)
             // 현재 사용자가 편집 중이 아닌 경우에만 UI 업데이트
             if (!this.enableEdit) {
                 this.lock = false;
                 this.editUser = null;
 
-                // 알림 표시 (이전 편집자가 있었던 경우)
-                if (oldLockData && oldLockData.user_id && oldLockData.user_id !== this.userName) {
+                // 알림 표시 (이전 편집자가 있었던 경우) — uEngine은 uid, ProcessGPT는 userName 기준
+                const prevEditorWasOther = oldLockData && oldLockData.user_id && (window.$mode === 'uEngine' ? oldLockData.user_id !== this.currentUserIdForLock : oldLockData.user_id !== this.userName);
+                if (prevEditorWasOther) {
+                    const name = window.$mode === 'uEngine' ? await getKeycloakUserDisplayName(oldLockData.user_id) : oldLockData.user_id;
                     this.$toast.info(
-                        this.$t('processDefinitionMap.editingEnded', { name: oldLockData.user_id }) ||
-                            `${oldLockData.user_id} 님이 수정을 완료했습니다. 이제 수정할 수 있습니다.`
+                        this.$t('processDefinitionMap.editingEnded', { name }) || `${name} 님이 수정을 완료했습니다. 이제 수정할 수 있습니다.`
                     );
                 }
 
-                // 최신 데이터 로드
-                this.getProcessMap();
+                // lock 풀렸으므로 map·metrics 다시 조회하여 갱신
+                await this.getProcessMap();
+                await this.getMetricsMap();
             }
         },
         handleLockInserted(newLockData) {
             // 다른 사용자가 수정을 시작했을 때 (체크아웃)
-            // 현재 사용자가 편집 중이 아닌 경우에만 UI 업데이트
-            if (!this.enableEdit && newLockData && newLockData.user_id !== this.userName) {
+            // uEngine: user_id는 uid 기준 비교, ProcessGPT: userName 기준
+            const isOtherUser = newLockData && newLockData.user_id !== (window.$mode === 'uEngine' ? this.currentUserIdForLock : this.userName);
+            if (isOtherUser) {
                 this.lock = true;
                 this.editUser = newLockData.user_id;
+                this.enableEdit = false; // 다른 사용자가 잠금 획득 시 편집 불가
             }
         },
         async handleForceCheckout(forceCheckoutBy) {
@@ -1296,18 +1403,31 @@ export default {
                 }
                 await backend.putProcessDefinitionMap(this.value);
 
-                // 2. Show notification to user
+                // 2. Show notification to user (uEngine: Keycloak으로 표시 이름 조회)
+                const displayName = window.$mode === 'uEngine' ? await getKeycloakUserDisplayName(forceCheckoutBy) : forceCheckoutBy;
                 this.$toast.warning(
-                    this.$t('processDefinitionMap.forceCheckoutNotification', { name: forceCheckoutBy }) ||
-                        `${forceCheckoutBy} 님이 수정을 시작하여, 현재까지 작업 내용이 저장된 후 수정이 종료됩니다.`
+                    this.$t('processDefinitionMap.forceCheckoutNotification', { name: displayName || forceCheckoutBy }) ||
+                        `${displayName || forceCheckoutBy} 님이 수정을 시작하여, 현재까지 작업 내용이 저장된 후 수정이 종료됩니다.`
                 );
 
                 // 3. Exit edit mode
                 this.lock = false;
                 this.enableEdit = false;
 
-                // 4. Clear force checkout flags and transfer lock to new user
-                await backend.deleteLock('process-map');
+                // 4. uEngine 한정: 본인이 아직 lock 소유자일 때만 deleteLock (다른 사용자가 이미 가져갔으면 호출 안 함)
+                if (window.$mode === 'uEngine') {
+                    const meId = this.editUser || this.userName || localStorage.getItem('uid');
+                    try {
+                        const currentLock = await backend.getLock(LOCK_RESOURCE_ID);
+                        if (currentLock && currentLock.user_id === meId) {
+                            await backend.deleteLock(LOCK_RESOURCE_ID);
+                        }
+                    } catch (e) {
+                        console.warn('[handleForceCheckout] getLock/deleteLock 실패 (무시):', e);
+                    }
+                } else {
+                    await backend.deleteLock(LOCK_RESOURCE_ID);
+                }
 
                 // 5. Refresh the page data
                 await this.getProcessMap();
@@ -1375,13 +1495,7 @@ export default {
 
             const text = (message?.text || '').toString().trim();
             const hasImages = Array.isArray(message?.images) && message.images.length > 0;
-            const messageFiles = Array.isArray(message?.files)
-                ? message.files.filter(Boolean)
-                : message?.file
-                  ? [message.file]
-                  : [];
-            const hasFile = messageFiles.length > 0;
-            const primaryFile = messageFiles[0] || null;
+            const hasFile = !!message?.file;
 
             const roomId = this.uuid();
             const nowIso = new Date().toISOString();
@@ -1414,16 +1528,15 @@ export default {
                 name: userInfo?.username || userInfo?.name || userInfo?.email || '',
                 userName: userInfo?.username || userInfo?.name || userInfo?.email || '',
                 images: message?.images || [],
-                pdfFile: primaryFile,
-                pdfFiles: messageFiles
+                pdfFile: message?.file || null
             };
 
             await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
             // last message preview는 첨부 요약을 사용 (content는 비워둠)
-            const fileName = (primaryFile?.name || primaryFile?.fileName || '').toString();
+            const fileName = (message?.file?.name || message?.file?.fileName || '').toString();
             const preview =
                 (text || '').substring(0, 50) ||
-                (hasFile ? (messageFiles.length > 1 ? `${fileName} 외 ${messageFiles.length - 1}개` : fileName).substring(0, 50) : '') ||
+                (hasFile ? fileName.substring(0, 50) : '') ||
                 (hasImages ? `이미지 ${(message?.images || []).length || 0}장` : '');
             room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
             await backend.putObject('db://chat_rooms', room);
@@ -1437,14 +1550,11 @@ export default {
                         msgUuid,
                         text,
                         images: message?.images || [],
-                        file: primaryFile,
-                        files: messageFiles,
+                        file: message?.file || null,
                         createdAt: nowIso
                     })
                 );
-            } catch (e) {
-                // ignore
-            }
+            } catch (e) {}
 
             // definition-map 패널은 열지 않고 /chat으로 이동
             this.showFullScreenChat = false;
@@ -1646,8 +1756,10 @@ export default {
             if (this.saveConfirmSaving) return;
             this.saveConfirmSaving = true;
             try {
-                await this.saveProcess();
+                const saved = await this.saveProcess();
+                if (!saved) return; // lock으로 저장 불가 시 다이얼로그 유지
                 this.saveConfirmDialog = false;
+                if (this.useLock) await this.checkIn();
             } finally {
                 this.saveConfirmSaving = false;
             }
@@ -1665,6 +1777,7 @@ export default {
                         ...megaProc,
                         major_proc_list: majorList.map((majorProc) => ({
                             ...majorProc,
+                            domain: majorProc?.domain ?? '',
                             sub_proc_list: Array.isArray(majorProc?.sub_proc_list) ? majorProc.sub_proc_list : []
                         }))
                     };
@@ -1675,10 +1788,7 @@ export default {
         async handleMainChatSubmit(message) {
             console.log('[ProcessDefinitionMap] handleMainChatSubmit 받음:', message);
             // 파일만 있거나 텍스트만 있거나 둘 다 있는 경우 처리
-            const files = Array.isArray(message?.files) ? message.files : message?.file ? [message.file] : [];
-            const hasFiles = files.length > 0;
-            const hasImages = Array.isArray(message?.images) && message.images.length > 0;
-            if (!message || (!message.text && !hasFiles && !hasImages)) return;
+            if (!message || (!message.text && !message.file && !message.images)) return;
 
             // 메인 채팅 전송 시: process-gpt-agent(가상) + 나 로 방 생성 후 /chat으로 이동
             await this.createRoomAndNavigateFromMainChat(message);
@@ -1833,8 +1943,8 @@ export default {
             this.$emit('closePDM');
         },
         async closeMarketplaceDialog() {
-            this.openMarketplaceDialog = false;
             await this.getProcessMap();
+            this.openMarketplaceDialog = false;
         },
         async addSampleProcess() {
             if (this.mode == 'ProcessGPT') {
@@ -1952,14 +2062,41 @@ export default {
             }
         },
         async checkedLock() {
-            if (this.isAdmin) {
+            if (this.canManageProcess) {
                 this.enableEdit = false;
-                const lockObj = await backend.getLock('process-map');
+                let lockObj = null;
+                try {
+                    lockObj = await backend.getLock(LOCK_RESOURCE_ID);
+                } catch (e) {
+                    console.warn('[checkedLock] getLock 실패, lock 없음으로 처리:', e);
+                }
                 if (lockObj && lockObj.id && lockObj.user_id) {
-                    this.lock = true;
-                    this.editUser = lockObj.user_id;
-                    if (this.userName == this.editUser) {
+                    // uEngine: user_id는 uid, ProcessGPT: user_id는 userName
+                    const isMe = window.$mode === 'uEngine' ? this.currentUserIdForLock === lockObj.user_id : this.userName === lockObj.user_id;
+                    if (isMe) {
+                        this.lock = true;
+                        this.editUser = lockObj.user_id;
                         this.enableEdit = true;
+                    } else if (window.$mode === 'uEngine') {
+                        // uid로 사용자를 못 찾으면(삭제 등) 잠금 무효 처리 → 수정 가능. admin은 타인 lock도 해제 가능
+                        const lockHolder = await getKeycloakUserById(lockObj.user_id);
+                        if (lockHolder && !canBypassLock()) {
+                            this.lock = true;
+                            this.editUser = lockObj.user_id;
+                        } else {
+                            if (lockHolder && canBypassLock()) {
+                                try {
+                                    await backend.deleteLock(LOCK_RESOURCE_ID);
+                                } catch (e) {
+                                    console.warn('[checkedLock] deleteLock 실패 (무시):', e);
+                                }
+                            }
+                            this.lock = false;
+                            this.editUser = null;
+                        }
+                    } else {
+                        this.lock = true;
+                        this.editUser = lockObj.user_id;
                     }
                 } else {
                     this.lock = false;
@@ -1991,8 +2128,21 @@ export default {
             this.$router.push(`/definition-map`);
         },
         async getProcessMap() {
-            const res = await backend.getProcessDefinitionMap();
+            let res = await backend.getProcessDefinitionMap();
+            // uEngine: 권한 사용 시 읽기 권한 없는 프로세스는 체계도에 표시하지 않음 (process-manager는 전체 조회)
+            const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
+            if (isUEngine && typeof backend.checkUsePermissions === 'function' && typeof backend.filterProcDefMap === 'function') {
+                try {
+                    const usePerm = await backend.checkUsePermissions();
+                    if (usePerm && res) {
+                        res = await backend.filterProcDefMap(res);
+                    }
+                } catch (e) {
+                    console.warn('[ProcessDefinitionMap] permission filter skip:', e);
+                }
+            }
             this.value = this.normalizeProcessMap(res);
+            // 미분류 프로세스 업데이트 (항상 재계산)
             await this.updateUncategorizedProcesses();
         },
         async getMetricsMap() {
@@ -2003,9 +2153,7 @@ export default {
         async updateUncategorizedProcesses() {
             try {
                 // 1. 모든 proc_def 가져오기
-                const { data: allProcDefs } = await window.$supabase
-                    .from('proc_def')
-                    .select('id, name');
+                const allProcDefs = await backend.listDefinition();
                 if (!allProcDefs || allProcDefs.length === 0) return;
 
                 // 미분류 이름 목록
@@ -2099,6 +2247,12 @@ export default {
             const supabase = window.$supabase;
             const tenantId = window.$tenantName || 'default';
 
+            if (!supabase) {
+                this.loadingOrganizations = false;
+                this.organizationOptions = [];
+                return;
+            }
+
             try {
                 const options = [];
 
@@ -2151,6 +2305,11 @@ export default {
         async loadFilteredProcDefIds(organizationId) {
             const supabase = window.$supabase;
             const tenantId = window.$tenantName || 'default';
+
+            if (!supabase) {
+                this.filteredProcDefIds = [];
+                return;
+            }
 
             try {
                 const { data, error } = await supabase
@@ -2388,6 +2547,35 @@ export default {
             }
             return null;
         },
+        /** uEngine: 루트 맵(this.value).user_permissions에 권한 반영 — 정의 체계도 저장 시 덮어쓰기 방지 */
+        syncUserPermissionToMap(permission) {
+            if (!this.value) return;
+            if (!Array.isArray(this.value.user_permissions)) this.value.user_permissions = [];
+            let idSuffix = '';
+            if (permission.target_type === 'user') idSuffix = permission.user_id;
+            else if (permission.target_type === 'organization') idSuffix = permission.organization_id;
+            else if (permission.target_type === 'org_group') idSuffix = permission.org_group_id;
+            const id = `${permission.proc_def_id}_${idSuffix}`;
+            const payload = { ...permission, id, tenant_id: window.$tenantName };
+            const idx = this.value.user_permissions.findIndex((p) => p && p.id === id);
+            if (idx >= 0) this.value.user_permissions[idx] = payload;
+            else this.value.user_permissions.push(payload);
+        },
+        /** uEngine: 루트 맵(this.value).user_permissions에서 권한 항목 제거 */
+        removeUserPermissionFromMap(options) {
+            if (!this.value || !Array.isArray(this.value.user_permissions)) return;
+            if (options.id) {
+                this.value.user_permissions = this.value.user_permissions.filter((p) => p.id !== options.id);
+            } else {
+                if (options.match && options.match.id) {
+                    this.value.user_permissions = this.value.user_permissions.filter((p) => p.id !== options.match.id);
+                } else if (options.user_id && options.proc_def_id) {
+                    this.value.user_permissions = this.value.user_permissions.filter(
+                        (p) => !(p.user_id === options.user_id && p.proc_def_id === options.proc_def_id)
+                    );
+                }
+            }
+        },
         async putPermissions(process, userId, processList) {
             const permission = {
                 user_id: userId,
@@ -2397,11 +2585,36 @@ export default {
                 readable: true
             };
             await backend.putUserPermission(permission);
+            if (window.$mode === 'uEngine') this.syncUserPermissionToMap(permission);
         },
         async deletePermissions(process, userId) {
             await backend.deleteUserPermission({ user_id: userId, proc_def_id: process.id });
+            if (window.$mode === 'uEngine') this.removeUserPermissionFromMap({ user_id: userId, proc_def_id: process.id });
         },
         async saveProcess() {
+            if (!this.canManageProcess) return false;
+            // 저장 전 lock 확인: admin 이외만 getLock 호출 후 타인이 잡고 있으면 저장 불가
+            if (this.useLock && !canBypassLock() && typeof backend.getLock === 'function') {
+                let currentLock = null;
+                try {
+                    currentLock = await backend.getLock(LOCK_RESOURCE_ID);
+                } catch (e) {
+                    console.warn('[saveProcess] getLock 실패:', e);
+                }
+                if (currentLock && currentLock.user_id) {
+                    const meId = window.$mode === 'uEngine' ? this.currentUserIdForLock : this.userName;
+                    const isMe = meId === currentLock.user_id;
+                    if (!isMe) {
+                        const lockHolder = window.$mode === 'uEngine' ? await getKeycloakUserById(currentLock.user_id) : { id: currentLock.user_id };
+                        const name =
+                            lockHolder && window.$mode === 'uEngine'
+                                ? formatKeycloakUserAsNameAndLoginId(lockHolder) || lockHolder.username || currentLock.user_id
+                                : currentLock.user_id || '';
+                        this.$toast?.warning?.(this.$t('processDefinitionMap.lockConflict', { name }) || `${name}님이 이미 수정 중입니다. 저장할 수 없습니다.`);
+                        return false;
+                    }
+                }
+            }
             // 저장 전에 미분류 Mega 제거 (미분류는 저장하지 않음, 로드 시 항상 재계산)
             const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
             this.value.mega_proc_list = this.value.mega_proc_list.filter(
@@ -2416,37 +2629,202 @@ export default {
             await backend.putProcessDefinitionMap(this.normalizeProcessMap(this.value));
             await this.getProcessMap(); // 미분류 재계산 포함
             this.closeAlertDialog();
+            return true;
+        },
+        /** uEngine 전용: 저장 없이 잠금만 수행 (lock 해제 후 읽기 전용으로 전환) */
+        async lockOnlyMap() {
+            if (!this.canManageProcess) return;
+            if (window.$mode !== 'uEngine') return;
+            const meId = this.editUser || this.userName || localStorage.getItem('uid');
+            try {
+                const currentLock = await backend.getLock(LOCK_RESOURCE_ID);
+                if (currentLock && currentLock.user_id === meId) {
+                    await backend.deleteLock(LOCK_RESOURCE_ID);
+                }
+            } catch (e) {
+                console.warn('[lockOnlyMap] getLock/deleteLock 실패 (무시):', e);
+            }
+            this.lock = false;
+            this.enableEdit = false;
+            this.editUser = null;
+            await this.getProcessMap();
+            await this.getMetricsMap();
         },
         async checkIn() {
+            if (!this.canManageProcess) return;
             const isConnected = await backend.checkDBConnection();
             if (!isConnected) {
                 this.alertDialog = true;
                 this.alertMessage = this.$t('processDefinitionMap.checkInDBError');
                 this.alertType = 'download';
             } else {
+                if (this.useLock) {
+                    // uEngine 한정: 다른 사람이 이미 lock을 풀어놨으면 해제하지 않음
+                    if (window.$mode === 'uEngine') {
+                        let currentLock = null;
+                        try {
+                            currentLock = await backend.getLock(LOCK_RESOURCE_ID);
+                        } catch (e) {
+                            console.warn('[checkIn] getLock 실패:', e);
+                        }
+                        const meId = this.editUser || this.userName || localStorage.getItem('uid');
+                        if (currentLock == null || !currentLock.user_id) {
+                            this.$toast?.warning?.(this.$t('processDefinitionMap.lockAlreadyReleased') || '이미 다른 사용자가 잠금을 해제했습니다.');
+                            this.lock = false;
+                            this.enableEdit = false;
+                            this.editUser = null;
+                            this.closeAlertDialog();
+                            await this.getProcessMap();
+                            await this.getMetricsMap();
+                            return;
+                        }
+                        if (currentLock.user_id !== meId) {
+                            // id로 검색된 사용자가 있을 경우에만 lock 풀기 막기 (삭제/없는 사용자면 풀기 허용)
+                            const lockHolder = window.$mode === 'uEngine' ? await getKeycloakUserById(currentLock.user_id) : { id: currentLock.user_id };
+                            if (lockHolder && !canBypassLock()) {
+                                const name =
+                                    window.$mode === 'uEngine'
+                                        ? formatKeycloakUserAsNameAndLoginId(lockHolder) || lockHolder.username || currentLock.user_id
+                                        : currentLock.user_id;
+                                this.$toast?.warning?.(this.$t('processDefinitionMap.lockHeldByOther', { name }) || `${name}님이 잠금을 보유 중입니다. 해제할 수 없습니다.`);
+                                this.lock = true;
+                                this.editUser = currentLock.user_id;
+                                this.enableEdit = false;
+                                this.closeAlertDialog();
+                                return;
+                            }
+                            // admin은 타인 lock 해제 가능, 사용자를 id로 찾지 못한 경우(삭제 등): 막지 않고 deleteLock 진행
+                        }
+                    }
+                    try {
+                        await backend.deleteLock(LOCK_RESOURCE_ID);
+                    } catch (e) {
+                        console.warn('[checkIn] deleteLock 실패 (무시):', e);
+                    }
+                }
                 this.lock = false;
                 this.enableEdit = false;
-                if (this.useLock) {
-                    await backend.deleteLock('process-map');
-                }
+                this.editUser = null;
                 this.closeAlertDialog();
+                await this.getProcessMap();
+                await this.getMetricsMap();
             }
         },
         async checkOut() {
+            if (!this.canManageProcess) return;
             const isConnected = await backend.checkDBConnection();
             if (!isConnected) {
                 alert(this.$t('processDefinitionMap.checkOutDBError'));
+                this.closeAlertDialog();
+                return;
+            }
+            if (this.useLock && (this.userName != null && this.userName !== undefined || (window.$mode === 'uEngine' && this.currentUserIdForLock))) {
+                // checkout 버튼 누를 때도 잠금 상태 한 번 확인
+                let currentLock = null;
+                try {
+                    currentLock = await backend.getLock(LOCK_RESOURCE_ID);
+                } catch (e) {
+                    console.warn('[checkOut] getLock 실패:', e);
+                }
+                if (currentLock && currentLock.user_id) {
+                    const isMe = window.$mode === 'uEngine' ? this.currentUserIdForLock === currentLock.user_id : this.userName === currentLock.user_id;
+                    if (!isMe) {
+                        if (window.$mode === 'uEngine') {
+                            const lockHolder = await getKeycloakUserById(currentLock.user_id);
+                            // process-manager는 타인 lock 시 편집 불가. admin은 deleteLock 후 setLock으로 강제 체크아웃 가능
+                            if (lockHolder && !canBypassLock()) {
+                                const name =
+                                    formatKeycloakUserAsNameAndLoginId(lockHolder) || lockHolder.username || currentLock.user_id;
+                                this.$toast?.warning?.(this.$t('processDefinitionMap.lockConflict', { name }) || `${name}님이 이미 수정 중입니다. 편집할 수 없습니다.`);
+                                this.lock = true;
+                                this.editUser = currentLock.user_id;
+                                this.enableEdit = false;
+                                this.closeAlertDialog();
+                                return;
+                            }
+                            if (canBypassLock() && lockHolder) {
+                                try {
+                                    await backend.deleteLock(LOCK_RESOURCE_ID);
+                                } catch (e) {
+                                    console.warn('[checkOut] deleteLock 실패 (무시):', e);
+                                }
+                            } else if (!lockHolder) {
+                                try {
+                                    await backend.deleteLock(LOCK_RESOURCE_ID);
+                                } catch (e) {
+                                    console.warn('[checkOut] deleteLock 실패 (무시):', e);
+                                }
+                            }
+                        } else {
+                            this.$toast?.warning?.(this.$t('processDefinitionMap.lockConflict', { name: currentLock.user_id }) || `${currentLock.user_id}님이 이미 수정 중입니다. 편집할 수 없습니다.`);
+                            this.lock = true;
+                            this.editUser = currentLock.user_id;
+                            this.enableEdit = false;
+                            this.closeAlertDialog();
+                            return;
+                        }
+                    }
+                }
+                // uEngine 한정: setLock은 uid 기준, 성공 시에만 편집 모드, 409 시 메시지 표시
+                if (window.$mode === 'uEngine') {
+                    const uid = this.currentUserIdForLock;
+                    if (!uid) {
+                        this.$toast?.warning?.(this.$t('processDefinitionMap.lockSetFailed') || '잠금 설정에 실패했습니다. 다시 시도해 주세요.');
+                        return;
+                    }
+                    try {
+                        this.editUser = uid;
+                        await backend.setLock({ id: LOCK_RESOURCE_ID, user_id: this.editUser });
+                        this.lock = true;
+                        this.enableEdit = true;
+                    } catch (e) {
+                        const status = e?.response?.status;
+                        const is409 = status === 409;
+                        console.warn('[checkOut] setLock 실패:', e);
+                        if (is409) {
+                            try {
+                                const currentLock = await backend.getLock(LOCK_RESOURCE_ID);
+                                if (currentLock?.user_id) {
+                                    const lockHolder = await getKeycloakUserById(currentLock.user_id);
+                                    if (lockHolder) {
+                                        const name =
+                                            formatKeycloakUserAsNameAndLoginId(lockHolder) || lockHolder.username || currentLock.user_id;
+                                        this.$toast?.warning?.(this.$t('processDefinitionMap.lockConflict', { name }) || `${name}님이 이미 수정 중입니다. 편집할 수 없습니다.`);
+                                        this.lock = true;
+                                        this.editUser = currentLock.user_id;
+                                        this.enableEdit = false;
+                                    } else {
+                                        await backend.deleteLock(LOCK_RESOURCE_ID);
+                                        await backend.setLock({ id: LOCK_RESOURCE_ID, user_id: this.editUser });
+                                        this.lock = true;
+                                        this.enableEdit = true;
+                                    }
+                                } else {
+                                    await backend.setLock({ id: LOCK_RESOURCE_ID, user_id: this.editUser });
+                                    this.lock = true;
+                                    this.enableEdit = true;
+                                }
+                            } catch (_) {
+                                this.$toast?.warning?.(this.$t('processDefinitionMap.lockConflict', { name: '' }) || '다른 사용자가 이미 수정 중입니다. 편집할 수 없습니다.');
+                            }
+                        } else {
+                            this.$toast?.warning?.(this.$t('processDefinitionMap.lockSetFailed') || '잠금 설정에 실패했습니다. 다시 시도해 주세요.');
+                        }
+                    }
+                } else {
+                    this.lock = true;
+                    this.enableEdit = true;
+                    this.editUser = this.userName;
+                    try {
+                        await backend.setLock({ id: LOCK_RESOURCE_ID, user_id: this.editUser });
+                    } catch (e) {
+                        console.warn('[checkOut] setLock 실패:', e);
+                        this.$toast?.warning?.(this.$t('processDefinitionMap.lockSetFailed') || '잠금 설정에 실패했습니다. 다시 시도해 주세요.');
+                    }
+                }
             } else {
                 this.lock = true;
                 this.enableEdit = true;
-                if (this.useLock && this.userName && this.userName != undefined) {
-                    this.editUser = this.userName;
-                    let lockObj = {
-                        id: 'process-map',
-                        user_id: this.editUser
-                    };
-                    await backend.setLock(lockObj);
-                }
             }
             this.closeAlertDialog();
         },
@@ -2462,24 +2840,52 @@ export default {
         },
         async openAlertDialog() {
             var me = this;
+            if (!me.canManageProcess) return;
             me.$try({
                 context: me,
                 action: async () => {
                     if (me.useLock) {
-                        // GPT 모드인 경우
-                        const lockObj = await backend.getLock('process-map');
+                        let lockObj = null;
+                        try {
+                            lockObj = await backend.getLock(LOCK_RESOURCE_ID);
+                        } catch (e) {
+                            console.warn('[openAlertDialog] getLock 실패, lock 없음으로 처리:', e);
+                        }
                         if (lockObj && lockObj.id && lockObj.user_id) {
-                            me.lock = true;
                             me.editUser = lockObj.user_id;
-                            if (me.editUser == me.userName) {
+                            const isMe = window.$mode === 'uEngine' ? me.currentUserIdForLock === me.editUser : me.editUser === me.userName;
+                            if (isMe) {
+                                me.lock = true;
                                 me.alertDialog = true;
                                 me.alertMessage = this.$t('processDefinitionMap.checkInMessage');
+                                me.alertType = 'checkin';
                             } else {
-                                me.alertDialog = true;
-                                me.alertMessage = this.$t('processDefinitionMap.forcedCheckOutMessage', { name: me.editUser });
-                                me.enableEdit = false;
+                                const lockHolder = window.$mode === 'uEngine' ? await getKeycloakUserById(lockObj.user_id) : { id: lockObj.user_id };
+                                if (lockHolder) {
+                                    me.lock = true;
+                                    me.alertDialog = true;
+                                    const displayName =
+                                        window.$mode === 'uEngine'
+                                            ? formatKeycloakUserAsNameAndLoginId(lockHolder) || lockHolder.username || lockObj.user_id
+                                            : lockObj.user_id;
+                                    me.alertMessage = this.$t('processDefinitionMap.lockedByOtherMessage', { name: displayName });
+                                    me.enableEdit = false;
+                                    me.alertType = 'lockedByOther';
+                                    // admin은 강제 체크아웃 버튼으로 take over 가능 (actionButtons에서 처리)
+                                } else {
+                                    try {
+                                        await backend.deleteLock(LOCK_RESOURCE_ID);
+                                    } catch (e) {
+                                        console.warn('[openAlertDialog] deleteLock 실패 (무시):', e);
+                                    }
+                                    me.lock = false;
+                                    me.enableEdit = false;
+                                    me.editUser = null;
+                                    me.alertDialog = true;
+                                    me.alertMessage = this.$t('processDefinitionMap.checkOutMessage');
+                                    me.alertType = 'checkout';
+                                }
                             }
-                            me.alertType = 'checkin';
                         } else {
                             me.lock = false;
                             me.enableEdit = false;
@@ -2565,22 +2971,14 @@ export default {
          * 단일 프로세스 분류 다이얼로그 열기
          */
         openAssignDialog(process) {
-            this.toggleAssignPanel(process);
-        },
-        toggleAssignPanel(proc) {
-            if (!proc || this.assignDialog.expandedId === proc.id) {
-                this.assignDialog.expandedId = null;
-                this.assignDialog.processList = [];
-            } else {
-                this.assignDialog.expandedId = proc.id;
-                this.assignDialog.processList = [proc];
-            }
+            this.assignDialog.processList = [process];
             this.assignDialog.selectedMega = null;
             this.assignDialog.selectedMajor = null;
             this.assignDialog.newMegaName = '';
             this.assignDialog.newMajorName = '';
             this.showNewMegaInput = false;
             this.showNewMajorInput = false;
+            this.assignDialog.show = true;
         },
 
         /**
@@ -2695,11 +3093,12 @@ export default {
                 });
             }
 
-            // 3. 저장
-            await this.saveProcess();
+            // 3. 저장 (lock으로 저장 불가 시 다이얼로그 유지)
+            const saved = await this.saveProcess();
+            if (!saved) return;
 
-            // 4. 패널 닫기
-            this.assignDialog.expandedId = null;
+            // 4. 다이얼로그 닫기
+            this.assignDialog.show = false;
             this.orphanDialog.selectedProcesses = this.orphanDialog.selectedProcesses.filter((id) => !processIds.includes(id));
 
             // 5. 토스트 메시지
@@ -2895,9 +3294,41 @@ export default {
     height: 100%;
 }
 
+/* 서브 경로(/definition-map/sub): 불필요한 세로 스크롤 방지 */
+.definition-map-wrapper.definition-map-sub {
+    overflow: hidden;
+    min-height: 0;
+}
+
 .definition-map-card {
     flex: 1;
     min-width: 0;
+}
+
+.definition-map-card.definition-map-card-sub {
+    height: 100%;
+    min-height: 0;
+}
+
+#processMap.process-map-sub {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#processMap.process-map-sub > div {
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#processMap.process-map-sub .is-work-height {
+    height: 100% !important;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* 채팅 리사이저 */

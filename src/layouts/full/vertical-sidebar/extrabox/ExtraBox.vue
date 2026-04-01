@@ -1,6 +1,5 @@
 <template>
-    <!-- 사이드바 남은 크레딧 표시 -->
-    <!-- <v-menu v-if="!gs" location="top" offset="8" open-on-hover>
+    <v-menu v-if="!gs && !isPal" location="top" offset="8" open-on-hover>
         <template v-slot:activator="{ props }">
             <div class="credit-badge credit-badge-full" v-bind="props" style="cursor: pointer; margin-bottom: 5px">
                 <span class="credit-badge-icon">🔋</span>
@@ -22,7 +21,7 @@
                 <a href="/usage" class="credit-menu-link">사용 현황 보기 <v-icon size="14">mdi-chevron-right</v-icon></a>
             </div>
         </div>
-    </v-menu> -->
+    </v-menu>
 
     <v-sheet rounded="md" color="lightprimary" class="pa-4 ExtraBox hide-menu">
         <div class="d-flex align-center justify-space-between">
@@ -73,6 +72,9 @@ export default defineComponent({
     computed: {
         gs() {
             return window.$gs;
+        },
+        isPal() {
+            return !!window.$pal;
         },
         userRole() {
             return this.isAdmin ? 'Admin' : '';
