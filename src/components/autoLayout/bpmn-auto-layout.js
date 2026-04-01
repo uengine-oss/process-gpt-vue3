@@ -703,6 +703,269 @@
             const modeling = bpmnModeler.get('modeling');
             const connectionDocking = bpmnModeler.get('connectionDocking');
 
+            function isFlowObstacleShape(element) {
+                if (!element || element.waypoints || element.labelTarget || !element.businessObject) return false;
+
+                const type = element.businessObject.$type || '';
+                if (!type.startsWith('bpmn:')) return false;
+
+                const ignoredTypes = new Set([
+                    'bpmn:Lane',
+                    'bpmn:Participant',
+                    'bpmn:Process',
+                    'bpmn:Collaboration',
+                    'bpmn:TextAnnotation',
+                    'bpmn:Group',
+                    'bpmn:DataObjectReference',
+                    'bpmn:DataStoreReference'
+                ]);
+
+                return !ignoredTypes.has(type) && typeof element.x === 'number' && typeof element.y === 'number';
+            }
+
+            function pointInRect(point, rect) {
+                return point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
+            }
+
+            // 샘플링 방식으로 선분-사각형 충돌 검사 (대각/직교 모두 대응)
+            function segmentIntersectsRect(a, b, rect) {
+                if (!a || !b) return false;
+                if (pointInRect(a, rect) || pointInRect(b, rect)) return true;
+
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const length = Math.max(Math.abs(dx), Math.abs(dy));
+                const steps = Math.max(1, Math.ceil(length / 8));
+
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    const p = {
+                        x: a.x + dx * t,
+                        y: a.y + dy * t
+                    };
+                    if (pointInRect(p, rect)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            function buildFlowObstacles(elements, sourceId, targetId, margin = 14) {
+                return elements
+                    .filter((el) => isFlowObstacleShape(el) && el.id !== sourceId && el.id !== targetId)
+                    .map((el) => ({
+                        id: el.id,
+                        left: el.x - margin,
+                        right: el.x + el.width + margin,
+                        top: el.y - margin,
+                        bottom: el.y + el.height + margin
+                    }));
+            }
+
+            function getCollidingObstacles(waypoints, obstacles) {
+                if (!Array.isArray(waypoints) || waypoints.length < 2 || !Array.isArray(obstacles) || obstacles.length === 0) {
+                    return [];
+                }
+
+                const collidedIds = new Set();
+                for (let i = 0; i < waypoints.length - 1; i++) {
+                    const p1 = waypoints[i];
+                    const p2 = waypoints[i + 1];
+                    obstacles.forEach((obs) => {
+                        if (!collidedIds.has(obs.id) && segmentIntersectsRect(p1, p2, obs)) {
+                            collidedIds.add(obs.id);
+                        }
+                    });
+                }
+
+                return obstacles.filter((obs) => collidedIds.has(obs.id));
+            }
+
+            function pathHasNoCollision(path, obstacles) {
+                return getCollidingObstacles(path, obstacles).length === 0;
+            }
+
+            function getLaneAncestor(element, elements) {
+                let cur = element;
+                while (cur) {
+                    const type = cur.businessObject && cur.businessObject.$type;
+                    if (type === 'bpmn:Lane') return cur;
+                    cur = cur.parent;
+                }
+
+                if (!element || !element.businessObject || !Array.isArray(elements)) return null;
+
+                // 1) BPMN lane flowNodeRef 기반 매칭
+                const boId = element.businessObject.id;
+                const laneByRef = elements.find((el) => {
+                    return (
+                        el &&
+                        el.businessObject &&
+                        el.businessObject.$type === 'bpmn:Lane' &&
+                        Array.isArray(el.businessObject.flowNodeRef) &&
+                        el.businessObject.flowNodeRef.some((ref) => ref && ref.id === boId)
+                    );
+                });
+                if (laneByRef) return laneByRef;
+
+                // 2) 좌표 포함 기반 매칭 (부모 참조가 누락된 모델 호환)
+                const laneByGeometry = elements.find((el) => {
+                    return el && el.businessObject && el.businessObject.$type === 'bpmn:Lane' && isElementInLane(element, el);
+                });
+                if (laneByGeometry) return laneByGeometry;
+
+                return null;
+            }
+
+            function expandLaneFamilyToIncludeY(lane, targetY, modeling, elements, padding = 20) {
+                if (!lane || typeof targetY !== 'number') return;
+
+                const currentTop = lane.y;
+                const currentBottom = lane.y + lane.height;
+                const desiredTop = Math.min(currentTop, targetY - padding);
+                const desiredBottom = Math.max(currentBottom, targetY + padding);
+
+                if (Math.abs(desiredTop - currentTop) < 0.5 && Math.abs(desiredBottom - currentBottom) < 0.5) {
+                    return;
+                }
+
+                const resizeVertical = (shape, newTop, newBottom) => {
+                    try {
+                        modeling.resizeShape(shape, {
+                            x: shape.x,
+                            y: newTop,
+                            width: shape.width,
+                            height: Math.max(40, newBottom - newTop)
+                        });
+                    } catch (e) {
+                        console.warn('레인 높이 확장 실패:', shape && shape.id, e);
+                    }
+                };
+
+                const parent = lane.parent;
+                const parentType = parent && parent.businessObject && parent.businessObject.$type;
+
+                if (parent && parentType === 'bpmn:Participant') {
+                    const siblingLanes = elements.filter((el) => {
+                        return (
+                            el &&
+                            el.parent &&
+                            el.parent.id === parent.id &&
+                            el.businessObject &&
+                            el.businessObject.$type === 'bpmn:Lane'
+                        );
+                    });
+
+                    siblingLanes.forEach((sibling) => resizeVertical(sibling, desiredTop, desiredBottom));
+                    resizeVertical(parent, desiredTop, desiredBottom);
+                } else {
+                    resizeVertical(lane, desiredTop, desiredBottom);
+                }
+            }
+
+            function clampToLaneY(lane, y, margin = 14) {
+                const top = lane.y + margin;
+                const bottom = lane.y + lane.height - margin;
+                return Math.min(bottom, Math.max(top, y));
+            }
+
+            function buildReroutedPath(start, end, obstacles, laneConstraint) {
+                if (!start || !end || !obstacles || obstacles.length === 0) return null;
+
+                const dx = Math.abs(end.x - start.x);
+                const dy = Math.abs(end.y - start.y);
+                const isMainlyHorizontal = dx >= dy;
+                const pad = 24;
+
+                if (isMainlyHorizontal) {
+                    const minTop = Math.min(...obstacles.map((o) => o.top));
+                    const maxBottom = Math.max(...obstacles.map((o) => o.bottom));
+                    const preferredY = (start.y + end.y) / 2;
+                    const candidates = [minTop - pad, maxBottom + pad];
+                    candidates.sort((a, b) => Math.abs(a - preferredY) - Math.abs(b - preferredY));
+
+                    for (let detourY of candidates) {
+                        if (laneConstraint && laneConstraint.lane) {
+                            expandLaneFamilyToIncludeY(
+                                laneConstraint.lane,
+                                detourY,
+                                laneConstraint.modeling,
+                                laneConstraint.elements
+                            );
+                            detourY = clampToLaneY(laneConstraint.lane, detourY);
+                        }
+
+                        const candidate = [
+                            start,
+                            { x: start.x, y: detourY },
+                            { x: end.x, y: detourY },
+                            end
+                        ];
+                        if (pathHasNoCollision(candidate, obstacles)) {
+                            return candidate;
+                        }
+                    }
+                } else {
+                    const minLeft = Math.min(...obstacles.map((o) => o.left));
+                    const maxRight = Math.max(...obstacles.map((o) => o.right));
+                    const preferredX = (start.x + end.x) / 2;
+                    const candidates = [minLeft - pad, maxRight + pad];
+                    candidates.sort((a, b) => Math.abs(a - preferredX) - Math.abs(b - preferredX));
+
+                    for (const detourX of candidates) {
+                        const candidate = [
+                            start,
+                            { x: detourX, y: start.y },
+                            { x: detourX, y: end.y },
+                            end
+                        ];
+                        if (pathHasNoCollision(candidate, obstacles)) {
+                            return candidate;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            function rerouteConnectionAvoidingShapes(flow, elements, modeling) {
+                if (!flow || !Array.isArray(flow.waypoints) || flow.waypoints.length < 2 || !flow.source || !flow.target) {
+                    return;
+                }
+
+                const obstacles = buildFlowObstacles(elements, flow.source.id, flow.target.id);
+                if (obstacles.length === 0) return;
+
+                const collisions = getCollidingObstacles(flow.waypoints, obstacles);
+                if (collisions.length === 0) return;
+
+                const start = flow.waypoints[0];
+                const end = flow.waypoints[flow.waypoints.length - 1];
+                let laneConstraint = null;
+                const sourceLane = getLaneAncestor(flow.source, elements);
+                const targetLane = getLaneAncestor(flow.target, elements);
+
+                // 같은 레인 내부 연결선은 레인 밖으로 나가지 않도록 강제
+                if (sourceLane && targetLane && sourceLane.id === targetLane.id) {
+                    laneConstraint = {
+                        lane: sourceLane,
+                        modeling,
+                        elements
+                    };
+                }
+
+                const rerouted = buildReroutedPath(start, end, collisions, laneConstraint);
+
+                if (rerouted && rerouted.length >= 2) {
+                    try {
+                        modeling.updateWaypoints(flow, rerouted);
+                    } catch (e) {
+                        console.warn('시퀀스 플로우 충돌 회피 라우팅 실패:', flow.id, e);
+                    }
+                }
+            }
+
             // 노드의 테두리(모서리가 아닌 가장자리 포함)에 가장 가까운 점으로 스냅시키는 헬퍼
             function snapPointToElementCorner(point, element) {
                 if (!point || !element || typeof element.x !== 'number' || typeof element.y !== 'number') {
@@ -947,6 +1210,8 @@
             sequenceFlows.forEach((flow) => {
                 try {
                     modeling.layoutConnection(flow);
+                    // layoutConnection 이후에도 연결선이 노드를 관통하면 직교 우회 경로로 보정
+                    rerouteConnectionAvoidingShapes(flow, elements, modeling);
                 } catch (e) {
                     console.warn('시퀀스 플로우 레이아웃 재적용 실패:', flow.id, e);
                 }

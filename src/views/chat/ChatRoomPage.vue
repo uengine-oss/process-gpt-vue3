@@ -3979,7 +3979,9 @@ export default {
                             processCount,
                             savedProcesses: resultData.saved_processes || [],
                             generatedBpmns,
-                            taskId
+                            taskId,
+                            savedSkills: resultData.saved_skills || resultData.savedSkills || [],
+                            savedAgents: resultData.saved_agents || resultData.savedAgents || []
                         };
                         if (me.currentChatRoom?.id === targetRoomId) {
                             me.messages.push(msgObj);
@@ -4205,7 +4207,9 @@ export default {
                 processCount,
                 savedProcesses,
                 generatedBpmns: progressState.generatedBpmns,
-                taskId
+                taskId,
+                savedSkills: resultData.saved_skills || resultData.savedSkills || [],
+                savedAgents: resultData.saved_agents || resultData.savedAgents || []
             };
 
             if (me.currentChatRoom?.id === targetRoomId) {

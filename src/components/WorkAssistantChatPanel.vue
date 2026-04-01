@@ -1622,7 +1622,10 @@ export default {
                         msgObj.pdf2bpmnResult = {
                             processCount: processCount,
                             savedProcesses: resultData.saved_processes || [],
-                            generatedBpmns: generatedBpmns
+                            generatedBpmns: generatedBpmns,
+                            taskId: resultData.task_id || resultData.taskId || resultData.todo_id || resultData.id || '',
+                            savedSkills: resultData.saved_skills || resultData.savedSkills || [],
+                            savedAgents: resultData.saved_agents || resultData.savedAgents || []
                         };
                         // UI에는 현재 방일 때만 추가, DB에는 항상 저장
                         if (me.currentRoomId === targetRoomId) {
@@ -2048,7 +2051,10 @@ export default {
             msgObj.pdf2bpmnResult = {
                 processCount: processCount,
                 savedProcesses: savedProcesses,
-                generatedBpmns: progressState.generatedBpmns
+                generatedBpmns: progressState.generatedBpmns,
+                taskId: resultData.task_id || resultData.taskId || resultData.todo_id || resultData.id || '',
+                savedSkills: resultData.saved_skills || resultData.savedSkills || [],
+                savedAgents: resultData.saved_agents || resultData.savedAgents || []
             };
 
             // UI에는 현재 방일 때만 추가, DB에는 항상 저장

@@ -1343,9 +1343,7 @@
                                                                         <!-- PDF2BPMN 결과 카드 -->
                                                                         <div
                                                                             v-if="
-                                                                                message.pdf2bpmnResult &&
-                                                                                message.pdf2bpmnResult.generatedBpmns &&
-                                                                                message.pdf2bpmnResult.generatedBpmns.length > 0
+                                                                                hasPdf2bpmnResultSections(message)
                                                                             "
                                                                             class="pdf2bpmn-result-container mt-3"
                                                                         >
@@ -1354,9 +1352,7 @@
                                                                                     >mdi-check-circle</v-icon
                                                                                 >
                                                                                 <span class="text-caption font-weight-bold">
-                                                                                    생성된 BPMN 프로세스 ({{
-                                                                                        message.pdf2bpmnResult.generatedBpmns.length
-                                                                                    }}개)
+                                                                                    PDF2BPMN 생성 결과
                                                                                 </span>
                                                                                 <v-spacer />
                                                                                 <v-btn
@@ -1374,7 +1370,23 @@
                                                                                     전체 그래프
                                                                                 </v-btn>
                                                                             </div>
-                                                                            <div class="d-flex flex-column" style="gap: 8px">
+                                                                            <div
+                                                                                v-if="
+                                                                                    message.pdf2bpmnResult.generatedBpmns &&
+                                                                                    message.pdf2bpmnResult.generatedBpmns.length > 0
+                                                                                "
+                                                                                class="text-caption font-weight-bold mb-1"
+                                                                            >
+                                                                                생성된 BPMN 프로세스 ({{ message.pdf2bpmnResult.generatedBpmns.length }}개)
+                                                                            </div>
+                                                                            <div
+                                                                                v-if="
+                                                                                    message.pdf2bpmnResult.generatedBpmns &&
+                                                                                    message.pdf2bpmnResult.generatedBpmns.length > 0
+                                                                                "
+                                                                                class="d-flex flex-column"
+                                                                                style="gap: 8px"
+                                                                            >
                                                                                 <v-card
                                                                                     v-for="(bpmn, bIdx) in message.pdf2bpmnResult
                                                                                         .generatedBpmns"
@@ -1396,6 +1408,55 @@
                                                                                             </div>
                                                                                         </div>
                                                                                         <v-icon size="16" color="grey">mdi-eye</v-icon>
+                                                                                    </div>
+                                                                                </v-card>
+                                                                            </div>
+                                                                            <div v-if="getPdf2bpmnSavedSkills(message).length > 0" class="text-caption font-weight-bold mt-3 mb-1">
+                                                                                생성된 스킬 ({{ getPdf2bpmnSavedSkills(message).length }}개)
+                                                                            </div>
+                                                                            <div v-if="getPdf2bpmnSavedSkills(message).length > 0" class="d-flex flex-column" style="gap: 8px">
+                                                                                <v-card
+                                                                                    v-for="(skill, sIdx) in getPdf2bpmnSavedSkills(message)"
+                                                                                    :key="`skill-${sIdx}`"
+                                                                                    class="pa-2 pdf2bpmn-bpmn-card"
+                                                                                    variant="outlined"
+                                                                                    @click="emitOpenExternalUrl(resolveSkillUrl(skill))"
+                                                                                >
+                                                                                    <div class="d-flex align-center">
+                                                                                        <v-icon size="18" color="deep-orange" class="mr-2"
+                                                                                            >mdi-lightning-bolt-outline</v-icon
+                                                                                        >
+                                                                                        <div class="flex-grow-1">
+                                                                                            <div class="text-body-2 font-weight-bold">
+                                                                                                {{ skill.name || skill.safe_name || 'Unnamed Skill' }}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <v-icon size="16" color="grey">mdi-open-in-new</v-icon>
+                                                                                    </div>
+                                                                                </v-card>
+                                                                            </div>
+                                                                            <div v-if="getPdf2bpmnSavedAgents(message).length > 0" class="text-caption font-weight-bold mt-3 mb-1">
+                                                                                생성된 에이전트 ({{ getPdf2bpmnSavedAgents(message).length }}개)
+                                                                            </div>
+                                                                            <div v-if="getPdf2bpmnSavedAgents(message).length > 0" class="d-flex flex-column" style="gap: 8px">
+                                                                                <v-card
+                                                                                    v-for="(agent, aIdx) in getPdf2bpmnSavedAgents(message)"
+                                                                                    :key="`agent-${aIdx}`"
+                                                                                    class="pa-2 pdf2bpmn-bpmn-card"
+                                                                                    variant="outlined"
+                                                                                    @click="emitOpenExternalUrl(resolveAgentUrl(agent))"
+                                                                                >
+                                                                                    <div class="d-flex align-center">
+                                                                                        <v-icon size="18" color="primary" class="mr-2">mdi-account-tie</v-icon>
+                                                                                        <div class="flex-grow-1">
+                                                                                            <div class="text-body-2 font-weight-bold">
+                                                                                                {{ agent.name || agent.id || 'Unnamed Agent' }}
+                                                                                            </div>
+                                                                                            <div class="text-caption text-medium-emphasis">
+                                                                                                UID: {{ agent.id }}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <v-icon size="16" color="grey">mdi-open-in-new</v-icon>
                                                                                     </div>
                                                                                 </v-card>
                                                                             </div>
@@ -3244,6 +3305,41 @@ export default {
             const resolvedTaskId = String(taskId || '').trim();
             if (!resolvedTaskId) return;
             this.$emit('preview-integrated-graph', resolvedTaskId);
+        },
+        hasPdf2bpmnResultSections(message) {
+            const result = message?.pdf2bpmnResult || {};
+            const bpmns = Array.isArray(result.generatedBpmns) ? result.generatedBpmns : [];
+            const skills = this.getPdf2bpmnSavedSkills(message);
+            const agents = this.getPdf2bpmnSavedAgents(message);
+            return bpmns.length > 0 || skills.length > 0 || agents.length > 0;
+        },
+        getPdf2bpmnSavedSkills(message) {
+            const result = message?.pdf2bpmnResult || {};
+            const list = Array.isArray(result.savedSkills)
+                ? result.savedSkills
+                : Array.isArray(result.saved_skills)
+                  ? result.saved_skills
+                  : [];
+            return list.filter((x) => x && (x.name || x.safe_name));
+        },
+        getPdf2bpmnSavedAgents(message) {
+            const result = message?.pdf2bpmnResult || {};
+            const list = Array.isArray(result.savedAgents)
+                ? result.savedAgents
+                : Array.isArray(result.saved_agents)
+                  ? result.saved_agents
+                  : [];
+            return list.filter((x) => x && x.id);
+        },
+        resolveSkillUrl(skill) {
+            const directPath = String(skill?.url_path || '').trim();
+            if (directPath) return `${window.location.origin}${directPath}`;
+            const name = String(skill?.name || skill?.safe_name || '').trim();
+            return name ? `${window.location.origin}/skills/${encodeURIComponent(name)}` : '';
+        },
+        resolveAgentUrl(agent) {
+            const id = String(agent?.id || '').trim();
+            return id ? `${window.location.origin}/agent-chat/${encodeURIComponent(id)}` : '';
         },
         emitOpenExternalUrl(url) {
             if (!url) return;

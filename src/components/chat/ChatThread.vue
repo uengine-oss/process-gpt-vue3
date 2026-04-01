@@ -105,14 +105,20 @@
                     </div>
 
                     <div
-                        v-if="msg.pdf2bpmnResult && msg.pdf2bpmnResult.generatedBpmns && msg.pdf2bpmnResult.generatedBpmns.length > 0"
+                        v-if="hasPdf2bpmnResultSections(msg)"
                         class="pdf2bpmn-result-container mt-3"
                     >
                         <div class="result-header">
                             <v-icon size="18" color="success" class="mr-2">mdi-check-circle</v-icon>
-                            <span class="result-title">생성된 BPMN 프로세스 ({{ msg.pdf2bpmnResult.generatedBpmns.length }}개)</span>
+                            <span class="result-title">PDF2BPMN 생성 결과</span>
                         </div>
-                        <div class="bpmn-cards">
+                        <div
+                            v-if="msg.pdf2bpmnResult.generatedBpmns && msg.pdf2bpmnResult.generatedBpmns.length > 0"
+                            class="text-caption font-weight-bold mb-1"
+                        >
+                            생성된 BPMN 프로세스 ({{ msg.pdf2bpmnResult.generatedBpmns.length }}개)
+                        </div>
+                        <div v-if="msg.pdf2bpmnResult.generatedBpmns && msg.pdf2bpmnResult.generatedBpmns.length > 0" class="bpmn-cards">
                             <div
                                 v-for="(bpmn, idx) in msg.pdf2bpmnResult.generatedBpmns"
                                 :key="idx"
@@ -128,6 +134,49 @@
                                 </div>
                                 <v-btn icon variant="text" size="small" class="bpmn-card-action">
                                     <v-icon size="18">mdi-eye</v-icon>
+                                </v-btn>
+                            </div>
+                        </div>
+                        <div v-if="getPdf2bpmnSavedSkills(msg).length > 0" class="text-caption font-weight-bold mt-3 mb-1">
+                            생성된 스킬 ({{ getPdf2bpmnSavedSkills(msg).length }}개)
+                        </div>
+                        <div v-if="getPdf2bpmnSavedSkills(msg).length > 0" class="bpmn-cards">
+                            <div
+                                v-for="(skill, sIdx) in getPdf2bpmnSavedSkills(msg)"
+                                :key="`skill-${sIdx}`"
+                                class="bpmn-card"
+                                @click="emitOpenExternalUrl(resolveSkillUrl(skill))"
+                            >
+                                <div class="bpmn-card-icon">
+                                    <v-icon size="24" color="deep-orange">mdi-lightning-bolt-outline</v-icon>
+                                </div>
+                                <div class="bpmn-card-content">
+                                    <div class="bpmn-card-title">{{ skill.name || skill.safe_name || 'Unnamed Skill' }}</div>
+                                </div>
+                                <v-btn icon variant="text" size="small" class="bpmn-card-action">
+                                    <v-icon size="18">mdi-open-in-new</v-icon>
+                                </v-btn>
+                            </div>
+                        </div>
+                        <div v-if="getPdf2bpmnSavedAgents(msg).length > 0" class="text-caption font-weight-bold mt-3 mb-1">
+                            생성된 에이전트 ({{ getPdf2bpmnSavedAgents(msg).length }}개)
+                        </div>
+                        <div v-if="getPdf2bpmnSavedAgents(msg).length > 0" class="bpmn-cards">
+                            <div
+                                v-for="(agent, aIdx) in getPdf2bpmnSavedAgents(msg)"
+                                :key="`agent-${aIdx}`"
+                                class="bpmn-card"
+                                @click="emitOpenExternalUrl(resolveAgentUrl(agent))"
+                            >
+                                <div class="bpmn-card-icon">
+                                    <v-icon size="24" color="primary">mdi-account-tie</v-icon>
+                                </div>
+                                <div class="bpmn-card-content">
+                                    <div class="bpmn-card-title">{{ agent.name || agent.id || 'Unnamed Agent' }}</div>
+                                    <div class="bpmn-card-subtitle">UID: {{ agent.id }}</div>
+                                </div>
+                                <v-btn icon variant="text" size="small" class="bpmn-card-action">
+                                    <v-icon size="18">mdi-open-in-new</v-icon>
                                 </v-btn>
                             </div>
                         </div>
@@ -251,6 +300,39 @@ export default {
         emitOpenExternalUrl(url) {
             if (!url) return;
             this.$emit('open-external-url', url);
+        },
+        hasPdf2bpmnResultSections(message) {
+            const result = message?.pdf2bpmnResult || {};
+            const bpmns = Array.isArray(result.generatedBpmns) ? result.generatedBpmns : [];
+            return bpmns.length > 0 || this.getPdf2bpmnSavedSkills(message).length > 0 || this.getPdf2bpmnSavedAgents(message).length > 0;
+        },
+        getPdf2bpmnSavedSkills(message) {
+            const result = message?.pdf2bpmnResult || {};
+            const list = Array.isArray(result.savedSkills)
+                ? result.savedSkills
+                : Array.isArray(result.saved_skills)
+                  ? result.saved_skills
+                  : [];
+            return list.filter((x) => x && (x.name || x.safe_name));
+        },
+        getPdf2bpmnSavedAgents(message) {
+            const result = message?.pdf2bpmnResult || {};
+            const list = Array.isArray(result.savedAgents)
+                ? result.savedAgents
+                : Array.isArray(result.saved_agents)
+                  ? result.saved_agents
+                  : [];
+            return list.filter((x) => x && x.id);
+        },
+        resolveSkillUrl(skill) {
+            const directPath = String(skill?.url_path || '').trim();
+            if (directPath) return `${window.location.origin}${directPath}`;
+            const name = String(skill?.name || skill?.safe_name || '').trim();
+            return name ? `${window.location.origin}/skills/${encodeURIComponent(name)}` : '';
+        },
+        resolveAgentUrl(agent) {
+            const id = String(agent?.id || '').trim();
+            return id ? `${window.location.origin}/agent-chat/${encodeURIComponent(id)}` : '';
         },
         getAttachmentUrl(fileOrUrl) {
             if (!fileOrUrl) return '';

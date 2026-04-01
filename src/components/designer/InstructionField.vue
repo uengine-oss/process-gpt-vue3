@@ -378,7 +378,11 @@ export default {
         normalizeInstructionValue(value) {
             const s = (value || '').toString();
             // 이전 포맷([[mention:type=id|label]])을 "@type:id" 형식으로 변환
-            return s.replace(/\[\[mention:([a-zA-Z]+)=([^|]+)\|([^\]]+)\]\]/g, '@$1:$2');
+            return s
+                .replace(/\\r\\n/g, '\n')
+                .replace(/\\n/g, '\n')
+                .replace(/\\r/g, '\n')
+                .replace(/\[\[mention:([a-zA-Z]+)=([^|]+)\|([^\]]+)\]\]/g, '@$1:$2');
         }
     }
 };
