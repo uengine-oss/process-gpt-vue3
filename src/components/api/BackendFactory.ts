@@ -2,7 +2,6 @@ import UEngineBackend from './UEngineBackend';
 import ProcessGPTBackend from './ProcessGPTBackend';
 import PalModeBackend from './PalModeBackend';
 import PalUengineBackend from './PalUengineBackend';
-
 class BackendFactory extends Window {
     static wrapBackendWithNullSkip<T extends Record<string, any>>(backend: T): T {
         const warnedKey = '__backend_null_skip_warned__';

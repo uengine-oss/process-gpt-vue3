@@ -127,11 +127,17 @@
                             ]"
                             :label="$t('ProcessDefinitionVersionDialog.versionTag')"
                             :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.versionTagRequired')]"
-                            :messages="[versionFlowMessage]"
                             variant="outlined"
                             density="compact"
                             class="mb-2"
-                        ></v-select>
+                        >
+                            <template #prepend-inner>
+                                <span class="text-body-2 text-medium-emphasis mr-1">v{{ information.version || '0.0' }} →</span>
+                            </template>
+                            <template #append-inner>
+                                <v-chip size="small" color="primary" variant="flat">v{{ newVersion }}</v-chip>
+                            </template>
+                        </v-select>
                         <div class="position-relative">
                             <v-textarea
                                 class="process-definition-version-dialog-textarea"
@@ -273,23 +279,17 @@ export default {
             let baseVersion = this.information.version || '0.0';
             let major = Math.floor(parseFloat(baseVersion)) || 0;
             let minor = baseVersion.toString().includes('.') ? Number(baseVersion.toString().split('.')[1]) || 0 : 0;
+            const versionTag = this.information.version_tag === 'major' ? 'major' : 'minor';
 
-            if (this.information.version_tag === 'major') {
+            if (versionTag === 'major') {
                 major += 1;
                 return `${major}.0`;
             }
-            if (this.information.version_tag === 'minor') {
-                minor += 1;
-                return `${major}.${minor}`;
-            }
-            return baseVersion;
-        },
-        versionFlowMessage() {
-            const currentVersionText = this.information.version || '0.0';
-            return `${this.$t('ProcessDefinitionVersionDialog.currentVersion')} : v${currentVersionText} -> ${this.$t('ProcessDefinitionVersionDialog.nextVersion')} : v${this.newVersion}`;
+            minor += 1;
+            return `${major}.${minor}`;
         },
         useLock() {
-            if (this.mode == 'ProcessGPT') {
+            if (this.mode == 'ProcessGPT' || this.mode === 'uEngine') {
                 return true;
             } else {
                 return false;
@@ -566,26 +566,59 @@ export default {
                 } catch (e) {}
                 if (bpmn) {
                     if (me.useLock) {
-                        // GPT
                         let definitionInfo = await backend.getRawDefinition(me.process.processDefinitionId);
+                        // uEngine: getRawDefinition이 BPMN 문자열만 반환 → 메타는 process 기준으로 보정
+                        if (definitionInfo != null && typeof definitionInfo === 'string') {
+                            definitionInfo = {
+                                id: me.process.processDefinitionId,
+                                name: me.process?.processDefinitionName || '',
+                                owner: ''
+                            };
+                        }
                         let versionInfo = await backend.getDefinitionVersions(me.process.processDefinitionId, {
                             sort: 'desc',
                             orderBy: 'timeStamp',
-                            size: 1
+                            size: 9999
                         });
+                        versionInfo = Array.isArray(versionInfo) ? versionInfo : [];
 
+                        const compareVersionParts = (va, vb) => {
+                            const aParts = String(va ?? '').split('.').map((p) => (p === '' ? 0 : Number(p)));
+                            const bParts = String(vb ?? '').split('.').map((p) => (p === '' ? 0 : Number(p)));
+                            const len = Math.max(aParts.length, bParts.length);
+                            for (let i = 0; i < len; i++) {
+                                const ai = Number.isFinite(aParts[i]) ? aParts[i] : 0;
+                                const bi = Number.isFinite(bParts[i]) ? bParts[i] : 0;
+                                if (ai !== bi) return ai - bi;
+                            }
+                            return 0;
+                        };
                         if (versionInfo.length > 0) {
+                            versionInfo.sort((a, b) => compareVersionParts(b.version, a.version));
                             me.information = versionInfo[0];
-                            me.information.name = me.processName ? me.processName : definitionInfo.name;
+                            me.information.name =
+                                me.processName || me.process?.processDefinitionName || me.information.name || definitionInfo?.name || '';
+                            me.information.proc_def_id = me.information.proc_def_id || me.process?.processDefinitionId || '';
+                            me.information.arcv_id =
+                                me.information.arcv_id ||
+                                (me.information.proc_def_id
+                                    ? `${me.information.proc_def_id}_${me.information.version ?? 0.0}`
+                                    : null);
                             me.information.owner = definitionInfo.owner || ''; // 기존 담당자 로드
                             me.information.message = '';
+                            // 편집 중인 currentBpmn 우선 사용(description 등 유지). 없을 때만 서버 조회 bpmn 사용
+                            const snapshotSource = (me.currentBpmn && String(me.currentBpmn).trim()) ? me.currentBpmn : bpmn;
+                            if (me.information.snapshot == null || me.information.snapshot === '') {
+                                me.information.snapshot = snapshotSource;
+                            }
                         } else {
+                            const snapshotSource = (me.currentBpmn && String(me.currentBpmn).trim()) ? me.currentBpmn : bpmn;
                             me.information = {
-                                arcv_id: definitionInfo.id,
+                                arcv_id: me.process?.processDefinitionId ? `${me.process.processDefinitionId}_0.0` : definitionInfo.id,
                                 version: 0.0,
-                                name: me.processName ? me.processName : definitionInfo.name,
-                                proc_def_id: definitionInfo.id,
-                                snapshot: bpmn,
+                                name: me.processName || me.process?.processDefinitionName || definitionInfo.name,
+                                proc_def_id: me.process?.processDefinitionId || definitionInfo.id,
+                                snapshot: snapshotSource,
                                 diff: null,
                                 timeStamp: null,
                                 message: null,
@@ -617,9 +650,10 @@ export default {
                             sort: 'desc',
                             type: 'bpmn',
                             orderBy: 'timeStamp',
-                            size: 1
+                            size: 9999
                         });
-                        if (versionInfo) {
+                        versionInfo = Array.isArray(versionInfo) ? versionInfo : [];
+                        if (versionInfo.length > 0) {
                             const compareVersionParts = (va, vb) => {
                                 const aParts = String(va ?? '')
                                     .split('.')
@@ -639,14 +673,13 @@ export default {
 
                             // "0.10" > "0.9" 처럼 점(.) 기준 숫자 비교로 정렬
                             versionInfo.sort((a, b) => compareVersionParts(b.version, a.version));
-                            const highestVersion = versionInfo.length > 0 ? versionInfo[0].version : null;
-                            me.information.version = highestVersion;
+                            me.information.version = versionInfo[0].version;
                         } else {
                             me.information.version = '0.0';
                         }
 
                         me.information.proc_def_id = defId;
-                        me.information.name = defId;
+                        me.information.name = me.processName || me.process?.processDefinitionName || defId;
                     }
                 } else {
                     // BPMN을 불러오지 못한 경우: DB에 없으므로 새 프로세스

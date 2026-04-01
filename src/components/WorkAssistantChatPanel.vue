@@ -92,6 +92,7 @@
             @preview-image="openImagePreview"
             @preview-bpmn="showBpmnPreview"
             @open-external-url="openExternalUrl"
+            @human-feedback-submit="handleHumanFeedbackSubmit"
         />
 
         <!-- 입력 영역 - Chat 컴포넌트 사용 -->
@@ -352,6 +353,33 @@ export default {
         this.abortAllAgentStreams();
     },
     methods: {
+        /**
+         * HumanFeedbackPanel에서 사용자가 선택을 완료했을 때 호출
+         * 선택 결과를 사용자 메시지로 전송하여 에이전트가 이어서 처리하도록 함
+         */
+        async handleHumanFeedbackSubmit(message, feedbackResult) {
+            if (!feedbackResult || !this.currentRoomId) return;
+
+            // 메시지를 제출 완료 상태로 변경
+            if (message.__humanFeedback) {
+                message.__humanFeedback.__submitted = true;
+            }
+
+            let userText = '';
+            if (feedbackResult.type === 'select_items') {
+                const selectedLabels = feedbackResult.selectedItems.map(item => item.label);
+                userText = `다음 문서를 참고해서 작성해 주세요: ${selectedLabels.join(', ')}`;
+            } else if (feedbackResult.type === 'suggestions') {
+                userText = feedbackResult.selected;
+            } else {
+                userText = '확인';
+            }
+
+            // 기존 sendMessage 로직 재사용: inputText를 설정하고 sendMessage 호출
+            this.inputText = userText;
+            await this.sendMessage();
+        },
+
         normalizeParticipant(p) {
             if (!p) return null;
             return {
@@ -743,6 +771,25 @@ export default {
                             if (toolCalls.length > 0) {
                                 toolCalls[toolCalls.length - 1].output = output;
                             }
+
+                            // list_reference_documents 등 human feedback 도구 결과 감지
+                            if (toolCalls.length > 0) {
+                                const lastTool = toolCalls[toolCalls.length - 1];
+                                console.log('[HumanFeedback] onToolEnd - toolName:', lastTool.name, 'output type:', typeof output, 'output[:200]:', String(output).substring(0, 200));
+                                if (lastTool.name && lastTool.name.includes('list_reference_documents')) {
+                                    try {
+                                        const parsed = typeof output === 'string' ? JSON.parse(output) : output;
+                                        console.log('[HumanFeedback] parsed:', JSON.stringify(parsed).substring(0, 300));
+                                        console.log('[HumanFeedback] user_request_type:', parsed?.user_request_type, 'items:', !!parsed?.items, 'items.length:', parsed?.items?.length);
+                                        if (parsed && parsed.user_request_type === 'select_items' && parsed.items) {
+                                            lastTool.__humanFeedback = parsed;
+                                            console.log('[HumanFeedback] ✅ __humanFeedback 설정 완료');
+                                        }
+                                    } catch (e) {
+                                        console.warn('[HumanFeedback] 파싱 실패:', e, 'output:', String(output).substring(0, 200));
+                                    }
+                                }
+                            }
                         },
                         onAbort: async () => {
                             // 로딩 상태 해제 (해당 채팅방)
@@ -783,6 +830,14 @@ export default {
                             // AI 응답 메시지 생성
                             const assistantMsgObj = this.createMessageObj(content, 'assistant');
                             assistantMsgObj.toolCalls = toolCalls;
+
+                            // human feedback 도구 결과가 있으면 메시지에 첨부
+                            const feedbackToolCall = toolCalls.find(tc => tc.__humanFeedback);
+                            console.log('[HumanFeedback] onDone - feedbackToolCall:', !!feedbackToolCall, 'toolCalls count:', toolCalls.length);
+                            if (feedbackToolCall) {
+                                assistantMsgObj.__humanFeedback = feedbackToolCall.__humanFeedback;
+                                console.log('[HumanFeedback] ✅ 메시지에 __humanFeedback 첨부됨, items:', feedbackToolCall.__humanFeedback?.items?.length);
+                            }
 
                             // ★ 현재 채팅방이 요청 시작 채팅방과 같을 때만 UI에 추가
                             if (this.currentRoomId === targetRoomId) {

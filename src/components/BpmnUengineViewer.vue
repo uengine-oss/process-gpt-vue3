@@ -7,8 +7,8 @@
         v-hammer:pan="onPan"
         v-hammer:pinch="onPinch"
     >
-        <div :class="isMobile ? 'mobile-position' : 'desktop-position'" :style="laneAssignments.length > 0 ? '' : ''">
-            <div class="pa-1 ga-2" :class="isMobile ? 'mobile-style' : 'desktop-style'">
+        <div :class="isMobile ? 'mobile-position' : 'desktop-position'" :style="laneAssignments.length > 0 ? 'top: 38px;' : ''">
+            <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer">mdi-crosshairs-gps</v-icon>
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer">mdi-plus</v-icon>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer">mdi-minus</v-icon>
@@ -26,48 +26,48 @@
                     </template>
                     <span>{{ $t('BpmnUengineViewer.expandedView') }}</span>
                 </v-tooltip>
-                <!-- 참여자 보기 툴팁 -->
-                <div v-if="laneAssignments.length > 0" class="participants-tooltip-wrapper">
-                    <v-menu :open-on-hover="!isMobile" :open-delay="200" :close-delay="200" location="bottom" max-width="400">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon size="small" variant="text" class="detail-info-button">
-                                <v-icon size="24">mdi-account-group</v-icon>
-                            </v-btn>
-                        </template>
+            </div>
+        </div>
+        <!-- 참여자 보기 툴팁 -->
+        <div v-if="laneAssignments.length > 0" class="participants-tooltip-wrapper">
+            <v-menu open-on-hover :open-delay="200" :close-delay="200" location="bottom" max-width="400">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" icon size="x-small" variant="text" class="detail-info-button">
+                        <v-icon>mdi-account-group</v-icon>
+                    </v-btn>
+                </template>
 
-                        <v-card class="participants-popup-card">
-                            <v-card-title class="pa-4 pb-2 d-flex align-center">
-                                <v-icon class="mr-2" style="flex-shrink: 0">mdi-account-group</v-icon>
-                                <span class="participants-title-text">{{ $t('BpmnUengineViewer.viewParticipants') }}</span>
-                            </v-card-title>
+                <v-card class="participants-popup-card">
+                    <v-card-title class="pa-4 pb-2 d-flex align-center">
+                        <v-icon class="mr-2" style="flex-shrink: 0">mdi-account-group</v-icon>
+                        <span class="participants-title-text">{{ $t('BpmnUengineViewer.viewParticipants') }}</span>
+                    </v-card-title>
 
-                            <v-divider class="my-1"></v-divider>
+                    <v-divider class="my-1"></v-divider>
 
-                            <v-card-text class="pa-0" style="max-height: 400px; overflow-y: auto">
-                                <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="participant-item pa-2">
-                                    <div class="d-flex align-center">
-                                        <v-avatar size="32" class="mr-3">
-                                            <v-img :src="assignment.profileImage" :alt="assignment.assignee" cover>
+                    <v-card-text class="pa-0" style="max-height: 400px; overflow-y: auto">
+                        <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="participant-item pa-2">
+                            <div class="d-flex align-center">
+                                <v-avatar size="32" class="mr-3">
+                                    <v-img :src="assignment.profileImage" :alt="assignment.assignee" cover>
+                                        <template v-slot:error>
+                                            <v-img src="/images/defaultUser.png" cover>
                                                 <template v-slot:error>
-                                                    <v-img src="/images/defaultUser.png" cover>
-                                                        <template v-slot:error>
-                                                            <v-icon size="small" style="color: #666">mdi-account</v-icon>
-                                                        </template>
-                                                    </v-img>
+                                                    <v-icon size="small" style="color: #666">mdi-account</v-icon>
                                                 </template>
                                             </v-img>
-                                        </v-avatar>
-                                        <div class="flex-grow-1">
-                                            <div class="text-body-2 font-weight-medium" style="color: #444">{{ assignment.laneName }}</div>
-                                            <div class="text-caption" style="color: #666">{{ assignment.assignee }}</div>
-                                        </div>
-                                    </div>
+                                        </template>
+                                    </v-img>
+                                </v-avatar>
+                                <div class="flex-grow-1">
+                                    <div class="text-body-2 font-weight-medium" style="color: #444">{{ assignment.laneName }}</div>
+                                    <div class="text-caption" style="color: #666">{{ assignment.assignee }}</div>
                                 </div>
-                            </v-card-text>
-                        </v-card>
-                    </v-menu>
-                </div>
-            </div>
+                            </div>
+                        </div>
+                    </v-card-text>
+                </v-card>
+            </v-menu>
         </div>
         <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10">
             <v-row class="ma-0 pa-0">
@@ -138,13 +138,12 @@
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
 import zeebeModdleDescriptor from '@/components/descriptors/zeebe.json';
 import 'bpmn-js/dist/assets/diagram-js.css';
+import 'bpmn-js/dist/assets/bpmn-js.css';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import domtoimage from 'dom-to-image';
 import ZoomScroll from './customZoomScroll';
 // import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
-import MoveCanvas from './customMoveCanvas';
-// import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
 import customBpmnModule from './customBpmn';
 import paletteProvider from './customPalette/PaletteProvider';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
@@ -250,11 +249,9 @@ export default {
             this.fetchDiagram(this.url);
         } else if (this.bpmn) {
             this.diagramXML = this.bpmn;
-            this.importDiagram(this.bpmn, 'mounted:bpmn-prop');
         } else {
             this.diagramXML =
                 '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <bpmn:extensionElements> <uengine:properties> </uengine:properties> </bpmn:extensionElements> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>';
-            this.importDiagram(this.diagramXML, 'mounted:default-empty');
         }
         this.initResizeObserver();
     },
@@ -278,7 +275,7 @@ export default {
             });
         },
         diagramXML(val) {
-            this.importDiagram(val, 'watch:diagramXML');
+            this.bpmnViewer.importXML(val);
         },
         taskStatus(val) {
             this.activityStatus = val;
@@ -314,18 +311,6 @@ export default {
         }
     },
     methods: {
-        importDiagram(xml, source = 'unknown') {
-            if (!this.bpmnViewer || !xml) return;
-            this.bpmnViewer
-                .importXML(xml)
-                .then(() => {
-                    this.onLoadEnd();
-                })
-                .catch((err) => {
-                    this.$emit('error', err);
-                    this.onLoadEnd();
-                });
-        },
         async setRoleMapping() {
             let self = this;
             const workList = await backend.getWorkListByInstId(this.instanceId);
@@ -648,15 +633,17 @@ export default {
                     return;
                 }
 
-                // zoomScroll, moveCanvas 동기화
-                moveCanvas.canvasSize = {
-                    height: bbox.height,
-                    width: bbox.width,
-                    x: bbox.x,
-                    y: bbox.y
-                };
-                moveCanvas.scaleOffset = bbox.scale;
-                moveCanvas.resetMovedDistance();
+                // zoomScroll, moveCanvas 동기화 (diagram-js 기본 moveCanvas에는 canvasSize 없음)
+                if (moveCanvas && typeof moveCanvas.resetMovedDistance === 'function' && 'canvasSize' in moveCanvas) {
+                    moveCanvas.canvasSize = {
+                        height: bbox.height,
+                        width: bbox.width,
+                        x: bbox.x,
+                        y: bbox.y
+                    };
+                    moveCanvas.scaleOffset = bbox.scale;
+                    moveCanvas.resetMovedDistance();
+                }
 
                 zoomScroll.canvasSize = {
                     height: bbox.height,
@@ -948,8 +935,7 @@ export default {
                         contextPadProvider: ['value', {}]
                     },
                     blockEditingInteractions,
-                    ZoomScroll,
-                    MoveCanvas
+                    ZoomScroll
                 ],
                 moddleExtensions: {
                     uengine: uEngineModdleDescriptor,
@@ -1150,7 +1136,6 @@ export default {
                 })
                 .then((text) => {
                     self.diagramXML = text;
-                    self.importDiagram(text, 'fetchDiagram');
                 })
                 .catch((err) => {
                     self.$emit('error', err);
@@ -1246,7 +1231,8 @@ export default {
         },
         onPan(ev) {
             const srcEvent = ev.srcEvent;
-            if (srcEvent.pointerType === 'mouse' || srcEvent.type.startsWith('mouse')) {
+            const isMouse = srcEvent.pointerType === 'mouse' || (srcEvent.type && srcEvent.type.startsWith('mouse'));
+            if (isMouse && !this.isViewMode) {
                 return;
             }
 
@@ -1312,8 +1298,8 @@ export default {
 }
 .desktop-position {
     position: absolute;
-    top: 32px;
-    right: 20px;
+    top: 16px;
+    right: 16px;
     pointer-events: auto;
     z-index: 10;
 }
@@ -1322,13 +1308,16 @@ export default {
     flex-direction: row;
     align-items: center;
     border: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 카드 스타일 그림자 적용 */
     border-radius: 10px;
     background-color: rgba(255, 255, 255, 0.6); /* 반투명 백그라운드 0.6 적용 */
 }
 .desktop-style {
     display: flex;
+    flex-direction: column;
     align-items: center;
     border: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 카드 스타일 그림자 적용 */
     border-radius: 10px;
     background-color: rgba(255, 255, 255, 0.6); /* 반투명 백그라운드 0.6 적용 */
 }
@@ -1431,6 +1420,9 @@ svg .bpmn-diff-deleted marker[id*='sequenceflow-end'] path {
 
 /* 참여자 툴팁 스타일 */
 .participants-tooltip-wrapper {
+    position: absolute;
+    top: 0px;
+    right: 16px;
     z-index: 10;
 }
 

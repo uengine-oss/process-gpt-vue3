@@ -180,7 +180,6 @@ export default {
             },
             definitions: [],
             definitionRoles: [],
-            definitionRoles: [],
             calleeDefinitionRoles: [],
             copyUengineProperties: this.uengineProperties ? JSON.parse(JSON.stringify(this.uengineProperties)) : {},
             name: '',
@@ -271,6 +270,8 @@ export default {
     watch: {
         'copyUengineProperties.definitionId'(after, before) {
             this.setDefinitionInfo(after);
+            // ProcessDefinitionDisplay v-model은 로컬만 갱신 → 부모 패널 상태도 맞춤(저장 전에도 XML 반영 준비)
+            this.$emit('update:uengineProperties', { ...this.copyUengineProperties });
         },
         selectedVariable(after, before) {
             if (after) {
@@ -305,8 +306,11 @@ export default {
                 } else {
                     delete this.copyUengineProperties.version;
                 }
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+            } else {
+                delete this.copyUengineProperties.version;
             }
+            // BpmnPropertyPanel은 @update:uengineProperties(소문자 e)만 수신 — 대문자 E면 저장 시 반영 안 됨
+            this.$emit('update:uengineProperties', { ...this.copyUengineProperties });
         },
         parseType(type) {
             switch (type) {
@@ -379,24 +383,24 @@ export default {
             const index = this.copyUengineProperties.variableBindings.findIndex((element) => element.key === item.key);
             if (index > -1) {
                 this.copyUengineProperties.variableBindings.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+                this.$emit('update:uengineProperties', { ...this.copyUengineProperties });
             }
         },
         deleteCheckPoint(item) {
             const index = this.copyUengineProperties.checkpoints.findIndex((element) => element.checkpoint === item.checkpoint);
             if (index > -1) {
                 this.copyUengineProperties.checkpoints.splice(index, 1);
-                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+                this.$emit('update:uengineProperties', { ...this.copyUengineProperties });
             }
         },
         addParameter() {
             this.copyUengineProperties.variableBindings.push({ key: this.paramKey, value: this.paramValue });
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+            this.$emit('update:uengineProperties', { ...this.copyUengineProperties });
         },
 
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+            this.$emit('update:uengineProperties', { ...this.copyUengineProperties });
         },
         setTaskColor(color) {
             this.copyUengineProperties.taskColor = color;

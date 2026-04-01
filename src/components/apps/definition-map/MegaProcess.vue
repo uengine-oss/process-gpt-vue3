@@ -17,6 +17,7 @@
                             :type="type"
                             :process="value"
                             :enableEdit="enableEdit"
+                            :enableEditMega="enableEditMegaComputed"
                             :selectedDomain="selectedDomain"
                             @add="openProcessDialog('add')"
                             @delete="deleteProcess"
@@ -27,8 +28,8 @@
                 </v-row>
             </h6>
             <ProcessDialog
-                v-else-if="processDialogStatus && enableEdit && processType === 'update'"
-                :enableEdit="enableEdit"
+                v-else-if="processDialogStatus && enableEditMegaComputed && processType === 'update'"
+                :enableEdit="enableEditMegaComputed"
                 :process="value"
                 :processDialogStatus="processDialogStatus"
                 :processType="processType"
@@ -77,7 +78,7 @@
                 />
             </div>
         </div>
-        <!-- Add Major Process Dialog: 특정 도메인 탭에서만 표시 -->
+        <!-- Add Major Process Dialog: process-manager도 Major 추가 가능 -->
         <ProcessDialog
             v-if="processDialogStatus && enableEdit && processType === 'add' && (selectedDomain || isPalUengine)"
             :enableEdit="enableEdit"
@@ -111,6 +112,8 @@ export default {
         value: Object,
         parent: Object,
         enableEdit: Boolean,
+        /** Mega 레벨(추가/수정/삭제)은 admin만; 미주입 시 enableEdit과 동일 */
+        enableEditMega: { type: Boolean, default: undefined },
         isExecutionByProject: Boolean,
         domains: Array,
         selectedDomain: [String, Number],
@@ -121,6 +124,10 @@ export default {
         hover: false
     }),
     computed: {
+        /** Mega 카드 메뉴/다이얼로그용 (admin만). 미주입 시 enableEdit */
+        enableEditMegaComputed() {
+            return this.enableEditMega !== undefined ? this.enableEditMega : this.enableEdit;
+        },
         isPalUengine() {
             return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
         },
@@ -200,10 +207,18 @@ export default {
             this.$emit('clickPlayBtn', value);
         },
         editProcess(process) {
-            const index = this.value.major_proc_list.findIndex((item) => item.id === process.id);
+            // Mega 자체 수정 (process.id === value.id) - domain은 Major에만 있음
+            if (process.id === this.value.id) {
+                this.value.name = process.name;
+                return;
+            }
+            // Major 수정: parent(원본 value) 기준으로 업데이트 (filteredValue 복사본 이슈 방지)
+            const mega = this.parent?.mega_proc_list?.find((m) => m.id === this.value.id);
+            const majorList = mega ? mega.major_proc_list : this.value.major_proc_list;
+            const index = majorList?.findIndex((item) => item.id === process.id) ?? -1;
             if (index > -1) {
-                this.value.major_proc_list[index].name = process.name;
-                this.value.major_proc_list[index].domain = process.domain;
+                majorList[index].name = process.name;
+                majorList[index].domain = process.domain ?? '';
             }
         }
     }

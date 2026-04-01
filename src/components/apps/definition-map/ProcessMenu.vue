@@ -1,8 +1,8 @@
 <template>
     <div>
-        <div v-if="enableEdit" class="proc-menu-btn-box text-right">
-            <!-- Add button for mega/major types -->
-            <v-tooltip v-if="(type === 'mega' || type === 'major') && (selectedDomain || isPal)" :text="addTooltipText">
+        <div v-if="enableEdit || canEditDeleteMega" class="proc-menu-btn-box text-right">
+            <!-- Add button for mega/major types (Major 추가는 process-manager도 가능) -->
+            <v-tooltip v-if="enableEdit && (type === 'mega' || type === 'major') && (selectedDomain || isPal)" :text="addTooltipText">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="addProcess" icon v-bind="props" density="compact" size="small">
                         <v-icon size="14">mdi-plus</v-icon>
@@ -16,7 +16,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip v-if="type != 'map' && type != 'sub'" :text="$t('ProcessMenu.edit')">
+            <v-tooltip v-if="canEditDeleteMega && type != 'map' && type != 'sub'" :text="$t('ProcessMenu.edit')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="openEditDialog('update')" icon v-bind="props" density="compact" size="small">
                         <Icons :icon="'pencil'" :width="12" :height="12" />
@@ -44,7 +44,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip v-if="type != 'map'" :text="$t('ProcessMenu.delete')">
+            <v-tooltip v-if="canEditDeleteMega && type != 'map'" :text="$t('ProcessMenu.delete')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="deleteProcess" icon v-bind="props" density="compact" size="small" class="process-delete-btn">
                         <Icons :icon="'trash'" :width="12" :height="12" />
@@ -57,6 +57,7 @@
 
 <script>
 import ProcessDialog from './ProcessDialog.vue';
+import { canManageProcess as hasProcessManagementAccess, isAdminUser } from '@/utils/processManagement';
 
 export default {
     components: {
@@ -67,6 +68,8 @@ export default {
         type: String,
         process: Object,
         enableEdit: Boolean,
+        /** Mega 카드 전용: 수정/삭제는 admin만. 미주입 시 enableEdit 사용 */
+        enableEditMega: { type: Boolean, default: undefined },
         selectedDomain: [String, Number]
     },
     data: () => ({
@@ -78,6 +81,10 @@ export default {
         processType: ''
     }),
     computed: {
+        /** Mega일 때 수정/삭제용 (admin만). 없으면 enableEdit */
+        canEditDeleteMega() {
+            return this.type === 'mega' && this.enableEditMega !== undefined ? this.enableEditMega : this.enableEdit;
+        },
         addType() {
             if (this.type == 'map') {
                 return 'mega';
@@ -90,12 +97,16 @@ export default {
         isPal() {
             return typeof window !== 'undefined' && window.$pal;
         },
-        isAdmin() {
-            return localStorage.getItem('isAdmin') === 'true';
+        canManageProcess() {
+            return hasProcessManagementAccess();
         },
         canSetPermission() {
-            // PAL 모드이거나 관리자 권한이 있으면 표시
-            return this.isPal || this.isAdmin;
+            // Mega 카드: 권한 설정은 admin만 표시 (process-manager는 숨김)
+            if (this.type === 'mega') {
+                return this.isPal || isAdminUser();
+            }
+            // 그 외: PAL 모드이거나 프로세스 관리 권한이 있으면 표시
+            return this.isPal || this.canManageProcess;
         },
         addTooltipText() {
             if (this.type === 'mega') {

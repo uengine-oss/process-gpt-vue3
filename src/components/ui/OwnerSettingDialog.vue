@@ -16,11 +16,12 @@
                     {{ processName }}
                 </div>
 
-                <!-- 담당자 선택 -->
+                <!-- 담당자 선택 (uEngine 모드에서는 Keycloak 유저 목록 사용) -->
                 <OwnerSelect
                     v-model="selectedOwner"
                     :label="$t('ownerSettingDialog.owner')"
                     :placeholder="$t('ownerSettingDialog.placeholder')"
+                    :use-keycloak-users="true"
                     hide-details
                 />
             </v-card-text>
@@ -88,9 +89,27 @@ export default defineComponent({
             emit('update:modelValue', newVal);
         });
 
-        // 현재 owner 로드
+        // 현재 owner 로드 (uEngine: 맵 JSON proc_def_owners, 그 외: Supabase proc_def)
         const loadCurrentOwner = async () => {
             try {
+                const isUEngine = (window as any).$mode === 'uEngine';
+                if (isUEngine && typeof backend.getOwnerByProcDef === 'function') {
+                    const owner = await backend.getOwnerByProcDef(props.process.id);
+                    selectedOwner.value = owner ?? '';
+                    return;
+                }
+                const supabase = (window as any).$supabase;
+                if (supabase) {
+                    const { data, error } = await supabase
+                        .from('proc_def')
+                        .select('owner')
+                        .eq('id', props.process.id)
+                        .maybeSingle();
+                    if (!error && data && data.owner != null && data.owner !== '') {
+                        selectedOwner.value = data.owner;
+                        return;
+                    }
+                }
                 const procDef = await backend.getRawDefinition(props.process.id);
                 if (procDef && procDef.owner) {
                     selectedOwner.value = procDef.owner;
@@ -113,15 +132,18 @@ export default defineComponent({
 
             saving.value = true;
             try {
-                // proc_def 테이블의 owner 필드 업데이트
-                const supabase = window.$supabase;
-                if (supabase) {
-                    const { error } = await supabase
-                        .from('proc_def')
-                        .update({ owner: selectedOwner.value || null })
-                        .eq('id', props.process.id);
-
-                    if (error) throw error;
+                const isUEngine = (window as any).$mode === 'uEngine';
+                if (isUEngine && typeof backend.putOwner === 'function') {
+                    await backend.putOwner(props.process.id, selectedOwner.value || null);
+                } else {
+                    const supabase = window.$supabase;
+                    if (supabase) {
+                        const { error } = await supabase
+                            .from('proc_def')
+                            .update({ owner: selectedOwner.value || null })
+                            .eq('id', props.process.id);
+                        if (error) throw error;
+                    }
                 }
 
                 emit('saved', {

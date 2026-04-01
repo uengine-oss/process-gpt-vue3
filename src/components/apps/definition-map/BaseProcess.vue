@@ -4,6 +4,7 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { canManageProcess as hasProcessManagementAccess } from '@/utils/processManagement';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -29,15 +30,15 @@ export default {
         window.addEventListener('closeAllProcessDialogs', this._closeDialogHandler);
     },
     async mounted() {
-        const role = localStorage.getItem('role');
-        if (role == 'superAdmin') {
+        if (hasProcessManagementAccess()) {
             this.editable = true;
         } else {
             if (this.process) {
                 const uid = localStorage.getItem('uid');
                 const permission = await backend.getUserPermissions({ proc_def_id: this.process.id, user_id: uid });
                 if (permission) {
-                    this.editable = permission.writable;
+                    const p = Array.isArray(permission) ? permission[0] : permission;
+                    this.editable = p?.writable ?? false;
                 } else {
                     this.editable = false;
                 }

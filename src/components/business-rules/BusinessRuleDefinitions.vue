@@ -112,7 +112,7 @@
                                 class="mr-2"
                                 @update:model-value="onToggleAdvancedMode"
                             />
-                            <v-btn v-if="isUEngineMode && draft?.id" variant="text" rounded class="mr-2" @click="openVersionManager">
+                            <v-btn v-if="isUengineMode && draft?.id" variant="text" rounded class="mr-2" @click="openVersionManager">
                                 <v-icon start>mdi-history</v-icon>
                                 {{ $t('businessRuleDefinition.versionManagement') }}
                             </v-btn>
@@ -444,7 +444,7 @@
 
         <!-- 버전 관리 다이얼로그 (UEngine 모드 전용) -->
         <business-rule-version-manager
-            v-if="showVersionManager && isUEngineMode && draft?.id"
+            v-if="showVersionManager && isUengineMode && draft?.id"
             :rule-id="draft?.id"
             :rule-name="draft?.name"
             @close="showVersionManager = false"
@@ -588,7 +588,7 @@ export default {
             if (!Array.isArray(this.draft.rules) || this.draft.rules.length === 0) return false;
             return true;
         },
-        isUEngineMode() {
+        isUengineMode() {
             return window.$mode === 'uEngine';
         }
     },

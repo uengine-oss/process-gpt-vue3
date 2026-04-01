@@ -116,9 +116,13 @@ export default {
             this.searchResult = [];
 
             try {
-                await backend.search(this.searchKeyword, (updated) => {
-                    this.searchResult = updated;
+                const updated = await backend.search(this.searchKeyword, (results) => {
+                    this.searchResult = results ?? [];
                 });
+                // 백엔드가 콜백을 호출하지 않는 경우 반환값으로 적용 (예: UEngineBackend 호환)
+                if (Array.isArray(updated) && updated.length > 0) {
+                    this.searchResult = updated;
+                }
             } catch (e) {
                 console.error('검색 중 에러 발생:', e);
                 this.searchResult = [];

@@ -27,6 +27,10 @@
                 {{ $t('System.description') }}: {{ systemInfo.description }}
                 <br />
                 URL: {{ systemInfo.url }}
+                <template v-if="lastModifiedByActorLine">
+                    <br />
+                    <span class="text-caption text-medium-emphasis">{{ lastModifiedByActorLine }}</span>
+                </template>
             </v-card-text>
             <v-btn @click="editSystem" color="primary" rounded style="position: absolute; bottom: 10px; right: 10px">
                 {{ $t('System.edit') }}
@@ -54,6 +58,7 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { hasActorValue, resolveUpdatedByForDisplay, trimmedActorId } from '@/utils/definitionActorDisplay';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -62,19 +67,52 @@ export default {
         system: {
             type: String,
             required: true
+        },
+        /** GET /definition/system 목록 항목의 updatedByName (Keycloak ID 등) */
+        listUpdatedByName: {
+            type: String,
+            default: ''
         }
     },
     data: () => ({
         systemInfo: null,
-        showDeleteDialog: false
+        showDeleteDialog: false,
+        lastModifiedByActorResolved: ''
     }),
     async created() {
         let me = this;
         this.systemInfo = await backend.getSystem(me.system.replace('.json', ''));
+        await this.resolveLastModifiedActor();
     },
     mounted() {},
-    computed: {},
+    watch: {
+        listUpdatedByName() {
+            this.resolveLastModifiedActor();
+        },
+        systemInfo: {
+            deep: true,
+            handler() {
+                this.resolveLastModifiedActor();
+            }
+        }
+    },
+    computed: {
+        lastModifiedByActorLine() {
+            if (!this.lastModifiedByActorResolved) return '';
+            return this.$t('System.lastModifiedByActor', { actor: this.lastModifiedByActorResolved });
+        }
+    },
     methods: {
+        async resolveLastModifiedActor() {
+            const fromList = this.listUpdatedByName;
+            const fromDetail = this.systemInfo && this.systemInfo.updatedByName;
+            const raw = hasActorValue(fromList) ? fromList : fromDetail;
+            if (!hasActorValue(raw)) {
+                this.lastModifiedByActorResolved = '';
+                return;
+            }
+            this.lastModifiedByActorResolved = await resolveUpdatedByForDisplay(trimmedActorId(raw));
+        },
         editSystem() {
             this.$emit('editSystem', this.systemInfo);
         },

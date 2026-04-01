@@ -132,8 +132,11 @@
                 </div>
             </v-window-item>
 
-            <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
-                <FormDefinition ref="formDefinition" :type="tab" :formId="formId" v-model="tempFormHtml" />
+            <v-window-item value="edit">
+                <FormDefinition ref="formDefinitionEdit" type="edit" :formId="formId" v-model="tempFormHtml" />
+            </v-window-item>
+            <v-window-item value="preview">
+                <FormDefinition ref="formDefinitionPreview" type="preview" :formId="formId" v-model="tempFormHtml" />
             </v-window-item>
         </v-window>
     </div>
@@ -292,8 +295,8 @@ export default {
             async handler(newVal, oldVal) {
                 if (newVal !== oldVal) {
                     // 폼 편집 탭에서 나갈 때 HTML 저장
-                    if (oldVal === 'edit' && this.$refs.formDefinition && this.$refs.formDefinition[0]) {
-                        this.tempFormHtml = this.$refs.formDefinition[0].getFormHTML();
+                    if (oldVal === 'edit' && this.$refs.formDefinitionEdit) {
+                        this.tempFormHtml = this.$refs.formDefinitionEdit.getFormHTML();
                     }
 
                     // 참조정보 탭으로 들어갈 때 이전 폼 목록 로드
@@ -547,8 +550,8 @@ export default {
         async beforeSave() {
             var me = this;
 
-            if (me.$refs.formDefinition && me.activeTab == 'edit') {
-                me.tempFormHtml = me.$refs.formDefinition[0].getFormHTML();
+            if (me.$refs.formDefinitionEdit && me.activeTab == 'edit') {
+                me.tempFormHtml = me.$refs.formDefinitionEdit.getFormHTML();
             }
 
             // 저장 시 규칙 통일:

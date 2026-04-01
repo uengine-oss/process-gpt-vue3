@@ -103,11 +103,37 @@
                     </v-tooltip>
 
                     <div class="pdf-download-btn">
-                        <v-tooltip location="bottom" :text="$t('processDefinition.savePDF')">
+                        <v-menu v-if="Pal" location="bottom">
+                            <template v-slot:activator="{ props: menuProps }">
+                                <div v-bind="menuProps" class="mr-2">
+                                    <v-btn
+                                        :size="30"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        :title="$t('processDefinition.savePDF')"
+                                    >
+                                        <v-icon :size="26">mdi-file-pdf-box</v-icon>
+                                    </v-btn>
+                                </div>
+                            </template>
+                            <v-list density="compact" min-width="240">
+                                <v-list-item @click="savePDF('full')">
+                                    <v-list-item-title>{{ $t('subProcessDetail.pdfSaveFull') }}</v-list-item-title>
+                                    <v-list-item-subtitle>{{ $t('subProcessDetail.pdfSaveFullHint') }}</v-list-item-subtitle>
+                                </v-list-item>
+                                <v-list-item @click="savePDF('bpmn')">
+                                    <v-list-item-title>{{ $t('subProcessDetail.pdfSaveBpmnOnly') }}</v-list-item-title>
+                                    <v-list-item-subtitle>{{ $t('subProcessDetail.pdfSaveBpmnOnlyHint') }}</v-list-item-subtitle>
+                                </v-list-item>
+                            </v-list>
+                        </v-menu>
+                        <v-tooltip v-else location="bottom" :text="$t('processDefinition.savePDF')">
                             <template v-slot:activator="{ props }">
                                 <div v-bind="props" class="mr-2">
                                     <v-btn
-                                        @click="savePDF"
+                                        @click="savePDF('bpmn')"
                                         :size="30"
                                         icon
                                         variant="text"
@@ -151,7 +177,7 @@
 
         <v-card-text
             style="width: 100%"
-            :style="isMobile ? 'height: calc(100vh - 94px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 188px); padding: 10px;'"
+            :style="isMobile ? 'height: calc(100vh - 94px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 180px); padding: 10px;'"
         >
             <ProcessDefinition
                 ref="processDefinitionRef"
@@ -163,7 +189,8 @@
                 :isViewMode="isViewMode"
                 :isAdmin="isAdmin"
                 :isPreviewPDFDialog="isPreviewPDFDialog"
-                @closePDFDialog="isPreviewPDFDialog = false"
+                :pdf-include-pal-manuals="pdfIncludePalManuals"
+                @closePDFDialog="onClosePDFDialog"
                 v-on:openSubProcess="(ele) => openSubProcess(ele)"
             >
             </ProcessDefinition>
@@ -204,7 +231,6 @@ import BaseProcess from './BaseProcess.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { useBpmnStore } from '@/stores/bpmn';
 import { useBpmnExport } from '@/composables/useBpmnExport';
-
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -234,6 +260,8 @@ export default {
         isViewMode: true,
         executeDialog: false,
         isPreviewPDFDialog: false,
+        /** PAL PDF: true면 activities 매뉴얼 포함 */
+        pdfIncludePalManuals: false,
         //
         isEditable: false,
         isSimulate: false,
@@ -257,6 +285,7 @@ export default {
     watch: {
         '$route.params': {
             handler(newVal, oldVal) {
+                if (!this.$route.path.includes('/definition-map/sub/')) return;
                 const id = this.getSubIdFromParams(newVal);
                 const oldId = oldVal && this.getSubIdFromParams(oldVal);
                 if (!id) return;
@@ -269,7 +298,8 @@ export default {
     created() {
         const params = this.$route.params;
         const id = this.getSubIdFromParams(params);
-        this.init(id ? { id, name: params.name || id } : params);
+        if (!id) return;
+        this.init({ id, name: params.name || id });
     },
     methods: {
         async checkEditable() {
@@ -355,12 +385,14 @@ export default {
                 }
             }
         },
+        /**
+         * 서브프로세스 상세 라우트는 `/definition-map/sub/:pathMatch(.+)` 만 pathMatch를 쓴다.
+         * `/definition-map/mega/:id`, `/definition-map/major/:id` 의 params.id는 메가/메이저 표시명이므로
+         * 여기서 쓰면 `기본` → default/기본.bpmn 조회 같은 오조회가 난다.
+         */
         getSubIdFromParams(params) {
-            if (!params) return null;
-            if (params.pathMatch != null) {
-                return Array.isArray(params.pathMatch) ? params.pathMatch.join('/') : params.pathMatch;
-            }
-            return params.id || null;
+            if (!params || params.pathMatch == null) return null;
+            return Array.isArray(params.pathMatch) ? params.pathMatch.join('/') : params.pathMatch;
         },
         async init(obj) {
             var me = this;
@@ -437,9 +469,15 @@ export default {
                 processName: this.processDefinition?.name || 'Process Diagram'
             });
         },
-        savePDF() {
+        /** @param {'full'|'bpmn'} mode — full: BPMN+PAL 매뉴얼, bpmn: 다이어그램만 */
+        savePDF(mode) {
+            this.pdfIncludePalManuals = mode === 'full';
             this.isPreviewPDFDialog = false;
             this.isPreviewPDFDialog = true;
+        },
+        onClosePDFDialog() {
+            this.isPreviewPDFDialog = false;
+            this.pdfIncludePalManuals = false;
         },
         executeProcess(mode) {
             if (mode == 'simulate') {

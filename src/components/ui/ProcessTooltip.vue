@@ -29,10 +29,24 @@
                         <span class="text-caption"> {{ $t('processTooltip.status') }}: {{ statusText }} </span>
                     </div>
 
+                    <!-- 미확인 여부 -->
+                    <div v-if="processInfo.isUnchecked" class="d-flex align-center mb-1">
+                        <v-icon size="14" class="mr-2" color="grey-lighten-1">mdi-circle-medium</v-icon>
+                        <span class="text-caption"> {{ $t('processTooltip.unchecked') }} </span>
+                    </div>
+
                     <!-- 최종 수정일 -->
                     <div v-if="showUpdatedAt && processInfo.updatedAt" class="d-flex align-center mb-1">
                         <v-icon size="14" class="mr-2" color="grey-lighten-1">mdi-calendar</v-icon>
                         <span class="text-caption"> {{ $t('processTooltip.lastModified') }}: {{ formatDate(processInfo.updatedAt) }} </span>
+                    </div>
+
+                    <!-- 정의 저장 메타(목록 API): 최종 변경자 — 은행권 표기 -->
+                    <div v-if="processInfo.lastModifiedByActor" class="d-flex align-center mb-1">
+                        <v-icon size="14" class="mr-2" color="grey-lighten-1">mdi-account-edit</v-icon>
+                        <span class="text-caption">
+                            {{ $t('processTooltip.lastModifiedByBank', { actor: processInfo.lastModifiedByActor }) }}
+                        </span>
                     </div>
 
                     <!-- Task 수 -->
@@ -74,11 +88,13 @@ export default {
                 id: '',
                 name: '',
                 owner: '',
+                isUnchecked: false,
                 status: 'draft',
                 updatedAt: null,
                 description: '',
                 taskCount: 0,
-                completionRate: 0
+                completionRate: 0,
+                lastModifiedByActor: ''
             })
         },
         // 툴팁 위치

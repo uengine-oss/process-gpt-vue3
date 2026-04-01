@@ -33,10 +33,17 @@
         "noIncomingConnection": "들어오는 연결이 없습니다.",
         "noOutgoingConnection": "나가는 연결이 없습니다.",
         "noManual": "매뉴얼이 없습니다.",
-        "callActivityNoProcess": "선택된 프로세스가 없습니다."
+        "callActivityNoProcess": "선택된 프로세스가 없습니다.",
+        "saveBlockedHint": "검증 문제로 저장할 수 없습니다. 하단 패널에서 내용을 확인한 뒤 수정하거나, 오류가 없을 때만 무시하고 저장할 수 있습니다."
     },
     "save": {
         "noChanges": "변경 사항이 없습니다."
+    },
+    "leadTime": {
+        "title": "BPMN 검증 결과",
+        "days": "일",
+        "hours": "시간",
+        "minutes": "분"
     },
     "businessRuleDefinition": {
         "title": "룰 정의(비즈니스 규칙)",
@@ -217,7 +224,7 @@
         "pricing": "가격",
         "documentation": "사용 설명서",
         "support": "고객 지원",
-        "start": "사용해 보기",
+        "start": "베타 테스트하기",
         "title": "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
@@ -650,8 +657,23 @@
     "systemDefinition": {
         "title": "시스템 정의"
     },
+    "keycloakUsers": {
+        "title": "Keycloak 사용자",
+        "hint": "Keycloak Admin API로 사용자 목록을 불러옵니다. 행을 선택하면 GET /users/{id} 응답 필드를 그대로 표시합니다.",
+        "listTitle": "사용자 목록",
+        "detailTitle": "사용자 상세 (API 필드명 그대로)",
+        "search": "검색 (username, email, 이름 등)",
+        "load": "목록 불러오기",
+        "noUsers": "사용자가 없습니다.",
+        "selectUser": "목록에서 사용자를 선택하세요.",
+        "notUEngine": "uEngine 모드에서만 사용할 수 있습니다.",
+        "loadError": "목록을 불러오지 못했습니다. (토큰·realm-management 권한을 확인하세요.)",
+        "detailError": "상세 정보를 불러오지 못했습니다.",
+        "prev": "이전",
+        "next": "다음"
+    },
     "organizationChartDefinition": {
-        "title": "조직도 관리",
+        "title": "조직도 추가 및 관리",
         "cardTitle": "조직도 관리",
         "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다.",
         "addTeam": "팀 생성",
@@ -728,7 +750,10 @@
         "title": "프로세스 정의 체계도",
         "mobileTitle": "시작하기",
         "lock": "저장하려면 저장 아이콘을 누르십시오.",
+        "editingInProgress": "편집 중",
         "unlock": "편집하려면 연필 아이콘을 누르십시오.",
+        "lockedByOtherTooltip": "다른 사용자가 수정 중입니다. 체크아웃하려면 클릭하세요.",
+        "lockedByOtherMessage": "현재 {name} 님이 수정 중입니다. 해당 사용자가 편집을 마칠 때까지 편집할 수 없습니다.",
         "addMega": "Mega 프로세스",
         "addMajor": "Major 프로세스",
         "addSub": "Sub 프로세스",
@@ -753,6 +778,10 @@
                     "title": "이미지 다운로드 아이콘\n생성된 체계도를 이미지로 다운로드하는 기능입니다."
                 },
                 {
+                    "icon": "magic",
+                    "title": "프로세스 컨설팅\nAI를 활용해 초기 프로세스를 만들 수 있습니다.\n예) '휴가신청 프로세스를 생성해줘'와 같이 입력하면 자동으로 생성됩니다."
+                },
+                {
                     "icon": "market",
                     "title": "마켓플레이스\n이미 다른 사람들에 의해 등록된 예시 프로세스를 테스트 및 동작시켜볼 수 있습니다."
                 }
@@ -760,7 +789,8 @@
         },
         "editingUser": "{name} 님이 수정 중 입니다.",
         "checkIn": "잠금",
-        "checkOut": "잠금 해제",
+        "checkOut": "편집",
+        "subProcessEditHint": "새 창에서 프로세스 정의를 엽니다. 맵 전체(추가·삭제·배치)는 상단에서 편집을 시작한 뒤에 할 수 있습니다.",
         "saveCheckIn": "저장",
         "cancelCheckIn": "저장 안함",
         "confirm": "확인",
@@ -768,6 +798,7 @@
         "cancel": "취소",
         "download": "다운로드",
         "uncategorized": "미분류",
+        "unchecked": "미확인",
         "searchProcess": "정의체계도 검색 (예: 보험, 신청)",
         "isDeployable": "배포",
         "closeConsulting": "저장하지 않은 정보는 모두 유실됩니다. 컨설팅을 종료하시겠습니까?",
@@ -779,6 +810,9 @@
         "forcedCheckOutMessage": "현재 {name} 님께서 수정 중입니다. 편집을 진행하는 경우 {name}님이 수정한 내용은 손상되어 저장되지 않습니다. \n편집을 진행 하시겠습니까?",
         "forceCheckoutNotification": "{name} 님이 수정을 시작하여, 현재까지 작업 내용이 저장된 후 수정이 종료됩니다.",
         "forceCheckoutError": "강제 체크아웃 처리 중 오류가 발생했습니다.",
+        "lockAlreadyReleased": "이미 다른 사용자가 잠금을 해제했습니다.",
+        "lockHeldByOther": "{name}님이 잠금을 보유 중입니다. 해제할 수 없습니다.",
+        "lockConflict": "{name}님이 이미 수정 중입니다. 편집할 수 없습니다.",
         "settingPermission": "권한 설정",
         "isReadable": "열람",
         "isWritable": "개정",
@@ -789,8 +823,10 @@
         "cardView": "카드",
         "matrixView": "매트릭스",
         "duplicateName": "동일한 이름의 프로세스가 이미 존재합니다.",
+        "nameSyncFailed": "정의 서버 표시명(TB) 저장에 실패했습니다.",
         "allDomains": "전체",
         "selectColor": "색상 선택",
+        "selectDomain": "도메인 선택",
         "filterByOrganization": "조직 필터",
         "editingEnded": "{name} 님이 수정을 완료했습니다. 이제 수정할 수 있습니다.",
         "manageOrphans": "미분류 프로세스 관리",
@@ -990,7 +1026,11 @@
             "createAndOpen": "생성 후 열기",
             "aiSuggestion": "AI 추천 위치",
             "recommended": "추천",
-            "applySuggestion": "적용"
+            "applySuggestion": "적용",
+            "creationTypeInfoScratch": "새로운 빈 캔버스에서 프로세스를 처음부터 설계합니다.",
+            "creationTypeInfoTemplate": "기존 표준 템플릿을 기반으로 프로세스를 빠르게 시작합니다.",
+            "creationTypeInfoClone": "기존 프로세스를 복사하여 유사한 프로세스를 효율적으로 생성합니다.",
+            "createFailed": "프로세스 생성에 실패했습니다."
         }
     },
     "processHierarchy": {
@@ -1038,6 +1078,11 @@
         "wipFailed": "WIP 상태 변경에 실패했습니다.",
         "savePrepFailed": "저장 준비에 실패했습니다.",
         "saveFailed": "저장에 실패했습니다.",
+        "lockedByUser": "%s님이 수정 중입니다.",
+        "edit": "편집",
+        "requestEdit": "편집 요청",
+        "releaseLock": "잠금 해제",
+        "checkoutTooltip": "현재 {name} 님께서 수정 중입니다. 체크아웃 하는 경우 해당 사용자가 수정한 내용은 저장되지 않습니다. 체크아웃 하시겠습니까?",
         "defaultProcessName": "프로세스",
         "copySuffix": "(복사본)",
         "currentVersionLabel": "현재 버전",
@@ -1085,7 +1130,10 @@
         "rollbackFailed": "되돌리기에 실패했습니다.",
         "selectProcessToCompare": "비교할 프로세스를 왼쪽 목록에서 선택하세요",
         "selectProcessHint": "프로세스를 선택하면 버전 간 차이를 비교할 수 있습니다",
-        "noVersions": "저장된 버전이 없습니다"
+        "noVersions": "저장된 버전이 없습니다",
+        "versionModifiedBy": "해당 버전 변경자: {actor}",
+        "noSavedVersionMeta": "저장 시각·변경자 정보 없음 (API 미제공)",
+        "noSavedVersionMetaUEngine": "변경자·담당 정보 없음 (API 미제공)"
     },
     "toolbarInfo": {
         "savedAgo": "{n}분 전 저장",
@@ -1097,7 +1145,7 @@
         "historyMode": "히스토리"
     },
     "validationConsole": {
-        "title": "접근 권한 설정",
+        "title": "BPMN 검증 결과",
         "noIssues": "문제가 발견되지 않았습니다.",
         "errorCount": "오류 {n}건",
         "warningCount": "경고 {n}건",
@@ -1200,7 +1248,6 @@
     },
     "progressBadge": {
         "draft": "작성중",
-        "processEditing": "프로세스 편집중",
         "review": "검토중",
         "published": "완료",
         "public_review": "Public Review",
@@ -1217,6 +1264,7 @@
         "unnamed": "이름 없음",
         "unassigned": "미지정",
         "owner": "담당자",
+        "unchecked": "미확인",
         "status": "상태",
         "lastModified": "최종 수정",
         "taskCount": "Task 수",
@@ -1225,7 +1273,8 @@
         "loading": "로딩 중...",
         "today": "오늘",
         "yesterday": "어제",
-        "daysAgo": "일 전"
+        "daysAgo": "일 전",
+        "lastModifiedByBank": "최종 변경자: {actor}"
     },
     "processDefinitionTree": {
         "title": "프로세스 정의 트리",
@@ -1366,6 +1415,7 @@
         "inputMessage": "메시지 입력",
         "definitionMapInputMessage": "예: 휴가 신청 프로세스 만들어줘 / 휴가 신청 프로세스 실행해줘 / 실행중인 휴가 신청의 승인 여부 알려줘",
         "lock": "저장하려면 저장 아이콘을 누르세요.",
+        "lockOnly": "저장 없이 잠금",
         "unlock": "편집하려면 연필 아이콘을 누르세요.",
         "processDefinitionSave": "저장",
         "history": "버전 히스토리",
@@ -1441,7 +1491,7 @@
         "dataSource": "데이터소스",
         "dataSourceConnection": "데이터소스 연동",
         "experimentalFeature": "실험 기능",
-        "experimentalFeatureExplanationOn": "폼 데이터와 외부 DB를 연동합니다. 프로세스 생성 시 필요한 데이터를 폼에 자동으로 채워줍니다. (예: 휴가 잔여일수)",
+        "experimentalFeatureExplanationOn": "폼 스캔 시 외부 dataSource를 자동으로 연동합니다",
         "experimentalFeatureExplanationOff": "폼 스캔 시 dataSource 연동을 사용하지 않습니다",
         "experimentalFeatureWarning": "이 기능은 현재 테스트 중이며, 예상과 다르게 동작할 수 있습니다. 피드백은 개발팀에 전달해 주세요.",
         "addDataSource": "데이터소스 추가",
@@ -1480,16 +1530,8 @@
         "sendInvitation": "초대 보내기",
         "emailAddress": "이메일 주소",
         "role": "역할",
-        "user": "user",
-        "admin": "Admin",
-        "me": "나",
-        "delegate": "위임",
-        "delegateAction": "위임하기",
-        "delegateSuperAdminTitle": "SuperAdmin 권한 위임",
-        "delegateSuperAdminDescription": "위임할 사용자를 선택하면 해당 사용자가 SuperAdmin이 되고, 내 권한은 Admin으로 변경됩니다.",
-        "selectUser": "사용자 선택",
-        "delegateSuperAdminSuccess": "SuperAdmin 권한이 위임되었습니다.",
-        "delegateSuperAdminFailed": "SuperAdmin 권한 위임에 실패했습니다.",
+        "user": "사용자",
+        "admin": "관리자",
         "add": "추가",
         "addMCPServer": "새 MCP 서버 추가",
         "addEnvironment": "추가",
@@ -1533,6 +1575,7 @@
         "noGroups": "등록된 그룹이 없습니다",
         "noAvailableTeams": "추가 가능한 팀이 없습니다",
         "addSelectedTeams": "선택한 팀 추가",
+        "confirmDelete": "그룹 삭제",
         "deleteConfirmMessage": "'{name}' 그룹을 삭제하시겠습니까?",
         "affiliatedTeam": "소속 팀"
     },
@@ -1696,11 +1739,15 @@
         "duplicateKey": "중복된 Key입니다."
     },
     "PDFPreviewer": {
+        "checkpointsLabel": "체크포인트",
+        "palManualSection": "PAL 태스크 매뉴얼",
+        "pageLabel": "페이지",
         "saveDocument": "PDF 저장",
         "close": "닫기",
         "title": "PDF 저장 미리보기",
         "splitBPMN": "분할",
-        "savingPDF": "PDF 저장중..."
+        "savingPDF": "PDF 저장중...",
+        "taskManualContinued": "계속"
     },
     "EscalationEventDefinitionPanel": {
         "expression": "이벤트 키"
@@ -1755,8 +1802,7 @@
         "helpVersionToggle": "• 버전 태그(minor / major):\n  - minor: 현재 버전의 소수점 이하를 1 증가시켜 저장합니다. 예) 1.3 → 1.4\n    * 주로 실제 운영(배포) 전에 여러 번 수정·보완하면서 \"임시 저장\"이나 작업 중인 스냅샷을 남길 때 사용합니다.\n  - major: 정수 버전을 1 증가시키고 소수점은 0으로 초기화합니다. 예) 1.3 → 2.0\n    * 실제로 적용·배포되는 프로세스 버전에 사용하며, 운영 환경에서 기준이 되는 버전입니다.\n  저장 시 선택한 버전 태그에 따라 다음 버전 번호(new version)가 자동 계산되어 사용됩니다.",
         "helpOptimize": "• 프로세스 정의 최적화: 체크하면 저장 시 AI가 프로세스 정의를 분석하여 각 작업(액티비티)에 필요한 입력 데이터(참조 정보)와 데이터 흐름을 자동으로 보정합니다.\n  - 작업 간 데이터 연결 관계를 점검하고 필요한 변수를 추천\n  - 불필요한 필드나 누락된 필드를 제안하여 정의 품질 향상\n  - 직접 하나씩 수정하기 어려운 반복 작업을 자동화하여 모델링 시간을 단축합니다.",
         "generatingDiff": "변경 내역을 분석 중입니다...",
-        "currentVersion": "현재 버전",
-        "nextVersion": "다음 버전"
+        "currentVersion": "현재 버전"
     },
     "FormDefinitionPanel": {
         "editForm": "폼 속성 수정",
@@ -2032,7 +2078,8 @@
         "edit": "수정",
         "delete": "삭제",
         "confirmDeleteTitle": "시스템 정의 삭제",
-        "confirmDeleteText": "을/를 삭제하시겠습니까?"
+        "confirmDeleteText": "을/를 삭제하시겠습니까?",
+        "lastModifiedByActor": "최종 수정자: {actor}"
     },
     "PaletteProvider": {
         "undoCmdZ": "되돌리기 (Cmd + Z)",
@@ -2082,23 +2129,14 @@
         "confirmDeleteChatRoom": "채팅방을 삭제하시겠습니까?",
         "deleteChatRoomConfirm": "이 대화를 삭제하시겠습니까? 삭제된 대화는 복구할 수 없습니다.",
         "enterChatRoomName": "채팅방 이름을 입력해주세요.",
-        "selectAtLeastOneParticipant": "참여자를 하나 이상 선택해주세요.",
-        "newChat": "새 채팅",
-        "defaultUser": "사용자",
-        "renameChatRoom": "채팅방 이름 변경",
-        "changeParticipants": "참여자 변경",
-        "chat": "대화",
-        "loadingUserInfo": "유저 정보를 불러오는 중...",
-        "deleteWarning": "- 삭제하면 복구할 수 없습니다."
+        "selectAtLeastOneParticipant": "참여자를 하나 이상 선택해주세요."
     },
     "userListing": {
         "search": "검색",
         "chat": "채팅"
     },
     "ProcessDefinitionChat": {
-        "greetingMessage": "{name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!",
-        "datasourceSchemaFailed": "데이터소스 스키마 연동에 실패했습니다. 설정 > 데이터소스에서 연결 정보를 확인해 주세요.",
-        "datasourceSchemaFailedNoPermission": "데이터소스 스키마 연동에 실패했습니다. 데이터소스 설정은 관리자만 가능합니다. 관리자에게 문의해 주세요."
+        "greetingMessage": "{name}님 안녕하세요! 어떤 업무에 어떤 문제를 겪고 계신가요? 말씀해주시면 도와드리겠습니다!"
     },
     "customContextPad": {
         "endEvent": "종료 이벤트 추가",
@@ -2153,7 +2191,7 @@
         "replace-with-message-end": "메시지 종료 이벤트로 변경",
         "replace-with-none-intermediate-throw": "빈 중간 이벤트로 변경",
         "replace-with-signal-start": "신호 시작 이벤트로 변경",
-        "replace-with-terminate-end": "종료 이벤트로 변경",
+        "replace-with-terminate-end": "처리 종료(terminate) 이벤트로 변경",
         "replace-with-signal-end": "신호 종료 이벤트로 변경",
         "replace-with-conditional-start": "조건부 시작 이벤트로 변경",
         "replace-with-message-start": "메시지 시작 이벤트로 변경",
@@ -2196,7 +2234,40 @@
         "replace-with-non-interrupting-timer-boundary": "타이머 경계 이벤트 (비중단)로 변경",
         "replace-with-signal-boundary": "신호 경계 이벤트로 변경",
         "replace-with-timer-boundary": "타이머 경계 이벤트로 변경",
-        "replace-with-expanded-pool": "확장된 풀로 변경"
+        "replace-with-expanded-pool": "확장된 풀로 변경",
+        "replace-with-cancel-end": "취소 종료 이벤트로 변경",
+        "replace-with-cancel-boundary": "취소 경계 이벤트로 변경",
+        "replace-with-error-start": "오류 시작 이벤트로 변경",
+        "replace-with-escalation-start": "에스컬레이션 시작 이벤트로 변경",
+        "replace-with-compensation-start": "보상 시작 이벤트로 변경",
+        "replace-with-non-interrupting-message-start": "메시지 시작 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-timer-start": "타이머 시작 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-conditional-start": "조건부 시작 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-signal-start": "신호 시작 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-escalation-start": "에스컬레이션 시작 이벤트 (비중단)로 변경",
+        "replace-with-subprocess": "하위 프로세스로 변경",
+        "replace-with-sequence-flow": "시퀀스 플로우로 변경",
+        "replace-with-default-flow": "기본 플로우로 변경",
+        "replace-with-conditional-flow": "조건부 플로우로 변경",
+        "replace-with-parallel-multiple-start": "병렬 다중 시작 이벤트로 변경",
+        "replace-with-multiple-start": "다중 시작 이벤트로 변경",
+        "replace-with-parallel-multiple-start-sub": "병렬 다중 시작 이벤트로 변경",
+        "replace-with-multiple-start-sub": "다중 시작 이벤트로 변경",
+        "replace-with-parallel-multiple-start-esp": "병렬 다중 시작 이벤트로 변경",
+        "replace-with-multiple-start-esp": "다중 시작 이벤트로 변경",
+        "replace-with-non-interrupting-parallel-multiple-start-esp": "병렬 다중 시작 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-multiple-start-esp": "다중 시작 이벤트 (비중단)로 변경",
+        "replace-with-exclusive-event-based-gateway": "이벤트 기반 인스턴스형 게이트웨이 (배타)로 변경",
+        "replace-with-parallel-event-based-instantiate-gateway": "이벤트 기반 인스턴스형 게이트웨이 (병렬)로 변경",
+        "replace-with-error-intermediate-catch": "오류 중간 잡기로 변경",
+        "replace-with-multiple-intermediate-catch": "다중 중간 잡기 이벤트로 변경",
+        "replace-with-parallel-multiple-intermediate-catch": "병렬 다중 중간 잡기 이벤트로 변경",
+        "replace-with-message-start-embedded-sub": "메시지 시작 이벤트로 변경 (하위 프로세스)",
+        "replace-with-timer-start-embedded-sub": "타이머 시작 이벤트로 변경 (하위 프로세스)",
+        "replace-with-conditional-start-embedded-sub": "조건부 시작 이벤트로 변경 (하위 프로세스)",
+        "replace-with-signal-start-embedded-sub": "신호 시작 이벤트로 변경 (하위 프로세스)",
+        "replace-with-multiple-intermediate-throw": "다중 중간 던지기 이벤트로 변경",
+        "replace-with-parallel-multiple-intermediate-throw": "병렬 다중 중간 던지기 이벤트로 변경"
     },
     "WorkItem": {
         "progress": "프로세스",
@@ -2480,10 +2551,10 @@
     "VerticalSidebar": {
         "instanceList": "인스턴스",
         "projectList": "프로젝트",
-        "agentList": "에이전트 동료",
+        "agentList": "에이전트",
         "skills": "스킬",
         "addSkill": "스킬 관리",
-        "userList": "사람 동료",
+        "userList": "유저 목록",
         "userLoading": "불러오는 중...",
         "instanceMyGroup": "내 그룹 인스턴스",
         "saveFileName": "저장될 파일명",
@@ -2496,11 +2567,8 @@
         "showLess": "접기",
         "chatList": "대화목록",
         "chatLoading": "불러오는 중...",
-        "chatEmpty": "진행중인 대화가 없습니다.",
-        "chatSearchEmpty": "검색 결과가 없습니다.",
-        "analytics": "분석",
-        "definitionLoading": "정의 목록을 불러오는 중...",
-        "createAgent": "에이전트 생성"
+        "chatEmpty": "채팅방이 없습니다.",
+        "analytics": "분석"
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "프로세스 실행실적",
@@ -2620,7 +2688,12 @@
     "ProcessDefinitionChatHeader": {
         "addMarketplace": "마켓플레이스 등록",
         "processDefinitionName": "프로세스 정의명",
-        "duplicateProcess": "프로세스 복제"
+        "duplicateProcess": "프로세스 복제",
+        "autoValidation": "자동검증",
+        "autoValidationOnSave": "저장 시 검증",
+        "autoValidationMenuHint": "저장 버튼으로 버전·저장 창을 열 때 하단에 검증 결과를 표시합니다. 설정은 이 브라우저에 저장됩니다.",
+        "autoValidationHint": "저장(버전) 창을 열 때 BPMN 검증을 실행합니다. 설정은 이 브라우저에 저장됩니다.",
+        "validateBpmn": "검증 실행"
     },
     "ProcessDefinitionMarketPlaceDialog": {
         "title": "마켓플레이스 등록",
@@ -2789,7 +2862,7 @@
         "title1": "업무 프로세스를 정의하세요.",
         "title2": "실행은 Process GPT가 맡습니다.",
         "description1": "전략 목표에 맞춰 AI 에이전트들이 업무 흐름을 구성하고 실행합니다. 사람은 필요한 판단만 개입하고, 프로세스는 자동으로 이어집니다.",
-        "betaTestButton": "사용해 보기",
+        "betaTestButton": "베타 테스트하기",
         "galleryButton": "갤러리 보기",
         "educationButton": "교육과정 보기",
         "technicalReportLink": "Technical Report 보기"
@@ -3002,7 +3075,7 @@
     "CTASection": {
         "title": "지금 바로 Process GPT를 시작하세요",
         "subtitle": "AI 기반 프로세스 관리의 혁신을 경험해보세요",
-        "betaTestButton": "사용해 보기",
+        "betaTestButton": "베타 테스트하기",
         "contactButton": "문의하기",
         "name": "이름",
         "email": "이메일",
@@ -3057,7 +3130,11 @@
         "noProcessModel": "정의된 프로세스 모델이 없습니다.",
         "editProcess": "프로세스 편집",
         "processDefinitionSaved": "프로세스 정의가 저장되었습니다.",
-        "backToParent": "뒤로가기"
+        "backToParent": "뒤로가기",
+        "pdfSaveFull": "전체 저장",
+        "pdfSaveFullHint": "BPMN + 태스크 매뉴얼(PAL)",
+        "pdfSaveBpmnOnly": "BPMN만 저장",
+        "pdfSaveBpmnOnlyHint": "다이어그램만 (기존과 동일)"
     },
     "completedListPage": {
         "search": "인스턴스 검색",
@@ -3194,8 +3271,7 @@
         "skipped": "건너뜀"
     },
     "SubProcess": {
-        "execute": "실행",
-        "lockedWarning": "{name}님이 편집중인 프로세스입니다."
+        "execute": "실행"
     },
     "ProcessInstanceChat": {
         "subprocessCreating": "서브프로세스 생성 중입니다...",
@@ -3273,6 +3349,9 @@
     "OrganizationChart": {
         "searchByName": "이름으로 검색"
     },
+    "definitionActor": {
+        "lastModifiedByActor": "최종 수정자: {actor}"
+    },
     "ProcessDefinitionVersionManager": {
         "noVersionsAvailable": "저장된 버전이 없습니다",
         "versionManagement": "버전 관리",
@@ -3290,53 +3369,25 @@
         "copiedToClipboard": "클립보드에 복사되었습니다.",
         "relativeJustNow": "방금",
         "relativeMinutesAgo": "{minutes}분 전",
-        "relativeHoursAgo": "{hours}시간 전"
+        "relativeHoursAgo": "{hours}시간 전",
+        "lastModifiedByActor": "최종 수정자: {actor}"
     },
     "BpmnUengineField": {
         "newProcess": "신규",
         "processSelectLabel": "Process",
         "versionSelectLabel": "Version"
     },
-    "defaultSetting": {
-        "defaultLLM": {
-            "username": "기본 LLM",
-            "description": "기본 AI 모델을 사용한 빠른 초안 생성. ex) 기본 문서 작성, 간단한 분석 (1~3분 소요)"
-        },
-        "openaiDeepResearch": {
-            "username": "OpenAI 고급 분석",
-            "description": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 (3~10분 소요)"
-        },
-        "browserAutomation": {
-            "username": "브라우저 자동화 에이전트",
-            "description": "브라우저 자동화 에이전트"
-        },
-        "visionparse": {
-            "username": "이미지 분석",
-            "description": "이미지 분석 및 텍스트 추출"
-        }
-    },
-    "ProcessInstanceList": {
-        "loading": "인스턴스 로딩 중...",
-        "empty": "실행 중인 인스턴스가 없습니다"
-    },
     "AgentList": {
         "title": "에이전트 목록",
         "loading": "에이전트 로딩 중...",
         "empty": "등록된 에이전트가 없습니다",
-        "loadFailed": "에이전트 목록 로딩 실패",
-        "search": "에이전트 검색",
-        "searchEmpty": "검색 결과가 없습니다"
+        "loadFailed": "에이전트 목록 로딩 실패"
     },
     "SkillList": {
         "title": "스킬 목록",
         "loading": "스킬 로딩 중...",
         "empty": "등록된 스킬이 없습니다",
         "loadFailed": "스킬 목록 로딩 실패"
-    },
-    "UserList": {
-        "loading": "유저 목록을 불러오는 중...",
-        "empty": "등록된 유저가 없습니다.",
-        "searchEmpty": "검색 결과가 없습니다."
     },
     "SkillDetail": {
         "title": "스킬 상세",
@@ -3440,7 +3491,8 @@
         "idRequired": "ID는 필수입니다.",
         "idInvalid": "영문 소문자로 시작, 소문자/숫자/언더스코어만 허용",
         "generateIdTooltip": "AI로 ID 추천받기",
-        "generatingId": "ID 생성 중..."
+        "generatingId": "ID 생성 중...",
+        "displayNamePlaceholder": "비우면 선택한 프로세스 정의명이 사용됩니다"
     },
     "ProcessMenu": {
         "settings": "설정",
@@ -3453,13 +3505,19 @@
         "duplicate": "복제",
         "copySuffix": "복사",
         "duplicateSuccess": "프로세스가 복사되었습니다.",
-"duplicateFailed": "프로세스 복사에 실패했습니다.",
-        "duplicatePartialSuccess": "프로세스가 복사되었으나 세부내용은 복제되지 않았습니다."
+        "duplicateFailed": "프로세스 복사에 실패했습니다.",
+        "duplicatePartialSuccess": "프로세스가 복사되었으나 세부내용은 복제되지 않았습니다.",
+        "duplicateName": "이름",
+        "duplicateId": "ID (경로)",
+        "duplicateIdHint": "복제된 프로세스의 고유 ID입니다. 공백은 _ 로 저장됩니다.",
+        "duplicateConfirm": "복제",
+        "duplicateNameRequired": "이름을 입력해 주세요.",
+        "duplicateIdRequired": "ID를 입력해 주세요."
     },
     "ownerSettingDialog": {
-        "title": "승인 상태",
+        "title": "담당자 설정",
         "owner": "담당자",
-        "placeholder": "댓글을 입력하세요 (Ctrl+Enter로 전송)",
+        "placeholder": "담당자를 선택하세요",
         "cancel": "취소",
         "save": "저장",
         "saveSuccess": "담당자가 설정되었습니다."

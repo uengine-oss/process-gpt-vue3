@@ -1,6 +1,19 @@
 import { assign } from 'min-dash';
 import { i18n } from '@/main';
 import { indexOf } from 'lodash';
+import BackendFactory from '@/components/api/BackendFactory';
+
+function __bpmnModelingPolicy() {
+    try {
+        return BackendFactory.createBackend().getBpmnModelingPolicy();
+    } catch (e) {
+        return {
+            defaultAppendTaskBpmnType: 'bpmn:ManualTask',
+            paletteVisibleTaskBpmnTypes: null,
+            multiReplaceTaskBpmnTypes: null
+        };
+    }
+}
 
 export default function ContextPadProvider(
     config,
@@ -866,9 +879,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         actions['append.gateway'].title = i18n.global.t('customContextPad.gateway');
     }
     if (actions['append.append-task']) {
-        // uEngine·PAL 모드: 추가되는 태스크는 UserTask, 그 외는 ManualTask
-        const appendTaskType =
-            typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal) ? 'bpmn:UserTask' : 'bpmn:ManualTask';
+        const appendTaskType = __bpmnModelingPolicy().defaultAppendTaskBpmnType;
         const newAction = appendAction(appendTaskType, actions['append.append-task'].className, i18n.global.t('customContextPad.task'), {});
 
         actions['append.append-task'].action = newAction.action;
@@ -951,10 +962,9 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
             }
         ];
 
-        // 활성화된 Task 타입만 필터링 (uEngine·PAL 모드: UserTask만)
-        const isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
-        const enabledTypes = isUEngineOrPal
-            ? ['bpmn:UserTask']
+        const policy = __bpmnModelingPolicy();
+        const enabledTypes = policy.multiReplaceTaskBpmnTypes
+            ? policy.multiReplaceTaskBpmnTypes
             : window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
               window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask'];
 
@@ -1147,10 +1157,9 @@ function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, 
         { type: 'bpmn:ReceiveTask', label: i18n.global.t('CustomReplaceElement.replace-with-receive-task') || 'Receive Task', icon: '📥' }
     ];
 
-    // 활성화된 Task 타입만 필터링 (uEngine·PAL 모드: UserTask만)
-    const isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
-    const enabledTypes = isUEngineOrPal
-        ? ['bpmn:UserTask']
+    const policy = __bpmnModelingPolicy();
+    const enabledTypes = policy.multiReplaceTaskBpmnTypes
+        ? policy.multiReplaceTaskBpmnTypes
         : window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
           window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask'];
 

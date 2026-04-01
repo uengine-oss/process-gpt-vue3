@@ -2283,7 +2283,7 @@ export default {
                 })
                 .then((data) => {
                     if (data) {
-                        const instId = me.workItem.worklist.instId.replace(/\./g, '_DOT_');
+                        const instId = me.backend.encodeInstanceIdForInstancelistRoute(me.workItem.worklist.instId);
                         me.$router.push(`/instancelist/${instId}`);
                     }
                 })

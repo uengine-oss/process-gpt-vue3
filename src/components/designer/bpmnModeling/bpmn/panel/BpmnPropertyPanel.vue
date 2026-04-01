@@ -1,14 +1,20 @@
 <template>
     <div
         id="property-panel"
-        style="overflow: auto"
-        class="is-work-height"
+        class="bpmn-property-panel-root"
         :class="{ 'view-mode-panel-content': isViewMode, 'pal-view-mode': isViewMode && isPALMode }"
+        :style="panelRootStyle"
     >
-        <v-row class="ma-0 pa-4 pb-0" :class="{ 'view-mode-header': isViewMode }">
-            <v-chip v-if="isViewMode" color="gray" variant="tonal" size="x-small" class="mr-2">
+        <!-- 편집 모드 전용: 왼쪽 리사이즈 핸들 -->
+        <div
+            v-if="!isViewMode"
+            class="bpmn-property-panel-resize-handle"
+            @mousedown.prevent="startResize"
+        ></div>
+        <v-row class="ma-0 pa-4 pb-0 property-panel-header-row" :class="{ 'view-mode-header': isViewMode }">
+            <v-chip v-if="isViewMode" color="info" variant="tonal" size="x-small" class="mr-2">
                 <v-icon start size="x-small">mdi-eye</v-icon>
-                <div>{{ $t('BpmnPropertyPanel.readOnly') || 'Read Only' }}</div>
+                {{ $t('BpmnPropertyPanel.readOnly') || 'Read Only' }}
             </v-chip>
             <v-card-title v-if="isViewMode" class="pa-0 view-mode-title">{{ name }}</v-card-title>
             <v-combobox
@@ -16,15 +22,14 @@
                 v-model="name"
                 :label="$t('BpmnPropertyPanel.name')"
                 :disabled="isViewMode"
-                density="comfortable"
                 ref="cursor"
                 :items="termSuggestions"
                 :loading="termLoading"
                 @update:search="onTermSearch"
                 @update:model-value="recordTermUsage"
-                hide-no-data예
+                hide-no-data
                 clearable
-                class="bpmn-property-panel-name mb-3 delete-input-details"
+                class="bpmn-property-panel-name mb-2 delete-input-details"
             ></v-combobox>
             <v-text-field
                 v-else-if="!isPALMode"
@@ -32,13 +37,13 @@
                 :label="$t('BpmnPropertyPanel.name')"
                 :disabled="isViewMode"
                 ref="cursor"
-                class="bpmn-property-panel-name mb-3 delete-input-details"
+                class="bpmn-property-panel-name mb-2 delete-input-details"
             ></v-text-field>
             <div v-if="!isViewMode && isPALMode" style="position: relative; width: 200px">
                 <v-text-field
                     v-model="name"
                     :label="$t('BpmnPropertyPanel.name')"
-                    class="ml-2 mb-3 delete-input-details"
+                    class="ml-2 mb-2 delete-input-details"
                     @focus="menu = true"
                     @input="onInput"
                     ref="inputRef"
@@ -77,13 +82,14 @@
             </v-btn>
         </v-row>
         <v-card-text
-            class="delete-input-details pa-0 pl-4"
-            :style="isViewMode ? 'overflow: auto; flex: 1;' : 'overflow: auto; width: 50vw; min-width: 370px; height:calc(100% - 80px);'"
+            class="delete-input-details pa-0 pr-4 pl-4"
+            :style="cardTextStyle"
         >
-            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" :class="isViewMode ? 'pa-2 pb-0' : 'pa-4 pb-0'">
+            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" :class="[isViewMode ? 'pa-2 pb-0' : 'pa-4 pb-0', 'property-panel-label-block']">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
-                <div class="mb-3" v-if="!panelName.includes('sequence-flow')">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
+                <div class="role-label" v-if="!panelName.includes('sequence-flow')">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
             </div>
+            <div class="property-panel-content">
             <component
                 :is="panelName"
                 :isViewMode="isViewMode"
@@ -104,6 +110,7 @@
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
                 :key="componentKey"
             ></component>
+            </div>
 
             <!-- Zeebe Properties Panel (Camunda 8) -->
             <ZeebePropertiesPanel
@@ -115,16 +122,16 @@
                 @update:uengineProperties="(newProps) => (uengineProperties = newProps)"
             />
 
-            <v-dialog v-if="isViewMode" v-model="printDialog" max-width="1150px" max-height="80vh">
+            <v-dialog v-if="isViewMode" v-model="printDialog" max-width="720px" max-height="80vh">
                 <template v-slot:activator="{ props }">
                     <v-btn block color="primary" class="panel-download-btn" v-bind="props" @click="printDocument">
                         {{ $t('BpmnPropertyPanel.printDocument') }}
                     </v-btn>
                 </template>
-                <v-card style="max-height: 80vh; display: flex; flex-direction: column">
+                <v-card style="max-height: 80vh; display: flex; flex-direction: column; max-width: 720px">
                     <v-card-title class="headline">{{ $t('BpmnPropertyPanel.pdfPreview') }}</v-card-title>
                     <v-card-text style="flex: 1; overflow: auto">
-                        <PDFPreviewer ref="pdfPreviewer" :element="html" :name="name" />
+                        <PDFPreviewer ref="pdfPreviewer" :element="html" :name="name" :hideReadOnlyChip="true" />
                     </v-card-text>
                     <v-card-actions>
                         <v-spacer></v-spacer>
@@ -207,6 +214,12 @@ export default {
         // Object.keys(this.requiredKeyLists).forEach(key => {
         //     this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key])
         // })
+        // 패널 가로 크기 localStorage 복원
+        const stored = localStorage.getItem('bpmnPropertyPanelWidth');
+        if (stored) {
+            const w = parseInt(stored, 10);
+            if (!Number.isNaN(w) && w >= 320 && w <= 800) this.panelWidth = w;
+        }
     },
     components: {
         ValidationField,
@@ -254,7 +267,11 @@ export default {
             termSuggestions: [],
             termLoading: false,
             allTerms: [],
-            menu: false
+            menu: false,
+            // 패널 가로 크기 (편집 모드, 리사이즈·localStorage 복원)
+            panelWidth: 380,
+            _resizeStartX: 0,
+            _resizeStartWidth: 0
         };
     },
     async mounted() {
@@ -265,25 +282,6 @@ export default {
 
         // BPMN 모델 변경 이벤트 리스너 추가
         // this.setupModelChangeListener();
-
-        // view mode에서 directEditing 차단으로 사라진 엘리먼트 텍스트 복원
-        if (this.isViewMode && this.bpmnModeler) {
-            setTimeout(() => {
-                try {
-                    const elementRegistry = this.bpmnModeler.get('elementRegistry');
-                    const graphicsFactory = this.bpmnModeler.get('graphicsFactory');
-                    const task = elementRegistry.get(this.element.id);
-                    if (task) {
-                        const gfx = elementRegistry.getGraphics(task);
-                        if (gfx) {
-                            graphicsFactory.update('shape', task, gfx);
-                        }
-                    }
-                } catch (e) {
-                    // view mode 텍스트 복원 실패 무시
-                }
-            }, 100);
-        }
 
         // 템플릿 목록 불러오기
         if (this.isPALMode) {
@@ -302,6 +300,24 @@ export default {
         this.removeModelChangeListener();
     },
     computed: {
+        panelRootStyle() {
+            const base = { overflow: 'auto' };
+            if (this.isViewMode) return base;
+            return {
+                ...base,
+                position: 'relative',
+                width: `${this.panelWidth}px`,
+                minWidth: '320px',
+                maxWidth: '800px',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column'
+            };
+        },
+        cardTextStyle() {
+            if (this.isViewMode) return 'overflow: auto; flex: 1;';
+            return `overflow: auto; width: 100%; min-width: 0; flex: 1; min-height: 0;`;
+        },
         filteredTemplateOptions() {
             const filtered = this.templateOptions.filter((option) => option.includes(this.name));
             return filtered ? filtered : [];
@@ -372,7 +388,15 @@ export default {
         //     return result;
         // }
     },
-    watch: {},
+    watch: {
+        printDialog(open) {
+            if (open) {
+                this.$nextTick(() => {
+                    this.$refs.pdfPreviewer?.formatHtml();
+                });
+            }
+        }
+    },
     methods: {
         printDocument() {
             var me = this;
@@ -409,7 +433,7 @@ export default {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
         },
         async save() {
-            if (this.isViewMode) {
+            if (window.$pal && this.isViewMode) {
                 this.$emit('close');
                 return;
             }
@@ -626,6 +650,24 @@ export default {
         closePanel() {
             this.$emit('close');
         },
+        startResize(e) {
+            this._resizeStartX = e.clientX;
+            this._resizeStartWidth = this.panelWidth;
+            document.addEventListener('mousemove', this.doResize);
+            document.addEventListener('mouseup', this.stopResize);
+        },
+        doResize(e) {
+            const delta = this._resizeStartX - e.clientX;
+            const next = Math.max(320, Math.min(800, this._resizeStartWidth + delta));
+            this.panelWidth = next;
+        },
+        stopResize() {
+            document.removeEventListener('mousemove', this.doResize);
+            document.removeEventListener('mouseup', this.stopResize);
+            try {
+                localStorage.setItem('bpmnPropertyPanelWidth', String(this.panelWidth));
+            } catch (_) {}
+        },
         migrateZeebeProperties() {
             if (!this.element || !this.element.extensionElements || !this.element.extensionElements.values) {
                 return;
@@ -765,6 +807,48 @@ export default {
 </script>
 
 <style>
+/* 패널 루트: 편집 모드에서 가로 폭 적용 */
+.bpmn-property-panel-root {
+    height: 100%;
+}
+
+/* 헤더 행: 콘텐츠 높이만 사용, v-spacer가 세로로 늘어나지 않도록 */
+.property-panel-header-row {
+    flex: 0 0 auto;
+    align-items: center;
+    min-height: 0;
+}
+.property-panel-header-row .v-spacer {
+    align-self: center;
+    min-height: 0;
+}
+
+/* 편집 모드 전용 리사이즈 핸들 (왼쪽 가장자리) */
+.bpmn-property-panel-resize-handle {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: ew-resize;
+    z-index: 1;
+    user-select: none;
+}
+.bpmn-property-panel-resize-handle:hover {
+    background: rgba(var(--v-theme-primary), 0.15);
+}
+
+/* 레이블(역할 등)과 아래 패널 콘텐츠 간격 축소 */
+.property-panel-label-block {
+    margin-bottom: 0;
+}
+.property-panel-label-block .role-label {
+    margin-bottom: 4px;
+}
+.property-panel-content {
+    margin-top: 4px;
+}
+
 /* ============================================
    View Mode Panel Styles - Compact
    ============================================ */
@@ -788,6 +872,8 @@ export default {
 
 /* View Mode Header */
 .view-mode-header {
+    background: linear-gradient(to right, #f8fafc, #ffffff);
+    border-bottom: 1px solid #e2e8f0;
     padding: 4px 10px !important;
     flex-shrink: 0;
     flex-grow: 0;
@@ -811,6 +897,7 @@ export default {
     font-size: 0.7rem !important;
     font-weight: 600;
     background: rgba(99, 102, 241, 0.1) !important;
+    color: #6366f1 !important;
 }
 
 .view-mode-header .panel-close-btn {
@@ -915,7 +1002,9 @@ export default {
 .view-mode-panel-content .mb-3 {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 0.8125rem;
+    color: #475569;
     padding: 8px 12px;
+    background: #f1f5f9;
     border-radius: 8px;
     margin-bottom: 4px !important;
 }
