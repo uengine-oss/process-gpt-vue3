@@ -281,7 +281,9 @@ export default {
         delegateTaskDialog: false,
         inputFields: null,
         isInitialized: false,
-        fileFieldNames: []
+        fileFieldNames: [],
+        /** DynamicForm text-field 중 type="number" 인 필드 name 목록 (formData 값은 대부분 문자열이라 타입 추론용) */
+        numberFieldNames: []
         // activeTab: 'direct-input', // 'direct-input' 또는 'chat'
     }),
     computed: {
@@ -316,6 +318,7 @@ export default {
             }
             this.EventBus.emit('html-updated', this.html);
             this.fileFieldNames = this.extractFileFieldNames(this.html);
+            this.numberFieldNames = this.extractNumberFieldNames(this.html);
 
             // HTML이 업데이트되면 chip 핸들러 다시 설정
             this.$nextTick(() => {
@@ -343,7 +346,8 @@ export default {
                     }
                 }
                 Object.keys(incomingValues).forEach(function (key) {
-                    const normalizedValue = me.normalizeIncomingFormValue(key, incomingValues[key]);
+                    const coercedValue = me.coerceIncomingValueToFieldType(key, incomingValues[key]);
+                    const normalizedValue = me.normalizeIncomingFormValue(key, coercedValue);
                     if (me.isFileFieldKey(key)) {
                         me.formData[key] = normalizedValue;
                         return;
@@ -411,6 +415,67 @@ export default {
         isFileFieldKey(key) {
             if (!key) return false;
             return Array.isArray(this.fileFieldNames) && this.fileFieldNames.includes(key);
+        },
+        isNumberFieldKey(key) {
+            if (!key) return false;
+            return Array.isArray(this.numberFieldNames) && this.numberFieldNames.includes(key);
+        },
+        extractNumberFieldNames(html) {
+            if (!html) return [];
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const fields = Array.from(doc.querySelectorAll('text-field'));
+                const names = fields
+                    .filter((field) => String(field.getAttribute('type') || '').toLowerCase() === 'number')
+                    .map((field) => (field.getAttribute('name') || field.getAttribute('id') || '').trim())
+                    .filter((name) => name);
+                return Array.from(new Set(names));
+            } catch (error) {
+                console.warn('[FormWorkItem] text-field number parse error:', error);
+                return [];
+            }
+        },
+        coerceIncomingValueToFieldType(key, value) {
+            if (!key) return value;
+            if (value === null || value === undefined) return value;
+
+            // 파일 필드는 별도 처리 로직이 있어 캐스팅하지 않음
+            if (this.isFileFieldKey(key)) return value;
+
+            // TextField는 modelValue가 String이며 number 타입도 폼 데이터는 문자열('0' 등)이라
+            // formData 타입만으로는 숫자 필드를 알 수 없음 → HTML에서 type="number" 필드명으로 판별
+            if (this.isNumberFieldKey(key)) {
+                if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+                if (typeof value === 'string') {
+                    const cleaned = value.replace(/,/g, '').trim();
+                    if (cleaned === '') return value;
+                    const num = Number(cleaned);
+                    return Number.isFinite(num) ? String(num) : value;
+                }
+                return value;
+            }
+
+            const current = this.formData ? this.formData[key] : undefined;
+            if (current === null || current === undefined) return value;
+
+            // number 필드에 "167,200" 같은 문자열이 들어오는 케이스 처리 (formData가 실제로 number인 경우)
+            if (typeof current === 'number' && typeof value === 'string') {
+                const cleaned = value.replace(/,/g, '').trim();
+                if (cleaned === '') return value;
+                const num = Number(cleaned);
+                return Number.isFinite(num) ? num : value;
+            }
+
+            // boolean 필드에 문자열이 들어오는 케이스 처리
+            if (typeof current === 'boolean' && typeof value === 'string') {
+                const lowered = value.trim().toLowerCase();
+                if (['true', 'y', 'yes', '1'].includes(lowered)) return true;
+                if (['false', 'n', 'no', '0'].includes(lowered)) return false;
+                return value;
+            }
+
+            return value;
         },
         normalizeIncomingFormValue(key, value) {
             if (!this.isFileFieldKey(key)) return value;

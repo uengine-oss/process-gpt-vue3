@@ -350,6 +350,7 @@ export default {
                 'openai-deep-research',
                 'crewai-deep-research',
                 'deep-research-custom',
+                'deepagents',
                 'langchain-react',
                 'browser-automation-agent',
                 'a2a',

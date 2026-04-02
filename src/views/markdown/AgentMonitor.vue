@@ -248,6 +248,23 @@ export default {
                             { title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.2.title' }
                         ]
                     }
+                },
+                {
+                    titleKey: 'AgentSelectInfo.orchestration.deepagents.title',
+                    value: 'deepagents',
+                    label: this.$t('AgentSelectInfo.orchestration.deepagents.title'),
+                    startLabel: 'DeepAgents',
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.deepagents.description',
+                    costKey: 'AgentSelectInfo.cost.medium',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.2.title' }
+                        ]
+                    }
                 }
             ],
 
@@ -475,7 +492,8 @@ export default {
                 return (
                     this.selectedAgent.orchestration === 'crewai-action' ||
                     this.selectedAgent.orchestration === 'crewai-deep-research' ||
-                    this.selectedAgent.orchestration === 'deep-research-custom'
+                    this.selectedAgent.orchestration === 'deep-research-custom' ||
+                    this.selectedAgent.orchestration === 'deepagents'
                 );
             }
             return false;
@@ -780,6 +798,20 @@ export default {
             return this.formatOutput(output, 'markdown');
         },
 
+        /** task_completed 등 객체 데이터에서 화면 표시용 텍스트만 뽑음 (메타 필드 제외) */
+        extractDisplayTextFromObject(obj) {
+            if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return '';
+            const preferredKeys = ['message', 'summary', 'content', 'text', 'result'];
+            const parts = [];
+            for (const k of preferredKeys) {
+                if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+                const v = obj[k];
+                if (v === undefined || v === null) continue;
+                parts.push(typeof v === 'object' ? JSON.stringify(v) : String(v));
+            }
+            return parts.join('\n').trim();
+        },
+
         // 객체면 첫번째 키의 값을 반환, 배열/문자열 등은 그대로 반환
         resolvePrimaryValue(output, crewType) {
             const type = crewType ? String(crewType).toLowerCase() : '';
@@ -801,13 +833,21 @@ export default {
                 // 키가 없으면 원래 로직대로 원본 유지
                 return output;
             }
-            // result 타입은 원본 그대로 사용
+            // result 타입: 제출용 outputRaw는 그대로 두고, 표시용으로는 message/summary 우선
             if (type === 'result') {
+                if (output && typeof output === 'object' && !Array.isArray(output)) {
+                    const text = this.extractDisplayTextFromObject(output);
+                    if (text) return text;
+                }
                 return output;
             }
             if (output && typeof output === 'object' && !Array.isArray(output)) {
                 const keys = Object.keys(output);
-                if (keys.length > 0) return output[keys[0]];
+                if (keys.length > 0) {
+                    const text = this.extractDisplayTextFromObject(output);
+                    if (text) return text;
+                    return output[keys[0]];
+                }
             }
             return output;
         },
@@ -857,6 +897,14 @@ export default {
             let payloadForSubmit = original;
             if (!payloadForSubmit || typeof payloadForSubmit !== 'object' || Array.isArray(payloadForSubmit)) {
                 payloadForSubmit = task.content ?? this.resolvePrimaryValue(original, task.crewType || 'text');
+            }
+            // agent_finished/final 응답에서 실제 폼 입력 값은 result 안에 오는 경우가 많아 최상위로 펼쳐준다.
+            // FormWorkItem은 최상위 키만 폼 필드에 매핑하므로, result를 펼치지 않으면 화면에 보이는 값이 폼에 반영되지 않는다.
+            if (payloadForSubmit && typeof payloadForSubmit === 'object' && !Array.isArray(payloadForSubmit)) {
+                const result = payloadForSubmit.result;
+                if (result && typeof result === 'object' && !Array.isArray(result)) {
+                    payloadForSubmit = { ...payloadForSubmit, ...result };
+                }
             }
             let normalized = this.normalizeFormValues(payloadForSubmit);
             const hasFilePayload = this.hasFilePayload(normalized);
@@ -1236,7 +1284,7 @@ export default {
         // ========================================
         // 🚀 작업 실행 관련 메서드들
         // ========================================
-        async startTask(newVal) {
+        async startTask(newVal = this.selectedAgent) {
             const taskId = this.validateTaskId();
             if (!taskId) return;
 
@@ -1384,11 +1432,20 @@ export default {
                     if (this.todoStatus.query && this.todoStatus.query.trim() !== '') {
                         query = this.todoStatus.query + '\n\n' + content.text;
                     }
+                    const agentOrch =
+                        this.selectedOrchestrationMethod ||
+                        this.selectedAgent?.orchestration ||
+                        this.workItem?.worklist?.orchestration ||
+                        this.todoStatus?.agent_orch ||
+                        'crewai-action';
                     await this.backend.putWorkItem(taskId, {
                         status: 'IN_PROGRESS',
                         description: content.text,
-                        query: query
+                        query: query,
+                        agent_orch: agentOrch
                     });
+                    this.selectedOrchestrationMethod = agentOrch;
+                    this.todoStatus.agent_orch = agentOrch;
                     this.isLoading = true;
                     this.chatMessages.push({ time: new Date().toISOString(), content: content.text });
                     this.$emit('update:new-tab-title', content.text, taskId);
@@ -1475,7 +1532,7 @@ export default {
         // 🎯 오케스트레이션 방식 관련 메서드들
         // ========================================
         selectOrchestrationMethod(value) {
-            this.selectedOrchestrationMethod = value.orchestration;
+            this.selectedOrchestrationMethod = typeof value === 'string' ? value : value?.orchestration;
         },
 
         // ========================================
