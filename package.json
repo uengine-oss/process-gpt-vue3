@@ -34,7 +34,6 @@
         "@dicebear/collection": "^5.3.5",
         "@dicebear/core": "^5.3.5",
         "@floating-ui/dom": "1.0.0",
-        "@fontsource/plus-jakarta-sans": "^5.2.8",
         "@fullcalendar/core": "6.1.8",
         "@fullcalendar/daygrid": "6.1.8",
         "@fullcalendar/interaction": "6.1.8",

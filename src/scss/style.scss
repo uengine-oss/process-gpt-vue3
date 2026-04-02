@@ -47,8 +47,4 @@
 @import './pages/authentication';
 @import './pages/apps';
 
-/* vue3-perfect-scrollbar/src/style.css는 ~perfect-scrollbar(webpack) 의존 — Vite에서는 직접 import */
-@import 'perfect-scrollbar/css/perfect-scrollbar.css';
-.ps {
-  position: relative;
-}
+@import 'vue3-perfect-scrollbar/style.css';
