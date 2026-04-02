@@ -62,6 +62,10 @@ export default {
             openedTasks.forEach((id) => {
                 gantt.open(id);
             });
+
+            requestAnimationFrame(() => {
+                gantt.render();
+            });
         };
 
         // 전역 삭제 함수 정의
@@ -1120,16 +1124,6 @@ export default {
 </script>
 
 <style>
-.custom-gantt-container,
-.gantt_container,
-.gantt_layout_root,
-.gantt_grid,
-.gantt_task,
-.gantt_cal_light,
-.gantt_message {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-}
-
 .gantt-container {
     height: 500px;
     width: 100%;

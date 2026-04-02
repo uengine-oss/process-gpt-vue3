@@ -40,11 +40,6 @@ export default {
         name: {
             type: String,
             required: true
-        },
-        /** 미리보기/PDF에서만 '읽기 전용' 칩 숨김 */
-        hideReadOnlyChip: {
-            type: Boolean,
-            default: false
         }
     },
     data() {
@@ -57,14 +52,6 @@ export default {
     created() {},
     mounted() {
         this.formatHtml();
-    },
-    watch: {
-        element: {
-            handler() {
-                this.formatHtml();
-            },
-            deep: true
-        }
     },
     methods: {
         formatHtml() {
@@ -90,17 +77,6 @@ export default {
             if (attachmentContainer) {
                 const parent = attachmentContainer.parentNode;
                 parent.removeChild(attachmentContainer);
-            }
-
-            // 미리보기 전용: '읽기 전용' / Read Only 칩 제거
-            if (this.hideReadOnlyChip) {
-                const chips = tempDiv.querySelectorAll('.v-chip, [class*="chip"]');
-                chips.forEach((node) => {
-                    const text = (node.textContent || '').trim();
-                    if (text.includes('읽기 전용') || text.includes('Read Only')) {
-                        node.remove();
-                    }
-                });
             }
 
             // PDF 추출 시 아이콘 폰트(mdi-check)가 깨지는 문제 방지:

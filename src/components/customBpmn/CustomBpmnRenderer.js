@@ -452,10 +452,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
         } else if (is(element, 'bpmn:StartEvent')) {
             this.drawCustomStartEvent(parentNode, shape, element);
         } else if (is(element, 'bpmn:EndEvent')) {
-            const endGfx = this.drawCustomEndEvent(parentNode, shape, element);
-            if (endGfx) {
-                return endGfx;
-            }
+            this.drawCustomEndEvent(parentNode, shape, element);
         } else if (is(element, 'phase:PhaseContainer')) {
             this.drawCustomPhaseContainer(parentNode, shape, element);
         } else if (is(element, 'phase:Phase')) {
@@ -845,46 +842,17 @@ export default class CustomBpmnRenderer extends BaseRenderer {
         svgRemove(shape);
     }
 
-    // EndEvent: 짙은 외곽 링 + 노란 중심 + bpmn-js가 그린 이벤트 정의 아이콘(메시지/오류 등)은 그 위에 유지
+    // endEvnet 관련
     drawCustomEndEvent(parentNode, shape, element) {
-        const w = element.width || 36;
-        const h = element.height || 36;
-        const cx = w / 2;
-        const cy = h / 2;
-        // bpmn-js drawCircle 과 동일: r = round((w+h)/4)
-        const rOuter = Math.round((w + h) / 4);
-        // 안쪽 노란 원 — 바깥 대비 고리 두께. 값을 키우면 노란 원이 작아지고, 줄이면 노란 원이 커짐(일식 느낌 완화)
-        const ringPx = Math.max(3, Math.round(rOuter * 0.22));
-        const rInner = Math.max(1, rOuter - ringPx);
+        const size = 34;
+        const radius = 100;
+        var strokeColor = 'none';
 
+        const borderRect = drawBorderRect(parentNode, size, size, radius, strokeColor);
+        prependTo(borderRect, parentNode);
+        const rect = drawRect(parentNode, size, size, radius, 'none', '#f6c745');
+        prependTo(rect, parentNode);
         svgRemove(shape);
-
-        const outer = svgCreate('circle');
-        svgAttr(outer, {
-            cx,
-            cy,
-            r: rOuter,
-            stroke: 'none',
-            fill: '#333333'
-        });
-        prependTo(outer, parentNode);
-
-        const inner = svgCreate('circle');
-        svgAttr(inner, {
-            cx,
-            cy,
-            r: rInner,
-            stroke: 'none',
-            fill: '#f6c745'
-        });
-        const nextAfterOuter = outer.nextSibling;
-        if (nextAfterOuter) {
-            parentNode.insertBefore(inner, nextAfterOuter);
-        } else {
-            svgAppend(parentNode, inner);
-        }
-
-        return outer;
     }
 
     // 이벤트끼리의 연결선과 화살표 관련

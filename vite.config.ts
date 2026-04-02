@@ -65,8 +65,6 @@ export default defineConfig({
         entries: ['./src/**/*.vue']
     },
     server: {
-        host: true, // 또는 '0.0.0.0'
-        allowedHosts: true,
         proxy: {
             '/query': {
                 target: 'http://localhost:8005',

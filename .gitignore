@@ -14,7 +14,6 @@ acebase/mydb.acebase
 spikeadmin*
 cypress.config.ts
 .tmp/
-.tmp-bnk-head-src/
 .cache/
 reports/
 # Compiled Java class files

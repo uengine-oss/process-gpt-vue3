@@ -27,7 +27,7 @@
                             </div>
                         </div>
 
-                        <div v-if="showDetailUrl" class="mt-3">
+                        <div v-if="detailUrl" class="mt-3">
                             <v-divider class="mb-2"></v-divider>
                             <a :href="detailUrl" target="_blank" class="detail-link">
                                 <v-row class="align-center ma-0 pa-0">
@@ -60,11 +60,7 @@ export default {
         return {};
     },
     async mounted() {},
-    computed: {
-        showDetailUrl() {
-            return !!this.detailUrl && window.$mode !== 'uEngine';
-        }
-    },
+    computed: {},
     watch: {},
     methods: {
         getImagePath(imgName) {

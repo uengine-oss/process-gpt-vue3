@@ -15,25 +15,25 @@
                                 </v-tab>
                                 <template v-if="!gs">
                                     <!-- 구글 드라이브 -->
-                                    <v-tab v-if="superAdmin && !isUengineMode" value="Drive">
+                                    <v-tab v-if="superAdmin && !isUEngineMode" value="Drive">
                                         <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }}
                                     </v-tab>
                                     <!-- MCP 서버 -->
-                                    <v-tab v-if="!isUengineMode" value="MCP-Servers">
+                                    <v-tab v-if="!isUEngineMode" value="MCP-Servers">
                                         <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }}
                                     </v-tab>
                                     <!-- MCP 환경변수 -->
-                                    <v-tab v-if="!isUengineMode" value="MCP-Environments">
+                                    <v-tab v-if="!isUEngineMode" value="MCP-Environments">
                                         <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon>
                                         {{ $t('accountTab.environments') }}
                                     </v-tab>
-                                    <!-- <v-tab v-if="!isUengineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab> -->
+                                    <!-- <v-tab v-if="!isUEngineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab> -->
                                     <!-- 데이터 소스 연결 정보 -->
-                                    <v-tab v-if="!isUengineMode" value="ConnectionInfo">
+                                    <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                         <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                     </v-tab>
                                     <!-- 업무 카탈로그 -->
-                                    <v-tab v-if="!isUengineMode" value="TaskCatalog">
+                                    <v-tab v-if="!isUEngineMode" value="TaskCatalog">
                                         <v-icon class="mr-2" size="20">mdi-view-grid</v-icon> {{ $t('taskCatalog.catalog') }}
                                     </v-tab>
                                     <!-- 조직도 그룹 -->
@@ -103,7 +103,7 @@
 
                             <template v-if="!gs">
                                 <v-btn
-                                    v-if="superAdmin && !isUengineMode"
+                                    v-if="superAdmin && !isUEngineMode"
                                     variant="text"
                                     color="default"
                                     size="small"
@@ -114,7 +114,7 @@
                                 </v-btn>
 
                                 <v-btn
-                                    v-if="!isUengineMode"
+                                    v-if="!isUEngineMode"
                                     variant="text"
                                     color="default"
                                     size="small"
@@ -124,7 +124,7 @@
                                     {{ $t('accountTab.mcpServers') }}
                                 </v-btn>
                                 <v-btn
-                                    v-if="!isUengineMode"
+                                    v-if="!isUEngineMode"
                                     variant="text"
                                     color="default"
                                     size="small"
@@ -134,7 +134,7 @@
                                     {{ $t('accountTab.environments') }}
                                 </v-btn>
                                 <v-btn
-                                    v-if="!isUengineMode"
+                                    v-if="!isUEngineMode"
                                     variant="text"
                                     color="default"
                                     size="small"
@@ -144,7 +144,7 @@
                                     <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.dataSource') }}
                                 </v-btn>
                                 <v-btn
-                                    v-if="!isUengineMode"
+                                    v-if="!isUEngineMode"
                                     variant="text"
                                     color="default"
                                     size="small"
@@ -209,34 +209,34 @@
                         </v-window-item>
 
                         <!-- Drive: 구글 드라이브 설정 탭 (accountTab.drive) -->
-                        <v-window-item v-if="!isUengineMode" value="Drive">
+                        <v-window-item v-if="!isUEngineMode" value="Drive">
                             <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
                                 <DriveTab />
                             </div>
                         </v-window-item>
 
                         <!-- ConnectionInfo: 데이터소스 탭 (accountTab.dataSource) -->
-                        <v-window-item v-if="!isUengineMode" value="ConnectionInfo">
+                        <v-window-item v-if="!isUEngineMode" value="ConnectionInfo">
                             <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
                                 <ConnectionInfoTab />
                             </div>
                         </v-window-item>
 
                         <!-- MCP-Servers: MCP 서버 탭 (accountTab.mcpServers) -->
-                        <v-window-item v-if="!isUengineMode" value="MCP-Servers">
+                        <v-window-item v-if="!isUEngineMode" value="MCP-Servers">
                             <div>
                                 <MCPServerTab />
                             </div>
                         </v-window-item>
 
                         <!-- MCP-Environments: 환경변수 탭 (accountTab.environments) -->
-                        <v-window-item v-if="!isUengineMode" value="MCP-Environments">
+                        <v-window-item v-if="!isUEngineMode" value="MCP-Environments">
                             <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
                                 <MCPEnvSecretTab />
                             </div>
                         </v-window-item>
                         <!-- Skills: 스킬 탭 (accountTab.skills) -->
-                        <!-- <v-window-item v-if="!isUengineMode" value="Skills">
+                        <!-- <v-window-item v-if="!isUEngineMode" value="Skills">
                             <div 
                                 style="overflow: auto;"
                                 :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
@@ -246,7 +246,7 @@
                         </v-window-item> -->
 
                         <!-- task 설정 탭 -->
-                        <v-window-item v-if="!isUengineMode" value="TaskCatalog">
+                        <v-window-item v-if="!isUEngineMode" value="TaskCatalog">
                             <div class="pa-4" style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
                                 <TaskCatalogList />
                             </div>
@@ -335,7 +335,7 @@ export default {
         this.ensureVisibleTab();
     },
     computed: {
-        isUengineMode() {
+        isUEngineMode() {
             return window.$mode === 'uEngine';
         },
         gs() {
@@ -355,7 +355,7 @@ export default {
             }
             if (this.gs && hiddenInGs.has(this.tab)) {
                 this.tab = 'Account';
-            } else if (this.isUengineMode && hiddenInUEngine.has(this.tab)) {
+            } else if (this.isUEngineMode && hiddenInUEngine.has(this.tab)) {
                 this.tab = 'Account';
             }
         },

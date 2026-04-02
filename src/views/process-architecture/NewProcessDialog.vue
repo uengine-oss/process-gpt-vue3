@@ -340,12 +340,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, getCurrentInstance } from 'vue';
+import { ref, computed, watch } from 'vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { generateProcessId, isPidInUse } from './processIdUtils';
-
-const instance = getCurrentInstance()!;
-const t = (key: string) => instance.proxy!.$t(key);
 
 const props = defineProps<{
     modelValue: boolean;
@@ -606,11 +603,11 @@ function navigateToSimilar(process: { id: string; name: string }) {
 const creationTypeInfo = computed(() => {
     switch (form.value.creationType) {
         case 'scratch':
-            return t('processArchitecture.newProcessDialog.creationTypeInfoScratch');
+            return '새로운 빈 캔버스에서 프로세스를 처음부터 설계합니다.';
         case 'template':
-            return t('processArchitecture.newProcessDialog.creationTypeInfoTemplate');
+            return '기존 표준 템플릿을 기반으로 프로세스를 빠르게 시작합니다.';
         case 'clone':
-            return t('processArchitecture.newProcessDialog.creationTypeInfoClone');
+            return '기존 프로세스를 복사하여 유사한 프로세스를 효율적으로 생성합니다.';
         default:
             return '';
     }
@@ -708,7 +705,7 @@ async function createProcess() {
         close();
     } catch (e: any) {
         console.error('Failed to create process:', e);
-        errorMessage.value = e?.message || String(e) || t('processArchitecture.newProcessDialog.createFailed');
+        errorMessage.value = e?.message || String(e) || 'Failed to create process';
         errorSnackbar.value = true;
     } finally {
         creating.value = false;

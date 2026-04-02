@@ -118,10 +118,8 @@ hr {
     position: absolute;
     top: 8px;
     left: 8px;
-}
-
-.organization-chart-search-container {
-
+    z-index: 100;
+    width: 300px;
 }
 
 .mcp-secret-monaco-editor {
@@ -137,7 +135,7 @@ hr {
 }
 
 .mcp-server-list-box {
-    height: calc(100vh - 250px) !important;
+    height: calc(100vh - 290px) !important;
     overflow: auto;
 }
 
@@ -278,83 +276,6 @@ hr {
 .vue-bpmn-diagram-container {
     height: 100%;
     width: 100%;
-    position: relative;
-}
-
-/* 읽기 모드: Call 드릴 + 서브 드릴 통합 브레드크럼 (BpmnUengine.vue ul.bjs-breadcrumbs-unified) */
-.vue-bpmn-diagram-container > ul.bjs-breadcrumbs-unified {
-    display: flex !important;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    position: absolute;
-    z-index: 26;
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
-    max-width: calc(100% - 32px);
-    pointer-events: auto;
-    row-gap: 4px;
-    column-gap: 0;
-}
-
-.vue-bpmn-diagram-container > ul.bjs-breadcrumbs-unified > li {
-    position: relative;
-    float: none;
-    display: inline-flex;
-    align-items: center;
-    flex: 0 0 auto;
-    max-width: 100%;
-}
-
-.vue-bpmn-diagram-container > ul.bjs-breadcrumbs-unified > li:not(:last-child)::after {
-    content: '›';
-    display: inline-block;
-    margin: 0 0.35em;
-    opacity: 0.65;
-    font-weight: 600;
-    flex-shrink: 0;
-}
-
-.vue-bpmn-diagram-container > ul.bjs-breadcrumbs-unified .bjs-crumb a {
-    white-space: nowrap;
-    text-decoration: underline;
-}
-
-.vue-bpmn-diagram-container > ul.bjs-breadcrumbs-unified .bjs-crumb span {
-    white-space: nowrap;
-}
-
-/* bpmn-js 드릴다운: 접힌 서브프로세스(.bjs-drilldown) + 상위로 돌아가기 경로(.bjs-breadcrumbs) */
-.vue-bpmn-diagram-container .bjs-container {
-    position: relative;
-}
-
-/* 읽기 모드: 네이티브 bpmn-js 브레드크럼은 숨기고, 통합 ul만 사용 */
-.vue-bpmn-diagram-container.view-mode .bjs-container ul.bjs-breadcrumbs {
-    display: none !important;
-}
-
-/* 편집 모드: 서브프로세스 경로 — 좌하단 (bpmn-js 기본은 top:30px) */
-.vue-bpmn-diagram-container:not(.view-mode) .bjs-container .bjs-breadcrumbs {
-    z-index: 25;
-    pointer-events: auto;
-    top: auto !important;
-    bottom: 20px;
-    left: 16px !important;
-}
-
-.vue-bpmn-diagram-container:not(.view-mode) .bjs-container.djs-palette-shown .bjs-breadcrumbs,
-.vue-bpmn-diagram-container:not(.view-mode) .bjs-container.djs-palette-shown.djs-palette-two-column .bjs-breadcrumbs {
-    left: 16px !important;
-}
-
-.vue-bpmn-diagram-container .bjs-drilldown {
-    z-index: 1;
-    pointer-events: auto;
 }
 
 .highlight:not(.djs-connection) .djs-visual> :nth-child(1) {
@@ -977,6 +898,20 @@ hr {
     align-items: center;
     justify-content: center;
 }
+/* 리스트 스켈레톤 로딩 */
+.list-skeleton-loading {
+    padding: 4px 12px;
+}
+
+.list-skeleton-loading .v-skeleton-loader__list-item {
+    margin: 0px;
+    padding: 8px 0px 8px 0px;
+}
+
+.list-skeleton-loading .v-skeleton-loader__text {
+    height: 30px;
+}
+
 /* skeleton 관련 style */
 .tutorial-main-skeleton .v-skeleton-loader__heading {
     display: none;
@@ -1061,7 +996,28 @@ hr {
 /* 선택된 배경색을 나타내는 클래스 - 영어로 'choice'로 변경 */
 .choice-background-color {
     background-color: rgb(var(--v-theme-primary)) !important;
-    color: white;
+    color: rgb(var(--v-theme-on-primary)) !important;
+}
+
+.bg-primary,
+.bg-primary .v-btn__content,
+.bg-primary .v-chip__content,
+.bg-primary .v-list-item-title,
+.bg-primary .v-icon,
+.v-btn.bg-primary,
+.v-btn.bg-primary .v-btn__content,
+.v-btn.bg-primary .v-icon,
+.v-chip.bg-primary,
+.v-chip.bg-primary .v-chip__content,
+.v-chip.bg-primary .v-icon,
+.v-card.bg-primary,
+.v-card.bg-primary .v-card-title,
+.v-card.bg-primary .v-card-text,
+.v-sheet.bg-primary,
+.v-sheet.bg-primary .v-icon,
+.v-alert.bg-primary,
+.v-alert.bg-primary .v-alert__content {
+    color: rgb(var(--v-theme-on-primary)) !important;
 }
 
 .instance-select-box:focus {
@@ -1346,7 +1302,7 @@ hr {
 }
 
 .instance-card-process-box {
-    height: 73vh;
+    height: calc(100vh - 244px);
 }
 
 .node-info-btn {
@@ -1475,6 +1431,17 @@ hr {
 }
 
 @media only screen and (max-width: 1279px) {
+    .work-item-history-tab {
+        height: calc(100vh - 264px);
+        overflow: auto;
+    }
+    .organization-chart-search-container {
+        position: absolute;
+        top: 6px;
+        left: 50px;
+        z-index: 100;
+        width: 300px;
+    }
     .is-sidebar-pc {
         display: none !important;
     }
@@ -1484,12 +1451,18 @@ hr {
 
 
     .agent-chat-info-content {
-        height: calc(100vh - 74px);
+        height: calc(100vh - 190px);
         overflow: auto;
     }
 }
 
 @media only screen and (max-width: 768px) {
+
+    .agent-chat-info-content {
+        height: calc(100vh - 74px);
+        overflow: auto;
+    }
+
     .version-manager-vuediff-box .vue-diff-viewer {
         font-size: 11px !important;
     }
@@ -1599,8 +1572,8 @@ hr {
 
     .app-base-card-is-mobile-height,
     .instance-card-process-box {
-        max-height: calc(100vh - 200px);
-        height: calc(100vh - 200px);
+        max-height: calc(100vh - 220px);
+        height: calc(100vh - 220px);
     }
 
     .work-itme-current-component .v-checkbox {

@@ -1,6 +1,5 @@
 /**
- * BPMN 유효성 검사 규칙 정의 (XML 문자열 전용, 백엔드 validate 등)
- * 에디터/캔버스와 동일한 규칙은 modeler 기준 @/utils/bpmnModelValidation 의 validateBpmnModel 을 사용한다.
+ * BPMN 유효성 검사 규칙 정의
  */
 
 // 오류 레벨 상수

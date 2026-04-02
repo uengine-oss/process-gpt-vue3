@@ -10,8 +10,6 @@ import partialParse from 'partial-json-parser';
 import JSON5 from 'json5';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 import { getBpmnModelService } from '@/services/bpmnModelService';
-import { getKeycloakUserDisplayName, getKeycloakUserById } from '@/utils/keycloak';
-import { formatKeycloakUserAsNameAndLoginId } from '@/utils/definitionActorDisplay';
 
 const backend = BackendFactory.createBackend();
 
@@ -73,9 +71,10 @@ export default {
     },
     methods: {
         async checkedFormData() {
+            console.log('[FORM_DEBUG] checkedFormData called', { hasElements: !!this.processDefinition?.elements, hasActivities: !!this.processDefinition?.activities, procDefId: this.processDefinition?.processDefinitionId });
             if (this.processDefinition && this.processDefinition.elements) {
-                // 메인 프로세스와 서브프로세스의 모든 activities를 수집
                 const allActivities = this.collectAllActivities(this.processDefinition);
+                console.log('[FORM_DEBUG] allActivities', { count: allActivities.length, ids: allActivities.map(a => a.id), withOutputData: allActivities.filter(a => a.outputData?.length > 0).map(a => ({ id: a.id, outputData: a.outputData })) });
 
                 this.generateFormTask = {};
 
@@ -151,6 +150,7 @@ export default {
                 }
 
                 this.generateFormTask = {};
+                console.log('[FORM_DEBUG] checkedFormData finished', { formDraftsCount: this.processDefinition?.formDrafts?.length, drafts: (this.processDefinition?.formDrafts || []).map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })) });
             }
         },
 
@@ -261,26 +261,46 @@ export default {
             });
         },
         async saveFormData(html, activityId) {
+            console.log('[FORM_DEBUG] saveFormData called', { activityId, htmlLength: html?.length, hasActivities: Array.isArray(this.processDefinition?.activities), activitiesCount: this.processDefinition?.activities?.length, procDefId: this.processDefinition?.processDefinitionId });
+            const activity =
+                this.processDefinition && Array.isArray(this.processDefinition.activities)
+                    ? this.processDefinition.activities.find((a) => a.id === activityId)
+                    : null;
+
             let formId = '';
-            if (this.processDefinition && this.processDefinition.processDefinitionId) {
+            const tool = activity?.tool || '';
+            const toolFormId = tool.includes('formHandler:') ? tool.replace('formHandler:', '') : '';
+
+            if (toolFormId && toolFormId !== 'defaultform') {
+                formId = toolFormId;
+            } else if (this.processDefinition && this.processDefinition.processDefinitionId) {
                 formId = `${this.processDefinition.processDefinitionId}_${activityId}_form`;
             } else {
                 formId = `${activityId}_form`;
             }
+
             formId = formId.toLowerCase().replace(/[/.]/g, '_').replace(/#/g, '_');
-            if (this.lastPath) {
-                if (this.lastPath == 'chat' || this.lastPath == 'definition-map') {
-                    localStorage.setItem(formId, html);
-                } else {
-                    await backend.putRawDefinition(html, formId, {
-                        type: 'form',
-                        proc_def_id: this.processDefinition.processDefinitionId,
-                        activity_id: activityId
-                    });
-                }
-            } else {
-                localStorage.setItem(formId, html);
+
+            if (activity && activity.tool !== `formHandler:${formId}`) {
+                activity.tool = `formHandler:${formId}`;
             }
+
+            if (!Array.isArray(this.processDefinition.formDrafts)) {
+                this.processDefinition.formDrafts = [];
+            }
+            const draft = {
+                id: formId,
+                html: html,
+                proc_def_id: this.processDefinition?.processDefinitionId || '',
+                activity_id: activityId
+            };
+            const existingIndex = this.processDefinition.formDrafts.findIndex((item) => item && item.activity_id === activityId);
+            if (existingIndex > -1) {
+                this.processDefinition.formDrafts[existingIndex] = draft;
+            } else {
+                this.processDefinition.formDrafts.push(draft);
+            }
+            console.log('[FORM_DEBUG] saveFormData done', { formId, draftCount: this.processDefinition.formDrafts.length, drafts: this.processDefinition.formDrafts.map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })) });
             return { id: formId, html: html };
         },
         extractPropertyNameAndIndex(jsonPath) {
@@ -461,22 +481,21 @@ export default {
                 }
             }
         },
-        async toggleVersionDialog(open) {
-            // Version Dialog 열기 전에 모델러 최신 XML을 bpmn에 반영 → currentBpmn(description 등)이 덮어쓰이지 않도록
-            if (open) {
-                try {
-                    const store = useBpmnStore();
-                    const modeler = store.getModeler;
-                    if (modeler) {
-                        const { xml } = await modeler.saveXML({ format: true, preamble: true });
-                        if (xml) this.bpmn = xml;
-                    }
-                } catch (e) {
-                    console.warn('버전 다이얼로그 열기 전 XML 동기화 실패:', e);
-                }
-            }
+        toggleVersionDialog(open) {
+            // Version Dialog
             this.versionDialog = open;
             this.loading = false;
+            // try {
+            //     if (open) {
+            //         if (this.$refs.definitionComponent.copyProcessDefinition) {
+            //             this.optimizeDefinition(this.$refs.definitionComponent.copyProcessDefinition);
+            //         } else {
+            //             this.optimizeDefinition(this.processDefinition);
+            //         }
+            //     }
+            // } catch(e) {
+            //     console.log(e)
+            // }
         },
         saveDefinition(info) {
             var me = this;
@@ -486,6 +505,12 @@ export default {
                     me.loading = true;
                     me.saveSchedule(info, '1.0');
                     await me.setDefinitionInfo(info);
+
+                    const savedFormDrafts = Array.isArray(me.processDefinition?.formDrafts)
+                        ? [...me.processDefinition.formDrafts]
+                        : [];
+                    console.log('[FORM_DEBUG] saveDefinition start', { savedFormDraftsCount: savedFormDrafts.length, drafts: savedFormDrafts.map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })) });
+
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
                     let xmlObj;
@@ -583,6 +608,7 @@ export default {
 
                         if (!me.processDefinition) {
                             me.processDefinition = newProcessDefinition;
+                            if (savedFormDrafts.length > 0) me.processDefinition.formDrafts = savedFormDrafts;
                         } else {
                             // if (me.processDefinition.roles) {
                             //     newProcessDefinition.roles = newProcessDefinition.roles.map(newRole => {
@@ -618,6 +644,9 @@ export default {
 
                             me.processDefinition = newProcessDefinition;
                         }
+
+                        if (savedFormDrafts.length > 0) me.processDefinition.formDrafts = savedFormDrafts;
+                        console.log('[FORM_DEBUG] after Path1 processDefinition replaced', { formDraftsCount: me.processDefinition.formDrafts?.length, savedFormDraftsCount: savedFormDrafts.length });
 
                         if (info.name && info.name != '') {
                             me.processDefinition.processDefinitionName = info.name;
@@ -712,12 +741,19 @@ export default {
                             updatedProcessDefinition.processDefinitionName = info.name;
                         }
 
+                        if (savedFormDrafts.length > 0) {
+                            updatedProcessDefinition.formDrafts = savedFormDrafts;
+                        }
+
                         me.processDefinition = updatedProcessDefinition;
                         info.definition = me.processDefinition;
+                        console.log('[FORM_DEBUG] after Path2 processDefinition replaced', { formDraftsCount: me.processDefinition.formDrafts?.length });
                     } catch (e) {
                         console.warn('update element roles failed', e);
+                        console.log('[FORM_DEBUG] Path2 failed, current formDrafts', { formDraftsCount: me.processDefinition?.formDrafts?.length });
                     }
 
+                    console.log('[FORM_DEBUG] before saveModel', { formDraftsCount: me.processDefinition?.formDrafts?.length });
                     await me.saveModel(info, xmlObj.xml);
                     me.bpmn = xmlObj.xml;
 
@@ -750,47 +786,11 @@ export default {
                     };
                     this.$emit('modelCreated', processInfo);
 
-                    // uEngine 한정: 저장 후 lock 해제 시 본인 소유일 때만 deleteLock (다른 사람이 이미 풀었으면 호출 안 함)
-                    if (window.$mode === 'uEngine') {
-                        const defId = me.fullPath || me.processDefinition?.processDefinitionId;
-                        if (defId && me.useLock) {
-                            try {
-                                const currentLock = await backend.getLock(defId);
-                                const meId = localStorage.getItem('uid') || me.editUser || me.userInfo?.name || me.userInfo?.username;
-                                if (currentLock == null || !currentLock.user_id) {
-                                    if (me.$toast?.warning) {
-                                        me.$toast.warning(
-                                            me.$t('processDefinitionMap.lockAlreadyReleased') || '이미 다른 사용자가 잠금을 해제했습니다.'
-                                        );
-                                    }
-                                } else if (currentLock.user_id !== meId) {
-                                    // id로 검색된 사용자가 있을 경우에만 lock 풀기 막기
-                                    const lockHolder = await getKeycloakUserById(currentLock.user_id);
-                                    if (lockHolder) {
-                                        if (me.$toast?.warning) {
-                                            const name =
-                                                formatKeycloakUserAsNameAndLoginId(lockHolder) ||
-                                                lockHolder.username ||
-                                                '다른 사용자';
-                                            me.$toast.warning(
-                                                me.$t('processDefinitionMap.lockHeldByOther', { name }) || `${name}님이 잠금을 보유 중입니다. 해제할 수 없습니다.`
-                                            );
-                                        }
-                                    } else {
-                                        await backend.deleteLock(defId);
-                                    }
-                                } else {
-                                    await backend.deleteLock(defId);
-                                }
-                            } catch (e) {
-                                console.warn('[saveDefinition] getLock/deleteLock 실패 (무시):', e);
-                            }
-                        }
+                    if (window.$mode !== 'uEngine') {
+                        me.disableChat = true;
+                        me.isViewMode = true;
+                        me.lock = true; // 잠금처리 ( 수정 불가 )
                     }
-
-                    me.disableChat = true;
-                    me.isViewMode = true;
-                    me.lock = true; // 잠금처리 ( 수정 불가 )
                     me.definitionChangeCount++;
 
                     me.loading = false;
@@ -963,9 +963,6 @@ export default {
             return organizations;
         },
         async saveSchedule(info, version) {
-            // prevSnapshot 없으면 스킵 (Oracle/버전 API는 목록에 snapshot 미포함인 경우 많음 → parse 예외 방지)
-            if (!info?.prevSnapshot || typeof info.prevSnapshot !== 'string') return;
-
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(info.prevSnapshot, 'text/xml');
 
@@ -1048,13 +1045,33 @@ export default {
                         return f;
                     }
                 };
+                const decodeXmlEntities = (s) => {
+                    if (!s || typeof s !== 'string') return s;
+                    return s
+                        .replace(/&quot;/g, '"')
+                        .replace(/&#34;/g, '"')
+                        .replace(/&apos;/g, "'")
+                        .replace(/&#39;/g, "'")
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&amp;/g, '&');
+                };
 
                 // ① JSON 파싱 캐시(문자열 → 객체 변환 1회만)
                 const jsonCache = new WeakMap();
                 const getPropsJson = (node) => {
                     if (!node) return null;
-                    const str = node['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'];
-                    if (!str) return null;
+                    const first = (v) => (Array.isArray(v) ? v[0] : v);
+                    const ext = first(node['bpmn:extensionElements']);
+                    const props = first(ext?.['uengine:properties']);
+                    const raw =
+                        props?.['uengine:json'] ||
+                        props?.['json'] ||
+                        props?.$?.json ||
+                        null;
+                    if (!raw) return null;
+                    if (typeof raw !== 'string') return raw;
+                    const str = decodeXmlEntities(raw);
                     if (!jsonCache.has(node)) {
                         jsonCache.set(node, safeJson(str, null));
                     }
@@ -1751,50 +1768,6 @@ export default {
                 resolve();
             });
         },
-        buildProcessDefinitionMapCandidates(defId) {
-            const raw = String(defId || '').trim();
-            if (!raw) return [];
-
-            const defaultFolderPrefix = 'default/';
-            const normalizedDefaultPath = raw.toLowerCase().startsWith(defaultFolderPrefix)
-                ? raw.slice(defaultFolderPrefix.length)
-                : '';
-            const basename = raw.split('/').pop() || '';
-            const normalizedBasename = normalizedDefaultPath.split('/').pop() || '';
-            const basenameWithoutExtension = basename.replace(/\.bpmn$/i, '');
-            const normalizedBasenameWithoutExtension = normalizedBasename.replace(/\.bpmn$/i, '');
-
-            return Array.from(
-                new Set([
-                    raw,
-                    !raw.toLowerCase().endsWith('.bpmn') ? `${raw}.bpmn` : '',
-                    normalizedDefaultPath,
-                    normalizedDefaultPath && !normalizedDefaultPath.toLowerCase().endsWith('.bpmn')
-                        ? `${normalizedDefaultPath}.bpmn`
-                        : '',
-                    basename,
-                    basenameWithoutExtension,
-                    normalizedBasename,
-                    normalizedBasenameWithoutExtension
-                ].filter(Boolean))
-            );
-        },
-        findProcessDefinitionMapEntry(procMap, defId) {
-            if (!procMap || !Array.isArray(procMap.mega_proc_list)) return null;
-
-            const candidates = this.buildProcessDefinitionMapCandidates(defId);
-            for (const megaProc of procMap.mega_proc_list) {
-                const majorList = Array.isArray(megaProc?.major_proc_list) ? megaProc.major_proc_list : [];
-                for (const majorProc of majorList) {
-                    const subList = Array.isArray(majorProc?.sub_proc_list) ? majorProc.sub_proc_list : [];
-                    const entry = subList.find((sub) => candidates.includes(String(sub?.id || '').trim()));
-                    if (entry) {
-                        return entry;
-                    }
-                }
-            }
-            return null;
-        },
         async saveModel(info, xml) {
             var me = this;
             me.$try({
@@ -1818,29 +1791,80 @@ export default {
                         if (me.processDefinition.processDefinitionId == 'definition-map')
                             me.processDefinition.processDefinitionId = info.proc_def_id;
 
-                        // 최초 저장 시 폼 정보 저장
-                        if (me.$route.fullPath.includes('/chat') || me.$route.fullPath.includes('/definition-map')) {
-                            if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
-                                me.processDefinition.data = [];
-                                me.processDefinition.activities.forEach(async (activity) => {
-                                    let formId;
-                                    if (activity.tool && activity.tool.includes('formHandler:')) {
-                                        formId = activity.tool.replace('formHandler:', '');
-                                    } else {
-                                        formId = `${me.processDefinition.processDefinitionId}_${activity.id}_form`;
-                                    }
-                                    let formHtml = localStorage.getItem(formId);
-                                    if (formHtml) {
+                        // 폼 임시본(formDrafts)을 항상 함께 저장
+                        const normalizeIdPart = (id) => (id || '').toString().toLowerCase().replace(/[/.]/g, '_').replace(/#/g, '_');
+                        const procIdForForm = normalizeIdPart(info.proc_def_id || me.processDefinition.processDefinitionId);
+                        const formDrafts = Array.isArray(me.processDefinition.formDrafts) ? me.processDefinition.formDrafts : [];
+                        const activities = Array.isArray(me.processDefinition.activities) ? me.processDefinition.activities : [];
+                        console.log('[FORM_DEBUG] saveModel formDrafts check', { formDraftsCount: formDrafts.length, activitiesCount: activities.length, procIdForForm, drafts: formDrafts.map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })), activityTools: activities.map(a => ({ id: a?.id, tool: a?.tool })) });
+
+                        if (formDrafts.length > 0) {
+                            await Promise.all(
+                                formDrafts
+                                    .filter((draft) => draft && draft.id && draft.html)
+                                    .map(async (draft) => {
+                                        const draftId = normalizeIdPart(draft.id);
+                                        const draftActivityId = draft.activity_id ? String(draft.activity_id) : null;
+
+                                        let targetActivity = activities.find((a) => a && a.id === draftActivityId) || null;
+
+                                        if (!targetActivity) {
+                                            targetActivity =
+                                                activities.find((a) => {
+                                                    if (!a || !a.id) return false;
+                                                    return `${procIdForForm}_${normalizeIdPart(a.id)}_form` === draftId;
+                                                }) || null;
+                                        }
+
+                                        let activityIdForSave = targetActivity?.id || draftActivityId;
+                                        if (!activityIdForSave && draftId.startsWith(`${procIdForForm}_`) && draftId.endsWith('_form')) {
+                                            activityIdForSave = draftId.slice(procIdForForm.length + 1, -5);
+                                        }
+
+                                        if (targetActivity) {
+                                            targetActivity.tool = `formHandler:${draftId}`;
+                                        }
+
                                         const options = {
                                             type: 'form',
                                             proc_def_id: info.proc_def_id,
-                                            activity_id: activity.id
+                                            activity_id: activityIdForSave || draftActivityId || ''
                                         };
-                                        await backend.putRawDefinition(formHtml, formId, options);
-                                        localStorage.removeItem(formId);
-                                    }
-                                });
-                            }
+                                        console.log('[FORM_DEBUG] saving form to DB', { draftId, activityIdForSave, options, htmlLen: draft.html?.length });
+                                        try {
+                                            const result = await backend.putRawDefinition(draft.html, draftId, options);
+                                            console.log('[FORM_DEBUG] putRawDefinition result', { draftId, result });
+                                        } catch (err) {
+                                            console.error('[FORM_DEBUG] putRawDefinition FAILED', { draftId, error: err });
+                                        }
+                                    })
+                            );
+
+                            me.processDefinition.formDrafts = [];
+                        }
+
+                        if (activities.length > 0) {
+                            await Promise.all(
+                                activities.map(async (activity) => {
+                                    if (!activity || !activity.id || !activity.tool || !activity.tool.includes('formHandler:defaultform')) return;
+                                    const activityId = normalizeIdPart(activity.id);
+                                    const promotedFormId = `${procIdForForm}_${activityId}_form`;
+                                    const draft = formDrafts.find(
+                                        (item) =>
+                                            item &&
+                                            item.html &&
+                                            (normalizeIdPart(item.id) === promotedFormId || String(item.activity_id || '') === String(activity.id))
+                                    );
+                                    if (!draft) return;
+
+                                    activity.tool = `formHandler:${promotedFormId}`;
+                                    await backend.putRawDefinition(draft.html, promotedFormId, {
+                                        type: 'form',
+                                        proc_def_id: info.proc_def_id,
+                                        activity_id: activity.id
+                                    });
+                                })
+                            );
                         }
 
                         me.processDefinition.processDefinitionId = info.proc_def_id
@@ -1857,6 +1881,8 @@ export default {
                         if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                             throw new Error('processDefinitionId or processDefinitionName is missing');
                         }
+                        // saveModel 내부에서 activity.tool이 바뀐 최신 정의를 proc_def.definition으로 저장하도록 동기화
+                        info.definition = me.processDefinition;
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
                     }
                     // 신규 프로세스 이동.
@@ -1869,48 +1895,23 @@ export default {
                         // 최신 정의 체계도 불러오기
                         me.processDefinitionMap = await backend.getProcessDefinitionMap();
 
-                        if (info.syncMappedProcessNameOnly) {
-                            let mappedEntry = me.findProcessDefinitionMapEntry(me.processDefinitionMap, info.proc_def_id);
-                            if (!mappedEntry && info.name && me.processDefinitionMap?.mega_proc_list) {
-                                const pid = String(info.proc_def_id || '').trim();
-                                const tail = pid.replace(/\.bpmn$/i, '').split('/').pop() || pid;
-                                outer: for (const megaProc of me.processDefinitionMap.mega_proc_list) {
-                                    for (const majorProc of megaProc.major_proc_list || []) {
-                                        for (const sub of majorProc.sub_proc_list || []) {
-                                            const sid = String(sub.id || '').trim();
-                                            const sTail = sid.replace(/\.bpmn$/i, '').split('/').pop() || sid;
-                                            if (sid === pid || sTail === tail || sid.replace(/\.bpmn$/i, '') === pid.replace(/\.bpmn$/i, '')) {
-                                                mappedEntry = sub;
-                                                break outer;
-                                            }
-                                        }
-                                    }
-                                }
+                        // BPMN XML에서 mega/major 프로세스 ID 추출
+                        let megaProcessId = null;
+                        let majorProcessId = null;
+                        try {
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(xml, 'text/xml');
+                            const processElement = xmlDoc.querySelector('process');
+                            if (processElement) {
+                                megaProcessId = processElement.getAttribute('megaProcessId');
+                                majorProcessId = processElement.getAttribute('majorProcessId');
                             }
-                            if (mappedEntry && info.name) {
-                                mappedEntry.name = info.name;
-                                await backend.putProcessDefinitionMap(me.processDefinitionMap);
-                            } else {
-                                console.log(`[정의체계도] 기존 매핑 ID 없음 - 이름 동기화 스킵: ${info.proc_def_id}`);
-                            }
-                        } else {
-                            // BPMN XML에서 mega/major 프로세스 ID 추출
-                            let megaProcessId = null;
-                            let majorProcessId = null;
-                            try {
-                                const parser = new DOMParser();
-                                const xmlDoc = parser.parseFromString(xml, 'text/xml');
-                                const processElement = xmlDoc.querySelector('process');
-                                if (processElement) {
-                                    megaProcessId = processElement.getAttribute('megaProcessId');
-                                    majorProcessId = processElement.getAttribute('majorProcessId');
-                                }
-                                console.log(
-                                    `[정의체계도] 프로세스 추가 - Mega: ${megaProcessId}, Major: ${majorProcessId}, Process: ${info.proc_def_id}`
-                                );
-                            } catch (e) {
-                                console.warn('Failed to parse XML for mega/major process IDs:', e);
-                            }
+                            console.log(
+                                `[정의체계도] 프로세스 추가 - Mega: ${megaProcessId}, Major: ${majorProcessId}, Process: ${info.proc_def_id}`
+                            );
+                        } catch (e) {
+                            console.warn('Failed to parse XML for mega/major process IDs:', e);
+                        }
 
                         // proc_map에 해당 프로세스가 이미 있는지 확인
                         let processExists = false;
@@ -2045,9 +2046,8 @@ export default {
                             }
                         }
 
-                            // 업데이트된 proc_map 저장
-                            await backend.putProcessDefinitionMap(me.processDefinitionMap);
-                        }
+                        // 업데이트된 proc_map 저장
+                        await backend.putProcessDefinitionMap(me.processDefinitionMap);
                     }
 
                     // 새 탭으로 열린 프로세스 편집창

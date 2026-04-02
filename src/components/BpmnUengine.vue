@@ -9,48 +9,18 @@
         :style="{ '--label-font-size': labelFontSize + 'px' }"
         @dragover.prevent="onDragOver"
         @drop.prevent="onDrop"
-        @contextmenu.prevent="onContextMenu"
     >
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
         <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
-            <div class="pa-1 d-flex flex-column align-end gap-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
-                <div class="d-flex align-center flex-wrap" style="gap: 4px">
-                    <v-icon @click="resetZoom" style="color: #444; cursor: pointer">mdi-crosshairs-gps</v-icon>
-                    <v-icon @click="zoomIn" style="color: #444; cursor: pointer">mdi-plus</v-icon>
-                    <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
-                    <v-icon @click="zoomOut" style="color: #444; cursor: pointer">mdi-minus</v-icon>
-                    <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer">mdi-crop-rotate</v-icon>
-                </div>
-                <!-- 한 줄만: 타인 잠금이 있으면 '읽기 모드' 대신 편집자 안내 -->
-                <div
-                    v-if="lockHolderName || showReadOnlyLabel"
-                    class="bpmn-lock-holder-hint text-caption d-flex align-center"
-                    style="gap: 4px; max-width: min(280px, 70vw)"
-                >
-                    <v-icon v-if="lockHolderName" size="16" color="primary">mdi-lock-outline</v-icon>
-                    <v-icon v-else size="16" color="grey-darken-1">mdi-eye-outline</v-icon>
-                    <span class="text-medium-emphasis">{{
-                        lockHolderName ? lockHolderHintText : $t('processDefinition.isReadOnlyMode')
-                    }}</span>
-                </div>
+            <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
+                <v-icon @click="resetZoom" style="color: #444; cursor: pointer">mdi-crosshairs-gps</v-icon>
+                <v-icon @click="zoomIn" style="color: #444; cursor: pointer">mdi-plus</v-icon>
+                <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
+                <v-icon @click="zoomOut" style="color: #444; cursor: pointer">mdi-minus</v-icon>
+                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer">mdi-crop-rotate</v-icon>
             </div>
         </div>
-        <!-- 읽기 모드: Call 드릴 + 서브프로세스 드릴 경로를 bpmn-js와 동일한 한 줄 브레드크럼으로 통합 (네이티브 ul.bjs-breadcrumbs는 숨김) -->
-        <ul
-            v-if="isViewMode && !isPreviewMode && unifiedBreadcrumbSegments.length > 1"
-            class="bjs-breadcrumbs-unified"
-            aria-label="Diagram navigation"
-        >
-            <li v-for="(seg, idx) in unifiedBreadcrumbSegments" :key="'unified-crumb-' + idx">
-                <span class="bjs-crumb">
-                    <a v-if="idx < unifiedBreadcrumbSegments.length - 1" href="#" @click.prevent="unifiedBreadcrumbNavigateTo(idx)">{{
-                        seg.label
-                    }}</a>
-                    <span v-else>{{ seg.label }}</span>
-                </span>
-            </li>
-        </ul>
-        <!-- Font size and zoom controls (edit mode only, hidden in PAL mode) -->
+        <!-- Font size and zoom controls (edit mode only) -->
         <div v-if="!isViewMode" :class="['font-size-controls', { 'font-size-controls-mobile': isMobile }]">
             <!-- Extra controls slot (for parent component buttons) -->
             <div class="controls-row">
@@ -66,7 +36,7 @@
                 </v-tooltip>
             </div>
             <!-- Font size controls -->
-            <div v-if="!isPal" class="controls-row">
+            <div class="controls-row">
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
                         <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer" size="small"
@@ -87,16 +57,10 @@
             </div>
         </div>
     </div>
-    <!-- PDF 미리보기 열(~720px) + 카드 여백에 맞춤. 넓은 다이얼로그에 좁은 미리보기만 두면 좌우 빈 여백이 과함 -->
-    <v-dialog v-model="isPreviewPDFDialog" max-width="800px" scrollable>
+    <v-dialog v-model="isPreviewPDFDialog" max-width="1160px">
         <v-card>
             <v-card-title class="headline">{{ $t('PDFPreviewer.title') }}</v-card-title>
-            <PDFPreviewer
-                :bpmnViewer="bpmnViewer"
-                :include-pal-manuals="pdfIncludePalManuals"
-                :process-definition="pdfProcessDefinition"
-                @closeDialog="closePDFDialog"
-            />
+            <PDFPreviewer :bpmnViewer="bpmnViewer" @closeDialog="closePDFDialog" />
         </v-card>
     </v-dialog>
     <!-- Color Ruleset Dialog -->
@@ -109,7 +73,6 @@ import zeebeModdleDescriptor from '@/components/descriptors/zeebe.json';
 import { useBpmnStore } from '@/stores/bpmn';
 import { useTaskCatalogStore } from '@/stores/taskCatalog';
 import 'bpmn-js/dist/assets/diagram-js.css';
-import 'bpmn-js/dist/assets/bpmn-js.css';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import BpmnModdle from 'bpmn-moddle';
@@ -118,7 +81,6 @@ import ZoomScroll from './customZoomScroll';
 import MoveCanvas from './customMoveCanvas';
 // import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
 import BackendFactory from '@/components/api/BackendFactory';
-import { createBpmnValidationOverlayElement } from '@/utils/bpmnValidationOverlayHtml.js';
 import customBpmnModule from './customBpmn';
 import customPaletteModule from './customPalette';
 import paletteProvider from './customPalette/PaletteProvider';
@@ -136,8 +98,6 @@ import minimapModule from 'diagram-js-minimap';
 import { uengineJsonElementToAttr, uengineJsonAttrToElement, isUengineMode } from '@/utils/uengineXmlTransform';
 import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
-import { getBusinessObject, is } from 'bpmn-js/lib/util/ModelUtil';
-import { getPlaneIdFromShape } from 'bpmn-js/lib/util/DrilldownUtil';
 
 const backend = BackendFactory.createBackend();
 
@@ -205,15 +165,6 @@ export default {
             type: Object,
             default: () => ({})
         },
-        lockHolderName: {
-            type: String,
-            default: ''
-        },
-        /** 읽기 모드일 때 상단에 "읽기 모드입니다." 안내 (ProcessHierarchy 등) */
-        showReadOnlyLabel: {
-            type: Boolean,
-            default: false
-        },
         onLoadStart: {
             type: Function,
             default: () => {
@@ -225,16 +176,6 @@ export default {
             default: () => {
                 return () => {};
             }
-        },
-        /** PAL: PDF에 태스크 매뉴얼(activities) 포함 — SubProcessDetail 등에서 전달 */
-        pdfIncludePalManuals: {
-            type: Boolean,
-            default: false
-        },
-        /** PAL 매뉴얼용 processDefinition(activities) */
-        pdfProcessDefinition: {
-            type: Object,
-            default: null
         }
     },
     components: {
@@ -270,20 +211,7 @@ export default {
             showColorRulesetDialog: false,
             colorRules: [], // Color rules loaded from BPMN XML
             // compensate boundaryEvent ↔ 보상 task 연결 시 자동으로 compensateTask 채움
-            compensateAutoFillInstalled: false,
-            /** CallActivity 더블클릭 시 캔버스 내 드릴(상위 앱 브레드크럼/라우트 변경 없음) */
-            callDrillBaseXml: null,
-            callDrillBaseLabel: '',
-            /** 첫 Call 진입 직전 부모 정의의 Process/SubProcess 드릴 전체 경로 (label + diagram plane id, 재import 후 setRoot용) */
-            callDrillBasePathSegments: [],
-            callDrillStack: [],
-            callDrillLoading: false,
-            /** 읽기 모드 통합 브레드크럼: bpmn-js DrilldownBreadcrumbs와 동일한 서브프로세스 경로(planeRoot는 canvas.setRootElement용) */
-            subProcessDrillSegments: [],
-            /** import.render.complete 반복 시 element.dblclick 중복 등록 방지 */
-            _viewModeElementDblClick: null,
-            _editModeElementDblClick: null,
-            _unifiedRootSetListener: null
+            compensateAutoFillInstalled: false
         };
     },
     computed: {
@@ -304,79 +232,6 @@ export default {
         },
         isPalUengine() {
             return !!(window.$pal && window.$mode === 'uEngine');
-        },
-        lockHolderHintText() {
-            if (!this.lockHolderName) return '';
-            return this.$t('processDefinitionMap.editingUser', { name: this.lockHolderName });
-        },
-        /** Call 드릴 + 서브프로세스 드릴을 한 경로로 합친 브레드크럼 (표시용 label + 네비 종류) */
-        unifiedBreadcrumbSegments() {
-            const out = [];
-            const callBase = this.callDrillBasePathSegments || [];
-            const callBaseFirstLabel = callBase[0]?.label;
-            const trimDupRoot = (arr) => {
-                let a = arr || [];
-                if (this.callDrillStack?.length > 0 && callBaseFirstLabel && a.length > 0 && a[0].label === callBaseFirstLabel) {
-                    a = a.slice(1);
-                }
-                return a;
-            };
-            if (this.callDrillStack?.length > 0) {
-                callBase.forEach((s) => {
-                    /** 첫 콜 직전 부모 정의 경로 — 클릭 시 항상 부모 XML 복귀(parentBase) */
-                    out.push({ kind: 'callBase', crumbNav: 'parentBase', planeId: s.planeId, label: s.label });
-                });
-                this.callDrillStack.forEach((s, i) => {
-                    out.push({ kind: 'call', crumbNav: 'callLevel', callIndex: i + 1, label: s.label || '…' });
-                    let trailSubs = trimDupRoot(s.subTrailBeforeNext);
-                    trailSubs.forEach((seg) => {
-                        out.push({
-                            kind: 'sub',
-                            crumbNav: 'subTrail',
-                            planeId: seg.planeId,
-                            label: seg.label,
-                            trailStackIndex: i
-                        });
-                    });
-                });
-            }
-            let subs = trimDupRoot(this.subProcessDrillSegments || []);
-            // subTrailBeforeNext로 이미 넣은 plane과 현재 캔버스 경로가 겹치면(예: 테스트 서브 두 번) 한 번만 표시
-            const lastTrailPlane = (() => {
-                for (let k = out.length - 1; k >= 0; k--) {
-                    if (out[k].kind === 'sub' && out[k].planeId) return out[k].planeId;
-                }
-                return null;
-            })();
-            if (lastTrailPlane && subs.length > 0) {
-                const first = subs[0];
-                const fpid = first.planeRoot?.id;
-                if (fpid && fpid === lastTrailPlane) {
-                    subs = subs.slice(1);
-                }
-            }
-            subs.forEach((s) => {
-                const pid = s.planeRoot?.id;
-                out.push({ kind: 'sub', crumbNav: 'subCurrent', planeId: pid, planeRoot: s.planeRoot, label: s.label });
-            });
-            // 연속된 동일 sub(같은 planeId) 제거 — trail + 현재 경로가 한 plane을 두 번 쓸 때
-            const collapsed = [];
-            for (let j = 0; j < out.length; j++) {
-                const cur = out[j];
-                const prev = collapsed[collapsed.length - 1];
-                if (
-                    prev &&
-                    cur.kind === 'sub' &&
-                    prev.kind === 'sub' &&
-                    cur.planeId &&
-                    prev.planeId &&
-                    cur.planeId === prev.planeId
-                ) {
-                    continue;
-                }
-                collapsed.push(cur);
-            }
-            return collapsed;
         }
     },
     async mounted() {
@@ -492,6 +347,8 @@ export default {
             .finally(() => {
                 try {
                     this.onLoadEnd();
+                    const minimap = this.bpmnViewer.get('minimap');
+                    if (minimap) minimap.open();
                 } catch (_) {}
             });
         this.initResizeObserver();
@@ -510,17 +367,10 @@ export default {
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
         }
-        if (this.bpmnViewer && this._unifiedRootSetListener) {
-            try {
-                this.bpmnViewer.get('eventBus').off('root.set', this._unifiedRootSetListener);
-            } catch (_) {}
-            this._unifiedRootSetListener = null;
-        }
     },
     watch: {
         bpmn: {
             async handler(newVal) {
-                this.clearCallActivityDrillState();
                 if (this.registerToStore) {
                     return;
                 }
@@ -542,38 +392,8 @@ export default {
                 }
             }
         },
-        async isViewMode() {
-            this.clearCallActivityDrillState();
-            // 편집/보기 전환 시 기존 모델러 제거 후 새로 생성하고, 현재 다이어그램 XML 재로드
-            const xmlToImport = this.diagramXML || this.bpmn;
-            if (this.bpmnViewer) {
-                if (this.registerToStore && this.bpmnStore) {
-                    this.bpmnStore.setModeler(null);
-                }
-                try {
-                    this.bpmnViewer.destroy();
-                } catch (e) {
-                    console.warn('[BpmnUengine] isViewMode: destroy 이전 모델러 실패', e);
-                }
-                this.bpmnViewer = null;
-            }
+        isViewMode(val) {
             this.initializeViewer();
-            this.setDiagramEvent();
-            if (xmlToImport && typeof xmlToImport === 'string' && xmlToImport.trim().length > 0) {
-                try {
-                    this.onLoadStart();
-                    let xml = xmlToImport;
-                    if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
-                    await this.bpmnViewer.importXML(xml);
-                } catch (e) {
-                    console.error('[BpmnUengine] isViewMode 전환 후 import 실패:', e);
-                    this.$emit('error', e);
-                } finally {
-                    try {
-                        this.onLoadEnd();
-                    } catch (_) {}
-                }
-            }
         },
         url(val) {
             this.$emit('loading');
@@ -650,526 +470,6 @@ export default {
         }
     },
     methods: {
-        clearCallActivityDrillState() {
-            this.callDrillBaseXml = null;
-            this.callDrillBaseLabel = '';
-            this.callDrillBasePathSegments = [];
-            this.callDrillStack = [];
-            this.callDrillLoading = false;
-            this.subProcessDrillSegments = [];
-        },
-        /**
-         * bpmn-js DrilldownBreadcrumbs와 동일: 루트 요소 기준 Process/SubProcess 체인 → 각 단계 plane (diagram-js root id)
-         */
-        buildPlaneSegmentsFromRoot(rootElement) {
-            if (!this.bpmnViewer || !rootElement) return [];
-            const canvas = this.bpmnViewer.get('canvas');
-            const elementRegistry = this.bpmnViewer.get('elementRegistry');
-            const businessObject = getBusinessObject(rootElement);
-            const parents = [];
-            for (let el = businessObject; el; el = el.$parent) {
-                if (is(el, 'bpmn:SubProcess') || is(el, 'bpmn:Process')) {
-                    parents.push(el);
-                }
-            }
-            parents.reverse();
-            const segments = [];
-            parents.forEach((parent) => {
-                let parentPlane =
-                    canvas.findRoot(getPlaneIdFromShape(parent)) || canvas.findRoot(parent.id);
-                if (!parentPlane && is(parent, 'bpmn:Process')) {
-                    const candidates = elementRegistry.filter(function (element) {
-                        const bo = getBusinessObject(element);
-                        const pr = bo && (typeof bo.get === 'function' ? bo.get('processRef') : bo.processRef);
-                        return pr === parent;
-                    });
-                    const participant = candidates && candidates.length ? candidates[0] : null;
-                    parentPlane = participant && canvas.findRoot(participant.id);
-                }
-                if (!parentPlane) {
-                    return;
-                }
-                const label = parent.name || parent.id;
-                segments.push({ label: String(label), planeRoot: parentPlane });
-            });
-            return segments;
-        },
-        updateSubProcessDrillSegmentsFromRoot(rootElement) {
-            if (!this.bpmnViewer || !rootElement) {
-                this.subProcessDrillSegments = [];
-                return;
-            }
-            try {
-                this.subProcessDrillSegments = this.buildPlaneSegmentsFromRoot(rootElement);
-            } catch (e) {
-                console.warn('[BpmnUengine] subProcess breadcrumb segments failed:', e);
-                this.subProcessDrillSegments = [];
-            }
-        },
-        /** 첫 Call 드릴 직전: 부모 정의 안의 서브프로세스 드릴 전체 경로를 plane id로 저장 (통합 브레드크럼 + 클릭 복귀용) */
-        captureCallDrillBasePathSegments() {
-            if (!this.bpmnViewer) {
-                this.callDrillBasePathSegments = [];
-                return;
-            }
-            try {
-                const canvas = this.bpmnViewer.get('canvas');
-                const root = canvas.getRootElement();
-                const segments = this.buildPlaneSegmentsFromRoot(root);
-                if (!segments.length) {
-                    this.callDrillBasePathSegments = [{ label: this.getRootDiagramTitle(), planeId: root?.id || '' }];
-                } else {
-                    this.callDrillBasePathSegments = segments.map((s) => ({
-                        label: s.label,
-                        planeId: s.planeRoot.id
-                    }));
-                }
-                this.callDrillBaseLabel = this.callDrillBasePathSegments.map((x) => x.label).join(' › ');
-            } catch (e) {
-                console.warn('[BpmnUengine] captureCallDrillBasePathSegments failed:', e);
-                const root = this.bpmnViewer.get('canvas').getRootElement();
-                this.callDrillBasePathSegments = [{ label: this.getRootDiagramTitle(), planeId: root?.id || '' }];
-                this.callDrillBaseLabel = this.callDrillBasePathSegments[0].label;
-            }
-        },
-        /**
-         * parentBase 클릭인데 callDrillBaseXml이 없을 때만(상태 불일치) 현재 정의에서 setRoot 시도.
-         * 정상 경로는 navigateToCallBasePlane만 사용한다.
-         */
-        navigateParentBaseFallbackSetRoot(seg) {
-            if (!this.bpmnViewer || seg?.kind !== 'callBase') return false;
-            const canvas = this.bpmnViewer.get('canvas');
-            const elementRegistry = this.bpmnViewer.get('elementRegistry');
-            const trySetRoot = (planeRootOrId) => {
-                const id = planeRootOrId?.id != null ? planeRootOrId.id : planeRootOrId;
-                if (!id) return false;
-                const plane = canvas.findRoot(id) || elementRegistry.get(id);
-                if (plane) {
-                    canvas.setRootElement(plane);
-                    return true;
-                }
-                return false;
-            };
-            const subs = this.subProcessDrillSegments || [];
-            if (subs.length > 1) {
-                const want = String(seg.label || '');
-                const upper = subs.slice(0, -1);
-                const matches = upper.filter((x) => String(x.label) === want);
-                if (matches.length === 1) {
-                    if (trySetRoot(matches[0].planeRoot)) return true;
-                } else if (matches.length > 1) {
-                    if (trySetRoot(matches[matches.length - 1].planeRoot)) return true;
-                }
-            }
-            const cur = canvas.getRootElement();
-            const chain = this.buildPlaneSegmentsFromRoot(cur);
-            if (chain.length) {
-                let target = null;
-                if (seg.planeId) {
-                    target = chain.find((c) => c.planeRoot?.id === seg.planeId) || null;
-                }
-                if (!target) {
-                    const want = String(seg.label || '');
-                    target = chain.find((c) => String(c.label) === want) || null;
-                }
-                if (target?.planeRoot && trySetRoot(target.planeRoot)) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        /** callBase 크럼 클릭: 부모 정의로 복귀(import) 후 해당 plane으로 이동, Call 드릴 스택 종료 */
-        async navigateToCallBasePlane(planeId) {
-            if (!this.bpmnViewer || !this.callDrillBaseXml) return;
-            this.callDrillLoading = true;
-            try {
-                this.onLoadStart();
-                this.callDrillStack = [];
-                let xml = this.callDrillBaseXml;
-                if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
-                await this.bpmnViewer.importXML(xml);
-                this.diagramXML = this.callDrillBaseXml;
-                this.callDrillBaseXml = null;
-                this.callDrillBaseLabel = '';
-                this.callDrillBasePathSegments = [];
-                await this.$nextTick();
-                const canvas = this.bpmnViewer.get('canvas');
-                const elementRegistry = this.bpmnViewer.get('elementRegistry');
-                let plane = null;
-                if (planeId) {
-                    plane = canvas.findRoot(planeId) || elementRegistry.get(planeId);
-                }
-                if (!plane) {
-                    plane = canvas.getRootElement();
-                }
-                if (plane) {
-                    canvas.setRootElement(plane);
-                } else {
-                    console.warn('[BpmnUengine] navigateToCallBasePlane: no plane to set', planeId);
-                }
-            } catch (e) {
-                console.error('[BpmnUengine] navigateToCallBasePlane failed', e);
-                this.$emit('error', e);
-            } finally {
-                this.callDrillLoading = false;
-                this.onLoadEnd();
-            }
-        },
-        unifiedBreadcrumbNavigateTo(segmentIndex) {
-            const segs = this.unifiedBreadcrumbSegments;
-            if (!segs || segmentIndex < 0 || segmentIndex >= segs.length - 1) return;
-            const seg = segs[segmentIndex];
-            const nav = seg.crumbNav;
-            if (nav === 'parentBase') {
-                if (this.callDrillBaseXml) {
-                    this.navigateToCallBasePlane(seg.planeId || null);
-                } else {
-                    this.navigateParentBaseFallbackSetRoot(seg);
-                }
-                return;
-            }
-            if (nav === 'callLevel') {
-                this.callDrillNavigateTo(seg.callIndex);
-                return;
-            }
-            if (nav === 'subTrail') {
-                const id = seg.planeId;
-                if (!id || !this.bpmnViewer) return;
-                this.navigateToCallStackAndSubPlane(seg.trailStackIndex, id);
-                return;
-            }
-            if (nav === 'subCurrent' && this.bpmnViewer) {
-                const id = seg.planeId || seg.planeRoot?.id;
-                if (!id) return;
-                try {
-                    const canvas = this.bpmnViewer.get('canvas');
-                    const elementRegistry = this.bpmnViewer.get('elementRegistry');
-                    const plane = canvas.findRoot(id) || elementRegistry.get(id);
-                    if (plane) {
-                        canvas.setRootElement(plane);
-                    } else {
-                        console.warn('[BpmnUengine] unified breadcrumb: sub plane not found', id);
-                    }
-                } catch (e) {
-                    console.warn('[BpmnUengine] setRootElement failed:', e);
-                }
-                return;
-            }
-            // 하위 호환: crumbNav 없으면 기존 kind 분기
-            if (seg.kind === 'callBase') {
-                if (this.callDrillBaseXml) {
-                    this.navigateToCallBasePlane(seg.planeId || null);
-                } else {
-                    this.navigateParentBaseFallbackSetRoot(seg);
-                }
-                return;
-            }
-            if (seg.kind === 'call') {
-                this.callDrillNavigateTo(seg.callIndex);
-                return;
-            }
-            if (seg.kind === 'sub' && this.bpmnViewer) {
-                const id = seg.planeId || seg.planeRoot?.id;
-                if (!id) return;
-                if (typeof seg.trailStackIndex === 'number') {
-                    this.navigateToCallStackAndSubPlane(seg.trailStackIndex, id);
-                    return;
-                }
-                try {
-                    const canvas = this.bpmnViewer.get('canvas');
-                    const elementRegistry = this.bpmnViewer.get('elementRegistry');
-                    const plane = canvas.findRoot(id) || elementRegistry.get(id);
-                    if (plane) {
-                        canvas.setRootElement(plane);
-                    } else {
-                        console.warn('[BpmnUengine] unified breadcrumb: sub plane not found', id);
-                    }
-                } catch (e) {
-                    console.warn('[BpmnUengine] setRootElement failed:', e);
-                }
-            }
-        },
-        /** subTrailBeforeNext에 저장된 plane은 과거 Call 단계 XML에 속함 → 해당 스택 깊이로 복귀 후 setRoot */
-        async navigateToCallStackAndSubPlane(trailStackIndex, planeId) {
-            if (this.callDrillLoading || !this.bpmnViewer || trailStackIndex < 0) return;
-            if (trailStackIndex >= this.callDrillStack.length) return;
-            this.callDrillLoading = true;
-            try {
-                this.onLoadStart();
-                const newStack = this.callDrillStack.slice(0, trailStackIndex + 1);
-                this.callDrillStack = newStack;
-                const top = newStack[trailStackIndex];
-                if (!top?.xml) return;
-                let xml = top.xml;
-                if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
-                await this.bpmnViewer.importXML(xml);
-                this.diagramXML = top.xml;
-                await this.$nextTick();
-                const canvas = this.bpmnViewer.get('canvas');
-                const elementRegistry = this.bpmnViewer.get('elementRegistry');
-                const plane = canvas.findRoot(planeId) || elementRegistry.get(planeId);
-                if (plane) {
-                    canvas.setRootElement(plane);
-                } else {
-                    console.warn('[BpmnUengine] navigateToCallStackAndSubPlane: plane not found', planeId);
-                }
-            } catch (e) {
-                console.error('[BpmnUengine] navigateToCallStackAndSubPlane failed', e);
-                this.$emit('error', e);
-            } finally {
-                this.callDrillLoading = false;
-                this.onLoadEnd();
-            }
-        },
-        /** Call 드릴 한 단계 더 들어가기 직전: 현재 정의 안의 서브프로세스 경로(라벨·plane id) 직렬화 */
-        serializeSubTrail(subProcessDrillSegments) {
-            if (!subProcessDrillSegments?.length) return [];
-            return subProcessDrillSegments
-                .map((s) => ({
-                    label: String(s.label || ''),
-                    planeId: s.planeRoot?.id || ''
-                }))
-                .filter((x) => x.planeId);
-        },
-        parseUengineDefinitionIdFromBo(bo) {
-            if (!bo) return null;
-
-            const pickIdFromParsed = (p) => {
-                if (!p || typeof p !== 'object') return null;
-                for (const key of ['definitionId', 'definitionPath', 'processDefinitionId']) {
-                    const v = p[key];
-                    if (v != null && String(v).trim() !== '') {
-                        return String(v).trim();
-                    }
-                }
-                const zp = p.zeebe?.calledElement?.processId ?? p.zeebe?.processId;
-                if (zp != null && String(zp).trim() !== '') {
-                    return String(zp).trim();
-                }
-                return null;
-            };
-
-            const tryJson = (jsonStr) => {
-                if (!jsonStr || typeof jsonStr !== 'string') return null;
-                try {
-                    const p = JSON.parse(jsonStr);
-                    return pickIdFromParsed(p);
-                } catch (_) {}
-                return null;
-            };
-
-            const collectStringsFromModdle = (node, out, depth) => {
-                if (!node || depth > 24) return;
-                if (typeof node === 'string') {
-                    if (node.trim()) out.push(node);
-                    return;
-                }
-                if (node.definition != null && String(node.definition).trim() !== '') {
-                    out.push(`__def:${String(node.definition).trim()}`);
-                }
-                const j = node.json;
-                if (typeof j === 'string' && j.trim()) out.push(j);
-                const b = node.$body ?? node.body;
-                if (typeof b === 'string' && b.trim()) out.push(b);
-                const ch = node.$children;
-                if (Array.isArray(ch)) {
-                    for (const c of ch) {
-                        collectStringsFromModdle(c, out, depth + 1);
-                    }
-                }
-            };
-
-            const ee = bo.extensionElements ?? (typeof bo.get === 'function' ? bo.get('extensionElements') : null);
-            let vals = ee?.values ?? (typeof ee?.get === 'function' ? ee.get('values') : null);
-            if (vals?.length) {
-                const asArray = Array.isArray(vals) ? vals : [vals];
-                const propsFirst = asArray.find((v) => v && String(v.$type || '').includes('Properties'));
-                const ordered = propsFirst ? [propsFirst, ...asArray.filter((v) => v !== propsFirst)] : [...asArray];
-                for (const v of ordered) {
-                    if (!v) continue;
-                    if (v.definition != null && String(v.definition).trim() !== '') {
-                        return String(v.definition).trim();
-                    }
-                    const candidates = [];
-                    collectStringsFromModdle(v, candidates, 0);
-                    for (const s of candidates) {
-                        if (s.startsWith('__def:')) {
-                            return s.slice(6);
-                        }
-                        const hit = tryJson(s);
-                        if (hit) return hit;
-                    }
-                }
-            }
-
-            const ce = bo?.calledElement;
-            if (ce != null && typeof ce === 'string') {
-                const s = ce.trim();
-                if (s && (s.includes('/') || /\.bpmn$/i.test(s) || /^definitions\//i.test(s))) {
-                    return s.replace(/^definitions\//i, '');
-                }
-            }
-            if (ce && typeof ce === 'object' && ce.id != null && String(ce.id).trim() !== '') {
-                return String(ce.id).trim();
-            }
-
-            return null;
-        },
-        /**
-         * CallActivity에 저장된 id가 폴더 없는 짧은 값이면, 현재 보고 있는 정의(defId)의 디렉터리를 붙여 조회한다.
-         * (Call 안의 Call 등 중첩 드릴에서 상대 경로 definitionId 대응)
-         */
-        resolveCallActivityFetchPath(normalizedId, parentDefId) {
-            const id = String(normalizedId || '')
-                .replace(/\.bpmn$/i, '')
-                .trim();
-            if (!id) return '';
-            const withoutDefPrefix = id.replace(/^definitions\//i, '').trim();
-            if (withoutDefPrefix.includes('/')) {
-                return withoutDefPrefix;
-            }
-            const pd = parentDefId && String(parentDefId).replace(/\.bpmn$/i, '').trim();
-            if (pd) {
-                const lastSlash = pd.lastIndexOf('/');
-                const parentDir = lastSlash >= 0 ? pd.slice(0, lastSlash) : '';
-                if (parentDir) {
-                    return `${parentDir}/${withoutDefPrefix}`;
-                }
-            }
-            return withoutDefPrefix;
-        },
-        getRootDiagramTitle() {
-            try {
-                const canvas = this.bpmnViewer.get('canvas');
-                const root = canvas.getRootElement();
-                const rbo = root?.businessObject;
-                if (rbo?.name) return String(rbo.name);
-                if (rbo?.$type === 'bpmn:Collaboration') {
-                    const parts = rbo.participants || rbo.get?.('participants');
-                    const first = Array.isArray(parts) ? parts[0] : null;
-                    const pref = first?.businessObject?.processRef || first?.processRef;
-                    if (pref?.name) return String(pref.name);
-                    if (pref?.id) return String(pref.id);
-                }
-                const definitions = this.bpmnViewer.getDefinitions();
-                const proc = definitions?.rootElements?.find((e) => e.$type === 'bpmn:Process');
-                if (proc?.name) return String(proc.name);
-                if (proc?.id) return String(proc.id);
-            } catch (_) {}
-            return 'Process';
-        },
-        async callDrillNavigateTo(idx) {
-            if (this.callDrillLoading || !this.bpmnViewer) return;
-            // callIndex는 1..stack.length(해당 Call 단계로 복귀). 예전 segCount-1 조건은 stack.length와 같을 때 막혀 두 번째 결재 클릭이 무응답이 됨
-            if (idx < 0 || idx > this.callDrillStack.length) return;
-            this.callDrillLoading = true;
-            try {
-                this.onLoadStart();
-                if (idx === 0) {
-                    const base = this.callDrillBaseXml;
-                    this.callDrillStack = [];
-                    this.callDrillBaseXml = null;
-                    this.callDrillBaseLabel = '';
-                    this.callDrillBasePathSegments = [];
-                    let xml = base || (typeof this.bpmn === 'string' ? this.bpmn : '');
-                    if (!xml || !xml.trim()) return;
-                    if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
-                    await this.bpmnViewer.importXML(xml);
-                    this.diagramXML = base || this.bpmn;
-                } else {
-                    this.callDrillStack = this.callDrillStack.slice(0, idx);
-                    const top = this.callDrillStack[this.callDrillStack.length - 1];
-                    if (!top?.xml) return;
-                    // importXML로 해당 Call 정의가 다시 그려지면 루트는 초기화됨. 서브프로세스 안에서 콜로 들어가기 직전에 저장한 subTrailBeforeNext는 더 이상 맞지 않음 → 브레드크럼에 ‘테스트 서브’ 등이 남는 현상 방지
-                    const clearedTop = { ...top, subTrailBeforeNext: [] };
-                    this.callDrillStack.splice(this.callDrillStack.length - 1, 1, clearedTop);
-                    let xml = clearedTop.xml;
-                    if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
-                    await this.bpmnViewer.importXML(xml);
-                    this.diagramXML = clearedTop.xml;
-                }
-                await this.$nextTick();
-                try {
-                    const canvas = this.bpmnViewer.get('canvas');
-                    if (canvas && typeof canvas.getRootElement === 'function') {
-                        this.updateSubProcessDrillSegmentsFromRoot(canvas.getRootElement());
-                    }
-                } catch (_) {
-                    /* ignore */
-                }
-            } catch (e) {
-                console.error('[BpmnUengine] CallActivity 드릴 뒤로가기 실패', e);
-                this.$emit('error', e);
-            } finally {
-                this.callDrillLoading = false;
-                this.onLoadEnd();
-            }
-        },
-        async drillIntoCallActivity(bo) {
-            if (this.callDrillLoading || !this.bpmnViewer) return;
-            const defIdRaw = this.parseUengineDefinitionIdFromBo(bo);
-            if (!defIdRaw) return;
-            const normalizedId = defIdRaw.replace(/\.bpmn$/i, '').trim();
-            if (!normalizedId) return;
-            this.callDrillLoading = true;
-            try {
-                this.onLoadStart();
-                if (!this.callDrillStack.length && !this.callDrillBaseXml) {
-                    let { xml } = await this.bpmnViewer.saveXML({ format: true, preamble: true });
-                    if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
-                    this.callDrillBaseXml = xml;
-                    this.captureCallDrillBasePathSegments();
-                }
-                let parentDefId = null;
-                if (this.callDrillStack.length > 0) {
-                    // 중첩 Call 진입 직전: 현재 정의에서 열어둔 서브프로세스 경로(예: 테스트 서브)를 보존해 브레드크럼에 유지
-                    const subTrailSnap = this.serializeSubTrail(this.subProcessDrillSegments);
-                    let { xml } = await this.bpmnViewer.saveXML({ format: true, preamble: true });
-                    if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
-                    const i = this.callDrillStack.length - 1;
-                    const cur = this.callDrillStack[i];
-                    this.callDrillStack.splice(i, 1, { ...cur, xml, subTrailBeforeNext: subTrailSnap });
-                    parentDefId = cur.defId ?? null;
-                }
-                const fetchPath = this.resolveCallActivityFetchPath(normalizedId, parentDefId);
-                const raw = await backend.getRawDefinition(fetchPath, { type: 'bpmn' });
-                let childXml =
-                    typeof raw === 'string'
-                        ? raw
-                        : raw && typeof raw === 'object'
-                          ? raw.bpmn ?? raw.definition ?? raw.xml
-                          : null;
-                if (!childXml || typeof childXml !== 'string' || !childXml.trim()) {
-                    console.warn('[BpmnUengine] CallActivity: 호출 정의를 불러올 수 없습니다', fetchPath);
-                    if (!this.callDrillStack.length) {
-                        this.callDrillBaseXml = null;
-                        this.callDrillBaseLabel = '';
-                        this.callDrillBasePathSegments = [];
-                    }
-                    return;
-                }
-                const label =
-                    (bo.name && String(bo.name).trim()) ||
-                    fetchPath.split('/').pop() ||
-                    fetchPath;
-                this.callDrillStack.push({ label, xml: childXml, defId: fetchPath });
-                let xmlToImport = childXml;
-                if (isUengineMode()) xmlToImport = uengineJsonElementToAttr(childXml);
-                await this.bpmnViewer.importXML(xmlToImport);
-                this.diagramXML = childXml;
-            } catch (e) {
-                console.error('[BpmnUengine] CallActivity 드릴 실패', e);
-                this.$emit('error', e);
-                if (!this.callDrillStack.length) {
-                    this.callDrillBaseXml = null;
-                    this.callDrillBaseLabel = '';
-                    this.callDrillBasePathSegments = [];
-                }
-            } finally {
-                this.callDrillLoading = false;
-                this.onLoadEnd();
-            }
-        },
         // 노드별 코멘트 배지 오버레이 렌더링
         renderCommentBadges(commentCounts) {
             if (!this.bpmnViewer) return;
@@ -1253,66 +553,28 @@ export default {
             }
         },
 
-        // Phase 1-3: Apply validation markers + 메시지 오버레이 (스타일은 전역 CSS 클래스)
-        createValidationOverlayHtml(errors) {
-            return createBpmnValidationOverlayElement(errors, this.$t.bind(this));
-        },
-
+        // Phase 1-3: Apply validation markers on canvas
         applyValidationMarkers(items) {
             if (!this.bpmnViewer) return;
             try {
                 const canvas = this.bpmnViewer.get('canvas');
                 const elementRegistry = this.bpmnViewer.get('elementRegistry');
-                const overlays = this.bpmnViewer.get('overlays');
 
-                try {
-                    overlays.remove({ type: 'validation-error' });
-                } catch (e) {
-                    /* ignore */
-                }
-                try {
-                    overlays.remove({ type: 'validation-warning' });
-                } catch (e) {
-                    /* ignore */
-                }
-
+                // Remove all existing validation markers
                 elementRegistry.getAll().forEach((el) => {
                     canvas.removeMarker(el.id, 'validation-error');
                     canvas.removeMarker(el.id, 'validation-warning');
                 });
 
-                if (!items || items.length === 0) return;
-
-                const byElement = new Map();
+                // Add markers per item
                 (items || []).forEach((item) => {
                     if (!item.elementId) return;
-                    if (!byElement.has(item.elementId)) byElement.set(item.elementId, []);
-                    byElement.get(item.elementId).push(item);
-                });
-
-                byElement.forEach((elementErrors, elementId) => {
-                    const el = elementRegistry.get(elementId);
+                    const el = elementRegistry.get(item.elementId);
                     if (!el) return;
-
-                    const hasError = elementErrors.some((e) => e.level === 'error');
-                    if (hasError) {
-                        canvas.addMarker(elementId, 'validation-error');
+                    if (item.level === 'error') {
+                        canvas.addMarker(item.elementId, 'validation-error');
                     } else {
-                        canvas.addMarker(elementId, 'validation-warning');
-                    }
-
-                    const overlayType = hasError ? 'validation-error' : 'validation-warning';
-                    try {
-                        const html = this.createValidationOverlayHtml(elementErrors);
-                        overlays.add(elementId, overlayType, {
-                            position: {
-                                top: -12,
-                                left: (el.width || 100) + 8
-                            },
-                            html
-                        });
-                    } catch (e) {
-                        console.warn('[BpmnUengine] validation overlay:', e);
+                        canvas.addMarker(item.elementId, 'validation-warning');
                     }
                 });
             } catch (e) {
@@ -1905,16 +1167,6 @@ export default {
         setDiagramEvent() {
             var self = this;
             var eventBus = this.bpmnViewer.get('eventBus');
-
-            if (self._unifiedRootSetListener) {
-                eventBus.off('root.set', self._unifiedRootSetListener);
-            }
-            self._unifiedRootSetListener = function (e) {
-                if (!self.isViewMode) return;
-                self.updateSubProcessDrillSegmentsFromRoot(e.element);
-            };
-            eventBus.on('root.set', self._unifiedRootSetListener);
-
             // eventBus.on('import.render.start', function (e) {
             //     // self.openPanel = true;
             //     // console.log("render  complete")
@@ -2046,89 +1298,68 @@ export default {
 
                     callActivities.forEach((element) => {
                         const businessObject = element.businessObject;
-                        const linkedDefId = self.parseUengineDefinitionIdFromBo(businessObject);
-                        if (!linkedDefId) return;
-                        try {
-                            const existing = overlays.get({ element: element, type: 'call-activity-external' });
-                            existing.forEach(function (o) {
-                                overlays.remove({ id: o.id });
-                            });
+                        if (
+                            businessObject.extensionElements &&
+                            businessObject.extensionElements.values &&
+                            businessObject.extensionElements.values.length > 0
+                        ) {
+                            const json = businessObject.extensionElements.values[0].json;
+                            if (json) {
+                                try {
+                                    const properties = JSON.parse(json);
+                                    if (properties.definitionId) {
+                                        const html = document.createElement('div');
+                                        html.className = 'call-activity-link-btn';
+                                        html.style.cssText =
+                                            'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+                                        html.innerHTML =
+                                            '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: #333;"></i>';
 
-                            const html = document.createElement('div');
-                            html.className = 'call-activity-link-btn';
-                            html.style.cssText =
-                                'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
-                            html.innerHTML =
-                                '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: #333;"></i>';
+                                        html.addEventListener('click', function (e) {
+                                            e.stopPropagation(); // Prevent element selection
+                                            window.open(`/definitions/${properties.definitionId.replace('.bpmn', '')}`, '_blank');
+                                        });
 
-                            const parentDefForLink =
-                                self.callDrillStack.length > 0
-                                    ? self.callDrillStack[self.callDrillStack.length - 1].defId
-                                    : null;
-                            const resolvedOpen = self.resolveCallActivityFetchPath(
-                                String(linkedDefId).replace(/\.bpmn$/i, '').trim(),
-                                parentDefForLink
-                            );
-                            const urlId = String(resolvedOpen).replace(/\.bpmn$/i, '');
-                            html.addEventListener('click', function (e) {
-                                e.stopPropagation();
-                                window.open(`/definitions/${urlId}`, '_blank');
-                            });
-
-                            overlays.add(element, 'call-activity-external', {
-                                position: {
-                                    top: -10,
-                                    right: -10
-                                },
-                                html: html
-                            });
-                        } catch (err) {
-                            console.error('Failed to add CallActivity external link overlay', err);
+                                        overlays.add(element.id, {
+                                            position: {
+                                                top: -10,
+                                                right: -10
+                                            },
+                                            html: html
+                                        });
+                                    }
+                                } catch (err) {
+                                    console.error('Failed to parse CallActivity properties', err);
+                                }
+                            }
                         }
                     });
 
-                    // View 모드: CallActivity는 PAL 포함 항상 캔버스 내 드릴(상단 정의 경로/라우트 변경 없음)
-                    if (self._viewModeElementDblClick) {
-                        eventBus.off('element.dblclick', self._viewModeElementDblClick);
-                        self._viewModeElementDblClick = null;
-                    }
-                    self._viewModeElementDblClick = function (e) {
+                    // View 모드: 더블클릭 시 CallActivity/SubProcess(definitionId 있음)면 프로세스로 이동(openDefinition), 그 외는 패널 열기
+                    eventBus.on('element.dblclick', function (e) {
                         const el = e.element;
                         const bo = el.businessObject;
+                        let emitNavigate = false;
                         if (el.type && el.type.includes('CallActivity')) {
-                            const defId = self.parseUengineDefinitionIdFromBo(bo);
-                            if (defId) {
-                                self.drillIntoCallActivity(bo);
-                            } else {
-                                self.$emit('openPanel', el.id);
-                            }
-                            return;
+                            emitNavigate = !!bo?.extensionElements?.values?.[0]?.json;
+                        } else if (el.type && el.type.includes('SubProcess') && bo?.extensionElements?.values?.[0]?.json) {
+                            try {
+                                const p = JSON.parse(bo.extensionElements.values[0].json);
+                                emitNavigate = !!(p && p.definitionId);
+                            } catch (_) {}
                         }
-                        if (el.type && el.type.includes('SubProcess')) {
-                            const subDefId = self.parseUengineDefinitionIdFromBo(bo);
-                            if (subDefId) {
-                                self.drillIntoCallActivity(bo);
-                            } else {
-                                self.$emit('openPanel', el.id);
-                            }
-                            return;
+                        if (emitNavigate) {
+                            self.$emit('openDefinition', bo);
+                        } else {
+                            self.$emit('openPanel', el.id);
                         }
-                        self.$emit('openPanel', el.id);
-                    };
-                    // 우선 실행: 다른 리스너/선택 처리보다 앞서 Call/SubProcess 드릴 결정
-                    eventBus.on('element.dblclick', 2500, self._viewModeElementDblClick);
+                    });
                 } else {
-                    // Edit 모드: 더블클릭 시 우클릭과 동일하게 동작 (속성 패널 열기)
-                    // Collaboration만 특별 처리(새 탭), 나머지(CallActivity 포함)는 openPanel
-                    if (self._editModeElementDblClick) {
-                        eventBus.off('element.dblclick', self._editModeElementDblClick);
-                        self._editModeElementDblClick = null;
-                    }
-                    self._editModeElementDblClick = function (e) {
-                        const el = e.element;
-                        const elType = el.type || '';
-                        if (elType.includes('Collaboration')) {
-                            const businessObject = el.businessObject;
+                    eventBus.on('element.dblclick', function (e) {
+                        if (e.element.type.includes('CallActivity')) {
+                            self.$emit('openDefinition', e.element.businessObject);
+                        } else if (e.element.type.includes('Collaboration')) {
+                            const businessObject = e.element.businessObject;
                             if (
                                 businessObject.extensionElements &&
                                 businessObject.extensionElements.values &&
@@ -2146,37 +1377,8 @@ export default {
                                     }
                                 }
                             }
-                        } else if (elType !== 'bpmn:Process' && elType !== 'bpmn:Collaboration') {
-                            // Task, Event, Gateway 등: 우클릭과 동일하게 속성 패널 열기
-                            self.$emit('openPanel', el.id);
-                        }
-                    };
-                    eventBus.on('element.dblclick', self._editModeElementDblClick);
-
-                    // Edit 모드: 우클릭 시 속성 패널 열기 (DOM 이벤트 사용)
-                    const canvas = self.bpmnViewer.get('canvas');
-                    const container = canvas.getContainer();
-                    container.addEventListener('contextmenu', function (event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-
-                        // 클릭된 SVG 요소에서 data-element-id 찾기
-                        let target = event.target;
-                        let elementId = null;
-
-                        while (target && target !== container) {
-                            elementId = target.getAttribute('data-element-id');
-                            if (elementId) break;
-                            target = target.parentElement;
-                        }
-
-                        if (elementId) {
-                            // Root element나 빈 공간은 무시
-                            const elementRegistry = self.bpmnViewer.get('elementRegistry');
-                            const element = elementRegistry.get(elementId);
-                            if (element && element.type !== 'bpmn:Process' && element.type !== 'bpmn:Collaboration') {
-                                self.$emit('openPanel', elementId);
-                            }
+                        } else {
+                            self.$emit('openPanel', e.element.id);
                         }
                     });
                 }
@@ -2357,18 +1559,18 @@ export default {
                     }
                 });
 
-                // var events = ['element.hover', 'element.out', 'element..click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
+                // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
                 // events.forEach(function (event) {
 
                 // });
                 if (self.isAIGenerated) {
-                   if (self._layoutTimeout) {
-                       clearTimeout(self._layoutTimeout);
-                   }
-                   self._layoutTimeout = setTimeout(() => {
-                       self.applyAutoLayout();
-                       self.$emit('update:isAIGenerated', false);
-                   }, 500); // 500ms 안 변하면 실행 (PAL 모드 포함)
+                    if (self._layoutTimeout) {
+                        clearTimeout(self._layoutTimeout);
+                    }
+                    self._layoutTimeout = setTimeout(() => {
+                        self.applyAutoLayout();
+                        self.$emit('update:isAIGenerated', false);
+                    }, 500); // 500ms 안 변하면 실행 (PAL 모드 포함)
                 }
 
                 // 코멘트 배지 렌더링 (commentCounts prop이 있을 때)
@@ -2381,7 +1583,7 @@ export default {
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
                 // PAL 모드에서도 엑셀 등으로 BPMN 로드 시 자동 레이아웃 적용
-                //self.applyAutoLayout();
+                self.applyAutoLayout();
                 self.resetZoom();
             });
 
@@ -2490,8 +1692,7 @@ export default {
                             },
                             blockEditingInteractions,
                             ZoomScroll,
-                            // 읽기 모드: 커스텀 MoveCanvas는 element.mousedown 에서 return true 로 전파를 막아
-                            // diagram-js 기본 moveCanvas(마우스 드래그 팬)가 동작하지 않음 → 기본 모듈만 사용
+                            MoveCanvas,
                             minimapModule
                         ],
                         moddleExtensions: {
@@ -2765,7 +1966,7 @@ export default {
             var canvas = self.bpmnViewer.get('canvas');
             var elementRegistry = self.bpmnViewer.get('elementRegistry');
             var zoomScroll = self.bpmnViewer.get('zoomScroll');
-            var moveCanvas = self.bpmnViewer.get('MoveCanvas') || self.bpmnViewer.get('moveCanvas');
+            var moveCanvas = self.bpmnViewer.get('MoveCanvas');
 
             // Guard: skip if canvas container has no dimensions (prevents SVGMatrix non-finite error)
             try {
@@ -2811,17 +2012,15 @@ export default {
             // ✅ 4) 필요하면 여기서 padding / 이동 조정하고 싶으면 scroll 사용
             // 예: canvas.scroll({ dx: 50, dy: 50 });
 
-            // ✅ 5) zoomScroll, moveCanvas 동기화 (커스텀 MoveCanvas에만 bbox/이동거리 상태 있음)
-            if (moveCanvas && typeof moveCanvas.resetMovedDistance === 'function' && 'canvasSize' in moveCanvas) {
-                moveCanvas.canvasSize = {
-                    height: bbox.height,
-                    width: bbox.width,
-                    x: bbox.x,
-                    y: bbox.y
-                };
-                moveCanvas.scaleOffset = bbox.scale;
-                moveCanvas.resetMovedDistance();
-            }
+            // ✅ 5) zoomScroll, moveCanvas 동기화
+            moveCanvas.canvasSize = {
+                height: bbox.height,
+                width: bbox.width,
+                x: bbox.x,
+                y: bbox.y
+            };
+            moveCanvas.scaleOffset = bbox.scale;
+            moveCanvas.resetMovedDistance();
 
             zoomScroll.canvasSize = {
                 height: bbox.height,
@@ -2958,9 +2157,7 @@ export default {
         },
         onPan(ev) {
             const srcEvent = ev.srcEvent;
-            const isMouse = srcEvent.pointerType === 'mouse' || (srcEvent.type && srcEvent.type.startsWith('mouse'));
-            // 편집 모드: 마우스는 diagram-js에 맡김(요소 이동·팔레트와 충돌 방지). 읽기/미리보기: 컨테이너 팬 허용
-            if (isMouse && !this.isViewMode && !this.isPreviewMode) {
+            if (srcEvent.pointerType === 'mouse' || srcEvent.type.startsWith('mouse')) {
                 return;
             }
 
@@ -3156,13 +2353,6 @@ export default {
             }
             ev.srcEvent.stopPropagation();
             ev.srcEvent.preventDefault();
-        },
-        onContextMenu(event) {
-            // 기본 브라우저 컨텍스트 메뉴 방지 (Edit 모드에서만)
-            // bpmn-js의 element.contextmenu 이벤트에서 패널을 열도록 처리
-            if (!this.isViewMode) {
-                event.preventDefault();
-            }
         },
         onDragOver(event) {
             // Enable drop
@@ -3469,86 +2659,17 @@ export default {
 </script>
 
 <style>
-/* BPMN 검증 오버레이 — diagram-js 부모가 폭을 거의 주지 않으면 글자가 한 자씩 세로로 깨짐 → min-width·flex-shrink:0 필수 */
-.bpmn-validation-overlay-box {
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    gap: 8px;
-    /* 가로 폭 ~2/3 수준으로 컴팩트 (다이어그램 가림 최소화) */
-    min-width: 148px;
-    max-width: min(186px, 33vw);
-    flex-shrink: 0;
-    padding: 8px 10px;
-    border-radius: 4px;
-    border: 1px solid transparent;
-    /* 배경은 불투명 — 반투명이면 다이어그램 선과 겹쳐 글자가 묻힘 */
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
-    pointer-events: auto;
-    writing-mode: horizontal-tb;
-    word-break: keep-all;
-    overflow-wrap: break-word;
-    font-family: inherit;
-    line-height: 1.35;
-}
-/* 경고: 주황 테두리 / 오류: 빨강 테두리 — 본문 배경은 불투명 흰색 */
-.bpmn-validation-overlay-box--warn {
-    border-color: rgb(var(--v-theme-warning));
-    background: rgb(var(--v-theme-surface));
-}
-.bpmn-validation-overlay-box--error {
-    border-color: rgb(var(--v-theme-error));
-    background: rgb(var(--v-theme-surface));
-}
-.bpmn-validation-overlay-box__accent {
-    width: 3px;
-    min-height: 28px;
-    align-self: stretch;
-    border-radius: 2px;
-    flex-shrink: 0;
-}
-.bpmn-validation-overlay-box--warn .bpmn-validation-overlay-box__accent {
-    background: rgb(var(--v-theme-warning));
-}
-.bpmn-validation-overlay-box--error .bpmn-validation-overlay-box__accent {
-    background: rgb(var(--v-theme-error));
-}
-.bpmn-validation-overlay-box__body {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.bpmn-validation-overlay-box__title {
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.3;
-}
-.bpmn-validation-overlay-box--warn .bpmn-validation-overlay-box__title {
-    color: rgb(var(--v-theme-warning));
-}
-.bpmn-validation-overlay-box--error .bpmn-validation-overlay-box__title {
-    color: rgb(var(--v-theme-error));
-}
-.bpmn-validation-overlay-box__msg {
-    font-size: 11px;
-    color: rgba(var(--v-theme-on-surface), 0.9);
-    line-height: 1.45;
-}
-
-/* Phase 1-3: Validation markers — 오류 빨강 / 경고 주황 */
+/* Phase 1-3: Validation markers */
 .djs-element.validation-error .djs-visual rect,
 .djs-element.validation-error .djs-visual circle,
 .djs-element.validation-error .djs-visual polygon {
-    stroke: rgb(var(--v-theme-error)) !important;
+    stroke: #f44336 !important;
     stroke-width: 2px !important;
 }
 .djs-element.validation-warning .djs-visual rect,
 .djs-element.validation-warning .djs-visual circle,
 .djs-element.validation-warning .djs-visual polygon {
-    stroke: rgb(var(--v-theme-warning)) !important;
+    stroke: #ff9800 !important;
     stroke-width: 2px !important;
 }
 
@@ -3565,13 +2686,6 @@ export default {
     right: 16px;
     pointer-events: auto;
     z-index: 10;
-}
-.bpmn-lock-holder-hint {
-    background: rgba(255, 255, 255, 0.92);
-    padding: 4px 8px;
-    border-radius: 4px;
-    line-height: 1.25;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .view-mode .djs-palette {
     display: none !important;
@@ -3652,32 +2766,34 @@ export default {
     fill: #000000 !important;
 }
 
-/* Minimap styling - positioned above BPMN.io logo */
+/* Minimap card styling */
 .djs-minimap {
-    bottom: 40px !important;
+    bottom: 12px !important;
     top: auto !important;
-    right: 10px !important;
-    left: auto !important;
+    left: 12px !important;
+    right: auto !important;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 6px;
 }
 
 .djs-minimap .toggle {
-    width: 32px;
-    height: 32px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 34px;
+    height: 34px;
+    background: gray;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.djs-minimap .toggle:hover {
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+.djs-minimap.open .toggle {
+    margin-right: 8px;
 }
 
-/* Map icon */
 .djs-minimap .toggle::before {
     content: '';
     display: block;
@@ -3690,16 +2806,16 @@ export default {
 }
 
 .djs-minimap .map {
-    border: 1px solid #e8e8e8;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: none;
+    border-radius: 8px;
     overflow: hidden;
+    margin-top: 6px;
 }
 
 @media only screen and (max-width: 768px) {
     .djs-minimap {
-        bottom: 50px !important;
-        right: 60px !important;
+        bottom: 8px !important;
+        left: 8px !important;
     }
 }
 </style>

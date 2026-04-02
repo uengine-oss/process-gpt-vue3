@@ -34,7 +34,52 @@
 
             <v-row class="ma-0 pa-0">
                 <v-col cols="12" class="ma-0 pa-0">
-                    <!-- 새 서브프로세스: 프로세스 ID를 맨 위에 (UI 통일) -->
+                    <ProcessDefinitionDisplay
+                        v-if="addType == 'sub' && !isNewDef && processType === 'add'"
+                        v-model="newProcess"
+                        :file-extensions="['.bpmn']"
+                        :options="{
+                            label: $t('processDialog.processDefinition'),
+                            returnObject: true,
+                            hideDetails: true,
+                            itemValue: 'id'
+                        }"
+                    ></ProcessDefinitionDisplay>
+
+                    <!-- 도메인은 상위 탭에서 선택하므로 입력 필드 제거 -->
+
+                    <v-text-field
+                        v-if="addType != 'sub' || isNewDef || processType === 'update'"
+                        class="cp-process-id"
+                        v-model="newProcess.name"
+                        variant="outlined"
+                        color="primary"
+                        density="comfortable"
+                        :label="
+                            $i18n.locale === 'ko'
+                                ? processType === 'add'
+                                    ? `${displayType.toUpperCase()} 프로세스 추가`
+                                    : `${displayType.toUpperCase()} 프로세스 수정`
+                                : processType === 'add'
+                                ? `Add ${displayType.toUpperCase()} Process`
+                                : `Edit ${displayType.toUpperCase()} Process`
+                        "
+                        autofocus
+                        @keypress.enter="processType === 'add' ? addProcess() : updateProcess()"
+                        @click.stop
+                    ></v-text-field>
+
+                    <!-- PAL 전용: 서브프로세스 추가 시 공통 모듈 토글 -->
+                    <v-switch
+                        v-if="addType === 'sub' && processType === 'add' && isPal"
+                        v-model="newProcess.commonModule"
+                        :label="$t('ProcessMenu.commonModule') || '공통 모듈'"
+                        color="primary"
+                        hide-details
+                        class="mt-2"
+                    />
+
+                    <!-- ID field for new subprocess creation -->
                     <v-text-field
                         v-if="addType === 'sub' && isNewDef && processType === 'add'"
                         v-model="newProcess.id"
@@ -42,9 +87,9 @@
                         color="primary"
                         density="comfortable"
                         :rules="idRules"
-                        :hint="processIdHint"
+                        :hint="$t('processDialog.idHint') || '영문 소문자, 숫자, 언더스코어(_)만 사용'"
                         persistent-hint
-                        class="mb-3"
+                        class="mt-2"
                         :loading="isGeneratingId"
                         @click.stop
                     >
@@ -73,79 +118,6 @@
                             </v-tooltip>
                         </template>
                     </v-text-field>
-
-                    <ProcessDefinitionDisplay
-                        v-if="addType == 'sub' && !isNewDef && processType === 'add'"
-                        v-model="newProcess"
-                        :file-extensions="['.bpmn']"
-                        :options="{
-                            label: $t('processDialog.processDefinition'),
-                            returnObject: true,
-                            hideDetails: true,
-                            itemValue: 'id'
-                        }"
-                    ></ProcessDefinitionDisplay>
-
-                    <!-- 기존 프로세스 선택 시: 맵 표시용 이름만 편집(선택한 정의 객체는 변경하지 않음) -->
-                    <v-text-field
-                        v-if="addType == 'sub' && !isNewDef && processType === 'add'"
-                        v-model="mapDisplayName"
-                        variant="outlined"
-                        color="primary"
-                        density="comfortable"
-                        :label="$t('processDialog.processName') || '프로세스명'"
-                        :placeholder="$t('processDialog.displayNamePlaceholder') || '비우면 선택한 프로세스 정의명이 사용됩니다'"
-                        hide-details
-                        class="mt-3"
-                        @keypress.enter="addProcess()"
-                        @click.stop
-                    />
-
-                    <v-text-field
-                        v-if="addType != 'sub' || isNewDef || processType === 'update'"
-                        class="cp-process-id"
-                        v-model="newProcess.name"
-                        variant="outlined"
-                        color="primary"
-                        density="comfortable"
-                        :label="
-                            $i18n.locale === 'ko'
-                                ? processType === 'add'
-                                    ? (addType === 'sub' && isNewDef ? '프로세스명' : `${displayType.toUpperCase()} 프로세스 추가`)
-                                    : `${displayType.toUpperCase()} 프로세스 수정`
-                                : processType === 'add'
-                                ? (addType === 'sub' && isNewDef ? 'Process Name' : `Add ${displayType.toUpperCase()} Process`)
-                                : `Edit ${displayType.toUpperCase()} Process`
-                        "
-                        autofocus
-                        @keypress.enter="processType === 'add' ? addProcess() : updateProcess()"
-                        @click.stop
-                    ></v-text-field>
-
-                    <!-- Major 프로세스: 도메인 선택 (이름 입력 아래) -->
-                    <v-select
-                        v-if="(addType === 'major' || (type === 'major' && processType === 'update')) && domains && domains.length > 0"
-                        v-model="newProcess.domain"
-                        :items="domains"
-                        :label="$t('processDefinitionMap.selectDomain') || '도메인 선택'"
-                        item-title="name"
-                        item-value="name"
-                        clearable
-                        variant="outlined"
-                        density="comfortable"
-                        hide-details
-                        class="mt-3"
-                    />
-
-                    <!-- PAL 전용: 서브프로세스 추가 시 공통 모듈 토글 -->
-                    <v-switch
-                        v-if="addType === 'sub' && processType === 'add' && isPal"
-                        v-model="newProcess.commonModule"
-                        :label="$t('ProcessMenu.commonModule') || '공통 모듈'"
-                        color="primary"
-                        hide-details
-                        class="mt-2"
-                    />
                 </v-col>
             </v-row>
 
@@ -169,12 +141,6 @@
 <script>
 import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
 import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator';
-import {
-    getInvalidProcessDefinitionIdMessage,
-    getProcessDefinitionIdHint,
-    isValidProcessDefinitionId,
-    normalizeGeneratedProcessDefinitionId
-} from '@/utils/processDefinitionId.js';
 
 export default {
     components: {
@@ -196,12 +162,6 @@ export default {
             domain: '',
             commonModule: false
         },
-        /** 기존 프로세스 선택 시, 선택한 정의의 이름(이름 필드 비우면 map에 이 값 사용) */
-        selectedDefinitionName: '',
-        /** 기존 프로세스 선택 시, 맵에 표시할 이름만 편집(선택한 정의 객체는 수정하지 않음) */
-        mapDisplayName: '',
-        /** ProcessDefinitionDisplay 선택 시 in-place 갱신 대비: 마지막으로 채운 정의 시그니처 */
-        _mapFillPickKey: '',
         isNewDef: false,
         isGeneratingId: false,
         previousSuggestions: [],
@@ -212,10 +172,10 @@ export default {
     mounted() {
         if (!this.processDialogStatus) return;
         if (this.processType == 'update') {
-                this.newProcess.id = this.process.id;
-                this.newProcess.name = this.process.name;
-                this.newProcess.domain = this.process.domain ?? this.defaultDomain ?? '';
-            }
+            this.newProcess.id = this.process.id;
+            this.newProcess.name = this.process.name;
+            this.newProcess.domain = this.process.domain;
+        }
     },
     computed: {
         domainNames() {
@@ -241,21 +201,6 @@ export default {
         isPal() {
             return typeof window !== 'undefined' && window.$pal;
         },
-        currentMode() {
-            return typeof window !== 'undefined' ? String(window.$mode || '') : '';
-        },
-        processIdHint() {
-            if (this.currentMode.toLowerCase() === 'uengine') {
-                return getProcessDefinitionIdHint({ mode: this.currentMode });
-            }
-            return this.$t('processDialog.idHint') || getProcessDefinitionIdHint({ mode: this.currentMode });
-        },
-        processIdInvalidMessage() {
-            if (this.currentMode.toLowerCase() === 'uengine') {
-                return getInvalidProcessDefinitionIdMessage({ mode: this.currentMode });
-            }
-            return this.$t('processDialog.idInvalid') || getInvalidProcessDefinitionIdMessage({ mode: this.currentMode });
-        },
         isSaveDisabled() {
             if (this.addType === 'sub') {
                 if (this.isNewDef) {
@@ -273,7 +218,8 @@ export default {
         idRules() {
             return [
                 (v) => !!v || this.$t('processDialog.idRequired') || 'ID는 필수입니다.',
-                (v) => isValidProcessDefinitionId(v, { mode: this.currentMode }) || this.processIdInvalidMessage
+                (v) =>
+                    /^[a-z][a-z0-9_]*$/.test(v) || this.$t('processDialog.idInvalid') || '영문 소문자로 시작, 소문자/숫자/언더스코어만 허용'
             ];
         }
     },
@@ -286,56 +232,8 @@ export default {
                 domain: this.defaultDomain || '',
                 commonModule: false
             };
-            this.selectedDefinitionName = '';
-            this.mapDisplayName = '';
-            this._mapFillPickKey = '';
             this.previousSuggestions = [];
             this.isGeneratingId = false;
-        },
-        /**
-         * 기존 정의 선택: Vuetify가 부모 newProcess와 동일 참조를 제자리로 채울 수 있어 deep watch 필수.
-         * definitionName → displayName → name(파일명) → path 로 맵 표시명(프로세스명) 채움.
-         */
-        newProcess: {
-            deep: true,
-            handler(val) {
-                if (this.addType !== 'sub' || this.isNewDef || this.processType !== 'add') return;
-                if (!val || typeof val !== 'object') {
-                    this.selectedDefinitionName = '';
-                    this.mapDisplayName = '';
-                    this._mapFillPickKey = '';
-                    return;
-                }
-                const nextPath = String(val.path || '').trim();
-                const nextId = val.id != null && String(val.id).trim() !== '' ? String(val.id).trim() : nextPath;
-                if (!nextPath && !nextId) {
-                    this.selectedDefinitionName = '';
-                    this.mapDisplayName = '';
-                    this._mapFillPickKey = '';
-                    return;
-                }
-                const pickKey = `${nextPath}\0${nextId}\0${val.definitionName || ''}\0${val.name || ''}`;
-                if (this._mapFillPickKey === pickKey) return;
-                this._mapFillPickKey = pickKey;
-
-                const display =
-                    (val.definitionName && String(val.definitionName).trim()) ||
-                    (val.displayName && String(val.displayName).trim()) ||
-                    '';
-                const fromFile =
-                    (val.name && String(val.name).replace(/\.(bpmn|xml)$/i, '').trim()) || '';
-                const baseFromPath = nextPath
-                    ? String(nextPath)
-                          .split('/')
-                          .pop()
-                          .replace(/\.(bpmn|xml)$/i, '')
-                          .trim()
-                    : '';
-                const resolved =
-                    display || fromFile || baseFromPath || String(nextId).replace(/\.(bpmn|xml)$/i, '').trim();
-                this.selectedDefinitionName = resolved;
-                this.mapDisplayName = resolved;
-            }
         },
         processDialogStatus(val) {
             if (!val) return;
@@ -348,15 +246,11 @@ export default {
                     domain: this.defaultDomain || '',
                     commonModule: false
                 };
-                this.selectedDefinitionName = '';
-                this.mapDisplayName = '';
-                this._mapFillPickKey = '';
                 this.previousSuggestions = [];
                 this.isGeneratingId = false;
             } else if (this.processType == 'update') {
                 this.newProcess.id = this.process.id;
                 this.newProcess.name = this.process.name;
-                this.newProcess.domain = this.process.domain ?? this.defaultDomain ?? '';
             }
         }
     },
@@ -381,12 +275,10 @@ export default {
                         this.closeDialog();
                     }
                 } else {
-                    // Select existing: id는 선택한 정의 ID, 이름은 mapDisplayName(비우면 선택한 정의명)
+                    // Select existing mode: use selected process
                     if (this.newProcess.id || this.newProcess.name) {
-                        const trimmed = (this.mapDisplayName && String(this.mapDisplayName).trim()) || '';
-                        const name = trimmed
-                            ? trimmed.replace(/\.(bpmn|xml)$/i, '').trim()
-                            : (this.selectedDefinitionName || this.newProcess.id || '');
+                        // Remove file extension from name if exists
+                        const name = this.newProcess.name ? this.newProcess.name.replace(/\.(bpmn|xml)$/i, '') : this.newProcess.id;
                         this.$emit('add', {
                             id: this.newProcess.id || '',
                             name: name,
@@ -399,8 +291,8 @@ export default {
             } else {
                 // For mega/major processes
                 if (this.newProcess.name) {
-                    // Major process: 도메인 미선택 시 현재 탭 도메인 사용 (사용자 선택은 유지)
-                    if (this.addType === 'major' && !this.newProcess.domain && this.defaultDomain) {
+                    // Major process인 경우 선택된 도메인 탭을 자동으로 설정
+                    if (this.addType === 'major' && this.defaultDomain) {
                         this.newProcess.domain = this.defaultDomain;
                     }
                     this.$emit('add', this.newProcess);
@@ -415,7 +307,7 @@ export default {
             }
         },
         isValidId(id) {
-            return isValidProcessDefinitionId(id, { mode: this.currentMode });
+            return /^[a-z][a-z0-9_]*$/.test(id);
         },
         async generateIdFromName() {
             if (!this.newProcess.name || !this.newProcess.name.trim()) return;
@@ -438,7 +330,19 @@ export default {
             }
         },
         generateIdFallback() {
-            this.newProcess.id = normalizeGeneratedProcessDefinitionId(this.newProcess.name, { mode: this.currentMode });
+            // Simple fallback when AI fails
+            let id = this.newProcess.name
+                .toLowerCase()
+                .replace(/\s+/g, '_')
+                .replace(/[^a-z0-9_]/g, '')
+                .replace(/^[0-9_]+/, '')
+                .replace(/_+/g, '_')
+                .replace(/_$/, '');
+
+            if (!id) {
+                id = 'process_' + Date.now().toString(36);
+            }
+            this.newProcess.id = id;
         },
         async onGenerationFinished(response) {
             try {
@@ -454,7 +358,13 @@ export default {
                 }
 
                 if (id) {
-                    id = normalizeGeneratedProcessDefinitionId(id, { mode: this.currentMode });
+                    // Clean up the ID to ensure it's valid
+                    id = id
+                        .toLowerCase()
+                        .replace(/[^a-z0-9_]/g, '_')
+                        .replace(/^[0-9_]+/, '')
+                        .replace(/_+/g, '_')
+                        .replace(/_$/, '');
 
                     if (id) {
                         this.newProcess.id = id;

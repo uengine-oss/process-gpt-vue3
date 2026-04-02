@@ -13,8 +13,6 @@
 </template>
 
 <script>
-import { calculateContentHash } from '@/utils/iconHash.js';
-
 export default {
     name: 'Icons',
     props: {
@@ -24,7 +22,7 @@ export default {
         },
         color: {
             type: String,
-            default: ''
+            default: 'currentColor'
         },
         width: {
             type: [String, Number],
@@ -90,7 +88,12 @@ export default {
             }
         },
         async calculateHash(content) {
-            return calculateContentHash(content);
+            const encoder = new TextEncoder();
+            const data = encoder.encode(content);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
         },
         shouldAddFill(svg) {
             return (
@@ -100,19 +103,22 @@ export default {
                 !svg.match(/fill="none"/)
             );
         },
+        resolveThemeColor(colorName) {
+            if (!colorName || colorName === 'currentColor') return colorName;
+            const themeColors = this.$vuetify?.theme?.current?.colors;
+            return themeColors?.[colorName] || colorName;
+        },
         updateSvgContent(svg) {
-            if (this.color) {
-                // currentColor를 사용하는 stroke 및 fill 속성을 동적으로 변경
-                svg = svg.replace(/stroke="currentColor"/g, `stroke="${this.color}"`);
-                svg = svg.replace(/fill="currentColor"/g, `fill="${this.color}"`);
+            const resolvedColor = this.resolveThemeColor(this.color);
+            if (resolvedColor) {
+                svg = svg.replace(/stroke="currentColor"/g, `stroke="${resolvedColor}"`);
+                svg = svg.replace(/fill="currentColor"/g, `fill="${resolvedColor}"`);
 
-                // 조건에 따라 <path>에 fill 속성 추가
                 if (this.shouldAddFill(svg)) {
-                    svg = svg.replace(/<path/g, `<path fill="${this.color}"`);
+                    svg = svg.replace(/<path/g, `<path fill="${resolvedColor}"`);
                 }
             }
 
-            // 루트 SVG 요소에 width와 height 속성 설정
             svg = svg.replace(/<svg/, `<svg width="${this.computedWidth}" height="${this.computedHeight}"`);
 
             this.svgContent = svg;

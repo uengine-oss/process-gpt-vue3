@@ -21,11 +21,15 @@ export default {
     },
     computed: {},
     methods: {
+        getScrollContainerElement() {
+            const scrollRef = this.$refs?.scrollContainer;
+            if (!scrollRef) return null;
+            return scrollRef.$el || scrollRef;
+        },
         scrollToBottom() {
             setTimeout(() => {
-                const ref = this.$refs.scrollContainer;
-                const container = ref?.$el ?? ref;
-                if (container?.scrollHeight != null) {
+                if (this.$refs.scrollContainer) {
+                    const container = this.$refs.scrollContainer.$el;
                     container.scrollTop = container.scrollHeight;
                 }
             }, 300);
@@ -35,9 +39,8 @@ export default {
             // });
         },
         handleScroll() {
-            const ref = this.$refs.scrollContainer;
-            const container = ref?.$el ?? ref;
-            if (container) {
+            if (this.$refs.scrollContainer) {
+                const container = this.$refs.scrollContainer.$el;
                 clearTimeout(this.scrollTimeout);
                 this.scrollTimeout = setTimeout(() => {
                     const scrollPosition = Math.round(container.scrollTop + container.clientHeight) + 1;

@@ -1,25 +1,13 @@
 import axios from 'axios';
 const axiosInstance = axios.create();
-import type { Backend, BpmnModelingPolicy } from './Backend';
-import {
-    getAllUsers,
-    getKeycloakGroupsForPermission,
-    getKeycloakGroupsHierarchy,
-    getKeycloakRootGroups,
-    getUsersByRoles,
-    getUserGroupsOnly
-} from '@/utils/keycloak';
-import { canManageProcess } from '@/utils/processManagement';
+import type { Backend } from './Backend';
+import { getAllUsers } from '@/utils/keycloak';
 import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
-import { buildActorUidForSave, normalizeRawDefinitionDisplayName } from '@/utils/definitionActorDisplay';
-import { getKeycloakUserIdForSave } from '@/utils/keycloak';
+
 // uEngine 모드에서 ProcessGPT 전용(또는 미지원) 메서드 호출 시
 // - null/undefined 반환으로 인해 호출부에서 NPE(예: .forEach, .path 접근) 나는 걸 방지하기 위해
 // - 안전한 기본값을 반환하고, "다른 모드 전용 기능이라 추후 개발 가능" 경고를 1회만 출력한다.
 const __uEngineWarnedUnsupported = new Set<string>();
-/** 저장/조회 시 폴더 경로가 없을 때 앞에 붙이는 기본 폴더 (예: test.bpmn → default/test.bpmn) */
-const __defaultDefinitionFolder = 'default';
-
 function __warnUnsupported(methodName: string) {
     if (__uEngineWarnedUnsupported.has(methodName)) return;
     __uEngineWarnedUnsupported.add(methodName);
@@ -39,22 +27,15 @@ axiosInstance.interceptors.request.use(
         //   uEngine API 호출에 Supabase JWT가 실릴 수 있다.
         // - 따라서 uEngine 모드에서는 keycloak 토큰을 최우선으로 사용한다.
         const token =
-            (typeof window !== 'undefined' && (window as any).$mode === 'uEngine'
-                ? (localStorage.getItem('keycloak') || localStorage.getItem('accessToken'))
-                : (localStorage.getItem('accessToken') || localStorage.getItem('keycloak')));
+            typeof window !== 'undefined' && (window as any).$mode === 'uEngine'
+                ? localStorage.getItem('keycloak') || localStorage.getItem('accessToken')
+                : localStorage.getItem('accessToken') || localStorage.getItem('keycloak');
         if (token) {
             // Axios v1에서는 config.headers 타입이 AxiosHeaders일 수 있어 단순 {} 할당이 타입에러를 유발할 수 있음
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const anyConfig = config as any;
             anyConfig.headers = anyConfig.headers ?? {};
             anyConfig.headers.Authorization = `Bearer ${token}`;
-            // definition-service 등: DefinitionActorNameProvider / UserContext와 맞추기 위해 Keycloak 사용자 id(UUID)
-            if (typeof window !== 'undefined' && (window as any).$mode === 'uEngine') {
-                const userId = getKeycloakUserIdForSave();
-                if (userId) {
-                    anyConfig.headers['X-User-Id'] = userId;
-                }
-            }
         }
         return config;
     },
@@ -65,175 +46,6 @@ class UEngineBackend implements Backend {
     // constructor() {
     //     super();
     // }
-
-    private __isOracleMode(): boolean {
-        return typeof window !== 'undefined' && (window as any).$oracle === true;
-    }
-
-    private __safeParseJson(data: any): any {
-        if (typeof data !== 'string') return data;
-        try {
-            return JSON.parse(data);
-        } catch (e) {
-            return data;
-        }
-    }
-
-    private __friendlyError(error: any, fallbackMessage: string): Error {
-        const detail = error?.response?.data?.message || error?.message || '';
-        const message = detail ? `${fallbackMessage}: ${detail}` : fallbackMessage;
-
-        if (error && typeof error === 'object') {
-            error.message = message;
-            return error;
-        }
-
-        return new Error(message);
-    }
-
-    getGatewayExportCondition(gateway: any): string {
-        return gateway?.condition || '';
-    }
-
-    getSequenceFlowExportCondition(flow: any): string {
-        return flow?.condition || '';
-    }
-
-    encodeInstanceIdForInstancelistRoute(instId: string): string {
-        if (instId == null || instId === '') return '';
-        return String(instId);
-    }
-
-    decodeInstanceIdFromInstancelistRouteParam(routeParam: string): string {
-        if (routeParam == null || routeParam === '') return '';
-        return String(routeParam);
-    }
-
-    getBpmnModelingPolicy(): BpmnModelingPolicy {
-        return {
-            defaultAppendTaskBpmnType: 'bpmn:UserTask',
-            paletteVisibleTaskBpmnTypes: ['bpmn:UserTask'],
-            multiReplaceTaskBpmnTypes: ['bpmn:UserTask']
-        };
-    }
-
-    async saveProcessDefinitionFromModeler(params: { info: any; xml: string; processDefinition?: any }): Promise<void> {
-        const { info, xml } = params;
-        const rawPath = info?.path || info?.proc_def_id || info?.id || '';
-        await this.putRawDefinition(xml, rawPath, { type: 'bpmn' });
-    }
-
-    private __encodePathSegments(path: string): string {
-        return String(path || '')
-            .split('/')
-            .filter((segment) => segment !== '')
-            .map((segment) => encodeURIComponent(segment))
-            .join('/');
-    }
-
-    /**
-     * raw 정의 경로 정규화 (저장/조회 공통).
-     * - 앞뒤 공백·앞 슬래시, definition/raw/, definitions/ 접두사 제거
-     * - 타입별 확장자 보정 (.bpmn, .form 등)
-     * - 폴더 경로가 없으면(슬래시 없음) 기본 폴더를 앞에 붙임 (예: test.bpmn → default/test.bpmn)
-     */
-    private __normalizeRawResourcePath(defPath: string, type: string = 'bpmn'): string {
-        let normalized = String(defPath || '')
-            .trim()
-            .replace(/^\/+/, '')
-            .replace(/^definition\/raw\/?/i, '')
-            .replace(/^definitions\//i, '')
-            .replace(/\/version\/[^/]+$/i, '');
-
-        if (!normalized) return normalized;
-
-        const extensionMap: Record<string, string> = {
-            bpmn: '.bpmn',
-            form: '.form',
-            rule: '.rule',
-            json: '.json',
-            unit: '.unit'
-        };
-
-        const expectedExtension = extensionMap[type];
-        if (expectedExtension && !normalized.toLowerCase().endsWith(expectedExtension)) {
-            normalized += expectedExtension;
-        }
-
-        if (!normalized.includes('/')) {
-            normalized = __defaultDefinitionFolder + '/' + normalized;
-        }
-        return normalized;
-    }
-
-    private __normalizeRawDefinitionResponse(data: any, type: string) {
-        const parsed = this.__safeParseJson(data);
-        if (parsed == null) return null;
-
-        if (type === 'bpmn') {
-            if (typeof parsed === 'string') return parsed;
-            if (typeof parsed === 'object' && (parsed.bpmn != null || parsed.definition != null))
-                return parsed.bpmn ?? parsed.definition;
-        }
-        if (type === 'form' && typeof parsed === 'object' && 'html' in parsed) return parsed.html;
-
-        return parsed;
-    }
-
-    private __normalizeMetricsMap(data: any): { domains: any[]; mega_processes: any[]; processes: any[] } {
-        const parsed = this.__safeParseJson(data);
-        if (!parsed || typeof parsed !== 'object') {
-            return { domains: [], mega_processes: [], processes: [] };
-        }
-
-        return {
-            domains: Array.isArray(parsed.domains) ? parsed.domains : [],
-            mega_processes: Array.isArray(parsed.mega_processes)
-                ? parsed.mega_processes
-                : Array.isArray(parsed.megaProcesses)
-                  ? parsed.megaProcesses
-                  : [],
-            processes: Array.isArray(parsed.processes) ? parsed.processes : []
-        };
-    }
-
-    private async __getOracleRawDefinition(defPath: string, options?: any) {
-        const type = options?.type ?? 'bpmn';
-        const normalizedPath = this.__normalizeRawResourcePath(defPath, type);
-        const encodedPath = this.__encodePathSegments(normalizedPath);
-        const candidateRequests = [
-            () =>
-                axiosInstance.get('/definition/raw', {
-                    params: {
-                        defPath: normalizedPath,
-                        ...(options?.version ? { version: options.version } : {})
-                    }
-                }),
-            () =>
-                axiosInstance.get(`/definition/raw/${encodedPath}`, {
-                    params: options?.version ? { version: options.version } : undefined
-                })
-        ];
-
-        let lastError: any = null;
-
-        for (const request of candidateRequests) {
-            try {
-                const response = await request();
-                return this.__normalizeRawDefinitionResponse(response?.data, type);
-            } catch (error: any) {
-                lastError = error;
-                if (error?.response?.status === 404) continue;
-                throw this.__friendlyError(error, `정의 '${normalizedPath}' 조회에 실패했습니다`);
-            }
-        }
-
-        if (options?.version) {
-            return null;
-        }
-
-        throw this.__friendlyError(lastError, `정의 '${normalizedPath}' 조회에 실패했습니다`);
-    }
 
     async fetchAgentData(url: string) {
         __warnUnsupported('fetchAgentData');
@@ -376,90 +188,19 @@ class UEngineBackend implements Backend {
 
     async getUserList(options: any) {
         const users = await getAllUsers(options);
-        return users.map(user => {
+        return users.map((user) => {
             return {
                 id: user.id,
                 profile: user.profile || null,
                 username: user.username,
                 email: user.email,
-                is_admin: user.is_admin || false 
-            }
-        })
-    }
-
-    /**
-     * 담당자 설정 다이얼로그 등에서 표시할 담당자 후보 목록.
-     * process-manager, admin 역할을 가진 사용자를 반환합니다.
-     */
-    async getOwnerCandidateUsers(): Promise<Array<{ id: string; name?: string; username?: string; email?: string }>> {
-        try {
-            const users = await getUsersByRoles(['process-manager', 'admin'], { max: 100 });
-            return users.map((u) => ({
-                id: u.id,
-                username: u.username,
-                email: u.email,
-                name: u.username || u.email || [u.firstName, u.lastName].filter(Boolean).join(' ').trim() || u.id
-            }));
-        } catch (e) {
-            console.warn('[UEngineBackend] getOwnerCandidateUsers failed:', e);
-            return [];
-        }
-    }
-
-    /**
-     * 접근 권한 설정용 조직 목록. uEngine 모드에서는 Keycloak **루트 그룹만** 반환합니다.
-     * Keycloak Admin API 권한(query-groups)이 필요합니다.
-     * ProcessGPTBackend의 getGroupList와 동일한 형태(chart.children)로 반환합니다.
-     */
-    async getGroupList() {
-        try {
-            const groups = await getKeycloakRootGroups();
-            if (!groups || groups.length === 0) return [];
-            return groups.map((g) => ({
-                id: g.id,
-                data: { name: g.name },
-                children: []
-            }));
-        } catch (e) {
-            console.warn('[UEngineBackend] getGroupList (Keycloak) failed:', e);
-            return [];
-        }
-    }
-
-    /**
-     * 접근 권한 설정용 조직 그룹 목록.
-     * uEngine 모드에서는 Keycloak 그룹을 조직 그룹으로도 사용합니다.
-     */
-    /**
-     * 조직 그룹 계층 트리 조회. 루트는 "Groups", 그 아래 Keycloak 그룹 계층.
-     * 권한 다이얼로그에서 트리로 선택할 때 사용. (Keycloak 기준으로 루트명을 Groups로 통일)
-     */
-    async getOrgChartGroupListTree(): Promise<{
-        id: string;
-        name: string;
-        children: Array<{ id: string; name: string; children: any[] }>;
-    }> {
-        try {
-            const children = await getKeycloakGroupsHierarchy();
-            return {
-                id: 'org-root',
-                name: 'Groups',
-                children: children || []
+                is_admin: user.is_admin || false
             };
-        } catch (e) {
-            console.warn('[UEngineBackend] getOrgChartGroupListTree failed:', e);
-            return { id: 'org-root', name: 'Groups', children: [] };
-        }
+        });
     }
 
-    async getOrgChartGroupList() {
-        try {
-            const groups = await getKeycloakGroupsForPermission();
-            return groups || [];
-        } catch (e) {
-            console.warn('[UEngineBackend] getOrgChartGroupList (Keycloak) failed:', e);
-            return [];
-        }
+    async getGroupList() {
+        return [];
     }
 
     async setNotifications(value: any) {
@@ -467,194 +208,87 @@ class UEngineBackend implements Backend {
         __warnUnsupported('setNotifications');
         return { ok: false };
     }
-    async search(keyword: string, callback?: (results: any[]) => void) {
-        let url = '/definition';
-        let result: any[] = [];
-
-        if (this.__isOracleMode()) {
-            // Oracle 모드: /definition/{path} 로 하위 목록 조회 후 재귀적으로 전체 목록 수집
-            try {
-                const list = await this.__listAllDefinitionsOracle();
-                const defList = Array.isArray(list) ? list : [];
-                const pathOf = (item: any) =>
-                    item.path ??
-                    (item._links?.self?.href ? String(item._links.self.href).replace(/.*\/definition\/?/, '').replace(/\/$/, '') : '') ??
-                    item.id ??
-                    '';
-                const nameOf = (item: any) => item.name ?? (pathOf(item) ? (pathOf(item).split('/').pop()?.split('.')[0] ?? pathOf(item)) : '');
-                const mapped = defList.map((def: any) => ({
-                    title: nameOf(def),
-                    href: `/definitions/${encodeURIComponent(pathOf(def))}`,
-                    matches: [nameOf(def), pathOf(def), def._links?.raw?.href || ''].filter(Boolean)
-                }));
-                // href는 인코딩되어 있으므로 디코딩한 값·인코딩한 키워드 둘 다로 검색
-                const decodedHref = (href: string) => {
-                    try {
-                        return decodeURIComponent(href);
-                    } catch {
-                        return href;
-                    }
-                };
-                const encodedKeyword = (() => {
-                    try {
-                        return encodeURIComponent(keyword);
-                    } catch {
-                        return keyword;
-                    }
-                })();
-                const filtered = mapped.filter(
-                    (item: any) =>
-                        (item.title && item.title.includes(keyword)) ||
-                        (item.href &&
-                            (item.href.includes(keyword) ||
-                                decodedHref(item.href).includes(keyword) ||
-                                item.href.includes(encodedKeyword))) ||
-                        item.matches.some((m: string) => m && m.includes(keyword))
-                );
-                result.push({ type: 'definition', header: '프로세스 정의', list: filtered });
-            } catch (e) {
-                console.warn('[UEngineBackend] search (Oracle) failed:', e);
-                result.push({ type: 'definition', header: '프로세스 정의', list: [] });
+    /** uEngine 전용: 폴더를 재귀 탐색해 .bpmn 파일만 수집 */
+    private async __collectBpmnDefinitionsOnly(basePath: string): Promise<{ id: string; name: string; path: string }[]> {
+        const list = await this.listDefinition(basePath);
+        const result: { id: string; name: string; path: string }[] = [];
+        for (const item of list || []) {
+            if (item.directory) {
+                const subPath = item.path || item.name || item.id;
+                if (subPath) {
+                    const children = await this.__collectBpmnDefinitionsOnly(subPath);
+                    result.push(...children);
+                }
+            } else {
+                const path = String(item.path || item.name || item.id || '');
+                if (path.toLowerCase().endsWith('.bpmn')) {
+                    const id = (item.id || path.replace(/\.bpmn$/i, '')).toString().replace(/\.bpmn$/i, '');
+                    const name = item.name || id;
+                    result.push({ id, name, path });
+                }
             }
-        } else {
-            // 기존 uEngine 모드: _embedded.definitions 구조 (원본 유지)
-            const response = await axiosInstance.get(url);
-            const definitions = response.data?._embedded?.definitions;
-
-            const formattedData = {
-                type: 'definition',
-                header: '프로세스 정의',
-                list: definitions
-                    .map((definition: any) => ({
-                        title: definition.name,
-                        href: `/definitions/${encodeURIComponent(definition.path)}`,
-                        matches: [
-                            definition.name,
-                            definition.path,
-                            definition._links?.raw?.href || ''
-                        ].filter(Boolean)
-                    }))
-                    .filter(
-                        (item: any) =>
-                            item.title.includes(keyword) ||
-                            item.href.includes(keyword) ||
-                            item.matches.some((match: string) => match.includes(keyword))
-                    )
-            };
-            result.push(formattedData);
-        }
-        if (typeof callback === 'function') {
-            callback(result);
         }
         return result;
     }
 
-    private __normalizeListDefinitionItem(item: any): {
-        path: string;
-        name: string;
-        directory: boolean;
-        id?: string;
-        isDeleted?: boolean;
-        definitionName?: string;
-        createdByName?: string;
-        updatedByName?: string;
-    } {
+    async search(keyword: string, callback?: (results: any[]) => void) {
+        const result: any[] = [];
+
+        // uEngine: 폴더 제외, 하위까지 재귀 탐색한 .bpmn만 검색 대상으로 사용
+        const bpmnOnly = await this.__collectBpmnDefinitionsOnly('');
+        const list = bpmnOnly
+            .filter(
+                (item) =>
+                    (item.name && item.name.includes(keyword)) ||
+                    (item.path && item.path.includes(keyword)) ||
+                    (item.id && item.id.includes(keyword))
+            )
+            .map((item) => ({
+                title: item.name,
+                href: `/definitions/${encodeURIComponent(item.id)}`,
+                matches: [item.name, item.path, item.id].filter(Boolean)
+            }));
+
+        result.push({
+            type: 'definition',
+            header: '프로세스 정의',
+            list
+        });
+        if (callback) callback(result);
+        return result;
+    }
+
+    private __normalizeListDefinitionItem(item: any): { path: string; name: string; directory: boolean; id?: string; isDeleted?: boolean } {
         const path =
             (item.path ??
-                (item._links?.self?.href ? String(item._links.self.href).replace(/.*\/definition\/?/, '').replace(/\/$/, '') : '')) ||
+                (item._links?.self?.href
+                    ? String(item._links.self.href)
+                          .replace(/.*\/definition\/?/, '')
+                          .replace(/\/$/, '')
+                    : '')) ||
             item.id ||
             '';
-        const pathBasename = path ? String(path.split('/').pop() ?? '').trim() : '';
-        const stripKnownExt = (s: string) => s.replace(/\.(bpmn|form|rule|json)$/i, '');
-        const pathBaseNoExt = stripKnownExt(pathBasename);
-        const apiNameRaw = item.name != null ? String(item.name).trim() : '';
-
+        const name = item.name ?? (path ? path.split('/').pop()?.split('.')[0] ?? path : '');
         const directory = item.directory ?? (typeof path === 'string' && !path.match(/\.(bpmn|form|rule|json)$/i));
         const isDeleted = item.isDeleted ?? item.isdeleted ?? false;
-
-        /** TB_BPM_PROCDEF.name 등 사람이 읽는 표시명 후보 (여러 배포·직렬화 키) */
-        const explicitHuman = [
-            item.definitionName,
-            item.processName,
-            item.processDefinitionName,
-            item.displayName,
-            item.label,
-            item.title,
-            item.resourceName,
-            item.definition_name,
-            item.display_name,
-            item.procDefName,
-            item.proc_def_name,
-            item.PROCESS_NAME,
-            item.process_definition_name
-        ]
-            .map((v: any) => (v != null ? String(v).trim() : ''))
-            .find((s: string) => s.length > 0);
-
-        let definitionName: string | undefined = explicitHuman || undefined;
-        if (!definitionName && apiNameRaw && pathBasename) {
-            const a = apiNameRaw.toLowerCase();
-            const b = pathBasename.toLowerCase();
-            const n = pathBaseNoExt.toLowerCase();
-            if (a !== b && a !== n && apiNameRaw !== path) {
-                definitionName = apiNameRaw;
-            }
-        }
-
-        /** 파일 식별·확장자 필터용: 경로 마지막 세그먼트 우선 (표시명이 한글인 경우에도 .bpmn 필터가 동작하도록) */
-        const name = pathBasename || apiNameRaw || path;
-
-        const createdRaw = item.createdByName ?? item.created_by_name ?? item.CREATED_BY_NAME;
-        const updatedRaw = item.updatedByName ?? item.updated_by_name ?? item.UPDATED_BY_NAME;
-        const createdByName =
-            createdRaw != null && String(createdRaw).trim() !== '' ? String(createdRaw).trim() : undefined;
-        const updatedByName =
-            updatedRaw != null && String(updatedRaw).trim() !== '' ? String(updatedRaw).trim() : undefined;
-        return {
-            path,
-            name,
-            directory,
-            id: path,
-            isDeleted,
-            ...(definitionName ? { definitionName } : {}),
-            ...(createdByName && { createdByName }),
-            ...(updatedByName && { updatedByName })
-        };
+        return { path, name, directory, id: path, isDeleted };
     }
 
     // Process Definition Service Impl API
     async listDefinition(basePath: string) {
-        const trim = String(basePath ?? '')
-            .trim()
-            .replace(/^\/+|\/+$/g, '');
-        let data: any;
-        try {
-            if (!trim) {
-                const response = await axiosInstance.get('/definition');
-                data = this.__safeParseJson(response?.data);
-            } else {
-                // 하위 폴더: definition-service는 보통 GET /definition/{경로} 로만 목록을 주고
-                // GET /definition?basePath= 경로 는 빈 목록이 되는 배포가 많음
-                const pathSeg = trim
-                    .split('/')
-                    .filter(Boolean)
-                    .map((s) => encodeURIComponent(s))
-                    .join('/');
-                try {
-                    const response = await axiosInstance.get(`/definition/${pathSeg}`);
-                    data = this.__safeParseJson(response?.data);
-                } catch (firstErr: any) {
-                    const st = firstErr?.response?.status;
-                    if (st === 404 || st === 405) {
-                        const response = await axiosInstance.get('/definition', { params: { basePath: trim } });
-                        data = this.__safeParseJson(response?.data);
-                    } else {
-                        throw firstErr;
-                    }
-                }
+        let url = '/definition';
+        if (basePath) url += `?basePath=${basePath}`;
+
+        const response = await axiosInstance.get(url);
+        let data = response?.data;
+
+        // 서버 구현에 따라 동일 endpoint가 "HAL object" 또는 "JSON string"을 반환할 수 있어 방어적으로 처리한다.
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                // 그대로 둠
             }
-        } catch (error: any) {
-            throw this.__friendlyError(error, `정의 목록 조회에 실패했습니다${trim ? ` (${trim})` : ''}`);
         }
 
         let list: any[] = [];
@@ -671,29 +305,7 @@ class UEngineBackend implements Backend {
             list = data.content;
         }
 
-        const normalized = list.map((item: any) => this.__normalizeListDefinitionItem(item));
-        return normalized;
-    }
-
-    /** Oracle 모드: 루트 목록 후 디렉터리만 재귀 조회하여 전체 정의 목록 반환 (search용) */
-    private async __listAllDefinitionsOracle(): Promise<any[]> {
-        const root = await this.listDefinition('');
-        const all: any[] = [];
-        const queue = [...root];
-        while (queue.length) {
-            const item = queue.shift()!;
-            if (item.directory) {
-                try {
-                    const children = await this.listDefinition(item.path);
-                    children.forEach((c: any) => (c.directory ? queue.push(c) : all.push(c)));
-                } catch {
-                    // 하위 경로 조회 실패 시 해당 디렉터리만 스킵
-                }
-            } else {
-                all.push(item);
-            }
-        }
-        return all;
+        return list.map((item: any) => this.__normalizeListDefinitionItem(item));
     }
     async listVersionDefinitions(version: string, basePath: string) {
         const response = await axiosInstance.get(`/version/${version}/definition/?basePath=${basePath}`);
@@ -717,34 +329,58 @@ class UEngineBackend implements Backend {
     }
 
     async getDefinitionVersions(defId: string, options: any) {
-        const resolvedOptions = options || {};
-        const type = resolvedOptions.type ?? 'bpmn';
-        // getRawDefinition(putRawDefinition)과 동일한 경로 규칙: 확장자 보정 + 폴더 없으면 default/
-        // 맵에 "test3"처럼 확장자 없는 id만 있으면 저장/조회는 default/test3.bpmn 인데,
-        // 여기서 예전처럼 test3.bpmn 만 붙이면 /versions/test3.bpmn 으로 호출되어 버전 목록이 비게 됨.
-        const pathSuffix = this.__normalizeRawResourcePath(defId, type);
-        if (!pathSuffix) return [];
+        const type = options?.type ?? 'bpmn';
+        // defId에 이미 .bpmn/.dmn이 붙어 있으면 제거 (ProcessHierarchy 등에서 selectedProcessId 그대로 넘길 수 있음)
+        const normalizedId = typeof defId === 'string' ? defId.replace(/\.(bpmn|dmn)$/i, '').trim() : defId;
+        const path = `/versions/${normalizedId}.${type}`;
 
-        // 목록 조회 시 sort/orderBy/size 등을 쿼리 파라미로 전달 (전체 버전 조회용)
-        const listParams: Record<string, any> = {};
-        if (resolvedOptions.sort != null) listParams.sort = resolvedOptions.sort;
-        if (resolvedOptions.orderBy != null) listParams.orderBy = resolvedOptions.orderBy;
-        if (resolvedOptions.size != null) listParams.size = resolvedOptions.size;
+        if (options?.key === 'snapshot') {
+            options.version = options?.match?.version;
+            const response = await this.getRawDefinition(`definitions/${normalizedId}`, options);
+            return [{ snapshot: response }];
+        }
 
-        if (resolvedOptions.key) {
-            if (resolvedOptions.key.includes('version')) {
-                const response = await axiosInstance.get(`/versions/${pathSuffix}`, { params: listParams });
-                return response.data?._embedded?.definitions;
-            } else if (resolvedOptions.key == 'snapshot') {
-                resolvedOptions.version = resolvedOptions?.match?.version;
-                const response = await this.getRawDefinition(`definitions/${defId}`, resolvedOptions);
-                return [{ snapshot: response }];
-            }
-        } else {
-            const response = await axiosInstance.get(`/versions/${pathSuffix}`, { params: listParams });
-            return response.data?._embedded?.definitions;
+        try {
+            const response = await axiosInstance.get(path, options);
+            const raw = response.data?._embedded?.definitions;
+            const list = Array.isArray(raw) ? raw : [];
+            // ProcessHierarchy 버전 표시: 각 항목에 .version(문자열) 필드 보장, name/path/_links 유지
+            return list.map((item: any) => {
+                if (!item) return { version: '0.0' };
+                const version =
+                    item.version != null && item.version !== ''
+                        ? String(item.version)
+                        : item.name && typeof item.name === 'string'
+                        ? item.name.replace(/\.(bpmn|dmn)$/i, '')
+                        : item?.id ?? '0.0';
+                return {
+                    ...item,
+                    version,
+                    name: item.name,
+                    path: item.path,
+                    _links: item._links
+                };
+            });
+        } catch (e) {
+            return [];
         }
     }
+
+    /** uEngine에는 승인 워크플로가 없으므로 항상 null (ProcessHierarchy 호출 호환) */
+    async getActiveApprovalState(_procDefId: string): Promise<any> {
+        return null;
+    }
+
+    /** uEngine에는 검토 요청 기능이 없으므로 no-op (ProcessHierarchy 호출 호환) */
+    async submitForReview(
+        _procDefId: string,
+        _comment?: string,
+        _version?: string,
+        _reviewers?: { userIds?: string[]; groupIds?: string[] }
+    ): Promise<any> {
+        return undefined;
+    }
+
     async getVersion(version: string) {
         const response = await axiosInstance.get(`/version/${version}`);
         return response.data;
@@ -778,151 +414,55 @@ class UEngineBackend implements Backend {
         link.click();
         document.body.removeChild(link);
     }
-    /**
-     * raw 정의 저장. requestPath에 폴더가 없으면 __normalizeRawResourcePath에서 기본 폴더(default/)를 붙임.
-     */
     async putRawDefinition(definition: any, requestPath: string, options: any) {
-        var config = {
+        const config = {
             headers: {
                 'Content-Type': 'application/json'
             }
         };
-        let pathToUse = requestPath;
-        const type = options?.type ?? 'bpmn';
-        pathToUse = this.__normalizeRawResourcePath(pathToUse, type);
-
-        const body: Record<string, any> = {
-            definition: typeof definition === 'string' ? definition : (definition?.bpmn ?? (definition && JSON.stringify(definition))),
+        const body = {
+            definition: typeof definition === 'string' ? definition : definition?.bpmn ?? (definition && JSON.stringify(definition)),
             version: options?.releaseName ?? options?.version ?? null
         };
-
-        const displayName = normalizeRawDefinitionDisplayName(options?.name);
-        if (displayName !== undefined) {
-            body.name = displayName;
+        let pathToUse = requestPath;
+        const type = options?.type ?? 'bpmn';
+        if (type === 'rule' && !pathToUse.toLowerCase().endsWith('.rule')) {
+            pathToUse = pathToUse + '.rule';
+        } else if (type === 'json' && !pathToUse.toLowerCase().endsWith('.json')) {
+            pathToUse = pathToUse + '.json';
         }
-
-        // uEngine BPMN 저장: 본문 updatedByName = Keycloak 사용자 id(UUID, Admin API users[].id) — 조회 시 표시명은 서버/프론트에서 조회
-        // Oracle/일부 서버는 JSON snake_case(updated_by_name)만 매핑하므로 둘 다 실음
-        if (typeof window !== 'undefined' && (window as any).$mode === 'uEngine' && type === 'bpmn') {
-            const manualUb = normalizeRawDefinitionDisplayName(options?.updatedByName);
-            if (manualUb !== undefined) {
-                body.updatedByName = manualUb;
-            } else {
-                const autoUb = buildActorUidForSave();
-                if (autoUb) body.updatedByName = autoUb;
-            }
-            if (body.updatedByName) {
-                body.updated_by_name = body.updatedByName;
-            }
+        let url = pathToUse;
+        if (!pathToUse.includes('/definition/raw')) {
+            url = `/definition/raw/${pathToUse}`;
         }
-
-        try {
-            if (this.__isOracleMode()) {
-                // Oracle: TB_BPM_PDEF_VER에 항상 proc_def_id/arcv_id가 .bpmn 포함 형식으로 저장되도록 전달
-                body.proc_def_id = pathToUse;
-                const ver = options?.version ?? (options?.arcv_id && String(options.arcv_id).split('_').pop()) ?? null;
-                body.arcv_id = ver != null ? `${pathToUse}_${ver}` : options?.arcv_id ?? `${pathToUse}_0.0`;
-
-                const url = `/definition/raw/${this.__encodePathSegments(pathToUse)}`;
-                const response = await axiosInstance.put(url, body, config);
-                return response.data;
-            }
-
-            // defPath는 필수: 쿼리 + body 둘 다 전달 (프록시가 PUT 쿼리를 제거하는 경우 대비)
-            if (!pathToUse || String(pathToUse).trim() === '') {
-                throw new Error('정의 경로(defPath)가 비어 있습니다. 저장할 정의 이름 또는 경로를 입력해 주세요.');
-            }
-            body.defPath = pathToUse;
-            const urlWithQuery = `/definition/raw?defPath=${encodeURIComponent(pathToUse)}`;
-            const response = await axiosInstance.put(urlWithQuery, body, config);
-            return response.data;
-        } catch (error: any) {
-            throw this.__friendlyError(error, `정의 '${pathToUse}' 저장에 실패했습니다`);
-        }
+        const response = await axiosInstance.put(url, body, config);
+        return response.data;
     }
-
-    /**
-     * uEngine 모드: BPMN 정의를 새 경로에 복제 (정의체계도 서브프로세스 복제 버튼용).
-     * - desiredNewId가 있으면 해당 경로로 저장 (이미 존재 시 오류), 없으면 _copy, _copy2, ... 자동 생성
-     */
-    async duplicateLocalProcess(
-        sourceId: string,
-        newName: string,
-        bpmn: string,
-        _definition?: any,
-        desiredNewId?: string
-    ): Promise<{ success: boolean; newId: string }> {
-        if (!sourceId || !bpmn || typeof bpmn !== 'string') {
-            throw new Error('복제할 정의 ID와 BPMN 내용이 필요합니다.');
-        }
-        const basePath = String(sourceId)
-            .trim()
-            .replace(/\.bpmn$/i, '')
-            .replace(/\s+/g, '_');
-        let newPath: string;
-        if (desiredNewId != null && String(desiredNewId).trim() !== '') {
-            newPath = String(desiredNewId)
-                .trim()
-                .replace(/\s+/g, '_')
-                .replace(/\.bpmn$/i, '');
-            if (!newPath) throw new Error('복제 ID가 비어 있습니다.');
-            try {
-                const existing = await this.getRawDefinition(newPath, { type: 'bpmn' });
-                if (existing) {
-                    throw new Error('이미 존재하는 ID입니다. 다른 ID를 입력해 주세요.');
-                }
-            } catch (e: any) {
-                if (e?.message?.includes('이미 존재하는')) throw e;
-                // 404 등 = 없음 → 사용 가능
-            }
-        } else {
-            let counter = 1;
-            newPath = `${basePath}_copy`;
-            while (true) {
-                try {
-                    const existing = await this.getRawDefinition(newPath, { type: 'bpmn' });
-                    if (!existing) break;
-                } catch {
-                    break;
-                }
-                newPath = `${basePath}_copy${counter++}`;
-            }
-        }
-        await this.putRawDefinition(bpmn, newPath, { type: 'bpmn', name: newName });
-        return { success: true, newId: newPath };
-    }
-
-    /**
-     * raw 정의 조회. defPath에 폴더가 없으면 __normalizeRawResourcePath에서 기본 폴더(default/)를 붙임.
-     */
     // @ts-ignore
     async getRawDefinition(defPath: string, options) {
         if (!defPath) return null;
         if (options?.type === 'deleted') return null;
 
         const type = options?.type ?? 'bpmn';
-        if (this.__isOracleMode()) {
-            return this.__getOracleRawDefinition(defPath, options);
+        let requestPath = String(defPath).replace(/\.bpmn$/i, '');
+        if (type === 'bpmn' && !requestPath.includes('definitions/')) {
+            requestPath = requestPath ? `definitions/${requestPath}` : 'definitions';
         }
+        let path = `/definition/raw/${requestPath}.${type}`;
+        if (options?.version) path = path + `/version/${options.version}`;
 
-        const pathToUse = this.__normalizeRawResourcePath(defPath, type);
-        if (!pathToUse || String(pathToUse).trim() === '') return null;
+        const response = await axiosInstance.get(path, options ?? {});
+        const data = response?.data;
+        if (data == null) return null;
 
-        // 쿼리를 URL에 직접 포함 (프록시가 params 제거하는 경우 대비)
-        let urlWithQuery = `/definition/raw?defPath=${encodeURIComponent(pathToUse)}`;
-        if (options?.version) urlWithQuery += `&version=${encodeURIComponent(String(options.version))}`;
-
-        try {
-            const response = await axiosInstance.get(urlWithQuery, options ?? {});
-            return this.__normalizeRawDefinitionResponse(response?.data, type);
-        } catch (error: any) {
-            throw this.__friendlyError(error, `정의 '${defPath}' 조회에 실패했습니다`);
-        }
+        if (type === 'bpmn' && typeof data === 'object' && 'bpmn' in data) return data.bpmn;
+        if (type === 'form' && typeof data === 'object' && 'html' in data) return data.html;
+        return data;
     }
 
     // Process Service Impl API
     async start(command: object) {
-        console.log(command)
+        console.log(command);
         const response = await axiosInstance.post('/instance', command);
         return response.data;
     }
@@ -951,9 +491,9 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/instance/${instanceId}`);
         if (!response) return null;
 
-        let _links = response.data._links;
-        let def_href = _links.definition.href;
-        let def_id = def_href.split('/definition/')[1];
+        const _links = response.data._links;
+        const def_href = _links.definition.href;
+        const def_id = def_href.split('/definition/')[1];
 
         // parse defId
         response.data.defId = def_id;
@@ -1005,22 +545,12 @@ class UEngineBackend implements Backend {
         tracingTag: string,
         body?: { payloadMapping?: Record<string, Record<string, any>>; maxAttempts?: number }
     ) {
-        const response = await axiosInstance.post(
-            `/instance/${instanceId}/advance-to-activity/${tracingTag}`,
-            body || {}
-        );
+        const response = await axiosInstance.post(`/instance/${instanceId}/advance-to-activity/${tracingTag}`, body || {});
         return response.data;
     }
 
-    async startFromActivity(
-        instanceId: string,
-        tracingTag: string,
-        body?: { variables?: Record<string, any> }
-    ) {
-        const response = await axiosInstance.post(
-            `/instance/${instanceId}/state/start-from-activity/${tracingTag}`,
-            body || {}
-        );
+    async startFromActivity(instanceId: string, tracingTag: string, body?: { variables?: Record<string, any> }) {
+        const response = await axiosInstance.post(`/instance/${instanceId}/state/start-from-activity/${tracingTag}`, body || {});
         return response.data;
     }
 
@@ -1039,7 +569,7 @@ class UEngineBackend implements Backend {
     }
 
     async setVariable(instanceId: string, varName: string, varValue: any) {
-        var config = {
+        const config = {
             headers: {
                 'Content-Type': 'text/plain'
             },
@@ -1051,7 +581,7 @@ class UEngineBackend implements Backend {
     }
 
     async setVariableWithTaskId(instanceId: string, taskId: string, varName: string, varValue: any) {
-        var config = {
+        const config = {
             headers: {
                 'Content-Type': 'text/plain'
             },
@@ -1100,7 +630,9 @@ class UEngineBackend implements Backend {
         return response.data;
     }
     async delegateWorkItem(taskId: string, delegatedRoleMapping: any, delegateOnlyForWorkitem = false) {
-        const response = await axiosInstance.post(`/work-item/${taskId}/delegate`, delegatedRoleMapping, { params: { delegateOnlyForWorkitem } });
+        const response = await axiosInstance.post(`/work-item/${taskId}/delegate`, delegatedRoleMapping, {
+            params: { delegateOnlyForWorkitem }
+        });
         return response.data;
     }
 
@@ -1110,7 +642,7 @@ class UEngineBackend implements Backend {
     }
 
     async putWorkItemComplete(taskId: string, workItem: any, isSimulate: string) {
-        let config = {
+        const config = {
             headers: {
                 isSimulate: isSimulate ? isSimulate : 'false'
             }
@@ -1135,7 +667,6 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/test/${path}/record`);
         return response.data;
     }
-
 
     async getEventList(instanceId: string) {
         const response = await axiosInstance.get(`/instance/${instanceId}/eventList`);
@@ -1221,7 +752,7 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/worklist`);
         if (!response.data) return null;
         if (!response.data._embedded) return null;
-        let result = response.data._embedded.worklist;
+        const result = response.data._embedded.worklist;
         return result;
     }
     async getWorkList(options?: any) {
@@ -1242,21 +773,17 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
             adhoc: task.adhoc,
-            task: task,
+            task: task
         }));
 
         if (options && options.instId !== undefined && options.instId !== null && options.instId !== '') {
             const rawInstId = options.instId;
-            const instId =
-                typeof rawInstId === 'number'
-                    ? rawInstId
-                    : parseInt(String(rawInstId).replace(/_DOT_/g, '.'), 10);
+            const instId = typeof rawInstId === 'number' ? rawInstId : parseInt(String(rawInstId).replace(/_DOT_/g, '.'), 10);
 
             if (!Number.isNaN(instId)) {
                 mappedResult = mappedResult.filter((w: any) => {
                     const wInstId = typeof w.instId === 'number' ? w.instId : parseInt(String(w.instId), 10);
-                    const wRootInstId =
-                        typeof w.rootInstId === 'number' ? w.rootInstId : parseInt(String(w.rootInstId), 10);
+                    const wRootInstId = typeof w.rootInstId === 'number' ? w.rootInstId : parseInt(String(w.rootInstId), 10);
                     return wInstId === instId || wRootInstId === instId;
                 });
             }
@@ -1271,7 +798,7 @@ class UEngineBackend implements Backend {
 
         if (!response.data) return null;
         if (!response.data._embedded) return null;
-        let mappedResult = response.data._embedded.worklist.map((task: any) => ({
+        const mappedResult = response.data._embedded.worklist.map((task: any) => ({
             defId: task.defId,
             endpoint: task.endpoint,
             instId: task.instId,
@@ -1296,7 +823,7 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/instance/${instId}/worklists`);
 
         if (!response.data) return null;
-        let mappedResult = response.data.map((task: any) => ({
+        const mappedResult = response.data.map((task: any) => ({
             defId: task.defId,
             endpoint: task.endpoint,
             instId: task.instId,
@@ -1318,7 +845,7 @@ class UEngineBackend implements Backend {
 
     // get Completed WorkList API
     async getCompletedList(options?: any) {
-        let basePath = '/worklist/search/findCompleted';
+        const basePath = '/worklist/search/findCompleted';
         if (!options) options = {};
         if (!options.page) options.page = 0;
         if (!options.size) options.size = 20;
@@ -1350,7 +877,7 @@ class UEngineBackend implements Backend {
 
         if (!response.data) return null;
         if (!response.data._embedded) return null;
-        let mappedResult = response.data._embedded.worklist.map((task: any) => ({
+        const mappedResult = response.data._embedded.worklist.map((task: any) => ({
             defId: task.defId,
             endpoint: task.endpoint,
             instId: task.instId,
@@ -1374,7 +901,7 @@ class UEngineBackend implements Backend {
 
         if (!response.data) return null;
         if (!response.data._embedded) return null;
-        let mappedResult = response.data._embedded.worklist.map((task: any) => ({
+        const mappedResult = response.data._embedded.worklist.map((task: any) => ({
             defId: task.defId,
             endpoint: task.endpoint,
             instId: task.instId,
@@ -1403,30 +930,22 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    private __normalizeProcessDefinitionMap(data: any): { mega_proc_list: any[]; user_permissions?: any[]; proc_def_owners?: any[] } {
-        if (!data || typeof data !== 'object') return { mega_proc_list: [], user_permissions: [], proc_def_owners: [] };
-        const ensureName = (o: any) => (o && ('name' in o ? o : { ...o, name: o.label ?? o.id ?? '' }));
+    private __normalizeProcessDefinitionMap(data: any): { mega_proc_list: any[] } {
+        if (!data || typeof data !== 'object') return { mega_proc_list: [] };
+        const ensureName = (o: any) => o && ('name' in o ? o : { ...o, name: o.label ?? o.id ?? '' });
         const ensureList = (arr: any[] | undefined) => (Array.isArray(arr) ? arr : []);
 
-        let raw = data.value ?? data.content ?? data;
-        if (typeof raw === 'string') {
-            try {
-                raw = JSON.parse(raw);
-            } catch {
-                raw = data;
-            }
-        }
-        const megaList = ensureList(
-            raw?.mega_proc_list ?? raw?.megaProcList ?? (Array.isArray(raw) ? raw : data.mega_proc_list ?? data.megaProcList ?? data.content)
-        );
-        const userPermissions = ensureList(raw?.user_permissions);
-        const procDefOwners = ensureList(raw?.proc_def_owners);
+        const megaList = ensureList(data.mega_proc_list ?? data.megaProcList ?? data.content);
         if (megaList.length === 0 && Array.isArray(data)) {
-            const subList = (data as any[]).map((d: any) => ({
-                id: d.id ?? d.path ?? String(d),
-                name: d.name ?? d.label ?? d.id ?? d.path ?? String(d),
-                path: d.path ?? d.id
-            }));
+            const subList = (data as any[]).map((d: any) => {
+                const rawId = d.id ?? d.path ?? String(d);
+                const id = typeof rawId === 'string' ? rawId.trim() : rawId;
+                return {
+                    id,
+                    name: d.name ?? d.label ?? d.id ?? d.path ?? String(d),
+                    path: d.path ?? d.id
+                };
+            });
             return {
                 mega_proc_list: [
                     {
@@ -1434,15 +953,11 @@ class UEngineBackend implements Backend {
                         name: '프로세스',
                         major_proc_list: [{ id: 'default_major', name: '전체', sub_proc_list: subList }]
                     }
-                ],
-                user_permissions: userPermissions,
-                proc_def_owners: procDefOwners
+                ]
             };
         }
 
         return {
-            user_permissions: userPermissions,
-            proc_def_owners: procDefOwners,
             mega_proc_list: megaList.map((mega: any) => {
                 const m = ensureName(mega);
                 const majorList = ensureList(m.major_proc_list ?? m.majorProcList);
@@ -1455,10 +970,11 @@ class UEngineBackend implements Backend {
                         return {
                             ...j,
                             id: j.id ?? j.name,
-                            domain: j.domain ?? '',
                             sub_proc_list: subList.map((sub: any) => {
                                 const s = ensureName(sub);
-                                return { ...s, id: s.id ?? s.name ?? s.path };
+                                // path 우선 사용(경로는 공백 없이 API 식별자로 쓰임), 없으면 id/name. 앞뒤 공백 제거.
+                                const rawId = s.id ?? s.path ?? s.name ?? '';
+                                return { ...s, id: typeof rawId === 'string' ? rawId.trim() : rawId };
                             })
                         };
                     })
@@ -1467,389 +983,51 @@ class UEngineBackend implements Backend {
         };
     }
 
-    /** uEngine 모드: 맵 JSON 내 user_permissions에서 해당 프로세스 권한만 반환 */
-    async getPermissionsByProcDef(procDefId: string) {
-        try {
-            const map = await this.getProcessDefinitionMap();
-            const list = Array.isArray((map as any).user_permissions) ? (map as any).user_permissions : [];
-            return list.filter((p: any) => p && p.proc_def_id === procDefId);
-        } catch (e) {
-            console.warn('[UEngineBackend] getPermissionsByProcDef failed:', e);
-            return [];
-        }
-    }
-
-    /** uEngine 모드: 맵 JSON의 user_permissions에 권한 추가/갱신 후 맵 저장 */
-    async putUserPermission(permission: any) {
-        try {
-            const map = (await this.getProcessDefinitionMap()) as any;
-            const list = Array.isArray(map.user_permissions) ? [...map.user_permissions] : [];
-            let idSuffix = '';
-            if (permission.target_type === 'user') idSuffix = permission.user_id;
-            else if (permission.target_type === 'organization') idSuffix = permission.organization_id;
-            else if (permission.target_type === 'org_group') idSuffix = permission.org_group_id;
-            const id = `${permission.proc_def_id}_${idSuffix}`;
-            const payload = {
-                ...permission,
-                id,
-                tenant_id: window.$tenantName
-            };
-            const idx = list.findIndex((p: any) => p.id === id);
-            if (idx >= 0) list[idx] = payload;
-            else list.push(payload);
-            map.user_permissions = list;
-            await this.putProcessDefinitionMap(map);
-        } catch (e) {
-            console.warn('[UEngineBackend] putUserPermission failed:', e);
-            throw e;
-        }
-    }
-
-    /** uEngine 모드: 맵 JSON의 user_permissions에서 항목 제거 후 맵 저장 */
-    async deleteUserPermission(options: any) {
-        try {
-            const map = (await this.getProcessDefinitionMap()) as any;
-            let list = Array.isArray(map.user_permissions) ? [...map.user_permissions] : [];
-            if (options.id) {
-                list = list.filter((p: any) => p.id !== options.id);
-            } else {
-                if (options.match && options.match.id) list = list.filter((p: any) => p.id !== options.match.id);
-                else if (options.user_id && options.proc_def_id) list = list.filter((p: any) => !(p.user_id === options.user_id && p.proc_def_id === options.proc_def_id));
-            }
-            map.user_permissions = list;
-            await this.putProcessDefinitionMap(map);
-        } catch (e) {
-            console.warn('[UEngineBackend] deleteUserPermission failed:', e);
-            throw e;
-        }
-    }
-
-    /** 현재 사용자의 Keycloak 그룹 ID 목록 (권한 필터용, uEngine 모드) */
-    private async __getCurrentUserKeycloakGroupIds(): Promise<string[]> {
-        try {
-            if (typeof window === 'undefined' || (window as any).$mode !== 'uEngine') return [];
-            const [allGroups, userGroupNames] = await Promise.all([
-                getKeycloakGroupsForPermission(),
-                getUserGroupsOnly()
-            ]);
-            if (!Array.isArray(userGroupNames) || userGroupNames.length === 0) return [];
-            return (allGroups || [])
-                .filter((g: { id: string; name: string }) => userGroupNames.includes(g.name))
-                .map((g: { id: string; name: string }) => g.id);
-        } catch (e) {
-            console.warn('[UEngineBackend] __getCurrentUserKeycloakGroupIds failed:', e);
-            return [];
-        }
-    }
-
-    /** ProcessGPT와 동일: proc_def_id(및 user_id) 기준 권한 목록. 반환: 배열 또는 null */
-    async getUserPermissions(options: any) {
-        try {
-            const list = await this.getPermissionsByProcDef(options.proc_def_id);
-            if (!list || list.length === 0) return null;
-
-            if (options.user_id) {
-                const userGroupIds = await this.__getCurrentUserKeycloakGroupIds();
-                const applicable = list.filter((p: any) => {
-                    if (p.target_type === 'user' && p.user_id === options.user_id) return true;
-                    if (!p.target_type && p.user_id === options.user_id) return true;
-                    if (p.target_type === 'organization' && p.organization_id && userGroupIds.includes(p.organization_id)) return true;
-                    if (p.target_type === 'org_group' && p.org_group_id && userGroupIds.includes(p.org_group_id)) return true;
-                    return false;
-                });
-                return applicable.length > 0 ? applicable : null;
-            }
-            return list;
-        } catch (e) {
-            console.warn('[UEngineBackend] getUserPermissions failed:', e);
-            return null;
-        }
-    }
-
-    /** ProcessGPT와 동일: 현재 사용자의 해당 프로세스 권한 체크. 반환: { readable, executable, writable, isPublic } */
-    async checkProcessPermission(
-        procDefId: string
-    ): Promise<{ readable: boolean; executable: boolean; writable: boolean; isPublic: boolean }> {
-        try {
-            if (canManageProcess()) {
-                return { readable: true, executable: true, writable: true, isPublic: false };
-            }
-            const uid = localStorage.getItem('uid');
-            if (!uid) {
-                return { readable: false, executable: false, writable: false, isPublic: false };
-            }
-            const allPermissions = await this.getPermissionsByProcDef(procDefId);
-            if (!allPermissions || allPermissions.length === 0) {
-                return { readable: true, executable: true, writable: true, isPublic: true };
-            }
-            const userGroupIds = await this.__getCurrentUserKeycloakGroupIds();
-            const applicable = allPermissions.filter((p: any) => {
-                if (p.target_type === 'user' && p.user_id === uid) return true;
-                if (!p.target_type && p.user_id === uid) return true;
-                if (p.target_type === 'organization' && p.organization_id && userGroupIds.includes(p.organization_id)) return true;
-                if (p.target_type === 'org_group' && p.org_group_id && userGroupIds.includes(p.org_group_id)) return true;
-                return false;
-            });
-            let readable = false;
-            let executable = false;
-            let writable = false;
-            for (const perm of applicable) {
-                if (perm.readable) readable = true;
-                if (perm.executable) executable = true;
-                if (perm.writable) writable = true;
-            }
-            return { readable, executable, writable, isPublic: false };
-        } catch (e) {
-            console.warn('[UEngineBackend] checkProcessPermission failed:', e);
-            return { readable: false, executable: false, writable: false, isPublic: false };
-        }
-    }
-
-    /** ProcessGPT와 동일: 병합된 권한. 반환: { has_readable, has_executable, has_writable } */
-    async getMergedPermission(options: any) {
-        try {
-            const list = await this.getPermissionsByProcDef(options.proc_def_id);
-            if (!list || list.length === 0) {
-                return { has_readable: false, has_executable: false, has_writable: false };
-            }
-            const userGroupIds =
-                Array.isArray(options.user_organizations) && options.user_organizations.length > 0
-                    ? options.user_organizations
-                    : await this.__getCurrentUserKeycloakGroupIds();
-            const applicable = list.filter((p: any) => {
-                if (p.target_type === 'user' && p.user_id === options.user_id) return true;
-                if (!p.target_type && p.user_id === options.user_id) return true;
-                if (p.target_type === 'organization' && p.organization_id && userGroupIds.includes(p.organization_id)) return true;
-                if (p.target_type === 'org_group' && p.org_group_id && userGroupIds.includes(p.org_group_id)) return true;
-                return false;
-            });
-            let has_readable = false;
-            let has_executable = false;
-            let has_writable = false;
-            for (const p of applicable) {
-                if (p.readable) has_readable = true;
-                if (p.executable) has_executable = true;
-                if (p.writable) has_writable = true;
-            }
-            return { has_readable, has_executable, has_writable };
-        } catch (e) {
-            console.warn('[UEngineBackend] getMergedPermission failed:', e);
-            return { has_readable: false, has_executable: false, has_writable: false };
-        }
-    }
-
-    /** proc_def_ids 구조에서 모든 프로세스 ID 추출 (ProcessGPT와 동일) */
-    private __extractProcDefIds(procDefIds: any, idSet: Set<string>): void {
-        if (!procDefIds) return;
-        if (procDefIds.id) idSet.add(procDefIds.id);
-        if (procDefIds.major_proc_list && Array.isArray(procDefIds.major_proc_list)) {
-            for (const major of procDefIds.major_proc_list) {
-                if (major && major.id) idSet.add(major.id);
-                if (major && major.sub_proc_list && Array.isArray(major.sub_proc_list)) {
-                    for (const sub of major.sub_proc_list) {
-                        if (sub && sub.id) idSet.add(sub.id);
-                    }
-                }
-            }
-        }
-        if (procDefIds.sub_proc_list && Array.isArray(procDefIds.sub_proc_list)) {
-            for (const sub of procDefIds.sub_proc_list) {
-                if (sub && sub.id) idSet.add(sub.id);
-            }
-        }
-    }
-
-    /** ProcessGPT와 동일: 현재 사용자가 접근 가능한 proc_def_id 목록 */
-    async getAccessibleProcDefIds(permissionType: 'readable' | 'executable' | 'writable' = 'readable'): Promise<string[]> {
-        const uid = localStorage.getItem('uid');
-        if (!uid) return [];
-        try {
-            const map = (await this.getProcessDefinitionMap()) as any;
-            const allList = Array.isArray(map.user_permissions) ? map.user_permissions : [];
-            const userGroupIds = await this.__getCurrentUserKeycloakGroupIds();
-
-            const applicable: any[] = [];
-            for (const p of allList) {
-                const matchUser = p.target_type === 'user' || !p.target_type ? p.user_id === uid : false;
-                const matchOrg = p.target_type === 'organization' && p.organization_id && userGroupIds.includes(p.organization_id);
-                const matchGroup = p.target_type === 'org_group' && p.org_group_id && userGroupIds.includes(p.org_group_id);
-                if (matchUser || matchOrg || matchGroup) applicable.push(p);
-            }
-            const filtered = applicable.filter((p) => p[permissionType] === true);
-            const idSet = new Set<string>();
-            for (const p of filtered) {
-                if (p.proc_def_id) idSet.add(p.proc_def_id);
-                if (p.proc_def_ids) this.__extractProcDefIds(p.proc_def_ids, idSet);
-            }
-            return Array.from(idSet);
-        } catch (e) {
-            console.warn('[UEngineBackend] getAccessibleProcDefIds failed:', e);
-            return [];
-        }
-    }
-
-    /** ProcessGPT와 동일: 권한 사용 여부 (맵에 권한이 하나라도 있으면 true) */
-    async checkUsePermissions(): Promise<boolean> {
-        try {
-            const map = (await this.getProcessDefinitionMap()) as any;
-            const list = Array.isArray(map.user_permissions) ? map.user_permissions : [];
-            return list.length > 0;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    /**
-     * ProcessGPT filterProcDefMap과 동일: 읽기 권한에 따라 맵 필터링.
-     * 권한이 정의되지 않은 프로세스는 공개, 정의된 프로세스는 readable 있을 때만 표시.
-     * admin 역할은 권한 설정과 관계없이 전체 조회 가능 (lock은 별개로 동작).
-     */
-    async filterProcDefMap(map: any): Promise<any> {
-        if (!map || !map.mega_proc_list) return map || {};
-        if (canManageProcess()) return map;
-        const uid = localStorage.getItem('uid');
-        if (!uid) return {};
-
-        try {
-            const accessibleIds = new Set<string>(await this.getAccessibleProcDefIds('readable'));
-            const restrictedIds = new Set<string>();
-            const list = Array.isArray((map as any).user_permissions) ? (map as any).user_permissions : [];
-            for (const p of list) {
-                if (p?.proc_def_id) restrictedIds.add(p.proc_def_id);
-                if (p?.proc_def_ids) this.__extractProcDefIds(p.proc_def_ids, restrictedIds);
-            }
-
-            const isProcessAllowed = (procId: string): boolean => {
-                if (!restrictedIds.has(procId)) return true;
-                return accessibleIds.has(procId);
-            };
-
-            const filteredMegaList = map.mega_proc_list
-                .map((mega: any) => {
-                    if (!mega) return null;
-                    const megaAllowed = isProcessAllowed(mega.id);
-                    let filteredMajorList: any[] = [];
-                    if (mega.major_proc_list) {
-                        filteredMajorList = mega.major_proc_list
-                            .map((major: any) => {
-                                if (!major) return null;
-                                const majorAllowed = megaAllowed || isProcessAllowed(major.id);
-                                let filteredSubList: any[] = [];
-                                if (major.sub_proc_list) {
-                                    filteredSubList = major.sub_proc_list.filter(
-                                        (sub: any) => sub && (majorAllowed || isProcessAllowed(sub.id ?? sub.path ?? sub.name))
-                                    );
-                                }
-                                if (majorAllowed || filteredSubList.length > 0) {
-                                    return {
-                                        ...major,
-                                        sub_proc_list: majorAllowed ? major.sub_proc_list : filteredSubList
-                                    };
-                                }
-                                return null;
-                            })
-                            .filter((m: any) => m !== null);
-                    }
-                    if (megaAllowed || filteredMajorList.length > 0) {
-                        return {
-                            ...mega,
-                            major_proc_list: megaAllowed ? mega.major_proc_list : filteredMajorList
-                        };
-                    }
-                    return null;
-                })
-                .filter((m: any) => m !== null);
-
-            return { ...map, mega_proc_list: filteredMegaList };
-        } catch (e) {
-            console.warn('[UEngineBackend] filterProcDefMap failed:', e);
-            return map;
-        }
-    }
-
-    /** uEngine 모드: 맵 JSON 내 proc_def_owners에서 해당 프로세스 담당자(owner) 반환 */
-    async getOwnerByProcDef(procDefId: string): Promise<string | null> {
-        try {
-            const map = await this.getProcessDefinitionMap();
-            const list = Array.isArray((map as any).proc_def_owners) ? (map as any).proc_def_owners : [];
-            const entry = list.find((e: any) => e && e.proc_def_id === procDefId);
-            return entry != null && entry.owner != null && entry.owner !== '' ? String(entry.owner) : null;
-        } catch (e) {
-            console.warn('[UEngineBackend] getOwnerByProcDef failed:', e);
-            return null;
-        }
-    }
-
-    /** uEngine 모드: 맵 JSON의 proc_def_owners에 담당자 설정 후 맵 저장 */
-    async putOwner(procDefId: string, owner: string | null): Promise<void> {
-        try {
-            const map = (await this.getProcessDefinitionMap()) as any;
-            const list = Array.isArray(map.proc_def_owners) ? [...map.proc_def_owners] : [];
-            const idx = list.findIndex((e: any) => e && e.proc_def_id === procDefId);
-            const payload = { proc_def_id: procDefId, owner: owner ?? null };
-            if (idx >= 0) list[idx] = payload;
-            else list.push(payload);
-            map.proc_def_owners = list;
-            await this.putProcessDefinitionMap(map);
-        } catch (e) {
-            console.warn('[UEngineBackend] putOwner failed:', e);
-            throw e;
-        }
-    }
-
     async getProcessDefinitionMap() {
-        try {
-            const response = await axiosInstance.get(`/definition/map`);
-            const data = this.__safeParseJson(response?.data);
-            return this.__normalizeProcessDefinitionMap(data);
-        } catch (error: any) {
-            throw this.__friendlyError(error, 'definition-map 조회에 실패했습니다');
-        }
+        const response = await axiosInstance.get(`/definition/map`);
+        const data = response?.data;
+        return this.__normalizeProcessDefinitionMap(data);
     }
 
     async putProcessDefinitionMap(definitionMap: any) {
-        const body = typeof definitionMap === 'object' && definitionMap?.mega_proc_list
-            ? definitionMap
-            : definitionMap;
+        const body = typeof definitionMap === 'object' && definitionMap?.mega_proc_list ? definitionMap : definitionMap;
         definitionMap = JSON.stringify(body);
-        try {
-            const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
-            return response.data;
-        } catch (error: any) {
-            throw this.__friendlyError(error, 'definition-map 저장에 실패했습니다');
-        }
+        const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
+        return response.data;
     }
 
+    /** GET /definition/metrics — definition/map과 동일한 방식으로 metrics 데이터 조회 */
     async getMetricsMap() {
         try {
             const response = await axiosInstance.get(`/definition/metrics`);
-            return this.__normalizeMetricsMap(response?.data);
-        } catch (error: any) {
-            if (error?.response?.status === 404) {
-                return { domains: [], mega_processes: [], processes: [] };
-            }
-            throw this.__friendlyError(error, 'definition-metrics 조회에 실패했습니다');
+            const data = response?.data;
+            return this.__normalizeMetricsMap(data);
+        } catch (e) {
+            console.warn('[UEngineBackend] getMetricsMap failed, returning empty structure:', e);
+            return { domains: [], mega_processes: [], processes: [] };
         }
     }
 
+    private __normalizeMetricsMap(data: any): { domains: any[]; mega_processes: any[]; processes: any[] } {
+        if (!data || typeof data !== 'object') return { domains: [], mega_processes: [], processes: [] };
+        const ensureList = (arr: any[] | undefined) => (Array.isArray(arr) ? arr : []);
+        return {
+            domains: ensureList(data.domains ?? data.domainList ?? []),
+            mega_processes: ensureList(data.mega_processes ?? data.megaProcesses ?? data.megaProcList ?? []),
+            processes: ensureList(data.processes ?? data.processList ?? [])
+        };
+    }
+
+    /** PUT /definition/metrics — definition/map과 동일한 방식으로 metrics 저장 (metrics.json 등) */
     async putMetricsMap(metricsMap: any) {
-        try {
-            const payload = JSON.stringify(
-                metricsMap && typeof metricsMap === 'object'
-                    ? {
-                          domains: Array.isArray(metricsMap.domains) ? metricsMap.domains : [],
-                          mega_processes: Array.isArray(metricsMap.mega_processes) ? metricsMap.mega_processes : [],
-                          processes: Array.isArray(metricsMap.processes) ? metricsMap.processes : []
-                      }
-                    : { domains: [], mega_processes: [], processes: [] }
-            );
-            const response = await axiosInstance.put(`/definition/metrics`, payload, {
-                headers: { 'Content-Type': 'text/plain' }
-            });
-            return response.data;
-        } catch (error: any) {
-            throw this.__friendlyError(error, 'definition-metrics 저장에 실패했습니다');
-        }
+        const body =
+            typeof metricsMap === 'object' &&
+            (metricsMap?.domains != null || metricsMap?.mega_processes != null || metricsMap?.processes != null)
+                ? metricsMap
+                : metricsMap;
+        const payload = typeof body === 'object' ? JSON.stringify(body) : body;
+        const response = await axiosInstance.put(`/definition/metrics`, payload, { headers: { 'Content-Type': 'text/plain' } });
+        return response?.data;
     }
 
     async getAllInstanceList(page: any, size: any) {
@@ -1878,9 +1056,9 @@ class UEngineBackend implements Backend {
         }
         let patternText = '';
         if (roles) {
-            let pattern = roles
+            const pattern = roles
                 .split(',')
-                .map(item => {
+                .map((item) => {
                     const trimmedItem = item.trim();
                     return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
                 })
@@ -1889,9 +1067,9 @@ class UEngineBackend implements Backend {
         }
 
         if (names) {
-            let namePattern = names
+            const namePattern = names
                 .split(',')
-                .map(item => {
+                .map((item) => {
                     const trimmedItem = item.trim();
                     return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
                 })
@@ -1912,9 +1090,9 @@ class UEngineBackend implements Backend {
     }
 
     async getInstanceListByGroup(groups: string) {
-        let pattern = groups
+        const pattern = groups
             .split(',')
-            .map(item => {
+            .map((item) => {
                 const trimmedItem = item.trim();
                 return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
             })
@@ -1933,7 +1111,6 @@ class UEngineBackend implements Backend {
         }));
     }
 
-
     // 관리자 페이지 필터링 관련  API
     async getFilteredInstanceList(filters: object, page: number, size: number) {
         const queryParams = new URLSearchParams();
@@ -1946,7 +1123,7 @@ class UEngineBackend implements Backend {
             }
         });
 
-        const request = `/instances/search/findFilterICanSee?${queryParams.toString()}`
+        const request = `/instances/search/findFilterICanSee?${queryParams.toString()}`;
         const response = await axiosInstance.get(request);
         if (!response.data) return null;
         if (!response.data._embedded) return null;
@@ -1962,8 +1139,8 @@ class UEngineBackend implements Backend {
                 subProcess: inst.subProcess
             })),
             totalElements: response.data.page.totalElements, // totalElements 반환
-            totalPages: response.data.page.totalPages,  // totalPages 반환
-            currentPage: response.data.page.number      // currentPage 반환
+            totalPages: response.data.page.totalPages, // totalPages 반환
+            currentPage: response.data.page.number // currentPage 반환
         };
     }
 
@@ -1988,7 +1165,7 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async getActivitiesStatus(instId: string, executionScope: String = "0") {
+    async getActivitiesStatus(instId: string, executionScope = '0') {
         const response = await axiosInstance.get(`/instance/${instId}/status/${executionScope}`);
 
         return response.data;
@@ -1996,7 +1173,7 @@ class UEngineBackend implements Backend {
 
     async dryRun(isSimulate: string, command: object) {
         // command를 object json으로 변경
-        let config = {
+        const config = {
             headers: {
                 isSimulate: isSimulate ? isSimulate : 'false'
             }
@@ -2009,9 +1186,8 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-
     async startAndComplete(command: object, isSimulate: string) {
-        let config = {
+        const config = {
             headers: {
                 isSimulate: isSimulate ? isSimulate : 'false'
             }
@@ -2046,7 +1222,7 @@ class UEngineBackend implements Backend {
     //     return response.data._embedded.definitions;
     // }
 
-    async getSystem(systemId: String) {
+    async getSystem(systemId: string) {
         const response = await axiosInstance.get(`/definition/system/${systemId}`);
         return response.data;
     }
@@ -2126,28 +1302,27 @@ class UEngineBackend implements Backend {
     }
 
     async saveTask(id: string, name: string, type: string, json: any) {
-        console.warn("method is not implemented only use PalModeBackend");
+        console.warn('method is not implemented only use PalModeBackend');
         return null;
     }
 
     async getTaskList() {
-        console.warn("method is not implemented only use PalModeBackend");
+        console.warn('method is not implemented only use PalModeBackend');
         return null;
     }
 
-
     async fetchNotifications() {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return [];
     }
 
     async getBSCard() {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async putBSCard(card: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
@@ -2163,7 +1338,10 @@ class UEngineBackend implements Backend {
             // ignore
         }
         // fallback (UUID v4 유사)
-        const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        const s4 = () =>
+            Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
         return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
     }
 
@@ -2190,14 +1368,14 @@ class UEngineBackend implements Backend {
 
             for (const item of lists) {
                 if (!item) continue;
-                
+
                 // versions 폴더는 제외
                 const itemPath = typeof item?.path === 'string' ? item.path : '';
                 const itemName = typeof item?.name === 'string' ? item.name : '';
                 if (itemPath.includes('/versions/') || itemPath.endsWith('/versions') || itemName === 'versions') {
                     continue;
                 }
-                
+
                 if (item.directory) {
                     // 하위 폴더는 item.path 기준으로 내려간다. (name만 쓰면 상위 경로를 잃을 수 있음)
                     const childPath = typeof item?.path === 'string' ? item.path : '';
@@ -2247,9 +1425,7 @@ class UEngineBackend implements Backend {
         );
 
         // id/name 없는 항목 방어 + 정렬(이름 기준)
-        return results
-            .filter((r: any) => r && r.id)
-            .sort((a: any, b: any) => String(a?.name ?? '').localeCompare(String(b?.name ?? '')));
+        return results.filter((r: any) => r && r.id).sort((a: any, b: any) => String(a?.name ?? '').localeCompare(String(b?.name ?? '')));
     }
 
     async getBusinessRule(ruleId: string) {
@@ -2300,11 +1476,9 @@ class UEngineBackend implements Backend {
         };
 
         // raw definition에는 "JSON 문자열"로 저장해 (서버/리소스매니저 직렬화 편차를 최소화)
-        await this.putRawDefinition(
-            JSON.stringify(versionedPayload),
-            `businessRules/${encodeURIComponent(String(toSave.id))}`,
-            { type: 'rule' }
-        );
+        await this.putRawDefinition(JSON.stringify(versionedPayload), `businessRules/${encodeURIComponent(String(toSave.id))}`, {
+            type: 'rule'
+        });
 
         return { id: toSave.id };
     }
@@ -2322,12 +1496,9 @@ class UEngineBackend implements Backend {
         if (!ruleId) {
             throw new Error('룰 ID가 필요합니다.');
         }
-        
+
         try {
-            const response = await axiosInstance.post(
-                `/business-rules/${encodeURIComponent(ruleId)}/execute`,
-                { inputs }
-            );
+            const response = await axiosInstance.post(`/business-rules/${encodeURIComponent(ruleId)}/execute`, { inputs });
             return response.data;
         } catch (error: any) {
             console.error('룰 실행 실패:', error);
@@ -2339,7 +1510,7 @@ class UEngineBackend implements Backend {
         if (!ruleId || !testCase) {
             throw new Error('룰 ID와 테스트 케이스가 필요합니다.');
         }
-        
+
         try {
             const testCaseId = testCase.id || this.__uuid();
             const testCaseData = {
@@ -2349,7 +1520,7 @@ class UEngineBackend implements Backend {
                 updatedAt: new Date().toISOString(),
                 createdAt: testCase.createdAt || new Date().toISOString()
             };
-            
+
             await this.putRawDefinition(
                 JSON.stringify(testCaseData),
                 `businessRules/${encodeURIComponent(ruleId)}/testCases/${encodeURIComponent(testCaseId)}`,
@@ -2363,15 +1534,15 @@ class UEngineBackend implements Backend {
 
     async getRuleTestCases(ruleId: string): Promise<any[]> {
         if (!ruleId) return [];
-        
+
         try {
             const testCasesPath = `businessRules/${encodeURIComponent(ruleId)}/testCases`;
             const testCaseFiles = await this.listDefinition(testCasesPath);
-            
+
             if (!Array.isArray(testCaseFiles) || testCaseFiles.length === 0) {
                 return [];
             }
-            
+
             const results = await Promise.all(
                 testCaseFiles
                     .filter((f: any) => !f.directory && f.name?.endsWith('.json'))
@@ -2380,7 +1551,7 @@ class UEngineBackend implements Backend {
                             const fileName = f.name?.replace(/\.json$/i, '') || '';
                             const raw = await this.getRawDefinition(`${testCasesPath}/${fileName}`, { type: 'json' });
                             if (!raw) return null;
-                            
+
                             const testCase = typeof raw === 'string' ? JSON.parse(raw) : raw;
                             return {
                                 id: testCase.id || fileName,
@@ -2397,12 +1568,14 @@ class UEngineBackend implements Backend {
                         }
                     })
             );
-            
-            return results.filter((r: any) => r !== null).sort((a: any, b: any) => {
-                const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
-                const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
-                return dateB - dateA; // 최신순
-            });
+
+            return results
+                .filter((r: any) => r !== null)
+                .sort((a: any, b: any) => {
+                    const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+                    const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+                    return dateB - dateA; // 최신순
+                });
         } catch (error) {
             console.error('테스트 케이스 목록 조회 실패:', error);
             return [];
@@ -2413,7 +1586,7 @@ class UEngineBackend implements Backend {
         if (!ruleId || !testCaseId) {
             throw new Error('룰 ID와 테스트 케이스 ID가 필요합니다.');
         }
-        
+
         try {
             await this.deleteDefinition(`businessRules/${encodeURIComponent(ruleId)}/testCases/${encodeURIComponent(testCaseId)}.json`);
         } catch (error: any) {
@@ -2449,13 +1622,13 @@ class UEngineBackend implements Backend {
 
         try {
             const historyList: any[] = [];
-            
+
             // 현재 룰의 DMN XML 가져오기
             const currentRaw = await this.getRawDefinition(`businessRules/${encodeURIComponent(targetRuleId)}`, { type: 'rule' });
             if (currentRaw) {
                 const currentDto = typeof currentRaw === 'string' ? JSON.parse(currentRaw) : currentRaw;
                 const currentDmnXml = currentDto?.ruleJson?.dmnXml || '';
-                
+
                 if (currentDmnXml) {
                     historyList.push({
                         knowledge_id: targetRuleId,
@@ -2474,18 +1647,18 @@ class UEngineBackend implements Backend {
             try {
                 const versionsPath = `businessRules/${encodeURIComponent(targetRuleId)}/versions`;
                 const versionFiles = await this.listDefinition(versionsPath);
-                
+
                 if (Array.isArray(versionFiles)) {
                     for (const file of versionFiles) {
                         if (file.directory || !file.name?.endsWith('.rule')) continue;
-                        
+
                         try {
                             const versionName = file.name.replace(/\.rule$/i, '');
                             const versionRaw = await this.getRawDefinition(`${versionsPath}/${versionName}`, { type: 'rule' });
                             if (versionRaw) {
                                 const versionDto = typeof versionRaw === 'string' ? JSON.parse(versionRaw) : versionRaw;
                                 const versionDmnXml = versionDto?.ruleJson?.dmnXml || '';
-                                
+
                                 if (versionDmnXml) {
                                     historyList.push({
                                         knowledge_id: targetRuleId,
@@ -2526,7 +1699,7 @@ class UEngineBackend implements Backend {
 
         try {
             const versions: any[] = [];
-            
+
             // 현재 룰 파일의 버전 정보 조회 (isCurrent 플래그 설정용)
             let currentVersion = null;
             try {
@@ -2543,47 +1716,53 @@ class UEngineBackend implements Backend {
             try {
                 const versionsPath = `businessRules/${encodeURIComponent(ruleId)}/versions`;
                 const versionFiles = await this.listDefinition(versionsPath);
-                
+
                 console.log('[getBusinessRuleVersions] versionsPath:', versionsPath);
                 console.log('[getBusinessRuleVersions] versionFiles:', versionFiles);
-                
+
                 if (Array.isArray(versionFiles) && versionFiles.length > 0) {
                     for (const file of versionFiles) {
                         // 디렉토리는 제외, .rule 파일만 처리
                         if (file.directory || !file.name?.endsWith('.rule')) {
-                            console.log('[getBusinessRuleVersions] 파일 스킵:', file.name, 'directory:', file.directory, 'endsWith .rule:', file.name?.endsWith('.rule'));
+                            console.log(
+                                '[getBusinessRuleVersions] 파일 스킵:',
+                                file.name,
+                                'directory:',
+                                file.directory,
+                                'endsWith .rule:',
+                                file.name?.endsWith('.rule')
+                            );
                             continue;
                         }
-                        
+
                         try {
                             const versionName = file.name.replace(/\.rule$/i, '');
                             const versionRaw = await this.getRawDefinition(`${versionsPath}/${versionName}`, { type: 'rule' });
-                            
+
                             // 파일이 실제로 존재하고 읽을 수 있는지 확인
                             if (!versionRaw) {
                                 console.warn('[getBusinessRuleVersions] 파일이 존재하지 않음, 스킵:', versionName);
                                 continue;
                             }
-                            
+
                             // 빈 문자열이나 잘못된 데이터인지 확인
-                            const versionDto = typeof versionRaw === 'string' 
-                                ? (versionRaw.trim() ? JSON.parse(versionRaw) : null)
-                                : versionRaw;
-                            
+                            const versionDto =
+                                typeof versionRaw === 'string' ? (versionRaw.trim() ? JSON.parse(versionRaw) : null) : versionRaw;
+
                             if (!versionDto || typeof versionDto !== 'object') {
                                 console.warn('[getBusinessRuleVersions] 유효하지 않은 데이터, 스킵:', versionName);
                                 continue;
                             }
-                            
+
                             // 버전 정보가 있는지 확인
                             if (!versionDto.version && !versionName) {
                                 console.warn('[getBusinessRuleVersions] 버전 정보가 없음, 스킵:', versionName);
                                 continue;
                             }
-                            
+
                             // 현재 룰 파일의 버전과 비교하여 isCurrent 설정
-                            const isCurrent = (currentVersion && versionName === currentVersion);
-                            
+                            const isCurrent = currentVersion && versionName === currentVersion;
+
                             versions.push({
                                 version: versionName, // 파일명 기준 버전 사용
                                 name: versionDto?.name || ruleId, // 룰 이름 추가
@@ -2685,7 +1864,7 @@ class UEngineBackend implements Backend {
     __fromBusinessRuleDto(dto: any) {
         if (!dto) return null;
         // 서버가 { id, name, description, ruleJson } 형태로 주는 경우를 UI 모델(conditions/result)로 펼친다.
-        if (dto.ruleJson && (dto.conditions === undefined && dto.result === undefined)) {
+        if (dto.ruleJson && dto.conditions === undefined && dto.result === undefined) {
             const flattened: any = {
                 ...dto,
                 ...(dto.ruleJson || {})
@@ -2741,118 +1920,118 @@ class UEngineBackend implements Backend {
     }
 
     async getSchedule(id: string, version: string) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async setSchedule(json: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async deleteSchedule(defId: string, eventId: string) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async getDataSourceList() {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return [];
     }
 
     async addDataSource(dataSource: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async updateDataSource(dataSource: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async deleteDataSource(dataSource: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async extractDatasourceSchema(): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         // 호출부에서 this.datasourceSchema.map(...)을 수행하므로 null 대신 빈 배열을 반환해
         // UI/모델러 렌더링 흐름이 끊기지 않도록 한다.
         return [];
     }
 
     async callDataSource(dataSource: any, bodyData: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async getEnvByTenant(): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async getSecretByTenant(): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async deleteEnvByTenant(name: string): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async deleteSecretByTenant(name: string): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async createEnvByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async createSecretByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async updateEnvByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async updateSecretByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async getBrowserUseSecretByTenant(): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async createBrowserUseSecretByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async updateBrowserUseSecretByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async deleteBrowserUseSecretByTenant(name: string): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async getMCPLists(): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
-    async claimWorkItem(taskId: string, data: any){
+    async claimWorkItem(taskId: string, data: any) {
         const response = await axiosInstance.post(`/work-item/${taskId}/claim`, data);
         return response.data;
     }
@@ -2861,75 +2040,75 @@ class UEngineBackend implements Backend {
     // ============================================
 
     async getTaskSystems(): Promise<any> {
-        console.warn("getTaskSystems is not implemented - only use Process-GPT Mode");
+        console.warn('getTaskSystems is not implemented - only use Process-GPT Mode');
         return [];
     }
 
     async saveTaskSystem(system: any): Promise<any> {
-        console.warn("saveTaskSystem is not implemented - only use Process-GPT Mode");
+        console.warn('saveTaskSystem is not implemented - only use Process-GPT Mode');
         return system;
     }
 
     async deleteTaskSystem(id: string): Promise<void> {
-        console.warn("deleteTaskSystem is not implemented - only use Process-GPT Mode");
+        console.warn('deleteTaskSystem is not implemented - only use Process-GPT Mode');
     }
 
     async getTaskCatalogList(options?: any): Promise<any> {
-        console.warn("getTaskCatalogList is not implemented - only use Process-GPT Mode");
+        console.warn('getTaskCatalogList is not implemented - only use Process-GPT Mode');
         return [];
     }
 
     async getTaskCatalog(id: string): Promise<any> {
-        console.warn("getTaskCatalog is not implemented - only use Process-GPT Mode");
+        console.warn('getTaskCatalog is not implemented - only use Process-GPT Mode');
         return null;
     }
 
     async saveTaskCatalog(item: any): Promise<any> {
-        console.warn("saveTaskCatalog is not implemented - only use Process-GPT Mode");
+        console.warn('saveTaskCatalog is not implemented - only use Process-GPT Mode');
         return item;
     }
 
     async deleteTaskCatalog(id: string): Promise<void> {
-        console.warn("deleteTaskCatalog is not implemented - only use Process-GPT Mode");
+        console.warn('deleteTaskCatalog is not implemented - only use Process-GPT Mode');
     }
 
     async getPropertySchemas(taskType?: string): Promise<any> {
-        console.warn("getPropertySchemas is not implemented - only use Process-GPT Mode");
+        console.warn('getPropertySchemas is not implemented - only use Process-GPT Mode');
         return [];
     }
 
     async savePropertySchema(schema: any): Promise<any> {
-        console.warn("savePropertySchema is not implemented - only use Process-GPT Mode");
+        console.warn('savePropertySchema is not implemented - only use Process-GPT Mode');
         return schema;
     }
 
     async deletePropertySchema(id: string): Promise<void> {
-        console.warn("deletePropertySchema is not implemented - only use Process-GPT Mode");
+        console.warn('deletePropertySchema is not implemented - only use Process-GPT Mode');
     }
 
     async getPaletteSettings(): Promise<any> {
-        console.warn("getPaletteSettings is not implemented - only use Process-GPT Mode");
-        return { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+        // uEngine 모드: 사용자 작업(UserTask)만 팔레트에 표시
+        return { visibleTaskTypes: ['bpmn:UserTask'] };
     }
 
     async savePaletteSettings(settings: any): Promise<any> {
-        console.warn("savePaletteSettings is not implemented - only use Process-GPT Mode");
+        console.warn('savePaletteSettings is not implemented - only use Process-GPT Mode');
         return settings;
     }
 
     async getPaletteTaskTypes(): Promise<any> {
-        console.warn("getPaletteTaskTypes is not implemented - only use Process-GPT Mode");
+        console.warn('getPaletteTaskTypes is not implemented - only use Process-GPT Mode');
         return [];
     }
 
     async updatePaletteTaskType(id: string, isEnabled: boolean): Promise<any> {
-        console.warn("updatePaletteTaskType is not implemented - only use Process-GPT Mode");
+        console.warn('updatePaletteTaskType is not implemented - only use Process-GPT Mode');
         return null;
     }
 
     // Task Execution Properties - Not implemented in UEngine mode
     async getUserInfo(): Promise<any> {
-        console.warn("getUserInfo is not implemented - only use Process-GPT Mode");
+        console.warn('getUserInfo is not implemented - only use Process-GPT Mode');
         return null;
     }
 
@@ -2943,17 +2122,17 @@ class UEngineBackend implements Backend {
         properties: any;
         executorEmail?: string;
     }): Promise<any> {
-        console.warn("saveTaskExecutionProperties is not implemented - only use Process-GPT Mode");
+        console.warn('saveTaskExecutionProperties is not implemented - only use Process-GPT Mode');
         return null;
     }
 
     async updateTaskExecutionCompletion(params: any): Promise<any> {
-        console.warn("updateTaskExecutionCompletion is not implemented - only use Process-GPT Mode");
+        console.warn('updateTaskExecutionCompletion is not implemented - only use Process-GPT Mode');
         return null;
     }
 
     async getTaskExecutionProperties(options?: any): Promise<any[]> {
-        console.warn("getTaskExecutionProperties is not implemented - only use Process-GPT Mode");
+        console.warn('getTaskExecutionProperties is not implemented - only use Process-GPT Mode');
         return [];
     }
 
@@ -3035,70 +2214,18 @@ class UEngineBackend implements Backend {
     /**
      * 댓글 해결/미해결 처리
      */
-    async resolveElementComment(commentId: string, resolved: boolean = true, resolveActionText?: string): Promise<any> {
-        const response = await axiosInstance.patch(
-            `/definition/element-comments/${encodeURIComponent(commentId)}/resolve`,
-            { resolved, resolve_action_text: resolveActionText }
-        );
+    async resolveElementComment(commentId: string, resolved = true, resolveActionText?: string): Promise<any> {
+        const response = await axiosInstance.patch(`/definition/element-comments/${encodeURIComponent(commentId)}/resolve`, {
+            resolved,
+            resolve_action_text: resolveActionText
+        });
         return response?.data;
     }
 
-    // --------------- Lock API (동시 수정 방지, uEngine definition-service /definition/lock) ---------------
-    /** GET은 path 쿼리 파라미터 사용. uEngine에서는 user_id가 uid(Keycloak sub / localStorage 'uid') 기준. 타임아웃 시 null 반환해 스켈레톤에서 벗어나도록 함. */
-    async getLock(id: string): Promise<{ id: string; user_id: string } | null> {
-        try {
-            const response = await axiosInstance.get('/definition/lock', {
-                params: { path: id },
-                timeout: 5000
-            });
-            const data = response?.data;
-            const userId = data?.user_id ?? data?.userId;
-            if (data && data.id && userId) return { id: data.id, user_id: userId };
-            return null;
-        } catch (e: any) {
-            if (e?.response?.status === 404) return null;
-            if (e?.code === 'ECONNABORTED' || e?.message?.includes('timeout')) return null;
-            console.warn('[getLock] Lock 조회 실패, lock 없음으로 처리:', e?.message || e);
-            return null;
-        }
-    }
-
-    async setLock(lockObj: { id: string; user_id: string }): Promise<any> {
-        try {
-            const response = await axiosInstance.put('/definition/lock', lockObj, {
-                headers: { 'Content-Type': 'application/json' },
-                timeout: 5000
-            });
-            return response?.data;
-        } catch (e: any) {
-            console.warn('[setLock] Lock 설정 실패:', e?.message || e);
-            throw e;
-        }
-    }
-
-    async deleteLock(id: string): Promise<void> {
-        try {
-            // 슬래시 포함 path는 쿼리 파라미터로 보내야 백엔드/게이트웨이에서 안정적으로 도달
-            if (id.includes('/')) {
-                await axiosInstance.delete('/definition/lock', {
-                    params: { path: id },
-                    timeout: 5000
-                });
-            } else {
-                await axiosInstance.delete(`/definition/lock/${encodeURIComponent(id)}`, {
-                    timeout: 5000
-                });
-            }
-        } catch (e: any) {
-            console.warn('[deleteLock] Lock 해제 실패 (무시하고 진행):', e?.message || e);
-        }
-    }
-
     async setupAgentKnowledge(params: any): Promise<any> {
-        console.warn("setupAgentKnowledge is not implemented - only use Process-GPT Mode");
+        console.warn('setupAgentKnowledge is not implemented - only use Process-GPT Mode');
         return null;
     }
-
 }
 
 export default UEngineBackend;

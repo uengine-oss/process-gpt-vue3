@@ -71,7 +71,7 @@ function isItemActive(item) {
                     <Icons v-else :icon="getIcon(item)" :color="getIconColor(item)" />
                 </div>
             </template>
-            <v-tooltip bottom :text="item.definitionId || item.originalTitle || (useI18n ? $t(item.title) : item.title)">
+            <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title">
                 <template v-slot:activator="{ props }">
                     <v-list-item-title class="ml-0 text-body-1" v-bind="props">
                         {{ useI18n ? $t(item.title) : item.title }}

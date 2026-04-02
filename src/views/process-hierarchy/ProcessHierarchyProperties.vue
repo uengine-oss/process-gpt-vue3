@@ -137,32 +137,8 @@
                                         class="mb-3"
                                     />
                                 </template>
-                                <template v-if="processFields.length === 0 && showUengineProcessDescriptionField">
-                                    <label class="field-label">{{ $t('processHierarchy.titleField') }}</label>
-                                    <v-text-field
-                                        v-model="processForm.title"
-                                        density="compact"
-                                        variant="outlined"
-                                        hide-details
-                                        class="mb-3"
-                                        :placeholder="$t('processHierarchy.processNamePlaceholder')"
-                                    />
-                                </template>
-                                <!-- uEngine 전용 설명란: 스키마에 설명 키가 없을 때 (있으면 스키마 필드 → getEffective로 XML 반영) -->
-                                <template v-if="showUengineProcessDescriptionField">
-                                    <label class="field-label">{{ $t('processHierarchy.description') }}</label>
-                                    <v-textarea
-                                        v-model="processForm.description"
-                                        density="compact"
-                                        variant="outlined"
-                                        hide-details
-                                        rows="3"
-                                        auto-grow
-                                        class="mb-3"
-                                        :placeholder="$t('processHierarchy.describeProcessPlaceholder')"
-                                    />
-                                </template>
-                                <template v-if="processFields.length === 0 && !showUengineProcessDescriptionField">
+                                <!-- Fallback if no schema fields -->
+                                <template v-if="processFields.length === 0">
                                     <label class="field-label">{{ $t('processHierarchy.titleField') }}</label>
                                     <v-text-field
                                         v-model="processForm.title"
@@ -333,7 +309,7 @@
 
                 <!-- ==================== Task Tab ==================== -->
                 <v-window-item value="task">
-                    <div v-if="element" :key="taskPanelKey">
+                    <div v-if="element">
                         <!-- Element Name Header -->
                         <div class="element-name-header">
                             {{ element.businessObject?.name || element.id }}
@@ -343,7 +319,6 @@
                         <div v-if="usePalCallActivityPanel" class="pa-4">
                             <PALCallActivityPanel
                                 ref="palCallActivityPanel"
-                                :key="taskPanelKey"
                                 :element="element"
                                 :isViewMode="isViewMode"
                                 :uengineProperties="palCallActivityProperties"
@@ -366,7 +341,6 @@
                         <div v-else-if="usePalUserTaskPanel" class="pa-4">
                             <PALUserTaskPanel
                                 ref="palPanel"
-                                :key="taskPanelKey"
                                 :element="element"
                                 :processDefinition="processDefinition || {}"
                                 :processDefinitionId="definitionPath"
@@ -654,7 +628,6 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import { useTaskCatalogStore } from '@/stores/taskCatalog';
-import { coerceProcessMetaText } from '@/utils/bpmnHierarchyProcessMeta';
 import PALUserTaskPanel from '@/components/designer/bpmnModeling/bpmn/panel/PALUserTaskPanel.vue';
 import PALCallActivityPanel from '@/components/designer/bpmnModeling/bpmn/panel/PALCallActivityPanel.vue';
 
@@ -668,17 +641,6 @@ function defaultFte() {
         freqCount: 12,
         timePerTask: 0,
         headcount: 1
-    };
-}
-
-function defaultTaskForm() {
-    return {
-        name: '',
-        description: '',
-        manualLink: '',
-        systems: [],
-        fte: defaultFte(),
-        schemaProps: {}
     };
 }
 
@@ -730,7 +692,14 @@ export default {
                 systems: [],
                 fte: defaultFte()
             },
-            taskForm: defaultTaskForm(),
+            taskForm: {
+                name: '',
+                description: '',
+                manualLink: '',
+                systems: [],
+                fte: defaultFte(),
+                schemaProps: {}
+            },
             dbSelectItems: {},
             freqCycleOptions: ['Yearly', 'Monthly', 'Weekly', 'Daily'],
             palUengineProperties: {},
@@ -740,15 +709,6 @@ export default {
     computed: {
         isPalMode() {
             return typeof window !== 'undefined' && window.$pal;
-        },
-        /** 스키마에 프로세스 설명 필드가 없을 때만 전용 설명란 표시 (있으면 getEffective가 그 필드값을 XML에 반영) */
-        showUengineProcessDescriptionField() {
-            if (typeof window === 'undefined' || window.$mode !== 'uEngine') return false;
-            const has = (this.processFields || []).some((f) => {
-                const k = (f.property_key || '').toLowerCase();
-                return k.includes('shortdescription') || k === 'description';
-            });
-            return !has;
         },
         isTaskElement() {
             const type = this.element?.businessObject?.$type || this.element?.type || '';
@@ -786,60 +746,30 @@ export default {
         },
         annualWorkingHours() {
             return ANNUAL_WORKING_HOURS;
-        },
-        taskPanelKey() {
-            return this.element?.id || 'task-empty';
         }
     },
     watch: {
         processDefinition: {
             handler(val) {
                 if (val) {
-                    this.processForm.title = coerceProcessMetaText(val.name) || '';
-                    // uEngine: 설명은 BPMN 루트 shortDescription.text
-                    if (typeof window !== 'undefined' && window.$mode === 'uEngine') {
-                        const fromSd = val.shortDescription != null ? coerceProcessMetaText(val.shortDescription) : '';
-                        this.processForm.description = (fromSd !== '' ? fromSd : coerceProcessMetaText(val.description)) || '';
-                    } else {
-                        this.processForm.description = coerceProcessMetaText(val.description);
-                    }
+                    this.processForm.title = val.name || '';
+                    this.processForm.description = val.description || '';
                     if (val.systems) this.processForm.systems = [...val.systems];
                     if (val.fte) {
                         this.processForm.fte = { ...defaultFte(), ...val.fte };
                     }
-                    // Load schema-based process props (다국어 객체 → 문자열 필드는 텍스트로)
+                    // Load schema-based process props
                     this.processFields.forEach((f) => {
-                        if (val[f.property_key] === undefined) return;
-                        const raw = val[f.property_key];
-                        const textTypes = ['string', 'textarea', 'url'];
-                        if (textTypes.includes(f.property_type) && raw != null && typeof raw === 'object' && !Array.isArray(raw)) {
-                            this.processForm[f.property_key] = coerceProcessMetaText(raw);
-                        } else {
-                            this.processForm[f.property_key] = raw;
+                        if (val[f.property_key] !== undefined) {
+                            this.processForm[f.property_key] = val[f.property_key];
                         }
                     });
                 }
             },
             immediate: true
         },
-        element: {
-            immediate: true,
-            handler(val, oldVal) {
-                const nextId = val?.id || '';
-                const prevId = oldVal?.id || '';
-
-                if (!val) {
-                    this.taskForm = defaultTaskForm();
-                    this.palUengineProperties = {};
-                    this.palCallActivityProperties = {};
-                    return;
-                }
-
-                // 부모/자식 정의에 동일한 shape id가 있어도 businessObject는 다름 → PAL/태스크 폼을 반드시 갱신
-                if (nextId && prevId && nextId === prevId && oldVal?.businessObject === val?.businessObject) {
-                    return;
-                }
-
+        element(val) {
+            if (val) {
                 this.activeTab = 'task';
                 if (this.usePalCallActivityPanel) {
                     this.initPalCallActivityFromElement(val);
@@ -873,88 +803,32 @@ export default {
         // ---- Task: BPMN data sync (참조: BpmnPropertyPanel) ----
         loadTaskProperties(el) {
             const bo = el.businessObject;
+            this.taskForm.name = bo?.name || '';
 
             let uengineProps = {};
-            const vals = bo?.extensionElements?.values;
-            const uProp = Array.isArray(vals) ? vals.find((v) => (v.$type || '') === 'uengine:Properties') : null;
-            if (uProp?.json) {
+            if (bo?.extensionElements?.values?.[0]?.json) {
                 try {
-                    uengineProps = JSON.parse(uProp.json);
-                } catch {
-                    /* ignore */
-                }
+                    uengineProps = JSON.parse(bo.extensionElements.values[0].json);
+                } catch {}
             }
+
+            this.taskForm.description = uengineProps.description || '';
+            this.taskForm.manualLink = uengineProps.manualLink || '';
+            this.taskForm.systems = uengineProps.systems ? [...uengineProps.systems] : [];
+            this.taskForm.fte = { ...defaultFte(), ...(uengineProps.fte || {}) };
 
             // Load schema-based task props
             const schemaProps = {};
             this.taskFields.forEach((f) => {
                 schemaProps[f.property_key] = uengineProps[f.property_key] ?? f.default_value ?? null;
             });
-            this.taskForm = {
-                name: bo?.name || '',
-                description: uengineProps.description || '',
-                manualLink: uengineProps.manualLink || '',
-                systems: uengineProps.systems ? [...uengineProps.systems] : [],
-                fte: { ...defaultFte(), ...(uengineProps.fte || {}) },
-                schemaProps
-            };
-        },
-
-        /** BPMN 루트 JSON에 넣을 제목 (스키마 definitionName / title 등과 동기) */
-        getEffectiveProcessTitleForBpmn() {
-            const f = this.processForm;
-            const t = (v) => (v != null && String(v).trim() !== '' ? String(v).trim() : '');
-            let s = t(f.title);
-            if (s) return s;
-            s = t(f.definitionName);
-            if (s) return s;
-            s = t(f.name);
-            if (s) return s;
-            for (const field of this.processFields || []) {
-                const k = (field.property_key || '').toLowerCase();
-                if (k === 'title' || k === 'definitionname' || k === 'name' || k === 'processname') {
-                    s = t(f[field.property_key]);
-                    if (s) return s;
-                }
-            }
-            return '';
-        },
-        /** BPMN shortDescription — 스키마는 shortDescription 객체·textarea, 폴백은 description (Chat/패널과 동일 데이터 경로) */
-        getEffectiveProcessDescriptionForBpmn() {
-            const f = this.processForm;
-            const fromVal = (v) => {
-                if (v == null) return '';
-                if (typeof v === 'string') return v.trim();
-                if (typeof v === 'object' && !Array.isArray(v) && v.text != null) return String(v.text).trim();
-                return '';
-            };
-            let s = fromVal(f.description);
-            if (s) return s;
-            s = fromVal(f.shortDescription);
-            if (s) return s;
-            for (const field of this.processFields || []) {
-                const k = field.property_key || '';
-                const kl = k.toLowerCase();
-                if (
-                    kl.includes('shortdescription') ||
-                    kl === 'description' ||
-                    kl.endsWith('_description') ||
-                    kl.includes('process_description')
-                ) {
-                    s = fromVal(f[k]);
-                    if (s) return s;
-                }
-            }
-            return '';
+            this.taskForm.schemaProps = schemaProps;
         },
 
         saveProcess() {
-            if (typeof window !== 'undefined' && window.$mode === 'uEngine') {
-                this.applyProcessTabToBpmnRoot();
-            }
             const data = {
-                name: this.getEffectiveProcessTitleForBpmn() || this.processForm.title,
-                description: this.getEffectiveProcessDescriptionForBpmn() || this.processForm.description,
+                name: this.processForm.title,
+                description: this.processForm.description,
                 systems: [...(this.processForm.systems || [])],
                 fte: { ...this.processForm.fte }
             };
@@ -965,68 +839,6 @@ export default {
                 }
             });
             this.$emit('save', data);
-        },
-
-        /** uEngine: 프로세스 탭 값을 BPMN 루트(bpmn:Process) uengine:properties에 반영 — 저장 시 XML에 포함되도록 */
-        applyProcessTabToBpmnRoot() {
-            const store = useBpmnStore();
-            const modeler = store.getModeler;
-            if (!modeler) return;
-            const elementRegistry = modeler.get('elementRegistry');
-            const modeling = modeler.get('modeling');
-            const bpmnFactory = modeler.get('bpmnFactory');
-            const roots = elementRegistry.filter((e) => e.type === 'bpmn:Process');
-            const procEl = roots[0];
-            if (!procEl) return;
-
-            const bo = procEl.businessObject;
-            let existing = {};
-            const vals = bo.extensionElements?.values || [];
-            const uItem = vals.find((v) => (v.$type || '') === 'uengine:Properties');
-            if (uItem?.json) {
-                try {
-                    existing = JSON.parse(uItem.json);
-                } catch {
-                    existing = {};
-                }
-            }
-            const otherExt = vals.filter((v) => (v.$type || '') !== 'uengine:Properties');
-
-            const titleStr = this.getEffectiveProcessTitleForBpmn() || this.processForm.title || bo.name || '';
-            const descStr = this.getEffectiveProcessDescriptionForBpmn();
-            const merged = {
-                ...existing,
-                definitionName: titleStr,
-                systems: [...(this.processForm.systems || [])],
-                fte: { ...this.processForm.fte }
-            };
-            this.processFields.forEach((f) => {
-                if (this.processForm[f.property_key] !== undefined) {
-                    merged[f.property_key] = this.processForm[f.property_key];
-                }
-            });
-            // XML: shortDescription는 항상 { "text": "..." } 형태 (uengine:properties json)
-            let sdBase = {};
-            const candSd = merged.shortDescription !== undefined ? merged.shortDescription : existing.shortDescription;
-            if (candSd != null && typeof candSd === 'object' && !Array.isArray(candSd)) {
-                sdBase = { ...candSd };
-            } else if (typeof candSd === 'string' && candSd.trim()) {
-                sdBase = { text: candSd };
-            }
-            merged.shortDescription = { ...sdBase, text: descStr };
-            merged.definitionName = titleStr;
-
-            const uengineEl = bpmnFactory.create('uengine:Properties', {
-                json: JSON.stringify(merged),
-                variables: uItem?.variables ? uItem.variables : []
-            });
-            const newExtElements = bpmnFactory.create('bpmn:ExtensionElements', {
-                values: [...otherExt, uengineEl]
-            });
-            modeling.updateProperties(procEl, {
-                name: titleStr || bo.name,
-                extensionElements: newExtElements
-            });
         },
 
         async saveTask() {
@@ -1045,14 +857,10 @@ export default {
             // Build uengineProperties from form
             let existingProps = {};
             const bo = this.element.businessObject;
-            const _vals = bo?.extensionElements?.values;
-            const _uProp = Array.isArray(_vals) ? _vals.find((v) => (v.$type || '') === 'uengine:Properties') : null;
-            if (_uProp?.json) {
+            if (bo?.extensionElements?.values?.[0]?.json) {
                 try {
-                    existingProps = JSON.parse(_uProp.json);
-                } catch {
-                    /* ignore */
-                }
+                    existingProps = JSON.parse(bo.extensionElements.values[0].json);
+                } catch {}
             }
 
             const uengineProps = {
@@ -1102,9 +910,7 @@ export default {
             if (bo?.extensionElements?.values?.[0]?.json) {
                 try {
                     props = JSON.parse(bo.extensionElements.values[0].json);
-                } catch (_) {
-                    /* ignore */
-                }
+                } catch (_) {}
             }
             this.palCallActivityProperties = { ...props, definitionId: props.definitionId || '' };
         },
@@ -1157,9 +963,7 @@ export default {
             if (bo?.extensionElements?.values?.[0]?.json) {
                 try {
                     props = JSON.parse(bo.extensionElements.values[0].json);
-                } catch (_) {
-                    /* ignore */
-                }
+                } catch (_) {}
             }
             this.palUengineProperties = { ...props };
         },

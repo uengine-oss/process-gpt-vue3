@@ -48,8 +48,6 @@
                 :processDialogStatus="processDialogStatus"
                 :processType="processType"
                 :type="type"
-                :domains="domains"
-                :defaultDomain="selectedDomain"
                 @edit="editProcess"
                 @closeProcessDialog="closeProcessDialog"
             />
@@ -108,9 +106,6 @@ import ProcessMenu from './ProcessMenu.vue';
 import SubProcess from './SubProcess.vue';
 import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue';
-import BackendFactory from '@/components/api/BackendFactory';
-import { getDefaultBpmnXml } from '@/utils/defaultBpmnXml.js';
-import { syncBpmnDefinitionDisplayName } from '@/utils/procDefListMeta';
 
 export default {
     components: {
@@ -192,37 +187,17 @@ export default {
                     .replace(/_+/g, '_');
             }
 
-            // 새로 만드는 서브프로세스: 기본 BPMN XML로 먼저 저장 후 맵에만 추가 (편집 버튼으로 이동)
-            if (newProcess.isNew) {
-                const backend = BackendFactory.createBackend();
-                try {
-                    const defaultXml = getDefaultBpmnXml(newProcess.name || 'Lane 1');
-                    await backend.putRawDefinition(defaultXml, processId, {
-                        type: 'bpmn',
-                        name: newProcess.name
-                    });
-                } catch (e) {
-                    console.error('[MajorProcess] 기본 BPMN 저장 실패:', e);
-                    this.$toast?.error?.(this.$t('processDefinitionMap.saveFailed') || '프로세스 정의 저장에 실패했습니다.');
-                    return;
-                }
-            } else if (typeof window !== 'undefined' && window.$mode === 'uEngine') {
-                try {
-                    const backend = BackendFactory.createBackend();
-                    const r = await syncBpmnDefinitionDisplayName(backend, processId, newProcess.name);
-                    if (!r.ok && r.reason !== 'no_xml' && r.reason !== 'empty') {
-                        console.warn('[MajorProcess] 정의 표시명(TB name) 동기화:', r.reason);
-                    }
-                } catch (e) {
-                    console.warn('[MajorProcess] 정의 표시명 동기화 실패:', e);
-                }
-            }
-
             this.value.sub_proc_list.push({
                 id: processId,
                 name: newProcess.name,
                 ...(newProcess.commonModule !== undefined && { commonModule: !!newProcess.commonModule })
             });
+
+            // Navigate to process editor if this is a newly created process
+            if (newProcess.isNew) {
+                const url = `/definitions/chat?id=${processId}&name=${encodeURIComponent(newProcess.name)}&modeling=true`;
+                window.open(url, '_blank');
+            }
         },
         openSubProcessDialog(processType) {
             this.processType = processType;
@@ -238,12 +213,6 @@ export default {
                 window.$app_.snackbar = true;
                 window.$app_.snackbarSuccessStatus = true;
             }
-        },
-        editProcess(process) {
-            // BaseProcess는 domain을 설정하지 않음 → Major 전용 오버라이드
-            this.value.id = process.id;
-            this.value.name = process.name;
-            this.value.domain = process.domain ?? '';
         },
         clickProcess(id) {
             this.$emit('clickProcess', id);

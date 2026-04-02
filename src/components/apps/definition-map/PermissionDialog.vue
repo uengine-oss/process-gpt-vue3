@@ -98,8 +98,8 @@
                     </button>
                 </div>
 
-                <!-- 사용자/조직: 검색(드롭다운) -->
-                <div v-if="targetTab === 'user' || targetTab === 'organization'" class="search-container">
+                <!-- Search Input -->
+                <div class="search-container">
                     <div class="search-icon">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8" />
@@ -134,36 +134,20 @@
                         class="search-input"
                         @update:model-value="addOrganizationPermission"
                     />
-                </div>
-
-                <!-- 조직 그룹: 별도 트리뷰 (검색창 없음, vue3-treeview) -->
-                <div v-else-if="targetTab === 'org_group'" class="org-group-tree-section">
-                    <div class="org-group-tree-panel">
-                        <div v-if="Object.keys(orgGroupTreeNodes).length > 0" class="org-group-tree-view">
-                            <v-treeview
-                                :config="orgGroupTreeConfig"
-                                :nodes="orgGroupTreeNodes"
-                                class="permission-org-tree"
-                            >
-                                <template #before-input="{ node }">
-                                    <div
-                                        class="org-tree-node-row"
-                                        :class="{ 'org-tree-node--added': addedOrgGroupIds.has(node.id) }"
-                                        @click="onOrgGroupNodeClick(node)"
-                                    >
-                                        <v-icon size="18" class="mr-2">
-                                            {{ node.id === 'org-root' ? 'mdi-account-group' : (node.children && node.children.length ? 'mdi-folder' : 'mdi-file-document-outline') }}
-                                        </v-icon>
-                                        <span class="org-tree-node-text">{{ node.text }}</span>
-                                        <v-icon v-if="node.id !== 'org-root' && addedOrgGroupIds.has(node.id)" size="14" color="success" class="ml-1">mdi-check</v-icon>
-                                    </div>
-                                </template>
-                            </v-treeview>
-                        </div>
-                        <div v-else class="org-group-tree-empty">
-                            {{ orgGroupTree ? ($t('permissionDialog.noOrgGroups') || '그룹이 없습니다.') : ($t('permissionDialog.loadingOrgGroups') || '그룹 목록 로딩 중...') }}
-                        </div>
-                    </div>
+                    <v-autocomplete
+                        v-else
+                        v-model="selectedOrgGroup"
+                        :items="availableOrgGroups"
+                        item-title="name"
+                        item-value="id"
+                        :placeholder="$t('permissionDialog.searchOrgGroup')"
+                        variant="plain"
+                        density="compact"
+                        hide-details
+                        hide-no-data
+                        class="search-input"
+                        @update:model-value="addOrgGroupPermission"
+                    />
                 </div>
             </div>
 
@@ -230,22 +214,13 @@
                                 <span class="toggle-indicator view"></span>
                                 <span class="toggle-label">{{ $t('permissionDialog.view') }}</span>
                             </label>
-                            <label v-if="!isPal" class="permission-toggle" :class="{ active: item.executable }">
+                            <label class="permission-toggle" :class="{ active: item.executable }">
                                 <input type="checkbox" v-model="item.executable" />
                                 <span class="toggle-indicator execute"></span>
                                 <span class="toggle-label">{{ $t('permissionDialog.execute') }}</span>
                             </label>
-                            <!-- uEngine: 편집 권한은 일반 user 대상에는 부여 불가 (조직/조직그룹만 편집 권한 부여 가능) -->
-                            <label
-                                class="permission-toggle"
-                                :class="{ active: item.writable, disabled: item.target_type === 'user' }"
-                                :title="item.target_type === 'user' ? ($t('permissionDialog.noEditForUser') || '일반 사용자에는 편집 권한을 부여할 수 없습니다.') : ''"
-                            >
-                                <input
-                                    type="checkbox"
-                                    v-model="item.writable"
-                                    :disabled="item.target_type === 'user'"
-                                />
+                            <label class="permission-toggle" :class="{ active: item.writable }">
+                                <input type="checkbox" v-model="item.writable" />
                                 <span class="toggle-indicator edit"></span>
                                 <span class="toggle-label">{{ $t('permissionDialog.edit') || '수정' }}</span>
                             </label>
@@ -270,23 +245,14 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-import VTreeview from 'vue3-treeview';
-import 'vue3-treeview/dist/style.css';
-
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'PermissionDialog',
-    components: { VTreeview },
     props: {
         procDef: Object,
         processMap: Object,
         metricsMap: Object
-    },
-    inject: {
-        /** uEngine: 권한 저장 시 루트 맵 user_permissions 동기화 (정의 체계도 저장 시 덮어쓰기 방지) */
-        updateUserPermission: { default: null },
-        deleteUserPermissionFromMap: { default: null }
     },
     data() {
         return {
@@ -302,9 +268,6 @@ export default {
             userList: [],
             organizationList: [],
             orgGroupList: [],
-            orgGroupTree: null,
-            /** vue3-treeview nodes 맵 — computed로 매번 새 객체를 만들면 state.opened가 유지되지 않음 */
-            orgGroupTreeNodes: {},
 
             permissionList: [],
             originalPermissions: [],
@@ -339,17 +302,6 @@ export default {
             const addedGroupIds = this.permissionList.filter((p) => p.target_type === 'org_group').map((p) => p.target_id);
             return this.orgGroupList.filter((g) => !addedGroupIds.includes(g.id));
         },
-        addedOrgGroupIds() {
-            const ids = this.permissionList
-                .filter((p) => p.target_type === 'org_group')
-                .map((p) => p.target_id);
-            return new Set(ids);
-        },
-        /** vue3-treeview용 config (roots) */
-        orgGroupTreeConfig() {
-            if (!this.orgGroupTree) return { roots: [] };
-            return { roots: ['org-root'] };
-        },
         hasMajorLevel() {
             return this.processHierarchy?.major !== null;
         },
@@ -358,9 +310,6 @@ export default {
         },
         hasDomainLevel() {
             return this.processHierarchy?.domain !== null;
-        },
-        isPal() {
-            return typeof window !== 'undefined' && window.$pal;
         }
     },
     async mounted() {
@@ -384,66 +333,10 @@ export default {
                 const orgGroups = await backend.getOrgChartGroupList();
                 this.orgGroupList = orgGroups || [];
 
-                if (typeof backend.getOrgChartGroupListTree === 'function') {
-                    this.orgGroupTree = await backend.getOrgChartGroupListTree();
-                } else {
-                    this.orgGroupTree = null;
-                }
-                this.rebuildOrgGroupTreeNodes();
-
                 await this.loadExistingPermissions();
             } catch (error) {
                 console.error('Failed to load data:', error);
             }
-        },
-        /**
-         * Keycloak/백엔드에서 받은 orgGroupTree를 vue3-treeview nodes 맵으로 변환.
-         * 기존 노드의 state(opened)는 동일 id가 있으면 유지한다.
-         */
-        rebuildOrgGroupTreeNodes() {
-            const tree = this.orgGroupTree;
-            if (!tree) {
-                this.orgGroupTreeNodes = {};
-                return;
-            }
-            const prev = this.orgGroupTreeNodes || {};
-            const copyState = (id) => {
-                const o = prev[id];
-                if (o && o.state && typeof o.state === 'object') {
-                    return { opened: !!o.state.opened, checked: !!o.state.checked };
-                }
-                return { opened: false, checked: false };
-            };
-            const nodes = {};
-            const build = (node) => {
-                const id = node.id;
-                const text =
-                    node.name ||
-                    node.text ||
-                    (node.path ? String(node.path).replace(/^\//, '') : '') ||
-                    id ||
-                    '';
-                const childList = node.children || [];
-                const childIds = childList.map((c) => c.id).filter(Boolean);
-                childList.forEach((c) => build(c));
-                nodes[id] = {
-                    id,
-                    text,
-                    children: childIds,
-                    data: node,
-                    state: copyState(id)
-                };
-            };
-            const children = tree.children || [];
-            children.forEach((c) => build(c));
-            nodes['org-root'] = {
-                id: 'org-root',
-                text: tree.name || this.$t('permissionDialog.orgGroups') || '조직',
-                children: children.map((c) => c.id).filter(Boolean),
-                data: tree,
-                state: copyState('org-root')
-            };
-            this.orgGroupTreeNodes = nodes;
         },
         flattenOrganizations(nodes, result = []) {
             for (const node of nodes) {
@@ -465,23 +358,19 @@ export default {
                 const permissions = await backend.getPermissionsByProcDef(this.procDef.id);
                 if (permissions && permissions.length > 0) {
                     this.originalPermissions = [...permissions];
-                    this.permissionList = permissions.map((p) => {
-                        const targetType = p.target_type || 'user';
-                        return {
+                    this.permissionList = permissions.map((p) => ({
                         id: p.id,
-                        target_type: targetType,
+                        target_type: p.target_type || 'user',
                         target_id: p.user_id || p.organization_id || p.org_group_id,
                         name: this.getTargetName(p),
                         readable: p.readable,
                         executable: p.executable || false,
-                        // uEngine: 일반 user 대상에는 편집 권한 부여 불가
-                        writable: targetType === 'user' ? false : (p.writable || false),
+                        writable: p.writable || false,
                         permission_level: p.permission_level || 'sub',
                         user_id: p.user_id,
                         organization_id: p.organization_id,
                         org_group_id: p.org_group_id
-                    };
-                    });
+                    }));
 
                     if (permissions.length > 0 && permissions[0].permission_level) {
                         this.permissionLevel = permissions[0].permission_level;
@@ -572,31 +461,17 @@ export default {
             });
             this.selectedOrganization = null;
         },
-        onOrgGroupNodeClick(node) {
-            if (!node) return;
-            // 루트 "Groups" 행: 권한 추가 대상이 아니므로 펼치기/접기만 (삼각형만 누르지 않아도 동작)
-            if (node.id === 'org-root') {
-                if (node.children && node.children.length > 0) {
-                    if (!node.state) node.state = {};
-                    node.state.opened = !node.state.opened;
-                }
-                return;
-            }
-            if (this.addedOrgGroupIds.has(node.id)) return;
-            this.addOrgGroupPermission(node.id, node.text);
-        },
-        addOrgGroupPermission(groupId, nameFromNode) {
+        addOrgGroupPermission(groupId) {
             if (!groupId) return;
             const group = this.orgGroupList.find((g) => g.id === groupId);
-            const displayName = group ? group.name : nameFromNode || groupId;
-            if (!displayName) return;
+            if (!group) return;
 
             this.permissionList.push({
                 id: `${this.procDef.id}_${groupId}`,
                 target_type: 'org_group',
                 target_id: groupId,
                 org_group_id: groupId,
-                name: displayName,
+                name: group.name,
                 readable: true,
                 executable: false,
                 writable: false
@@ -654,22 +529,17 @@ export default {
                     const stillExists = this.permissionList.find((p) => p.id === original.id);
                     if (!stillExists) {
                         await backend.deleteUserPermission({ match: { id: original.id } });
-                        if (this.deleteUserPermissionFromMap) {
-                            this.deleteUserPermissionFromMap({ match: { id: original.id } });
-                        }
                     }
                 }
 
                 for (const permission of this.permissionList) {
-                    // uEngine: 편집 권한은 일반 user 대상에는 부여 불가
-                    const allowWritable = permission.target_type !== 'user';
                     const permissionData = {
                         proc_def_id: this.procDef.id,
                         proc_def_ids: procDefIds,
                         target_type: permission.target_type,
                         readable: permission.readable,
-                        executable: this.isPal ? false : permission.executable,
-                        writable: allowWritable && (permission.writable || false),
+                        executable: permission.executable,
+                        writable: permission.writable || false,
                         permission_level: this.permissionLevel
                     };
 
@@ -682,12 +552,6 @@ export default {
                     }
 
                     await backend.putUserPermission(permissionData);
-                    if (this.updateUserPermission) {
-                        this.updateUserPermission({
-                            ...permissionData,
-                            tenant_id: typeof window !== 'undefined' && window.$tenantName
-                        });
-                    }
                 }
 
                 this.$emit('saved');
@@ -709,8 +573,6 @@ export default {
             this.selectedUser = null;
             this.selectedOrganization = null;
             this.selectedOrgGroup = null;
-            this.orgGroupTree = null;
-            this.orgGroupTreeNodes = {};
             this.permissionList = [];
             this.originalPermissions = [];
         }
@@ -1105,56 +967,6 @@ export default {
     font-size: 0.875rem;
 }
 
-/* 조직 그룹 트리 */
-/* 조직 그룹: 별도 트리뷰 영역 (검색창과 분리) */
-.org-group-tree-section {
-    margin-top: 8px;
-}
-.org-group-tree-panel {
-    min-height: 200px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-secondary);
-    overflow: auto;
-}
-.org-group-tree-view {
-    padding: 8px 0;
-}
-.org-group-tree-view .permission-org-tree {
-    --vtree-item-height: 36px;
-}
-/* vue3-treeview는 before-input 뒤에 기본 .node-text를 그려 라벨이 중복됨 → 숨김 */
-.org-group-tree-view .permission-org-tree :deep(.input-wrapper .node-text) {
-    display: none;
-}
-.org-group-tree-view .permission-org-tree :deep(.input-wrapper) {
-    min-width: 0;
-}
-.org-tree-node-row {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    user-select: none;
-}
-.org-tree-node-row:hover {
-    background: var(--bg-tertiary);
-}
-.org-tree-node-text {
-    flex: 1;
-    font-size: 0.875rem;
-}
-.org-tree-node--added .org-tree-node-text {
-    color: var(--success, #2e7d32);
-}
-.org-group-tree-empty {
-    padding: 24px 16px;
-    color: var(--text-secondary, #666);
-    font-size: 0.875rem;
-    text-align: center;
-}
-
 /* Empty State */
 .empty-state {
     display: flex;
@@ -1379,11 +1191,6 @@ export default {
 
 .permission-toggle.active .toggle-label {
     color: var(--text-primary);
-}
-
-.permission-toggle.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
 }
 
 /* Card Animations */

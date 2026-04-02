@@ -60,8 +60,6 @@
 </template>
 
 <script>
-import * as d3 from 'd3';
-
 export default {
     props: {
         show: {
@@ -245,8 +243,20 @@ export default {
             });
         },
         async loadD3() {
-            // 오프라인 대응: d3는 npm 패키지로 번들됨 (CDN 미사용)
-            this.d3 = d3;
+            if (window.d3) {
+                this.d3 = window.d3;
+                return;
+            }
+
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
+                script.onload = () => {
+                    this.d3 = window.d3;
+                    resolve();
+                };
+                document.head.appendChild(script);
+            });
         },
         initializeNodesData() {
             this.nodesData = [

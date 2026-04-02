@@ -183,44 +183,18 @@ export class InternalOrganizationProvider implements IOrganizationProvider {
         return this.nodeToDepartment(node, true);
     }
 
-    /** 백엔드에서 담당자 후보(process-manager, admin 역할) 목록 조회 (조직도 비었을 때 fallback) */
-    private async loadOwnerCandidateMembers(): Promise<OrganizationMember[]> {
-        const getOwnerCandidateUsers = (this.backend as { getOwnerCandidateUsers?: () => Promise<Array<{ id: string; name?: string; username?: string; email?: string }>> }).getOwnerCandidateUsers;
-        if (typeof getOwnerCandidateUsers !== 'function') return [];
-        try {
-            const users = await getOwnerCandidateUsers();
-            return users.map((u) => ({
-                id: u.id,
-                name: u.name || u.username || u.email || u.id,
-                email: u.email,
-                department: undefined,
-                position: undefined,
-                avatar: undefined
-            }));
-        } catch (e) {
-            console.warn('[InternalOrganizationProvider] getOwnerCandidateUsers failed:', e);
-            return [];
-        }
-    }
-
     async getMembers(options?: SearchOptions): Promise<OrganizationMember[]> {
         await this.ensureInitialized();
 
-        let members: OrganizationMember[] = [];
+        if (!this.orgChart) return [];
 
-        if (this.orgChart) {
-            members = this.collectMembers(this.orgChart);
-            if (options?.departmentId) {
-                const deptNode = this.findNode(this.orgChart, options.departmentId);
-                if (deptNode) {
-                    members = this.collectMembers(deptNode);
-                }
+        let members = this.collectMembers(this.orgChart);
+
+        if (options?.departmentId) {
+            const deptNode = this.findNode(this.orgChart, options.departmentId);
+            if (deptNode) {
+                members = this.collectMembers(deptNode);
             }
-        }
-
-        // 조직도가 없거나 비어 있으면 담당자 후보(process-manager, admin 역할)로 fallback
-        if (members.length === 0) {
-            members = await this.loadOwnerCandidateMembers();
         }
 
         if (options?.query) {
@@ -238,24 +212,21 @@ export class InternalOrganizationProvider implements IOrganizationProvider {
     async getMember(memberId: string): Promise<OrganizationMember | null> {
         await this.ensureInitialized();
 
-        if (this.orgChart) {
-            const node = this.findNode(this.orgChart, memberId);
-            if (node && !node.data?.isTeam) {
-                const member = this.nodeToMember(node);
-                if (member) {
-                    const deptNode = this.findUserDepartment(this.orgChart, memberId);
-                    if (deptNode) {
-                        member.department = deptNode.data?.name;
-                    }
-                    return member;
-                }
+        if (!this.orgChart) return null;
+
+        const node = this.findNode(this.orgChart, memberId);
+        if (!node || node.data?.isTeam) return null;
+
+        const member = this.nodeToMember(node);
+        if (member) {
+            // 부서 정보 추가
+            const deptNode = this.findUserDepartment(this.orgChart, memberId);
+            if (deptNode) {
+                member.department = deptNode.data?.name;
             }
         }
 
-        // 조직도에 없으면 담당자 후보 목록에서 id로 조회 (기존 담당자 표시용)
-        const candidates = await this.loadOwnerCandidateMembers();
-        const found = candidates.find((m) => m.id === memberId);
-        return found || null;
+        return member;
     }
 
     async searchMembers(query: string, options?: SearchOptions): Promise<OrganizationMember[]> {

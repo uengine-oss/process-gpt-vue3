@@ -705,7 +705,7 @@ export default {
                 }
 
                 backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
-                me.$router.push(`/instancelist/${backend.encodeInstanceIdForInstancelistRoute(me.workItem.worklist.instId)}`);
+                me.$router.push(`/instancelist/${me.workItem.worklist.instId.replace(/\./g, '_DOT_')}`);
             } else {
                 // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
                 me.$try({
@@ -743,7 +743,7 @@ export default {
                             }
                             await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
 
-                            const path = backend.encodeInstanceIdForInstancelistRoute(me.workItem.worklist.instId);
+                            let path = me.workItem.worklist.instId;
                             me.$router.push(`/instancelist/${path}`);
                         }
                     }

@@ -256,7 +256,7 @@ export default {
         },
         onTaskReturned() {
             // 반송 성공 시, 워크아이템 화면을 종료하고 인스턴스 목록으로 이동
-            const route = backend.encodeInstanceIdForInstancelistRoute(this.workItem.worklist.instId);
+            const route = window.$mode == 'ProcessGPT' ? btoa(this.workItem.worklist.instId) : this.workItem.worklist.instId;
             this.taskReturnDialog = false;
             this.$router.push(`/instancelist/${route}`);
         },
@@ -390,7 +390,7 @@ export default {
                     } else {
                         if (me.workItem.execScope) value.execScope = me.workItem.execScope;
                         await backend.putWorkItemComplete(me.$route.params.taskId, value, true);
-                        const route = backend.encodeInstanceIdForInstancelistRoute(me.workItem.worklist.instId);
+                        const route = window.$mode == 'ProcessGPT' ? btoa(me.workItem.worklist.instId) : me.workItem.worklist.instId;
                         me.$router.push(`/instancelist/${route}`);
                     }
                 },

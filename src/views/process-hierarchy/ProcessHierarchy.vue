@@ -21,11 +21,6 @@
                 :definitionPath="selectedProcessId"
                 :definitionList="definitionList"
                 :loading="loading"
-                :useLock="useLock"
-                :lock="lock"
-                :editUser="editUser"
-                :editUserDisplayName="editUserDisplayName"
-                :currentUserId="currentUserId"
                 @openPanel="handleOpenPanel"
                 @updateXml="handleUpdateXml"
                 @definition="handleDefinition"
@@ -33,24 +28,16 @@
                 @clone="handleClone"
                 @versionHistory="handleVersionHistory"
                 @toggleWip="handleToggleWip"
-                @requestLock="requestLock"
-                @releaseLock="releaseLock"
             />
         </div>
 
-        <!-- Right Panel: 선택만 되면 마운트 유지(v-show) — 툴바 저장 시 프로세스 탭 설명이 XML에 반영되도록 -->
-        <div
-            v-if="selectedProcessId"
-            v-show="showProperties"
-            class="hierarchy-right-panel"
-            :style="{ width: rightPanelWidth + 'px' }"
-        >
+        <!-- Right Panel: Properties -->
+        <div v-if="showProperties" class="hierarchy-right-panel" :style="{ width: rightPanelWidth + 'px' }">
             <div class="resize-handle-right" @mousedown="startResizeRight"></div>
             <ProcessHierarchyProperties
-                ref="propertiesPanel"
                 :processDefinition="processDefinition"
                 :element="selectedElement"
-                :isViewMode="!hierarchyCanEdit"
+                :isViewMode="false"
                 :roles="roles"
                 :processVariables="processVariables"
                 :definitionPath="selectedProcessId"
@@ -150,7 +137,6 @@
                         class="mb-3"
                     />
                     <v-checkbox
-                        v-if="!isPal"
                         v-model="submitReviewAfterSave"
                         :label="$t('processHierarchy.submitForReviewAfterSave')"
                         color="primary"
@@ -170,43 +156,6 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-
-        <!-- 프로세스 복제: 정의체계도(SubProcess)와 동일 — 이름·ID(경로) 입력 -->
-        <v-dialog v-model="duplicateDialog" max-width="480" persistent>
-            <v-card rounded="lg">
-                <v-card-title class="text-subtitle-1 pa-4 pb-2">
-                    {{ $t('ProcessMenu.duplicate') || '프로세스 복제' }}
-                </v-card-title>
-                <v-card-text class="px-4 pb-2">
-                    <v-text-field
-                        v-model="duplicateForm.name"
-                        :label="$t('ProcessMenu.duplicateName') || '이름'"
-                        variant="outlined"
-                        density="comfortable"
-                        hide-details="auto"
-                        class="mb-3"
-                    />
-                    <v-text-field
-                        v-model="duplicateForm.id"
-                        :label="$t('ProcessMenu.duplicateId') || 'ID (경로)'"
-                        variant="outlined"
-                        density="comfortable"
-                        hide-details="auto"
-                        :hint="$t('ProcessMenu.duplicateIdHint') || '복제된 정의의 고유 경로입니다. 폴더/파일.bpmn 형태 가능.'"
-                        persistent-hint
-                    />
-                </v-card-text>
-                <v-card-actions class="pa-4 pt-2">
-                    <v-spacer />
-                    <v-btn variant="text" :disabled="duplicateLoading" @click="duplicateDialog = false">
-                        {{ $t('common.cancel') }}
-                    </v-btn>
-                    <v-btn color="primary" variant="flat" :loading="duplicateLoading" @click="confirmDuplicateProcess">
-                        {{ $t('ProcessMenu.duplicateConfirm') || '복제' }}
-                    </v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
     </div>
 </template>
 
@@ -218,10 +167,6 @@ import ProcessHierarchyDesigner from './ProcessHierarchyDesigner.vue';
 import ProcessHierarchyProperties from './ProcessHierarchyProperties.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
 import { useBpmnStore } from '@/stores/bpmn';
-import { getKeycloakUserById, getKeycloakUserDisplayName } from '@/utils/keycloak';
-import { formatKeycloakUserAsNameAndLoginId } from '@/utils/definitionActorDisplay';
-import { canBypassLock } from '@/utils/processManagement';
-import { parseUengineProcessRootMetaFromXml } from '@/utils/bpmnHierarchyProcessMeta';
 
 const backend = BackendFactory.createBackend();
 const storage = StorageBaseFactory.getStorage();
@@ -241,8 +186,6 @@ export default {
             definitionList: [],
             selectedProcessId: '',
             selectedProcessName: '',
-            /** 트리(체계도)에서 선택 시 표시명 — 헤더·프로퍼티 제목을 BPMN definitionName과 맞춤 */
-            treeLabelForSelectedProcess: '',
             bpmnXml: '',
             processDefinition: null,
             bpmnDefinitions: null,
@@ -260,9 +203,6 @@ export default {
             latestVersion: '0.0',
             savingVersion: false,
             pendingSaveXml: '',
-            duplicateDialog: false,
-            duplicateForm: { name: '', id: '' },
-            duplicateLoading: false,
             // Approval warning
             approvalWarningDialog: false,
             activeApprovalState: null,
@@ -271,11 +211,7 @@ export default {
             resizing: null,
             resizeStartX: 0,
             resizeStartWidth: 0,
-            selectionListenerCleanup: null,
-            // Lock (uEngine: 동시 수정 방지)
-            lock: false,
-            editUser: '',
-            editUserDisplayName: ''
+            selectionListenerCleanup: null
         };
     },
     async mounted() {
@@ -298,20 +234,6 @@ export default {
         }
     },
     computed: {
-        isPal() {
-            return !!(typeof window !== 'undefined' && window.$pal);
-        },
-        useLock() {
-            return typeof window !== 'undefined' && window.$mode === 'uEngine' && typeof backend.getLock === 'function';
-        },
-        currentUserId() {
-            return typeof window !== 'undefined' ? localStorage.getItem('uid') || '' : '';
-        },
-        /** lock 보유 시에만 편집 가능 → Properties 패널 viewMode */
-        hierarchyCanEdit() {
-            if (!this.useLock) return true;
-            return !!(this.lock && this.editUser === this.currentUserId);
-        },
         saveVersion() {
             // 저장할 때마다 minor +1 (거버넌스: Draft 단계에서 저장 시마다 마이너 버전 자동 기록)
             const base = this.latestVersion;
@@ -327,17 +249,14 @@ export default {
             this.loading = true;
             try {
                 const supabase = window.$supabase;
-                const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
                 const promises = [
                     backend.getProcessDefinitionMap(),
                     backend.getMetricsMap(),
                     backend.listDefinition('', { match: { tenant_id: window.$tenantName } }),
-                    isUEngine
-                        ? Promise.resolve([])
-                        : storage.list('proc_def_version', {
-                              sort: 'desc',
-                              orderBy: 'timeStamp'
-                          })
+                    storage.list('proc_def_version', {
+                        sort: 'desc',
+                        orderBy: 'timeStamp'
+                    })
                 ];
                 // proc_def_approval_state 일괄 조회
                 if (supabase) {
@@ -352,26 +271,15 @@ export default {
                 }
 
                 const [procMapResult, metricsResult, defList, versionList, approvalStates] = await Promise.all(promises);
-                let procMap = procMapResult;
-                // uEngine: 권한 사용 시 읽기 권한 없는 프로세스는 리스트에 표시하지 않음
-                if (isUEngine && typeof backend.checkUsePermissions === 'function' && typeof backend.filterProcDefMap === 'function') {
-                    try {
-                        const usePerm = await backend.checkUsePermissions();
-                        if (usePerm && procMap) {
-                            procMap = await backend.filterProcDefMap(procMap);
-                        }
-                    } catch (e) {
-                        console.warn('[ProcessHierarchy] permission filter skip:', e);
-                    }
-                }
-                this.procMap = procMap;
+                this.procMap = procMapResult;
                 this.metricsMap = metricsResult;
 
+                const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
                 // uEngine: 트리와 id 일치시키기 위해 procMap에서 리프( sub_proc_list )만 평면 목록으로 구성
                 let listForVersion = defList || [];
-                if (isUEngine && procMap?.mega_proc_list?.length > 0) {
+                if (isUEngine && procMapResult?.mega_proc_list?.length > 0) {
                     const flatFromMap = [];
-                    procMap.mega_proc_list.forEach((mega) => {
+                    procMapResult.mega_proc_list.forEach((mega) => {
                         (mega.major_proc_list || []).forEach((major) => {
                             (major.sub_proc_list || []).forEach((sub) => {
                                 const sid = sub.id ?? sub.path ?? sub.name;
@@ -456,37 +364,17 @@ export default {
             const normalizedId = typeof id === 'string' ? id.trim() : id;
             if (this.selectedProcessId === normalizedId) return;
 
-            // uEngine lock: 이전 선택에 대한 잠금 해제 (본인이 잡은 경우만)
-            if (this.useLock && this.selectedProcessId && this.editUser === this.currentUserId) {
-                try {
-                    await backend.deleteLock(this.selectedProcessId);
-                } catch (e) {
-                    console.warn('deleteLock on switch process:', e);
-                }
-                this.lock = false;
-                this.editUser = '';
-                this.editUserDisplayName = '';
-            }
-
             // 이전 element 선택 초기화
             this.selectedElement = null;
             this.selectedProcessId = normalizedId;
             this.selectedProcessName = name;
-            this.treeLabelForSelectedProcess =
-                name != null && String(name).trim() !== '' ? String(name).trim() : '';
             await this.loadProcess(normalizedId);
-
-            // uEngine lock: 선택 시에는 잠금을 잡지 않고, 현재 잠금 상태만 갱신 → 기본은 연필(보기)로 표시. 연필 클릭 시 tryLock
-            if (this.useLock && this.selectedProcessId) {
-                await this.refreshLockState(this.selectedProcessId);
-            }
         },
 
         async loadProcess(id) {
             if (!id) return;
             this.loading = true;
             this.bpmnXml = '';
-            let metaFromBpmn = null;
             try {
                 // definitionList에서 해당 프로세스 찾기
                 let def = this.definitionList.find((d) => d.id === id || d.file_name === id);
@@ -505,45 +393,8 @@ export default {
                 }
 
                 if (def) {
-                    def.processDefinitionId = def.processDefinitionId || def.id || def.file_name || id;
-                    const bpmnStr = def.bpmn || '';
-                    // uEngine: 프로세스 탭 메타는 XML에서 복원 (이름은 트리 표시명 우선)
-                    if (typeof window !== 'undefined' && window.$mode === 'uEngine' && bpmnStr) {
-                        metaFromBpmn = parseUengineProcessRootMetaFromXml(bpmnStr);
-                        if (metaFromBpmn) {
-                            def.description = metaFromBpmn.description ?? def.description ?? '';
-                            if (metaFromBpmn._shortDescriptionShape) {
-                                def.shortDescription = { ...metaFromBpmn._shortDescriptionShape };
-                            }
-                            if (metaFromBpmn.systems) def.systems = metaFromBpmn.systems;
-                            if (metaFromBpmn.fte) def.fte = metaFromBpmn.fte;
-                            Object.keys(metaFromBpmn).forEach((k) => {
-                                if (k.startsWith('_') || ['name', 'description', 'systems', 'fte'].includes(k)) return;
-                                if (metaFromBpmn[k] !== undefined && def[k] === undefined) def[k] = metaFromBpmn[k];
-                            });
-                        }
-                    }
-
-                    const treeLabel = (this.treeLabelForSelectedProcess || '').trim();
-                    const sameSelection = String(id) === String(this.selectedProcessId);
-                    if (treeLabel && sameSelection) {
-                        def.name = treeLabel;
-                        def.processDefinitionName = treeLabel;
-                        this.selectedProcessName = treeLabel;
-                    } else {
-                        def.name =
-                            def.name ||
-                            metaFromBpmn?.name ||
-                            this.selectedProcessName ||
-                            def.processDefinitionName ||
-                            def.processDefinitionId;
-                        def.processDefinitionName =
-                            def.processDefinitionName || def.name || this.selectedProcessName || def.processDefinitionId;
-                        this.selectedProcessName = this.selectedProcessName || def.processDefinitionName;
-                    }
-
                     this.processDefinition = def;
-                    this.bpmnXml = bpmnStr;
+                    this.bpmnXml = def.bpmn || '';
                     this.processVariables = def.definition?.data || [];
                     this.roles = def.definition?.roles || [];
                 } else {
@@ -559,117 +410,6 @@ export default {
             } finally {
                 this.loading = false;
             }
-        },
-
-        /** 잠금 보유자 sub → `성 이름 (로그인ID)` 한 줄 */
-        async buildEditUserDisplayLine(userId) {
-            if (!userId) return '';
-            const holder = await getKeycloakUserById(userId);
-            if (holder) {
-                const label = formatKeycloakUserAsNameAndLoginId(holder);
-                if (label) return label;
-            }
-            const nm = (await getKeycloakUserDisplayName(userId)).trim();
-            if (nm && nm !== userId) return nm;
-            return userId;
-        },
-
-        /** 선택 시 호출: 잠금을 잡지 않고 현재 잠금 상태만 조회 → 기본 연필(보기) 유지 */
-        async refreshLockState(id) {
-            if (!this.useLock || !id || !backend.getLock) return;
-            try {
-                const lockRes = await backend.getLock(id);
-                if (lockRes?.user_id) {
-                    this.lock = true;
-                    this.editUser = lockRes.user_id;
-                    this.editUserDisplayName = await this.buildEditUserDisplayLine(lockRes.user_id);
-                } else {
-                    this.lock = false;
-                    this.editUser = '';
-                    this.editUserDisplayName = '';
-                }
-            } catch (e) {
-                this.lock = false;
-                this.editUser = '';
-                this.editUserDisplayName = '';
-            }
-        },
-
-        async tryLock(id) {
-            if (!this.useLock || !id || !backend.setLock || !backend.getLock) return;
-            const uid = this.currentUserId;
-            if (!uid) return;
-            try {
-                await backend.setLock({ id, user_id: uid });
-                this.lock = true;
-                this.editUser = uid;
-                this.editUserDisplayName = await this.buildEditUserDisplayLine(uid);
-            } catch (e) {
-                if (e?.response?.status === 409 || e?.status === 409) {
-                    try {
-                        const lockRes = await backend.getLock(id);
-                        const holderId = lockRes?.user_id;
-                        const holder = holderId ? await getKeycloakUserById(holderId) : null;
-                        if (holder && !canBypassLock()) {
-                            this.lock = true;
-                            this.editUser = holderId;
-                            this.editUserDisplayName = await this.buildEditUserDisplayLine(holderId);
-                            if (this.$toast) {
-                                this.$toast.info(
-                                    (this.$t('processHierarchy.lockedByUser') || '%s님이 수정 중입니다.').replace('%s', this.editUserDisplayName)
-                                );
-                            }
-                            return;
-                        }
-                        await backend.deleteLock(id);
-                        await backend.setLock({ id, user_id: uid });
-                        this.lock = true;
-                        this.editUser = uid;
-                        this.editUserDisplayName = await this.buildEditUserDisplayLine(uid);
-                    } catch (err) {
-                        console.warn('tryLock after 409:', err);
-                    }
-                } else {
-                    console.warn('setLock failed:', e);
-                }
-            }
-        },
-
-        async requestLock() {
-            if (!this.useLock || !this.selectedProcessId) return;
-            // 수정 권한 확인: 쓰기 권한 없으면 편집 불가
-            if (typeof backend.checkProcessPermission === 'function') {
-                try {
-                    const perm = await backend.checkProcessPermission(this.selectedProcessId);
-                    if (!perm.writable && !perm.isPublic) {
-                        if (this.$toast) {
-                            this.$toast.error(this.$t('processHierarchy.noWritePermission') || '이 프로세스를 수정할 권한이 없습니다.');
-                        }
-                        return;
-                    }
-                } catch (e) {
-                    console.warn('[ProcessHierarchy] checkProcessPermission:', e);
-                    if (this.$toast) {
-                        this.$toast.error(this.$t('processHierarchy.noWritePermission') || '이 프로세스를 수정할 권한이 없습니다.');
-                    }
-                    return;
-                }
-            }
-            await this.tryLock(this.selectedProcessId);
-        },
-
-        async releaseLock() {
-            if (!this.useLock || !this.selectedProcessId) return;
-            try {
-                await backend.deleteLock(this.selectedProcessId);
-            } catch (e) {
-                console.warn('releaseLock deleteLock:', e);
-            }
-            this.lock = false;
-            this.editUser = '';
-            this.editUserDisplayName = '';
-            // lock 풀렸으므로 현재 프로세스 다시 조회하여 갱신
-            await this.loadProcess(this.selectedProcessId);
         },
 
         handleOpenPanel(elementId) {
@@ -759,155 +499,22 @@ export default {
             this.bpmnXml = xml;
         },
 
-        getCurrentProcessTitleForSave() {
-            const pr = this.$refs.propertiesPanel;
-            return (
-                (pr && typeof pr.getEffectiveProcessTitleForBpmn === 'function' && pr.getEffectiveProcessTitleForBpmn()) ||
-                this.selectedProcessName ||
-                this.processDefinition?.name ||
-                ''
-            );
-        },
-
-        /** uEngine: 저장 직전 XML 문자열에 프로세스 메타(definitionName, shortDescription.text)를 강제 반영 */
-        applyProcessMetaToXml(xml) {
-            try {
-                const pr = this.$refs.propertiesPanel;
-                const title = this.getCurrentProcessTitleForSave();
-                const description =
-                    (pr && typeof pr.getEffectiveProcessDescriptionForBpmn === 'function' && pr.getEffectiveProcessDescriptionForBpmn()) ||
-                    '';
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(xml, 'application/xml');
-                const ns = 'http://uengine';
-                const props = doc.getElementsByTagNameNS(ns, 'properties');
-
-                for (let i = 0; i < props.length; i++) {
-                    const el = props[i];
-                    const parent = el.parentElement;
-                    if (!parent || parent.localName !== 'extensionElements') continue;
-                    const grandParent = parent.parentElement;
-                    if (!grandParent || grandParent.localName !== 'process') continue;
-
-                    let raw = el.getAttribute('json');
-                    if ((!raw || !String(raw).trim()) && el.getElementsByTagNameNS(ns, 'json').length) {
-                        raw = (el.getElementsByTagNameNS(ns, 'json')[0].textContent || '').trim();
-                    }
-
-                    let obj = {};
-                    try {
-                        obj = raw ? JSON.parse(raw) : {};
-                    } catch {
-                        obj = {};
-                    }
-
-                    obj.definitionName = title || obj.definitionName || '';
-                    const prevSd = obj.shortDescription;
-                    if (prevSd && typeof prevSd === 'object' && !Array.isArray(prevSd)) {
-                        obj.shortDescription = { ...prevSd, text: description };
-                    } else {
-                        obj.shortDescription = { text: description };
-                    }
-
-                    const nextJson = JSON.stringify(obj);
-                    el.setAttribute('json', nextJson);
-                    const jsonEls = el.getElementsByTagNameNS(ns, 'json');
-                    if (jsonEls.length) {
-                        jsonEls[0].textContent = nextJson;
-                    }
-                }
-
-                return new XMLSerializer().serializeToString(doc);
-            } catch (e) {
-                console.warn('applyProcessMetaToXml failed, using original xml:', e);
-                return xml;
-            }
-        },
-
-        /** 현재 선택된 프로세스 이름을 procMap 리프(sub_proc_list) name에도 동기화 */
-        async syncSelectedProcessNameToMap(newName) {
-            const targetId = String(this.selectedProcessId || '').trim();
-            const nextName = String(newName || '').trim();
-            if (!targetId || !nextName || !this.procMap?.mega_proc_list?.length) return false;
-
-            const updatedMap = JSON.parse(JSON.stringify(this.procMap));
-            let updated = false;
-
-            updatedMap.mega_proc_list.forEach((mega) => {
-                (mega.major_proc_list || []).forEach((major) => {
-                    (major.sub_proc_list || []).forEach((sub) => {
-                        const subId = String(sub?.id ?? sub?.path ?? '').trim();
-                        if (subId === targetId) {
-                            sub.name = nextName;
-                            updated = true;
-                        }
-                    });
-                });
-            });
-
-            if (!updated) return false;
-
-            this.procMap = updatedMap;
-            this.treeLabelForSelectedProcess = nextName;
-            this.selectedProcessName = nextName;
-            if (this.processDefinition) {
-                this.processDefinition.name = nextName;
-                this.processDefinition.processDefinitionName = nextName;
-            }
-            const def = this.definitionList.find((d) => {
-                const id = String(d?.id ?? d?.file_name ?? '').trim();
-                return id === targetId;
-            });
-            if (def) {
-                def.name = nextName;
-                def.processDefinitionName = nextName;
-            }
-
-            if (typeof window !== 'undefined' && window.$mode === 'uEngine') {
-                await backend.putProcessDefinitionMap(updatedMap);
-            }
-
-            return true;
-        },
-
         async handleSave() {
             const store = useBpmnStore();
             const modeler = store.getModeler;
             if (!modeler) return;
 
             try {
-                // uEngine: 상단 저장만 눌러도 프로세스 탭(설명 등)이 BPMN 루트 JSON에 들어가게
-                if (typeof window !== 'undefined' && window.$mode === 'uEngine' && this.selectedProcessId) {
-                    await this.$nextTick();
-                    const pr = this.$refs.propertiesPanel;
-                    if (pr && typeof pr.applyProcessTabToBpmnRoot === 'function') {
-                        pr.applyProcessTabToBpmnRoot();
-                    }
-                }
                 const { xml } = await modeler.saveXML({ format: true, preamble: true });
-                this.pendingSaveXml =
-                    typeof window !== 'undefined' && window.$mode === 'uEngine' ? this.applyProcessMetaToXml(xml) : xml;
+                this.pendingSaveXml = xml;
 
-                const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
-                const versionId = String(this.selectedProcessId || '').replace(/\.bpmn$/i, '');
-
-                // 최신 버전 조회 (uEngine: API 경로 불일치/404 시에도 저장 플로우는 계속)
-                let versions = [];
-                try {
-                    const v = await backend.getDefinitionVersions(versionId, {
-                        sort: 'desc',
-                        orderBy: 'version'
-                    });
-                    versions = Array.isArray(v) ? v : [];
-                } catch (e) {
-                    if (isUEngine) {
-                        console.warn('[ProcessHierarchy] getDefinitionVersions 실패, 기본 버전 사용:', e);
-                    } else {
-                        throw e;
-                    }
-                }
-                if (versions.length > 0) {
-                    const sorted = [...versions].sort((a, b) => {
+                // 최신 버전 조회
+                const versions = await backend.getDefinitionVersions(this.selectedProcessId, {
+                    sort: 'desc',
+                    orderBy: 'version'
+                });
+                if (versions && versions.length > 0) {
+                    const sorted = versions.sort((a, b) => {
                         const [aM, am] = String(a.version).split('.').map(Number);
                         const [bM, bm] = String(b.version).split('.').map(Number);
                         return bM !== aM ? bM - aM : (bm || 0) - (am || 0);
@@ -917,18 +524,16 @@ export default {
                     this.latestVersion = '0.0';
                 }
 
-                // 활성 승인 건 체크 (ProcessGPT 중심; uEngine은 스킵)
-                if (!isUEngine) {
-                    try {
-                        const activeApproval = await backend.getActiveApprovalState(this.selectedProcessId);
-                        if (activeApproval) {
-                            this.activeApprovalState = activeApproval;
-                            this.approvalWarningDialog = true;
-                            return;
-                        }
-                    } catch (e) {
-                        console.warn('승인 상태 확인 실패:', e);
+                // 활성 승인 건 체크
+                try {
+                    const activeApproval = await backend.getActiveApprovalState(this.selectedProcessId);
+                    if (activeApproval) {
+                        this.activeApprovalState = activeApproval;
+                        this.approvalWarningDialog = true;
+                        return;
                     }
+                } catch (e) {
+                    console.warn('승인 상태 확인 실패:', e);
                 }
 
                 // 다이얼로그 초기화 후 열기
@@ -991,17 +596,13 @@ export default {
             this.savingVersion = true;
             try {
                 const version = this.saveVersion;
-                const titleForSave = this.getCurrentProcessTitleForSave();
                 // BPMN XML 내부 uengine:properties의 version 필드 업데이트
-                let xml = this.updateXmlVersion(this.pendingSaveXml, version);
-                if (typeof window !== 'undefined' && window.$mode === 'uEngine') {
-                    xml = this.applyProcessMetaToXml(xml);
-                }
+                const xml = this.updateXmlVersion(this.pendingSaveXml, version);
                 this.bpmnXml = xml;
 
                 // 새 minor 버전으로 저장 (거버넌스: 저장 시마다 마이너 버전 자동 기록)
                 await backend.putRawDefinition(xml, this.selectedProcessId, {
-                    name: titleForSave || this.selectedProcessName,
+                    name: this.selectedProcessName,
                     definition: this.processDefinition?.definition || null,
                     version: version,
                     version_tag: null,
@@ -1009,16 +610,8 @@ export default {
                     message: this.saveVersionMessage || null
                 });
 
-                if (titleForSave && titleForSave !== this.treeLabelForSelectedProcess) {
-                    try {
-                        await this.syncSelectedProcessNameToMap(titleForSave);
-                    } catch (mapErr) {
-                        console.warn('syncSelectedProcessNameToMap failed:', mapErr);
-                    }
-                }
-
-                // 검토 요청 (PAL/uEngine 제외 — ProcessGPT 승인 플로만)
-                if (!window.$pal && window.$mode !== 'uEngine' && this.submitReviewAfterSave) {
+                // 검토 요청 (버전 정보 포함)
+                if (this.submitReviewAfterSave) {
                     try {
                         await backend.submitForReview(this.selectedProcessId, this.saveVersionMessage || undefined, version);
                     } catch (reviewErr) {
@@ -1028,22 +621,8 @@ export default {
 
                 this.saveVersionDialog = false;
 
-                if (this.useLock && this.selectedProcessId) {
-                    try {
-                        await backend.deleteLock(this.selectedProcessId);
-                    } catch (lockErr) {
-                        console.warn('deleteLock after save:', lockErr);
-                    }
-                    this.lock = false;
-                    this.editUser = '';
-                    this.editUserDisplayName = '';
-                }
-
-                // 저장 후 definition 목록·맵 갱신; lock 풀렸으므로 현재 프로세스도 다시 조회
-                await this.loadProcess(this.selectedProcessId);
-
                 if (this.$toast) {
-                    const msg = (window.$pal || !this.submitReviewAfterSave) ? this.$t('successMsg.save') : this.$t('processHierarchy.savedAndSubmitted');
+                    const msg = this.submitReviewAfterSave ? this.$t('processHierarchy.savedAndSubmitted') : this.$t('successMsg.save');
                     this.$toast.success(msg);
                 }
 
@@ -1059,43 +638,8 @@ export default {
             }
         },
 
-        handleClone() {
+        async handleClone() {
             if (!this.selectedProcessId || !this.processDefinition) return;
-            const baseName = this.selectedProcessName || this.$t('processHierarchy.defaultProcessName');
-            this.duplicateForm.name = `${baseName} (${this.$t('ProcessMenu.copySuffix') || this.$t('processHierarchy.copySuffix')})`;
-            this.duplicateForm.id = this.suggestDuplicateId(this.selectedProcessId);
-            this.duplicateDialog = true;
-        },
-        suggestDuplicateId(sourceId) {
-            if (!sourceId) return '_copy';
-            return String(sourceId)
-                .trim()
-                .replace(/\s+/g, '_')
-                .replace(/\.bpmn$/i, '') + '_copy';
-        },
-        async confirmDuplicateProcess() {
-            if (!this.selectedProcessId || !this.processDefinition) return;
-            const newName = (this.duplicateForm.name || '').trim();
-            const desiredId = (this.duplicateForm.id || '').trim().replace(/\s+/g, '_');
-            if (!newName) {
-                if (this.$toast) {
-                    this.$toast.error(this.$t('ProcessMenu.duplicateNameRequired') || '이름을 입력해 주세요.');
-                }
-                return;
-            }
-            if (!desiredId) {
-                if (this.$toast) {
-                    this.$toast.error(this.$t('ProcessMenu.duplicateIdRequired') || 'ID를 입력해 주세요.');
-                }
-                return;
-            }
-            if (typeof backend.duplicateLocalProcess !== 'function') {
-                if (this.$toast) {
-                    this.$toast.error(this.$t('ProcessMenu.duplicateFailed') || '복제를 지원하지 않습니다.');
-                }
-                return;
-            }
-            this.duplicateLoading = true;
             try {
                 const store = useBpmnStore();
                 const modeler = store.getModeler;
@@ -1104,35 +648,24 @@ export default {
                     const { xml } = await modeler.saveXML({ format: true });
                     currentBpmn = xml;
                 }
-                if (!currentBpmn || typeof currentBpmn !== 'string') {
-                    throw new Error(this.$t('processHierarchy.emptyBpmnForClone') || '복제할 BPMN이 없습니다.');
-                }
-                const result = await backend.duplicateLocalProcess(
-                    this.selectedProcessId,
-                    newName,
-                    currentBpmn,
-                    this.processDefinition,
-                    desiredId
-                );
+
+                const newName =
+                    (this.selectedProcessName || this.$t('processHierarchy.defaultProcessName')) +
+                    ' ' +
+                    this.$t('processHierarchy.copySuffix');
+                const result = await backend.duplicateLocalProcess(this.selectedProcessId, newName, currentBpmn, this.processDefinition);
+
                 if (result && result.success) {
-                    this.duplicateDialog = false;
                     if (this.$toast) {
                         this.$toast.success(this.$t('ProcessMenu.duplicateSuccess'));
                     }
                     await this.loadInitialData();
-                    const newId = result.newId;
-                    if (newId) {
-                        this.treeLabelForSelectedProcess = newName;
-                        await this.handleSelectProcess(newId, newName);
-                    }
                 }
             } catch (e) {
                 console.error('Clone failed:', e);
                 if (this.$toast) {
-                    this.$toast.error(e?.message || this.$t('ProcessMenu.duplicateFailed'));
+                    this.$toast.error(this.$t('ProcessMenu.duplicateFailed'));
                 }
-            } finally {
-                this.duplicateLoading = false;
             }
         },
 
