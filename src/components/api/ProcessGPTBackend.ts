@@ -3712,6 +3712,10 @@ class ProcessGPTBackend implements Backend {
             };
             const response = await axios.post('/completion/set-tenant', request);
             if (response.status === 200) {
+                // auth.users 메타데이터 갱신 후에도 클라이언트 JWT는 그대로이므로 RLS(tenant_id())가 옛 tenant_id 를 씀.
+                // refresh 로 새 access token 을 받아 app_metadata.tenant_id 와 DB 를 맞춘다.
+                await storage.refreshSession({ clearOnError: false });
+
                 const isOwner = await storage.checkTenantOwner(tenantId);
                 // email/username을 넣지 않으면 upsert 시 새 행은 null로 들어가 유령 레코드가 됨 (setTenant가 원인)
                 const putObj: any = {
