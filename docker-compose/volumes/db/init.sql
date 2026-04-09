@@ -83,7 +83,7 @@ EXCEPTION
 END $$;
 -- 오케스트레이션 방식 enum
 DO $$ BEGIN
-  CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-automation-agent', 'a2a', 'visionparse');
+  CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-automation-agent', 'a2a', 'visionparse', 'pdf2bpmn');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
@@ -2140,6 +2140,7 @@ BEGIN
             WHEN 'browser-automation-agent' THEN 'browser-automation-agent'::agent_orch
             WHEN 'a2a' THEN 'a2a'::agent_orch
             WHEN 'visionparse' THEN 'visionparse'::agent_orch
+            WHEN 'pdf2bpmn' THEN 'pdf2bpmn'::agent_orch
             ELSE NULL
           END
         )
