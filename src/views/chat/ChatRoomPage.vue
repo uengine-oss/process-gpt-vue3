@@ -4668,15 +4668,8 @@ export default {
                         // 침묵 정책 제거: NO_RESPONSE도 그대로 텍스트로 표시하지 않도록 빈 값 처리
                         let safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
                         let displayContent = '';
-<<<<<<< HEAD
                         
-=======
-
->>>>>>> 345408076abe5e84c93fcaad2da34530e1c23bb7
-                        const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                        if (idx !== -1) {
-                            // human feedback 도구 결과가 있으면 메시지에 첨부
-                            const msgToolCalls = Array.isArray(this.messages[idx].toolCalls) ? this.messages[idx].toolCalls : [];
+        const msgToolCalls = Array.isArray(this.messages[idx].toolCalls) ? this.messages[idx].toolCalls : [];
                             const feedbackTC = msgToolCalls.find(tc => tc?.__humanFeedback);
                             if (feedbackTC) {
                                 this.messages[idx].__humanFeedback = feedbackTC.__humanFeedback;
@@ -4742,7 +4735,7 @@ export default {
                                     }
                                 }
                             }
-
+                            
                             this.messages[idx].content = safeFinal || full || '';
                             displayContent = this.extractDisplayAssistantContent(this.messages[idx].content);
                             this.messages[idx].isLoading = false;
