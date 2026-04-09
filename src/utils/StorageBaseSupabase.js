@@ -111,7 +111,11 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async refreshSession() {
+    /**
+     * @param {{ clearOnError?: boolean }} [options] - clearOnError: false 이면 갱신 실패 시 세션을 지우지 않음 (예: setTenant 직후 메타데이터만 갱신된 경우)
+     */
+    async refreshSession(options = {}) {
+        const clearOnError = options.clearOnError !== false;
         try {
             const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
 
@@ -125,8 +129,10 @@ export default class StorageBaseSupabase {
                     return;
                 }
 
-                // 기타 refresh 오류인 경우 세션 클리어
-                await this.clearSession();
+                // 기타 refresh 오류인 경우 세션 클리어 (clearOnError 가 true 일 때만)
+                if (clearOnError) {
+                    await this.clearSession();
+                }
             } else if (refreshData && refreshData.session) {
                 // Refresh 성공한 경우 새 토큰 저장
                 // Check if we're in webview mode
@@ -152,8 +158,9 @@ export default class StorageBaseSupabase {
             }
         } catch (e) {
             console.error('Error in refreshSession:', e);
-            // 예외 발생 시에도 세션 클리어
-            await this.clearSession();
+            if (clearOnError) {
+                await this.clearSession();
+            }
         }
     }
 

@@ -746,7 +746,11 @@ export default {
         },
         isFileListContent(payload) {
             const list = this.getFileList(payload?.content);
-            return Array.isArray(list) && list.length > 0;
+            return Array.isArray(list) && list.length > 0 && list.every((f) => this.isFileLikeItem(f));
+        },
+        isFileLikeItem(item) {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+            return Boolean(item.file_path || item.file_name || item.name || item.url);
         },
         getFileList(content) {
             if (!content) return [];
@@ -754,22 +758,16 @@ export default {
 
             if (typeof content === 'string') {
                 const trimmed = content.trim();
-                if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-                    parsed = this.parseJson(trimmed, null);
-                } else {
-                    const start = trimmed.indexOf('[');
-                    const end = trimmed.lastIndexOf(']');
-                    if (start !== -1 && end > start) {
-                        parsed = this.parseJson(trimmed.slice(start, end + 1), null);
-                    }
-                }
+                // 텍스트(마크다운/코드) 중간의 [...]를 억지로 파싱하면 오탐이 많으므로,
+                // 문자열 전체가 JSON 형태일 때만 파싱한다.
+                if (trimmed.startsWith('[') || trimmed.startsWith('{')) parsed = this.parseJson(trimmed, null);
             }
 
-            if (Array.isArray(parsed)) return parsed;
+            if (Array.isArray(parsed)) return parsed.filter((f) => this.isFileLikeItem(f));
             if (parsed && typeof parsed === 'object') {
-                if (Array.isArray(parsed.files)) return parsed.files;
-                if (Array.isArray(parsed.results)) return parsed.results;
-                if (Array.isArray(parsed.data)) return parsed.data;
+                if (Array.isArray(parsed.files)) return parsed.files.filter((f) => this.isFileLikeItem(f));
+                if (Array.isArray(parsed.results)) return parsed.results.filter((f) => this.isFileLikeItem(f));
+                if (Array.isArray(parsed.data)) return parsed.data.filter((f) => this.isFileLikeItem(f));
             }
 
             return [];
@@ -1469,13 +1467,14 @@ export default {
 }
 
 .json-container {
-    max-height: 400px;
+    max-height: min(50vh, 400px);
     overflow: hidden;
     transition: max-height 0.3s ease;
     position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0;
     font-size: 14px;
     color: #1d2129;
 }
@@ -1749,7 +1748,7 @@ export default {
     position: relative;
     flex: 1;
     padding: 16px;
-    min-height: 360px;
+    min-height: 0;
     font-size: 14px;
     line-height: 1.6;
     color: #1d2129;

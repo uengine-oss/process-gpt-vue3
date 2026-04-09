@@ -1495,7 +1495,8 @@ export default {
                 // agent_orch가 설정되어 있으면 에이전트가 진행 중인 것으로 판단
                 const validOrchs = [
                     'crewai-deep-research',
-                'deep-research-custom',
+                    'deep-research-custom',
+                    'deepagents',
                     'crewai-action',
                     'openai-deep-research',
                     'langchain-react',
@@ -1515,6 +1516,7 @@ export default {
             const mapping = {
                 crewaiDeepResearch: 'crewai-deep-research',
                 deepResearchCustom: 'deep-research-custom',
+                deepagents: 'deepagents',
                 crewaiAction: 'crewai-action',
                 openaiDeepResearch: 'openai-deep-research',
                 langchainReact: 'langchain-react',

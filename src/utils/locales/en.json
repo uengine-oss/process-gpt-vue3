@@ -2307,6 +2307,24 @@
                     ]
                 }
             },
+            "deepagents": {
+                "title": "DeepAgents",
+                "description": "Combine multiple specialist agents to produce step-by-step deep analysis and deliverables. ex) Research→Analyze→Draft→Verify (5~15 minutes)",
+                "detailDesc": {
+                    "title": "Role-based agents collaborate in stages",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\nResearcher → gather sources\nAnalyst → structure insights\nVerifier → fact-check and refine"
+                        },
+                        {
+                            "title": "💡 Use when:\n• Evidence-backed docs/reports\n• Complex requirements to organize\n• Want an extra quality/verification pass"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Proposal/plan draft\n• Technical comparison\n• Requirements breakdown and checklist"
+                        }
+                    ]
+                }
+            },
             "openaiDeepResearch": {
                 "title": "OpenAI Advanced Analysis",
                 "description": "Advanced reasoning and systematic analysis based on GPT-4. ex) Logical thinking, creative problem solving (3~10 minutes)",
