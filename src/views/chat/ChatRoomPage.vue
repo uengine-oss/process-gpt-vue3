@@ -1647,7 +1647,7 @@ export default {
                 this.activeRoomId = roomId;
                 // UI 즉시 반영(이후 roomId watcher가 bootstrapRoom으로 동기화)
                 this.currentChatRoom = room;
-                this.messages.push(msg);
+                this.upsertMessageByKeys(msg);
                 this.$nextTick(() => this.scrollToBottomSafe());
             } catch (e) {
                 // ignore
@@ -1722,7 +1722,7 @@ export default {
                 this.activeRoomId = roomId;
                 // UI 즉시 반영(이후 roomId watcher가 bootstrapRoom으로 동기화)
                 this.currentChatRoom = room;
-                this.messages.push(msg);
+                this.upsertMessageByKeys(msg);
                 this.$nextTick(() => this.scrollToBottomSafe());
             } catch (e) {
                 // ignore
@@ -2180,6 +2180,30 @@ export default {
                 this.messages.sort((a, b) => new Date(a.timeStamp) - new Date(b.timeStamp));
                 this.$nextTick(() => this.scrollToBottomSafe());
             } catch (e) {}
+        },
+        upsertMessageByKeys(message) {
+            if (!message) return;
+            const keys = [message?.uuid, message?.clientUuid, message?.rowUuid].filter(Boolean);
+            const existingIndex = (this.messages || []).findIndex((m) => {
+                if (!m) return false;
+                if (keys.length > 0) {
+                    return keys.includes(m?.uuid) || keys.includes(m?.clientUuid) || keys.includes(m?.rowUuid);
+                }
+                // 키가 없을 때만 fallback: 동일 작성자/내용/근접 시각이면 동일 메시지로 취급
+                const sameRole = (m?.role || '').toString() === (message?.role || '').toString();
+                const sameEmail = (m?.email || '').toString() === (message?.email || '').toString();
+                const sameContent = (m?.content || '').toString() === (message?.content || '').toString();
+                const mts = new Date(m?.timeStamp || 0).getTime();
+                const nts = new Date(message?.timeStamp || 0).getTime();
+                return sameRole && sameEmail && sameContent && Math.abs(mts - nts) <= 1500;
+            });
+
+            if (existingIndex !== -1) {
+                this.messages[existingIndex] = this.normalizeAssistantMessageForDisplay({ ...(this.messages[existingIndex] || {}), ...message });
+                return;
+            }
+
+            this.messages.push(this.normalizeAssistantMessageForDisplay(message));
         },
         openRenameDialog() {
             this.settingsMenu = false;
@@ -2720,7 +2744,7 @@ export default {
                 this.currentChatRoom.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 await backend.putObject('db://chat_rooms', this.currentChatRoom);
 
-                this.messages.push(msg);
+                this.upsertMessageByKeys(msg);
                 this.EventBus.emit('chat-rooms-updated');
                 this.$nextTick(() => this.scrollToBottomSafe());
                 this.focusComposerInput();
