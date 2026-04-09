@@ -10,6 +10,20 @@
             {{ context }}
         </div>
 
+        <div v-if="impactPreview && impactPreview.length" class="human-feedback-panel__meta">
+            <div class="human-feedback-panel__meta-title">예상 반영 결과</div>
+            <ul class="human-feedback-panel__meta-list">
+                <li v-for="(line, idx) in impactPreview" :key="`impact-${idx}`">{{ line }}</li>
+            </ul>
+        </div>
+
+        <div v-if="evidenceSpans && evidenceSpans.length" class="human-feedback-panel__meta">
+            <div class="human-feedback-panel__meta-title">근거 문장</div>
+            <ul class="human-feedback-panel__meta-list">
+                <li v-for="(line, idx) in evidenceSpans" :key="`evi-${idx}`">{{ line }}</li>
+            </ul>
+        </div>
+
         <!-- 아이템 선택 모드 (select_items) -->
         <div v-if="feedbackType === 'select_items'" class="human-feedback-panel__items">
             <div
@@ -50,6 +64,56 @@
             >
                 {{ suggestion }}
             </v-chip>
+        </div>
+
+        <!-- 승인/반려 + 보정 입력 (approve_reject_with_edit) -->
+        <div v-else-if="feedbackType === 'approve_reject_with_edit'" class="human-feedback-panel__decision">
+            <div class="human-feedback-panel__decision-buttons">
+                <v-btn
+                    size="small"
+                    :color="decision === 'approve' ? 'success' : undefined"
+                    :variant="decision === 'approve' ? 'flat' : 'outlined'"
+                    :disabled="submitted"
+                    @click="!submitted && setDecision('approve')"
+                >
+                    승인
+                </v-btn>
+                <v-btn
+                    size="small"
+                    :color="decision === 'reject' ? 'error' : undefined"
+                    :variant="decision === 'reject' ? 'flat' : 'outlined'"
+                    :disabled="submitted"
+                    @click="!submitted && setDecision('reject')"
+                >
+                    반려
+                </v-btn>
+            </div>
+
+            <div v-if="suggestions && suggestions.length" class="human-feedback-panel__suggestions">
+                <v-chip
+                    v-for="(suggestion, idx) in suggestions"
+                    :key="`decision-suggestion-${idx}`"
+                    :color="selectedSuggestion === suggestion ? 'primary' : undefined"
+                    :variant="selectedSuggestion === suggestion ? 'flat' : 'outlined'"
+                    :disabled="submitted"
+                    @click="!submitted && selectSuggestion(suggestion)"
+                    class="human-feedback-panel__chip"
+                >
+                    {{ suggestion }}
+                </v-chip>
+            </div>
+
+            <v-textarea
+                v-model="freeText"
+                :disabled="submitted"
+                variant="outlined"
+                density="compact"
+                rows="2"
+                auto-grow
+                hide-details
+                placeholder="판단 근거나 수정 의견을 입력하세요 (선택)"
+                class="mt-2"
+            />
         </div>
 
         <!-- 확인/전송 영역 -->
@@ -114,6 +178,14 @@ export default {
             type: Array,
             default: () => [],
         },
+        evidenceSpans: {
+            type: Array,
+            default: () => [],
+        },
+        impactPreview: {
+            type: Array,
+            default: () => [],
+        },
         /** 복수 선택 허용 */
         allowMultiple: {
             type: Boolean,
@@ -155,6 +227,8 @@ export default {
         return {
             selectedIds: new Set(),
             selectedSuggestion: null,
+            decision: '',
+            freeText: '',
         };
     },
     computed: {
@@ -164,6 +238,9 @@ export default {
             }
             if (this.feedbackType === 'suggestions') {
                 return this.selectedSuggestion !== null;
+            }
+            if (this.feedbackType === 'approve_reject_with_edit') {
+                return this.decision === 'approve' || this.decision === 'reject';
             }
             return true; // confirm 모드
         },
@@ -185,6 +262,13 @@ export default {
         selectSuggestion(suggestion) {
             if (this.submitted) return;
             this.selectedSuggestion = suggestion;
+            if (this.feedbackType === 'approve_reject_with_edit' && !this.freeText) {
+                this.freeText = suggestion;
+            }
+        },
+        setDecision(value) {
+            if (this.submitted) return;
+            this.decision = value;
         },
         handleSubmit() {
             if (!this.canSubmit) return;
@@ -199,6 +283,14 @@ export default {
                 this.$emit('submit', {
                     type: 'suggestions',
                     selected: this.selectedSuggestion,
+                });
+            } else if (this.feedbackType === 'approve_reject_with_edit') {
+                this.$emit('submit', {
+                    type: 'approve_reject_with_edit',
+                    decision: this.decision,
+                    answer: this.decision === 'approve' ? '승인' : '반려',
+                    reason: (this.freeText || '').trim(),
+                    selectedSuggestion: this.selectedSuggestion || null,
                 });
             } else {
                 this.$emit('submit', { type: 'confirm' });
@@ -246,6 +338,29 @@ export default {
     color: rgba(var(--v-theme-on-surface), 0.6);
     margin-bottom: 10px;
     line-height: 1.5;
+}
+
+.human-feedback-panel__meta {
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(var(--v-theme-surface), 0.5);
+    border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+
+.human-feedback-panel__meta-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.7);
+    margin-bottom: 4px;
+}
+
+.human-feedback-panel__meta-list {
+    margin: 0;
+    padding-left: 14px;
+    font-size: 12px;
+    color: rgba(var(--v-theme-on-surface), 0.7);
+    line-height: 1.45;
 }
 
 .human-feedback-panel__items {
@@ -314,6 +429,12 @@ export default {
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 10px;
+}
+
+.human-feedback-panel__decision-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .human-feedback-panel__chip {

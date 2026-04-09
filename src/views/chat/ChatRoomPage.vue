@@ -137,36 +137,22 @@
                                 :chatRoomMode="true"
                                 :hideInput="true"
                                 :pdf2bpmnProgress="currentPdf2bpmnProgress"
+                                :processGenerationProgress="currentProcessGenerationProgress"
+                                :pendingHumanFeedback="pendingHumanFeedback"
                                 @preview-bpmn="showBpmnPreview"
+                                @preview-integrated-graph="showIntegratedGraphByTask"
                                 @preview-image="openImagePreview"
                                 @open-external-url="openExternalUrl"
                                 @beforeReply="handleBeforeReply"
                                 @invite-agent="handleInviteAgent"
                                 @getMoreChat="loadMoreMessages"
                                 @human-feedback-submit="handleHumanFeedbackSubmit"
+                                @human-feedback-skip="handleHumanFeedbackSkip"
                             />
                         </div>
 
                         <!-- 입력 영역 -->
                         <div class="input-area">
-                            <!-- Human Feedback 패널 (입력부 상단) -->
-                            <HumanFeedbackPanel
-                                v-if="pendingHumanFeedback && !pendingHumanFeedback.__submitted"
-                                :feedbackType="pendingHumanFeedback.user_request_type || 'select_items'"
-                                :question="pendingHumanFeedback.question || '선택해 주세요.'"
-                                :context="pendingHumanFeedback.context || ''"
-                                :items="pendingHumanFeedback.items || []"
-                                :suggestions="pendingHumanFeedback.suggestions || []"
-                                :allowMultiple="pendingHumanFeedback.allow_multiple !== false"
-                                :minSelect="pendingHumanFeedback.min_select || 1"
-                                :allowSkip="pendingHumanFeedback.allow_skip || false"
-                                :submitted="false"
-                                :headerIcon="'mdi-file-document-multiple-outline'"
-                                :submitLabel="'선택 완료'"
-                                class="ml-3 mb-2"
-                                @submit="handleHumanFeedbackSubmit(pendingHumanFeedbackMessage, $event)"
-                                @skip="handleHumanFeedbackSkip(pendingHumanFeedbackMessage)"
-                            />
                             <!-- 음성 상태 바 (공용 컴포넌트가 위에서 렌더링) -->
                             <div v-if="isDesktopVoiceActive" class="voice-mode-bar" :class="{ 'is-error': voiceStatus === 'error' }">
                                 <div
@@ -301,6 +287,8 @@
                             :chatRoomMode="true"
                             :hideInput="true"
                             :pdf2bpmnProgress="currentPdf2bpmnProgress"
+                            :processGenerationProgress="currentProcessGenerationProgress"
+                            :pendingHumanFeedback="pendingHumanFeedback"
                             @preview-bpmn="showBpmnPreview"
                             @preview-integrated-graph="showIntegratedGraphByTask"
                             @preview-image="openImagePreview"
@@ -309,28 +297,11 @@
                             @invite-agent="handleInviteAgent"
                             @getMoreChat="loadMoreMessages"
                             @human-feedback-submit="handleHumanFeedbackSubmit"
+                            @human-feedback-skip="handleHumanFeedbackSkip"
                         />
                     </div>
 
                     <div class="input-area">
-                        <!-- Human Feedback 패널 (입력부 상단) -->
-                        <HumanFeedbackPanel
-                            v-if="pendingHumanFeedback && !pendingHumanFeedback.__submitted"
-                            :feedbackType="pendingHumanFeedback.user_request_type || 'select_items'"
-                            :question="pendingHumanFeedback.question || '선택해 주세요.'"
-                            :context="pendingHumanFeedback.context || ''"
-                            :items="pendingHumanFeedback.items || []"
-                            :suggestions="pendingHumanFeedback.suggestions || []"
-                            :allowMultiple="pendingHumanFeedback.allow_multiple !== false"
-                            :minSelect="pendingHumanFeedback.min_select || 1"
-                            :allowSkip="pendingHumanFeedback.allow_skip || false"
-                            :submitted="false"
-                            :headerIcon="'mdi-file-document-multiple-outline'"
-                            :submitLabel="'선택 완료'"
-                            class="mx-3 mb-2"
-                            @submit="handleHumanFeedbackSubmit(pendingHumanFeedbackMessage, $event)"
-                            @skip="handleHumanFeedbackSkip(pendingHumanFeedbackMessage)"
-                        />
                         <div v-if="isDesktopVoiceActive" class="voice-mode-bar" :class="{ 'is-error': voiceStatus === 'error' }">
                             <div
                                 class="voice-pulse-dot"
@@ -445,6 +416,8 @@
                         :chatRoomMode="true"
                         :hideInput="true"
                         :pdf2bpmnProgress="currentPdf2bpmnProgress"
+                        :processGenerationProgress="currentProcessGenerationProgress"
+                        :pendingHumanFeedback="pendingHumanFeedback"
                         @preview-bpmn="showBpmnPreview"
                         @preview-integrated-graph="showIntegratedGraphByTask"
                         @preview-image="openImagePreview"
@@ -452,6 +425,8 @@
                         @beforeReply="handleBeforeReply"
                         @invite-agent="handleInviteAgent"
                         @getMoreChat="loadMoreMessages"
+                        @human-feedback-submit="handleHumanFeedbackSubmit"
+                        @human-feedback-skip="handleHumanFeedbackSkip"
                     />
                 </div>
 
@@ -716,7 +691,7 @@
                         <ProcessDefinition
                             v-if="selectedBpmn?.bpmn_xml"
                             :bpmn="selectedBpmn.bpmn_xml"
-                            :key="selectedBpmn?.process_name"
+                            :key="bpmnPreviewRenderKey"
                             isViewMode="true"
                             isAIGenerated="true"
                         />
@@ -772,16 +747,17 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import Chat from '@/components/ui/Chat.vue';
-import HumanFeedbackPanel from '@/components/ui/HumanFeedbackPanel.vue';
 import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import BPMNXmlGenerator from '@/components/BPMNXmlGenerator.vue';
 import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import ArtifactPanel from '@/components/ArtifactPanel.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import agentRouterService from '@/services/AgentRouterService';
 import workAssistantAgentService from '@/services/WorkAssistantAgentService.js';
 import { getValidToken } from '@/utils/supabaseAuth';
+import { isLegacyProcessDefinition, convertLegacyProcessDefinitionToElements } from '@/utils/legacyProcessDefinition';
 import { processGptAgent } from '@/constants/processGptAgent';
 import { PROCESS_GPT_AGENT_ID } from '@/constants/processGptAgent';
 
@@ -819,8 +795,7 @@ export default {
         ProcessDefinition,
         OntologyGraphViewer,
         VoiceAgentDesktopMode,
-        ArtifactPanel,
-        HumanFeedbackPanel
+        ArtifactPanel
     },
     data() {
         return {
@@ -881,6 +856,7 @@ export default {
             pdf2bpmnProgressByRoomId: {},
             pdf2bpmnTaskIdByRoomId: {},
             pdf2bpmnEventsChannelByTaskId: {},
+            processGenerationByRoomId: {},
 
             // 프리뷰 UI (BPMN/이미지) - WorkAssistantChatPanel과 동일한 UX를 ChatRoomPage에서 제공
             bpmnPreviewDialog: false,
@@ -932,7 +908,13 @@ export default {
             // 마지막부터 역순으로 찾기
             for (let i = this.messages.length - 1; i >= 0; i--) {
                 const msg = this.messages[i];
-                if (msg && msg.__humanFeedback && msg.__humanFeedback.items && msg.__humanFeedback.items.length > 0 && !msg.__humanFeedback.__submitted) {
+                const feedback = msg && msg.__humanFeedback ? msg.__humanFeedback : null;
+                const hasOptions =
+                    (Array.isArray(feedback?.items) && feedback.items.length > 0) ||
+                    (Array.isArray(feedback?.suggestions) && feedback.suggestions.length > 0) ||
+                    feedback?.user_request_type === 'approve_reject_with_edit' ||
+                    feedback?.user_request_type === 'confirm';
+                if (feedback && hasOptions && !feedback.__submitted) {
                     return msg.__humanFeedback;
                 }
             }
@@ -945,7 +927,13 @@ export default {
             if (!this.messages || this.messages.length === 0) return null;
             for (let i = this.messages.length - 1; i >= 0; i--) {
                 const msg = this.messages[i];
-                if (msg && msg.__humanFeedback && msg.__humanFeedback.items && msg.__humanFeedback.items.length > 0 && !msg.__humanFeedback.__submitted) {
+                const feedback = msg && msg.__humanFeedback ? msg.__humanFeedback : null;
+                const hasOptions =
+                    (Array.isArray(feedback?.items) && feedback.items.length > 0) ||
+                    (Array.isArray(feedback?.suggestions) && feedback.suggestions.length > 0) ||
+                    feedback?.user_request_type === 'approve_reject_with_edit' ||
+                    feedback?.user_request_type === 'confirm';
+                if (feedback && hasOptions && !feedback.__submitted) {
                     return msg;
                 }
             }
@@ -1113,6 +1101,13 @@ export default {
         isIntegratedGraphPreview() {
             return !!this.selectedBpmn?.isIntegratedGraph;
         },
+        bpmnPreviewRenderKey() {
+            const processId = this.selectedBpmn?.process_id || 'no-process-id';
+            const processName = this.selectedBpmn?.process_name || 'no-process-name';
+            const xmlLength = this.selectedBpmn?.bpmn_xml ? String(this.selectedBpmn.bpmn_xml.length) : '0';
+            const updatedAt = this.selectedBpmn?.updatedAt || '';
+            return `${processId}::${processName}::${xmlLength}::${updatedAt}`;
+        },
         // 실제로 "중지(Abort)" 가능한 스트림이 현재 방에 존재하는가
         hasAbortableStream() {
             const rid = this.currentChatRoom?.id || this.roomId || null;
@@ -1131,6 +1126,22 @@ export default {
                     progress: 0,
                     message: '',
                     generatedBpmns: []
+                }
+            );
+        },
+        currentProcessGenerationProgress() {
+            const roomId = this.currentChatRoom?.id || this.roomId || null;
+            const state = roomId ? this.processGenerationByRoomId?.[roomId] : null;
+            return (
+                state || {
+                    isActive: false,
+                    status: '',
+                    message: '',
+                    process_name: '',
+                    process_id: '',
+                    definition: null,
+                    bpmn_xml: '',
+                    updatedAt: ''
                 }
             );
         },
@@ -2520,23 +2531,70 @@ export default {
          * HumanFeedbackPanel에서 사용자가 선택을 완료했을 때 호출
          * 선택 결과를 사용자 메시지로 변환하여 에이전트에게 전송
          */
-        handleHumanFeedbackSkip(message) {
+        handleHumanFeedbackSkip(messageOrFeedback) {
+            const message =
+                messageOrFeedback && messageOrFeedback.__humanFeedback
+                    ? messageOrFeedback
+                    : this.pendingHumanFeedbackMessage;
+            const feedback =
+                messageOrFeedback && !messageOrFeedback.__humanFeedback
+                    ? messageOrFeedback
+                    : message?.__humanFeedback;
+
             if (message && message.__humanFeedback) {
                 message.__humanFeedback.__submitted = true;
                 message.__humanFeedback.__submittedText = '건너뜀';
+            } else if (feedback) {
+                feedback.__submitted = true;
+                feedback.__submittedText = '건너뜀';
             }
         },
 
-        async handleHumanFeedbackSubmit(message, feedbackResult) {
+        async handleHumanFeedbackSubmit(messageOrFeedback, feedbackResult) {
+            // Chat.vue에서 emit한 경우: (humanFeedback, feedbackResult)
+            // 기존 호출(로컬 패널) 대비 호환: (message, feedbackResult)
+            if (!feedbackResult && messageOrFeedback && messageOrFeedback.type) {
+                feedbackResult = messageOrFeedback;
+                messageOrFeedback = null;
+            }
             if (!feedbackResult) return;
             console.log('[HumanFeedback] handleHumanFeedbackSubmit:', feedbackResult);
+
+            const message =
+                messageOrFeedback && messageOrFeedback.__humanFeedback
+                    ? messageOrFeedback
+                    : this.pendingHumanFeedbackMessage;
+            const feedback =
+                messageOrFeedback && !messageOrFeedback.__humanFeedback
+                    ? messageOrFeedback
+                    : message?.__humanFeedback;
 
             // 메시지를 제출 완료 상태로 변경
             if (message && message.__humanFeedback) {
                 message.__humanFeedback.__submitted = true;
-                message.__humanFeedback.__submittedText = feedbackResult.type === 'select_items'
-                    ? `${feedbackResult.selectedItems?.length || 0}개 문서 선택됨`
-                    : '응답 완료';
+                if (feedbackResult.type === 'select_items') {
+                    message.__humanFeedback.__submittedText = `${feedbackResult.selectedItems?.length || 0}개 문서 선택됨`;
+                } else if (feedbackResult.type === 'approve_reject_with_edit') {
+                    message.__humanFeedback.__submittedText = feedbackResult.decision === 'approve' ? '승인됨' : '반려됨';
+                } else {
+                    message.__humanFeedback.__submittedText = '응답 완료';
+                }
+            }
+
+            // PDF2BPMN HITL 응답은 todolist.output에 직접 기록 (하드 대기 해제 트리거)
+            if (feedbackResult.type === 'approve_reject_with_edit') {
+                const hitl = feedback || {};
+                const taskId = hitl.task_id || this._resolvePdf2bpmnTaskId({}, this.currentChatRoom?.id);
+                const payload = {
+                    question_id: hitl.question_id || hitl.id || '',
+                    action: feedbackResult.decision === 'approve' ? 'approve' : 'reject',
+                    answer: feedbackResult.answer || (feedbackResult.decision === 'approve' ? '승인' : '반려'),
+                    reason: feedbackResult.reason || feedbackResult.selectedSuggestion || '',
+                    target_type: hitl.target_type || '',
+                    target_id: hitl.target_id || '',
+                };
+                await this.submitPdf2BpmnHumanFeedback(taskId, payload);
+                return;
             }
 
             let userText = '';
@@ -2551,6 +2609,53 @@ export default {
 
             // handleSendMessage를 통해 에이전트에 전송
             await this.handleSendMessage({ text: userText });
+        },
+
+        async submitPdf2BpmnHumanFeedback(taskId, payload) {
+            const tid = String(taskId || '').trim();
+            if (!tid || !window.$supabase) return;
+            try {
+                const { data, error } = await window.$supabase
+                    .from('todolist')
+                    .select('id, output')
+                    .eq('id', tid)
+                    .limit(1);
+                if (error) throw error;
+
+                const row = Array.isArray(data) && data.length ? data[0] : null;
+                let output = row?.output;
+                if (typeof output === 'string') {
+                    try { output = JSON.parse(output); } catch (e) { output = {}; }
+                }
+                if (!output || typeof output !== 'object') output = {};
+
+                const current = Array.isArray(output.hitl_feedbacks) ? output.hitl_feedbacks : [];
+                const next = current.filter((x) => x?.question_id !== payload.question_id);
+                const feedbackEntry = {
+                    ...payload,
+                    submitted_at: new Date().toISOString(),
+                };
+                next.push(feedbackEntry);
+                output.hitl_feedbacks = next;
+                output.hitl_last_feedback = feedbackEntry;
+
+                const { error: updateError } = await window.$supabase
+                    .from('todolist')
+                    .update({ output })
+                    .eq('id', tid);
+                if (updateError) throw updateError;
+
+                const text = `HITL 응답 전달: ${feedbackEntry.answer}${feedbackEntry.reason ? ` (${feedbackEntry.reason})` : ''}`;
+                const msgObj = this.createMessageObj(text, 'user');
+                if (this.currentChatRoom?.id) {
+                    this.messages.push(msgObj);
+                    await this.saveMessageToRoom(msgObj, this.currentChatRoom.id);
+                }
+            } catch (e) {
+                console.warn('[HITL] submitPdf2BpmnHumanFeedback failed:', e);
+                const errMsg = this.createMessageObj('HITL 응답 전달 중 오류가 발생했습니다. 다시 시도해 주세요.', 'assistant');
+                this.messages.push(errMsg);
+            }
         },
 
         async handleSendMessage(payload) {
@@ -4001,6 +4106,275 @@ export default {
             }
         },
 
+        getOrCreateProcessGenerationState(roomId) {
+            const rid = roomId || this.currentChatRoom?.id || this.roomId || '';
+            if (!rid) return null;
+            if (!this.processGenerationByRoomId[rid]) {
+                this.processGenerationByRoomId[rid] = {
+                    isActive: false,
+                    status: '',
+                    message: '',
+                    process_name: '',
+                    process_id: '',
+                    definition: null,
+                    bpmn_xml: '',
+                    updatedAt: ''
+                };
+            }
+            return this.processGenerationByRoomId[rid];
+        },
+
+        updateProcessGenerationProgress(roomId, patch = {}) {
+            const state = this.getOrCreateProcessGenerationState(roomId);
+            if (!state) return;
+            const next = {
+                ...state,
+                ...patch,
+                updatedAt: new Date().toISOString()
+            };
+            this.processGenerationByRoomId[roomId] = next;
+        },
+        _getBpmnGeneratorContext() {
+            if (this.__bpmnGeneratorContext) return this.__bpmnGeneratorContext;
+            const methods = BPMNXmlGenerator?.methods || {};
+            const defaults = typeof BPMNXmlGenerator?.data === 'function' ? BPMNXmlGenerator.data() : {};
+            const ctx = { ...defaults };
+            Object.entries(methods).forEach(([name, fn]) => {
+                if (typeof fn === 'function') {
+                    ctx[name] = fn.bind(ctx);
+                }
+            });
+            this.__bpmnGeneratorContext = ctx;
+            return ctx;
+        },
+        _isLegacyProcessDefinition(definition) {
+            if (!definition || typeof definition !== 'object') return false;
+            return (
+                Array.isArray(definition.activities) ||
+                Array.isArray(definition.events) ||
+                Array.isArray(definition.gateways) ||
+                Array.isArray(definition.sequences)
+            );
+        },
+        _convertLegacyDefinitionToElements(definition) {
+            const oldObj = JSON.parse(JSON.stringify(definition || {}));
+            oldObj.elements = [];
+
+            const typeMapping = {
+                startEvent: 'StartEvent',
+                endEvent: 'EndEvent',
+                userTask: 'UserActivity',
+                serviceTask: 'ServiceActivity',
+                scriptTask: 'ScriptActivity',
+                sendTask: 'EmailActivity',
+                exclusiveGateway: 'ExclusiveGateway',
+                parallelGateway: 'ParallelGateway',
+                task: 'Activity'
+            };
+            const normalizeBpmnId = (rawId) => {
+                const base = String(rawId || '').trim();
+                if (!base) return `id_${Math.random().toString(36).slice(2, 10)}`;
+                const safe = base.replace(/[^A-Za-z0-9_.-]/g, '_');
+                return /^[A-Za-z_]/.test(safe) ? safe : `id_${safe}`;
+            };
+            const idMap = {};
+            const registerId = (id) => {
+                if (!id) return;
+                if (!idMap[id]) idMap[id] = normalizeBpmnId(id);
+            };
+
+            (oldObj.activities || []).forEach((activity) => registerId(activity.id));
+            (oldObj.events || []).forEach((event) => registerId(event.id));
+            (oldObj.gateways || []).forEach((gateway) => registerId(gateway.id));
+            (oldObj.sequences || []).forEach((sequence) => {
+                registerId(sequence.source);
+                registerId(sequence.target);
+            });
+
+            if (Array.isArray(oldObj.activities)) {
+                oldObj.activities.forEach((activity) => {
+                    let checkpoints = [];
+                    let duration = activity.duration || '5';
+                    try {
+                        if (activity.properties) {
+                            const props = typeof activity.properties === 'string' ? JSON.parse(activity.properties) : activity.properties;
+                            if (props?.checkpoints) checkpoints = props.checkpoints;
+                            if (props?.duration) duration = props.duration;
+                        }
+                    } catch (e) {}
+
+                    oldObj.elements.push({
+                        elementType: 'Activity',
+                        id: idMap[activity.id] || normalizeBpmnId(activity.id),
+                        name: activity.name,
+                        type: typeMapping[activity.type] || 'UserActivity',
+                        source: '',
+                        description: activity.description || '',
+                        instruction: activity.instruction || '',
+                        role: activity.role || '',
+                        inputData: activity.inputData || [],
+                        outputData: activity.outputData || [],
+                        checkpoints,
+                        duration
+                    });
+                });
+            }
+
+            if (Array.isArray(oldObj.events)) {
+                oldObj.events.forEach((event) => {
+                    oldObj.elements.push({
+                        elementType: 'Event',
+                        id: idMap[event.id] || normalizeBpmnId(event.id),
+                        name: event.name,
+                        role: event.role || '',
+                        source: '',
+                        type: typeMapping[event.type] || event.type,
+                        description: event.description || '',
+                        trigger: event.type === 'startEvent' ? '프로세스 시작' : '프로세스 종료'
+                    });
+                });
+            }
+
+            if (Array.isArray(oldObj.gateways)) {
+                oldObj.gateways.forEach((gateway) => {
+                    oldObj.elements.push({
+                        elementType: 'Gateway',
+                        id: idMap[gateway.id] || normalizeBpmnId(gateway.id),
+                        name: gateway.name || 'Gateway',
+                        role: gateway.role || '',
+                        source: '',
+                        type: typeMapping[gateway.type] || 'ExclusiveGateway',
+                        description: gateway.description || '분기점'
+                    });
+                });
+            }
+
+            if (Array.isArray(oldObj.sequences)) {
+                const targetToSourceMap = {};
+                oldObj.sequences.forEach((sequence) => {
+                    if (!targetToSourceMap[sequence.target]) targetToSourceMap[sequence.target] = [];
+                    targetToSourceMap[sequence.target].push(idMap[sequence.source] || normalizeBpmnId(sequence.source));
+                });
+
+                oldObj.elements.forEach((element) => {
+                    if (targetToSourceMap[element.id] && targetToSourceMap[element.id].length > 0) {
+                        element.source = targetToSourceMap[element.id][0];
+                    }
+                });
+
+                oldObj.sequences.forEach((sequence) => {
+                    oldObj.elements.push({
+                        elementType: 'Sequence',
+                        id: normalizeBpmnId(sequence.id),
+                        name: String(sequence.id || '').replace('SequenceFlow_', '').replace(/_/g, ' '),
+                        source: idMap[sequence.source] || normalizeBpmnId(sequence.source),
+                        target: idMap[sequence.target] || normalizeBpmnId(sequence.target),
+                        ...(sequence.condition ? { condition: sequence.condition } : {})
+                    });
+                });
+            }
+
+            return oldObj;
+        },
+        _buildBpmnXmlFromDefinition(definition) {
+            if (!definition || typeof definition !== 'object') return '';
+            try {
+                const ctx = this._getBpmnGeneratorContext();
+                let cloned = JSON.parse(JSON.stringify(definition));
+                const hasElements = Array.isArray(cloned?.elements) && cloned.elements.length > 0;
+                if (!hasElements && isLegacyProcessDefinition(cloned)) {
+                    cloned = convertLegacyProcessDefinitionToElements(cloned);
+                }
+                const horizontal = typeof cloned?.isHorizontal === 'boolean' ? cloned.isHorizontal : undefined;
+                const xml = ctx.createBpmnXml(cloned, horizontal);
+                return typeof xml === 'string' ? xml : '';
+            } catch (e) {
+                console.warn('[ProcessPreview] BPMNXmlGenerator createBpmnXml failed:', e);
+                return '';
+            }
+        },
+        _extractProcessDefinitionFromText(text) {
+            const source = String(text || '').trim();
+            if (!source) return null;
+            const candidates = [];
+
+            const fenceMatch = source.match(/```json\s*([\s\S]*?)```/i) || source.match(/```\s*([\s\S]*?)```/);
+            if (fenceMatch?.[1]) candidates.push(fenceMatch[1]);
+            candidates.push(source);
+
+            const firstBrace = source.indexOf('{');
+            const lastBrace = source.lastIndexOf('}');
+            if (firstBrace >= 0 && lastBrace > firstBrace) {
+                candidates.push(source.slice(firstBrace, lastBrace + 1));
+            }
+
+            for (const candidate of candidates) {
+                try {
+                    const parsed = JSON.parse(candidate);
+                    if (
+                        parsed &&
+                        typeof parsed === 'object' &&
+                        (Array.isArray(parsed.elements) || isLegacyProcessDefinition(parsed))
+                    ) {
+                        return parsed;
+                    }
+                } catch (e) {
+                    // ignore parse failures
+                }
+            }
+            return null;
+        },
+        _ensureProcessPreviewPayload(payload = {}) {
+            const definitionRaw = payload?.definition;
+            const definition =
+                typeof definitionRaw === 'string' ? this._extractProcessDefinitionFromText(definitionRaw) : definitionRaw || null;
+            const bpmnXmlFromPayload = String(payload?.bpmn_xml || '').trim();
+            const bpmn_xml = bpmnXmlFromPayload || this._buildBpmnXmlFromDefinition(definition);
+            return {
+                process_name: payload?.process_name || definition?.processDefinitionName || '',
+                process_id: payload?.process_id || definition?.processDefinitionId || '',
+                definition: definition || null,
+                bpmn_xml
+            };
+        },
+
+        appendAgentLogToMessage(assistantUuid, entry) {
+            const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+            if (idx === -1) return;
+            const target = this.messages[idx];
+            const logs = Array.isArray(target.agentLogs) ? target.agentLogs : [];
+            logs.push({
+                ts: new Date().toISOString(),
+                level: entry?.level || 'info',
+                category: entry?.category || 'runtime',
+                message: entry?.message || '',
+                detail: entry?.detail ?? null,
+                namespace: Array.isArray(entry?.namespace) ? entry.namespace : []
+            });
+            target.agentLogs = logs.slice(-80);
+            this.updateAgentPlanFromLog(target, entry || {});
+        },
+
+        updateAgentPlanFromLog(targetMessage, entry) {
+            if (!targetMessage || typeof targetMessage !== 'object') return;
+            const category = (entry?.category || '').toString().toLowerCase();
+            const message = (entry?.message || '').toString().trim();
+            const shouldUseAsPlan = category === 'plan' || (category === 'tool' && message.includes('tool_start'));
+            if (!shouldUseAsPlan || !message) return;
+
+            const current = targetMessage.agentPlan && typeof targetMessage.agentPlan === 'object'
+                ? targetMessage.agentPlan
+                : { summary: '', steps: [] };
+            const nextSteps = Array.isArray(current.steps) ? [...current.steps] : [];
+            if (nextSteps.length === 0 || nextSteps[nextSteps.length - 1] !== message) {
+                nextSteps.push(message);
+            }
+            targetMessage.agentPlan = {
+                summary: message,
+                steps: nextSteps.slice(-6)
+            };
+        },
+
         async streamAgents(agentTargets, userText, payload) {
             const userJwt = (await getValidToken()) || '';
             const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
@@ -4030,7 +4404,11 @@ export default {
                     name: agentTarget.username || agentId,
                     userName: agentTarget.username || agentId,
                     profile: agentTarget.profile || null,
-                    agentId
+                    agentId,
+                    agentPlan: {
+                        summary: '',
+                        steps: []
+                    }
                 };
 
                 let full = '';
@@ -4153,6 +4531,26 @@ export default {
                             this.messages[idx].toolCalls = toolCalls;
                             // WorkAssistantChatPanel처럼 현재 동작 텍스트로 표시
                             this.messages[idx].content = `🔧 ${this.formatToolName(name)} 실행 중...`;
+                            this.appendAgentLogToMessage(assistantUuid, {
+                                level: 'info',
+                                category: 'tool',
+                                message: `tool_start: ${name}`,
+                                detail: { input }
+                            });
+                            const roomId = this.currentChatRoom?.id || this.roomId || null;
+                            if (name.includes('generate_process')) {
+                                this.updateProcessGenerationProgress(roomId, {
+                                    isActive: true,
+                                    status: 'generating',
+                                    message: '프로세스를 생성 중입니다...'
+                                });
+                            } else if (name.includes('start_process_consulting')) {
+                                this.updateProcessGenerationProgress(roomId, {
+                                    isActive: true,
+                                    status: 'consulting',
+                                    message: '프로세스 컨설팅을 진행 중입니다...'
+                                });
+                            }
                             this.setAgentStatus(agentId, { state: 'streaming', message: '' });
                             maybeScroll();
                         } catch (e) {}
@@ -4178,6 +4576,12 @@ export default {
                                 }
                             }
                             this.messages[idx].toolCalls = toolCalls;
+                            this.appendAgentLogToMessage(assistantUuid, {
+                                level: 'info',
+                                category: 'tool',
+                                message: `tool_end: ${(lastRunningTool?.name || '').toString() || 'unknown'}`,
+                                detail: { output }
+                            });
 
                             // list_reference_documents 등 human feedback 도구 결과 감지
                             if (lastRunningTool && lastRunningTool.name && lastRunningTool.name.includes('list_reference_documents')) {
@@ -4213,11 +4617,58 @@ export default {
                             maybeScroll();
                         } catch (e) {}
                     },
+                    onAgentLog: (event) => {
+                        this.appendAgentLogToMessage(assistantUuid, event || {});
+                    },
+                    onProcessStatus: (event) => {
+                        const roomId = this.currentChatRoom?.id || this.roomId || null;
+                        const status = String(event?.status || '').trim().toLowerCase();
+                        const isGenerationStatus = ['generating', 'completed', 'error'].includes(status);
+                        if (!isGenerationStatus) return;
+                        this.updateProcessGenerationProgress(roomId, {
+                            isActive: status !== 'error',
+                            status: status || '',
+                            message: event?.message || ''
+                        });
+                    },
+                    onProcessPartial: (event) => {
+                        const roomId = this.currentChatRoom?.id || this.roomId || null;
+                        const preview = this._ensureProcessPreviewPayload({
+                            process_name: event?.process_name || '',
+                            process_id: event?.process_id || '',
+                            definition: event?.definition || null,
+                            bpmn_xml: event?.bpmn_xml || ''
+                        });
+                        const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+                        if (idx !== -1) {
+                            this.messages[idx].processPreview = {
+                                ...preview
+                            };
+                        }
+                        this.updateProcessGenerationProgress(roomId, {
+                            isActive: true,
+                            status: 'generating',
+                            message: '프로세스 초안을 갱신 중입니다...',
+                            process_name: preview.process_name || '',
+                            process_id: preview.process_id || '',
+                            definition: preview.definition || null,
+                            bpmn_xml: preview.bpmn_xml || ''
+                        });
+                    },
+                    onProcessPatch: (event) => {
+                        const roomId = this.currentChatRoom?.id || this.roomId || null;
+                        this.updateProcessGenerationProgress(roomId, {
+                            isActive: true,
+                            status: 'generating',
+                            message: event?.message || '프로세스 패치를 반영 중입니다...'
+                        });
+                    },
                     onDone: async (content) => {
                         const finalContent = (content || full || '').toString().trim();
                         // 침묵 정책 제거: NO_RESPONSE도 그대로 텍스트로 표시하지 않도록 빈 값 처리
                         let safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
-
+                        let displayContent = '';
+                        
                         const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                         if (idx !== -1) {
                             // human feedback 도구 결과가 있으면 메시지에 첨부
@@ -4289,7 +4740,7 @@ export default {
                             }
 
                             this.messages[idx].content = safeFinal || full || '';
-                            const displayContent = this.extractDisplayAssistantContent(this.messages[idx].content);
+                            displayContent = this.extractDisplayAssistantContent(this.messages[idx].content);
                             this.messages[idx].isLoading = false;
                             this.messages[idx].contentType = 'text';
                             this.applyHwpxViewerFromToolCalls(this.messages[idx].toolCalls, idx);
@@ -4313,6 +4764,26 @@ export default {
                             }
                         }
                         this.setAgentStatus(agentId, { state: 'ready', message: '' });
+                        const roomId = this.currentChatRoom?.id || this.roomId || null;
+                        const state = this.getOrCreateProcessGenerationState(roomId);
+                        const generatedDefinition =
+                            state?.definition && typeof state.definition === 'object'
+                                ? state.definition
+                                : this._extractProcessDefinitionFromText(safeFinal || full || '');
+                        const generatedBpmnXml =
+                            String(state?.bpmn_xml || '').trim() || this._buildBpmnXmlFromDefinition(generatedDefinition);
+                        const shouldKeepProcessState = !!(state?.isActive || generatedDefinition || generatedBpmnXml);
+                        if (shouldKeepProcessState) {
+                            this.updateProcessGenerationProgress(roomId, {
+                                isActive: true,
+                                status: 'completed',
+                                message: '프로세스 생성 응답이 완료되었습니다.',
+                                definition: generatedDefinition || state?.definition || null,
+                                bpmn_xml: generatedBpmnXml || state?.bpmn_xml || '',
+                                process_name: state?.process_name || generatedDefinition?.processDefinitionName || '',
+                                process_id: state?.process_id || generatedDefinition?.processDefinitionId || ''
+                            });
+                        }
 
                         // DB 저장
                         await backend.putObject(`db://chats/${assistantUuid}`, {
@@ -4364,6 +4835,15 @@ export default {
                             this.messages[idx].content = current ? current : '(에이전트 응답 오류)';
                             this.messages[idx].isLoading = false;
                         }
+                        const roomId = this.currentChatRoom?.id || this.roomId || null;
+                        const state = this.getOrCreateProcessGenerationState(roomId);
+                        if (state?.isActive) {
+                            this.updateProcessGenerationProgress(roomId, {
+                                isActive: true,
+                                status: 'error',
+                                message: '프로세스 생성 중 오류가 발생했습니다.'
+                            });
+                        }
                         this.setAgentStatus(agentId, { state: 'error', message: '응답 오류' });
                     }
                 };
@@ -4408,9 +4888,10 @@ export default {
         },
 
         /**
-         * WorkAssistantChatPanel에서 구현된 "도구 호출 결과 기반 동작"을 ChatRoomPage에서도 수행
-         * - start_process_consulting: 컨설팅 UI 오픈 + 초기 메시지 전달
-         * - generate_process: 프로세스 정의 생성 화면 이동(/definitions/chat)
+         * 도구 호출 기반 후처리
+         * - edit_hwpx_page_html: 기존과 동일하게 즉시 반영
+         * - start_process_consulting/generate_process: 레거시 프론트 LLM/라우팅 전환 로직은 비활성화
+         *   (DeepAgent 스킬 기반으로 채팅 내에서 직접 처리)
          */
         async handleAgentDirectiveToolCalls({ assistantUuid, userText, agentId }) {
             const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
@@ -4459,65 +4940,11 @@ export default {
                 }
             }
 
-            // 1) 프로세스 컨설팅 시작 → 컨설팅 다이얼로그 오픈 + 초기 메시지 전달
             if (startConsultingToolCall?.name?.includes('start_process_consulting')) {
-                // 메인 에이전트(work-assistant / process-gpt-agent)에서만 컨설팅 트리거 허용 (오동작 방지)
-                if (agentId && agentId !== PROCESS_GPT_AGENT_ID) return;
-
-                let imageAnalysis = null;
-                let parsedDirective = null;
-                try {
-                    const parsed = this.parseToolOutput(startConsultingToolCall.output);
-                    parsedDirective = parsed && typeof parsed === 'object' ? parsed : null;
-                    if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
-                        imageAnalysis = parsed.image_analysis_result;
-                    }
-                } catch (e) {
-                    // ignore
-                }
-
-                const shouldShowConsultingNotice = parsedDirective?.user_request_type === 'start_process_consulting';
-                if (shouldShowConsultingNotice) {
-                    const consultingStartMessage = '프로세스 컨설팅을 시작합니다. 말씀하신 내용의 프로세스 초안을 생성하겠습니다.';
-                    if (this.messages[idx]) {
-                        this.messages[idx].content = consultingStartMessage;
-                        this.messages[idx].contentType = 'text';
-                        this.messages[idx].isLoading = false;
-                    }
-
-                    await backend.putObject(`db://chats/${assistantUuid}`, {
-                        uuid: assistantUuid,
-                        id: this.currentChatRoom?.id,
-                        messages: { ...(this.messages[idx] || msg), content: consultingStartMessage, isLoading: false }
-                    });
-
-                    if (this.currentChatRoom) {
-                        this.currentChatRoom.message = {
-                            msg: consultingStartMessage.substring(0, 50),
-                            type: 'text',
-                            createdAt: new Date().toISOString()
-                        };
-                        await backend.putObject('db://chat_rooms', this.currentChatRoom);
-                    }
-                }
-
-                const originalMessage = imageAnalysis
-                    ? `${(userText || '').toString()}\n\n[이미지 분석 결과]\n${imageAnalysis}`
-                    : `${(userText || '').toString()}\n\n[전체 요청 및 첨부 이미지 분석 내용]: ${JSON.stringify(
-                          startConsultingToolCall.output ?? null
-                      )}`;
-
-                // WorkAssistantChatPanel 방식: 컨설팅은 다이얼로그가 아니라 ConsultingGenerator 1회 실행으로 처리
-                await this.switchToConsultingMode(originalMessage, { keepLastAssistantMessage: shouldShowConsultingNotice });
-                return;
+                console.info('[ChatRoomPage] 레거시 start_process_consulting 후처리는 비활성화되었습니다.');
             }
-
-            // 2) 생성 확정 → definitions 생성 화면으로 전환
             if (generateProcessToolCall?.name?.includes('generate_process')) {
-                if (agentId && agentId !== PROCESS_GPT_AGENT_ID) return;
-                const messagesForDefinition = this.buildMessagesForDefinitionGeneration();
-                this.$store.dispatch('updateMessages', messagesForDefinition);
-                this.$router.push('/definitions/chat');
+                console.info('[ChatRoomPage] 레거시 generate_process 화면 전환은 비활성화되었습니다.');
             }
         },
 
@@ -5157,6 +5584,9 @@ export default {
 
                 const progress = messageData.progress || 0;
                 const message = messageData.message || '';
+                const isHitlWaitingText =
+                    typeof message === 'string' &&
+                    (message.includes('[HITL] 사용자 확인 대기 중:') || message.includes('사용자 확인 대기 중'));
 
                 switch (eventType) {
                     case 'task_started':
@@ -5164,6 +5594,26 @@ export default {
                         progressState.status = 'started';
                         progressState.progress = progress || 5;
                         progressState.message = message || 'PDF2BPMN 작업 시작됨';
+                        break;
+                    case 'waiting_for_user': {
+                        progressState.isActive = true;
+                        progressState.status = 'waiting_for_user';
+                        progressState.progress = Math.max(progressState.progress, progress || 72);
+                        progressState.message = message || '사용자 확인이 필요합니다.';
+                        me.addPdf2BpmnHumanQuestionMessage(messageData, targetRoomId, eventTaskId);
+                        break;
+                    }
+                    case 'human_feedback_submitted':
+                        progressState.isActive = true;
+                        progressState.status = 'processing';
+                        progressState.progress = Math.max(progressState.progress, progress || 74);
+                        progressState.message = message || '사용자 응답 반영 중...';
+                        break;
+                    case 'resumed':
+                        progressState.isActive = true;
+                        progressState.status = 'processing';
+                        progressState.progress = Math.max(progressState.progress, progress || 75);
+                        progressState.message = message || '작업 재개';
                         break;
                     case 'tool_usage_started':
                         progressState.isActive = true;
@@ -5210,12 +5660,73 @@ export default {
                         break;
                     }
                     default:
+                        if (isHitlWaitingText) {
+                            progressState.isActive = true;
+                            progressState.status = 'waiting_for_user';
+                            progressState.progress = Math.max(progressState.progress, progress || 72);
+                            progressState.message = message || '사용자 확인이 필요합니다.';
+                            me.addPdf2BpmnHumanQuestionMessage(
+                                {
+                                    ...messageData,
+                                    message,
+                                    question: messageData?.question || {
+                                        prompt: String(message || '').replace(/^\[HITL\]\s*사용자 확인 대기 중:\s*/g, '').trim(),
+                                    },
+                                },
+                                targetRoomId,
+                                eventTaskId
+                            );
+                            break;
+                        }
                         if (progress > 0) progressState.progress = Math.max(progressState.progress, progress);
                         if (message) progressState.message = message;
                 }
             } catch (e) {
                 // ignore
             }
+        },
+
+        async addPdf2BpmnHumanQuestionMessage(eventData, roomId, explicitTaskId = '') {
+            const me = this;
+            const targetRoomId = roomId || me.currentChatRoom?.id;
+            if (!targetRoomId) return;
+            const taskId = String(explicitTaskId || me._resolvePdf2bpmnTaskId(eventData, targetRoomId) || '').trim();
+
+            const question = Array.isArray(eventData?.questions) && eventData.questions.length
+                ? eventData.questions[0]
+                : (eventData?.question || {});
+            const questionId = question?.question_id || `${taskId}-q`;
+            const hasSame = me.messages.some(
+                (m) => m?.__humanFeedback?.question_id === questionId && !m?.__humanFeedback?.__submitted
+            );
+            if (hasSame) return;
+
+            const content = '모호한 항목이 감지되었습니다. 아래 내용을 확인하고 승인/반려 또는 보정 의견을 입력해 주세요.';
+            const msgObj = me.createMessageObj(content, 'assistant');
+            msgObj.__humanFeedback = {
+                user_request_type: 'approve_reject_with_edit',
+                question: question?.prompt || eventData?.message || '확인이 필요합니다.',
+                context: '아래 근거와 예상 반영 결과를 확인한 후 응답해 주세요.',
+                suggestions: Array.isArray(question?.choices) ? question.choices : [],
+                items: [],
+                allow_multiple: false,
+                min_select: 1,
+                allow_skip: false,
+                question_id: questionId,
+                target_type: question?.target_type || '',
+                target_id: question?.target_id || '',
+                evidence_spans: Array.isArray(question?.evidence_spans) ? question.evidence_spans : [],
+                impact_preview: Array.isArray(question?.impact_preview) ? question.impact_preview : [],
+                task_id: taskId,
+                __submitted: false,
+                __submittedText: '',
+            };
+
+            if (me.currentChatRoom?.id === targetRoomId) {
+                me.messages.push(msgObj);
+                me.$nextTick(() => me.scrollToBottomSafe());
+            }
+            await me.saveMessageToRoom(msgObj, targetRoomId);
         },
 
         async addPdf2BpmnResultMessage(resultData, roomId, explicitTaskId = '') {
@@ -5325,24 +5836,58 @@ export default {
             // Always open preview in BPMN(diagram) mode
             me.bpmnViewMode = 'diagram';
 
-            // bpmn_xml/definition이 없으면 DB에서 로드
-            if ((!bpmn.bpmn_xml || !bpmn.definition) && bpmn.process_id && window.$supabase) {
+            // process_id가 있으면 모델러와 동일한 backend 경로로 최신본 조회
+            if (bpmn.process_id) {
                 try {
-                    const { data, error } = await window.$supabase
-                        .from('proc_def')
-                        .select('bpmn, definition')
-                        .eq('id', bpmn.process_id)
-                        .single();
-                    if (!error && data) {
-                        if (data.bpmn) bpmn.bpmn_xml = data.bpmn;
-                        if (data.definition) bpmn.definition = data.definition;
+                    let rawBpmn = await backend.getRawDefinition(bpmn.process_id, { type: 'bpmn' });
+                    let rawDefinition = await backend.getRawDefinition(bpmn.process_id);
+
+                    if (rawDefinition?.definition) {
+                        bpmn.definition = rawDefinition.definition;
+                        if (!bpmn.process_name) {
+                            bpmn.process_name = rawDefinition.name || rawDefinition.definition?.processDefinitionName || bpmn.process_id;
+                        }
+                    }
+
+                    if (rawBpmn) {
+                        bpmn.bpmn_xml = rawBpmn;
+                    } else if (rawDefinition?.definition) {
+                        // raw BPMN이 비어 있으면 definition에서 XML만 복구 생성 (원본 definition은 보존)
+                        const originalDefinitionForPersist = JSON.parse(JSON.stringify(rawDefinition.definition));
+                        let definitionForXml = JSON.parse(JSON.stringify(rawDefinition.definition));
+                        const hasElements = Array.isArray(definitionForXml?.elements) && definitionForXml.elements.length > 0;
+                        if (!hasElements && isLegacyProcessDefinition(definitionForXml)) {
+                            definitionForXml = convertLegacyProcessDefinitionToElements(definitionForXml);
+                        }
+                        bpmn.definition = originalDefinitionForPersist;
+
+                        const rebuiltXml = this._buildBpmnXmlFromDefinition(definitionForXml);
+                        if (String(rebuiltXml || '').trim()) {
+                            bpmn.bpmn_xml = rebuiltXml;
+                            try {
+                                await backend.putRawDefinition(rebuiltXml, bpmn.process_id, {
+                                    name:
+                                        rawDefinition?.name ||
+                                        originalDefinitionForPersist?.processDefinitionName ||
+                                        bpmn.process_name ||
+                                        bpmn.process_id,
+                                    // XML만 저장하고 definition 원문은 그대로 유지
+                                    definition: originalDefinitionForPersist
+                                });
+                            } catch (persistError) {
+                                console.warn('[ProcessPreview] rebuilt BPMN persisted failed:', persistError);
+                            }
+                        }
                     }
                 } catch (e) {
                     // ignore
                 }
             }
 
-            me.selectedBpmn = bpmn;
+            me.selectedBpmn = {
+                ...bpmn,
+                updatedAt: Date.now()
+            };
             me.neo4jGraphLoading = false;
             me.neo4jGraphError = '';
             me.neo4jGraphElements = [];

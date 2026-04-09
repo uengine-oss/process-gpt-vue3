@@ -1500,11 +1500,15 @@ export default {
             const { activityPos, offsetPos, roleVector } = this.createShapes(xmlDoc, jsonModel, bpmnPlane, isHorizontal);
             console.log('모양 생성 완료:', Object.keys(activityPos).length, '개의 모양 생성됨');
 
+            let mainWidth = null;
+            let mainHeight = null;
             // 참가자 모양 생성
             if (jsonModel.isAutoLayout) {
                 this.createParticipantShapeInAutoLayout(xmlDoc, bpmnPlane, isHorizontal, jsonModel);
             } else {
-                const { mainWidth, mainHeight } = this.createParticipantShape(xmlDoc, bpmnPlane, isHorizontal, roleVector);
+                const participantSize = this.createParticipantShape(xmlDoc, bpmnPlane, isHorizontal, roleVector);
+                mainWidth = participantSize.mainWidth;
+                mainHeight = participantSize.mainHeight;
             }
 
             // 레인 경계 계산 및 모양 생성

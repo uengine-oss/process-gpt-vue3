@@ -177,9 +177,37 @@
                                                     </v-chip>
                                                 </div>
                                             </div>
+
+                                            <!-- HITL 질문 카드: PDF2BPMN 로딩 UI 내부 -->
+                                            <div
+                                                v-if="
+                                                    pendingHumanFeedback &&
+                                                    !pendingHumanFeedback.__submitted &&
+                                                    (pdf2bpmnProgress.status === 'waiting_for_user' || (pdf2bpmnProgress.message || '').includes('사용자 확인 대기'))
+                                                "
+                                                class="mt-3"
+                                            >
+                                                <HumanFeedbackPanel
+                                                    :feedbackType="pendingHumanFeedback.user_request_type || 'approve_reject_with_edit'"
+                                                    :question="pendingHumanFeedback.question || '확인이 필요합니다.'"
+                                                    :context="pendingHumanFeedback.context || ''"
+                                                    :items="pendingHumanFeedback.items || []"
+                                                    :suggestions="pendingHumanFeedback.suggestions || []"
+                                                    :evidenceSpans="pendingHumanFeedback.evidence_spans || []"
+                                                    :impactPreview="pendingHumanFeedback.impact_preview || []"
+                                                    :allowMultiple="pendingHumanFeedback.allow_multiple !== false"
+                                                    :minSelect="pendingHumanFeedback.min_select || 1"
+                                                    :allowSkip="pendingHumanFeedback.allow_skip || false"
+                                                    :submitted="false"
+                                                    :headerIcon="'mdi-file-document-edit-outline'"
+                                                    :submitLabel="'응답 제출'"
+                                                    @submit="emitHumanFeedbackSubmit"
+                                                    @skip="emitHumanFeedbackSkip"
+                                                />
+                                            </div>
                                         </v-card>
                                     </div>
-                                    
+
                                     <!-- 라우팅(에이전트 선정) 로딩: 아바타/헤더 없이 '...' 버블만 표시(상대방 버블 색상과 동일) -->
                                     <div v-if="message && message.__routingLoading">
                                         <div class="message-bubble-wrap message-bubble-wrap--other">
@@ -1157,6 +1185,9 @@
                                                                         />
                                                                         <span class="ml-2">{{ getLoadingLabel(message) }}</span>
                                                                     </template>
+                                                                <div v-if="getAgentPlanSummary(message)" class="mt-1 text-caption text-medium-emphasis">
+                                                                    플랜: {{ getAgentPlanSummary(message) }}
+                                                                </div>
                                                                 </div>
 
                                                                 <v-sheet
@@ -1169,6 +1200,35 @@
                                                                     "
                                                                 >
                                                                     <div class="pa-2">
+                                                                        <!-- <div v-if="chatRoomMode && hasAgentLogs(message)" class="mb-2">
+                                                                            <v-expansion-panels variant="accordion">
+                                                                                <v-expansion-panel>
+                                                                                    <v-expansion-panel-title class="text-caption py-1">
+                                                                                        DeepAgent 플랜/로그 ({{ getRecentAgentLogs(message).length }})
+                                                                                    </v-expansion-panel-title>
+                                                                                    <v-expansion-panel-text>
+                                                                                        <div v-if="getAgentPlanSteps(message).length" class="text-caption mb-2">
+                                                                                            <div class="font-weight-bold mb-1">실행 플랜</div>
+                                                                                            <div
+                                                                                                v-for="(step, stepIdx) in getAgentPlanSteps(message)"
+                                                                                                :key="`agent-plan-${index}-${stepIdx}`"
+                                                                                                class="mb-1"
+                                                                                            >
+                                                                                                - {{ step }}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div class="text-caption font-weight-bold mb-1">실행 로그</div>
+                                                                                        <div
+                                                                                            v-for="(log, logIdx) in getRecentAgentLogs(message)"
+                                                                                            :key="`agent-log-${index}-${logIdx}`"
+                                                                                            class="text-caption mb-1"
+                                                                                        >
+                                                                                            • {{ formatAgentLogSummary(log) }}
+                                                                                        </div>
+                                                                                    </v-expansion-panel-text>
+                                                                                </v-expansion-panel>
+                                                                            </v-expansion-panels>
+                                                                        </div> -->
                                                                         <!-- 첨부(이미지/파일): content가 비어도 메시지로 렌더링 + 답장 가능 -->
                                                                         <div
                                                                             v-if="
@@ -1337,8 +1397,24 @@
                                                                         <div
                                                                             v-else
                                                                             class="text-body-1 markdown-content"
-                                                                            v-html="setMessageForUser(message.content)"
+                                                                            v-html="setMessageForUser(getDisplayMessageContent(message, index))"
                                                                         ></div>
+                                                                        <div
+                                                                            v-if="isInlineProcessPreviewTarget(message, index)"
+                                                                            class="mt-2"
+                                                                        >
+                                                                            <div class="d-flex align-center" style="gap: 8px;">
+                                                                                <v-btn
+                                                                                    size="small"
+                                                                                    variant="tonal"
+                                                                                    color="primary"
+                                                                                    @click="openInlineProcessPreview(message)"
+                                                                                >
+                                                                                    <v-icon start size="14">mdi-sitemap</v-icon>
+                                                                                    {{ getInlineProcessButtonLabel() }}
+                                                                                </v-btn>
+                                                                            </div>
+                                                                        </div>
 
                                                                         <!-- PDF2BPMN 결과 카드 -->
                                                                         <div
@@ -1372,24 +1448,23 @@
                                                                             </div>
                                                                             <div
                                                                                 v-if="
-                                                                                    message.pdf2bpmnResult.generatedBpmns &&
-                                                                                    message.pdf2bpmnResult.generatedBpmns.length > 0
+                                                                                    getPdf2bpmnBpmns(message) &&
+                                                                                    getPdf2bpmnBpmns(message).length > 0
                                                                                 "
                                                                                 class="text-caption font-weight-bold mb-1"
                                                                             >
-                                                                                생성된 BPMN 프로세스 ({{ message.pdf2bpmnResult.generatedBpmns.length }}개)
+                                                                                생성된 BPMN 프로세스 ({{ getPdf2bpmnBpmns(message).length }}개)
                                                                             </div>
                                                                             <div
                                                                                 v-if="
-                                                                                    message.pdf2bpmnResult.generatedBpmns &&
-                                                                                    message.pdf2bpmnResult.generatedBpmns.length > 0
+                                                                                    getPdf2bpmnBpmns(message) &&
+                                                                                    getPdf2bpmnBpmns(message).length > 0
                                                                                 "
                                                                                 class="d-flex flex-column"
                                                                                 style="gap: 8px"
                                                                             >
                                                                                 <v-card
-                                                                                    v-for="(bpmn, bIdx) in message.pdf2bpmnResult
-                                                                                        .generatedBpmns"
+                                                                                    v-for="(bpmn, bIdx) in getPdf2bpmnBpmns(message)"
                                                                                     :key="bIdx"
                                                                                     class="pa-2 pdf2bpmn-bpmn-card"
                                                                                     variant="outlined"
@@ -2356,7 +2431,7 @@
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage" />
             <input
                 type="file"
-                accept="image/*,.pdf,.doc,.docx,.hwpx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+                accept="image/*,.pdf,.doc,.docx,.hwp,.hwpx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
                 ref="unifiedFileInput"
                 class="d-none"
                 multiple
@@ -2862,6 +2937,15 @@ export default {
         pdf2bpmnProgress: {
             type: Object,
             default: null
+        },
+        processGenerationProgress: {
+            type: Object,
+            default: null
+        },
+        // ChatRoomPage가 계산한 현재 HITL 질문
+        pendingHumanFeedback: {
+            type: Object,
+            default: null
         }
     },
     emits: [
@@ -3252,6 +3336,12 @@ export default {
         }
     },
     methods: {
+        emitHumanFeedbackSubmit(feedbackResult) {
+            this.$emit('human-feedback-submit', this.pendingHumanFeedback || null, feedbackResult);
+        },
+        emitHumanFeedbackSkip() {
+            this.$emit('human-feedback-skip', this.pendingHumanFeedback || null);
+        },
         startAgentPanelResize(e) {
             e.preventDefault();
             this.isResizingAgentPanel = true;
@@ -3297,6 +3387,31 @@ export default {
                 return null;
             }
         },
+        hasAgentLogs(message) {
+            return Array.isArray(message?.agentLogs) && message.agentLogs.length > 0;
+        },
+        getAgentPlanSummary(message) {
+            const summary = (message?.agentPlan?.summary || '').toString().trim();
+            if (summary) return summary;
+            const logs = this.getRecentAgentLogs(message);
+            const planLike = logs.find((l) => ((l?.category || '').toString().toLowerCase() === 'plan'));
+            return (planLike?.message || '').toString().trim();
+        },
+        getAgentPlanSteps(message) {
+            const steps = Array.isArray(message?.agentPlan?.steps) ? message.agentPlan.steps : [];
+            return steps.filter((x) => (x || '').toString().trim().length > 0).slice(-6);
+        },
+        getRecentAgentLogs(message) {
+            const logs = Array.isArray(message?.agentLogs) ? message.agentLogs : [];
+            return logs.slice(-12).reverse();
+        },
+        formatAgentLogSummary(log) {
+            if (!log || typeof log !== 'object') return '';
+            const level = (log.level || 'info').toString().toUpperCase();
+            const category = (log.category || 'runtime').toString();
+            const message = (log.message || '').toString();
+            return `[${level}/${category}] ${message}`;
+        },
         emitPreviewImage(url) {
             if (!url) return;
             this.$emit('preview-image', url);
@@ -3305,14 +3420,127 @@ export default {
             if (!bpmn) return;
             this.$emit('preview-bpmn', bpmn);
         },
+        isInlineProcessPreviewTarget(message, index) {
+            if (!this.chatRoomMode) return false;
+            if (!message || !['assistant', 'agent'].includes(String(message.role || '').toLowerCase())) return false;
+            const status = String(this.processGenerationProgress?.status || '').trim().toLowerCase();
+            const hasProgress =
+                !!this.processGenerationProgress &&
+                (['generating', 'completed'].includes(status) || !!this.processGenerationProgress?.bpmn_xml);
+            return hasProgress || this.isProcessJsonMessage(message, index);
+        },
+        getInlineProcessName() {
+            const progress = this.processGenerationProgress || {};
+            return String(progress.process_name || progress.process_id || '프로세스').trim() || '프로세스';
+        },
+        getInlineProcessButtonLabel() {
+            const processName = this.getInlineProcessName();
+            const ready = !!(this.processGenerationProgress && this.processGenerationProgress.bpmn_xml);
+            return ready ? `${processName}` : `${processName} 생성중...`;
+        },
+        isProcessJsonMessage(message, index) {
+            const text = String(message?.content || '').trim();
+            if (!text) return false;
+            const hasShape = text.includes('"processDefinitionId"') && text.includes('"elements"');
+            const looksJson = text.includes('{') && text.includes('}');
+            return looksJson && hasShape;
+        },
+        _extractProcessJsonBlock(text) {
+            const source = String(text || '');
+            if (!source) return '';
+            const fenceMatch = source.match(/```json\s*([\s\S]*?)```/i) || source.match(/```\s*([\s\S]*?)```/);
+            if (fenceMatch?.[1]) {
+                const candidate = String(fenceMatch[1] || '').trim();
+                try {
+                    const parsed = JSON.parse(candidate);
+                    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.elements) && parsed.processDefinitionId) {
+                        return fenceMatch[0];
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
+            const firstBrace = source.indexOf('{');
+            const lastBrace = source.lastIndexOf('}');
+            if (firstBrace >= 0 && lastBrace > firstBrace) {
+                const candidate = source.slice(firstBrace, lastBrace + 1).trim();
+                try {
+                    const parsed = JSON.parse(candidate);
+                    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.elements) && parsed.processDefinitionId) {
+                        return candidate;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
+            return '';
+        },
+        getDisplayMessageContent(message, index) {
+            const original = String(message?.content || '');
+            if (!this.isProcessJsonMessage(message, index)) return original;
+            const jsonBlock = this._extractProcessJsonBlock(original);
+            if (!jsonBlock) return original;
+            const stripped = original.replace(jsonBlock, '').trim();
+            return stripped || '프로세스가 생성되었습니다.';
+        },
+        _extractProcessDefinitionFromText(text) {
+            const source = String(text || '').trim();
+            if (!source) return null;
+            const candidates = [];
+            const fenceMatch = source.match(/```json\s*([\s\S]*?)```/i) || source.match(/```\s*([\s\S]*?)```/);
+            if (fenceMatch?.[1]) candidates.push(fenceMatch[1]);
+            candidates.push(source);
+            const firstBrace = source.indexOf('{');
+            const lastBrace = source.lastIndexOf('}');
+            if (firstBrace >= 0 && lastBrace > firstBrace) {
+                candidates.push(source.slice(firstBrace, lastBrace + 1));
+            }
+            for (const candidate of candidates) {
+                try {
+                    const parsed = JSON.parse(candidate);
+                    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.elements)) {
+                        return parsed;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
+            return null;
+        },
+        openInlineProcessPreview(message) {
+            const progress = this.processGenerationProgress || {};
+            const fallbackDefinition =
+                progress.definition && typeof progress.definition === 'object'
+                    ? progress.definition
+                    : this._extractProcessDefinitionFromText(message?.content || '');
+            this.emitPreviewBpmn({
+                process_name: this.getInlineProcessName(),
+                process_id: progress.process_id || '',
+                bpmn_xml: progress.bpmn_xml || '',
+                definition: fallbackDefinition || null
+            });
+        },
         emitPreviewIntegratedGraph(taskId) {
             const resolvedTaskId = String(taskId || '').trim();
             if (!resolvedTaskId) return;
             this.$emit('preview-integrated-graph', resolvedTaskId);
         },
-        hasPdf2bpmnResultSections(message) {
+        getPdf2bpmnBpmns(message) {
             const result = message?.pdf2bpmnResult || {};
-            const bpmns = Array.isArray(result.generatedBpmns) ? result.generatedBpmns : [];
+            const generated = Array.isArray(result.generatedBpmns) ? result.generatedBpmns : [];
+            if (generated.length > 0) return generated;
+
+            const saved = Array.isArray(result.savedProcesses) ? result.savedProcesses : [];
+            if (saved.length === 0) return [];
+
+            return saved.map((proc) => ({
+                process_id: proc?.process_id || proc?.id || '',
+                process_name: proc?.process_name || proc?.name || 'Unnamed Process',
+                bpmn_xml: proc?.bpmn_xml || ''
+            }));
+        },
+        hasPdf2bpmnResultSections(message) {
+            const bpmns = this.getPdf2bpmnBpmns(message);
             const skills = this.getPdf2bpmnSavedSkills(message);
             const agents = this.getPdf2bpmnSavedAgents(message);
             return bpmns.length > 0 || skills.length > 0 || agents.length > 0;
@@ -4352,6 +4580,7 @@ export default {
                 '.pdf',
                 '.doc',
                 '.docx',
+                '.hwp',
                 '.hwpx',
                 '.xls',
                 '.xlsx',

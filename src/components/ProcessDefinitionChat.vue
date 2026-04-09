@@ -5,14 +5,14 @@
         :class="{ 'is-deleted': isDeleted, 'user-left-part': !canEdit }"
     >
         <v-card v-if="isConsultingMode">
-            <div :key="chatRenderKey">
+            <div>
                 <div style="display: none">
                     <process-definition
                         ref="definitionComponent"
                         class="process-definition-resize"
                         :bpmn="bpmn"
                         :isViewMode="true"
-                        :key="definitionChangeCount"
+                        :key="processDefinitionRenderKey"
                         :isXmlMode="isXmlMode"
                         :definitionPath="fullPath"
                         :definitionChat="this"
@@ -54,7 +54,7 @@
                     :bpmn="bpmn"
                     :isAIGenerated="isAIGenerated"
                     :processDefinition="processDefinition"
-                    :key="definitionChangeCount"
+                    :key="processDefinitionRenderKey"
                     :isViewMode="isViewMode"
                     :isXmlMode="isXmlMode"
                     :definitionPath="fullPath"
@@ -445,6 +445,7 @@ import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
 import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { hasSubstantialChanges } from '@/utils/xmlDiff';
+import { isLegacyProcessDefinition, convertLegacyProcessDefinitionToElements } from '@/utils/legacyProcessDefinition';
 import { useBpmnExport } from '@/composables/useBpmnExport';
 const storage = StorageBaseFactory.getStorage();
 
@@ -678,6 +679,11 @@ export default {
         }
     },
     computed: {
+        processDefinitionRenderKey() {
+            // definitionChangeCount 기반 key는 동일 화면에서도 재마운트를 유발해
+            // auto-layout이 반복 실행될 수 있으므로 경로 기반 안정 key를 사용한다.
+            return this.fullPath || 'new-process-definition';
+        },
         fullPath() {
             let path;
             if (this.$route.params.pathMatch) {
@@ -1626,13 +1632,55 @@ export default {
                 let lastPath = me.$route.params.pathMatch ? me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1] : null;
                 if (fullPath && fullPath != 'definitions-tree' && lastPath != 'chat') {
                     let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
+                    let rawDefinition = null;
+                    // raw BPMN이 없는 경우 저장된 processDefinition(JSON)으로 XML 재생성
+                    if (!bpmn) {
+                        rawDefinition = await backend.getRawDefinition(fullPath);
+                        if (rawDefinition && rawDefinition.definition) {
+                            try {
+                                // 저장된 definition 원본은 절대 직접 mutate하지 않는다.
+                                // - originalDefinitionForPersist: DB 보존용(원본 그대로)
+                                // - definitionForBuild: XML 생성용 (createBpmnXml 내부에서 좌표/boundary가 추가될 수 있음)
+                                const originalDefinitionForPersist = JSON.parse(JSON.stringify(rawDefinition.definition));
+                                let definitionForBuild = JSON.parse(JSON.stringify(rawDefinition.definition));
+                                const hasElements =
+                                    definitionForBuild &&
+                                    Array.isArray(definitionForBuild.elements) &&
+                                    definitionForBuild.elements.length > 0;
+                                const hasLegacyStructure = isLegacyProcessDefinition(definitionForBuild);
+
+                                // legacy 구조(activities/events/gateways/sequences)면 elements 구조로 변환 후 XML 생성
+                                if (!hasElements && hasLegacyStructure) {
+                                    definitionForBuild = await me.convertOldFormatToElements(definitionForBuild);
+                                }
+                                bpmn = me.createBpmnXml(definitionForBuild, me.isHorizontal);
+                                // 복구된 XML을 raw 저장소에도 반영해 다음 조회부터는 fallback 없이 로드되도록 함
+                                try {
+                                    await backend.putRawDefinition(bpmn, fullPath, {
+                                        name:
+                                            rawDefinition?.name ||
+                                            originalDefinitionForPersist?.processDefinitionName ||
+                                            me.projectName ||
+                                            fullPath,
+                                        // XML만 복구하고 definition 원문은 보존한다.
+                                        definition: originalDefinitionForPersist
+                                    });
+                                } catch (persistError) {
+                                    console.warn('[loadData] rebuilt BPMN persisted failed:', persistError);
+                                }
+                                console.warn('[loadData] raw BPMN not found. Rebuilt from processDefinition:', fullPath);
+                            } catch (rebuildError) {
+                                console.error('[loadData] failed to rebuild BPMN from processDefinition:', rebuildError);
+                            }
+                        }
+                    }
                     me.bpmn = bpmn;
                     me.definitionChangeCount++;
                     let isDeleted = await backend.getRawDefinition(fullPath, { type: 'deleted' });
                     me.isDefinitionDeleted = isDeleted;
                     if (me.useLock) {
                         // ProcessGPT 모드
-                        const value = await backend.getRawDefinition(fullPath);
+                        const value = rawDefinition || (await backend.getRawDefinition(fullPath));
                         if (value) {
                             me.processDefinition = value.definition;
                             me.processDefinition.processDefinitionId = value.id;
@@ -1928,157 +1976,7 @@ export default {
             }
         },
         async convertOldFormatToElements(oldObj) {
-            oldObj.elements = [];
-            // Type mapping to convert from old activity types to new element types
-            const typeMapping = {
-                startEvent: 'StartEvent',
-                endEvent: 'EndEvent',
-                userTask: 'UserActivity',
-                serviceTask: 'ServiceActivity',
-                scriptTask: 'ScriptActivity',
-                sendTask: 'EmailActivity',
-                exclusiveGateway: 'ExclusiveGateway',
-                parallelGateway: 'ParallelGateway',
-                task: 'Activity'
-            };
-
-            // Convert old activities to elements format
-            if (oldObj.activities && Array.isArray(oldObj.activities)) {
-                oldObj.activities.forEach((activity) => {
-                    const elementType = activity.type === 'userTask' ? 'Activity' : 'Activity';
-                    const type = typeMapping[activity.type] || 'Activity';
-
-                    // Parse properties if they exist
-                    let checkpoints = [];
-                    let duration = activity.duration || '5';
-                    try {
-                        if (activity.properties) {
-                            const props = JSON.parse(activity.properties);
-                            if (props.checkpoints) {
-                                checkpoints = props.checkpoints;
-                            }
-                            if (props.duration) {
-                                duration = props.duration;
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Error parsing properties:', e);
-                    }
-
-                    const newElement = {
-                        elementType: elementType,
-                        id: activity.id,
-                        name: activity.name,
-                        type: type,
-                        source: '', // This will be filled from sequences
-                        description: activity.description || '',
-                        instruction: activity.instruction || '',
-                        role: activity.role || '',
-                        inputData: activity.inputData || [],
-                        outputData: activity.outputData || [],
-                        checkpoints: checkpoints,
-                        duration: duration
-                    };
-
-                    oldObj.elements.push(newElement);
-                });
-            }
-
-            // Convert old events to elements format
-            if (oldObj.events && Array.isArray(oldObj.events)) {
-                oldObj.events.forEach((event) => {
-                    const elementType = 'Event';
-                    const type = typeMapping[event.type] || event.type;
-
-                    const newElement = {
-                        elementType: elementType,
-                        id: event.id,
-                        name: event.name,
-                        role: event.role || '',
-                        source: '',
-                        type: type,
-                        description: event.description || '',
-                        trigger: event.type === 'startEvent' ? '프로세스 시작' : '프로세스 종료'
-                    };
-
-                    oldObj.elements.push(newElement);
-                });
-            }
-
-            // Convert old gateways to elements format
-            if (oldObj.gateways && Array.isArray(oldObj.gateways)) {
-                oldObj.gateways.forEach((gateway) => {
-                    const elementType = 'Gateway';
-                    const type = typeMapping[gateway.type] || 'ExclusiveGateway';
-
-                    const newElement = {
-                        elementType: elementType,
-                        id: gateway.id,
-                        name: gateway.name || 'Gateway',
-                        role: gateway.role || '',
-                        source: '',
-                        type: type,
-                        description: gateway.description || '분기점'
-                    };
-
-                    oldObj.elements.push(newElement);
-                });
-            }
-
-            // Convert old sequences to elements format and set source properties
-            if (oldObj.sequences && Array.isArray(oldObj.sequences)) {
-                // First, create a mapping of target IDs to source IDs
-                const targetToSourceMap = {};
-                oldObj.sequences.forEach((sequence) => {
-                    if (!targetToSourceMap[sequence.target]) {
-                        targetToSourceMap[sequence.target] = [];
-                    }
-                    targetToSourceMap[sequence.target].push(sequence.source);
-                });
-
-                // Update source properties in existing elements
-                oldObj.elements.forEach((element) => {
-                    if (targetToSourceMap[element.id] && targetToSourceMap[element.id].length > 0) {
-                        element.source = targetToSourceMap[element.id][0]; // Take the first source
-                    }
-                });
-
-                // Now convert sequences to elements
-                oldObj.sequences.forEach((sequence) => {
-                    let condition = null;
-                    try {
-                        if (sequence.condition && sequence.condition !== '') {
-                            // Try to parse condition if it exists
-                            if (typeof sequence.condition === 'string' && sequence.condition.startsWith('{')) {
-                                const condObj = JSON.parse(sequence.condition);
-                                condition = {
-                                    key: condObj.key || '',
-                                    condition: condObj.operator || '==',
-                                    value: condObj.value || ''
-                                };
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Error parsing condition:', e);
-                    }
-
-                    const newElement = {
-                        elementType: 'Sequence',
-                        id: sequence.id,
-                        name: sequence.id.replace('SequenceFlow_', '').replace(/_/g, ' '),
-                        source: sequence.source,
-                        target: sequence.target
-                    };
-
-                    if (condition) {
-                        newElement.condition = condition;
-                    }
-
-                    oldObj.elements.push(newElement);
-                });
-            }
-
-            return oldObj;
+            return convertLegacyProcessDefinitionToElements(oldObj);
         },
         async afterGenerationFinished(response) {
             let jsonProcess = null;

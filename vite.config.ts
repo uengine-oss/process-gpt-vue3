@@ -106,7 +106,7 @@ export default defineConfig({
             // Work Assistant Agent API
             '/agent/': {
                 // Windows에서 localhost가 IPv6(::1)로 붙으면서 WSL/Docker 리스너로 가는 경우가 있어 IPv4로 고정
-                target: 'http://127.0.0.1:8000',
+                target: 'http://127.0.0.1:8008',
                 changeOrigin: true,
                 timeout: 0,
                 proxyTimeout: 0,

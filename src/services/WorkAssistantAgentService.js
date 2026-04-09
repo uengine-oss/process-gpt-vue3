@@ -76,7 +76,7 @@ class WorkAssistantAgentService {
      * @returns {Promise<void>}
      */
     async sendMessageStream(params, callbacks = {}, options = {}) {
-        const { onToken, onToolStart, onToolEnd, onDone, onError, onMetadata, onAskUser, onAbort } = callbacks;
+        const { onToken, onToolStart, onToolEnd, onDone, onError, onMetadata, onAskUser, onAbort, onAgentLog, onProcessStatus, onProcessPartial, onProcessPatch } = callbacks;
 
         try {
             const response = await fetch(`${this.baseUrl}/chat/stream`, {
@@ -152,7 +152,7 @@ class WorkAssistantAgentService {
      * 스트림 이벤트 처리
      */
     _handleStreamEvent(event, callbacks) {
-        const { onToken, onToolStart, onToolEnd, onDone, onError, onMetadata, onAskUser } = callbacks;
+        const { onToken, onToolStart, onToolEnd, onDone, onError, onMetadata, onAskUser, onAgentLog, onProcessStatus, onProcessPartial, onProcessPatch } = callbacks;
 
         if (event.conversation_id && onMetadata) {
             onMetadata({ conversation_id: event.conversation_id });
@@ -178,6 +178,18 @@ class WorkAssistantAgentService {
                 break;
             case 'error':
                 if (onError) onError(new Error(event.error || event.message));
+                break;
+            case 'agent_log':
+                if (onAgentLog) onAgentLog(event);
+                break;
+            case 'process_status':
+                if (onProcessStatus) onProcessStatus(event);
+                break;
+            case 'process_partial':
+                if (onProcessPartial) onProcessPartial(event);
+                break;
+            case 'process_patch':
+                if (onProcessPatch) onProcessPatch(event);
                 break;
         }
     }
