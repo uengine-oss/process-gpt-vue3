@@ -4668,8 +4668,10 @@ export default {
                         // 침묵 정책 제거: NO_RESPONSE도 그대로 텍스트로 표시하지 않도록 빈 값 처리
                         let safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
                         let displayContent = '';
-                        
-        const msgToolCalls = Array.isArray(this.messages[idx].toolCalls) ? this.messages[idx].toolCalls : [];
+
+                        const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+                        if (idx !== -1) {
+                            const msgToolCalls = Array.isArray(this.messages[idx].toolCalls) ? this.messages[idx].toolCalls : [];
                             const feedbackTC = msgToolCalls.find(tc => tc?.__humanFeedback);
                             if (feedbackTC) {
                                 this.messages[idx].__humanFeedback = feedbackTC.__humanFeedback;
