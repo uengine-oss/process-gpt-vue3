@@ -1392,8 +1392,8 @@ export default class StorageBaseSupabase {
 
     async uploadFile(fileName, file) {
         try {
-            const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-            const storageFileName = `uploads/${Date.now()}_${sanitizedFileName}`;
+            const ext = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
+            const storageFileName = `uploads/${Date.now()}_${crypto.randomUUID().substring(0, 8)}${ext}`;
 
             const { data, error } = await window.$supabase.storage.from('files').upload(storageFileName, file, {
                 cacheControl: '3600',

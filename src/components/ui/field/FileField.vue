@@ -356,7 +356,12 @@ export default {
                     this.$emit('update:modelValue', { path: null, name: null });
                 } else if (res && res.path) {
                     console.log('[FileField] 파일 업로드 성공:', res.path);
-                    this.$emit('update:modelValue', { path: res.path, name: fileName, fullPath: res.fullPath || res.path });
+                    const storagePath = res.path;
+                    // 원본 파일명 유지: selectedFiles에 직접 설정하여 watcher 재다운로드 방지
+                    file.originalFileName = fileName;
+                    file.path = storagePath;
+                    this.selectedFiles = [file];
+                    this.$emit('update:modelValue', { path: storagePath, name: fileName, fullPath: res.fullPath || storagePath });
                 } else {
                     console.warn('[FileField] 파일 업로드 응답이 비어있음');
                     this.$emit('update:modelValue', { path: null, name: null });
