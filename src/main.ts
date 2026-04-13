@@ -243,9 +243,10 @@ async function setupTenant() {
             writable: false,
             configurable: true
         });
-    } else if(window.location.host.includes('localhost') || 
-        window.location.host.includes('192.168') || 
-        window.location.host.includes('127.0.0.1')
+    } else if(window.location.host.includes('localhost') ||
+        window.location.host.includes('192.168') ||
+        window.location.host.includes('127.0.0.1') ||
+        /^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/.test(window.location.host)
     ) {
         Object.defineProperty(window, '$isTenantServer', {
             value: false,
