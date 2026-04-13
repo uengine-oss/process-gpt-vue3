@@ -81,7 +81,7 @@
             ref="fileInput"
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.hwpx,.txt,.csv,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+            accept=".pdf,.doc,.docx,.hwp,.hwpx,.txt,.csv,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
             style="display: none"
             @change="onFileSelect"
         />
@@ -283,6 +283,7 @@ export default {
                 '.pdf',
                 '.doc',
                 '.docx',
+                '.hwp',
                 '.hwpx',
                 '.txt',
                 '.csv',
@@ -333,6 +334,7 @@ export default {
                 '.pdf': 'mdi-file-pdf-box',
                 '.doc': 'mdi-file-word-box',
                 '.docx': 'mdi-file-word-box',
+                '.hwp': 'mdi-file-document-outline',
                 '.hwpx': 'mdi-file-document-outline',
                 '.txt': 'mdi-file-document',
                 '.csv': 'mdi-file-delimited',
@@ -356,6 +358,7 @@ export default {
                 '.pdf': 'red',
                 '.doc': 'blue',
                 '.docx': 'blue',
+                '.hwp': 'blue',
                 '.hwpx': 'blue',
                 '.txt': 'grey',
                 '.csv': 'green',
