@@ -4694,6 +4694,8 @@ export default {
                         let displayContent = '';
 
                         const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+                        /** DB/채팅방 요약용 — if (idx !== -1) 블록 밖에서도 참조되므로 블록 스코프에 두지 않음 */
+                        let displayContent = '';
                         if (idx !== -1) {
                             const msgToolCalls = Array.isArray(this.messages[idx].toolCalls) ? this.messages[idx].toolCalls : [];
                             const feedbackTC = msgToolCalls.find(tc => tc?.__humanFeedback);
@@ -4786,6 +4788,9 @@ export default {
                                 }
                             }
                         }
+                        if (!displayContent) {
+                            displayContent = this.extractDisplayAssistantContent((safeFinal || full || '').toString());
+                        }
                         this.setAgentStatus(agentId, { state: 'ready', message: '' });
                         const roomId = this.currentChatRoom?.id || this.roomId || null;
                         const state = this.getOrCreateProcessGenerationState(roomId);
@@ -4818,7 +4823,7 @@ export default {
                         // last message 업데이트(가장 마지막 완료 응답 기준으로 덮어쓰기)
                         if (this.currentChatRoom) {
                             this.currentChatRoom.message = {
-                                msg: displayContent.substring(0, 50),
+                                msg: (displayContent || safeFinal || full || '').substring(0, 50),
                                 type: 'text',
                                 createdAt: new Date().toISOString()
                             };
