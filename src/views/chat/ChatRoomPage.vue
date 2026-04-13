@@ -4966,9 +4966,16 @@ export default {
             if (startConsultingToolCall?.name?.includes('start_process_consulting')) {
                 console.info('[ChatRoomPage] 레거시 start_process_consulting 후처리는 비활성화되었습니다.');
             }
+
             if (generateProcessToolCall?.name?.includes('generate_process')) {
-                console.info('[ChatRoomPage] 레거시 generate_process 화면 전환은 비활성화되었습니다.');
+                if (agentId && agentId !== PROCESS_GPT_AGENT_ID) return;
+                const messagesForDefinition = this.buildMessagesForDefinitionGeneration();
+                this.$store.dispatch('updateMessages', messagesForDefinition);
+                this.$router.push('/definitions/chat');
             }
+            // if (generateProcessToolCall?.name?.includes('generate_process')) {
+            //     console.info('[ChatRoomPage] 레거시 generate_process 화면 전환은 비활성화되었습니다.');
+            // }
         },
 
         // ===== ConsultingGenerator (WorkAssistantChatPanel 방식) =====

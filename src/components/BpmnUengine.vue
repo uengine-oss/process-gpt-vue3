@@ -371,15 +371,28 @@ export default {
     watch: {
         bpmn: {
             async handler(newVal) {
-                if (this.registerToStore) {
-                    return;
-                }
                 try {
                     if (typeof newVal !== 'string' || newVal.trim().length === 0) return;
                     if (!this.bpmnViewer) return;
+
+                    const normalizedNewVal = newVal.trim();
+
+                    // registerToStore 모드에서는 내부 편집(changeElement)로 올라온 동일 XML은 다시 import하지 않는다.
+                    // 단, 외부(생성/로드/롤백 등)에서 변경된 BPMN은 import해서 화면을 동기화한다.
+                    if (this.registerToStore) {
+                        const normalizedCurrentModelXml =
+                            typeof this.bpmnXML === 'string' && this.bpmnXML.trim().length > 0 ? this.bpmnXML.trim() : '';
+                        const normalizedImportedXml =
+                            typeof this.diagramXML === 'string' && this.diagramXML.trim().length > 0 ? this.diagramXML.trim() : '';
+
+                        if (normalizedNewVal === normalizedCurrentModelXml || normalizedNewVal === normalizedImportedXml) {
+                            return;
+                        }
+                    }
+
                     this.onLoadStart();
-                    this.diagramXML = newVal;
-                    let xml = newVal;
+                    this.diagramXML = normalizedNewVal;
+                    let xml = normalizedNewVal;
                     if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
                     await this.bpmnViewer.importXML(xml);
                 } catch (e) {
