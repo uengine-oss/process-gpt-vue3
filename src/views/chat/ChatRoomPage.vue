@@ -4963,16 +4963,71 @@ export default {
                 }
             }
 
+            
+            // 1) 프로세스 컨설팅 시작 → 컨설팅 다이얼로그 오픈 + 초기 메시지 전달
             if (startConsultingToolCall?.name?.includes('start_process_consulting')) {
-                console.info('[ChatRoomPage] 레거시 start_process_consulting 후처리는 비활성화되었습니다.');
+                // 메인 에이전트(work-assistant / process-gpt-agent)에서만 컨설팅 트리거 허용 (오동작 방지)
+                if (agentId && agentId !== PROCESS_GPT_AGENT_ID) return;
+
+                let imageAnalysis = null;
+                let parsedDirective = null;
+                try {
+                    const parsed = this.parseToolOutput(startConsultingToolCall.output);
+                    parsedDirective = parsed && typeof parsed === 'object' ? parsed : null;
+                    if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
+                        imageAnalysis = parsed.image_analysis_result;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+
+                const shouldShowConsultingNotice = parsedDirective?.user_request_type === 'start_process_consulting';
+                if (shouldShowConsultingNotice) {
+                    const consultingStartMessage = '프로세스 컨설팅을 시작합니다. 말씀하신 내용의 프로세스 초안을 생성하겠습니다.';
+                    if (this.messages[idx]) {
+                        this.messages[idx].content = consultingStartMessage;
+                        this.messages[idx].contentType = 'text';
+                        this.messages[idx].isLoading = false;
+                    }
+
+                    await backend.putObject(`db://chats/${assistantUuid}`, {
+                        uuid: assistantUuid,
+                        id: this.currentChatRoom?.id,
+                        messages: { ...(this.messages[idx] || msg), content: consultingStartMessage, isLoading: false }
+                    });
+
+                    if (this.currentChatRoom) {
+                        this.currentChatRoom.message = {
+                            msg: consultingStartMessage.substring(0, 50),
+                            type: 'text',
+                            createdAt: new Date().toISOString()
+                        };
+                        await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                    }
+                }
+
+                const originalMessage = imageAnalysis
+                    ? `${(userText || '').toString()}\n\n[이미지 분석 결과]\n${imageAnalysis}`
+                    : `${(userText || '').toString()}\n\n[전체 요청 및 첨부 이미지 분석 내용]: ${JSON.stringify(
+                          startConsultingToolCall.output ?? null
+                      )}`;
+
+                // WorkAssistantChatPanel 방식: 컨설팅은 다이얼로그가 아니라 ConsultingGenerator 1회 실행으로 처리
+                await this.switchToConsultingMode(originalMessage, { keepLastAssistantMessage: shouldShowConsultingNotice });
+                return;
             }
 
+            // 2) 생성 확정 → definitions 생성 화면으로 전환
             if (generateProcessToolCall?.name?.includes('generate_process')) {
                 if (agentId && agentId !== PROCESS_GPT_AGENT_ID) return;
                 const messagesForDefinition = this.buildMessagesForDefinitionGeneration();
                 this.$store.dispatch('updateMessages', messagesForDefinition);
                 this.$router.push('/definitions/chat');
             }
+            
+            // if (startConsultingToolCall?.name?.includes('start_process_consulting')) {
+            //     console.info('[ChatRoomPage] 레거시 start_process_consulting 후처리는 비활성화되었습니다.');
+            // }
             // if (generateProcessToolCall?.name?.includes('generate_process')) {
             //     console.info('[ChatRoomPage] 레거시 generate_process 화면 전환은 비활성화되었습니다.');
             // }
