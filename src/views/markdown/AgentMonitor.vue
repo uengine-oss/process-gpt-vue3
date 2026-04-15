@@ -596,7 +596,15 @@ export default {
         isFileLikeValue(value) {
             if (!value) return false;
             if (typeof value === 'object') {
-                return !!(value.path || value.name || value.file_path || value.file_name || value.url || value.publicUrl || value.public_url);
+                return !!(
+                    value.path ||
+                    value.name ||
+                    value.file_path ||
+                    value.file_name ||
+                    value.url ||
+                    value.publicUrl ||
+                    value.public_url
+                );
             }
             if (typeof value === 'string') {
                 const lowered = value.toLowerCase();

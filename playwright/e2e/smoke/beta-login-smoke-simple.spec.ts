@@ -17,7 +17,10 @@ test.describe('smoke simple: login only', () => {
         await page.goto('/', { waitUntil: 'domcontentloaded' });
 
         if (!/\/auth\/login/.test(page.url())) {
-            const betaCta = page.locator('a,button,[role="button"]').filter({ hasText: /베타\s*테스트하기|beta\s*test|start/i }).first();
+            const betaCta = page
+                .locator('a,button,[role="button"]')
+                .filter({ hasText: /베타\s*테스트하기|beta\s*test|start/i })
+                .first();
             await expect(betaCta).toBeVisible({ timeout: 30_000 });
             await betaCta.click();
         }

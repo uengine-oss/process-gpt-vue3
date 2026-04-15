@@ -7550,14 +7550,11 @@ class ProcessGPTBackend implements Backend {
             return result;
         } catch (e: any) {
             const isMissingView =
-                e?.code === 'PGRST205' ||
-                (typeof e?.message === 'string' && e.message.includes('proc_def_element_comment_counts'));
+                e?.code === 'PGRST205' || (typeof e?.message === 'string' && e.message.includes('proc_def_element_comment_counts'));
 
             if (isMissingView) {
                 if (!this.hasWarnedMissingElementCommentCountView) {
-                    console.warn(
-                        '[ProcessGPTBackend] proc_def_element_comment_counts 뷰/테이블이 없어 댓글 카운트 조회를 건너뜁니다.'
-                    );
+                    console.warn('[ProcessGPTBackend] proc_def_element_comment_counts 뷰/테이블이 없어 댓글 카운트 조회를 건너뜁니다.');
                     this.hasWarnedMissingElementCommentCountView = true;
                 }
                 return {};

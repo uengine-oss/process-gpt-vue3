@@ -82,7 +82,9 @@
                         <v-tooltip :text="item.raw.subtitle" location="top" :disabled="!item.raw.subtitle" max-width="250">
                             <template #activator="{ props: tooltipProps }">
                                 <v-list-item v-bind="{ ...props, ...tooltipProps }" :title="item.raw.title">
-                                    <v-list-item-subtitle v-if="item.raw.subtitle" class="text-truncate" style="max-width: 250px;">{{ item.raw.subtitle }}</v-list-item-subtitle>
+                                    <v-list-item-subtitle v-if="item.raw.subtitle" class="text-truncate" style="max-width: 250px">{{
+                                        item.raw.subtitle
+                                    }}</v-list-item-subtitle>
                                 </v-list-item>
                             </template>
                         </v-tooltip>
@@ -108,7 +110,9 @@
                         <v-tooltip v-else :text="item.raw?.subtitle" location="top" :disabled="!item.raw?.subtitle" max-width="250">
                             <template #activator="{ props: tooltipProps }">
                                 <v-list-item v-bind="{ ...props, ...tooltipProps }" :title="item.raw?.title">
-                                    <v-list-item-subtitle v-if="item.raw?.subtitle" class="text-truncate" style="max-width: 250px;">{{ item.raw.subtitle }}</v-list-item-subtitle>
+                                    <v-list-item-subtitle v-if="item.raw?.subtitle" class="text-truncate" style="max-width: 250px">{{
+                                        item.raw.subtitle
+                                    }}</v-list-item-subtitle>
                                 </v-list-item>
                             </template>
                         </v-tooltip>
@@ -369,7 +373,9 @@ export default {
         selectedTools: {
             deep: true,
             handler(newVal) {
-                const normalized = (newVal || []).map((t) => (typeof t === 'object' && t?.value != null ? t.value : String(t ?? ''))).filter(Boolean);
+                const normalized = (newVal || [])
+                    .map((t) => (typeof t === 'object' && t?.value != null ? t.value : String(t ?? '')))
+                    .filter(Boolean);
                 this.agent.tools = normalized.join(',');
                 if (newVal?.some((t) => typeof t === 'object')) {
                     this.$nextTick(() => {

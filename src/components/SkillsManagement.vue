@@ -226,7 +226,8 @@
                                             </v-data-table>
                                         </div>
                                         <v-row v-else-if="viewMode === 'card'" class="skill-card-list ma-0 pa-0">
-                                            <v-col v-for="skill in uploadedCardRowsPaginated"
+                                            <v-col
+                                                v-for="skill in uploadedCardRowsPaginated"
                                                 :key="'uploaded-' + skill.name"
                                                 cols="12"
                                                 sm="6"

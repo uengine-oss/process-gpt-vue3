@@ -78,9 +78,7 @@
         <v-divider vertical class="d-none d-md-block"></v-divider>
 
         <!-- 우측: 수정 화면 (데스크톱) -->
-        <v-col cols="12" lg="6" class="d-none d-lg-block pa-0"
-            style="padding: 16px 16px 0px 16px !important;"
-        >
+        <v-col cols="12" lg="6" class="d-none d-lg-block pa-0" style="padding: 16px 16px 0px 16px !important">
             <div v-if="editingKey && !isAddMode" flat>
                 <div class="pt-0 pb-4">
                     <v-row class="ma-0 pa-0 align-center">
@@ -125,7 +123,13 @@
             <div v-else-if="isAddMode && !editingKey" flat>
                 <div class="pt-0 pb-4">
                     <h5 class="text-h5 mb-3">New MCP</h5>
-                    <vue-monaco-editor v-model:value="newJsonText" language="json" :options="monacoEditorOptions" @mount="handleMount" class="mcp-monaco-editor" />
+                    <vue-monaco-editor
+                        v-model:value="newJsonText"
+                        language="json"
+                        :options="monacoEditorOptions"
+                        @mount="handleMount"
+                        class="mcp-monaco-editor"
+                    />
                     <!-- <v-textarea 
                         v-model="newJsonText" 
                         label="MCP JSON" 

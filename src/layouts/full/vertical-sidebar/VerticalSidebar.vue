@@ -650,7 +650,7 @@ export default {
                         icon: 'diagram',
                         BgColor: 'primary',
                         to: '/organization',
-                        disable: false,
+                        disable: false
                     }
                 ];
             }
@@ -701,7 +701,9 @@ export default {
 
             // 프로세스 섹션: 프로세스 정의(메인 행) + 옆 작은 버튼으로 드롭다운
             if (isAdmin) {
-                this.processSectionListItems = [{ title: 'definitionManagement.processDefinition', icon: 'flowchart', to: '/definitions/chat' }];
+                this.processSectionListItems = [
+                    { title: 'definitionManagement.processDefinition', icon: 'flowchart', to: '/definitions/chat' }
+                ];
                 this.processSectionDropdownItems =
                     this.mode !== 'ProcessGPT'
                         ? [
@@ -1117,5 +1119,4 @@ export default {
     min-width: 36px !important;
     min-height: 36px !important;
 }
-
 </style>

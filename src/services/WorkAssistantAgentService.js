@@ -49,7 +49,7 @@ class WorkAssistantAgentService {
                 conversation_id: params.conversation_id || null,
                 file: params.file || null,
                 files: Array.isArray(params.files) ? params.files : [],
-                file_count: Number.isFinite(params.file_count) ? params.file_count : (Array.isArray(params.files) ? params.files.length : 0),
+                file_count: Number.isFinite(params.file_count) ? params.file_count : Array.isArray(params.files) ? params.files.length : 0,
                 stream: false,
                 metadata: params.metadata || {}
             })
@@ -68,6 +68,9 @@ class WorkAssistantAgentService {
      * @param {Function} onToken - 토큰 수신 콜백
      * @param {Function} onToolStart - 도구 시작 콜백
      * @param {Function} onToolEnd - 도구 종료 콜백
+     * @param {Function} callbacks.onPlanTools - plan_tools(예정 도구 목록) 콜백
+     * @param {Function} callbacks.onPlanSkills - plan_skills(예정/사용 스킬 목록) 콜백
+     * @param {Function} callbacks.onPlanTodos - plan_todos(예정/진행 할일 목록) 콜백
      * @param {Function} onDone - 완료 콜백
      * @param {Function} onError - 에러 콜백
      * @param {Function} onAskUser - ask_user 응답 감지 콜백 (Human in the Loop)
@@ -76,7 +79,20 @@ class WorkAssistantAgentService {
      * @returns {Promise<void>}
      */
     async sendMessageStream(params, callbacks = {}, options = {}) {
-        const { onToken, onToolStart, onToolEnd, onDone, onError, onMetadata, onAskUser, onAbort, onAgentLog, onProcessStatus, onProcessPartial, onProcessPatch } = callbacks;
+        const {
+            onToken,
+            onToolStart,
+            onToolEnd,
+            onDone,
+            onError,
+            onMetadata,
+            onAskUser,
+            onAbort,
+            onAgentLog,
+            onProcessStatus,
+            onProcessPartial,
+            onProcessPatch
+        } = callbacks;
 
         try {
             const response = await fetch(`${this.baseUrl}/chat/stream`, {
@@ -95,7 +111,11 @@ class WorkAssistantAgentService {
                     conversation_id: params.conversation_id || null,
                     file: params.file || null,
                     files: Array.isArray(params.files) ? params.files : [],
-                    file_count: Number.isFinite(params.file_count) ? params.file_count : (Array.isArray(params.files) ? params.files.length : 0),
+                    file_count: Number.isFinite(params.file_count)
+                        ? params.file_count
+                        : Array.isArray(params.files)
+                        ? params.files.length
+                        : 0,
                     stream: true,
                     metadata: params.metadata || {}
                 })
@@ -117,20 +137,20 @@ class WorkAssistantAgentService {
                 const lines = buffer.split('\n');
                 buffer = lines.pop() || '';
 
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6);
-                        if (data.trim()) {
-                            try {
-                                const parsed = JSON.parse(data);
-                                this._handleStreamEvent(parsed, callbacks);
-                            } catch (e) {
-                                // JSON 파싱 실패 시 무시
-                            }
+                for (const rawLine of lines) {
+                    const line = rawLine.replace(/\r$/, '');
+                    // SSE: "data: ..." — 공백 유무와 무관하게 파싱 (AgentRouterService와 동일)
+                    if (line.startsWith('data:')) {
+                        const data = line.slice(5).replace(/^\s+/, '');
+                        if (!data.trim()) continue;
+                        try {
+                            const parsed = JSON.parse(data);
+                            this._handleStreamEvent(parsed, callbacks);
+                        } catch (e) {
+                            // JSON 파싱 실패 시 무시
                         }
-                    } else if (line.startsWith('event: ')) {
-                        const eventType = line.slice(7).trim();
-                        // 이벤트 타입 처리 (metadata 등)
+                    } else if (line.startsWith('event:')) {
+                        // DevTools는 event: 필드로 타입을 표시함(fetch 클라이언트는 주로 data: JSON만 처리)
                     }
                 }
             }
@@ -152,22 +172,51 @@ class WorkAssistantAgentService {
      * 스트림 이벤트 처리
      */
     _handleStreamEvent(event, callbacks) {
-        const { onToken, onToolStart, onToolEnd, onDone, onError, onMetadata, onAskUser, onAgentLog, onProcessStatus, onProcessPartial, onProcessPatch } = callbacks;
+        const {
+            onToken,
+            onToolStart,
+            onToolEnd,
+            onPlanTools,
+            onPlanSkills,
+            onPlanTodos,
+            onDone,
+            onError,
+            onMetadata,
+            onAskUser,
+            onAgentLog,
+            onProcessStatus,
+            onProcessPartial,
+            onProcessPatch
+        } = callbacks;
 
-        if (event.conversation_id && onMetadata) {
+        // 타입이 meta이거나(또는 레거시로 type 없이) conversation_id만 올 때만 세션 메타로 처리
+        if (event.conversation_id && onMetadata && (event.type === 'meta' || event.type == null)) {
             onMetadata({ conversation_id: event.conversation_id });
             return;
         }
 
         switch (event.type) {
+            case 'meta':
+                break;
             case 'token':
                 if (onToken) onToken(event.content);
                 break;
-            case 'tool_start':
-                if (onToolStart) onToolStart(event.tool, event.input);
+            case 'plan_tools':
+                if (onPlanTools) onPlanTools(Array.isArray(event.tools) ? event.tools : [], event);
                 break;
+            case 'plan_skills':
+                if (onPlanSkills) onPlanSkills(Array.isArray(event.skills) ? event.skills : [], event);
+                break;
+            case 'plan_todos':
+                if (onPlanTodos) onPlanTodos(Array.isArray(event.todos) ? event.todos : [], event);
+                break;
+            case 'tool_start': {
+                const toolRef = event.tool ?? event.tool_name ?? event.name;
+                if (onToolStart) onToolStart(toolRef, event.input ?? event.arguments ?? null, event);
+                break;
+            }
             case 'tool_end':
-                if (onToolEnd) onToolEnd(event.output);
+                if (onToolEnd) onToolEnd(event.output, event);
                 break;
             case 'done':
                 const askUserData = this.parseAskUserResponse(event.content);

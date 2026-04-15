@@ -276,12 +276,7 @@
                                                                 v-bind="props"
                                                                 style="margin-right: 5px"
                                                             >
-                                                                <Icons
-                                                                    :icon="'play-outline'"
-                                                                    :size="17"
-                                                                    stroke-width="1.5"
-                                                                   
-                                                                />
+                                                                <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" />
                                                             </v-btn>
                                                         </template>
                                                     </v-tooltip>

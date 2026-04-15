@@ -122,21 +122,8 @@
                 {{ selectedIds.size }}개 선택됨
             </span>
             <v-spacer />
-            <v-btn
-                v-if="allowSkip"
-                variant="text"
-                size="small"
-                @click="handleSkip"
-            >
-                건너뛰기
-            </v-btn>
-            <v-btn
-                color="primary"
-                size="small"
-                variant="flat"
-                :disabled="!canSubmit"
-                @click="handleSubmit"
-            >
+            <v-btn v-if="allowSkip" variant="text" size="small" @click="handleSkip"> 건너뛰기 </v-btn>
+            <v-btn color="primary" size="small" variant="flat" :disabled="!canSubmit" @click="handleSubmit">
                 {{ submitLabel }}
             </v-btn>
         </div>
@@ -156,71 +143,71 @@ export default {
         /** 피드백 타입: 'select_items' | 'suggestions' | 'confirm' */
         feedbackType: {
             type: String,
-            default: 'select_items',
+            default: 'select_items'
         },
         /** 사용자에게 보여줄 질문/안내 */
         question: {
             type: String,
-            default: '선택해 주세요.',
+            default: '선택해 주세요.'
         },
         /** 추가 설명 텍스트 */
         context: {
             type: String,
-            default: '',
+            default: ''
         },
         /** 선택 가능한 아이템 리스트 [{id, label, description}] */
         items: {
             type: Array,
-            default: () => [],
+            default: () => []
         },
         /** 제안 리스트 (suggestions 모드) */
         suggestions: {
             type: Array,
-            default: () => [],
+            default: () => []
         },
         evidenceSpans: {
             type: Array,
-            default: () => [],
+            default: () => []
         },
         impactPreview: {
             type: Array,
-            default: () => [],
+            default: () => []
         },
         /** 복수 선택 허용 */
         allowMultiple: {
             type: Boolean,
-            default: true,
+            default: true
         },
         /** 최소 선택 개수 */
         minSelect: {
             type: Number,
-            default: 1,
+            default: 1
         },
         /** 건너뛰기 허용 */
         allowSkip: {
             type: Boolean,
-            default: false,
+            default: false
         },
         /** 제출 버튼 텍스트 */
         submitLabel: {
             type: String,
-            default: '확인',
+            default: '확인'
         },
         /** 헤더 아이콘 */
         headerIcon: {
             type: String,
-            default: 'mdi-comment-question-outline',
+            default: 'mdi-comment-question-outline'
         },
         /** 이미 제출된 상태 (읽기 전용) */
         submitted: {
             type: Boolean,
-            default: false,
+            default: false
         },
         /** 제출 후 표시 텍스트 */
         submittedText: {
             type: String,
-            default: '응답 완료',
-        },
+            default: '응답 완료'
+        }
     },
     emits: ['submit', 'skip'],
     data() {
@@ -228,7 +215,7 @@ export default {
             selectedIds: new Set(),
             selectedSuggestion: null,
             decision: '',
-            freeText: '',
+            freeText: ''
         };
     },
     computed: {
@@ -243,7 +230,7 @@ export default {
                 return this.decision === 'approve' || this.decision === 'reject';
             }
             return true; // confirm 모드
-        },
+        }
     },
     methods: {
         toggleItem(id) {
@@ -273,16 +260,16 @@ export default {
         handleSubmit() {
             if (!this.canSubmit) return;
             if (this.feedbackType === 'select_items') {
-                const selectedItems = this.items.filter(item => this.selectedIds.has(item.id));
+                const selectedItems = this.items.filter((item) => this.selectedIds.has(item.id));
                 this.$emit('submit', {
                     type: 'select_items',
                     selectedIds: [...this.selectedIds],
-                    selectedItems,
+                    selectedItems
                 });
             } else if (this.feedbackType === 'suggestions') {
                 this.$emit('submit', {
                     type: 'suggestions',
-                    selected: this.selectedSuggestion,
+                    selected: this.selectedSuggestion
                 });
             } else if (this.feedbackType === 'approve_reject_with_edit') {
                 this.$emit('submit', {
@@ -290,7 +277,7 @@ export default {
                     decision: this.decision,
                     answer: this.decision === 'approve' ? '승인' : '반려',
                     reason: (this.freeText || '').trim(),
-                    selectedSuggestion: this.selectedSuggestion || null,
+                    selectedSuggestion: this.selectedSuggestion || null
                 });
             } else {
                 this.$emit('submit', { type: 'confirm' });
@@ -298,8 +285,8 @@ export default {
         },
         handleSkip() {
             this.$emit('skip');
-        },
-    },
+        }
+    }
 };
 </script>
 

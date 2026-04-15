@@ -54,7 +54,6 @@
         <teleport to="body">
             <transition name="fade">
                 <div v-if="editDialog" class="slide-edit" @keydown.esc="cancelEdit" tabindex="0" ref="editOverlay">
-
                     <!-- 상단 바 -->
                     <div class="slide-edit__topbar">
                         <span class="slide-edit__title">슬라이드 {{ currentIndex + 1 }} 수정</span>
@@ -65,12 +64,16 @@
                                         class="slide-edit__toggle-btn"
                                         :class="{ 'is-active': compareTab === 'before' }"
                                         @click="compareTab = 'before'"
-                                    >수정 전</button>
+                                    >
+                                        수정 전
+                                    </button>
                                     <button
                                         class="slide-edit__toggle-btn"
                                         :class="{ 'is-active': compareTab === 'after' }"
                                         @click="compareTab = 'after'"
-                                    >수정 후</button>
+                                    >
+                                        수정 후
+                                    </button>
                                 </div>
                             </template>
                             <button class="slide-edit__close" @click="cancelEdit">
@@ -81,7 +84,6 @@
 
                     <!-- 메인 이미지 영역 -->
                     <div class="slide-edit__body">
-
                         <!-- 입력 모드: 이미지 위 드래그 영역 선택 + 하단 입력바 -->
                         <template v-if="editStep === 'input'">
                             <div class="slide-edit__image-area">
@@ -102,18 +104,12 @@
                                         @load="onEditImgLoad"
                                     />
                                     <!-- 선택 영역 표시 -->
-                                    <div
-                                        v-if="regionDisplay"
-                                        class="slide-edit__region"
-                                        :style="regionStyle"
-                                    ></div>
+                                    <div v-if="regionDisplay" class="slide-edit__region" :style="regionStyle"></div>
                                 </div>
                                 <div v-if="!regionDisplay" class="slide-edit__hint">
                                     드래그로 수정할 영역을 선택하세요 (선택 안 하면 전체 수정)
                                 </div>
-                                <div v-else class="slide-edit__hint">
-                                    영역 선택됨 — 다시 드래그하면 재지정
-                                </div>
+                                <div v-else class="slide-edit__hint">영역 선택됨 — 다시 드래그하면 재지정</div>
                             </div>
                             <!-- 참조 이미지 미리보기 -->
                             <div v-if="editRefImage" class="slide-edit__ref-bar">
@@ -131,7 +127,7 @@
                                     ref="refFileInput"
                                     type="file"
                                     accept="image/*"
-                                    style="display:none"
+                                    style="display: none"
                                     @change="handleRefImageUpload"
                                 />
                                 <textarea
@@ -141,11 +137,7 @@
                                     placeholder="수정할 내용을 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
                                     @keydown.enter.exact.prevent="submitEdit"
                                 ></textarea>
-                                <button
-                                    class="slide-edit__send"
-                                    :disabled="!editInstruction.trim()"
-                                    @click="submitEdit"
-                                >
+                                <button class="slide-edit__send" :disabled="!editInstruction.trim()" @click="submitEdit">
                                     <v-icon size="18">mdi-send</v-icon>
                                 </button>
                             </div>
@@ -176,7 +168,9 @@
                             </div>
                             <div class="slide-edit__compare-actions">
                                 <button class="slide-edit__action-btn slide-edit__action-btn--ghost" @click="cancelEdit">취소</button>
-                                <button class="slide-edit__action-btn slide-edit__action-btn--ghost" @click="editStep = 'input'">다시 수정</button>
+                                <button class="slide-edit__action-btn slide-edit__action-btn--ghost" @click="editStep = 'input'">
+                                    다시 수정
+                                </button>
                                 <button class="slide-edit__action-btn slide-edit__action-btn--primary" @click="applyEdit">
                                     <v-icon size="16" class="mr-1">mdi-check</v-icon> 적용
                                 </button>
@@ -189,9 +183,13 @@
                                 <div class="slide-edit__error-content">
                                     <v-icon size="56" color="error">mdi-alert-circle-outline</v-icon>
                                     <p class="slide-edit__error-text">{{ editError }}</p>
-                                    <div style="display:flex; gap:8px; margin-top:20px">
-                                        <button class="slide-edit__action-btn slide-edit__action-btn--ghost" @click="cancelEdit">닫기</button>
-                                        <button class="slide-edit__action-btn slide-edit__action-btn--primary" @click="editStep = 'input'">다시 시도</button>
+                                    <div style="display: flex; gap: 8px; margin-top: 20px">
+                                        <button class="slide-edit__action-btn slide-edit__action-btn--ghost" @click="cancelEdit">
+                                            닫기
+                                        </button>
+                                        <button class="slide-edit__action-btn slide-edit__action-btn--primary" @click="editStep = 'input'">
+                                            다시 시도
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -204,7 +202,14 @@
         <!-- 풀스크린 오버레이 -->
         <teleport to="body">
             <transition name="fade">
-                <div v-if="fullscreen" class="slide-fullscreen" @click.self="fullscreen = false" @keydown.esc="fullscreen = false" tabindex="0" ref="fullscreenEl">
+                <div
+                    v-if="fullscreen"
+                    class="slide-fullscreen"
+                    @click.self="fullscreen = false"
+                    @keydown.esc="fullscreen = false"
+                    tabindex="0"
+                    ref="fullscreenEl"
+                >
                     <div
                         class="slide-fullscreen__stage"
                         @pointerdown="onPointerDown"
@@ -214,7 +219,13 @@
                     >
                         <transition :name="swipeTransition">
                             <div class="slide-fullscreen__card" :key="currentIndex">
-                                <img v-if="currentSlide.image" :src="currentSlide.image" class="slide-fullscreen__image" alt="" draggable="false" />
+                                <img
+                                    v-if="currentSlide.image"
+                                    :src="currentSlide.image"
+                                    class="slide-fullscreen__image"
+                                    alt=""
+                                    draggable="false"
+                                />
                                 <div v-else class="slide-fullscreen__md" v-html="currentSlide.html"></div>
                             </div>
                         </transition>
@@ -280,8 +291,8 @@ export default {
             regionStartY: 0,
             regionDisplay: null, // { left, top, width, height } in px (display coords)
             regionNatural: null, // { x1, y1, x2, y2, width, height } in natural image pixels
-            editImgRect: null,   // { left, top, width, height, scale } of rendered img
-            editRefImage: null,  // { dataUrl, base64, mimeType } 참조 이미지
+            editImgRect: null, // { left, top, width, height, scale } of rendered img
+            editRefImage: null, // { dataUrl, base64, mimeType } 참조 이미지
             // 스와이프
             swipeStartX: 0,
             swipeStartY: 0,
@@ -294,7 +305,10 @@ export default {
             const raw = (this.slideMarkdown || '').trim();
             if (!raw) return [{ title: '', body: '', html: '<p>슬라이드 없음</p>', image: null }];
 
-            const parts = raw.split(/\n---\n/).map((s) => s.trim()).filter(Boolean);
+            const parts = raw
+                .split(/\n---\n/)
+                .map((s) => s.trim())
+                .filter(Boolean);
             return parts.map((part, i) => {
                 const lines = part.split('\n');
                 // 첫 번째 #으로 시작하는 줄을 타이틀로
@@ -433,13 +447,23 @@ export default {
 
             if (title) {
                 pptSlide.addText(title, {
-                    x: 0.5, y: 0.4, w: '90%', fontSize: 32, bold: true, color: '1d1d1f'
+                    x: 0.5,
+                    y: 0.4,
+                    w: '90%',
+                    fontSize: 32,
+                    bold: true,
+                    color: '1d1d1f'
                 });
             }
             if (body) {
                 pptSlide.addText(body, {
-                    x: 0.5, y: title ? 1.4 : 0.5, w: '90%', h: title ? 4 : 5,
-                    fontSize: 18, color: '444444', lineSpacingMultiple: 1.4
+                    x: 0.5,
+                    y: title ? 1.4 : 0.5,
+                    w: '90%',
+                    h: title ? 4 : 5,
+                    fontSize: 18,
+                    color: '444444',
+                    lineSpacingMultiple: 1.4
                 });
             }
         },
@@ -465,7 +489,9 @@ export default {
             this.editImgRect = null;
             this.editRefImage = null;
             this.editDialog = true;
-            this.$nextTick(() => { this.$refs.editOverlay?.focus(); });
+            this.$nextTick(() => {
+                this.$refs.editOverlay?.focus();
+            });
             document.body.style.overflow = 'hidden';
         },
         // ── 영역 선택 ──
@@ -517,7 +543,8 @@ export default {
                 this.regionDisplay = {
                     left: this.editImgRect.left + left,
                     top: this.editImgRect.top + top,
-                    width, height
+                    width,
+                    height
                 };
             }
         },
@@ -665,7 +692,9 @@ export default {
         },
         fullscreen(v) {
             if (v) {
-                this.$nextTick(() => { this.$refs.fullscreenEl?.focus(); });
+                this.$nextTick(() => {
+                    this.$refs.fullscreenEl?.focus();
+                });
                 document.body.style.overflow = 'hidden';
             } else {
                 document.body.style.overflow = '';
@@ -708,7 +737,7 @@ export default {
     aspect-ratio: 16 / 9;
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.10), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -810,8 +839,6 @@ export default {
 .slide-viewer__btn--expand {
     margin-left: 8px;
 }
-
-
 
 .slide-viewer__counter {
     font-size: 12px;
@@ -973,13 +1000,33 @@ export default {
     color: #1d1d1f;
 }
 
-.slide-fullscreen__md :deep(h1) { font-size: 32px; font-weight: 700; margin-bottom: 16px; }
-.slide-fullscreen__md :deep(h2) { font-size: 26px; font-weight: 600; margin-bottom: 12px; }
-.slide-fullscreen__md :deep(h3) { font-size: 21px; font-weight: 600; margin-bottom: 10px; }
+.slide-fullscreen__md :deep(h1) {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+.slide-fullscreen__md :deep(h2) {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.slide-fullscreen__md :deep(h3) {
+    font-size: 21px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
 .slide-fullscreen__md :deep(ul),
-.slide-fullscreen__md :deep(ol) { padding-left: 28px; margin-bottom: 12px; }
-.slide-fullscreen__md :deep(li) { margin-bottom: 6px; }
-.slide-fullscreen__md :deep(img) { max-width: 100%; border-radius: 12px; }
+.slide-fullscreen__md :deep(ol) {
+    padding-left: 28px;
+    margin-bottom: 12px;
+}
+.slide-fullscreen__md :deep(li) {
+    margin-bottom: 6px;
+}
+.slide-fullscreen__md :deep(img) {
+    max-width: 100%;
+    border-radius: 12px;
+}
 
 .slide-fullscreen__controls {
     display: flex;
@@ -1032,9 +1079,16 @@ export default {
 }
 
 /* fade transition for fullscreen overlay */
-.fade-enter-active { transition: opacity 0.2s ease; }
-.fade-leave-active { transition: opacity 0.15s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active {
+    transition: opacity 0.2s ease;
+}
+.fade-leave-active {
+    transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
 
 /* ── 편집 모달 ── */
 .slide-edit {

@@ -161,24 +161,25 @@
                                         <div v-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
                                         <pre v-else-if="message.content" class="text-body-1" v-html="linkify(message.content)"></pre>
 
-                                        <div
-                                            v-if="
-                                                hasPdf2bpmnResultSections(message)
-                                            "
-                                            class="pdf2bpmn-result-container mt-3"
-                                        >
+                                        <div v-if="hasPdf2bpmnResultSections(message)" class="pdf2bpmn-result-container mt-3">
                                             <div class="d-flex align-center mb-2">
                                                 <v-icon size="16" color="success" class="mr-1">mdi-check-circle</v-icon>
                                                 <span class="text-caption font-weight-bold">PDF2BPMN 생성 결과</span>
                                             </div>
                                             <div
-                                                v-if="message.pdf2bpmnResult.generatedBpmns && message.pdf2bpmnResult.generatedBpmns.length > 0"
+                                                v-if="
+                                                    message.pdf2bpmnResult.generatedBpmns &&
+                                                    message.pdf2bpmnResult.generatedBpmns.length > 0
+                                                "
                                                 class="text-caption font-weight-bold mb-1"
                                             >
                                                 생성된 BPMN 프로세스 ({{ message.pdf2bpmnResult.generatedBpmns.length }}개)
                                             </div>
                                             <div
-                                                v-if="message.pdf2bpmnResult.generatedBpmns && message.pdf2bpmnResult.generatedBpmns.length > 0"
+                                                v-if="
+                                                    message.pdf2bpmnResult.generatedBpmns &&
+                                                    message.pdf2bpmnResult.generatedBpmns.length > 0
+                                                "
                                                 class="d-flex flex-column"
                                                 style="gap: 8px"
                                             >
@@ -201,10 +202,17 @@
                                                     </div>
                                                 </v-card>
                                             </div>
-                                            <div v-if="getPdf2bpmnSavedSkills(message).length > 0" class="text-caption font-weight-bold mt-3 mb-1">
+                                            <div
+                                                v-if="getPdf2bpmnSavedSkills(message).length > 0"
+                                                class="text-caption font-weight-bold mt-3 mb-1"
+                                            >
                                                 생성된 스킬 ({{ getPdf2bpmnSavedSkills(message).length }}개)
                                             </div>
-                                            <div v-if="getPdf2bpmnSavedSkills(message).length > 0" class="d-flex flex-column" style="gap: 8px">
+                                            <div
+                                                v-if="getPdf2bpmnSavedSkills(message).length > 0"
+                                                class="d-flex flex-column"
+                                                style="gap: 8px"
+                                            >
                                                 <v-card
                                                     v-for="(skill, sIdx) in getPdf2bpmnSavedSkills(message)"
                                                     :key="`skill-${sIdx}`"
@@ -213,7 +221,9 @@
                                                     @click="openResultUrl(resolveSkillUrl(skill))"
                                                 >
                                                     <div class="d-flex align-center">
-                                                        <v-icon size="18" color="deep-orange" class="mr-2">mdi-lightning-bolt-outline</v-icon>
+                                                        <v-icon size="18" color="deep-orange" class="mr-2"
+                                                            >mdi-lightning-bolt-outline</v-icon
+                                                        >
                                                         <div class="flex-grow-1">
                                                             <div class="text-body-2 font-weight-bold">
                                                                 {{ skill.name || skill.safe_name || 'Unnamed Skill' }}
@@ -223,10 +233,17 @@
                                                     </div>
                                                 </v-card>
                                             </div>
-                                            <div v-if="getPdf2bpmnSavedAgents(message).length > 0" class="text-caption font-weight-bold mt-3 mb-1">
+                                            <div
+                                                v-if="getPdf2bpmnSavedAgents(message).length > 0"
+                                                class="text-caption font-weight-bold mt-3 mb-1"
+                                            >
                                                 생성된 에이전트 ({{ getPdf2bpmnSavedAgents(message).length }}개)
                                             </div>
-                                            <div v-if="getPdf2bpmnSavedAgents(message).length > 0" class="d-flex flex-column" style="gap: 8px">
+                                            <div
+                                                v-if="getPdf2bpmnSavedAgents(message).length > 0"
+                                                class="d-flex flex-column"
+                                                style="gap: 8px"
+                                            >
                                                 <v-card
                                                     v-for="(agent, aIdx) in getPdf2bpmnSavedAgents(message)"
                                                     :key="`agent-${aIdx}`"
@@ -442,8 +459,8 @@ export default {
             const list = Array.isArray(result.savedSkills)
                 ? result.savedSkills
                 : Array.isArray(result.saved_skills)
-                  ? result.saved_skills
-                  : [];
+                ? result.saved_skills
+                : [];
             return list.filter((x) => x && (x.name || x.safe_name));
         },
         getPdf2bpmnSavedAgents(message) {
@@ -451,8 +468,8 @@ export default {
             const list = Array.isArray(result.savedAgents)
                 ? result.savedAgents
                 : Array.isArray(result.saved_agents)
-                  ? result.saved_agents
-                  : [];
+                ? result.saved_agents
+                : [];
             return list.filter((x) => x && x.id);
         },
         resolveSkillUrl(skill) {

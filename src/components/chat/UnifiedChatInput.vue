@@ -147,11 +147,7 @@ export default {
             });
         },
         forwardSendMessage(message) {
-            const messageFiles = Array.isArray(message?.files)
-                ? message.files
-                : Array.isArray(message?.file)
-                  ? message.file
-                  : [];
+            const messageFiles = Array.isArray(message?.files) ? message.files : Array.isArray(message?.file) ? message.file : [];
             const hasFiles = messageFiles.length > 0;
             if (!message || (!message.text && !message.file && !hasFiles && (!message.images || message.images.length === 0))) return;
             this.$emit('sendMessage', {

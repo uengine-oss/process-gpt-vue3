@@ -535,10 +535,10 @@ export default {
             if (inMemoryDraft && inMemoryDraft.html) {
                 me.tempFormHtml = inMemoryDraft.html;
             } else {
-            me.tempFormHtml =
-                me.formId === 'defaultform'
-                    ? await me.backend.getRawDefinition(me.formId, { type: 'form' })
-                    : await me.backend.getRawDefinition(me.formId, options);
+                me.tempFormHtml =
+                    me.formId === 'defaultform'
+                        ? await me.backend.getRawDefinition(me.formId, { type: 'form' })
+                        : await me.backend.getRawDefinition(me.formId, options);
             }
 
             if (!me.tempFormHtml) {

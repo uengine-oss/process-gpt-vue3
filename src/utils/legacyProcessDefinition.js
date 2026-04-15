@@ -138,7 +138,9 @@ export function convertLegacyProcessDefinitionToElements(definition) {
             const sequenceElement = {
                 elementType: 'Sequence',
                 id: normalizeBpmnId(sequence.id),
-                name: String(sequence.id || '').replace('SequenceFlow_', '').replace(/_/g, ' '),
+                name: String(sequence.id || '')
+                    .replace('SequenceFlow_', '')
+                    .replace(/_/g, ' '),
                 source: idMap[sequence.source] || normalizeBpmnId(sequence.source),
                 target: idMap[sequence.target] || normalizeBpmnId(sequence.target)
             };

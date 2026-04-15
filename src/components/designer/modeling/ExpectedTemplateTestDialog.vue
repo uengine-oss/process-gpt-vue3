@@ -23,7 +23,6 @@
                                             <Icons
                                                 :icon="'file-document-edit-outline'"
                                                 :size="20"
-                                               
                                                 style="position: relative; left: -30px"
                                                 :style="
                                                     diffPathList[filePath].subPath && diffPathList[filePath].subPath != ''
@@ -59,7 +58,6 @@
                                             <Icons
                                                 :icon="'file-document-plus-outline'"
                                                 :size="20"
-                                               
                                                 style="position: relative; left: -30px"
                                                 :style="
                                                     diffPathList[filePath].subPath && diffPathList[filePath].subPath != ''
@@ -95,7 +93,6 @@
                                             <Icons
                                                 :icon="'file-document-minus-outline'"
                                                 :size="20"
-                                               
                                                 style="position: relative; left: -30px"
                                                 :style="
                                                     diffPathList[filePath].subPath && diffPathList[filePath].subPath != ''

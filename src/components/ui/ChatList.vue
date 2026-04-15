@@ -32,11 +32,7 @@
             <v-skeleton-loader v-for="n in 3" :key="n" type="list-item" />
         </div>
         <div v-else-if="filteredChatRooms.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
-            {{
-                searchText && searchText.trim()
-                    ? $t('VerticalSidebar.chatSearchEmpty')
-                    : $t('VerticalSidebar.chatEmpty')
-            }}
+            {{ searchText && searchText.trim() ? $t('VerticalSidebar.chatSearchEmpty') : $t('VerticalSidebar.chatEmpty') }}
         </div>
         <ExpandableList v-else :items="filteredChatRooms" :limit="5" :incremental="true" :step="10">
             <template #items="{ displayedItems }">
@@ -162,7 +158,9 @@
                             :subtitle="item.raw.email"
                         >
                             <template v-slot:prepend>
-                                <v-icon style="position: relative; margin-right: 10px; margin-left: -3px" size="48">mdi-account-circle</v-icon>
+                                <v-icon style="position: relative; margin-right: 10px; margin-left: -3px" size="48"
+                                    >mdi-account-circle</v-icon
+                                >
                             </template>
                         </v-list-item>
                     </template>

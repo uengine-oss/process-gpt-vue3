@@ -52,7 +52,12 @@
                         </v-icon>
                     </div>
 
-                    <div v-if="!workAssistantAgentMode" ref="chatSplitContainer" class="chat-split-container" :class="{ 'chat-split-active': showAgentMessagePanel }">
+                    <div
+                        v-if="!workAssistantAgentMode"
+                        ref="chatSplitContainer"
+                        class="chat-split-container"
+                        :class="{ 'chat-split-active': showAgentMessagePanel }"
+                    >
                         <perfect-scrollbar
                             :class="[
                                 'h-100 chat-view-box',
@@ -69,157 +74,161 @@
 
                                     <InfoAlert :howToUseInfo="howToUseInfo" :chatInfo="chatInfo" />
 
-                                <!-- 참여자 현황 UI -->
-                                <div v-if="participantUsers.length > 0"
-                                    class="pa-4 chat-participants-box"
-                                >
-                                    <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: #333;">{{ $t('chat.participants') }}</h6>
-                                    <v-row class="ma-0 pa-0">
-                                        <div v-for="participant in participantUsers" :key="participant.id" class="mr-4">
-                                            <div class="d-flex align-center">
-                                                <v-avatar size="24" class="mr-2">
-                                                    <v-img 
-                                                        :src="participant.profile || '/images/defaultUser.png'" 
-                                                        :alt="participant.username"
-                                                        cover
-                                                    >
-                                                        <template v-slot:error>
-                                                            <v-img src="/images/defaultUser.png" cover>
-                                                                <template v-slot:error>
-                                                                    <v-icon size="small" style="color: #666;">mdi-account</v-icon>
-                                                                </template>
-                                                            </v-img>
-                                                        </template>
-                                                    </v-img>
-                                                </v-avatar>
-                                                <div class="flex-grow-1">
-                                                    <div class="text-body-2 font-weight-medium" style="color: #444;">{{ participant.username || '이름 없음' }}</div>
-                                                    <div class="text-caption" style="color: #666;">{{ participant.email || 'ID: ' + participant.id }}</div>
+                                    <!-- 참여자 현황 UI -->
+                                    <div v-if="participantUsers.length > 0" class="pa-4 chat-participants-box">
+                                        <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: #333">
+                                            {{ $t('chat.participants') }}
+                                        </h6>
+                                        <v-row class="ma-0 pa-0">
+                                            <div v-for="participant in participantUsers" :key="participant.id" class="mr-4">
+                                                <div class="d-flex align-center">
+                                                    <v-avatar size="24" class="mr-2">
+                                                        <v-img
+                                                            :src="participant.profile || '/images/defaultUser.png'"
+                                                            :alt="participant.username"
+                                                            cover
+                                                        >
+                                                            <template v-slot:error>
+                                                                <v-img src="/images/defaultUser.png" cover>
+                                                                    <template v-slot:error>
+                                                                        <v-icon size="small" style="color: #666">mdi-account</v-icon>
+                                                                    </template>
+                                                                </v-img>
+                                                            </template>
+                                                        </v-img>
+                                                    </v-avatar>
+                                                    <div class="flex-grow-1">
+                                                        <div class="text-body-2 font-weight-medium" style="color: #444">
+                                                            {{ participant.username || '이름 없음' }}
+                                                        </div>
+                                                        <div class="text-caption" style="color: #666">
+                                                            {{ participant.email || 'ID: ' + participant.id }}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </v-row>
-                                </div>
-                                
-                                <div
-                                    v-for="(message, index) in userFilteredMessages"
-                                    :key="index"
-                                    class="py-1 px-3 chat-message-row"
-                                    :class="{ 'chat-message-row--highlight': highlightedMessageUuid && message && message.uuid === highlightedMessageUuid }"
-                                    :data-msg-uuid="message && message.uuid ? message.uuid : ''"
-                                >
-                                    <!-- 날짜 구분선 표시 -->
-                                    <div v-if="shouldDisplayDateSeparator(message, index)" class="date-separator-container">
-                                        <v-divider class="date-separator-line"></v-divider>
-                                        <div class="date-separator-text">
-                                            {{ formatDateSeparator(message.timeStamp) }}
-                                        </div>
-                                        <v-divider class="date-separator-line"></v-divider>
+                                        </v-row>
                                     </div>
-                                    
-                                    <!-- PDF2BPMN 진행 카드 (마지막 메시지 하단) -->
+
                                     <div
-                                        v-if="chatRoomMode && pdf2bpmnProgress && pdf2bpmnProgress.isActive && index === userFilteredMessages.length - 1"
-                                        class="pdf2bpmn-progress-wrap mb-2"
+                                        v-for="(message, index) in userFilteredMessages"
+                                        :key="index"
+                                        class="py-1 px-3 chat-message-row"
+                                        :class="{
+                                            'chat-message-row--highlight':
+                                                highlightedMessageUuid && message && message.uuid === highlightedMessageUuid
+                                        }"
+                                        :data-msg-uuid="message && message.uuid ? message.uuid : ''"
                                     >
-                                        <div class="d-flex align-center mb-1">
-                                            <v-icon size="16" color="primary" class="mr-1">mdi-file-pdf-box</v-icon>
-                                            <span class="text-caption font-weight-bold">PDF → BPMN 변환</span>
-                                            <v-chip
-                                                size="x-small"
-                                                class="ml-2"
-                                                :color="getProgressChipColor(pdf2bpmnProgress.status)"
-                                                variant="tonal"
-                                            >
-                                                {{ pdf2bpmnProgress.status }}
-                                            </v-chip>
+                                        <!-- 날짜 구분선 표시 -->
+                                        <div v-if="shouldDisplayDateSeparator(message, index)" class="date-separator-container">
+                                            <v-divider class="date-separator-line"></v-divider>
+                                            <div class="date-separator-text">
+                                                {{ formatDateSeparator(message.timeStamp) }}
+                                            </div>
+                                            <v-divider class="date-separator-line"></v-divider>
                                         </div>
-                                        <v-card class="pa-3" variant="tonal">
-                                            <v-progress-linear
-                                                :model-value="pdf2bpmnProgress.progress || 0"
-                                                height="8"
-                                                rounded
-                                                class="mb-2"
-                                                :color="(pdf2bpmnProgress.status === 'completed') ? 'success' : 'primary'"
-                                            />
-                                            <div class="d-flex align-center justify-space-between">
-                                                <div class="text-caption text-medium-emphasis" style="max-width: 75%;">
-                                                    {{ pdf2bpmnProgress.message || '' }}
+
+                                        <!-- PDF2BPMN 진행 카드 (마지막 메시지 하단) -->
+                                        <div
+                                            v-if="
+                                                chatRoomMode &&
+                                                pdf2bpmnProgress &&
+                                                pdf2bpmnProgress.isActive &&
+                                                index === userFilteredMessages.length - 1
+                                            "
+                                            class="pdf2bpmn-progress-wrap mb-2"
+                                        >
+                                            <div class="d-flex align-center mb-1">
+                                                <v-icon size="16" color="primary" class="mr-1">mdi-file-pdf-box</v-icon>
+                                                <span class="text-caption font-weight-bold">PDF → BPMN 변환</span>
+                                                <v-chip
+                                                    size="x-small"
+                                                    class="ml-2"
+                                                    :color="getProgressChipColor(pdf2bpmnProgress.status)"
+                                                    variant="tonal"
+                                                >
+                                                    {{ pdf2bpmnProgress.status }}
+                                                </v-chip>
+                                            </div>
+                                            <v-card class="pa-3" variant="tonal">
+                                                <v-progress-linear
+                                                    :model-value="pdf2bpmnProgress.progress || 0"
+                                                    height="8"
+                                                    rounded
+                                                    class="mb-2"
+                                                    :color="pdf2bpmnProgress.status === 'completed' ? 'success' : 'primary'"
+                                                />
+                                                <div class="d-flex align-center justify-space-between">
+                                                    <div class="text-caption text-medium-emphasis" style="max-width: 75%">
+                                                        {{ pdf2bpmnProgress.message || '' }}
+                                                    </div>
+                                                    <div class="text-caption font-weight-bold">
+                                                        {{ pdf2bpmnProgress.progress || 0 }}%
+                                                        <v-progress-circular
+                                                            v-if="pdf2bpmnProgress.status === 'processing'"
+                                                            style="margin-left: 3px; margin-bottom: 3px"
+                                                            indeterminate
+                                                            size="12"
+                                                            width="2"
+                                                            color="primary"
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div class="text-caption font-weight-bold">
-                                                    {{ pdf2bpmnProgress.progress || 0 }}%
-                                                    <v-progress-circular
-                                                        v-if="pdf2bpmnProgress.status === 'processing'"
-                                                        style="margin-left: 3px; margin-bottom: 3px;"
-                                                        indeterminate
-                                                        size="12"
-                                                        width="2"
-                                                        color="primary"
+                                                <div
+                                                    v-if="pdf2bpmnProgress.generatedBpmns && pdf2bpmnProgress.generatedBpmns.length > 0"
+                                                    class="mt-2"
+                                                >
+                                                    <div class="text-caption font-weight-bold mb-1">
+                                                        생성된 프로세스 ({{ pdf2bpmnProgress.generatedBpmns.length }})
+                                                    </div>
+                                                    <div class="d-flex flex-wrap" style="gap: 8px">
+                                                        <v-chip
+                                                            v-for="(bpmn, bIdx) in pdf2bpmnProgress.generatedBpmns"
+                                                            :key="bIdx"
+                                                            size="small"
+                                                            variant="tonal"
+                                                            color="success"
+                                                            @click="emitPreviewBpmn(bpmn)"
+                                                            style="cursor: pointer"
+                                                        >
+                                                            <v-icon start size="14">mdi-sitemap</v-icon>
+                                                            {{ bpmn.process_name || bpmn.process_id }}
+                                                        </v-chip>
+                                                    </div>
+                                                </div>
+
+                                                <!-- HITL 질문 카드: PDF2BPMN 로딩 UI 내부 -->
+                                                <div
+                                                    v-if="
+                                                        pendingHumanFeedback &&
+                                                        !pendingHumanFeedback.__submitted &&
+                                                        (pdf2bpmnProgress.status === 'waiting_for_user' ||
+                                                            (pdf2bpmnProgress.message || '').includes('사용자 확인 대기'))
+                                                    "
+                                                    class="mt-3"
+                                                >
+                                                    <HumanFeedbackPanel
+                                                        :feedbackType="pendingHumanFeedback.user_request_type || 'approve_reject_with_edit'"
+                                                        :question="pendingHumanFeedback.question || '확인이 필요합니다.'"
+                                                        :context="pendingHumanFeedback.context || ''"
+                                                        :items="pendingHumanFeedback.items || []"
+                                                        :suggestions="pendingHumanFeedback.suggestions || []"
+                                                        :evidenceSpans="pendingHumanFeedback.evidence_spans || []"
+                                                        :impactPreview="pendingHumanFeedback.impact_preview || []"
+                                                        :allowMultiple="pendingHumanFeedback.allow_multiple !== false"
+                                                        :minSelect="pendingHumanFeedback.min_select || 1"
+                                                        :allowSkip="pendingHumanFeedback.allow_skip || false"
+                                                        :submitted="false"
+                                                        :headerIcon="'mdi-file-document-edit-outline'"
+                                                        :submitLabel="'응답 제출'"
+                                                        @submit="emitHumanFeedbackSubmit"
+                                                        @skip="emitHumanFeedbackSkip"
                                                     />
                                                 </div>
-                                            </div>
-                                            <div v-if="pdf2bpmnProgress.generatedBpmns && pdf2bpmnProgress.generatedBpmns.length > 0" class="mt-2">
-                                                <div class="text-caption font-weight-bold mb-1">
-                                                    생성된 프로세스 ({{ pdf2bpmnProgress.generatedBpmns.length }})
-                                                </div>
-                                                <div class="d-flex flex-wrap" style="gap: 8px;">
-                                                    <v-chip
-                                                        v-for="(bpmn, bIdx) in pdf2bpmnProgress.generatedBpmns"
-                                                        :key="bIdx"
-                                                        size="small"
-                                                        variant="tonal"
-                                                        color="success"
-                                                        @click="emitPreviewBpmn(bpmn)"
-                                                        style="cursor: pointer;"
-                                                    >
-                                                        <v-icon start size="14">mdi-sitemap</v-icon>
-                                                        {{ bpmn.process_name || bpmn.process_id }}
-                                                    </v-chip>
-                                                </div>
-                                            </div>
-
-                                            <!-- HITL 질문 카드: PDF2BPMN 로딩 UI 내부 -->
-                                            <div
-                                                v-if="
-                                                    pendingHumanFeedback &&
-                                                    !pendingHumanFeedback.__submitted &&
-                                                    (pdf2bpmnProgress.status === 'waiting_for_user' || (pdf2bpmnProgress.message || '').includes('사용자 확인 대기'))
-                                                "
-                                                class="mt-3"
-                                            >
-                                                <HumanFeedbackPanel
-                                                    :feedbackType="pendingHumanFeedback.user_request_type || 'approve_reject_with_edit'"
-                                                    :question="pendingHumanFeedback.question || '확인이 필요합니다.'"
-                                                    :context="pendingHumanFeedback.context || ''"
-                                                    :items="pendingHumanFeedback.items || []"
-                                                    :suggestions="pendingHumanFeedback.suggestions || []"
-                                                    :evidenceSpans="pendingHumanFeedback.evidence_spans || []"
-                                                    :impactPreview="pendingHumanFeedback.impact_preview || []"
-                                                    :allowMultiple="pendingHumanFeedback.allow_multiple !== false"
-                                                    :minSelect="pendingHumanFeedback.min_select || 1"
-                                                    :allowSkip="pendingHumanFeedback.allow_skip || false"
-                                                    :submitted="false"
-                                                    :headerIcon="'mdi-file-document-edit-outline'"
-                                                    :submitLabel="'응답 제출'"
-                                                    @submit="emitHumanFeedbackSubmit"
-                                                    @skip="emitHumanFeedbackSkip"
-                                                />
-                                            </div>
-                                        </v-card>
-                                    </div>
-
-                                    <!-- 라우팅(에이전트 선정) 로딩: 아바타/헤더 없이 '...' 버블만 표시(상대방 버블 색상과 동일) -->
-                                    <div v-if="message && message.__routingLoading">
-                                        <div class="message-bubble-wrap message-bubble-wrap--other">
-                                            <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
-                                                <div class="pa-2">
-                                                    <pre class="text-body-1 routing-loading-text">{{ (message.content || '...') }}</pre>
-                                                </div>
-                                            </v-sheet>
+                                            </v-card>
                                         </div>
-                                    </div>
 
-                                    <div v-else>
                                         <!-- 라우팅(에이전트 선정) 로딩: 아바타/헤더 없이 '...' 버블만 표시(상대방 버블 색상과 동일) -->
                                         <div v-if="message && message.__routingLoading">
                                             <div class="message-bubble-wrap message-bubble-wrap--other">
@@ -231,616 +240,188 @@
                                             </div>
                                         </div>
 
-                                        <!-- 자동 추천(초대) 카드 -->
-                                        <div
-                                            v-else-if="
-                                                message &&
-                                                message.__agentInviteRecommendation &&
-                                                Array.isArray(message.__agentInviteRecommendation.recommendedAgents) &&
-                                                message.__agentInviteRecommendation.recommendedAgents.length > 0
-                                            "
-                                        >
-                                            <div class="message-bubble-wrap message-bubble-wrap--other">
-                                                <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
-                                                    <div class="pa-3">
-                                                        <div class="text-body-2 font-weight-bold mb-1">적절한 담당자를 초대해볼까요?</div>
-                                                        <div
-                                                            v-if="(message?.__agentInviteRecommendation?.reason || '').toString().trim()"
-                                                            class="text-caption text-medium-emphasis mb-3"
-                                                        >
-                                                            {{ message?.__agentInviteRecommendation?.reason }}
-                                                        </div>
-
-                                                        <div
-                                                            v-for="agent in message?.__agentInviteRecommendation?.recommendedAgents || []"
-                                                            :key="agent.id"
-                                                            class="d-flex align-center justify-space-between mb-2"
-                                                            style="gap: 12px"
-                                                        >
-                                                            <div class="d-flex align-center" style="gap: 10px; min-width: 0">
-                                                                <v-avatar size="26" color="grey-lighten-3">
-                                                                    <v-img :src="agent.profile || '/images/chat-icon.png'" cover />
-                                                                </v-avatar>
-                                                                <div style="min-width: 0">
-                                                                    <div class="text-body-2 font-weight-medium">
-                                                                        {{ agent.username || agent.id }}
-                                                                    </div>
-                                                                    <div
-                                                                        class="text-caption text-medium-emphasis"
-                                                                        style="
-                                                                            white-space: nowrap;
-                                                                            overflow: hidden;
-                                                                            text-overflow: ellipsis;
-                                                                        "
-                                                                    >
-                                                                        {{ agent.role || agent.description || agent.goal || '' }}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <v-btn
-                                                                size="small"
-                                                                variant="tonal"
-                                                                color="primary"
-                                                                :disabled="isRecommendationInvited(message, agent.id)"
-                                                                @click="inviteAgentFromRecommendation(message, agent)"
-                                                            >
-                                                                {{ isRecommendationInvited(message, agent.id) ? '초대됨' : '초대' }}
-                                                            </v-btn>
-                                                        </div>
-
-                                                        <div class="text-caption text-medium-emphasis mt-1">
-                                                            초대하면 에이전트가 준비된 뒤 방금 요청을 자동으로 처리합니다.
-                                                        </div>
-                                                    </div>
-                                                </v-sheet>
-                                            </div>
-                                        </div>
-
-                                        <AgentsChat
-                                            v-else-if="message && message._template === 'agent'"
-                                            :message="message"
-                                            :agentInfo="agentInfo"
-                                            :totalSize="userFilteredMessages.length"
-                                            :currentIndex="index"
-                                        />
                                         <div v-else>
-                                            <div>
-                                                <div v-if="message.email == userInfo.email && message.role != 'system'">
-                                                    <div v-if="editIndex === index" class="d-flex justify-end">
-                                                        <div class="bg-lightprimary chat-room-edit-wrap" style="border-radius: 10px">
-                                                            <v-textarea
-                                                                v-model="messages[index].content"
-                                                                variant="solo"
-                                                                hide-details
-                                                                bg-color="lightprimary"
-                                                                class="shadow-none"
-                                                                density="compact"
-                                                                auto-grow
-                                                                rows="1"
-                                                                autofocus
-                                                            >
-                                                            </v-textarea>
-                                                            <v-row class="pa-0 ma-0 mr-2 pb-2">
-                                                                <v-spacer></v-spacer>
-                                                                <v-btn
-                                                                    @click="send"
-                                                                    class="text-medium-emphasis"
-                                                                    icon
-                                                                    variant="text"
-                                                                    size="x-small"
-                                                                    style="background-color: white !important; margin-right: 5px"
-                                                                >
-                                                                    <SendIcon size="20" />
-                                                                </v-btn>
-                                                                <v-btn
-                                                                    @click="cancel"
-                                                                    class="text-medium-emphasis"
-                                                                    icon
-                                                                    variant="text"
-                                                                    size="x-small"
-                                                                    style="background-color: white !important"
-                                                                >
-                                                                    <Icons :icon="'backspace-bold'" :size="20" />
-                                                                </v-btn>
-                                                            </v-row>
+                                            <!-- 라우팅(에이전트 선정) 로딩: 아바타/헤더 없이 '...' 버블만 표시(상대방 버블 색상과 동일) -->
+                                            <div v-if="message && message.__routingLoading">
+                                                <div class="message-bubble-wrap message-bubble-wrap--other">
+                                                    <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
+                                                        <div class="pa-2">
+                                                            <pre class="text-body-1 routing-loading-text">{{
+                                                                message.content || '...'
+                                                            }}</pre>
                                                         </div>
-                                                    </div>
+                                                    </v-sheet>
+                                                </div>
+                                            </div>
 
-                                                    <div v-else>
-                                                        <div class="d-flex justify-end">
-                                                            <slot name="custom-message-actions" :message="message"></slot>
+                                            <!-- 자동 추천(초대) 카드 -->
+                                            <div
+                                                v-else-if="
+                                                    message &&
+                                                    message.__agentInviteRecommendation &&
+                                                    Array.isArray(message.__agentInviteRecommendation.recommendedAgents) &&
+                                                    message.__agentInviteRecommendation.recommendedAgents.length > 0
+                                                "
+                                            >
+                                                <div class="message-bubble-wrap message-bubble-wrap--other">
+                                                    <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
+                                                        <div class="pa-3">
+                                                            <div class="text-body-2 font-weight-bold mb-1">
+                                                                적절한 담당자를 초대해볼까요?
+                                                            </div>
                                                             <div
-                                                                v-if="chatRoomMode"
-                                                                class="message-bubble-wrap message-bubble-wrap--mine"
-                                                                @mouseenter="hoverIndex = index"
-                                                                @mouseleave="hoverIndex = -1"
+                                                                v-if="
+                                                                    (message?.__agentInviteRecommendation?.reason || '').toString().trim()
+                                                                "
+                                                                class="text-caption text-medium-emphasis mb-3"
                                                             >
-                                                                <div
-                                                                    class="chat-room-timestamp-action my-timestamp"
-                                                                    :class="{ 'is-hover': hoverIndex === index, 'is-mobile': isMobile }"
-                                                                >
-                                                                    <span
-                                                                        class="chat-room-timestamp-text"
-                                                                        :style="
-                                                                            shouldDisplayMessageTimestamp(message, index)
-                                                                                ? ''
-                                                                                : 'opacity:0;'
-                                                                        "
-                                                                    >
-                                                                        {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
-                                                                    </span>
-                                                                    <div class="chat-room-actions-overlay chat-room-actions-overlay--mine">
-                                                                        <v-btn
-                                                                            v-if="!disableChat"
-                                                                            @click="beforeReply(message)"
-                                                                            icon
-                                                                            variant="text"
-                                                                            size="x-small"
-                                                                            class="chat-room-action-btn"
-                                                                        >
-                                                                            <v-icon size="18">mdi-subdirectory-arrow-right</v-icon>
-                                                                        </v-btn>
-                                                                        <v-btn
-                                                                            v-if="!disableChat"
-                                                                            @click="editMessage(index)"
-                                                                            icon
-                                                                            variant="text"
-                                                                            size="x-small"
-                                                                            class="chat-room-action-btn"
-                                                                        >
-                                                                            <v-icon size="18">mdi-pencil</v-icon>
-                                                                        </v-btn>
-                                                                        <v-btn
-                                                                            v-if="
-                                                                                shouldDisplayGeneratedWorkList(
-                                                                                    type,
-                                                                                    userFilteredMessages,
-                                                                                    generatedWorkList,
-                                                                                    index
-                                                                                )
+                                                                {{ message?.__agentInviteRecommendation?.reason }}
+                                                            </div>
+
+                                                            <div
+                                                                v-for="agent in message?.__agentInviteRecommendation?.recommendedAgents ||
+                                                                []"
+                                                                :key="agent.id"
+                                                                class="d-flex align-center justify-space-between mb-2"
+                                                                style="gap: 12px"
+                                                            >
+                                                                <div class="d-flex align-center" style="gap: 10px; min-width: 0">
+                                                                    <v-avatar size="26" color="grey-lighten-3">
+                                                                        <v-img :src="agent.profile || '/images/chat-icon.png'" cover />
+                                                                    </v-avatar>
+                                                                    <div style="min-width: 0">
+                                                                        <div class="text-body-2 font-weight-medium">
+                                                                            {{ agent.username || agent.id }}
+                                                                        </div>
+                                                                        <div
+                                                                            class="text-caption text-medium-emphasis"
+                                                                            style="
+                                                                                white-space: nowrap;
+                                                                                overflow: hidden;
+                                                                                text-overflow: ellipsis;
                                                                             "
-                                                                            @click="showGeneratedWorkList = !showGeneratedWorkList"
-                                                                            icon
-                                                                            variant="text"
-                                                                            size="x-small"
-                                                                            class="chat-room-action-btn"
                                                                         >
-                                                                            <v-icon size="18">mdi-text-box-search-outline</v-icon>
-                                                                        </v-btn>
+                                                                            {{ agent.role || agent.description || agent.goal || '' }}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                                <v-sheet
-                                                                    class="chat-message-bubble bg-lightprimary rounded-md px-3 py-3 mb-1"
+
+                                                                <v-btn
+                                                                    size="small"
+                                                                    variant="tonal"
+                                                                    color="primary"
+                                                                    :disabled="isRecommendationInvited(message, agent.id)"
+                                                                    @click="inviteAgentFromRecommendation(message, agent)"
                                                                 >
-                                                                    <div>
-                                                                        <div
-                                                                            v-if="message.replyUserName || message.replyContent"
-                                                                            class="reply-quote reply-quote--mine"
-                                                                            role="button"
-                                                                            tabindex="0"
-                                                                            @click.stop="scrollToOriginalMessage(message.replyUuid)"
-                                                                        >
-                                                                            <div class="reply-quote__body">
-                                                                                <div class="reply-quote__title">
-                                                                                    {{ (message.replyUserName || '').toString()
-                                                                                    }}{{ message.replyUserName ? '에게 답장' : '답장' }}
-                                                                                </div>
-                                                                                <div class="reply-quote__text">
-                                                                                    {{ message.replyContent || '' }}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <!-- 첨부(이미지/파일): content가 비어도 메시지 박스로 표시/답장 가능 -->
-                                                                        <div
-                                                                            v-if="
-                                                                                message.image ||
-                                                                                (message.images && message.images.length > 0) ||
-                                                                                getMessageFiles(message).length > 0
-                                                                            "
-                                                                            class="mb-2"
-                                                                        >
-                                                                            <!-- 단일 이미지 표시 (기존 호환성) -->
-                                                                            <v-sheet v-if="message.image && !message.images" class="mb-1">
-                                                                                <img
-                                                                                    :src="message.image"
-                                                                                    class="rounded-md"
-                                                                                    alt="pro"
-                                                                                    width="250"
-                                                                                    style="cursor: pointer"
-                                                                                    @click="emitPreviewImage(message.image)"
-                                                                                />
-                                                                            </v-sheet>
-
-                                                                            <!-- 다중 이미지 표시 -->
-                                                                            <div
-                                                                                v-if="message.images && message.images.length > 0"
-                                                                                class="d-flex flex-wrap mb-1"
-                                                                            >
-                                                                                <v-sheet
-                                                                                    v-for="(image, imgIndex) in message.images"
-                                                                                    :key="imgIndex"
-                                                                                    class="ma-1"
-                                                                                >
-                                                                                    <img
-                                                                                        :src="image.url || image"
-                                                                                        class="rounded-md"
-                                                                                        alt="pro"
-                                                                                        width="250"
-                                                                                        style="cursor: pointer"
-                                                                                        @click="emitPreviewImage(image.url || image)"
-                                                                                    />
-                                                                                </v-sheet>
-                                                                            </div>
-
-                                                                            <!-- 파일 첨부(다중 지원) -->
-                                                                            <div
-                                                                                v-if="getMessageFiles(message).length > 0"
-                                                                                class="mb-1 d-flex justify-end flex-column"
-                                                                                style="gap: 8px"
-                                                                            >
-                                                                                <v-sheet
-                                                                                    v-for="(attachedFile, fileIdx) in getMessageFiles(message)"
-                                                                                    :key="`msg-file-${index}-${fileIdx}`"
-                                                                                    rounded="lg"
-                                                                                    class="pa-2 d-inline-flex align-center"
-                                                                                    style="
-                                                                                        gap: 10px;
-                                                                                        cursor: pointer;
-                                                                                        border: 1px solid rgba(0, 0, 0, 0.08);
-                                                                                        background: white;
-                                                                                        max-width: min(520px, 80vw);
-                                                                                    "
-                                                                                    @click="
-                                                                                        emitOpenExternalUrl(
-                                                                                            attachedFile.url ||
-                                                                                                attachedFile.fileUrl ||
-                                                                                                attachedFile.publicUrl ||
-                                                                                                attachedFile.signedUrl
-                                                                                        )
-                                                                                    "
-                                                                                >
-                                                                                    <div
-                                                                                        style="
-                                                                                            width: 28px;
-                                                                                            height: 28px;
-                                                                                            border-radius: 10px;
-                                                                                            display: flex;
-                                                                                            align-items: center;
-                                                                                            justify-content: center;
-                                                                                            background: rgba(var(--v-theme-primary), 0.12);
-                                                                                        "
-                                                                                    >
-                                                                                        <v-icon size="18" color="primary"
-                                                                                            >mdi-file-outline</v-icon
-                                                                                        >
-                                                                                    </div>
-                                                                                    <div style="min-width: 0; flex: 1 1 auto">
-                                                                                        <div
-                                                                                            style="
-                                                                                                font-size: 13px;
-                                                                                                font-weight: 700;
-                                                                                                color: rgba(0, 0, 0, 0.78);
-                                                                                                overflow: hidden;
-                                                                                                text-overflow: ellipsis;
-                                                                                                white-space: nowrap;
-                                                                                            "
-                                                                                        >
-                                                                                            {{
-                                                                                                attachedFile.name ||
-                                                                                                attachedFile.fileName ||
-                                                                                                '첨부파일'
-                                                                                            }}
-                                                                                        </div>
-                                                                                        <div
-                                                                                            style="
-                                                                                                font-size: 11px;
-                                                                                                color: rgba(0, 0, 0, 0.55);
-                                                                                                overflow: hidden;
-                                                                                                text-overflow: ellipsis;
-                                                                                                white-space: nowrap;
-                                                                                            "
-                                                                                        >
-                                                                                            {{ formatAttachmentSub(attachedFile) }}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <v-btn
-                                                                                        icon
-                                                                                        size="x-small"
-                                                                                        variant="tonal"
-                                                                                        :disabled="
-                                                                                            !(
-                                                                                                attachedFile.url ||
-                                                                                                attachedFile.fileUrl ||
-                                                                                                attachedFile.publicUrl ||
-                                                                                                attachedFile.signedUrl
-                                                                                            )
-                                                                                        "
-                                                                                        @click.stop="
-                                                                                            downloadAttachment(
-                                                                                                attachedFile.url ||
-                                                                                                    attachedFile.fileUrl ||
-                                                                                                    attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl,
-                                                                                                attachedFile.name ||
-                                                                                                    attachedFile.fileName
-                                                                                            )
-                                                                                        "
-                                                                                    >
-                                                                                        <v-icon size="14">mdi-download</v-icon>
-                                                                                    </v-btn>
-                                                                                </v-sheet>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div
-                                                                            v-if="message.contentType && message.contentType == 'html'"
-                                                                            class="w-100"
-                                                                        >
-                                                                            <SummaryButton>
-                                                                                <DynamicForm
-                                                                                    ref="dynamicForm"
-                                                                                    :formHTML="message.htmlContent"
-                                                                                    v-model="message.jsonContent"
-                                                                                    :readonly="true"
-                                                                                ></DynamicForm>
-                                                                            </SummaryButton>
-                                                                        </div>
-
-                                                                        <!-- 메시지 내 멘션 표시(Primary) -->
-                                                                        <div
-                                                                            v-if="
-                                                                                message.mentionedUsers && message.mentionedUsers.length > 0
-                                                                            "
-                                                                            class="message-mention-chip-row"
-                                                                        >
-                                                                            <v-chip
-                                                                                v-for="u in message.mentionedUsers"
-                                                                                :key="u.id || u.email || u.username"
-                                                                                color="primary"
-                                                                                variant="tonal"
-                                                                                size="x-small"
-                                                                                class="message-mention-chip"
-                                                                            >
-                                                                                {{ u.username || u.mentionText || u.email || u.id }}
-                                                                            </v-chip>
-                                                                        </div>
-                                                                        <pre
-                                                                            v-if="message.content && message.contentType != 'html'"
-                                                                            class="text-body-1"
-                                                                            v-html="linkify(message.content)"
-                                                                        ></pre>
-
-                                                                        <pre
-                                                                            v-if="message.jsonContent && message.contentType != 'html'"
-                                                                            class="text-body-1"
-                                                                            >{{ message.jsonContent }}</pre
-                                                                        >
-                                                                        <v-row class="ma-0 pa-0">
-                                                                            <v-spacer></v-spacer>
-                                                                        </v-row>
-                                                                    </div>
-                                                                </v-sheet>
+                                                                    {{ isRecommendationInvited(message, agent.id) ? '초대됨' : '초대' }}
+                                                                </v-btn>
                                                             </div>
-                                                            <div v-else class="message-bubble-wrap message-bubble-wrap--mine">
-                                                                <v-sheet
-                                                                    class="chat-message-bubble bg-lightprimary rounded-md px-3 py-3 mb-1"
+
+                                                            <div class="text-caption text-medium-emphasis mt-1">
+                                                                초대하면 에이전트가 준비된 뒤 방금 요청을 자동으로 처리합니다.
+                                                            </div>
+                                                        </div>
+                                                    </v-sheet>
+                                                </div>
+                                            </div>
+
+                                            <AgentsChat
+                                                v-else-if="message && message._template === 'agent'"
+                                                :message="message"
+                                                :agentInfo="agentInfo"
+                                                :totalSize="userFilteredMessages.length"
+                                                :currentIndex="index"
+                                            />
+                                            <div v-else>
+                                                <div>
+                                                    <div v-if="message.email == userInfo.email && message.role != 'system'">
+                                                        <div v-if="editIndex === index" class="d-flex justify-end">
+                                                            <div class="bg-lightprimary chat-room-edit-wrap" style="border-radius: 10px">
+                                                                <v-textarea
+                                                                    v-model="messages[index].content"
+                                                                    variant="solo"
+                                                                    hide-details
+                                                                    bg-color="lightprimary"
+                                                                    class="shadow-none"
+                                                                    density="compact"
+                                                                    auto-grow
+                                                                    rows="1"
+                                                                    autofocus
                                                                 >
-                                                                    <div @mouseover="hoverIndex = index" @mouseleave="hoverIndex = -1">
-                                                                        <div
-                                                                            v-if="message.replyUserName || message.replyContent"
-                                                                            class="reply-quote reply-quote--mine"
-                                                                            role="button"
-                                                                            tabindex="0"
-                                                                            @click.stop="scrollToOriginalMessage(message.replyUuid)"
-                                                                        >
-                                                                            <div class="reply-quote__body">
-                                                                                <div class="reply-quote__title">
-                                                                                    {{ (message.replyUserName || '').toString()
-                                                                                    }}{{ message.replyUserName ? '에게 답장' : '답장' }}
-                                                                                </div>
-                                                                                <div class="reply-quote__text">
-                                                                                    {{ message.replyContent || '' }}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
+                                                                </v-textarea>
+                                                                <v-row class="pa-0 ma-0 mr-2 pb-2">
+                                                                    <v-spacer></v-spacer>
+                                                                    <v-btn
+                                                                        @click="send"
+                                                                        class="text-medium-emphasis"
+                                                                        icon
+                                                                        variant="text"
+                                                                        size="x-small"
+                                                                        style="background-color: white !important; margin-right: 5px"
+                                                                    >
+                                                                        <SendIcon size="20" />
+                                                                    </v-btn>
+                                                                    <v-btn
+                                                                        @click="cancel"
+                                                                        class="text-medium-emphasis"
+                                                                        icon
+                                                                        variant="text"
+                                                                        size="x-small"
+                                                                        style="background-color: white !important"
+                                                                    >
+                                                                        <Icons :icon="'backspace-bold'" :size="20" />
+                                                                    </v-btn>
+                                                                </v-row>
+                                                            </div>
+                                                        </div>
 
-                                                                        <!-- 첨부(이미지/파일): content가 비어도 메시지 박스로 표시 -->
-                                                                        <div
-                                                                            v-if="
-                                                                                message.image ||
-                                                                                (message.images && message.images.length > 0) ||
-                                                                                getMessageFiles(message).length > 0
+                                                        <div v-else>
+                                                            <div class="d-flex justify-end">
+                                                                <slot name="custom-message-actions" :message="message"></slot>
+                                                                <div
+                                                                    v-if="chatRoomMode"
+                                                                    class="message-bubble-wrap message-bubble-wrap--mine"
+                                                                    @mouseenter="hoverIndex = index"
+                                                                    @mouseleave="hoverIndex = -1"
+                                                                >
+                                                                    <div
+                                                                        class="chat-room-timestamp-action my-timestamp"
+                                                                        :class="{ 'is-hover': hoverIndex === index, 'is-mobile': isMobile }"
+                                                                    >
+                                                                        <span
+                                                                            class="chat-room-timestamp-text"
+                                                                            :style="
+                                                                                shouldDisplayMessageTimestamp(message, index)
+                                                                                    ? ''
+                                                                                    : 'opacity:0;'
                                                                             "
-                                                                            class="mb-2"
                                                                         >
-                                                                            <v-sheet v-if="message.image && !message.images" class="mb-1">
-                                                                                <img
-                                                                                    :src="message.image"
-                                                                                    class="rounded-md"
-                                                                                    alt="pro"
-                                                                                    width="250"
-                                                                                    style="cursor: pointer"
-                                                                                    @click="emitPreviewImage(message.image)"
-                                                                                />
-                                                                            </v-sheet>
-                                                                            <div
-                                                                                v-if="message.images && message.images.length > 0"
-                                                                                class="d-flex flex-wrap mb-1"
-                                                                            >
-                                                                                <v-sheet
-                                                                                    v-for="(image, imgIndex) in message.images"
-                                                                                    :key="imgIndex"
-                                                                                    class="ma-1"
-                                                                                >
-                                                                                    <img
-                                                                                        :src="image.url || image"
-                                                                                        class="rounded-md"
-                                                                                        alt="pro"
-                                                                                        width="250"
-                                                                                        style="cursor: pointer"
-                                                                                        @click="emitPreviewImage(image.url || image)"
-                                                                                    />
-                                                                                </v-sheet>
-                                                                            </div>
-                                                                            <div
-                                                                                v-if="getMessageFiles(message).length > 0"
-                                                                                class="mb-1 d-flex justify-end flex-column"
-                                                                                style="gap: 8px"
-                                                                            >
-                                                                                <v-sheet
-                                                                                    v-for="(attachedFile, fileIdx) in getMessageFiles(message)"
-                                                                                    :key="`msg-file-mine-${index}-${fileIdx}`"
-                                                                                    rounded="lg"
-                                                                                    class="pa-2 d-inline-flex align-center"
-                                                                                    style="
-                                                                                        gap: 10px;
-                                                                                        cursor: pointer;
-                                                                                        border: 1px solid rgba(0, 0, 0, 0.08);
-                                                                                        background: rgba(var(--v-theme-primary), 0.06);
-                                                                                        max-width: min(520px, 80vw);
-                                                                                    "
-                                                                                    @click="
-                                                                                        emitOpenExternalUrl(
-                                                                                            attachedFile.url ||
-                                                                                                attachedFile.fileUrl ||
-                                                                                                attachedFile.publicUrl ||
-                                                                                                attachedFile.signedUrl
-                                                                                        )
-                                                                                    "
-                                                                                >
-                                                                                    <div
-                                                                                        style="
-                                                                                            width: 28px;
-                                                                                            height: 28px;
-                                                                                            border-radius: 10px;
-                                                                                            display: flex;
-                                                                                            align-items: center;
-                                                                                            justify-content: center;
-                                                                                            background: rgba(var(--v-theme-primary), 0.12);
-                                                                                        "
-                                                                                    >
-                                                                                        <v-icon size="18" color="primary"
-                                                                                            >mdi-file-outline</v-icon
-                                                                                        >
-                                                                                    </div>
-                                                                                    <div style="min-width: 0; flex: 1 1 auto">
-                                                                                        <div
-                                                                                            style="
-                                                                                                font-size: 13px;
-                                                                                                font-weight: 700;
-                                                                                                color: rgba(0, 0, 0, 0.78);
-                                                                                                overflow: hidden;
-                                                                                                text-overflow: ellipsis;
-                                                                                                white-space: nowrap;
-                                                                                            "
-                                                                                        >
-                                                                                            {{
-                                                                                                attachedFile.name ||
-                                                                                                attachedFile.fileName ||
-                                                                                                '첨부파일'
-                                                                                            }}
-                                                                                        </div>
-                                                                                        <div
-                                                                                            style="
-                                                                                                font-size: 11px;
-                                                                                                color: rgba(0, 0, 0, 0.55);
-                                                                                                overflow: hidden;
-                                                                                                text-overflow: ellipsis;
-                                                                                                white-space: nowrap;
-                                                                                            "
-                                                                                        >
-                                                                                            {{ formatAttachmentSub(attachedFile) }}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <v-btn
-                                                                                        icon
-                                                                                        size="x-small"
-                                                                                        variant="tonal"
-                                                                                        :disabled="
-                                                                                            !(
-                                                                                                attachedFile.url ||
-                                                                                                attachedFile.fileUrl ||
-                                                                                                attachedFile.publicUrl ||
-                                                                                                attachedFile.signedUrl
-                                                                                            )
-                                                                                        "
-                                                                                        @click.stop="
-                                                                                            downloadAttachment(
-                                                                                                attachedFile.url ||
-                                                                                                    attachedFile.fileUrl ||
-                                                                                                    attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl,
-                                                                                                attachedFile.name ||
-                                                                                                    attachedFile.fileName
-                                                                                            )
-                                                                                        "
-                                                                                    >
-                                                                                        <v-icon size="14">mdi-download</v-icon>
-                                                                                    </v-btn>
-                                                                                </v-sheet>
-                                                                            </div>
-                                                                        </div>
-
+                                                                            {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
+                                                                        </span>
                                                                         <div
-                                                                            v-if="message.contentType && message.contentType == 'html'"
-                                                                            class="w-100"
+                                                                            class="chat-room-actions-overlay chat-room-actions-overlay--mine"
                                                                         >
-                                                                            <SummaryButton>
-                                                                                <DynamicForm
-                                                                                    ref="dynamicForm"
-                                                                                    :formHTML="message.htmlContent"
-                                                                                    v-model="message.jsonContent"
-                                                                                    :readonly="true"
-                                                                                ></DynamicForm>
-                                                                            </SummaryButton>
-                                                                        </div>
-
-                                                                        <!-- 메시지 내 멘션 표시(Primary) -->
-                                                                        <div
-                                                                            v-if="
-                                                                                message.mentionedUsers && message.mentionedUsers.length > 0
-                                                                            "
-                                                                            class="message-mention-chip-row"
-                                                                        >
-                                                                            <v-chip
-                                                                                v-for="u in message.mentionedUsers"
-                                                                                :key="u.id || u.email || u.username"
-                                                                                color="primary"
-                                                                                variant="tonal"
-                                                                                size="x-small"
-                                                                                class="message-mention-chip"
-                                                                            >
-                                                                                {{ u.username || u.mentionText || u.email || u.id }}
-                                                                            </v-chip>
-                                                                        </div>
-                                                                        <pre
-                                                                            v-if="message.content && message.contentType != 'html'"
-                                                                            class="text-body-1"
-                                                                            v-html="linkify(message.content)"
-                                                                        ></pre>
-
-                                                                        <pre
-                                                                            v-if="message.jsonContent && message.contentType != 'html'"
-                                                                            class="text-body-1"
-                                                                            >{{ message.jsonContent }}</pre
-                                                                        >
-                                                                        <v-row class="ma-0 pa-0">
-                                                                            <v-spacer></v-spacer>
                                                                             <v-btn
-                                                                                v-if="hoverIndex === index && !disableChat"
+                                                                                v-if="!disableChat"
+                                                                                @click="beforeReply(message)"
+                                                                                icon
+                                                                                variant="text"
+                                                                                size="x-small"
+                                                                                class="chat-room-action-btn"
+                                                                            >
+                                                                                <v-icon size="18">mdi-subdirectory-arrow-right</v-icon>
+                                                                            </v-btn>
+                                                                            <v-btn
+                                                                                v-if="!disableChat"
                                                                                 @click="editMessage(index)"
                                                                                 icon
                                                                                 variant="text"
                                                                                 size="x-small"
-                                                                                class="float-left edit-btn action-btn"
-                                                                                style="background-color: white"
+                                                                                class="chat-room-action-btn"
                                                                             >
-                                                                                <icons :icon="'pencil'" :size="20" />
+                                                                                <v-icon size="18">mdi-pencil</v-icon>
                                                                             </v-btn>
-
-                                                                            <div
+                                                                            <v-btn
                                                                                 v-if="
                                                                                     shouldDisplayGeneratedWorkList(
                                                                                         type,
@@ -849,358 +430,835 @@
                                                                                         index
                                                                                     )
                                                                                 "
-                                                                                :key="isRender"
+                                                                                @click="showGeneratedWorkList = !showGeneratedWorkList"
+                                                                                icon
+                                                                                variant="text"
+                                                                                size="x-small"
+                                                                                class="chat-room-action-btn"
                                                                             >
-                                                                                <div
-                                                                                    @click="showGeneratedWorkList = !showGeneratedWorkList"
-                                                                                    class="find-message"
-                                                                                    :class="
-                                                                                        generatedWorkList.length > 0
-                                                                                            ? 'find-message-on'
-                                                                                            : 'find-message-off'
-                                                                                    "
-                                                                                >
-                                                                                    <img
-                                                                                        src="@/assets/images/chat/chat-icon.png"
-                                                                                        style="height: 30px"
-                                                                                    />
+                                                                                <v-icon size="18">mdi-text-box-search-outline</v-icon>
+                                                                            </v-btn>
+                                                                        </div>
+                                                                    </div>
+                                                                    <v-sheet
+                                                                        class="chat-message-bubble bg-lightprimary rounded-md px-3 py-3 mb-1"
+                                                                    >
+                                                                        <div>
+                                                                            <div
+                                                                                v-if="message.replyUserName || message.replyContent"
+                                                                                class="reply-quote reply-quote--mine"
+                                                                                role="button"
+                                                                                tabindex="0"
+                                                                                @click.stop="scrollToOriginalMessage(message.replyUuid)"
+                                                                            >
+                                                                                <div class="reply-quote__body">
+                                                                                    <div class="reply-quote__title">
+                                                                                        {{ (message.replyUserName || '').toString()
+                                                                                        }}{{ message.replyUserName ? '에게 답장' : '답장' }}
+                                                                                    </div>
+                                                                                    <div class="reply-quote__text">
+                                                                                        {{ message.replyContent || '' }}
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
-                                                                        </v-row>
+
+                                                                            <!-- 첨부(이미지/파일): content가 비어도 메시지 박스로 표시/답장 가능 -->
+                                                                            <div
+                                                                                v-if="
+                                                                                    message.image ||
+                                                                                    (message.images && message.images.length > 0) ||
+                                                                                    getMessageFiles(message).length > 0
+                                                                                "
+                                                                                class="mb-2"
+                                                                            >
+                                                                                <!-- 단일 이미지 표시 (기존 호환성) -->
+                                                                                <v-sheet
+                                                                                    v-if="message.image && !message.images"
+                                                                                    class="mb-1"
+                                                                                >
+                                                                                    <img
+                                                                                        :src="message.image"
+                                                                                        class="rounded-md"
+                                                                                        alt="pro"
+                                                                                        width="250"
+                                                                                        style="cursor: pointer"
+                                                                                        @click="emitPreviewImage(message.image)"
+                                                                                    />
+                                                                                </v-sheet>
+
+                                                                                <!-- 다중 이미지 표시 -->
+                                                                                <div
+                                                                                    v-if="message.images && message.images.length > 0"
+                                                                                    class="d-flex flex-wrap mb-1"
+                                                                                >
+                                                                                    <v-sheet
+                                                                                        v-for="(image, imgIndex) in message.images"
+                                                                                        :key="imgIndex"
+                                                                                        class="ma-1"
+                                                                                    >
+                                                                                        <img
+                                                                                            :src="image.url || image"
+                                                                                            class="rounded-md"
+                                                                                            alt="pro"
+                                                                                            width="250"
+                                                                                            style="cursor: pointer"
+                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                        />
+                                                                                    </v-sheet>
+                                                                                </div>
+
+                                                                                <!-- 파일 첨부(다중 지원) -->
+                                                                                <div
+                                                                                    v-if="getMessageFiles(message).length > 0"
+                                                                                    class="mb-1 d-flex justify-end flex-column"
+                                                                                    style="gap: 8px"
+                                                                                >
+                                                                                    <v-sheet
+                                                                                        v-for="(attachedFile, fileIdx) in getMessageFiles(
+                                                                                            message
+                                                                                        )"
+                                                                                        :key="`msg-file-${index}-${fileIdx}`"
+                                                                                        rounded="lg"
+                                                                                        class="pa-2 d-inline-flex align-center"
+                                                                                        style="
+                                                                                            gap: 10px;
+                                                                                            cursor: pointer;
+                                                                                            border: 1px solid rgba(0, 0, 0, 0.08);
+                                                                                            background: white;
+                                                                                            max-width: min(520px, 80vw);
+                                                                                        "
+                                                                                        @click="
+                                                                                            emitOpenExternalUrl(
+                                                                                                attachedFile.url ||
+                                                                                                    attachedFile.fileUrl ||
+                                                                                                    attachedFile.publicUrl ||
+                                                                                                    attachedFile.signedUrl
+                                                                                            )
+                                                                                        "
+                                                                                    >
+                                                                                        <div
+                                                                                            style="
+                                                                                                width: 28px;
+                                                                                                height: 28px;
+                                                                                                border-radius: 10px;
+                                                                                                display: flex;
+                                                                                                align-items: center;
+                                                                                                justify-content: center;
+                                                                                                background: rgba(
+                                                                                                    var(--v-theme-primary),
+                                                                                                    0.12
+                                                                                                );
+                                                                                            "
+                                                                                        >
+                                                                                            <v-icon size="18" color="primary"
+                                                                                                >mdi-file-outline</v-icon
+                                                                                            >
+                                                                                        </div>
+                                                                                        <div style="min-width: 0; flex: 1 1 auto">
+                                                                                            <div
+                                                                                                style="
+                                                                                                    font-size: 13px;
+                                                                                                    font-weight: 700;
+                                                                                                    color: rgba(0, 0, 0, 0.78);
+                                                                                                    overflow: hidden;
+                                                                                                    text-overflow: ellipsis;
+                                                                                                    white-space: nowrap;
+                                                                                                "
+                                                                                            >
+                                                                                                {{
+                                                                                                    attachedFile.name ||
+                                                                                                    attachedFile.fileName ||
+                                                                                                    '첨부파일'
+                                                                                                }}
+                                                                                            </div>
+                                                                                            <div
+                                                                                                style="
+                                                                                                    font-size: 11px;
+                                                                                                    color: rgba(0, 0, 0, 0.55);
+                                                                                                    overflow: hidden;
+                                                                                                    text-overflow: ellipsis;
+                                                                                                    white-space: nowrap;
+                                                                                                "
+                                                                                            >
+                                                                                                {{ formatAttachmentSub(attachedFile) }}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <v-btn
+                                                                                            icon
+                                                                                            size="x-small"
+                                                                                            variant="tonal"
+                                                                                            :disabled="
+                                                                                                !(
+                                                                                                    attachedFile.url ||
+                                                                                                    attachedFile.fileUrl ||
+                                                                                                    attachedFile.publicUrl ||
+                                                                                                    attachedFile.signedUrl
+                                                                                                )
+                                                                                            "
+                                                                                            @click.stop="
+                                                                                                downloadAttachment(
+                                                                                                    attachedFile.url ||
+                                                                                                        attachedFile.fileUrl ||
+                                                                                                        attachedFile.publicUrl ||
+                                                                                                        attachedFile.signedUrl,
+                                                                                                    attachedFile.name ||
+                                                                                                        attachedFile.fileName
+                                                                                                )
+                                                                                            "
+                                                                                        >
+                                                                                            <v-icon size="14">mdi-download</v-icon>
+                                                                                        </v-btn>
+                                                                                    </v-sheet>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div
+                                                                                v-if="message.contentType && message.contentType == 'html'"
+                                                                                class="w-100"
+                                                                            >
+                                                                                <SummaryButton>
+                                                                                    <DynamicForm
+                                                                                        ref="dynamicForm"
+                                                                                        :formHTML="message.htmlContent"
+                                                                                        v-model="message.jsonContent"
+                                                                                        :readonly="true"
+                                                                                    ></DynamicForm>
+                                                                                </SummaryButton>
+                                                                            </div>
+
+                                                                            <!-- 메시지 내 멘션 표시(Primary) -->
+                                                                            <div
+                                                                                v-if="
+                                                                                    message.mentionedUsers &&
+                                                                                    message.mentionedUsers.length > 0
+                                                                                "
+                                                                                class="message-mention-chip-row"
+                                                                            >
+                                                                                <v-chip
+                                                                                    v-for="u in message.mentionedUsers"
+                                                                                    :key="u.id || u.email || u.username"
+                                                                                    color="primary"
+                                                                                    variant="tonal"
+                                                                                    size="x-small"
+                                                                                    class="message-mention-chip"
+                                                                                >
+                                                                                    {{ u.username || u.mentionText || u.email || u.id }}
+                                                                                </v-chip>
+                                                                            </div>
+                                                                            <pre
+                                                                                v-if="message.content && message.contentType != 'html'"
+                                                                                class="text-body-1"
+                                                                                v-html="linkify(message.content)"
+                                                                            ></pre>
+
+                                                                            <pre
+                                                                                v-if="message.jsonContent && message.contentType != 'html'"
+                                                                                class="text-body-1"
+                                                                                >{{ message.jsonContent }}</pre
+                                                                            >
+                                                                            <v-row class="ma-0 pa-0">
+                                                                                <v-spacer></v-spacer>
+                                                                            </v-row>
+                                                                        </div>
+                                                                    </v-sheet>
+                                                                </div>
+                                                                <div v-else class="message-bubble-wrap message-bubble-wrap--mine">
+                                                                    <v-sheet
+                                                                        class="chat-message-bubble bg-lightprimary rounded-md px-3 py-3 mb-1"
+                                                                    >
+                                                                        <div @mouseover="hoverIndex = index" @mouseleave="hoverIndex = -1">
+                                                                            <div
+                                                                                v-if="message.replyUserName || message.replyContent"
+                                                                                class="reply-quote reply-quote--mine"
+                                                                                role="button"
+                                                                                tabindex="0"
+                                                                                @click.stop="scrollToOriginalMessage(message.replyUuid)"
+                                                                            >
+                                                                                <div class="reply-quote__body">
+                                                                                    <div class="reply-quote__title">
+                                                                                        {{ (message.replyUserName || '').toString()
+                                                                                        }}{{ message.replyUserName ? '에게 답장' : '답장' }}
+                                                                                    </div>
+                                                                                    <div class="reply-quote__text">
+                                                                                        {{ message.replyContent || '' }}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <!-- 첨부(이미지/파일): content가 비어도 메시지 박스로 표시 -->
+                                                                            <div
+                                                                                v-if="
+                                                                                    message.image ||
+                                                                                    (message.images && message.images.length > 0) ||
+                                                                                    getMessageFiles(message).length > 0
+                                                                                "
+                                                                                class="mb-2"
+                                                                            >
+                                                                                <v-sheet
+                                                                                    v-if="message.image && !message.images"
+                                                                                    class="mb-1"
+                                                                                >
+                                                                                    <img
+                                                                                        :src="message.image"
+                                                                                        class="rounded-md"
+                                                                                        alt="pro"
+                                                                                        width="250"
+                                                                                        style="cursor: pointer"
+                                                                                        @click="emitPreviewImage(message.image)"
+                                                                                    />
+                                                                                </v-sheet>
+                                                                                <div
+                                                                                    v-if="message.images && message.images.length > 0"
+                                                                                    class="d-flex flex-wrap mb-1"
+                                                                                >
+                                                                                    <v-sheet
+                                                                                        v-for="(image, imgIndex) in message.images"
+                                                                                        :key="imgIndex"
+                                                                                        class="ma-1"
+                                                                                    >
+                                                                                        <img
+                                                                                            :src="image.url || image"
+                                                                                            class="rounded-md"
+                                                                                            alt="pro"
+                                                                                            width="250"
+                                                                                            style="cursor: pointer"
+                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                        />
+                                                                                    </v-sheet>
+                                                                                </div>
+                                                                                <div
+                                                                                    v-if="getMessageFiles(message).length > 0"
+                                                                                    class="mb-1 d-flex justify-end flex-column"
+                                                                                    style="gap: 8px"
+                                                                                >
+                                                                                    <v-sheet
+                                                                                        v-for="(attachedFile, fileIdx) in getMessageFiles(
+                                                                                            message
+                                                                                        )"
+                                                                                        :key="`msg-file-mine-${index}-${fileIdx}`"
+                                                                                        rounded="lg"
+                                                                                        class="pa-2 d-inline-flex align-center"
+                                                                                        style="
+                                                                                            gap: 10px;
+                                                                                            cursor: pointer;
+                                                                                            border: 1px solid rgba(0, 0, 0, 0.08);
+                                                                                            background: rgba(var(--v-theme-primary), 0.06);
+                                                                                            max-width: min(520px, 80vw);
+                                                                                        "
+                                                                                        @click="
+                                                                                            emitOpenExternalUrl(
+                                                                                                attachedFile.url ||
+                                                                                                    attachedFile.fileUrl ||
+                                                                                                    attachedFile.publicUrl ||
+                                                                                                    attachedFile.signedUrl
+                                                                                            )
+                                                                                        "
+                                                                                    >
+                                                                                        <div
+                                                                                            style="
+                                                                                                width: 28px;
+                                                                                                height: 28px;
+                                                                                                border-radius: 10px;
+                                                                                                display: flex;
+                                                                                                align-items: center;
+                                                                                                justify-content: center;
+                                                                                                background: rgba(
+                                                                                                    var(--v-theme-primary),
+                                                                                                    0.12
+                                                                                                );
+                                                                                            "
+                                                                                        >
+                                                                                            <v-icon size="18" color="primary"
+                                                                                                >mdi-file-outline</v-icon
+                                                                                            >
+                                                                                        </div>
+                                                                                        <div style="min-width: 0; flex: 1 1 auto">
+                                                                                            <div
+                                                                                                style="
+                                                                                                    font-size: 13px;
+                                                                                                    font-weight: 700;
+                                                                                                    color: rgba(0, 0, 0, 0.78);
+                                                                                                    overflow: hidden;
+                                                                                                    text-overflow: ellipsis;
+                                                                                                    white-space: nowrap;
+                                                                                                "
+                                                                                            >
+                                                                                                {{
+                                                                                                    attachedFile.name ||
+                                                                                                    attachedFile.fileName ||
+                                                                                                    '첨부파일'
+                                                                                                }}
+                                                                                            </div>
+                                                                                            <div
+                                                                                                style="
+                                                                                                    font-size: 11px;
+                                                                                                    color: rgba(0, 0, 0, 0.55);
+                                                                                                    overflow: hidden;
+                                                                                                    text-overflow: ellipsis;
+                                                                                                    white-space: nowrap;
+                                                                                                "
+                                                                                            >
+                                                                                                {{ formatAttachmentSub(attachedFile) }}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <v-btn
+                                                                                            icon
+                                                                                            size="x-small"
+                                                                                            variant="tonal"
+                                                                                            :disabled="
+                                                                                                !(
+                                                                                                    attachedFile.url ||
+                                                                                                    attachedFile.fileUrl ||
+                                                                                                    attachedFile.publicUrl ||
+                                                                                                    attachedFile.signedUrl
+                                                                                                )
+                                                                                            "
+                                                                                            @click.stop="
+                                                                                                downloadAttachment(
+                                                                                                    attachedFile.url ||
+                                                                                                        attachedFile.fileUrl ||
+                                                                                                        attachedFile.publicUrl ||
+                                                                                                        attachedFile.signedUrl,
+                                                                                                    attachedFile.name ||
+                                                                                                        attachedFile.fileName
+                                                                                                )
+                                                                                            "
+                                                                                        >
+                                                                                            <v-icon size="14">mdi-download</v-icon>
+                                                                                        </v-btn>
+                                                                                    </v-sheet>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div
+                                                                                v-if="message.contentType && message.contentType == 'html'"
+                                                                                class="w-100"
+                                                                            >
+                                                                                <SummaryButton>
+                                                                                    <DynamicForm
+                                                                                        ref="dynamicForm"
+                                                                                        :formHTML="message.htmlContent"
+                                                                                        v-model="message.jsonContent"
+                                                                                        :readonly="true"
+                                                                                    ></DynamicForm>
+                                                                                </SummaryButton>
+                                                                            </div>
+
+                                                                            <!-- 메시지 내 멘션 표시(Primary) -->
+                                                                            <div
+                                                                                v-if="
+                                                                                    message.mentionedUsers &&
+                                                                                    message.mentionedUsers.length > 0
+                                                                                "
+                                                                                class="message-mention-chip-row"
+                                                                            >
+                                                                                <v-chip
+                                                                                    v-for="u in message.mentionedUsers"
+                                                                                    :key="u.id || u.email || u.username"
+                                                                                    color="primary"
+                                                                                    variant="tonal"
+                                                                                    size="x-small"
+                                                                                    class="message-mention-chip"
+                                                                                >
+                                                                                    {{ u.username || u.mentionText || u.email || u.id }}
+                                                                                </v-chip>
+                                                                            </div>
+                                                                            <pre
+                                                                                v-if="message.content && message.contentType != 'html'"
+                                                                                class="text-body-1"
+                                                                                v-html="linkify(message.content)"
+                                                                            ></pre>
+
+                                                                            <pre
+                                                                                v-if="message.jsonContent && message.contentType != 'html'"
+                                                                                class="text-body-1"
+                                                                                >{{ message.jsonContent }}</pre
+                                                                            >
+                                                                            <v-row class="ma-0 pa-0">
+                                                                                <v-spacer></v-spacer>
+                                                                                <v-btn
+                                                                                    v-if="hoverIndex === index && !disableChat"
+                                                                                    @click="editMessage(index)"
+                                                                                    icon
+                                                                                    variant="text"
+                                                                                    size="x-small"
+                                                                                    class="float-left edit-btn action-btn"
+                                                                                    style="background-color: white"
+                                                                                >
+                                                                                    <icons :icon="'pencil'" :size="20" />
+                                                                                </v-btn>
+
+                                                                                <div
+                                                                                    v-if="
+                                                                                        shouldDisplayGeneratedWorkList(
+                                                                                            type,
+                                                                                            userFilteredMessages,
+                                                                                            generatedWorkList,
+                                                                                            index
+                                                                                        )
+                                                                                    "
+                                                                                    :key="isRender"
+                                                                                >
+                                                                                    <div
+                                                                                        @click="
+                                                                                            showGeneratedWorkList = !showGeneratedWorkList
+                                                                                        "
+                                                                                        class="find-message"
+                                                                                        :class="
+                                                                                            generatedWorkList.length > 0
+                                                                                                ? 'find-message-on'
+                                                                                                : 'find-message-off'
+                                                                                        "
+                                                                                    >
+                                                                                        <img
+                                                                                            src="@/assets/images/chat/chat-icon.png"
+                                                                                            style="height: 30px"
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+                                                                            </v-row>
+                                                                        </div>
+                                                                    </v-sheet>
+                                                                    <div
+                                                                        v-if="shouldDisplayMessageTimestamp(message, index)"
+                                                                        class="message-timestamp my-timestamp"
+                                                                    >
+                                                                        {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
                                                                     </div>
-                                                                </v-sheet>
-                                                                <div
-                                                                    v-if="shouldDisplayMessageTimestamp(message, index)"
-                                                                    class="message-timestamp my-timestamp"
-                                                                >
-                                                                    {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
 
-                                                    <v-card
-                                                        v-if="
-                                                            showGeneratedWorkList &&
-                                                            shouldDisplayGeneratedWorkList(
-                                                                type,
-                                                                userFilteredMessages,
-                                                                generatedWorkList,
-                                                                index
-                                                            ) &&
-                                                            generatedWorkList.length > 0
-                                                        "
-                                                        class="mt-3"
-                                                    >
-                                                        <v-btn
-                                                            @click="deleteAllWorkList()"
-                                                            size="small"
-                                                            icon
-                                                            density="comfortable"
-                                                            style="position: absolute; right: 5px; top: 5px; z-index: 1"
+                                                        <v-card
+                                                            v-if="
+                                                                showGeneratedWorkList &&
+                                                                shouldDisplayGeneratedWorkList(
+                                                                    type,
+                                                                    userFilteredMessages,
+                                                                    generatedWorkList,
+                                                                    index
+                                                                ) &&
+                                                                generatedWorkList.length > 0
+                                                            "
+                                                            class="mt-3"
                                                         >
-                                                            <Icons :icon="'trash'" />
-                                                        </v-btn>
-                                                        <v-list>
-                                                            <div>
-                                                                <v-list-item
-                                                                    v-for="(work, index) in generatedWorkList"
-                                                                    :key="index"
-                                                                    class="d-flex align-items-center"
-                                                                >
-                                                                    <div
-                                                                        v-if="work.messageForUser"
-                                                                        class="flex-grow-1 d-flex align-items-center"
+                                                            <v-btn
+                                                                @click="deleteAllWorkList()"
+                                                                size="small"
+                                                                icon
+                                                                density="comfortable"
+                                                                style="position: absolute; right: 5px; top: 5px; z-index: 1"
+                                                            >
+                                                                <Icons :icon="'trash'" />
+                                                            </v-btn>
+                                                            <v-list>
+                                                                <div>
+                                                                    <v-list-item
+                                                                        v-for="(work, index) in generatedWorkList"
+                                                                        :key="index"
+                                                                        class="d-flex align-items-center"
                                                                     >
-                                                                        <div class="w-100">
-                                                                            <v-row class="ma-0 pa-3">
-                                                                                <template v-if="!workIcons[work.work]">
-                                                                                    <img
-                                                                                        :src="defaultWorkIcon"
-                                                                                        alt="Default Icon"
-                                                                                        style="width: 20px; height: 20px"
-                                                                                    />
-                                                                                </template>
-                                                                                <template v-else>
-                                                                                    <div style="padding-top: 2px">
-                                                                                        <Icons :icon="getWorkIcon(work.work)" />
+                                                                        <div
+                                                                            v-if="work.messageForUser"
+                                                                            class="flex-grow-1 d-flex align-items-center"
+                                                                        >
+                                                                            <div class="w-100">
+                                                                                <v-row class="ma-0 pa-3">
+                                                                                    <template v-if="!workIcons[work.work]">
+                                                                                        <img
+                                                                                            :src="defaultWorkIcon"
+                                                                                            alt="Default Icon"
+                                                                                            style="width: 20px; height: 20px"
+                                                                                        />
+                                                                                    </template>
+                                                                                    <template v-else>
+                                                                                        <div style="padding-top: 2px">
+                                                                                            <Icons :icon="getWorkIcon(work.work)" />
+                                                                                        </div>
+                                                                                    </template>
+                                                                                    <div style="margin-left: 5px; margin-top: 0px">
+                                                                                        {{ work.messageForUser }}
                                                                                     </div>
-                                                                                </template>
-                                                                                <div style="margin-left: 5px; margin-top: 0px">
-                                                                                    {{ work.messageForUser }}
-                                                                                </div>
-                                                                                <div>
-                                                                                    <v-tooltip
-                                                                                        v-if="!isViewMode"
-                                                                                        :text="$t('chat.viewDetails')"
-                                                                                    >
-                                                                                        <template v-slot:activator="{ props }">
-                                                                                            <v-btn
-                                                                                                v-bind="props"
-                                                                                                @click="work.expanded = !work.expanded"
-                                                                                                class="ml-2"
-                                                                                                size="small"
-                                                                                                icon
-                                                                                                variant="text"
-                                                                                                density="comfortable"
-                                                                                            >
-                                                                                                <icons
-                                                                                                    :icon="
-                                                                                                        work.expanded
-                                                                                                            ? 'arrow-up-2'
-                                                                                                            : 'arrow-down-2'
-                                                                                                    "
-                                                                                                />
-                                                                                            </v-btn>
-                                                                                        </template>
-                                                                                    </v-tooltip>
-                                                                                    <v-tooltip
-                                                                                        v-if="!isViewMode"
-                                                                                        :text="$t('chat.executeProcess')"
-                                                                                    >
-                                                                                        <template v-slot:activator="{ props }">
-                                                                                            <v-btn
-                                                                                                v-bind="props"
-                                                                                                @click="startProcess(work, index)"
-                                                                                                class="ml-2"
-                                                                                                size="small"
-                                                                                                icon
-                                                                                                variant="text"
-                                                                                                density="comfortable"
-                                                                                            >
-                                                                                                <Icons
-                                                                                                    :icon="'play'"
-                                                                                                    :color="'rgb(var(--v-theme-primary))'"
-                                                                                                />
-                                                                                            </v-btn>
-                                                                                        </template>
-                                                                                    </v-tooltip>
-                                                                                </div>
-                                                                            </v-row>
-                                                                            <v-expand-transition>
-                                                                                <div v-if="work.expanded" class="mt-2 w-100">
-                                                                                    <pre>{{ work }}</pre>
-                                                                                </div>
-                                                                            </v-expand-transition>
-                                                                            <!-- <v-img
+                                                                                    <div>
+                                                                                        <v-tooltip
+                                                                                            v-if="!isViewMode"
+                                                                                            :text="$t('chat.viewDetails')"
+                                                                                        >
+                                                                                            <template v-slot:activator="{ props }">
+                                                                                                <v-btn
+                                                                                                    v-bind="props"
+                                                                                                    @click="work.expanded = !work.expanded"
+                                                                                                    class="ml-2"
+                                                                                                    size="small"
+                                                                                                    icon
+                                                                                                    variant="text"
+                                                                                                    density="comfortable"
+                                                                                                >
+                                                                                                    <icons
+                                                                                                        :icon="
+                                                                                                            work.expanded
+                                                                                                                ? 'arrow-up-2'
+                                                                                                                : 'arrow-down-2'
+                                                                                                        "
+                                                                                                    />
+                                                                                                </v-btn>
+                                                                                            </template>
+                                                                                        </v-tooltip>
+                                                                                        <v-tooltip
+                                                                                            v-if="!isViewMode"
+                                                                                            :text="$t('chat.executeProcess')"
+                                                                                        >
+                                                                                            <template v-slot:activator="{ props }">
+                                                                                                <v-btn
+                                                                                                    v-bind="props"
+                                                                                                    @click="startProcess(work, index)"
+                                                                                                    class="ml-2"
+                                                                                                    size="small"
+                                                                                                    icon
+                                                                                                    variant="text"
+                                                                                                    density="comfortable"
+                                                                                                >
+                                                                                                    <Icons
+                                                                                                        :icon="'play'"
+                                                                                                        :color="'rgb(var(--v-theme-primary))'"
+                                                                                                    />
+                                                                                                </v-btn>
+                                                                                            </template>
+                                                                                        </v-tooltip>
+                                                                                    </div>
+                                                                                </v-row>
+                                                                                <v-expand-transition>
+                                                                                    <div v-if="work.expanded" class="mt-2 w-100">
+                                                                                        <pre>{{ work }}</pre>
+                                                                                    </div>
+                                                                                </v-expand-transition>
+                                                                                <!-- <v-img
                                                                             v-if="work.work == 'CreateProcessDefinition'"
                                                                             :width="300"
                                                                             aspect-ratio="16/9"
                                                                             cover
                                                                             src="https://github.com/jhyg/project-shop-test/assets/65217813/1b551056-0428-41b6-9b90-76dd7942affc"
                                                                         ></v-img> -->
-                                                                        </div>
-                                                                    </div>
-                                                                    <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
-                                                                </v-list-item>
-                                                            </div>
-                                                        </v-list>
-                                                    </v-card>
-                                                </div>
-                                                <!-- chat 관련 UI가 위 아래 붙기때문에 적용했던 스타일 필요시 다시 삽입 :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'" -->
-                                                <div v-else-if="!message.disableMsg || message.isLoading">
-                                                    <v-row v-if="shouldDisplayUserInfo(message, index)" class="ma-0 pa-0">
-                                                        <v-row class="ma-0 pa-0 d-flex align-center mb-2">
-                                                            <v-avatar size="28" style="margin-right: 8px">
-                                                                <img
-                                                                    v-if="message.role == 'system'"
-                                                                    src="@/assets/images/chat/chat-icon.png"
-                                                                    height="28"
-                                                                    width="28"
-                                                                />
-                                                                <v-img
-                                                                    v-else
-                                                                    :src="getProfile(message)"
-                                                                    :alt="
-                                                                        message.name ||
-                                                                        message.userName ||
-                                                                        message.username ||
-                                                                        message.email ||
-                                                                        'User'
-                                                                    "
-                                                                    height="28"
-                                                                    width="28"
-                                                                />
-                                                            </v-avatar>
-                                                            <div class="user-name">
-                                                                {{
-                                                                    message.role == 'system'
-                                                                        ? 'System'
-                                                                        : message.name ||
-                                                                          message.userName ||
-                                                                          message.username ||
-                                                                          message.email
-                                                                }}
-                                                            </div>
-                                                        </v-row>
-                                                    </v-row>
-
-                                                    <div
-                                                        v-if="message.contentType && message.contentType == 'html'"
-                                                        style="margin-bottom: 15px"
-                                                    >
-                                                        <DynamicForm
-                                                            ref="dynamicForm"
-                                                            :formHTML="message.htmlContent"
-                                                            v-model="message.jsonContent"
-                                                            :readonly="true"
-                                                        ></DynamicForm>
-                                                    </div>
-
-                                                    <div
-                                                        v-else-if="
-                                                            message.contentType && message.contentType == 'json' && type == 'instances'
-                                                        "
-                                                    >
-                                                        <ProcessWorkResult :message="message" />
-                                                    </div>
-
-                                                    <!-- markdown message -->
-                                                    <div
-                                                        v-else-if="
-                                                            markdownEnabled &&
-                                                            ((message.contentType && message.contentType == 'markdown') ||
-                                                                (message.role == 'system' && !message.contentType))
-                                                        "
-                                                        :class="
-                                                            agentMessage || message.role == 'system' ? 'agent-message' : 'other-message'
-                                                        "
-                                                    >
-                                                        <div v-html="renderedMarkdown(message.content)" class="markdown-content"></div>
-
-                                                        <div
-                                                            v-if="shouldDisplayMessageTimestamp(message, index)"
-                                                            class="markdown-timestamp"
-                                                        >
-                                                            {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
-                                                        </div>
-
-                                                        <!-- 프로세스 실행 폼 -->
-                                                        <div
-                                                            v-if="message.work === 'StartProcessInstance' && message.firstActivityForm"
-                                                            class="mt-3 pl-3 pr-3"
-                                                        >
-                                                            <v-card variant="outlined" class="mb-3">
-                                                                <v-card-title class="text-subtitle-1 py-2">
-                                                                    {{ message.firstActivityForm.activityName || '초기 정보 입력' }}
-                                                                </v-card-title>
-                                                                <v-divider></v-divider>
-                                                                <v-card-text class="pa-3">
-                                                                    <!-- formHtml이 있는 경우 DynamicForm 사용 -->
-                                                                    <div v-if="message.firstActivityForm.formHtml" class="form-container">
-                                                                        <DynamicForm
-                                                                            :formHTML="message.firstActivityForm.formHtml"
-                                                                            v-model="message.formValues"
-                                                                            :readonly="false"
-                                                                        ></DynamicForm>
-                                                                    </div>
-
-                                                                    <!-- 폼 정보가 없는 경우 -->
-                                                                    <div v-else class="text-caption text-grey">
-                                                                        추가 입력 정보가 필요하지 않습니다.
-                                                                    </div>
-                                                                </v-card-text>
-                                                            </v-card>
-
-                                                            <v-btn
-                                                                color="primary"
-                                                                variant="elevated"
-                                                                size="default"
-                                                                @click="executeProcessInstance(message, index)"
-                                                                :loading="message.executing"
-                                                                :disabled="message.executed"
-                                                            >
-                                                                <v-icon left class="mr-1">{{
-                                                                    message.executed ? 'mdi-check' : 'mdi-play'
-                                                                }}</v-icon>
-                                                                {{ message.executed ? '실행 완료' : '프로세스 실행' }}
-                                                            </v-btn>
-                                                        </div>
-
-                                                        <!-- 회사 정보 조회 결과에 확인하기 버튼 추가 -->
-                                                        <div v-if="message.companyQueryUrl" class="mt-3 pl-3">
-                                                            <v-btn
-                                                                color="primary"
-                                                                variant="elevated"
-                                                                size="small"
-                                                                @click="navigateToCompanyQuery(message.companyQueryUrl)"
-                                                            >
-                                                                <v-icon left small class="mr-1">mdi-open-in-new</v-icon>
-                                                                확인하기
-                                                            </v-btn>
-                                                        </div>
-                                                    </div>
-
-                                                    <div v-else class="w-100 pb-3">
-                                                        <div class="progress-border" :class="{ animate: borderCompletedAnimated }">
-                                                            <template
-                                                                v-if="message.role == 'system' && userFilteredMessages.length - 1 == index"
-                                                            >
-                                                                <div
-                                                                    class="progress-border-span"
-                                                                    :class="{ opacity: !borderCompletedAnimated }"
-                                                                    v-for="n in 5"
-                                                                    :key="n"
-                                                                ></div>
-                                                            </template>
-                                                            <div
-                                                                v-if="shouldRenderMessageBubble(message)"
-                                                                class="message-bubble-wrap message-bubble-wrap--other"
-                                                                @mouseenter="replyIndex = index"
-                                                                @mouseleave="replyIndex = -1"
-                                                            >
-                                                                <div
-                                                                    v-if="
-                                                                        chatRoomMode &&
-                                                                        (message.role === 'assistant' || message.role === 'agent') &&
-                                                                        message.isLoading
-                                                                    "
-                                                                    class="chat-room-loading-indicator"
-                                                                >
-                                                                    <template v-if="getRunningToolCall(message)">
-                                                                        <div class="chat-room-tool-calls">
-                                                                            <div class="chat-room-tool-call-item">
-                                                                                <v-icon size="14" color="primary" class="mr-1"
-                                                                                    >mdi-wrench</v-icon
-                                                                                >
-                                                                                <span class="tool-name">{{
-                                                                                    formatToolName(getRunningToolCall(message).name)
-                                                                                }}</span>
-                                                                                <v-progress-circular
-                                                                                    indeterminate
-                                                                                    size="14"
-                                                                                    width="2"
-                                                                                    color="primary"
-                                                                                    class="ml-2"
-                                                                                />
                                                                             </div>
                                                                         </div>
-                                                                    </template>
-                                                                    <template v-else>
-                                                                        <v-progress-circular
-                                                                            indeterminate
-                                                                            size="14"
-                                                                            width="2"
-                                                                            color="primary"
-                                                                        />
-                                                                        <span class="ml-2">{{ getLoadingLabel(message) }}</span>
-                                                                    </template>
-                                                                <div v-if="getAgentPlanSummary(message)" class="mt-1 text-caption text-medium-emphasis">
-                                                                    플랜: {{ getAgentPlanSummary(message) }}
+                                                                        <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
+                                                                    </v-list-item>
                                                                 </div>
+                                                            </v-list>
+                                                        </v-card>
+                                                    </div>
+                                                    <!-- chat 관련 UI가 위 아래 붙기때문에 적용했던 스타일 필요시 다시 삽입 :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'" -->
+                                                    <div v-else-if="!message.disableMsg || message.isLoading">
+                                                        <v-row v-if="shouldDisplayUserInfo(message, index)" class="ma-0 pa-0">
+                                                            <v-row class="ma-0 pa-0 d-flex align-center mb-2">
+                                                                <v-avatar size="28" style="margin-right: 8px">
+                                                                    <img
+                                                                        v-if="message.role == 'system'"
+                                                                        src="@/assets/images/chat/chat-icon.png"
+                                                                        height="28"
+                                                                        width="28"
+                                                                    />
+                                                                    <v-img
+                                                                        v-else
+                                                                        :src="getProfile(message)"
+                                                                        :alt="
+                                                                            message.name ||
+                                                                            message.userName ||
+                                                                            message.username ||
+                                                                            message.email ||
+                                                                            'User'
+                                                                        "
+                                                                        height="28"
+                                                                        width="28"
+                                                                    />
+                                                                </v-avatar>
+                                                                <div class="user-name">
+                                                                    {{
+                                                                        message.role == 'system'
+                                                                            ? 'System'
+                                                                            : message.name ||
+                                                                              message.userName ||
+                                                                              message.username ||
+                                                                              message.email
+                                                                    }}
                                                                 </div>
+                                                            </v-row>
+                                                        </v-row>
 
-                                                                <v-sheet
-                                                                    v-else
-                                                                    class="other-message rounded-md pa-0"
-                                                                    :class="
-                                                                        showTeamMemberSelector === index
-                                                                            ? 'chat-message-bubble-select-team-member'
-                                                                            : 'chat-message-bubble'
+                                                        <div
+                                                            v-if="message.contentType && message.contentType == 'html'"
+                                                            style="margin-bottom: 15px"
+                                                        >
+                                                            <DynamicForm
+                                                                ref="dynamicForm"
+                                                                :formHTML="message.htmlContent"
+                                                                v-model="message.jsonContent"
+                                                                :readonly="true"
+                                                            ></DynamicForm>
+                                                        </div>
+
+                                                        <div
+                                                            v-else-if="
+                                                                message.contentType && message.contentType == 'json' && type == 'instances'
+                                                            "
+                                                        >
+                                                            <ProcessWorkResult :message="message" />
+                                                        </div>
+
+                                                        <!-- markdown message -->
+                                                        <div
+                                                            v-else-if="
+                                                                markdownEnabled &&
+                                                                ((message.contentType && message.contentType == 'markdown') ||
+                                                                    (message.role == 'system' && !message.contentType))
+                                                            "
+                                                            :class="
+                                                                agentMessage || message.role == 'system' ? 'agent-message' : 'other-message'
+                                                            "
+                                                        >
+                                                            <div v-html="renderedMarkdown(message.content)" class="markdown-content"></div>
+
+                                                            <div
+                                                                v-if="shouldDisplayMessageTimestamp(message, index)"
+                                                                class="markdown-timestamp"
+                                                            >
+                                                                {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
+                                                            </div>
+
+                                                            <!-- 프로세스 실행 폼 -->
+                                                            <div
+                                                                v-if="message.work === 'StartProcessInstance' && message.firstActivityForm"
+                                                                class="mt-3 pl-3 pr-3"
+                                                            >
+                                                                <v-card variant="outlined" class="mb-3">
+                                                                    <v-card-title class="text-subtitle-1 py-2">
+                                                                        {{ message.firstActivityForm.activityName || '초기 정보 입력' }}
+                                                                    </v-card-title>
+                                                                    <v-divider></v-divider>
+                                                                    <v-card-text class="pa-3">
+                                                                        <!-- formHtml이 있는 경우 DynamicForm 사용 -->
+                                                                        <div
+                                                                            v-if="message.firstActivityForm.formHtml"
+                                                                            class="form-container"
+                                                                        >
+                                                                            <DynamicForm
+                                                                                :formHTML="message.firstActivityForm.formHtml"
+                                                                                v-model="message.formValues"
+                                                                                :readonly="false"
+                                                                            ></DynamicForm>
+                                                                        </div>
+
+                                                                        <!-- 폼 정보가 없는 경우 -->
+                                                                        <div v-else class="text-caption text-grey">
+                                                                            추가 입력 정보가 필요하지 않습니다.
+                                                                        </div>
+                                                                    </v-card-text>
+                                                                </v-card>
+
+                                                                <v-btn
+                                                                    color="primary"
+                                                                    variant="elevated"
+                                                                    size="default"
+                                                                    @click="executeProcessInstance(message, index)"
+                                                                    :loading="message.executing"
+                                                                    :disabled="message.executed"
+                                                                >
+                                                                    <v-icon left class="mr-1">{{
+                                                                        message.executed ? 'mdi-check' : 'mdi-play'
+                                                                    }}</v-icon>
+                                                                    {{ message.executed ? '실행 완료' : '프로세스 실행' }}
+                                                                </v-btn>
+                                                            </div>
+
+                                                            <!-- 회사 정보 조회 결과에 확인하기 버튼 추가 -->
+                                                            <div v-if="message.companyQueryUrl" class="mt-3 pl-3">
+                                                                <v-btn
+                                                                    color="primary"
+                                                                    variant="elevated"
+                                                                    size="small"
+                                                                    @click="navigateToCompanyQuery(message.companyQueryUrl)"
+                                                                >
+                                                                    <v-icon left small class="mr-1">mdi-open-in-new</v-icon>
+                                                                    확인하기
+                                                                </v-btn>
+                                                            </div>
+                                                        </div>
+
+                                                        <div v-else class="w-100 pb-3">
+                                                            <div class="progress-border" :class="{ animate: borderCompletedAnimated }">
+                                                                <template
+                                                                    v-if="
+                                                                        message.role == 'system' && userFilteredMessages.length - 1 == index
                                                                     "
                                                                 >
-                                                                    <div class="pa-2">
-                                                                        <!-- <div v-if="chatRoomMode && hasAgentLogs(message)" class="mb-2">
+                                                                    <div
+                                                                        class="progress-border-span"
+                                                                        :class="{ opacity: !borderCompletedAnimated }"
+                                                                        v-for="n in 5"
+                                                                        :key="n"
+                                                                    ></div>
+                                                                </template>
+                                                                <div
+                                                                    v-if="shouldRenderMessageBubble(message)"
+                                                                    class="message-bubble-wrap message-bubble-wrap--other"
+                                                                    @mouseenter="replyIndex = index"
+                                                                    @mouseleave="replyIndex = -1"
+                                                                >
+                                                                    <div
+                                                                        v-if="
+                                                                            chatRoomMode &&
+                                                                            (message.role === 'assistant' || message.role === 'agent') &&
+                                                                            message.isLoading
+                                                                        "
+                                                                        class="chat-room-loading-indicator"
+                                                                    >
+                                                                        <template v-if="getRunningToolCall(message)">
+                                                                            <div class="chat-room-tool-calls">
+                                                                                <div class="chat-room-tool-call-item">
+                                                                                    <v-icon size="14" color="primary" class="mr-1"
+                                                                                        >mdi-wrench</v-icon
+                                                                                    >
+                                                                                    <span class="tool-name">{{
+                                                                                        formatToolName(getRunningToolCall(message).name)
+                                                                                    }}</span>
+                                                                                    <v-progress-circular
+                                                                                        indeterminate
+                                                                                        size="14"
+                                                                                        width="2"
+                                                                                        color="primary"
+                                                                                        class="ml-2"
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                        </template>
+                                                                        <template v-else>
+                                                                            <v-progress-circular
+                                                                                indeterminate
+                                                                                size="14"
+                                                                                width="2"
+                                                                                color="primary"
+                                                                            />
+                                                                            <span class="ml-2">{{ getLoadingLabel(message) }}</span>
+                                                                        </template>
+                                                                        <div
+                                                                            v-if="getAgentPlanSummary(message)"
+                                                                            class="mt-1 text-caption text-medium-emphasis"
+                                                                        >
+                                                                            플랜: {{ getAgentPlanSummary(message) }}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <v-sheet
+                                                                        v-else
+                                                                        class="other-message rounded-md pa-0"
+                                                                        :class="
+                                                                            showTeamMemberSelector === index
+                                                                                ? 'chat-message-bubble-select-team-member'
+                                                                                : 'chat-message-bubble'
+                                                                        "
+                                                                    >
+                                                                        <div class="pa-2">
+                                                                            <!-- <div v-if="chatRoomMode && hasAgentLogs(message)" class="mb-2">
                                                                             <v-expansion-panels variant="accordion">
                                                                                 <v-expansion-panel>
                                                                                     <v-expansion-panel-title class="text-caption py-1">
@@ -1229,781 +1287,862 @@
                                                                                 </v-expansion-panel>
                                                                             </v-expansion-panels>
                                                                         </div> -->
-                                                                        <!-- 첨부(이미지/파일): content가 비어도 메시지로 렌더링 + 답장 가능 -->
-                                                                        <div
-                                                                            v-if="
-                                                                                message.image ||
-                                                                                (message.images && message.images.length > 0) ||
-                                                                                getMessageFiles(message).length > 0
-                                                                            "
-                                                                            class="mb-2"
-                                                                        >
-                                                                            <!-- 단일 이미지 표시 (기존 호환성) -->
-                                                                            <v-sheet v-if="message.image && !message.images" class="mb-1">
-                                                                                <img
-                                                                                    :src="message.image"
-                                                                                    class="rounded-md"
-                                                                                    alt="pro"
-                                                                                    width="250"
-                                                                                    style="cursor: pointer"
-                                                                                    @click="emitPreviewImage(message.image)"
-                                                                                />
-                                                                            </v-sheet>
-
-                                                                            <!-- 다중 이미지 표시 -->
+                                                                            <!-- 첨부(이미지/파일): content가 비어도 메시지로 렌더링 + 답장 가능 -->
                                                                             <div
-                                                                                v-if="message.images && message.images.length > 0"
-                                                                                class="d-flex flex-wrap mb-1"
+                                                                                v-if="
+                                                                                    message.image ||
+                                                                                    (message.images && message.images.length > 0) ||
+                                                                                    getMessageFiles(message).length > 0
+                                                                                "
+                                                                                class="mb-2"
                                                                             >
+                                                                                <!-- 단일 이미지 표시 (기존 호환성) -->
                                                                                 <v-sheet
-                                                                                    v-for="(image, imgIndex) in message.images"
-                                                                                    :key="imgIndex"
-                                                                                    class="ma-1"
+                                                                                    v-if="message.image && !message.images"
+                                                                                    class="mb-1"
                                                                                 >
                                                                                     <img
-                                                                                        :src="image.url || image"
+                                                                                        :src="message.image"
                                                                                         class="rounded-md"
                                                                                         alt="pro"
                                                                                         width="250"
                                                                                         style="cursor: pointer"
-                                                                                        @click="emitPreviewImage(image.url || image)"
+                                                                                        @click="emitPreviewImage(message.image)"
                                                                                     />
                                                                                 </v-sheet>
-                                                                            </div>
 
-                                                                            <!-- 파일 첨부(다중 지원) -->
-                                                                            <div
-                                                                                v-if="getMessageFiles(message).length > 0"
-                                                                                class="mb-1 d-flex flex-column"
-                                                                                style="gap: 8px"
-                                                                            >
-                                                                                <v-sheet
-                                                                                    v-for="(attachedFile, fileIdx) in getMessageFiles(message)"
-                                                                                    :key="`msg-file-other-${index}-${fileIdx}`"
-                                                                                    rounded="lg"
-                                                                                    class="pa-2 d-inline-flex align-center"
-                                                                                    style="
-                                                                                        gap: 10px;
-                                                                                        cursor: pointer;
-                                                                                        border: 1px solid rgba(0, 0, 0, 0.08);
-                                                                                        background: rgba(var(--v-theme-primary), 0.06);
-                                                                                        max-width: min(520px, 80vw);
-                                                                                    "
-                                                                                    @click="
-                                                                                        emitOpenExternalUrl(
-                                                                                            attachedFile.url ||
-                                                                                                attachedFile.fileUrl ||
-                                                                                                attachedFile.publicUrl ||
-                                                                                                attachedFile.signedUrl
-                                                                                        )
-                                                                                    "
+                                                                                <!-- 다중 이미지 표시 -->
+                                                                                <div
+                                                                                    v-if="message.images && message.images.length > 0"
+                                                                                    class="d-flex flex-wrap mb-1"
                                                                                 >
-                                                                                    <div
-                                                                                        style="
-                                                                                            width: 28px;
-                                                                                            height: 28px;
-                                                                                            border-radius: 10px;
-                                                                                            display: flex;
-                                                                                            align-items: center;
-                                                                                            justify-content: center;
-                                                                                            background: rgba(var(--v-theme-primary), 0.12);
-                                                                                        "
+                                                                                    <v-sheet
+                                                                                        v-for="(image, imgIndex) in message.images"
+                                                                                        :key="imgIndex"
+                                                                                        class="ma-1"
                                                                                     >
-                                                                                        <v-icon size="18" color="primary"
-                                                                                            >mdi-file-outline</v-icon
-                                                                                        >
-                                                                                    </div>
-                                                                                    <div style="min-width: 0; flex: 1 1 auto">
-                                                                                        <div
-                                                                                            style="
-                                                                                                font-size: 13px;
-                                                                                                font-weight: 700;
-                                                                                                color: rgba(0, 0, 0, 0.78);
-                                                                                                overflow: hidden;
-                                                                                                text-overflow: ellipsis;
-                                                                                                white-space: nowrap;
-                                                                                            "
-                                                                                        >
-                                                                                            {{
-                                                                                                attachedFile.name ||
-                                                                                                attachedFile.fileName ||
-                                                                                                '첨부파일'
-                                                                                            }}
-                                                                                        </div>
-                                                                                        <div
-                                                                                            style="
-                                                                                                font-size: 11px;
-                                                                                                color: rgba(0, 0, 0, 0.55);
-                                                                                                overflow: hidden;
-                                                                                                text-overflow: ellipsis;
-                                                                                                white-space: nowrap;
-                                                                                            "
-                                                                                        >
-                                                                                            {{ formatAttachmentSub(attachedFile) }}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <v-btn
-                                                                                        icon
-                                                                                        size="x-small"
-                                                                                        variant="tonal"
-                                                                                        :disabled="
-                                                                                            !(
-                                                                                                attachedFile.url ||
-                                                                                                attachedFile.fileUrl ||
-                                                                                                attachedFile.publicUrl ||
-                                                                                                attachedFile.signedUrl
-                                                                                            )
+                                                                                        <img
+                                                                                            :src="image.url || image"
+                                                                                            class="rounded-md"
+                                                                                            alt="pro"
+                                                                                            width="250"
+                                                                                            style="cursor: pointer"
+                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                        />
+                                                                                    </v-sheet>
+                                                                                </div>
+
+                                                                                <!-- 파일 첨부(다중 지원) -->
+                                                                                <div
+                                                                                    v-if="getMessageFiles(message).length > 0"
+                                                                                    class="mb-1 d-flex flex-column"
+                                                                                    style="gap: 8px"
+                                                                                >
+                                                                                    <v-sheet
+                                                                                        v-for="(attachedFile, fileIdx) in getMessageFiles(
+                                                                                            message
+                                                                                        )"
+                                                                                        :key="`msg-file-other-${index}-${fileIdx}`"
+                                                                                        rounded="lg"
+                                                                                        class="pa-2 d-inline-flex align-center"
+                                                                                        style="
+                                                                                            gap: 10px;
+                                                                                            cursor: pointer;
+                                                                                            border: 1px solid rgba(0, 0, 0, 0.08);
+                                                                                            background: rgba(var(--v-theme-primary), 0.06);
+                                                                                            max-width: min(520px, 80vw);
                                                                                         "
-                                                                                        @click.stop="
-                                                                                            downloadAttachment(
+                                                                                        @click="
+                                                                                            emitOpenExternalUrl(
                                                                                                 attachedFile.url ||
                                                                                                     attachedFile.fileUrl ||
                                                                                                     attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl,
-                                                                                                attachedFile.name ||
-                                                                                                    attachedFile.fileName
+                                                                                                    attachedFile.signedUrl
                                                                                             )
                                                                                         "
                                                                                     >
-                                                                                        <v-icon size="14">mdi-download</v-icon>
-                                                                                    </v-btn>
-                                                                                </v-sheet>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div
-                                                                            v-if="message.replyUserName || message.replyContent"
-                                                                            class="reply-quote reply-quote--other"
-                                                                            role="button"
-                                                                            tabindex="0"
-                                                                            @click.stop="scrollToOriginalMessage(message.replyUuid)"
-                                                                        >
-                                                                            <div class="reply-quote__body">
-                                                                                <div class="reply-quote__title">
-                                                                                    {{ (message.replyUserName || '').toString()
-                                                                                    }}{{ message.replyUserName ? '에게 답장' : '답장' }}
+                                                                                        <div
+                                                                                            style="
+                                                                                                width: 28px;
+                                                                                                height: 28px;
+                                                                                                border-radius: 10px;
+                                                                                                display: flex;
+                                                                                                align-items: center;
+                                                                                                justify-content: center;
+                                                                                                background: rgba(
+                                                                                                    var(--v-theme-primary),
+                                                                                                    0.12
+                                                                                                );
+                                                                                            "
+                                                                                        >
+                                                                                            <v-icon size="18" color="primary"
+                                                                                                >mdi-file-outline</v-icon
+                                                                                            >
+                                                                                        </div>
+                                                                                        <div style="min-width: 0; flex: 1 1 auto">
+                                                                                            <div
+                                                                                                style="
+                                                                                                    font-size: 13px;
+                                                                                                    font-weight: 700;
+                                                                                                    color: rgba(0, 0, 0, 0.78);
+                                                                                                    overflow: hidden;
+                                                                                                    text-overflow: ellipsis;
+                                                                                                    white-space: nowrap;
+                                                                                                "
+                                                                                            >
+                                                                                                {{
+                                                                                                    attachedFile.name ||
+                                                                                                    attachedFile.fileName ||
+                                                                                                    '첨부파일'
+                                                                                                }}
+                                                                                            </div>
+                                                                                            <div
+                                                                                                style="
+                                                                                                    font-size: 11px;
+                                                                                                    color: rgba(0, 0, 0, 0.55);
+                                                                                                    overflow: hidden;
+                                                                                                    text-overflow: ellipsis;
+                                                                                                    white-space: nowrap;
+                                                                                                "
+                                                                                            >
+                                                                                                {{ formatAttachmentSub(attachedFile) }}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <v-btn
+                                                                                            icon
+                                                                                            size="x-small"
+                                                                                            variant="tonal"
+                                                                                            :disabled="
+                                                                                                !(
+                                                                                                    attachedFile.url ||
+                                                                                                    attachedFile.fileUrl ||
+                                                                                                    attachedFile.publicUrl ||
+                                                                                                    attachedFile.signedUrl
+                                                                                                )
+                                                                                            "
+                                                                                            @click.stop="
+                                                                                                downloadAttachment(
+                                                                                                    attachedFile.url ||
+                                                                                                        attachedFile.fileUrl ||
+                                                                                                        attachedFile.publicUrl ||
+                                                                                                        attachedFile.signedUrl,
+                                                                                                    attachedFile.name ||
+                                                                                                        attachedFile.fileName
+                                                                                                )
+                                                                                            "
+                                                                                        >
+                                                                                            <v-icon size="14">mdi-download</v-icon>
+                                                                                        </v-btn>
+                                                                                    </v-sheet>
                                                                                 </div>
-                                                                                <div class="reply-quote__text">
-                                                                                    {{ message.replyContent || '' }}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <pre v-if="message.disableMsg" class="text-body-1">{{ '...' }}</pre>
-                                                                        <div
-                                                                            v-else-if="message.htmlContent"
-                                                                            v-html="message.htmlContent"
-                                                                            class="text-body-1"
-                                                                        ></div>
-                                                                        <div
-                                                                            v-else
-                                                                            class="text-body-1 markdown-content"
-                                                                            v-html="setMessageForUser(getDisplayMessageContent(message, index))"
-                                                                        ></div>
-                                                                        <div
-                                                                            v-if="isInlineProcessPreviewTarget(message, index)"
-                                                                            class="mt-2"
-                                                                        >
-                                                                            <div class="d-flex align-center" style="gap: 8px;">
-                                                                                <v-btn
-                                                                                    size="small"
-                                                                                    variant="tonal"
-                                                                                    color="primary"
-                                                                                    @click="openInlineProcessPreview(message)"
-                                                                                >
-                                                                                    <v-icon start size="14">mdi-sitemap</v-icon>
-                                                                                    {{ getInlineProcessButtonLabel() }}
-                                                                                </v-btn>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <!-- PDF2BPMN 결과 카드 -->
-                                                                        <div
-                                                                            v-if="
-                                                                                hasPdf2bpmnResultSections(message)
-                                                                            "
-                                                                            class="pdf2bpmn-result-container mt-3"
-                                                                        >
-                                                                            <div class="d-flex align-center mb-2">
-                                                                                <v-icon size="16" color="success" class="mr-1"
-                                                                                    >mdi-check-circle</v-icon
-                                                                                >
-                                                                                <span class="text-caption font-weight-bold">
-                                                                                    PDF2BPMN 생성 결과
-                                                                                </span>
-                                                                                <v-spacer />
-                                                                                <v-btn
-                                                                                    v-if="message.pdf2bpmnResult.taskId"
-                                                                                    size="x-small"
-                                                                                    variant="tonal"
-                                                                                    color="primary"
-                                                                                    @click.stop="
-                                                                                        emitPreviewIntegratedGraph(
-                                                                                            message.pdf2bpmnResult.taskId
-                                                                                        )
-                                                                                    "
-                                                                                >
-                                                                                    <v-icon start size="14">mdi-graph-outline</v-icon>
-                                                                                    전체 그래프
-                                                                                </v-btn>
                                                                             </div>
                                                                             <div
-                                                                                v-if="
-                                                                                    getPdf2bpmnBpmns(message) &&
-                                                                                    getPdf2bpmnBpmns(message).length > 0
-                                                                                "
-                                                                                class="text-caption font-weight-bold mb-1"
+                                                                                v-if="message.replyUserName || message.replyContent"
+                                                                                class="reply-quote reply-quote--other"
+                                                                                role="button"
+                                                                                tabindex="0"
+                                                                                @click.stop="scrollToOriginalMessage(message.replyUuid)"
                                                                             >
-                                                                                생성된 BPMN 프로세스 ({{ getPdf2bpmnBpmns(message).length }}개)
-                                                                            </div>
-                                                                            <div
-                                                                                v-if="
-                                                                                    getPdf2bpmnBpmns(message) &&
-                                                                                    getPdf2bpmnBpmns(message).length > 0
-                                                                                "
-                                                                                class="d-flex flex-column"
-                                                                                style="gap: 8px"
-                                                                            >
-                                                                                <v-card
-                                                                                    v-for="(bpmn, bIdx) in getPdf2bpmnBpmns(message)"
-                                                                                    :key="bIdx"
-                                                                                    class="pa-2 pdf2bpmn-bpmn-card"
-                                                                                    variant="outlined"
-                                                                                    @click="emitPreviewBpmn(bpmn)"
-                                                                                >
-                                                                                    <div class="d-flex align-center">
-                                                                                        <v-icon size="18" color="primary" class="mr-2"
-                                                                                            >mdi-sitemap</v-icon
-                                                                                        >
-                                                                                        <div class="flex-grow-1">
-                                                                                            <div class="text-body-2 font-weight-bold">
-                                                                                                {{ bpmn.process_name || 'Unnamed Process' }}
-                                                                                            </div>
-                                                                                            <div class="text-caption text-medium-emphasis">
-                                                                                                ID: {{ bpmn.process_id }}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <v-icon size="16" color="grey">mdi-eye</v-icon>
+                                                                                <div class="reply-quote__body">
+                                                                                    <div class="reply-quote__title">
+                                                                                        {{ (message.replyUserName || '').toString()
+                                                                                        }}{{ message.replyUserName ? '에게 답장' : '답장' }}
                                                                                     </div>
-                                                                                </v-card>
-                                                                            </div>
-                                                                            <div v-if="getPdf2bpmnSavedSkills(message).length > 0" class="text-caption font-weight-bold mt-3 mb-1">
-                                                                                생성된 스킬 ({{ getPdf2bpmnSavedSkills(message).length }}개)
-                                                                            </div>
-                                                                            <div v-if="getPdf2bpmnSavedSkills(message).length > 0" class="d-flex flex-column" style="gap: 8px">
-                                                                                <v-card
-                                                                                    v-for="(skill, sIdx) in getPdf2bpmnSavedSkills(message)"
-                                                                                    :key="`skill-${sIdx}`"
-                                                                                    class="pa-2 pdf2bpmn-bpmn-card"
-                                                                                    variant="outlined"
-                                                                                    @click="emitOpenExternalUrl(resolveSkillUrl(skill))"
-                                                                                >
-                                                                                    <div class="d-flex align-center">
-                                                                                        <v-icon size="18" color="deep-orange" class="mr-2"
-                                                                                            >mdi-lightning-bolt-outline</v-icon
-                                                                                        >
-                                                                                        <div class="flex-grow-1">
-                                                                                            <div class="text-body-2 font-weight-bold">
-                                                                                                {{ skill.name || skill.safe_name || 'Unnamed Skill' }}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <v-icon size="16" color="grey">mdi-open-in-new</v-icon>
+                                                                                    <div class="reply-quote__text">
+                                                                                        {{ message.replyContent || '' }}
                                                                                     </div>
-                                                                                </v-card>
+                                                                                </div>
                                                                             </div>
-                                                                            <div v-if="getPdf2bpmnSavedAgents(message).length > 0" class="text-caption font-weight-bold mt-3 mb-1">
-                                                                                생성된 에이전트 ({{ getPdf2bpmnSavedAgents(message).length }}개)
-                                                                            </div>
-                                                                            <div v-if="getPdf2bpmnSavedAgents(message).length > 0" class="d-flex flex-column" style="gap: 8px">
-                                                                                <v-card
-                                                                                    v-for="(agent, aIdx) in getPdf2bpmnSavedAgents(message)"
-                                                                                    :key="`agent-${aIdx}`"
-                                                                                    class="pa-2 pdf2bpmn-bpmn-card"
-                                                                                    variant="outlined"
-                                                                                    @click="emitOpenExternalUrl(resolveAgentUrl(agent))"
-                                                                                >
-                                                                                    <div class="d-flex align-center">
-                                                                                        <v-icon size="18" color="primary" class="mr-2">mdi-account-tie</v-icon>
-                                                                                        <div class="flex-grow-1">
-                                                                                            <div class="text-body-2 font-weight-bold">
-                                                                                                {{ agent.name || agent.id || 'Unnamed Agent' }}
-                                                                                            </div>
-                                                                                            <div class="text-caption text-medium-emphasis">
-                                                                                                UID: {{ agent.id }}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <v-icon size="16" color="grey">mdi-open-in-new</v-icon>
-                                                                                    </div>
-                                                                                </v-card>
-                                                                            </div>
-                                                                        </div>
 
-                                                                        <div
-                                                                            v-if="message.type && message.type === 'add_team'"
-                                                                            class="mt-2"
-                                                                        >
-                                                                            <v-btn
-                                                                                style="
-                                                                                    border: 1px solid #e0e0e0;
-                                                                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                                                            <pre v-if="message.disableMsg" class="text-body-1">{{
+                                                                                '...'
+                                                                            }}</pre>
+                                                                            <div
+                                                                                v-else-if="message.htmlContent"
+                                                                                v-html="message.htmlContent"
+                                                                                class="text-body-1"
+                                                                            ></div>
+                                                                            <div
+                                                                                v-else
+                                                                                class="text-body-1 markdown-content"
+                                                                                v-html="
+                                                                                    setMessageForUser(
+                                                                                        getDisplayMessageContent(message, index)
+                                                                                    )
                                                                                 "
-                                                                                :style="replyIndex === index ? 'margin-bottom: 10px;' : ''"
-                                                                                color="white"
-                                                                                variant="elevated"
-                                                                                size="small"
-                                                                                class="mr-2"
-                                                                                @click="addTeam(message, index)"
-                                                                                :disabled="message.added || message.adding"
+                                                                            ></div>
+                                                                            <div
+                                                                                v-if="isInlineProcessPreviewTarget(message, index)"
+                                                                                class="mt-2"
                                                                             >
-                                                                                <template v-if="message.adding">
-                                                                                    <v-progress-circular
-                                                                                        indeterminate
+                                                                                <div class="d-flex align-center" style="gap: 8px">
+                                                                                    <v-btn
+                                                                                        size="small"
+                                                                                        variant="tonal"
                                                                                         color="primary"
-                                                                                        size="16"
-                                                                                        width="2"
-                                                                                        style="margin-right: 5px"
-                                                                                    ></v-progress-circular>
-                                                                                </template>
-                                                                                <template v-else-if="message.added">
-                                                                                    <v-icon style="margin-right: 3px">mdi-check</v-icon>
-                                                                                    추가됨
-                                                                                </template>
-                                                                                <template v-else> 추가 </template>
-                                                                            </v-btn>
+                                                                                        @click="openInlineProcessPreview(message)"
+                                                                                    >
+                                                                                        <v-icon start size="14">mdi-sitemap</v-icon>
+                                                                                        {{ getInlineProcessButtonLabel() }}
+                                                                                    </v-btn>
+                                                                                </div>
+                                                                            </div>
 
-                                                                            <v-btn
-                                                                                v-if="message.added"
-                                                                                style="
-                                                                                    border: 1px solid #e0e0e0;
-                                                                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                                                                                "
-                                                                                color="white"
-                                                                                variant="elevated"
-                                                                                size="small"
-                                                                                @click="toggleTeamMemberSelector(index)"
+                                                                            <!-- PDF2BPMN 결과 카드 -->
+                                                                            <div
+                                                                                v-if="hasPdf2bpmnResultSections(message)"
+                                                                                class="pdf2bpmn-result-container mt-3"
                                                                             >
-                                                                                <v-icon style="margin-right: 3px">mdi-account-edit</v-icon>
-                                                                                팀원 관리({{
-                                                                                    (selectedTeamMembersByMessage[index] || []).length
-                                                                                }})
-                                                                            </v-btn>
-                                                                        </div>
+                                                                                <div class="d-flex align-center mb-2">
+                                                                                    <v-icon size="16" color="success" class="mr-1"
+                                                                                        >mdi-check-circle</v-icon
+                                                                                    >
+                                                                                    <span class="text-caption font-weight-bold">
+                                                                                        PDF2BPMN 생성 결과
+                                                                                    </span>
+                                                                                    <v-spacer />
+                                                                                    <v-btn
+                                                                                        v-if="message.pdf2bpmnResult.taskId"
+                                                                                        size="x-small"
+                                                                                        variant="tonal"
+                                                                                        color="primary"
+                                                                                        @click.stop="
+                                                                                            emitPreviewIntegratedGraph(
+                                                                                                message.pdf2bpmnResult.taskId
+                                                                                            )
+                                                                                        "
+                                                                                    >
+                                                                                        <v-icon start size="14">mdi-graph-outline</v-icon>
+                                                                                        전체 그래프
+                                                                                    </v-btn>
+                                                                                </div>
+                                                                                <div
+                                                                                    v-if="
+                                                                                        getPdf2bpmnBpmns(message) &&
+                                                                                        getPdf2bpmnBpmns(message).length > 0
+                                                                                    "
+                                                                                    class="text-caption font-weight-bold mb-1"
+                                                                                >
+                                                                                    생성된 BPMN 프로세스 ({{
+                                                                                        getPdf2bpmnBpmns(message).length
+                                                                                    }}개)
+                                                                                </div>
+                                                                                <div
+                                                                                    v-if="
+                                                                                        getPdf2bpmnBpmns(message) &&
+                                                                                        getPdf2bpmnBpmns(message).length > 0
+                                                                                    "
+                                                                                    class="d-flex flex-column"
+                                                                                    style="gap: 8px"
+                                                                                >
+                                                                                    <v-card
+                                                                                        v-for="(bpmn, bIdx) in getPdf2bpmnBpmns(message)"
+                                                                                        :key="bIdx"
+                                                                                        class="pa-2 pdf2bpmn-bpmn-card"
+                                                                                        variant="outlined"
+                                                                                        @click="emitPreviewBpmn(bpmn)"
+                                                                                    >
+                                                                                        <div class="d-flex align-center">
+                                                                                            <v-icon size="18" color="primary" class="mr-2"
+                                                                                                >mdi-sitemap</v-icon
+                                                                                            >
+                                                                                            <div class="flex-grow-1">
+                                                                                                <div class="text-body-2 font-weight-bold">
+                                                                                                    {{
+                                                                                                        bpmn.process_name ||
+                                                                                                        'Unnamed Process'
+                                                                                                    }}
+                                                                                                </div>
+                                                                                                <div
+                                                                                                    class="text-caption text-medium-emphasis"
+                                                                                                >
+                                                                                                    ID: {{ bpmn.process_id }}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <v-icon size="16" color="grey">mdi-eye</v-icon>
+                                                                                        </div>
+                                                                                    </v-card>
+                                                                                </div>
+                                                                                <div
+                                                                                    v-if="getPdf2bpmnSavedSkills(message).length > 0"
+                                                                                    class="text-caption font-weight-bold mt-3 mb-1"
+                                                                                >
+                                                                                    생성된 스킬 ({{
+                                                                                        getPdf2bpmnSavedSkills(message).length
+                                                                                    }}개)
+                                                                                </div>
+                                                                                <div
+                                                                                    v-if="getPdf2bpmnSavedSkills(message).length > 0"
+                                                                                    class="d-flex flex-column"
+                                                                                    style="gap: 8px"
+                                                                                >
+                                                                                    <v-card
+                                                                                        v-for="(skill, sIdx) in getPdf2bpmnSavedSkills(
+                                                                                            message
+                                                                                        )"
+                                                                                        :key="`skill-${sIdx}`"
+                                                                                        class="pa-2 pdf2bpmn-bpmn-card"
+                                                                                        variant="outlined"
+                                                                                        @click="emitOpenExternalUrl(resolveSkillUrl(skill))"
+                                                                                    >
+                                                                                        <div class="d-flex align-center">
+                                                                                            <v-icon
+                                                                                                size="18"
+                                                                                                color="deep-orange"
+                                                                                                class="mr-2"
+                                                                                                >mdi-lightning-bolt-outline</v-icon
+                                                                                            >
+                                                                                            <div class="flex-grow-1">
+                                                                                                <div class="text-body-2 font-weight-bold">
+                                                                                                    {{
+                                                                                                        skill.name ||
+                                                                                                        skill.safe_name ||
+                                                                                                        'Unnamed Skill'
+                                                                                                    }}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <v-icon size="16" color="grey"
+                                                                                                >mdi-open-in-new</v-icon
+                                                                                            >
+                                                                                        </div>
+                                                                                    </v-card>
+                                                                                </div>
+                                                                                <div
+                                                                                    v-if="getPdf2bpmnSavedAgents(message).length > 0"
+                                                                                    class="text-caption font-weight-bold mt-3 mb-1"
+                                                                                >
+                                                                                    생성된 에이전트 ({{
+                                                                                        getPdf2bpmnSavedAgents(message).length
+                                                                                    }}개)
+                                                                                </div>
+                                                                                <div
+                                                                                    v-if="getPdf2bpmnSavedAgents(message).length > 0"
+                                                                                    class="d-flex flex-column"
+                                                                                    style="gap: 8px"
+                                                                                >
+                                                                                    <v-card
+                                                                                        v-for="(agent, aIdx) in getPdf2bpmnSavedAgents(
+                                                                                            message
+                                                                                        )"
+                                                                                        :key="`agent-${aIdx}`"
+                                                                                        class="pa-2 pdf2bpmn-bpmn-card"
+                                                                                        variant="outlined"
+                                                                                        @click="emitOpenExternalUrl(resolveAgentUrl(agent))"
+                                                                                    >
+                                                                                        <div class="d-flex align-center">
+                                                                                            <v-icon size="18" color="primary" class="mr-2"
+                                                                                                >mdi-account-tie</v-icon
+                                                                                            >
+                                                                                            <div class="flex-grow-1">
+                                                                                                <div class="text-body-2 font-weight-bold">
+                                                                                                    {{
+                                                                                                        agent.name ||
+                                                                                                        agent.id ||
+                                                                                                        'Unnamed Agent'
+                                                                                                    }}
+                                                                                                </div>
+                                                                                                <div
+                                                                                                    class="text-caption text-medium-emphasis"
+                                                                                                >
+                                                                                                    UID: {{ agent.id }}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <v-icon size="16" color="grey"
+                                                                                                >mdi-open-in-new</v-icon
+                                                                                            >
+                                                                                        </div>
+                                                                                    </v-card>
+                                                                                </div>
+                                                                            </div>
 
-                                                                        <v-row v-if="!chatRoomMode" class="pa-0 ma-0 message-actions">
-                                                                            <div v-if="isMobile || replyIndex === index" class="d-flex">
+                                                                            <div
+                                                                                v-if="message.type && message.type === 'add_team'"
+                                                                                class="mt-2"
+                                                                            >
                                                                                 <v-btn
-                                                                                    v-if="type != 'AssistantChats' && message.specific"
-                                                                                    @click="viewWork(index)"
-                                                                                    variant="text"
-                                                                                    size="x-small"
-                                                                                    icon
-                                                                                    class="action-btn"
+                                                                                    style="
+                                                                                        border: 1px solid #e0e0e0;
+                                                                                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                                                                    "
+                                                                                    :style="
+                                                                                        replyIndex === index ? 'margin-bottom: 10px;' : ''
+                                                                                    "
+                                                                                    color="white"
+                                                                                    variant="elevated"
+                                                                                    size="small"
+                                                                                    class="mr-2"
+                                                                                    @click="addTeam(message, index)"
+                                                                                    :disabled="message.added || message.adding"
                                                                                 >
-                                                                                    <Icons :icon="'document'" :size="20" />
+                                                                                    <template v-if="message.adding">
+                                                                                        <v-progress-circular
+                                                                                            indeterminate
+                                                                                            color="primary"
+                                                                                            size="16"
+                                                                                            width="2"
+                                                                                            style="margin-right: 5px"
+                                                                                        ></v-progress-circular>
+                                                                                    </template>
+                                                                                    <template v-else-if="message.added">
+                                                                                        <v-icon style="margin-right: 3px">mdi-check</v-icon>
+                                                                                        추가됨
+                                                                                    </template>
+                                                                                    <template v-else> 추가 </template>
                                                                                 </v-btn>
+
                                                                                 <v-btn
-                                                                                    @click="beforeReply(message)"
-                                                                                    variant="text"
-                                                                                    size="x-small"
-                                                                                    icon
-                                                                                    class="action-btn"
+                                                                                    v-if="message.added"
+                                                                                    style="
+                                                                                        border: 1px solid #e0e0e0;
+                                                                                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                                                                    "
+                                                                                    color="white"
+                                                                                    variant="elevated"
+                                                                                    size="small"
+                                                                                    @click="toggleTeamMemberSelector(index)"
                                                                                 >
-                                                                                    <Icons :icon="'reply'" :size="20" />
-                                                                                </v-btn>
-                                                                                <v-btn
-                                                                                    @click="viewJSON(index)"
-                                                                                    variant="text"
-                                                                                    size="x-small"
-                                                                                    icon
-                                                                                    class="action-btn"
-                                                                                >
-                                                                                    <Icons
-                                                                                        v-if="message.jsonContent && isviewJSONStatus"
-                                                                                        :icon="'arrow-up-2'"
-                                                                                        :size="20"
-                                                                                    />
-                                                                                    <Icons v-else :icon="'arrow-down-2'" :size="20" />
+                                                                                    <v-icon style="margin-right: 3px"
+                                                                                        >mdi-account-edit</v-icon
+                                                                                    >
+                                                                                    팀원 관리({{
+                                                                                        (selectedTeamMembersByMessage[index] || []).length
+                                                                                    }})
                                                                                 </v-btn>
                                                                             </div>
-                                                                        </v-row>
 
-                                                                        <!-- 팀원 선택 UI -->
-                                                                        <v-card
-                                                                            v-if="showTeamMemberSelector === index"
-                                                                            class="mt-3"
-                                                                            outlined
-                                                                        >
-                                                                            <v-card-title class="pb-2">
-                                                                                <div class="d-flex align-center justify-space-between">
-                                                                                    <span>팀원 선택</span>
+                                                                            <v-row v-if="!chatRoomMode" class="pa-0 ma-0 message-actions">
+                                                                                <div v-if="isMobile || replyIndex === index" class="d-flex">
+                                                                                    <v-btn
+                                                                                        v-if="type != 'AssistantChats' && message.specific"
+                                                                                        @click="viewWork(index)"
+                                                                                        variant="text"
+                                                                                        size="x-small"
+                                                                                        icon
+                                                                                        class="action-btn"
+                                                                                    >
+                                                                                        <Icons :icon="'document'" :size="20" />
+                                                                                    </v-btn>
+                                                                                    <v-btn
+                                                                                        @click="beforeReply(message)"
+                                                                                        variant="text"
+                                                                                        size="x-small"
+                                                                                        icon
+                                                                                        class="action-btn"
+                                                                                    >
+                                                                                        <Icons :icon="'reply'" :size="20" />
+                                                                                    </v-btn>
+                                                                                    <v-btn
+                                                                                        @click="viewJSON(index)"
+                                                                                        variant="text"
+                                                                                        size="x-small"
+                                                                                        icon
+                                                                                        class="action-btn"
+                                                                                    >
+                                                                                        <Icons
+                                                                                            v-if="message.jsonContent && isviewJSONStatus"
+                                                                                            :icon="'arrow-up-2'"
+                                                                                            :size="20"
+                                                                                        />
+                                                                                        <Icons v-else :icon="'arrow-down-2'" :size="20" />
+                                                                                    </v-btn>
+                                                                                </div>
+                                                                            </v-row>
+
+                                                                            <!-- 팀원 선택 UI -->
+                                                                            <v-card
+                                                                                v-if="showTeamMemberSelector === index"
+                                                                                class="mt-3"
+                                                                                outlined
+                                                                            >
+                                                                                <v-card-title class="pb-2">
+                                                                                    <div class="d-flex align-center justify-space-between">
+                                                                                        <span>팀원 선택</span>
+                                                                                        <v-btn
+                                                                                            @click="closeTeamMemberSelector()"
+                                                                                            variant="text"
+                                                                                            size="small"
+                                                                                            icon
+                                                                                        >
+                                                                                            <v-icon>mdi-close</v-icon>
+                                                                                        </v-btn>
+                                                                                    </div>
+                                                                                </v-card-title>
+
+                                                                                <v-card-text>
+                                                                                    <v-text-field
+                                                                                        v-model="teamMemberSearch"
+                                                                                        label="팀원 검색"
+                                                                                        prepend-inner-icon="mdi-magnify"
+                                                                                        variant="outlined"
+                                                                                        density="compact"
+                                                                                        hide-details
+                                                                                        class="mb-3"
+                                                                                    ></v-text-field>
+
+                                                                                    <div
+                                                                                        class="team-member-list"
+                                                                                        style="max-height: 200px; overflow-y: auto"
+                                                                                    >
+                                                                                        <v-list density="compact">
+                                                                                            <v-list-item
+                                                                                                v-for="user in filteredTeamMembers"
+                                                                                                :key="user.id"
+                                                                                                @click="
+                                                                                                    toggleTeamMemberSelection(user, index)
+                                                                                                "
+                                                                                                class="team-member-item"
+                                                                                                :class="{
+                                                                                                    selected: (
+                                                                                                        selectedTeamMembersByMessage[
+                                                                                                            index
+                                                                                                        ] || []
+                                                                                                    ).includes(user.id)
+                                                                                                }"
+                                                                                            >
+                                                                                                <template v-slot:prepend>
+                                                                                                    <v-avatar size="32">
+                                                                                                        <img
+                                                                                                            :src="
+                                                                                                                user.profile ||
+                                                                                                                '/images/defaultUser.png'
+                                                                                                            "
+                                                                                                        />
+                                                                                                    </v-avatar>
+                                                                                                </template>
+
+                                                                                                <v-list-item-title>{{
+                                                                                                    user.username
+                                                                                                }}</v-list-item-title>
+                                                                                                <v-list-item-subtitle>{{
+                                                                                                    user.email
+                                                                                                }}</v-list-item-subtitle>
+
+                                                                                                <template v-slot:append>
+                                                                                                    <v-checkbox
+                                                                                                        :model-value="
+                                                                                                            (
+                                                                                                                selectedTeamMembersByMessage[
+                                                                                                                    index
+                                                                                                                ] || []
+                                                                                                            ).includes(user.id)
+                                                                                                        "
+                                                                                                        @update:model-value="
+                                                                                                            toggleTeamMemberSelection(
+                                                                                                                user,
+                                                                                                                index
+                                                                                                            )
+                                                                                                        "
+                                                                                                        hide-details
+                                                                                                    ></v-checkbox>
+                                                                                                </template>
+                                                                                            </v-list-item>
+                                                                                        </v-list>
+                                                                                    </div>
+                                                                                </v-card-text>
+
+                                                                                <v-card-actions>
+                                                                                    <v-spacer></v-spacer>
                                                                                     <v-btn
                                                                                         @click="closeTeamMemberSelector()"
                                                                                         variant="text"
                                                                                         size="small"
-                                                                                        icon
                                                                                     >
-                                                                                        <v-icon>mdi-close</v-icon>
+                                                                                        닫기
                                                                                     </v-btn>
-                                                                                </div>
-                                                                            </v-card-title>
+                                                                                    <v-btn
+                                                                                        @click="addSelectedTeamMembers(message, index)"
+                                                                                        color="primary"
+                                                                                        variant="elevated"
+                                                                                        size="small"
+                                                                                        :disabled="
+                                                                                            (selectedTeamMembersByMessage[index] || [])
+                                                                                                .length === 0
+                                                                                        "
+                                                                                    >
+                                                                                        확인 ({{
+                                                                                            (selectedTeamMembersByMessage[index] || [])
+                                                                                                .length
+                                                                                        }})
+                                                                                    </v-btn>
+                                                                                </v-card-actions>
+                                                                            </v-card>
 
-                                                                            <v-card-text>
-                                                                                <v-text-field
-                                                                                    v-model="teamMemberSearch"
-                                                                                    label="팀원 검색"
-                                                                                    prepend-inner-icon="mdi-magnify"
-                                                                                    variant="outlined"
-                                                                                    density="compact"
-                                                                                    hide-details
-                                                                                    class="mb-3"
-                                                                                ></v-text-field>
+                                                                            <v-row v-if="message.tableData" class="my-5">
+                                                                                <v-col cols="12">
+                                                                                    <v-card outlined>
+                                                                                        <v-card-title>{{
+                                                                                            setTableName(message.content)
+                                                                                        }}</v-card-title>
+                                                                                        <v-card-text>
+                                                                                            <div
+                                                                                                v-html="message.tableData"
+                                                                                                class="table-responsive"
+                                                                                            ></div>
+                                                                                        </v-card-text>
+                                                                                    </v-card>
+                                                                                </v-col>
+                                                                            </v-row>
 
-                                                                                <div
-                                                                                    class="team-member-list"
-                                                                                    style="max-height: 200px; overflow-y: auto"
+                                                                            <v-row v-if="message.searchResults" class="my-5">
+                                                                                <v-col
+                                                                                    v-for="(searchResult, index) in message.searchResults"
+                                                                                    :key="index"
+                                                                                    cols="4"
                                                                                 >
-                                                                                    <v-list density="compact">
-                                                                                        <v-list-item
-                                                                                            v-for="user in filteredTeamMembers"
-                                                                                            :key="user.id"
-                                                                                            @click="toggleTeamMemberSelection(user, index)"
-                                                                                            class="team-member-item"
-                                                                                            :class="{
-                                                                                                selected: (
-                                                                                                    selectedTeamMembersByMessage[index] ||
-                                                                                                    []
-                                                                                                ).includes(user.id)
-                                                                                            }"
-                                                                                        >
-                                                                                            <template v-slot:prepend>
-                                                                                                <v-avatar size="32">
-                                                                                                    <img
-                                                                                                        :src="
-                                                                                                            user.profile ||
-                                                                                                            '/images/defaultUser.png'
-                                                                                                        "
-                                                                                                    />
-                                                                                                </v-avatar>
-                                                                                            </template>
+                                                                                    <v-card outlined>
+                                                                                        <v-card-title class="d-flex justify-space-between">
+                                                                                            <span>{{ searchResult.score }}</span>
+                                                                                            <span>{{ searchResult.index }}</span>
+                                                                                        </v-card-title>
+                                                                                        <v-card-text>{{ searchResult.memory }}</v-card-text>
+                                                                                    </v-card>
+                                                                                </v-col>
+                                                                            </v-row>
 
-                                                                                            <v-list-item-title>{{
-                                                                                                user.username
-                                                                                            }}</v-list-item-title>
-                                                                                            <v-list-item-subtitle>{{
-                                                                                                user.email
-                                                                                            }}</v-list-item-subtitle>
-
-                                                                                            <template v-slot:append>
-                                                                                                <v-checkbox
-                                                                                                    :model-value="
-                                                                                                        (
-                                                                                                            selectedTeamMembersByMessage[
-                                                                                                                index
-                                                                                                            ] || []
-                                                                                                        ).includes(user.id)
-                                                                                                    "
-                                                                                                    @update:model-value="
-                                                                                                        toggleTeamMemberSelection(
-                                                                                                            user,
-                                                                                                            index
-                                                                                                        )
-                                                                                                    "
-                                                                                                    hide-details
-                                                                                                ></v-checkbox>
-                                                                                            </template>
-                                                                                        </v-list-item>
-                                                                                    </v-list>
-                                                                                </div>
-                                                                            </v-card-text>
-
-                                                                            <v-card-actions>
-                                                                                <v-spacer></v-spacer>
-                                                                                <v-btn
-                                                                                    @click="closeTeamMemberSelector()"
-                                                                                    variant="text"
-                                                                                    size="small"
-                                                                                >
-                                                                                    닫기
-                                                                                </v-btn>
-                                                                                <v-btn
-                                                                                    @click="addSelectedTeamMembers(message, index)"
-                                                                                    color="primary"
-                                                                                    variant="elevated"
-                                                                                    size="small"
-                                                                                    :disabled="
-                                                                                        (selectedTeamMembersByMessage[index] || [])
-                                                                                            .length === 0
-                                                                                    "
-                                                                                >
-                                                                                    확인 ({{
-                                                                                        (selectedTeamMembersByMessage[index] || []).length
-                                                                                    }})
-                                                                                </v-btn>
-                                                                            </v-card-actions>
-                                                                        </v-card>
-
-                                                                        <v-row v-if="message.tableData" class="my-5">
-                                                                            <v-col cols="12">
-                                                                                <v-card outlined>
-                                                                                    <v-card-title>{{
-                                                                                        setTableName(message.content)
-                                                                                    }}</v-card-title>
-                                                                                    <v-card-text>
-                                                                                        <div
-                                                                                            v-html="message.tableData"
-                                                                                            class="table-responsive"
-                                                                                        ></div>
-                                                                                    </v-card-text>
-                                                                                </v-card>
-                                                                            </v-col>
-                                                                        </v-row>
-
-                                                                        <v-row v-if="message.searchResults" class="my-5">
-                                                                            <v-col
-                                                                                v-for="(searchResult, index) in message.searchResults"
-                                                                                :key="index"
-                                                                                cols="4"
+                                                                            <v-row
+                                                                                v-if="
+                                                                                    message.memento &&
+                                                                                    message.memento.sources &&
+                                                                                    message.memento.sources.length > 0
+                                                                                "
+                                                                                class="my-5"
                                                                             >
-                                                                                <v-card outlined>
-                                                                                    <v-card-title class="d-flex justify-space-between">
-                                                                                        <span>{{ searchResult.score }}</span>
-                                                                                        <span>{{ searchResult.index }}</span>
-                                                                                    </v-card-title>
-                                                                                    <v-card-text>{{ searchResult.memory }}</v-card-text>
-                                                                                </v-card>
-                                                                            </v-col>
-                                                                        </v-row>
-
-                                                                        <v-row
-                                                                            v-if="
-                                                                                message.memento &&
-                                                                                message.memento.sources &&
-                                                                                message.memento.sources.length > 0
-                                                                            "
-                                                                            class="my-5"
-                                                                        >
-                                                                            <v-col cols="12">
-                                                                                <v-card outlined>
-                                                                                    <v-card-title>Memento</v-card-title>
+                                                                                <v-col cols="12">
+                                                                                    <v-card outlined>
+                                                                                        <v-card-title>Memento</v-card-title>
+                                                                                        <v-card-text>
+                                                                                            <v-textarea
+                                                                                                hide-details
+                                                                                                v-model="message.memento.response"
+                                                                                                auto-grow
+                                                                                                readonly
+                                                                                                variant="solo-filled"
+                                                                                            ></v-textarea>
+                                                                                            <div
+                                                                                                class="chips-container"
+                                                                                                style="margin-top: 5px"
+                                                                                            >
+                                                                                                <v-chip
+                                                                                                    v-for="(source, index) in message
+                                                                                                        .memento.sources"
+                                                                                                    :key="index"
+                                                                                                    variant="outlined"
+                                                                                                    size="x-small"
+                                                                                                    text-color="primary"
+                                                                                                    style="margin-bottom: 1px"
+                                                                                                    @click="downloadFile(source)"
+                                                                                                >
+                                                                                                    <v-icon
+                                                                                                        start
+                                                                                                        icon="mdi-label"
+                                                                                                        x-small
+                                                                                                    ></v-icon>
+                                                                                                    {{ source.file_name }}
+                                                                                                </v-chip>
+                                                                                            </div>
+                                                                                        </v-card-text>
+                                                                                    </v-card>
+                                                                                </v-col>
+                                                                            </v-row>
+                                                                            <pre v-if="isViewJSON.includes(index)" class="text-body-1"
+                                                                                >{{ message.jsonContent }}
+                                                                        </pre
+                                                                            >
+                                                                            <v-card
+                                                                                v-if="
+                                                                                    (type == 'AssistantChats' &&
+                                                                                        isMobile &&
+                                                                                        index === userFilteredMessages.length - 1) ||
+                                                                                    isViewWork == index
+                                                                                "
+                                                                            >
+                                                                                <div v-if="message.specific">
+                                                                                    <v-card-title style="margin-bottom: -10px"
+                                                                                        ><h3>Title:</h3></v-card-title
+                                                                                    >
                                                                                     <v-card-text>
                                                                                         <v-textarea
-                                                                                            hide-details
-                                                                                            v-model="message.memento.response"
-                                                                                            auto-grow
                                                                                             readonly
-                                                                                            variant="solo-filled"
+                                                                                            rows="1"
+                                                                                            v-model="message.title"
+                                                                                            auto-grow
                                                                                         ></v-textarea>
-                                                                                        <div
-                                                                                            class="chips-container"
-                                                                                            style="margin-top: 5px"
+                                                                                    </v-card-text>
+                                                                                    <v-card-title style="margin-bottom: -10px"
+                                                                                        ><h3>Specific:</h3></v-card-title
+                                                                                    >
+                                                                                    <v-card-text>
+                                                                                        <v-textarea
+                                                                                            readonly
+                                                                                            rows="1"
+                                                                                            v-model="message.specific"
+                                                                                            auto-grow
+                                                                                        ></v-textarea>
+                                                                                    </v-card-text>
+                                                                                    <v-card-title style="margin-bottom: -10px"
+                                                                                        ><h3>Measurable:</h3></v-card-title
+                                                                                    >
+                                                                                    <v-card-text>
+                                                                                        <v-textarea
+                                                                                            readonly
+                                                                                            rows="1"
+                                                                                            v-model="message.measurable"
+                                                                                            auto-grow
+                                                                                        ></v-textarea>
+                                                                                    </v-card-text>
+                                                                                    <v-card-title style="margin-bottom: -10px"
+                                                                                        ><h3>Attainable:</h3></v-card-title
+                                                                                    >
+                                                                                    <v-card-text>
+                                                                                        <v-textarea
+                                                                                            readonly
+                                                                                            rows="1"
+                                                                                            v-model="message.attainable"
+                                                                                            auto-grow
+                                                                                        ></v-textarea>
+                                                                                    </v-card-text>
+                                                                                    <v-card-title style="margin-bottom: -10px"
+                                                                                        ><h3>Relevant:</h3></v-card-title
+                                                                                    >
+                                                                                    <v-card-text>
+                                                                                        <v-textarea
+                                                                                            readonly
+                                                                                            rows="1"
+                                                                                            v-model="message.relevant"
+                                                                                            auto-grow
+                                                                                        ></v-textarea>
+                                                                                    </v-card-text>
+                                                                                    <v-card-title style="margin-bottom: -10px"
+                                                                                        ><h3>Time-bound:</h3></v-card-title
+                                                                                    >
+                                                                                    <v-card-text>
+                                                                                        <v-col
+                                                                                            style="max-width: 100%"
+                                                                                            cols="12"
+                                                                                            sm="6"
+                                                                                            md="4"
                                                                                         >
-                                                                                            <v-chip
-                                                                                                v-for="(source, index) in message.memento
-                                                                                                    .sources"
-                                                                                                :key="index"
-                                                                                                variant="outlined"
-                                                                                                size="x-small"
-                                                                                                text-color="primary"
-                                                                                                style="margin-bottom: 1px"
-                                                                                                @click="downloadFile(source)"
+                                                                                            <v-menu
+                                                                                                v-model="timeBoundMenu"
+                                                                                                :close-on-content-click="false"
+                                                                                                :nudge-right="40"
+                                                                                                transition="scale-transition"
+                                                                                                offset-y
+                                                                                                min-width="auto"
                                                                                             >
-                                                                                                <v-icon
-                                                                                                    start
-                                                                                                    icon="mdi-label"
-                                                                                                    x-small
-                                                                                                ></v-icon>
-                                                                                                {{ source.file_name }}
-                                                                                            </v-chip>
+                                                                                                <template v-slot:activator="{ on, attrs }">
+                                                                                                    <v-text-field
+                                                                                                        v-model="message.time_bound"
+                                                                                                        prepend-icon="mdi-calendar"
+                                                                                                        readonly
+                                                                                                        v-bind="attrs"
+                                                                                                        v-on="on"
+                                                                                                    ></v-text-field>
+                                                                                                </template>
+                                                                                                <v-date-picker
+                                                                                                    v-model="message.time_bound"
+                                                                                                    @input="timeBoundMenu = false"
+                                                                                                ></v-date-picker>
+                                                                                            </v-menu>
+                                                                                        </v-col>
+                                                                                    </v-card-text>
+                                                                                    <v-card-title>Descriptions</v-card-title>
+                                                                                    <v-card-text>
+                                                                                        <div
+                                                                                            v-for="(desc, index) in message.descriptions"
+                                                                                            :key="index"
+                                                                                        >
+                                                                                            <h3>{{ desc.word }}</h3>
+                                                                                            <p>{{ desc.description }}</p>
                                                                                         </div>
                                                                                     </v-card-text>
-                                                                                </v-card>
-                                                                            </v-col>
-                                                                        </v-row>
-                                                                        <pre v-if="isViewJSON.includes(index)" class="text-body-1"
-                                                                        >{{ message.jsonContent }}
-                                                                        </pre>
-                                                                        <v-card
-                                                                            v-if="
-                                                                                (type == 'AssistantChats' &&
-                                                                                    isMobile &&
-                                                                                    index === userFilteredMessages.length - 1) ||
-                                                                                isViewWork == index
+                                                                                    <v-card-title>CheckList</v-card-title>
+                                                                                    <v-card-text>
+                                                                                        <v-checkbox
+                                                                                            v-for="(check, index) in message.checkPoints"
+                                                                                            :key="index"
+                                                                                            :label="check"
+                                                                                            readonly
+                                                                                            v-model="checked"
+                                                                                        ></v-checkbox>
+                                                                                    </v-card-text>
+                                                                                    <div
+                                                                                        v-if="type == 'AssistantChats' && isMobile"
+                                                                                        class="d-flex justify-center"
+                                                                                        style="margin-bottom: 10px"
+                                                                                    >
+                                                                                        <v-btn @click="clickedWorkOrder" color="primary"
+                                                                                            >업무 지시하기</v-btn
+                                                                                        >
+                                                                                    </div>
+                                                                                </div>
+                                                                            </v-card>
+                                                                        </div>
+                                                                        <!--   -->
+                                                                        <v-progress-linear
+                                                                            v-if="userFilteredMessages.length - 1 == index && isLoading"
+                                                                            style="
+                                                                                margin-top: -4px;
+                                                                                border-radius: 0 0 10px 10px;
+                                                                                width: 99%;
+                                                                            "
+                                                                            indeterminate
+                                                                            class="my-progress-linear"
+                                                                        >
+                                                                        </v-progress-linear>
+                                                                    </v-sheet>
+                                                                    <div
+                                                                        v-if="chatRoomMode || shouldDisplayMessageTimestamp(message, index)"
+                                                                        class="chat-room-timestamp-action other-timestamp"
+                                                                        :class="{ 'is-hover': replyIndex === index, 'is-mobile': isMobile }"
+                                                                    >
+                                                                        <span
+                                                                            class="chat-room-timestamp-text"
+                                                                            :style="
+                                                                                shouldDisplayMessageTimestamp(message, index)
+                                                                                    ? ''
+                                                                                    : 'opacity:0;'
                                                                             "
                                                                         >
-                                                                            <div v-if="message.specific">
-                                                                                <v-card-title style="margin-bottom: -10px"
-                                                                                    ><h3>Title:</h3></v-card-title
-                                                                                >
-                                                                                <v-card-text>
-                                                                                    <v-textarea
-                                                                                        readonly
-                                                                                        rows="1"
-                                                                                        v-model="message.title"
-                                                                                        auto-grow
-                                                                                    ></v-textarea>
-                                                                                </v-card-text>
-                                                                                <v-card-title style="margin-bottom: -10px"
-                                                                                    ><h3>Specific:</h3></v-card-title
-                                                                                >
-                                                                                <v-card-text>
-                                                                                    <v-textarea
-                                                                                        readonly
-                                                                                        rows="1"
-                                                                                        v-model="message.specific"
-                                                                                        auto-grow
-                                                                                    ></v-textarea>
-                                                                                </v-card-text>
-                                                                                <v-card-title style="margin-bottom: -10px"
-                                                                                    ><h3>Measurable:</h3></v-card-title
-                                                                                >
-                                                                                <v-card-text>
-                                                                                    <v-textarea
-                                                                                        readonly
-                                                                                        rows="1"
-                                                                                        v-model="message.measurable"
-                                                                                        auto-grow
-                                                                                    ></v-textarea>
-                                                                                </v-card-text>
-                                                                                <v-card-title style="margin-bottom: -10px"
-                                                                                    ><h3>Attainable:</h3></v-card-title
-                                                                                >
-                                                                                <v-card-text>
-                                                                                    <v-textarea
-                                                                                        readonly
-                                                                                        rows="1"
-                                                                                        v-model="message.attainable"
-                                                                                        auto-grow
-                                                                                    ></v-textarea>
-                                                                                </v-card-text>
-                                                                                <v-card-title style="margin-bottom: -10px"
-                                                                                    ><h3>Relevant:</h3></v-card-title
-                                                                                >
-                                                                                <v-card-text>
-                                                                                    <v-textarea
-                                                                                        readonly
-                                                                                        rows="1"
-                                                                                        v-model="message.relevant"
-                                                                                        auto-grow
-                                                                                    ></v-textarea>
-                                                                                </v-card-text>
-                                                                                <v-card-title style="margin-bottom: -10px"
-                                                                                    ><h3>Time-bound:</h3></v-card-title
-                                                                                >
-                                                                                <v-card-text>
-                                                                                    <v-col style="max-width: 100%" cols="12" sm="6" md="4">
-                                                                                        <v-menu
-                                                                                            v-model="timeBoundMenu"
-                                                                                            :close-on-content-click="false"
-                                                                                            :nudge-right="40"
-                                                                                            transition="scale-transition"
-                                                                                            offset-y
-                                                                                            min-width="auto"
-                                                                                        >
-                                                                                            <template v-slot:activator="{ on, attrs }">
-                                                                                                <v-text-field
-                                                                                                    v-model="message.time_bound"
-                                                                                                    prepend-icon="mdi-calendar"
-                                                                                                    readonly
-                                                                                                    v-bind="attrs"
-                                                                                                    v-on="on"
-                                                                                                ></v-text-field>
-                                                                                            </template>
-                                                                                            <v-date-picker
-                                                                                                v-model="message.time_bound"
-                                                                                                @input="timeBoundMenu = false"
-                                                                                            ></v-date-picker>
-                                                                                        </v-menu>
-                                                                                    </v-col>
-                                                                                </v-card-text>
-                                                                                <v-card-title>Descriptions</v-card-title>
-                                                                                <v-card-text>
-                                                                                    <div
-                                                                                        v-for="(desc, index) in message.descriptions"
-                                                                                        :key="index"
-                                                                                    >
-                                                                                        <h3>{{ desc.word }}</h3>
-                                                                                        <p>{{ desc.description }}</p>
-                                                                                    </div>
-                                                                                </v-card-text>
-                                                                                <v-card-title>CheckList</v-card-title>
-                                                                                <v-card-text>
-                                                                                    <v-checkbox
-                                                                                        v-for="(check, index) in message.checkPoints"
-                                                                                        :key="index"
-                                                                                        :label="check"
-                                                                                        readonly
-                                                                                        v-model="checked"
-                                                                                    ></v-checkbox>
-                                                                                </v-card-text>
-                                                                                <div
-                                                                                    v-if="type == 'AssistantChats' && isMobile"
-                                                                                    class="d-flex justify-center"
-                                                                                    style="margin-bottom: 10px"
-                                                                                >
-                                                                                    <v-btn @click="clickedWorkOrder" color="primary"
-                                                                                        >업무 지시하기</v-btn
-                                                                                    >
-                                                                                </div>
-                                                                            </div>
-                                                                        </v-card>
-                                                                    </div>
-                                                                    <!--   -->
-                                                                    <v-progress-linear
-                                                                        v-if="userFilteredMessages.length - 1 == index && isLoading"
-                                                                        style="margin-top: -4px; border-radius: 0 0 10px 10px; width: 99%"
-                                                                        indeterminate
-                                                                        class="my-progress-linear"
-                                                                    >
-                                                                    </v-progress-linear>
-                                                                </v-sheet>
-                                                                <div
-                                                                    v-if="chatRoomMode || shouldDisplayMessageTimestamp(message, index)"
-                                                                    class="chat-room-timestamp-action other-timestamp"
-                                                                    :class="{ 'is-hover': replyIndex === index, 'is-mobile': isMobile }"
-                                                                >
-                                                                    <span
-                                                                        class="chat-room-timestamp-text"
-                                                                        :style="
-                                                                            shouldDisplayMessageTimestamp(message, index)
-                                                                                ? ''
-                                                                                : 'opacity:0;'
-                                                                        "
-                                                                    >
-                                                                        {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
-                                                                    </span>
-                                                                    <div
-                                                                        v-if="chatRoomMode"
-                                                                        class="chat-room-actions-overlay chat-room-actions-overlay--other"
-                                                                    >
-                                                                        <v-btn
-                                                                            v-if="!disableChat"
-                                                                            @click="beforeReply(message)"
-                                                                            icon
-                                                                            variant="text"
-                                                                            size="x-small"
-                                                                            class="chat-room-action-btn"
+                                                                            {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
+                                                                        </span>
+                                                                        <div
+                                                                            v-if="chatRoomMode"
+                                                                            class="chat-room-actions-overlay chat-room-actions-overlay--other"
                                                                         >
-                                                                            <v-icon size="18">mdi-subdirectory-arrow-right</v-icon>
-                                                                        </v-btn>
-                                                                        <v-btn
-                                                                            v-if="message && message.jsonContent"
-                                                                            @click="viewJSON(index)"
-                                                                            icon
-                                                                            variant="text"
-                                                                            size="x-small"
-                                                                            class="chat-room-action-btn"
-                                                                        >
-                                                                            <v-icon size="18">mdi-code-json</v-icon>
-                                                                        </v-btn>
-                                                                        <v-btn
-                                                                            v-if="type != 'AssistantChats' && message && message.specific"
-                                                                            @click="viewWork(index)"
-                                                                            icon
-                                                                            variant="text"
-                                                                            size="x-small"
-                                                                            class="chat-room-action-btn"
-                                                                        >
-                                                                            <v-icon size="18">mdi-file-document-outline</v-icon>
-                                                                        </v-btn>
+                                                                            <v-btn
+                                                                                v-if="!disableChat"
+                                                                                @click="beforeReply(message)"
+                                                                                icon
+                                                                                variant="text"
+                                                                                size="x-small"
+                                                                                class="chat-room-action-btn"
+                                                                            >
+                                                                                <v-icon size="18">mdi-subdirectory-arrow-right</v-icon>
+                                                                            </v-btn>
+                                                                            <v-btn
+                                                                                v-if="message && message.jsonContent"
+                                                                                @click="viewJSON(index)"
+                                                                                icon
+                                                                                variant="text"
+                                                                                size="x-small"
+                                                                                class="chat-room-action-btn"
+                                                                            >
+                                                                                <v-icon size="18">mdi-code-json</v-icon>
+                                                                            </v-btn>
+                                                                            <v-btn
+                                                                                v-if="
+                                                                                    type != 'AssistantChats' && message && message.specific
+                                                                                "
+                                                                                @click="viewWork(index)"
+                                                                                icon
+                                                                                variant="text"
+                                                                                size="x-small"
+                                                                                class="chat-room-action-btn"
+                                                                            >
+                                                                                <v-icon size="18">mdi-file-document-outline</v-icon>
+                                                                            </v-btn>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -2011,6 +2150,13 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <AgentsChat
+                                                v-if="type == 'instances' && agentInfo.isRunning && userFilteredMessages.length == 0"
+                                                class="px-5 py-1"
+                                                :agentInfo="agentInfo"
+                                                :totalSize="userFilteredMessages.length"
+                                                :currentIndex="-1"
+                                            />
                                         </div>
                                         <AgentsChat
                                             v-if="type == 'instances' && agentInfo.isRunning && userFilteredMessages.length == 0"
@@ -2020,35 +2166,25 @@
                                             :currentIndex="-1"
                                         />
                                     </div>
-                                    <AgentsChat
-                                        v-if="type == 'instances' && agentInfo.isRunning && userFilteredMessages.length == 0"
-                                        class="px-5 py-1" :agentInfo="agentInfo" :totalSize="userFilteredMessages.length"
-                                        :currentIndex="-1" />
-
-                                </div>
-                                <slot name="custom-chat"></slot>
-                            </v-col>
-                        </div>
-                    </perfect-scrollbar>
-                    <div
-                        v-if="showAgentMessagePanel"
-                        class="chat-split-resize-handle"
-                        @mousedown="startAgentPanelResize"
-                    ></div>
-                    <AgentMessagePanel
-                        v-if="showAgentMessagePanel"
-                        class="chat-view-box-split-right"
-                        :style="{ width: agentPanelWidth + 'px' }"
-                        :messages="agentFilteredMessages"
-                        :agentInfo="agentInfo"
-                        :userInfo="userInfo"
-                        :userList="userList"
-                        @invite-agent="(payload) => $emit('invite-agent', payload)"
-                        @preview-image="(url) => $emit('preview-image', url)"
-                        @preview-bpmn="(bpmn) => $emit('preview-bpmn', bpmn)"
-                    />
+                                    <slot name="custom-chat"></slot>
+                                </v-col>
+                            </div>
+                        </perfect-scrollbar>
+                        <div v-if="showAgentMessagePanel" class="chat-split-resize-handle" @mousedown="startAgentPanelResize"></div>
+                        <AgentMessagePanel
+                            v-if="showAgentMessagePanel"
+                            class="chat-view-box-split-right"
+                            :style="{ width: agentPanelWidth + 'px' }"
+                            :messages="agentFilteredMessages"
+                            :agentInfo="agentInfo"
+                            :userInfo="userInfo"
+                            :userList="userList"
+                            @invite-agent="(payload) => $emit('invite-agent', payload)"
+                            @preview-image="(url) => $emit('preview-image', url)"
+                            @preview-bpmn="(bpmn) => $emit('preview-bpmn', bpmn)"
+                        />
                     </div>
-                    <div v-if="!workAssistantAgentMode" style="position: relative; z-index: 9999;">
+                    <div v-if="!workAssistantAgentMode" style="position: relative; z-index: 9999">
                         <v-row class="pa-0 ma-0">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
                                 <v-tooltip :text="$t('chat.addFile')">
@@ -3036,7 +3172,7 @@ export default {
 
             //preview-message
             previewMessage: null,
-            
+
             agentPanelWidth: 380,
             isResizingAgentPanel: false,
 
@@ -3223,10 +3359,13 @@ export default {
                 this.setRenderTime();
             }
             const seenRecommendationKeys = new Set();
-            list = list.filter(m => {
+            list = list.filter((m) => {
                 if (!m || !m.__agentInviteRecommendation) return true;
                 const agents = m.__agentInviteRecommendation.recommendedAgents || [];
-                const key = agents.map(a => a.id).sort().join(',');
+                const key = agents
+                    .map((a) => a.id)
+                    .sort()
+                    .join(',');
                 if (!key || seenRecommendationKeys.has(key)) return false;
                 seenRecommendationKeys.add(key);
                 return true;
@@ -3394,7 +3533,7 @@ export default {
             const summary = (message?.agentPlan?.summary || '').toString().trim();
             if (summary) return summary;
             const logs = this.getRecentAgentLogs(message);
-            const planLike = logs.find((l) => ((l?.category || '').toString().toLowerCase() === 'plan'));
+            const planLike = logs.find((l) => (l?.category || '').toString().toLowerCase() === 'plan');
             return (planLike?.message || '').toString().trim();
         },
         getAgentPlanSteps(message) {
@@ -3423,7 +3562,9 @@ export default {
         isInlineProcessPreviewTarget(message, index) {
             if (!this.chatRoomMode) return false;
             if (!message || !['assistant', 'agent'].includes(String(message.role || '').toLowerCase())) return false;
-            const status = String(this.processGenerationProgress?.status || '').trim().toLowerCase();
+            const status = String(this.processGenerationProgress?.status || '')
+                .trim()
+                .toLowerCase();
             const hasProgress =
                 !!this.processGenerationProgress &&
                 (['generating', 'completed'].includes(status) || !!this.processGenerationProgress?.bpmn_xml);
@@ -3550,8 +3691,8 @@ export default {
             const list = Array.isArray(result.savedSkills)
                 ? result.savedSkills
                 : Array.isArray(result.saved_skills)
-                  ? result.saved_skills
-                  : [];
+                ? result.saved_skills
+                : [];
             return list.filter((x) => x && (x.name || x.safe_name));
         },
         getPdf2bpmnSavedAgents(message) {
@@ -3559,8 +3700,8 @@ export default {
             const list = Array.isArray(result.savedAgents)
                 ? result.savedAgents
                 : Array.isArray(result.saved_agents)
-                  ? result.saved_agents
-                  : [];
+                ? result.saved_agents
+                : [];
             return list.filter((x) => x && x.id);
         },
         resolveSkillUrl(skill) {
@@ -5943,20 +6084,20 @@ pre {
     border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 .chat-view-box-split-right {
-  min-width: 280px;
-  flex-shrink: 0;
+    min-width: 280px;
+    flex-shrink: 0;
 }
 .chat-split-resize-handle {
-  width: 4px;
-  cursor: col-resize;
-  background-color: transparent;
-  flex-shrink: 0;
-  transition: background-color 0.15s;
-  position: relative;
-  z-index: 10;
+    width: 4px;
+    cursor: col-resize;
+    background-color: transparent;
+    flex-shrink: 0;
+    transition: background-color 0.15s;
+    position: relative;
+    z-index: 10;
 }
 .chat-split-resize-handle:hover,
 .chat-split-resize-handle:active {
-  background-color: rgba(var(--v-theme-primary), 0.3);
+    background-color: rgba(var(--v-theme-primary), 0.3);
 }
 </style>

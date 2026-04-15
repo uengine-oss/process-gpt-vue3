@@ -3,13 +3,7 @@
         <div class="hwpx-viewer__header">
             <div class="hwpx-viewer__title">미리보기</div>
             <div class="hwpx-viewer__actions">
-                <v-chip
-                    v-if="imgEnhancing"
-                    size="small"
-                    variant="tonal"
-                    color="primary"
-                    class="mr-2"
-                >
+                <v-chip v-if="imgEnhancing" size="small" variant="tonal" color="primary" class="mr-2">
                     <v-progress-circular size="10" width="1" indeterminate class="mr-1" />
                     이미지 개선 중...
                 </v-chip>
@@ -33,13 +27,7 @@
                     <v-icon size="16" class="mr-1">mdi-robot-outline</v-icon>
                     AI 편집
                 </v-btn>
-                <v-btn
-                    v-if="isEditing && !readOnly"
-                    variant="text"
-                    density="comfortable"
-                    size="small"
-                    @click="cancelEdit"
-                >
+                <v-btn v-if="isEditing && !readOnly" variant="text" density="comfortable" size="small" @click="cancelEdit">
                     <v-icon size="16" class="mr-1">mdi-close</v-icon>
                     편집취소
                 </v-btn>
@@ -53,13 +41,7 @@
                     <v-icon size="16" class="mr-1">{{ isEditing ? 'mdi-check' : 'mdi-pencil-outline' }}</v-icon>
                     {{ isEditing ? '편집완료' : '편집' }}
                 </v-btn>
-                <v-btn
-                    v-if="!isLoading && !hasError"
-                    variant="text"
-                    density="comfortable"
-                    size="small"
-                    @click="emitDownload"
-                >
+                <v-btn v-if="!isLoading && !hasError" variant="text" density="comfortable" size="small" @click="emitDownload">
                     <v-icon size="16" class="mr-1">mdi-download</v-icon>
                     다운로드
                 </v-btn>
@@ -89,11 +71,7 @@
                     @mouseover="onEditorImgOver"
                     @mouseleave="onEditorImgLeave"
                 ></div>
-                <div
-                    v-if="selectionRect.visible"
-                    class="hwpx-selection-rect"
-                    :style="selectionRectStyle"
-                ></div>
+                <div v-if="selectionRect.visible" class="hwpx-selection-rect" :style="selectionRectStyle"></div>
             </div>
         </div>
 
@@ -103,20 +81,13 @@
             ref="imgOverlayBtn"
             class="img-enhance-overlay"
             :style="{
-                top: (imgHoverRect.top + 4) + 'px',
-                left: (imgHoverRect.left + imgHoverRect.width - 84) + 'px',
+                top: imgHoverRect.top + 4 + 'px',
+                left: imgHoverRect.left + imgHoverRect.width - 84 + 'px'
             }"
             @mouseenter="imgMouseInOverlay = true"
             @mouseleave="onOverlayMouseLeave"
         >
-            <v-btn
-                size="x-small"
-                color="primary"
-                variant="flat"
-                rounded
-                :disabled="imgEnhancing"
-                @click.stop="clickEnhanceImage"
-            >
+            <v-btn size="x-small" color="primary" variant="flat" rounded :disabled="imgEnhancing" @click.stop="clickEnhanceImage">
                 <v-icon size="13" class="mr-1">mdi-creation</v-icon>
                 AI 개선
             </v-btn>
@@ -134,9 +105,7 @@
                     </v-btn>
                 </v-card-title>
                 <v-card-text class="pa-4 pt-2">
-                    <div class="text-caption text-medium-emphasis mb-3">
-                        이미지를 드래그하면 이전/이후를 비교할 수 있습니다.
-                    </div>
+                    <div class="text-caption text-medium-emphasis mb-3">이미지를 드래그하면 이전/이후를 비교할 수 있습니다.</div>
                     <div
                         class="img-compare"
                         ref="compareRef"
@@ -198,12 +167,8 @@
                     </v-btn>
                 </v-card-title>
                 <v-card-text class="pa-3 pt-2">
-                    <div class="text-caption text-medium-emphasis mb-2">
-                        {{ sectionEditPageNumber }}페이지 선택됨
-                    </div>
-                    <div v-if="sectionEditTargetText" class="text-caption mb-1">
-                        선택 내용: "{{ sectionEditTargetText }}"
-                    </div>
+                    <div class="text-caption text-medium-emphasis mb-2">{{ sectionEditPageNumber }}페이지 선택됨</div>
+                    <div v-if="sectionEditTargetText" class="text-caption mb-1">선택 내용: "{{ sectionEditTargetText }}"</div>
                     <div v-if="selectedTargets.length > 1" class="text-caption text-medium-emphasis mb-3">
                         총 {{ selectedTargets.length }}개 영역 선택
                     </div>
@@ -281,7 +246,7 @@ export default {
             imgEnhancedSrc: '',
             imgComparePos: 50,
             imgEnhanceError: '',
-            compareDragging: false,
+            compareDragging: false
         };
     },
     computed: {
@@ -458,11 +423,7 @@ export default {
                 const id = (el.getAttribute('data-id') || '').toString().trim();
                 if (!id) continue;
                 const box = el.getBoundingClientRect();
-                const intersects =
-                    box.right >= left &&
-                    box.left <= rectRight &&
-                    box.bottom >= top &&
-                    box.top <= rectBottom;
+                const intersects = box.right >= left && box.left <= rectRight && box.bottom >= top && box.top <= rectBottom;
                 if (!intersects) continue;
                 const pageEl = el.closest?.('.page');
                 if (!firstPageEl && pageEl) firstPageEl = pageEl;
@@ -485,9 +446,7 @@ export default {
         openSectionEditDialog({ pageNumber, targets }) {
             const list = Array.isArray(targets) ? targets : [];
             this.selectedTargets = list;
-            const texts = list
-                .map((t) => (t?.text || '').toString().trim())
-                .filter(Boolean);
+            const texts = list.map((t) => (t?.text || '').toString().trim()).filter(Boolean);
             let preview = texts.slice(0, 3).join(' / ');
             if (texts.length > 3) preview += ` 외 ${texts.length - 3}건`;
             this.sectionEditPageNumber = pageNumber;
@@ -600,7 +559,7 @@ export default {
                     left: rect.left,
                     right: rect.right,
                     width: rect.width,
-                    height: rect.height,
+                    height: rect.height
                 };
                 this.imgOverlayVisible = true;
             } else if (!this.imgMouseInOverlay) {
@@ -669,7 +628,7 @@ export default {
                 const resp = await fetch('http://localhost:1192/api/enhance-image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image_base64: b64, mime_type: mime }),
+                    body: JSON.stringify({ image_base64: b64, mime_type: mime })
                 });
                 if (!resp.ok) {
                     const err = await resp.json().catch(() => ({}));
@@ -843,9 +802,7 @@ export default {
                     .map((s) => s.trim())
                     .filter(Boolean)
                     .map((s) => {
-                        const normalized = s
-                            .replace(/^html\s*/i, scopeSelector)
-                            .replace(/^body\s*/i, scopeSelector);
+                        const normalized = s.replace(/^html\s*/i, scopeSelector).replace(/^body\s*/i, scopeSelector);
                         if (normalized.startsWith(scopeSelector)) return normalized;
                         return `${scopeSelector} ${normalized}`;
                     })
@@ -974,8 +931,14 @@ export default {
 }
 
 @keyframes fadeInOverlay {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ──── 이미지 비교(reveal) 위젯 ──── */
@@ -1043,7 +1006,10 @@ export default {
     pointer-events: none;
 }
 
-.img-compare__lbl--l { left: 10px; }
-.img-compare__lbl--r { right: 10px; }
-
+.img-compare__lbl--l {
+    left: 10px;
+}
+.img-compare__lbl--r {
+    right: 10px;
+}
 </style>

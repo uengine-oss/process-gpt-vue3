@@ -18,57 +18,66 @@
                         <div class="messages-area">
                             <div class="header-bar">
                                 <div class="header-left">
-                            <div class="avatar-wrap">
-                                <template v-if="displayParticipants.length === 1">
-                                    <v-avatar size="28" color="grey-lighten-3">
-                                        <img
-                                            :src="getParticipantProfile(displayParticipants[0])"
-                                            :alt="getParticipantAlt(displayParticipants[0])"
-                                            class="avatar-img"
-                                        />
-                                    </v-avatar>
-                                </template>
-                                <template v-else>
-                                    <v-avatar size="28" color="grey-lighten-3">
-                                        <div class="avatar-grid">
-                                            <div
-                                                v-for="(p, idx) in displayParticipants.slice(0, 4)"
-                                                :key="(p && (p.id || p.email)) || idx"
-                                                class="avatar-grid__cell"
+                                    <div class="avatar-wrap">
+                                        <template v-if="displayParticipants.length === 1">
+                                            <v-avatar size="28" color="grey-lighten-3">
+                                                <img
+                                                    :src="getParticipantProfile(displayParticipants[0])"
+                                                    :alt="getParticipantAlt(displayParticipants[0])"
+                                                    class="avatar-img"
+                                                />
+                                            </v-avatar>
+                                        </template>
+                                        <template v-else>
+                                            <v-avatar size="28" color="grey-lighten-3">
+                                                <div class="avatar-grid">
+                                                    <div
+                                                        v-for="(p, idx) in displayParticipants.slice(0, 4)"
+                                                        :key="(p && (p.id || p.email)) || idx"
+                                                        class="avatar-grid__cell"
+                                                    >
+                                                        <img
+                                                            :src="getParticipantProfile(p)"
+                                                            :alt="getParticipantAlt(p)"
+                                                            class="avatar-img"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </v-avatar>
+                                        </template>
+                                    </div>
+                                    <div class="header-title">
+                                        <div class="room-name">{{ currentChatRoom?.name || $t('chatListing.chat') }}</div>
+                                        <div class="room-subtitle text-caption text-medium-emphasis d-flex align-center" style="gap: 8px">
+                                            <v-btn
+                                                variant="text"
+                                                density="compact"
+                                                class="participants-summary-btn"
+                                                @click="openParticipantsView"
                                             >
-                                                <img :src="getParticipantProfile(p)" :alt="getParticipantAlt(p)" class="avatar-img" />
-                                            </div>
+                                                <v-icon size="16" class="mr-1">mdi-account-multiple</v-icon>
+                                                <span class="participants-count">{{ (currentChatRoom?.participants || []).length }}</span>
+                                                <v-icon v-if="hasAgentFailure" size="16" color="error" class="ml-1">mdi-alert</v-icon>
+                                            </v-btn>
+                                            <span
+                                                v-if="participantsPreviewText"
+                                                class="participants-preview"
+                                                role="button"
+                                                tabindex="0"
+                                                :title="participantsPreviewTooltip"
+                                                @click="openParticipantsView"
+                                                @keydown.enter.stop.prevent="openParticipantsView"
+                                                @keydown.space.stop.prevent="openParticipantsView"
+                                            >
+                                                {{ participantsPreviewText }}
+                                            </span>
+                                            <!-- 에이전트 연결중(웜업) 표시: 참가자 옆 원형 로딩 -->
+                                            <template v-if="hasAgentWarming">
+                                                <v-progress-circular indeterminate color="primary" :size="14" :width="2" />
+                                            </template>
                                         </div>
-                                    </v-avatar>
-                                </template>
-                            </div>
-                            <div class="header-title">
-                                <div class="room-name">{{ currentChatRoom?.name || $t('chatListing.chat') }}</div>
-                                <div class="room-subtitle text-caption text-medium-emphasis d-flex align-center" style="gap: 8px">
-                                    <v-btn variant="text" density="compact" class="participants-summary-btn" @click="openParticipantsView">
-                                        <v-icon size="16" class="mr-1">mdi-account-multiple</v-icon>
-                                        <span class="participants-count">{{ (currentChatRoom?.participants || []).length }}</span>
-                                        <v-icon v-if="hasAgentFailure" size="16" color="error" class="ml-1">mdi-alert</v-icon>
-                                    </v-btn>
-                                    <span
-                                        v-if="participantsPreviewText"
-                                        class="participants-preview"
-                                        role="button"
-                                        tabindex="0"
-                                        :title="participantsPreviewTooltip"
-                                        @click="openParticipantsView"
-                                        @keydown.enter.stop.prevent="openParticipantsView"
-                                        @keydown.space.stop.prevent="openParticipantsView"
-                                    >
-                                        {{ participantsPreviewText }}
-                                    </span>
-                                    <!-- 에이전트 연결중(웜업) 표시: 참가자 옆 원형 로딩 -->
-                                    <template v-if="hasAgentWarming">
-                                        <v-progress-circular indeterminate color="primary" :size="14" :width="2" />
-                                    </template>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
                                 <div class="header-right">
                                     <v-btn
                                         v-if="hasArtifactPanel"
@@ -870,14 +879,27 @@ export default {
             previewImageUrl: null,
 
             // 산출물 미리보기 패널 (공통)
-            artifactPanels: [],       // [{ id, type, label, data: { htmlUrl, fileUrl, messageId } }]
-            activeArtifactId: null,   // 현재 활성 탭 ID
+            artifactPanels: [], // [{ id, type, label, data: { htmlUrl, fileUrl, messageId } }]
+            activeArtifactId: null, // 현재 활성 탭 ID
             artifactSidebarVisible: false,
             artifactSidebarWidth: 820,
             artifactSidebarResizing: false,
             artifactSidebarResizeStartX: 0,
             artifactSidebarResizeStartWidth: 0,
             artifactDownloadLoading: false,
+
+            // 예정/사용 도구 목록(우측 패널)
+            plannedToolsById: {}, // { [id]: { id, tool, name, displayName, args, status, input, output } }
+            plannedSkills: [], // ["skill-name", ...] (or normalized objects)
+            plannedTodos: [], // [{ content, status, ... }]
+            planSideInfoEnabled: {
+                tools: false,
+                skills: false,
+                todos: false
+            },
+            // 우측 사이드바 폭 정책
+            artifactSidebarWideWidth: 820,
+            artifactSidebarNarrowWidth: 360,
 
             // 스트리밍 중지(Abort) 컨트롤러: roomId:agentId 단위
             agentAbortControllers: {},
@@ -1843,6 +1865,12 @@ export default {
             this.artifactPanels = [];
             this.activeArtifactId = null;
             this.artifactSidebarVisible = false;
+            this.artifactSidebarWidth = this.artifactSidebarWideWidth;
+            // 방 전환 시 plan_* 사이드 정보 초기화
+            this.plannedToolsById = {};
+            this.plannedSkills = [];
+            this.plannedTodos = [];
+            this.planSideInfoEnabled = { tools: false, skills: false, todos: false };
             try {
                 // 방 전환 시 히스토리 페이지네이션 상태 초기화
                 this.resetHistoryPagination();
@@ -1851,6 +1879,7 @@ export default {
                     await this.loadUserList();
                 }
                 await this.loadRoom(roomId);
+                this.restoreSideInfoFromRoomContext();
                 await this.loadMessages(roomId);
                 await this.subscribeToRoom(roomId);
                 this.EventBus.emit('chat-room-selected', roomId);
@@ -1902,21 +1931,114 @@ export default {
         },
         async loadRoom(roomId) {
             // 우선 로컬 인덱스 사용
+            let cachedRoom = null;
             try {
                 const raw = localStorage.getItem('chatRoomIndex');
                 if (raw) {
                     const idx = JSON.parse(raw);
                     const cached = idx?.[roomId] || null;
                     if (cached) {
+                        cachedRoom = cached;
                         this.currentChatRoom = cached;
-                        return;
                     }
                 }
             } catch (e) {}
 
             const rooms = await backend.getChatRoomList('chat_rooms');
             const found = (rooms || []).find((r) => r.id === roomId) || null;
-            this.currentChatRoom = found || { id: roomId, name: this.$t('chatListing.chat'), participants: [] };
+            this.currentChatRoom = found || cachedRoom || { id: roomId, name: this.$t('chatListing.chat'), participants: [] };
+
+            // 최신 room_context 등을 위해 로컬 인덱스 갱신(가능하면)
+            try {
+                if (this.currentChatRoom && this.currentChatRoom.id) {
+                    const raw = localStorage.getItem('chatRoomIndex');
+                    const idx = raw ? JSON.parse(raw) : {};
+                    idx[this.currentChatRoom.id] = this.currentChatRoom;
+                    localStorage.setItem('chatRoomIndex', JSON.stringify(idx));
+                }
+            } catch (e) {}
+        },
+
+        /** chat_rooms.room_context → 우측 plan_* 박스 복원 */
+        restoreSideInfoFromRoomContext() {
+            try {
+                const ctx = this.currentChatRoom?.room_context || this.currentChatRoom?.roomContext || null;
+                if (!ctx || typeof ctx !== 'object') return;
+
+                const enabled = ctx.enabled && typeof ctx.enabled === 'object' ? ctx.enabled : {};
+                const enabledTools = enabled.tools === true || Array.isArray(ctx.tools);
+                const enabledSkills = enabled.skills === true || Array.isArray(ctx.skills);
+                const enabledTodos = enabled.todos === true || Array.isArray(ctx.todos);
+
+                const tools = Array.isArray(ctx.tools) ? ctx.tools : [];
+                const skills = Array.isArray(ctx.skills) ? ctx.skills : [];
+                const todos = Array.isArray(ctx.todos) ? ctx.todos : [];
+
+                if (enabledTools) {
+                    this.planSideInfoEnabled.tools = true;
+                    const byId = {};
+                    for (let i = 0; i < tools.length; i++) {
+                        const t = tools[i] || {};
+                        const id = (t.id || '').toString() || `restored-${i}`;
+                        byId[id] = {
+                            id,
+                            tool: (t.tool || t.name || '').toString(),
+                            name: (t.name || t.tool || '').toString(),
+                            displayName: (t.displayName || t.display_name || '').toString() || this.formatToolName(t.tool || t.name || ''),
+                            status: (t.status || 'planned').toString(),
+                            __order: i
+                        };
+                    }
+                    this.plannedToolsById = byId;
+                    this.upsertToolsPanel();
+                }
+
+                if (enabledSkills) {
+                    this.planSideInfoEnabled.skills = true;
+                    this.plannedSkills = skills;
+                    this.upsertSkillsPanel();
+                }
+
+                if (enabledTodos) {
+                    this.planSideInfoEnabled.todos = true;
+                    this.plannedTodos = todos;
+                    this.upsertTodosPanel();
+                }
+            } catch (e) {
+                // ignore
+            }
+        },
+
+        /** 현재 plan_* 상태를 chat_rooms.room_context에 저장 */
+        async persistRoomContext() {
+            try {
+                if (!this.currentChatRoom?.id) return;
+                const tools = Object.values(this.plannedToolsById || {}).map((t) => ({
+                    id: t?.id || null,
+                    tool: t?.tool || null,
+                    name: t?.name || null,
+                    displayName: t?.displayName || null,
+                    status: t?.status || null
+                }));
+                const skills = Array.isArray(this.plannedSkills) ? this.plannedSkills : [];
+                const todos = Array.isArray(this.plannedTodos) ? this.plannedTodos : [];
+
+                const next = {
+                    enabled: {
+                        tools: !!this.planSideInfoEnabled?.tools,
+                        skills: !!this.planSideInfoEnabled?.skills,
+                        todos: !!this.planSideInfoEnabled?.todos
+                    },
+                    tools: tools.filter((t) => t && (t.tool || t.name || t.displayName)),
+                    skills,
+                    todos,
+                    updatedAt: new Date().toISOString()
+                };
+                this.currentChatRoom.room_context = next;
+                await backend.putObject('db://chat_rooms', this.currentChatRoom);
+            } catch (e) {
+                // ignore
+            }
         },
         async loadMessages(roomId) {
             this.messages = [];
@@ -1995,11 +2117,7 @@ export default {
 
                     const def = procDef.definition || {};
                     const ex = def.extraction || {};
-                    const runId =
-                        ex?.integrated_graph_ref?.run_id ||
-                        ex?.graph_run_id ||
-                        ex?.graph_snapshot_ref?.run_id ||
-                        '';
+                    const runId = ex?.integrated_graph_ref?.run_id || ex?.graph_run_id || ex?.graph_snapshot_ref?.run_id || '';
                     const taskId = me._extractTaskIdFromRunId(runId);
                     if (!taskId) continue;
 
@@ -2169,7 +2287,10 @@ export default {
                     if (dupIdx !== -1) {
                         // 들어온 것을 기준으로 최신화(단, uuid는 메시지 uuid를 유지)
                         if (typeof incoming === 'object') {
-                            this.messages[dupIdx] = this.normalizeAssistantMessageForDisplay({ ...(this.messages[dupIdx] || {}), ...incoming });
+                            this.messages[dupIdx] = this.normalizeAssistantMessageForDisplay({
+                                ...(this.messages[dupIdx] || {}),
+                                ...incoming
+                            });
                         } else {
                             this.messages[dupIdx] = incoming;
                         }
@@ -2199,7 +2320,10 @@ export default {
             });
 
             if (existingIndex !== -1) {
-                this.messages[existingIndex] = this.normalizeAssistantMessageForDisplay({ ...(this.messages[existingIndex] || {}), ...message });
+                this.messages[existingIndex] = this.normalizeAssistantMessageForDisplay({
+                    ...(this.messages[existingIndex] || {}),
+                    ...message
+                });
                 return;
             }
 
@@ -2207,7 +2331,9 @@ export default {
         },
         openRenameDialog() {
             this.settingsMenu = false;
-            this.renameDraft = (this.currentChatRoom?.id ? this.currentChatRoom?.name || '' : this.draftName || this.$t('chatListing.newChat')).toString();
+            this.renameDraft = (
+                this.currentChatRoom?.id ? this.currentChatRoom?.name || '' : this.draftName || this.$t('chatListing.newChat')
+            ).toString();
             this.renameDialog = true;
         },
         async confirmRename() {
@@ -2556,14 +2682,8 @@ export default {
          * 선택 결과를 사용자 메시지로 변환하여 에이전트에게 전송
          */
         handleHumanFeedbackSkip(messageOrFeedback) {
-            const message =
-                messageOrFeedback && messageOrFeedback.__humanFeedback
-                    ? messageOrFeedback
-                    : this.pendingHumanFeedbackMessage;
-            const feedback =
-                messageOrFeedback && !messageOrFeedback.__humanFeedback
-                    ? messageOrFeedback
-                    : message?.__humanFeedback;
+            const message = messageOrFeedback && messageOrFeedback.__humanFeedback ? messageOrFeedback : this.pendingHumanFeedbackMessage;
+            const feedback = messageOrFeedback && !messageOrFeedback.__humanFeedback ? messageOrFeedback : message?.__humanFeedback;
 
             if (message && message.__humanFeedback) {
                 message.__humanFeedback.__submitted = true;
@@ -2584,14 +2704,8 @@ export default {
             if (!feedbackResult) return;
             console.log('[HumanFeedback] handleHumanFeedbackSubmit:', feedbackResult);
 
-            const message =
-                messageOrFeedback && messageOrFeedback.__humanFeedback
-                    ? messageOrFeedback
-                    : this.pendingHumanFeedbackMessage;
-            const feedback =
-                messageOrFeedback && !messageOrFeedback.__humanFeedback
-                    ? messageOrFeedback
-                    : message?.__humanFeedback;
+            const message = messageOrFeedback && messageOrFeedback.__humanFeedback ? messageOrFeedback : this.pendingHumanFeedbackMessage;
+            const feedback = messageOrFeedback && !messageOrFeedback.__humanFeedback ? messageOrFeedback : message?.__humanFeedback;
 
             // 메시지를 제출 완료 상태로 변경
             if (message && message.__humanFeedback) {
@@ -2615,7 +2729,7 @@ export default {
                     answer: feedbackResult.answer || (feedbackResult.decision === 'approve' ? '승인' : '반려'),
                     reason: feedbackResult.reason || feedbackResult.selectedSuggestion || '',
                     target_type: hitl.target_type || '',
-                    target_id: hitl.target_id || '',
+                    target_id: hitl.target_id || ''
                 };
                 await this.submitPdf2BpmnHumanFeedback(taskId, payload);
                 return;
@@ -2623,7 +2737,7 @@ export default {
 
             let userText = '';
             if (feedbackResult.type === 'select_items') {
-                const selectedLabels = feedbackResult.selectedItems.map(item => item.label);
+                const selectedLabels = feedbackResult.selectedItems.map((item) => item.label);
                 userText = `다음 문서를 참고해서 작성해 주세요: ${selectedLabels.join(', ')}`;
             } else if (feedbackResult.type === 'suggestions') {
                 userText = feedbackResult.selected;
@@ -2639,17 +2753,17 @@ export default {
             const tid = String(taskId || '').trim();
             if (!tid || !window.$supabase) return;
             try {
-                const { data, error } = await window.$supabase
-                    .from('todolist')
-                    .select('id, output')
-                    .eq('id', tid)
-                    .limit(1);
+                const { data, error } = await window.$supabase.from('todolist').select('id, output').eq('id', tid).limit(1);
                 if (error) throw error;
 
                 const row = Array.isArray(data) && data.length ? data[0] : null;
                 let output = row?.output;
                 if (typeof output === 'string') {
-                    try { output = JSON.parse(output); } catch (e) { output = {}; }
+                    try {
+                        output = JSON.parse(output);
+                    } catch (e) {
+                        output = {};
+                    }
                 }
                 if (!output || typeof output !== 'object') output = {};
 
@@ -2657,16 +2771,13 @@ export default {
                 const next = current.filter((x) => x?.question_id !== payload.question_id);
                 const feedbackEntry = {
                     ...payload,
-                    submitted_at: new Date().toISOString(),
+                    submitted_at: new Date().toISOString()
                 };
                 next.push(feedbackEntry);
                 output.hitl_feedbacks = next;
                 output.hitl_last_feedback = feedbackEntry;
 
-                const { error: updateError } = await window.$supabase
-                    .from('todolist')
-                    .update({ output })
-                    .eq('id', tid);
+                const { error: updateError } = await window.$supabase.from('todolist').update({ output }).eq('id', tid);
                 if (updateError) throw updateError;
 
                 const text = `HITL 응답 전달: ${feedbackEntry.answer}${feedbackEntry.reason ? ` (${feedbackEntry.reason})` : ''}`;
@@ -2695,9 +2806,7 @@ export default {
                 const keyObj = {
                     text: text || '',
                     imgCount: hasImages ? (payload.images || []).length : 0,
-                    fileNames: hasFile
-                        ? fileMeta.files.map((f) => f?.name || f?.fileName || '').filter(Boolean)
-                        : []
+                    fileNames: hasFile ? fileMeta.files.map((f) => f?.name || f?.fileName || '').filter(Boolean) : []
                 };
                 const key = JSON.stringify(keyObj);
                 const now = Date.now();
@@ -2941,8 +3050,8 @@ export default {
                 const triggerFiles = Array.isArray(triggerMsg?.pdfFiles)
                     ? triggerMsg.pdfFiles
                     : triggerMsg?.pdfFile
-                      ? [triggerMsg.pdfFile]
-                      : [];
+                    ? [triggerMsg.pdfFile]
+                    : [];
                 const resendPayload = {
                     images: Array.isArray(triggerMsg?.images) ? triggerMsg.images : [],
                     file: triggerFiles[0] || null,
@@ -3099,7 +3208,10 @@ export default {
                         // ignore parse error and fallback to comma split
                     }
                 }
-                return s.split(',').map((v) => v.trim()).filter(Boolean);
+                return s
+                    .split(',')
+                    .map((v) => v.trim())
+                    .filter(Boolean);
             }
             if (typeof raw === 'object') {
                 try {
@@ -3417,12 +3529,7 @@ export default {
             let messageForAgent = (userText || '').toString();
             // 첨부 정보는 기존 방식처럼 [InputData]로 전달
             const normalizedFiles = this.normalizePayloadFiles(payload);
-            if (
-                (payload?.images && payload.images.length > 0) ||
-                normalizedFiles.length > 0 ||
-                payload?.hwpxUrl ||
-                payload?.hwpxEdit
-            ) {
+            if ((payload?.images && payload.images.length > 0) || normalizedFiles.length > 0 || payload?.hwpxUrl || payload?.hwpxEdit) {
                 const inputData = {};
                 if (payload?.images && payload.images.length > 0) inputData.images = payload.images;
                 if (normalizedFiles.length > 0) {
@@ -3455,7 +3562,10 @@ export default {
             const raw = (content || '').toString().trim();
             if (!raw) return null;
             // 마크다운 코드블록(```json ... ```) 안의 JSON도 추출
-            const stripped = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+            const stripped = raw
+                .replace(/^```[a-z]*\n?/i, '')
+                .replace(/\n?```$/i, '')
+                .trim();
             // content 전체 or 코드블록 내부에서 { ... } JSON 객체 추출
             const match = stripped.match(/\{[\s\S]*\}/);
             if (!match) return null;
@@ -3466,7 +3576,7 @@ export default {
                 const hasFileUrl = !!(parsed.file_url || parsed.fileUrl);
                 const hasBase64 = !!(parsed.base64_data || parsed.base64Data);
                 const hasHtmlUrl = !!(parsed.html_url || parsed.htmlUrl || parsed.hwpx_html_url || parsed.hwpxHtmlUrl);
-                const hasSlideMarkdown = !!(parsed.slide_markdown);
+                const hasSlideMarkdown = !!parsed.slide_markdown;
                 if (hasPdfUrl || hasFileUrl || hasBase64 || hasHtmlUrl || hasSlideMarkdown) return parsed;
                 return null;
             } catch (e) {
@@ -3501,11 +3611,7 @@ export default {
          */
         pushArtifactPanel({ type, label, data }) {
             const existingIdx = this.artifactPanels.findIndex(
-                (p) => p.type === type && (
-                    type === 'slide'
-                        ? p.data?.messageId === data?.messageId
-                        : p.data?.htmlUrl === data?.htmlUrl
-                )
+                (p) => p.type === type && (type === 'slide' ? p.data?.messageId === data?.messageId : p.data?.htmlUrl === data?.htmlUrl)
             );
             if (existingIdx !== -1) {
                 this.artifactPanels[existingIdx] = { ...this.artifactPanels[existingIdx], label, data };
@@ -3515,6 +3621,77 @@ export default {
                 this.artifactPanels.push({ id, type, label, data });
                 this.activeArtifactId = id;
             }
+            // 문서/슬라이드 같은 "실제 아티팩트"는 넓게 열기
+            if (type === 'hwpx' || type === 'docx' || type === 'slide') {
+                if ((this.artifactSidebarWidth || 0) < this.artifactSidebarWideWidth) {
+                    this.artifactSidebarWidth = this.artifactSidebarWideWidth;
+                }
+            }
+            this.artifactSidebarVisible = true;
+        },
+
+        /** 우측 사이드바에 Tools 정보 패널(숨김 타입) 생성/갱신 */
+        upsertToolsPanel() {
+            if (!this.planSideInfoEnabled?.tools) return;
+            const items = Object.values(this.plannedToolsById || {});
+            // 최신이 아래로 쌓이도록 id 기반 정렬(단순)
+            const sorted = items.sort((a, b) => (a.__order ?? 0) - (b.__order ?? 0));
+            const data = { enabled: true, items: sorted };
+
+            const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'tools');
+            if (existingIdx !== -1) {
+                const existing = this.artifactPanels[existingIdx];
+                this.artifactPanels[existingIdx] = { ...existing, label: 'Tools', data };
+            } else {
+                const id = `tools-${this.uuid()}`;
+                this.artifactPanels.push({ id, type: 'tools', label: 'Tools', data });
+            }
+            // side-info만 있을 때는 좁게 열기
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !['tools', 'skills', 'todos'].includes(p.type));
+            if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
+            // tools 이벤트가 오면 자동으로 열어줌(요구가 "간단"이므로)
+            this.artifactSidebarVisible = true;
+        },
+
+        /** 우측 사이드바에 Todos 정보 패널(숨김 타입) 생성/갱신 */
+        upsertTodosPanel() {
+            if (!this.planSideInfoEnabled?.todos) return;
+            const items = Array.isArray(this.plannedTodos) ? this.plannedTodos : [];
+            const data = { enabled: true, items };
+
+            const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'todos');
+            if (existingIdx !== -1) {
+                const existing = this.artifactPanels[existingIdx];
+                this.artifactPanels[existingIdx] = { ...existing, label: 'Todos', data };
+            } else {
+                const id = `todos-${this.uuid()}`;
+                this.artifactPanels.push({ id, type: 'todos', label: 'Todos', data });
+            }
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !['tools', 'skills', 'todos'].includes(p.type));
+            if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
+            this.artifactSidebarVisible = true;
+        },
+
+        /** 우측 사이드바에 Skills 정보 패널(숨김 타입) 생성/갱신 */
+        upsertSkillsPanel() {
+            if (!this.planSideInfoEnabled?.skills) return;
+            const raw = Array.isArray(this.plannedSkills) ? this.plannedSkills : [];
+            // 서버 포맷: ["korea-econ-indicators"] 처럼 문자열 배열
+            const items = raw
+                .map((s) => (typeof s === 'string' ? { name: s } : s))
+                .filter((s) => s && (s.name || s.label || s.skill));
+            const data = { enabled: true, items };
+
+            const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'skills');
+            if (existingIdx !== -1) {
+                const existing = this.artifactPanels[existingIdx];
+                this.artifactPanels[existingIdx] = { ...existing, label: 'Skills', data };
+            } else {
+                const id = `skills-${this.uuid()}`;
+                this.artifactPanels.push({ id, type: 'skills', label: 'Skills', data });
+            }
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !['tools', 'skills', 'todos'].includes(p.type));
+            if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
             this.artifactSidebarVisible = true;
         },
 
@@ -3537,13 +3714,7 @@ export default {
 
         extractHwpxHtmlUrl(payload) {
             if (!payload || typeof payload !== 'object') return '';
-            return (
-                payload.html_url ||
-                payload.htmlUrl ||
-                payload.hwpx_html_url ||
-                payload.hwpxHtmlUrl ||
-                ''
-            );
+            return payload.html_url || payload.htmlUrl || payload.hwpx_html_url || payload.hwpxHtmlUrl || '';
         },
 
         extractHwpxHtmlUrlFromText(text) {
@@ -3634,9 +3805,7 @@ export default {
                 //       OR content에 .hwpx URL이 있거나
                 //       OR content에 filled- 포함 .html URL이 있는 경우
                 const isHwpxMessage =
-                    !!msg.hwpxHtmlUrl ||
-                    /https?:\/\/\S+\.hwpx/i.test(content) ||
-                    /https?:\/\/\S*filled-\S+\.html/i.test(content);
+                    !!msg.hwpxHtmlUrl || /https?:\/\/\S+\.hwpx/i.test(content) || /https?:\/\/\S*filled-\S+\.html/i.test(content);
                 if (!isHwpxMessage) continue;
 
                 const cleaned = this.cleanupHwpxMessageContent(i);
@@ -3649,8 +3818,7 @@ export default {
         pushHwpxArtifact(parsed, msgIdx) {
             const url = this.extractHwpxHtmlUrl(parsed);
             if (!url) return;
-            const name =
-                (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
+            const name = (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
             const isFilled = name.startsWith('filled-') || url.includes('filled-');
             if (!isFilled) return;
             const msg = this.messages?.[msgIdx];
@@ -3670,8 +3838,7 @@ export default {
         pushDocxArtifact(parsed, msgIdx) {
             const url = this.extractHwpxHtmlUrl(parsed);
             if (!url) return;
-            const name =
-                (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
+            const name = (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
             const msg = this.messages?.[msgIdx];
             const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
             this.pushArtifactPanel({
@@ -4290,7 +4457,9 @@ export default {
                     oldObj.elements.push({
                         elementType: 'Sequence',
                         id: normalizeBpmnId(sequence.id),
-                        name: String(sequence.id || '').replace('SequenceFlow_', '').replace(/_/g, ' '),
+                        name: String(sequence.id || '')
+                            .replace('SequenceFlow_', '')
+                            .replace(/_/g, ' '),
                         source: idMap[sequence.source] || normalizeBpmnId(sequence.source),
                         target: idMap[sequence.target] || normalizeBpmnId(sequence.target),
                         ...(sequence.condition ? { condition: sequence.condition } : {})
@@ -4335,11 +4504,7 @@ export default {
             for (const candidate of candidates) {
                 try {
                     const parsed = JSON.parse(candidate);
-                    if (
-                        parsed &&
-                        typeof parsed === 'object' &&
-                        (Array.isArray(parsed.elements) || isLegacyProcessDefinition(parsed))
-                    ) {
+                    if (parsed && typeof parsed === 'object' && (Array.isArray(parsed.elements) || isLegacyProcessDefinition(parsed))) {
                         return parsed;
                     }
                 } catch (e) {
@@ -4386,9 +4551,10 @@ export default {
             const shouldUseAsPlan = category === 'plan' || (category === 'tool' && message.includes('tool_start'));
             if (!shouldUseAsPlan || !message) return;
 
-            const current = targetMessage.agentPlan && typeof targetMessage.agentPlan === 'object'
-                ? targetMessage.agentPlan
-                : { summary: '', steps: [] };
+            const current =
+                targetMessage.agentPlan && typeof targetMessage.agentPlan === 'object'
+                    ? targetMessage.agentPlan
+                    : { summary: '', steps: [] };
             const nextSteps = Array.isArray(current.steps) ? [...current.steps] : [];
             if (nextSteps.length === 0 || nextSteps[nextSteps.length - 1] !== message) {
                 nextSteps.push(message);
@@ -4397,6 +4563,26 @@ export default {
                 summary: message,
                 steps: nextSteps.slice(-6)
             };
+        },
+
+        /** Chat.vue / WorkAssistantChatPanel과 동일한 도구 표시명 (스트리밍 onToolStart에서 사용) */
+        formatToolName(name) {
+            if (!name) return '';
+            const raw = name.toString();
+            const key = raw.split('__').pop();
+            const toolNameMap = {
+                get_process_list: '프로세스 목록 조회',
+                get_process_detail: '프로세스 상세 조회',
+                get_form_fields: '폼 필드 조회',
+                execute_process: '프로세스 실행',
+                get_instance_list: '인스턴스 목록 조회',
+                get_todolist: '할일 목록 조회',
+                get_organization: '조직도 조회',
+                start_process_consulting: '프로세스 컨설팅 시작',
+                generate_process: '프로세스 생성',
+                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청'
+            };
+            return toolNameMap[key] || key;
         },
 
         async streamAgents(agentTargets, userText, payload) {
@@ -4487,7 +4673,7 @@ export default {
                     persona: agentTarget?.persona || '',
                     description: agentTarget?.description || '',
                     tools: agentTarget?.tools || '',
-                    skills: assignedSkills,
+                    skills: assignedSkills
                 };
 
                 const commonParams = {
@@ -4539,7 +4725,57 @@ export default {
                         this.setAgentStatus(agentId, { state: 'streaming', message: '' });
                         maybeScroll();
                     },
-                    onToolStart: (tool, input) => {
+                    onPlanTools: (tools) => {
+                        try {
+                            if (!Array.isArray(tools)) return;
+                            this.planSideInfoEnabled.tools = true;
+                            const baseOrder = Object.keys(this.plannedToolsById || {}).length;
+                            for (let i = 0; i < tools.length; i++) {
+                                const t = tools[i] || {};
+                                const id = (t.id || '').toString();
+                                if (!id) continue;
+                                const toolRef = (t.tool || t.name || '').toString();
+                                const name = (t.name || toolRef || '').toString();
+                                const displayName = this.formatToolName(toolRef || name);
+                                const prev = this.plannedToolsById?.[id] || null;
+                                this.plannedToolsById[id] = {
+                                    ...(prev || {}),
+                                    id,
+                                    tool: toolRef,
+                                    name,
+                                    displayName,
+                                    args: t.args ?? prev?.args ?? null,
+                                    status: prev?.status || 'planned',
+                                    __order: prev?.__order ?? baseOrder + i
+                                };
+                            }
+                            this.upsertToolsPanel();
+                            this.persistRoomContext();
+                        } catch (e) {}
+                    },
+                    onPlanSkills: (skills) => {
+                        try {
+                            if (!Array.isArray(skills)) return;
+                            this.planSideInfoEnabled.skills = true;
+                            this.plannedSkills = skills;
+                            this.upsertSkillsPanel();
+                            this.persistRoomContext();
+                        } catch (e) {}
+                    },
+                    onPlanTodos: (todos) => {
+                        try {
+                            if (!Array.isArray(todos)) return;
+                            this.planSideInfoEnabled.todos = true;
+                            // 서버 포맷: [{ content, status }]
+                            this.plannedTodos = todos.map((t) => ({
+                                content: (t?.content || '').toString(),
+                                status: (t?.status || '').toString()
+                            }));
+                            this.upsertTodosPanel();
+                            this.persistRoomContext();
+                        } catch (e) {}
+                    },
+                    onToolStart: (tool, input, rawEvent) => {
                         try {
                             const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                             if (idx === -1) return;
@@ -4561,6 +4797,26 @@ export default {
                                 message: `tool_start: ${name}`,
                                 detail: { input }
                             });
+
+                            // 우측 Tools 패널 상태 업데이트 (id 매칭)
+                            const toolId = (rawEvent?.id || rawEvent?.tool_call_id || '').toString();
+                            if (toolId) {
+                                const prev = this.plannedToolsById?.[toolId] || null;
+                                this.plannedToolsById[toolId] = {
+                                    ...(prev || {}),
+                                    id: toolId,
+                                    tool: (rawEvent?.tool || rawEvent?.tool_name || rawEvent?.name || name || '').toString(),
+                                    name,
+                                    displayName: this.formatToolName(
+                                        (rawEvent?.tool || rawEvent?.tool_name || rawEvent?.name || name || '').toString()
+                                    ),
+                                    status: 'running',
+                                    input: input ?? prev?.input ?? null
+                                };
+                                if (this.planSideInfoEnabled?.tools) this.upsertToolsPanel();
+                                if (this.planSideInfoEnabled?.tools) this.persistRoomContext();
+                            }
+
                             const roomId = this.currentChatRoom?.id || this.roomId || null;
                             if (name.includes('generate_process')) {
                                 this.updateProcessGenerationProgress(roomId, {
@@ -4579,7 +4835,7 @@ export default {
                             maybeScroll();
                         } catch (e) {}
                     },
-                    onToolEnd: (output) => {
+                    onToolEnd: (output, rawEvent) => {
                         try {
                             const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                             if (idx === -1) return;
@@ -4606,6 +4862,25 @@ export default {
                                 message: `tool_end: ${(lastRunningTool?.name || '').toString() || 'unknown'}`,
                                 detail: { output }
                             });
+
+                            // 우측 Tools 패널 상태 업데이트 (id 매칭)
+                            const toolId = (rawEvent?.id || rawEvent?.tool_call_id || '').toString();
+                            if (toolId) {
+                                const prev = this.plannedToolsById?.[toolId] || null;
+                                this.plannedToolsById[toolId] = {
+                                    ...(prev || {}),
+                                    id: toolId,
+                                    tool: (rawEvent?.tool || rawEvent?.tool_name || rawEvent?.name || prev?.tool || '').toString(),
+                                    name: (prev?.name || rawEvent?.tool || rawEvent?.tool_name || rawEvent?.name || '').toString(),
+                                    displayName:
+                                        prev?.displayName ||
+                                        this.formatToolName((rawEvent?.tool || rawEvent?.tool_name || rawEvent?.name || '').toString()),
+                                    status: 'done',
+                                    output: output ?? prev?.output ?? null
+                                };
+                                if (this.planSideInfoEnabled?.tools) this.upsertToolsPanel();
+                                if (this.planSideInfoEnabled?.tools) this.persistRoomContext();
+                            }
 
                             // list_reference_documents 등 human feedback 도구 결과 감지
                             if (lastRunningTool && lastRunningTool.name && lastRunningTool.name.includes('list_reference_documents')) {
@@ -4646,7 +4921,9 @@ export default {
                     },
                     onProcessStatus: (event) => {
                         const roomId = this.currentChatRoom?.id || this.roomId || null;
-                        const status = String(event?.status || '').trim().toLowerCase();
+                        const status = String(event?.status || '')
+                            .trim()
+                            .toLowerCase();
                         const isGenerationStatus = ['generating', 'completed', 'error'].includes(status);
                         if (!isGenerationStatus) return;
                         this.updateProcessGenerationProgress(roomId, {
@@ -4694,16 +4971,17 @@ export default {
                         let displayContent = '';
 
                         const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                        /** DB/채팅방 요약용 — if (idx !== -1) 블록 밖에서도 참조되므로 블록 스코프에 두지 않음 */
-                        let displayContent = '';
                         if (idx !== -1) {
                             const msgToolCalls = Array.isArray(this.messages[idx].toolCalls) ? this.messages[idx].toolCalls : [];
-                            const feedbackTC = msgToolCalls.find(tc => tc?.__humanFeedback);
+                            const feedbackTC = msgToolCalls.find((tc) => tc?.__humanFeedback);
                             if (feedbackTC) {
                                 this.messages[idx].__humanFeedback = feedbackTC.__humanFeedback;
                                 // AI가 문서 목록을 텍스트로 나열한 부분 제거 → 간결한 안내만 표시
                                 safeFinal = '참고할 문서를 검색했습니다. 아래에서 선택해 주세요.';
-                                console.log('[HumanFeedback] ✅ 메시지에 __humanFeedback 첨부됨, items:', feedbackTC.__humanFeedback?.items?.length);
+                                console.log(
+                                    '[HumanFeedback] ✅ 메시지에 __humanFeedback 첨부됨, items:',
+                                    feedbackTC.__humanFeedback?.items?.length
+                                );
                             }
 
                             const hwpxPayload = this.extractHwpxPayload(safeFinal || full || '');
@@ -4716,8 +4994,11 @@ export default {
                                 const pdfName = (hwpxPayload.pdf_name || hwpxPayload.pdfName || '').toString();
                                 const fileUrl = hwpxPayload.file_url || hwpxPayload.fileUrl || '';
                                 const fileName = (hwpxPayload.file_name || hwpxPayload.fileName || 'filled.hwpx').toString();
-                                const contentType =
-                                    (hwpxPayload.content_type || hwpxPayload.contentType || 'application/vnd.hancom.hwpx').toString();
+                                const contentType = (
+                                    hwpxPayload.content_type ||
+                                    hwpxPayload.contentType ||
+                                    'application/vnd.hancom.hwpx'
+                                ).toString();
                                 const htmlUrl = this.extractHwpxHtmlUrl(hwpxPayload);
 
                                 if (pdfUrl) {
@@ -4763,7 +5044,7 @@ export default {
                                     }
                                 }
                             }
-                            
+
                             this.messages[idx].content = safeFinal || full || '';
                             displayContent = this.extractDisplayAssistantContent(this.messages[idx].content);
                             this.messages[idx].isLoading = false;
@@ -4817,7 +5098,11 @@ export default {
                         await backend.putObject(`db://chats/${assistantUuid}`, {
                             uuid: assistantUuid,
                             id: this.currentChatRoom?.id,
-                            messages: { ...(this.messages[idx] || assistantMsgBase), content: displayContent || safeFinal || full || '', isLoading: false }
+                            messages: {
+                                ...(this.messages[idx] || assistantMsgBase),
+                                content: displayContent || safeFinal || full || '',
+                                isLoading: false
+                            }
                         });
 
                         // last message 업데이트(가장 마지막 완료 응답 기준으로 덮어쓰기)
@@ -5358,7 +5643,10 @@ export default {
                     if (lastMessage.role === 'assistant' && !lastMessage.uuid) {
                         lastMessage.uuid = me.uuid();
                     }
-                    lastMessage.content = me.extractConsultingText(responseObj.content) || normalizedContent || '응답을 받았지만 표시할 텍스트를 찾지 못했습니다.';
+                    lastMessage.content =
+                        me.extractConsultingText(responseObj.content) ||
+                        normalizedContent ||
+                        '응답을 받았지만 표시할 텍스트를 찾지 못했습니다.';
                     if (!lastMessage.isLoading) {
                         await me.saveMessage(lastMessage);
                     }
@@ -5760,8 +6048,10 @@ export default {
                                     ...messageData,
                                     message,
                                     question: messageData?.question || {
-                                        prompt: String(message || '').replace(/^\[HITL\]\s*사용자 확인 대기 중:\s*/g, '').trim(),
-                                    },
+                                        prompt: String(message || '')
+                                            .replace(/^\[HITL\]\s*사용자 확인 대기 중:\s*/g, '')
+                                            .trim()
+                                    }
                                 },
                                 targetRoomId,
                                 eventTaskId
@@ -5782,13 +6072,10 @@ export default {
             if (!targetRoomId) return;
             const taskId = String(explicitTaskId || me._resolvePdf2bpmnTaskId(eventData, targetRoomId) || '').trim();
 
-            const question = Array.isArray(eventData?.questions) && eventData.questions.length
-                ? eventData.questions[0]
-                : (eventData?.question || {});
+            const question =
+                Array.isArray(eventData?.questions) && eventData.questions.length ? eventData.questions[0] : eventData?.question || {};
             const questionId = question?.question_id || `${taskId}-q`;
-            const hasSame = me.messages.some(
-                (m) => m?.__humanFeedback?.question_id === questionId && !m?.__humanFeedback?.__submitted
-            );
+            const hasSame = me.messages.some((m) => m?.__humanFeedback?.question_id === questionId && !m?.__humanFeedback?.__submitted);
             if (hasSame) return;
 
             const content = '모호한 항목이 감지되었습니다. 아래 내용을 확인하고 승인/반려 또는 보정 의견을 입력해 주세요.';
@@ -5809,7 +6096,7 @@ export default {
                 impact_preview: Array.isArray(question?.impact_preview) ? question.impact_preview : [],
                 task_id: taskId,
                 __submitted: false,
-                __submittedText: '',
+                __submittedText: ''
             };
 
             if (me.currentChatRoom?.id === targetRoomId) {
@@ -6032,10 +6319,10 @@ export default {
                 const elements = Array.isArray(data?.elements)
                     ? data.elements
                     : Array.isArray(data?.data?.elements)
-                      ? data.data.elements
-                      : Array.isArray(data?.graph?.elements)
-                        ? data.graph.elements
-                        : [];
+                    ? data.data.elements
+                    : Array.isArray(data?.graph?.elements)
+                    ? data.graph.elements
+                    : [];
 
                 me.neo4jGraphElements = elements;
                 if (elements.length === 0) {

@@ -104,10 +104,7 @@
                         </div>
                     </div>
 
-                    <div
-                        v-if="hasPdf2bpmnResultSections(msg)"
-                        class="pdf2bpmn-result-container mt-3"
-                    >
+                    <div v-if="hasPdf2bpmnResultSections(msg)" class="pdf2bpmn-result-container mt-3">
                         <div class="result-header">
                             <v-icon size="18" color="success" class="mr-2">mdi-check-circle</v-icon>
                             <span class="result-title">PDF2BPMN 생성 결과</span>
@@ -314,8 +311,8 @@ export default {
             const list = Array.isArray(result.savedSkills)
                 ? result.savedSkills
                 : Array.isArray(result.saved_skills)
-                  ? result.saved_skills
-                  : [];
+                ? result.saved_skills
+                : [];
             return list.filter((x) => x && (x.name || x.safe_name));
         },
         getPdf2bpmnSavedAgents(message) {
@@ -323,8 +320,8 @@ export default {
             const list = Array.isArray(result.savedAgents)
                 ? result.savedAgents
                 : Array.isArray(result.saved_agents)
-                  ? result.saved_agents
-                  : [];
+                ? result.saved_agents
+                : [];
             return list.filter((x) => x && x.id);
         },
         resolveSkillUrl(skill) {

@@ -367,7 +367,7 @@ export default {
 
             let userText = '';
             if (feedbackResult.type === 'select_items') {
-                const selectedLabels = feedbackResult.selectedItems.map(item => item.label);
+                const selectedLabels = feedbackResult.selectedItems.map((item) => item.label);
                 userText = `다음 문서를 참고해서 작성해 주세요: ${selectedLabels.join(', ')}`;
             } else if (feedbackResult.type === 'suggestions') {
                 userText = feedbackResult.selected;
@@ -775,12 +775,26 @@ export default {
                             // list_reference_documents 등 human feedback 도구 결과 감지
                             if (toolCalls.length > 0) {
                                 const lastTool = toolCalls[toolCalls.length - 1];
-                                console.log('[HumanFeedback] onToolEnd - toolName:', lastTool.name, 'output type:', typeof output, 'output[:200]:', String(output).substring(0, 200));
+                                console.log(
+                                    '[HumanFeedback] onToolEnd - toolName:',
+                                    lastTool.name,
+                                    'output type:',
+                                    typeof output,
+                                    'output[:200]:',
+                                    String(output).substring(0, 200)
+                                );
                                 if (lastTool.name && lastTool.name.includes('list_reference_documents')) {
                                     try {
                                         const parsed = typeof output === 'string' ? JSON.parse(output) : output;
                                         console.log('[HumanFeedback] parsed:', JSON.stringify(parsed).substring(0, 300));
-                                        console.log('[HumanFeedback] user_request_type:', parsed?.user_request_type, 'items:', !!parsed?.items, 'items.length:', parsed?.items?.length);
+                                        console.log(
+                                            '[HumanFeedback] user_request_type:',
+                                            parsed?.user_request_type,
+                                            'items:',
+                                            !!parsed?.items,
+                                            'items.length:',
+                                            parsed?.items?.length
+                                        );
                                         if (parsed && parsed.user_request_type === 'select_items' && parsed.items) {
                                             lastTool.__humanFeedback = parsed;
                                             console.log('[HumanFeedback] ✅ __humanFeedback 설정 완료');
@@ -832,11 +846,19 @@ export default {
                             assistantMsgObj.toolCalls = toolCalls;
 
                             // human feedback 도구 결과가 있으면 메시지에 첨부
-                            const feedbackToolCall = toolCalls.find(tc => tc.__humanFeedback);
-                            console.log('[HumanFeedback] onDone - feedbackToolCall:', !!feedbackToolCall, 'toolCalls count:', toolCalls.length);
+                            const feedbackToolCall = toolCalls.find((tc) => tc.__humanFeedback);
+                            console.log(
+                                '[HumanFeedback] onDone - feedbackToolCall:',
+                                !!feedbackToolCall,
+                                'toolCalls count:',
+                                toolCalls.length
+                            );
                             if (feedbackToolCall) {
                                 assistantMsgObj.__humanFeedback = feedbackToolCall.__humanFeedback;
-                                console.log('[HumanFeedback] ✅ 메시지에 __humanFeedback 첨부됨, items:', feedbackToolCall.__humanFeedback?.items?.length);
+                                console.log(
+                                    '[HumanFeedback] ✅ 메시지에 __humanFeedback 첨부됨, items:',
+                                    feedbackToolCall.__humanFeedback?.items?.length
+                                );
                             }
 
                             // ★ 현재 채팅방이 요청 시작 채팅방과 같을 때만 UI에 추가

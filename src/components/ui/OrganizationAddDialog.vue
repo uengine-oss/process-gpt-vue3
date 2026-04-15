@@ -49,10 +49,7 @@
 
         <!-- 선택된 팀에 멤버 추가 -->
         <div v-if="selectedTeam">
-            <v-card-text
-                class="pa-4 pb-0 pt-0"
-                style="max-height: calc(100vh - 300px); overflow: auto"
-            >
+            <v-card-text class="pa-4 pb-0 pt-0" style="max-height: calc(100vh - 300px); overflow: auto">
                 <v-autocomplete
                     v-if="!isNewUser"
                     v-model="selectedList"

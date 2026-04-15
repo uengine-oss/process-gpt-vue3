@@ -4,7 +4,7 @@
         <v-alert dense outlined type="info" color="gray" class="mb-4 pa-4 pt-2 pb-2">
             <span class="text-body-1">{{ $t('orgChartGroup.description') }}</span>
         </v-alert>
-        
+
         <!-- Header with Add Button -->
         <div class="d-flex align-center mb-4">
             <span class="text-h6 font-weight-bold">{{ $t('orgChartGroup.title') }}</span>
@@ -42,7 +42,14 @@
                             </v-chip>
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable" @click.stop="confirmDeleteGroup(group)">
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click.stop="confirmDeleteGroup(group)"
+                                    >
                                         <v-icon color="error">mdi-delete-outline</v-icon>
                                     </v-btn>
                                 </template>
@@ -50,7 +57,14 @@
                             </v-tooltip>
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable" @click.stop="openGroupDialog(group)">
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click.stop="openGroupDialog(group)"
+                                    >
                                         <v-icon>mdi-pencil</v-icon>
                                     </v-btn>
                                 </template>
@@ -58,7 +72,14 @@
                             </v-tooltip>
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable" @click="openTeamSelector(group)">
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="openTeamSelector(group)"
+                                    >
                                         <v-icon size="32">mdi-plus</v-icon>
                                     </v-btn>
                                 </template>
@@ -69,7 +90,13 @@
 
                     <div class="px-4 pb-4">
                         <div class="d-flex flex-wrap ga-2">
-                            <v-chip v-for="team in getGroupTeams(group.id)" :key="team.id" size="small" closable @click:close="removeTeamFromGroup(group.id, team.id)">
+                            <v-chip
+                                v-for="team in getGroupTeams(group.id)"
+                                :key="team.id"
+                                size="small"
+                                closable
+                                @click:close="removeTeamFromGroup(group.id, team.id)"
+                            >
                                 <v-icon size="14" class="mr-1">mdi-account-multiple</v-icon>
                                 {{ team.team_name }}
                             </v-chip>
@@ -123,9 +150,11 @@
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-card-title>
-                <v-card-text class="pa-4 pb-0 d-flex flex-column" style="overflow: hidden;">
-                    <div class="d-flex align-center border border-borderColor rounded-pill px-5 mb-4 flex-shrink-0"
-                        style="min-width: 160px;">
+                <v-card-text class="pa-4 pb-0 d-flex flex-column" style="overflow: hidden">
+                    <div
+                        class="d-flex align-center border border-borderColor rounded-pill px-5 mb-4 flex-shrink-0"
+                        style="min-width: 160px"
+                    >
                         <Icons :icon="'magnifer-linear'" :size="20" />
                         <v-text-field
                             v-model="teamSearchQuery"
@@ -137,7 +166,7 @@
                             hide-details
                         />
                     </div>
-                    <v-list class="pa-0 border rounded flex-grow-1" style="max-height: 300px; overflow-y: auto;">
+                    <v-list class="pa-0 border rounded flex-grow-1" style="max-height: 300px; overflow-y: auto">
                         <v-list-item
                             v-for="team in filteredAvailableTeams"
                             :key="team.id"
@@ -464,6 +493,6 @@ export default defineComponent({
 }
 
 .org-chart-group-search-input input {
-   padding: 0px !important;
+    padding: 0px !important;
 }
 </style>

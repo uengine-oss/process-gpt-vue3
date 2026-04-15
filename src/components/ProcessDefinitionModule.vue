@@ -71,10 +71,20 @@ export default {
     },
     methods: {
         async checkedFormData() {
-            console.log('[FORM_DEBUG] checkedFormData called', { hasElements: !!this.processDefinition?.elements, hasActivities: !!this.processDefinition?.activities, procDefId: this.processDefinition?.processDefinitionId });
+            console.log('[FORM_DEBUG] checkedFormData called', {
+                hasElements: !!this.processDefinition?.elements,
+                hasActivities: !!this.processDefinition?.activities,
+                procDefId: this.processDefinition?.processDefinitionId
+            });
             if (this.processDefinition && this.processDefinition.elements) {
                 const allActivities = this.collectAllActivities(this.processDefinition);
-                console.log('[FORM_DEBUG] allActivities', { count: allActivities.length, ids: allActivities.map(a => a.id), withOutputData: allActivities.filter(a => a.outputData?.length > 0).map(a => ({ id: a.id, outputData: a.outputData })) });
+                console.log('[FORM_DEBUG] allActivities', {
+                    count: allActivities.length,
+                    ids: allActivities.map((a) => a.id),
+                    withOutputData: allActivities
+                        .filter((a) => a.outputData?.length > 0)
+                        .map((a) => ({ id: a.id, outputData: a.outputData }))
+                });
 
                 this.generateFormTask = {};
 
@@ -150,7 +160,14 @@ export default {
                 }
 
                 this.generateFormTask = {};
-                console.log('[FORM_DEBUG] checkedFormData finished', { formDraftsCount: this.processDefinition?.formDrafts?.length, drafts: (this.processDefinition?.formDrafts || []).map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })) });
+                console.log('[FORM_DEBUG] checkedFormData finished', {
+                    formDraftsCount: this.processDefinition?.formDrafts?.length,
+                    drafts: (this.processDefinition?.formDrafts || []).map((d) => ({
+                        id: d.id,
+                        activity_id: d.activity_id,
+                        htmlLen: d.html?.length
+                    }))
+                });
             }
         },
 
@@ -261,7 +278,13 @@ export default {
             });
         },
         async saveFormData(html, activityId) {
-            console.log('[FORM_DEBUG] saveFormData called', { activityId, htmlLength: html?.length, hasActivities: Array.isArray(this.processDefinition?.activities), activitiesCount: this.processDefinition?.activities?.length, procDefId: this.processDefinition?.processDefinitionId });
+            console.log('[FORM_DEBUG] saveFormData called', {
+                activityId,
+                htmlLength: html?.length,
+                hasActivities: Array.isArray(this.processDefinition?.activities),
+                activitiesCount: this.processDefinition?.activities?.length,
+                procDefId: this.processDefinition?.processDefinitionId
+            });
             const activity =
                 this.processDefinition && Array.isArray(this.processDefinition.activities)
                     ? this.processDefinition.activities.find((a) => a.id === activityId)
@@ -300,7 +323,11 @@ export default {
             } else {
                 this.processDefinition.formDrafts.push(draft);
             }
-            console.log('[FORM_DEBUG] saveFormData done', { formId, draftCount: this.processDefinition.formDrafts.length, drafts: this.processDefinition.formDrafts.map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })) });
+            console.log('[FORM_DEBUG] saveFormData done', {
+                formId,
+                draftCount: this.processDefinition.formDrafts.length,
+                drafts: this.processDefinition.formDrafts.map((d) => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length }))
+            });
             return { id: formId, html: html };
         },
         extractPropertyNameAndIndex(jsonPath) {
@@ -506,10 +533,11 @@ export default {
                     me.saveSchedule(info, '1.0');
                     await me.setDefinitionInfo(info);
 
-                    const savedFormDrafts = Array.isArray(me.processDefinition?.formDrafts)
-                        ? [...me.processDefinition.formDrafts]
-                        : [];
-                    console.log('[FORM_DEBUG] saveDefinition start', { savedFormDraftsCount: savedFormDrafts.length, drafts: savedFormDrafts.map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })) });
+                    const savedFormDrafts = Array.isArray(me.processDefinition?.formDrafts) ? [...me.processDefinition.formDrafts] : [];
+                    console.log('[FORM_DEBUG] saveDefinition start', {
+                        savedFormDraftsCount: savedFormDrafts.length,
+                        drafts: savedFormDrafts.map((d) => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length }))
+                    });
 
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
@@ -646,7 +674,10 @@ export default {
                         }
 
                         if (savedFormDrafts.length > 0) me.processDefinition.formDrafts = savedFormDrafts;
-                        console.log('[FORM_DEBUG] after Path1 processDefinition replaced', { formDraftsCount: me.processDefinition.formDrafts?.length, savedFormDraftsCount: savedFormDrafts.length });
+                        console.log('[FORM_DEBUG] after Path1 processDefinition replaced', {
+                            formDraftsCount: me.processDefinition.formDrafts?.length,
+                            savedFormDraftsCount: savedFormDrafts.length
+                        });
 
                         if (info.name && info.name != '') {
                             me.processDefinition.processDefinitionName = info.name;
@@ -747,10 +778,14 @@ export default {
 
                         me.processDefinition = updatedProcessDefinition;
                         info.definition = me.processDefinition;
-                        console.log('[FORM_DEBUG] after Path2 processDefinition replaced', { formDraftsCount: me.processDefinition.formDrafts?.length });
+                        console.log('[FORM_DEBUG] after Path2 processDefinition replaced', {
+                            formDraftsCount: me.processDefinition.formDrafts?.length
+                        });
                     } catch (e) {
                         console.warn('update element roles failed', e);
-                        console.log('[FORM_DEBUG] Path2 failed, current formDrafts', { formDraftsCount: me.processDefinition?.formDrafts?.length });
+                        console.log('[FORM_DEBUG] Path2 failed, current formDrafts', {
+                            formDraftsCount: me.processDefinition?.formDrafts?.length
+                        });
                     }
 
                     console.log('[FORM_DEBUG] before saveModel', { formDraftsCount: me.processDefinition?.formDrafts?.length });
@@ -1064,11 +1099,7 @@ export default {
                     const first = (v) => (Array.isArray(v) ? v[0] : v);
                     const ext = first(node['bpmn:extensionElements']);
                     const props = first(ext?.['uengine:properties']);
-                    const raw =
-                        props?.['uengine:json'] ||
-                        props?.['json'] ||
-                        props?.$?.json ||
-                        null;
+                    const raw = props?.['uengine:json'] || props?.['json'] || props?.$?.json || null;
                     if (!raw) return null;
                     if (typeof raw !== 'string') return raw;
                     const str = decodeXmlEntities(raw);
@@ -1796,7 +1827,13 @@ export default {
                         const procIdForForm = normalizeIdPart(info.proc_def_id || me.processDefinition.processDefinitionId);
                         const formDrafts = Array.isArray(me.processDefinition.formDrafts) ? me.processDefinition.formDrafts : [];
                         const activities = Array.isArray(me.processDefinition.activities) ? me.processDefinition.activities : [];
-                        console.log('[FORM_DEBUG] saveModel formDrafts check', { formDraftsCount: formDrafts.length, activitiesCount: activities.length, procIdForForm, drafts: formDrafts.map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })), activityTools: activities.map(a => ({ id: a?.id, tool: a?.tool })) });
+                        console.log('[FORM_DEBUG] saveModel formDrafts check', {
+                            formDraftsCount: formDrafts.length,
+                            activitiesCount: activities.length,
+                            procIdForForm,
+                            drafts: formDrafts.map((d) => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })),
+                            activityTools: activities.map((a) => ({ id: a?.id, tool: a?.tool }))
+                        });
 
                         if (formDrafts.length > 0) {
                             await Promise.all(
@@ -1830,7 +1867,12 @@ export default {
                                             proc_def_id: info.proc_def_id,
                                             activity_id: activityIdForSave || draftActivityId || ''
                                         };
-                                        console.log('[FORM_DEBUG] saving form to DB', { draftId, activityIdForSave, options, htmlLen: draft.html?.length });
+                                        console.log('[FORM_DEBUG] saving form to DB', {
+                                            draftId,
+                                            activityIdForSave,
+                                            options,
+                                            htmlLen: draft.html?.length
+                                        });
                                         try {
                                             const result = await backend.putRawDefinition(draft.html, draftId, options);
                                             console.log('[FORM_DEBUG] putRawDefinition result', { draftId, result });
@@ -1846,14 +1888,16 @@ export default {
                         if (activities.length > 0) {
                             await Promise.all(
                                 activities.map(async (activity) => {
-                                    if (!activity || !activity.id || !activity.tool || !activity.tool.includes('formHandler:defaultform')) return;
+                                    if (!activity || !activity.id || !activity.tool || !activity.tool.includes('formHandler:defaultform'))
+                                        return;
                                     const activityId = normalizeIdPart(activity.id);
                                     const promotedFormId = `${procIdForForm}_${activityId}_form`;
                                     const draft = formDrafts.find(
                                         (item) =>
                                             item &&
                                             item.html &&
-                                            (normalizeIdPart(item.id) === promotedFormId || String(item.activity_id || '') === String(activity.id))
+                                            (normalizeIdPart(item.id) === promotedFormId ||
+                                                String(item.activity_id || '') === String(activity.id))
                                     );
                                     if (!draft) return;
 

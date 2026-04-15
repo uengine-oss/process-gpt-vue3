@@ -286,7 +286,9 @@ export default {
         },
         versionFlowMessage() {
             const currentVersionText = this.information.version || '0.0';
-            return `${this.$t('ProcessDefinitionVersionDialog.currentVersion')} : v${currentVersionText} -> ${this.$t('ProcessDefinitionVersionDialog.nextVersion')} : v${this.newVersion}`;
+            return `${this.$t('ProcessDefinitionVersionDialog.currentVersion')} : v${currentVersionText} -> ${this.$t(
+                'ProcessDefinitionVersionDialog.nextVersion'
+            )} : v${this.newVersion}`;
         },
         useLock() {
             if (this.mode == 'ProcessGPT') {

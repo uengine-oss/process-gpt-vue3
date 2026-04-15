@@ -81,10 +81,16 @@
                                         v-else
                                         variant="flat"
                                         color="#f0f0f0"
-                                        :class="(isProtectedSuperAdmin(item) || item.is_admin) ? 'text-primary' : 'text-black'"
+                                        :class="isProtectedSuperAdmin(item) || item.is_admin ? 'text-primary' : 'text-black'"
                                         size="x-small"
                                     >
-                                        {{ isProtectedSuperAdmin(item) ? 'superAdmin' : item.is_admin ? $t('accountTab.admin') : $t('accountTab.user') }}
+                                        {{
+                                            isProtectedSuperAdmin(item)
+                                                ? 'superAdmin'
+                                                : item.is_admin
+                                                ? $t('accountTab.admin')
+                                                : $t('accountTab.user')
+                                        }}
                                     </v-chip>
                                 </div>
                                 <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ item.email }}</div>

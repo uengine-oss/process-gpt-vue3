@@ -20,13 +20,7 @@
         </div>
 
         <div v-else-if="filteredUsers.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
-            {{
-                users.length === 0
-                    ? $t('UserList.empty')
-                    : (searchValue || '').trim()
-                    ? $t('UserList.searchEmpty')
-                    : $t('UserList.empty')
-            }}
+            {{ users.length === 0 ? $t('UserList.empty') : (searchValue || '').trim() ? $t('UserList.searchEmpty') : $t('UserList.empty') }}
         </div>
 
         <ExpandableList v-else :items="filteredUsers" :limit="5">

@@ -60,8 +60,7 @@ export default {
         name: String,
         alias: String,
         disabled: String,
-        readonly: String
-        ,
+        readonly: String,
         allowReadonlyUpload: {
             type: Boolean,
             default: true

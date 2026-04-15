@@ -1144,7 +1144,7 @@ export default {
                     me.isAdmin = true;
                 }
 
-                const [,, userInfo] = await Promise.all([
+                const [, , userInfo] = await Promise.all([
                     me.getProcessMap(),
                     me.getMetricsMap().then(() => me.ensureUncategorizedDomainTab()),
                     backend.getUserInfo(),
@@ -1375,11 +1375,7 @@ export default {
 
             const text = (message?.text || '').toString().trim();
             const hasImages = Array.isArray(message?.images) && message.images.length > 0;
-            const messageFiles = Array.isArray(message?.files)
-                ? message.files.filter(Boolean)
-                : message?.file
-                  ? [message.file]
-                  : [];
+            const messageFiles = Array.isArray(message?.files) ? message.files.filter(Boolean) : message?.file ? [message.file] : [];
             const hasFile = messageFiles.length > 0;
             const primaryFile = messageFiles[0] || null;
 
@@ -2003,9 +1999,7 @@ export default {
         async updateUncategorizedProcesses() {
             try {
                 // 1. 모든 proc_def 가져오기
-                const { data: allProcDefs } = await window.$supabase
-                    .from('proc_def')
-                    .select('id, name');
+                const { data: allProcDefs } = await window.$supabase.from('proc_def').select('id, name');
                 if (!allProcDefs || allProcDefs.length === 0) return;
 
                 // 미분류 이름 목록

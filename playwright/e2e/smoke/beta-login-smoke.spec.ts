@@ -72,7 +72,10 @@ test.describe('smoke: landing to login', () => {
 
         // 운영/로컬 배포별로 CTA의 태그가 link/button으로 달라질 수 있어 텍스트 기준으로 클릭
         if (!/\/auth\/login/.test(page.url())) {
-            const betaCta = page.locator('a,button,[role="button"]').filter({ hasText: /베타\s*테스트하기|beta\s*test|start/i }).first();
+            const betaCta = page
+                .locator('a,button,[role="button"]')
+                .filter({ hasText: /베타\s*테스트하기|beta\s*test|start/i })
+                .first();
             await expect(betaCta).toBeVisible({ timeout: 30_000 });
             await betaCta.click();
         }
@@ -141,14 +144,20 @@ test.describe('smoke: landing to login', () => {
         await targetProcess.click();
 
         // 실행 다이얼로그 진입
-        await page.getByRole('button', { name: /^실행$/ }).first().click();
+        await page
+            .getByRole('button', { name: /^실행$/ })
+            .first()
+            .click();
 
         // 역할 지정: 값이 비어있을 때만 자동 입력
         await fillRoleIfEmpty(page, '신청자', 'jhyg', 'jhyg');
         await fillRoleIfEmpty(page, '대출 심사 에이전트', '대출 심사 전문가', '대출 심사 전문가');
 
         // 실행 시작
-        await page.getByRole('button', { name: /^실행$/ }).first().click();
+        await page
+            .getByRole('button', { name: /^실행$/ })
+            .first()
+            .click();
 
         // WorkItem: 에이전트에 맡기기 > 빠른 초안 생성
         await clickTabOrButton(page, /에이전트에 맡기기/);
@@ -164,7 +173,10 @@ test.describe('smoke: landing to login', () => {
                 { timeout: 180_000 }
             )
             .toBeTruthy();
-        await page.getByRole('button', { name: /제출 완료/ }).first().click();
+        await page
+            .getByRole('button', { name: /제출 완료/ })
+            .first()
+            .click();
 
         // 칸반보드 전환 후 상태 확인
         const doneColumn = kanbanColumnByTitle(page, '완료됨');
@@ -175,14 +187,19 @@ test.describe('smoke: landing to login', () => {
         await expect(progressColumn.getByText(/신청서 검토/, { exact: false }).first()).toBeVisible({ timeout: 120_000 });
 
         // 신청서 검토 단계 진입
-        await progressColumn.getByText(/신청서 검토/, { exact: false }).first().click();
+        await progressColumn
+            .getByText(/신청서 검토/, { exact: false })
+            .first()
+            .click();
 
         // 신청서 검토: 에이전트 탭에서 폼(심사 영역) 채워질 때까지 대기
         await clickTabOrButton(page, /에이전트에 맡기기/);
         await expect
             .poll(
                 async () => {
-                    const input = page.locator('.v-input:has(label:has-text("심사 영역")) textarea, .v-input:has(label:has-text("심사 영역")) input').first();
+                    const input = page
+                        .locator('.v-input:has(label:has-text("심사 영역")) textarea, .v-input:has(label:has-text("심사 영역")) input')
+                        .first();
                     if ((await input.count()) === 0) return false;
                     const val = ((await input.inputValue()) || '').trim();
                     return val.length > 0;

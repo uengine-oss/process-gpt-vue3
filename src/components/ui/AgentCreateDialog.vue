@@ -25,18 +25,10 @@
             </div>
         </div>
 
-        <v-card-text
-            class="pa-0 pt-2 agent-create-dialog-body"
-            :class="{ 'agent-create-dialog-body--mobile': isMobile }"
-        >
+        <v-card-text class="pa-0 pt-2 agent-create-dialog-body" :class="{ 'agent-create-dialog-body--mobile': isMobile }">
             <v-window v-model="agentSubTab">
                 <v-window-item value="agent">
-                    <AgentField
-                        v-model="newAgent"
-                        class="agent-field-dialog-contents"
-                        :nameRules="nameRules"
-                        :dialogReset="dialogReset"
-                    />
+                    <AgentField v-model="newAgent" class="agent-field-dialog-contents" :nameRules="nameRules" :dialogReset="dialogReset" />
                 </v-window-item>
 
                 <v-window-item v-if="!gs" value="a2a">

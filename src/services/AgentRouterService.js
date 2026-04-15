@@ -47,7 +47,7 @@ class AgentRouterService {
     }
 
     async sendMessageStream(agentId, params, callbacks = {}, options = {}) {
-        const { onToken, onToolStart, onToolEnd, onDone, onError, onMetadata, onAbort } = callbacks;
+        const { onToken, onToolStart, onToolEnd, onPlanTools, onPlanSkills, onPlanTodos, onDone, onError, onMetadata, onAbort } = callbacks;
 
         try {
             const response = await fetch(`${this.baseUrl}/${agentId}/chat/stream`, {
@@ -66,7 +66,11 @@ class AgentRouterService {
                     conversation_id: params.conversation_id || null,
                     file: params.file || null,
                     files: Array.isArray(params.files) ? params.files : [],
-                    file_count: Number.isFinite(params.file_count) ? params.file_count : (Array.isArray(params.files) ? params.files.length : 0),
+                    file_count: Number.isFinite(params.file_count)
+                        ? params.file_count
+                        : Array.isArray(params.files)
+                        ? params.files.length
+                        : 0,
                     stream: true,
                     metadata: params.metadata || {}
                 })
@@ -88,23 +92,39 @@ class AgentRouterService {
                 const lines = buffer.split('\n');
                 buffer = lines.pop() || '';
 
-                for (const line of lines) {
+                for (const rawLine of lines) {
+                    const line = rawLine.replace(/\r$/, '');
                     // SSE line format: "data: <json>" (space optional)
                     if (line.startsWith('data:')) {
                         const data = line.slice(5).replace(/^\s+/, '');
                         if (!data.trim()) continue;
                         try {
                             const parsed = JSON.parse(data);
+                            if (parsed.type === 'meta' && parsed.conversation_id && onMetadata) {
+                                onMetadata({ conversation_id: parsed.conversation_id });
+                                continue;
+                            }
                             // work-assistant-agent stream format: {type:'token'|'tool_start'|'tool_end'|'done'|'error', ...}
                             switch (parsed.type) {
                                 case 'token':
                                     if (onToken) onToken(parsed.content);
                                     break;
-                                case 'tool_start':
-                                    if (onToolStart) onToolStart(parsed.tool, parsed.input);
+                                case 'plan_tools':
+                                    if (onPlanTools) onPlanTools(Array.isArray(parsed.tools) ? parsed.tools : [], parsed);
                                     break;
+                                case 'plan_skills':
+                                    if (onPlanSkills) onPlanSkills(Array.isArray(parsed.skills) ? parsed.skills : [], parsed);
+                                    break;
+                                case 'plan_todos':
+                                    if (onPlanTodos) onPlanTodos(Array.isArray(parsed.todos) ? parsed.todos : [], parsed);
+                                    break;
+                                case 'tool_start': {
+                                    const toolRef = parsed.tool ?? parsed.tool_name ?? parsed.name;
+                                    if (onToolStart) onToolStart(toolRef, parsed.input ?? parsed.arguments ?? null, parsed);
+                                    break;
+                                }
                                 case 'tool_end':
-                                    if (onToolEnd) onToolEnd(parsed.output);
+                                    if (onToolEnd) onToolEnd(parsed.output, parsed);
                                     break;
                                 case 'done':
                                     if (onDone) onDone(parsed.content);
@@ -116,12 +136,8 @@ class AgentRouterService {
                         } catch (e) {
                             // ignore parse errors
                         }
-                    } else if (line.startsWith('event: ')) {
-                        // EventSourceResponse metadata line (optional)
-                        const eventType = line.slice(7).trim();
-                        if (eventType === 'metadata') {
-                            // next data: line will carry metadata json; handled above
-                        }
+                    } else if (line.startsWith('event:')) {
+                        // DevTools는 event: 로 타입을 구분(예: metadata). 본 클라이언트는 data: JSON만 처리.
                     }
                 }
             }

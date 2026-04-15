@@ -538,7 +538,8 @@ export default {
 
             const foundNode = this.findOriginalNodeById(this.node, agentId);
             const nodeData = (foundNode && (foundNode.data || foundNode)) || fallbackData;
-            const isAgent = foundNode?.data?.isAgent ?? foundNode?.data?.is_agent ?? fallbackData?.isAgent ?? fallbackData?.is_agent ?? true;
+            const isAgent =
+                foundNode?.data?.isAgent ?? foundNode?.data?.is_agent ?? fallbackData?.isAgent ?? fallbackData?.is_agent ?? true;
 
             if (!nodeData || !isAgent) return;
 
@@ -739,7 +740,6 @@ export default {
 </script>
 
 <style scoped>
-
 .header-search {
     background-color: white !important;
     min-height: 36px !important;

@@ -89,8 +89,8 @@ function run() {
     const koKeys = new Set(Object.keys(koFlat));
     const enKeys = new Set(Object.keys(enFlat));
 
-    const missingInEn = [...koKeys].filter(k => !enKeys.has(k));
-    const missingInKo = [...enKeys].filter(k => !koKeys.has(k));
+    const missingInEn = [...koKeys].filter((k) => !enKeys.has(k));
+    const missingInKo = [...enKeys].filter((k) => !koKeys.has(k));
 
     const koLineMap = extractLineKeyMap(KO_PATH);
     const enLineMap = extractLineKeyMap(EN_PATH);
@@ -154,7 +154,9 @@ function run() {
     }
 
     const totalIssues = missingInEn.length + missingInKo.length + lineMismatches.length + untranslated.length;
-    console.log(`\nTotal: ${missingInEn.length} missing in en, ${missingInKo.length} missing in ko, ${lineMismatches.length} line mismatches, ${untranslated.length} untranslated`);
+    console.log(
+        `\nTotal: ${missingInEn.length} missing in en, ${missingInKo.length} missing in ko, ${lineMismatches.length} line mismatches, ${untranslated.length} untranslated`
+    );
 
     if (totalIssues === 0) {
         console.log('\nAll locale files are in sync.');
