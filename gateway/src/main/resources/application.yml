@@ -52,6 +52,13 @@ spring:
                   filters:
                       - RewritePath=/agent-router/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
+                - id: process-gpt-deepagents
+                  uri: http://localhost:8888
+                  predicates:
+                      - Path=/process-gpt-deepagents/**
+                  filters:
+                      - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
                 - id: agent
                   uri: http://localhost:8008
                   predicates:
@@ -187,6 +194,16 @@ spring:
                       - Path=/agent-router/**
                   filters:
                       - RewritePath=/agent-router/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
+                  order: 45
+
+                # DeepAgents Router 서비스 (별도 런타임/포트, SSE 지원)
+                - id: process-gpt-deepagents
+                  uri: http://process-gpt-deepagents:8888
+                  predicates:
+                      - Path=/process-gpt-deepagents/**
+                  filters:
+                      - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
                   order: 45
 

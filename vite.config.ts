@@ -124,6 +124,14 @@ export default defineConfig({
                 // - /agent-router/route -> /route
                 // - (레거시) /agent-router/agents/<agentId>/... -> /agents/<agentId>/...
                 rewrite: (path) => path.replace(/^\/agent-router/, '')
+            },
+            // DeepAgents Router API
+            '/process-gpt-deepagents/': {
+                target: 'http://127.0.0.1:8888',
+                changeOrigin: true,
+                timeout: 0,
+                proxyTimeout: 0,
+                rewrite: (path) => path.replace(/^\/process-gpt-deepagents/, '')
             }
         }
     },

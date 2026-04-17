@@ -764,13 +764,16 @@ import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import ArtifactPanel from '@/components/ArtifactPanel.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import agentRouterService from '@/services/AgentRouterService';
-import workAssistantAgentService from '@/services/WorkAssistantAgentService.js';
+import deepAgentRouterService from '@/services/DeepAgentRouterService';
+import FixedBaseWorkAssistantAgentService from '@/services/FixedBaseWorkAssistantAgentService';
 import { getValidToken } from '@/utils/supabaseAuth';
 import { isLegacyProcessDefinition, convertLegacyProcessDefinitionToElements } from '@/utils/legacyProcessDefinition';
 import { processGptAgent } from '@/constants/processGptAgent';
 import { PROCESS_GPT_AGENT_ID } from '@/constants/processGptAgent';
 
 const backend = BackendFactory.createBackend();
+const fixedLangchainMainAgentService = new FixedBaseWorkAssistantAgentService('/agent');
+const fixedDeepagentsMainAgentService = new FixedBaseWorkAssistantAgentService('/process-gpt-deepagents');
 
 // 메인 에이전트(process-gpt-agent)는 별도 메타 설정이 필요함(항상 기본 파드로 실행)
 const MAIN_PROCESS_GPT_AGENT_META = {
@@ -1918,13 +1921,23 @@ export default {
                 // 1회만 실행
                 sessionStorage.removeItem(`chatKickoff:${roomId}`);
 
+                // kickoff payload와 room_context.orchestration을 동일하게 맞춘 뒤 스트림
+                try {
+                    const effectiveOrchestration =
+                        ((payload?.orchestration != null ? String(payload.orchestration) : '') || '').trim() ||
+                        this.getRoomOrchestration();
+                    await this.setRoomOrchestration(effectiveOrchestration);
+                    payload.orchestration = effectiveOrchestration;
+                } catch (e) {}
+
                 const agentTargets = await this.resolveAgentTargetsForMessage(payload.text || '');
                 if (agentTargets.length > 0) {
                     const kickoffFiles = this.normalizePayloadFiles(payload);
                     await this.streamAgents(agentTargets, payload.text || '', {
                         images: payload.images || [],
                         file: kickoffFiles[0] || null,
-                        files: kickoffFiles
+                        files: kickoffFiles,
+                        orchestration: payload.orchestration
                     });
                 }
             } catch (e) {}
@@ -2009,6 +2022,41 @@ export default {
             }
         },
 
+        getRoomOrchestration() {
+            try {
+                const ctx = this.currentChatRoom?.room_context || this.currentChatRoom?.roomContext || null;
+                const value = (ctx?.orchestration || '').toString().trim();
+                return value || 'langchain-react';
+            } catch (e) {
+                return 'langchain-react';
+            }
+        },
+        getAgentRouterForOrchestration(orchestration) {
+            const o = (orchestration || '').toString().trim();
+            return o === 'deepagents' ? deepAgentRouterService : agentRouterService;
+        },
+        getMainAgentServiceForOrchestration(orchestration) {
+            const o = (orchestration || '').toString().trim();
+            return o === 'deepagents' ? fixedDeepagentsMainAgentService : fixedLangchainMainAgentService;
+        },
+        async setRoomOrchestration(orchestration) {
+            try {
+                if (!this.currentChatRoom?.id) return;
+                const nextValue = (orchestration || '').toString().trim();
+                if (!nextValue) return;
+                const prevCtx = this.currentChatRoom?.room_context || this.currentChatRoom?.roomContext || null;
+                const nextCtx = {
+                    ...(prevCtx && typeof prevCtx === 'object' ? prevCtx : {}),
+                    orchestration: nextValue,
+                    updatedAt: new Date().toISOString()
+                };
+                this.currentChatRoom.room_context = nextCtx;
+                await backend.putObject('db://chat_rooms', this.currentChatRoom);
+            } catch (e) {
+                // ignore
+            }
+        },
+
         /** 현재 plan_* 상태를 chat_rooms.room_context에 저장 */
         async persistRoomContext() {
             try {
@@ -2023,7 +2071,11 @@ export default {
                 const skills = Array.isArray(this.plannedSkills) ? this.plannedSkills : [];
                 const todos = Array.isArray(this.plannedTodos) ? this.plannedTodos : [];
 
+                const prevCtx = this.currentChatRoom?.room_context || this.currentChatRoom?.roomContext || null;
+                const preserved = prevCtx && typeof prevCtx === 'object' ? prevCtx : {};
+
                 const next = {
+                    ...preserved,
                     enabled: {
                         tools: !!this.planSideInfoEnabled?.tools,
                         skills: !!this.planSideInfoEnabled?.skills,
@@ -2396,6 +2448,7 @@ export default {
         },
         async warmupAgentsForCurrentRoom() {
             const agents = this.agentParticipants || [];
+            const router = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
             await Promise.all(
                 agents.map(async (a) => {
                     const id = a?.id;
@@ -2409,7 +2462,7 @@ export default {
                     }
                     this.setAgentStatus(id, { state: 'warming', message: '' });
                     try {
-                        await agentRouterService.warmup(id);
+                        await router.warmup(id);
                         this.setAgentStatus(id, { state: 'ready', message: '' });
                     } catch (e) {
                         this.setAgentStatus(id, { state: 'error', message: '준비 실패' });
@@ -2803,6 +2856,12 @@ export default {
             if (!text && !hasImages && !hasFile) return;
 
             try {
+                // UI(또는 기존 방) 기준 orchestration을 먼저 확정하고 room_context에 반영한 뒤, 동일 값으로 스트림 호출
+                const effectiveOrchestration =
+                    ((payload?.orchestration != null ? String(payload.orchestration) : '') || '').trim() || this.getRoomOrchestration();
+                await this.setRoomOrchestration(effectiveOrchestration);
+                payload.orchestration = effectiveOrchestration;
+
                 const keyObj = {
                     text: text || '',
                     imgCount: hasImages ? (payload.images || []).length : 0,
@@ -3376,7 +3435,8 @@ export default {
             try {
                 const tenant_id = window.$tenantName || localStorage.getItem('tenantId') || '';
                 const user_uid = this.userInfo?.uid || this.userInfo?.id || '';
-                const routed = await agentRouterService.routeAgents({
+                const router = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
+                const routed = await router.routeAgents({
                     user_message: (text || '').toString(),
                     recent_history,
                     agents_info,
@@ -4590,6 +4650,9 @@ export default {
             const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
             const requestFiles = this.normalizePayloadFiles(payload);
             const requestPrimaryFile = requestFiles[0] || null;
+            const orchestration = (payload?.orchestration || this.getRoomOrchestration() || '').toString().trim() || 'langchain-react';
+            const router = this.getAgentRouterForOrchestration(orchestration);
+            const mainAgentService = this.getMainAgentServiceForOrchestration(orchestration);
 
             // remove routing loading bubble once we start calling agents
             const routingUuid = (agentTargets || []).find((t) => t?.__routingLoadingUuid)?.__routingLoadingUuid || null;
@@ -4647,7 +4710,7 @@ export default {
                 } else {
                     this.setAgentStatus(agentId, { state: 'warming', message: '' });
                     try {
-                        await agentRouterService.warmup(agentId);
+                        await router.warmup(agentId);
                         this.setAgentStatus(agentId, { state: 'ready', message: '' });
                     } catch (e) {
                         this.setAgentStatus(agentId, { state: 'error', message: '준비 실패' });
@@ -5162,7 +5225,7 @@ export default {
                 };
 
                 if (agentId === PROCESS_GPT_AGENT_ID) {
-                    await workAssistantAgentService.sendMessageStream(
+                    await mainAgentService.sendMessageStream(
                         commonParams,
                         {
                             ...callbacks,
@@ -5178,7 +5241,7 @@ export default {
                         { signal: abortController.signal }
                     );
                 } else {
-                    await agentRouterService.sendMessageStream(
+                    await router.sendMessageStream(
                         agentId,
                         commonParams,
                         {

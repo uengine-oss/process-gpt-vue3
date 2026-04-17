@@ -2731,6 +2731,18 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
+                                <v-select
+                                    v-if="workAssistantAgentMode && !inputOnly"
+                                    v-model="orchestration"
+                                    :items="orchestrationOptions"
+                                    item-title="label"
+                                    item-value="value"
+                                    density="compact"
+                                    variant="outlined"
+                                    hide-details
+                                    class="ml-2 orchestration-select"
+                                    style="max-width: 150px"
+                                />
                                 <v-tooltip text="Draft Agent">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
@@ -3152,6 +3164,12 @@ export default {
             uploadedPdfInfo: null,
             uploadedPdfInfos: [],
             isPdfUploading: false,
+            // orchestration: which chat server/runtime to use
+            orchestration: 'langchain-react',
+            orchestrationOptions: [
+                { label: 'LangChain React', value: 'langchain-react' },
+                { label: 'DeepAgents', value: 'deepagents' }
+            ],
             isDragOverTextarea: false,
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
@@ -3253,6 +3271,23 @@ export default {
             if (newVal !== oldVal) {
                 this.newMessage = newVal;
                 this.beforeSend();
+            }
+        },
+        currentChatRoom: {
+            immediate: true,
+            handler(newRoom, oldRoom) {
+                try {
+                    const newId = newRoom?.id != null ? String(newRoom.id) : '';
+                    const oldId = oldRoom?.id != null ? String(oldRoom.id) : '';
+                    // 같은 방에 대한 메시지/미리보기 갱신마다 실행되므로, 방 전환 시에만 서버 값으로 동기화한다.
+                    // (매 갱신마다 덮어쓰면 컴포저에서 선택한 orchestration 이 전송 전에 초기화됨)
+                    if (newId && oldId && newId === oldId) {
+                        return;
+                    }
+                    const ctx = newRoom?.room_context || newRoom?.roomContext || null;
+                    const v = (ctx?.orchestration || '').toString().trim();
+                    this.orchestration = v === 'deepagents' ? 'deepagents' : 'langchain-react';
+                } catch (e) {}
             }
         },
         newMessageInfo(newVal) {
@@ -4673,6 +4708,7 @@ export default {
                     images: this.attachedImages,
                     text: this.newMessage,
                     mentionedUsers: this.mentionedUsers,
+                    orchestration: (this.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
                     // 하위 호환: 첫 파일은 file에 유지, 다중은 files로 전달
                     file: uploadedFiles[0] || this.uploadedPdfInfo,
                     files: uploadedFiles,
@@ -6099,5 +6135,27 @@ pre {
 .chat-split-resize-handle:hover,
 .chat-split-resize-handle:active {
     background-color: rgba(var(--v-theme-primary), 0.3);
+}
+
+// Orchestration select (definition-map main input)
+.orchestration-select {
+    width: 150px;
+    min-width: 120px;
+}
+
+.orchestration-select .v-field {
+    border-radius: 10px;
+}
+
+.orchestration-select .v-field__input {
+    min-height: 30px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    font-size: 12px;
+}
+
+.orchestration-select .v-field__append-inner {
+    padding-top: 0;
+    padding-bottom: 0;
 }
 </style>

@@ -139,11 +139,17 @@ export default {
         },
         selectExample(example) {
             if (!example) return;
+            let orchestration = 'langchain-react';
+            try {
+                const o = this.$refs.inputChat?.orchestration;
+                if ((o || '').toString().trim() === 'deepagents') orchestration = 'deepagents';
+            } catch (e) {}
             this.$emit('sendMessage', {
                 text: example.text,
                 timestamp: new Date().toISOString(),
                 file: null,
-                images: null
+                images: null,
+                orchestration
             });
         },
         forwardSendMessage(message) {
@@ -156,6 +162,9 @@ export default {
                 file: message.file || null,
                 files: hasFiles ? messageFiles : null,
                 images: message.images || null,
+                // orchestration pass-through (Chat.vue -> MainChatInput/ChatRoomPage)
+                orchestration:
+                    (message?.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
                 // mention 메타데이터 pass-through (Chat.vue -> ChatRoomPage 라우팅)
                 mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],
                 // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)

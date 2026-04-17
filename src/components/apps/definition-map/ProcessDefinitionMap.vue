@@ -1378,6 +1378,7 @@ export default {
             const messageFiles = Array.isArray(message?.files) ? message.files.filter(Boolean) : message?.file ? [message.file] : [];
             const hasFile = messageFiles.length > 0;
             const primaryFile = messageFiles[0] || null;
+            const orchestration = (message?.orchestration || '').toString().trim() || 'langchain-react';
 
             const roomId = this.uuid();
             const nowIso = new Date().toISOString();
@@ -1394,7 +1395,12 @@ export default {
                 name: roomName,
                 // primary_agent_id는 DB에 실제로 존재하는 에이전트가 아닐 수 있어 저장하지 않음
                 participants,
-                message: { msg: 'NEW', type: 'text', createdAt: nowIso }
+                message: { msg: 'NEW', type: 'text', createdAt: nowIso },
+                // chat_rooms.room_context에 orchestration 저장 (tools/skills/todos와 충돌 방지: 최상위 키로 둔다)
+                room_context: {
+                    orchestration,
+                    updatedAt: nowIso
+                }
             };
 
             await backend.putObject('db://chat_rooms', room);
@@ -1435,6 +1441,7 @@ export default {
                         images: message?.images || [],
                         file: primaryFile,
                         files: messageFiles,
+                        orchestration,
                         createdAt: nowIso
                     })
                 );
@@ -1669,7 +1676,6 @@ export default {
         },
         // 메인 채팅 입력 처리
         async handleMainChatSubmit(message) {
-            console.log('[ProcessDefinitionMap] handleMainChatSubmit 받음:', message);
             // 파일만 있거나 텍스트만 있거나 둘 다 있는 경우 처리
             const files = Array.isArray(message?.files) ? message.files : message?.file ? [message.file] : [];
             const hasFiles = files.length > 0;
