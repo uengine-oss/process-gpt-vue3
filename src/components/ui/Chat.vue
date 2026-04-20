@@ -3284,7 +3284,7 @@ export default {
                     if (newId && oldId && newId === oldId) {
                         return;
                     }
-                    const ctx = newRoom?.room_context || newRoom?.roomContext || null;
+                    const ctx = newRoom?.context ?? newRoom?.room_context ?? newRoom?.roomContext ?? null;
                     const v = (ctx?.orchestration || '').toString().trim();
                     this.orchestration = v === 'deepagents' ? 'deepagents' : 'langchain-react';
                 } catch (e) {}

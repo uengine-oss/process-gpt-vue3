@@ -295,6 +295,28 @@ ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS message jsonb;
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS name text;
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS primary_agent_id text;
+-- chat_rooms: room_context → context (신규 설치는 context만 추가, 기존 DB는 rename)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'chat_rooms'
+          AND column_name = 'room_context'
+    ) THEN
+        ALTER TABLE public.chat_rooms RENAME COLUMN room_context TO context;
+    ELSIF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'chat_rooms'
+          AND column_name = 'context'
+    ) THEN
+        ALTER TABLE public.chat_rooms ADD COLUMN context jsonb;
+    END IF;
+END
+$$;
 
 -- chats table
 ALTER TABLE public.chats ADD COLUMN IF NOT EXISTS uuid text;

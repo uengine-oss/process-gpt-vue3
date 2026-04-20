@@ -762,6 +762,7 @@ import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import BPMNXmlGenerator from '@/components/BPMNXmlGenerator.vue';
 import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import ArtifactPanel from '@/components/ArtifactPanel.vue';
+import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import agentRouterService from '@/services/AgentRouterService';
 import deepAgentRouterService from '@/services/DeepAgentRouterService';
@@ -820,6 +821,7 @@ export default {
             currentChatRoom: null,
             messages: [],
             chatsWatchRef: null,
+            attachmentsWatchRef: null,
 
             // history pagination (10개씩)
             historyPageSize: 10,
@@ -895,10 +897,13 @@ export default {
             plannedToolsById: {}, // { [id]: { id, tool, name, displayName, args, status, input, output } }
             plannedSkills: [], // ["skill-name", ...] (or normalized objects)
             plannedTodos: [], // [{ content, status, ... }]
+            /** chat_attachments 테이블에서 읽은 첨부 목록 */
+            plannedAttachments: [],
             planSideInfoEnabled: {
                 tools: false,
                 skills: false,
-                todos: false
+                todos: false,
+                attachments: false
             },
             // 우측 사이드바 폭 정책
             artifactSidebarWideWidth: 820,
@@ -1356,6 +1361,12 @@ export default {
             }
         } catch (e) {}
         this.chatsWatchRef = null;
+        try {
+            if (this.attachmentsWatchRef && typeof this.attachmentsWatchRef.unsubscribe === 'function') {
+                this.attachmentsWatchRef.unsubscribe();
+            }
+        } catch (e) {}
+        this.attachmentsWatchRef = null;
 
         // PDF2BPMN events 구독 해제
         this.unsubscribeAllPdf2bpmnEvents();
@@ -1537,6 +1548,28 @@ export default {
                 this.$refs.chatView?.scrollToBottom?.();
             } catch (e) {}
         },
+        /** chat_rooms.context (구 room_context / roomContext). 읽기만 하위 호환 */
+        readChatRoomContext(room) {
+            const r = room !== undefined && room !== null ? room : this.currentChatRoom;
+            if (!r || typeof r !== 'object') return null;
+            const ctx = r.context ?? r.room_context ?? r.roomContext;
+            return ctx != null && typeof ctx === 'object' ? ctx : null;
+        },
+        isDeepagentsOrchestration(orchestration) {
+            return (orchestration || '').toString().trim() === 'deepagents';
+        },
+        shouldClientWriteChatDb(orchestration) {
+            // deepagents orchestration에서는 클라이언트가 DB write를 하지 않는다.
+            return !this.isDeepagentsOrchestration(orchestration);
+        },
+        /** DB/putObject용: context 단일 필드로 쓰고 구 키는 제거 */
+        writeChatRoomContext(nextCtx, room) {
+            const r = room !== undefined && room !== null ? room : this.currentChatRoom;
+            if (!r || typeof r !== 'object') return;
+            r.context = nextCtx;
+            delete r.room_context;
+            delete r.roomContext;
+        },
         normalizePayloadFiles(payload) {
             const files = [];
             const pushIfFile = (candidate) => {
@@ -1568,9 +1601,6 @@ export default {
             pushIfFile(single?.files);
             pushIfFile(single?.attachments);
 
-            for (const f of files) {
-                if (!f) continue;
-            }
             const uniq = [];
             const seen = new Set();
             for (const f of files) {
@@ -1591,6 +1621,47 @@ export default {
                 fileCount: files.length,
                 firstFileName: (primary?.name || primary?.fileName || '').toString()
             };
+        },
+        normalizeChatAttachmentRow(file, roomId) {
+            if (!file || typeof file !== 'object') return null;
+            const fileName = (file.fileName || file.name || '').toString().trim();
+            const filePath =
+                (file.fileUrl || file.url || file.publicUrl || file.fullPath || file.path || '').toString() || '';
+            if (!fileName && !filePath) return null;
+            return {
+                id: this.uuid(),
+                file_name: fileName || (filePath ? String(filePath).split('/').pop() : '') || 'attachment',
+                file_path: filePath,
+                chat_room_id: (roomId || '').toString(),
+                user_name: this.userInfo?.name || this.userInfo?.username || this.userInfo?.email || '',
+                tenant_id: window.$tenantName || localStorage.getItem('tenantId') || 'process-gpt'
+            };
+        },
+        async saveChatAttachments(roomId, rawFiles) {
+            try {
+                const files = this.normalizePayloadFiles({ files: rawFiles });
+                if (!roomId || files.length === 0) return;
+                const seen = new Set(
+                    (Array.isArray(this.plannedAttachments) ? this.plannedAttachments : [])
+                        .map((a) => `${a?.file_path || ''}|${a?.file_name || ''}`)
+                        .filter(Boolean)
+                );
+                for (const f of files) {
+                    const row = this.normalizeChatAttachmentRow(f, roomId);
+                    if (!row) continue;
+                    const key = `${row.file_path || ''}|${row.file_name || ''}`;
+                    if (key && seen.has(key)) continue;
+                    seen.add(key);
+                    // eslint-disable-next-line no-await-in-loop
+                    await backend.putObject('db://chat_attachments', row);
+                }
+            } catch (e) {
+                // 첨부 저장 실패해도 메시지는 진행 (단, 디버깅 위해 로그는 남긴다)
+                try {
+                    // eslint-disable-next-line no-console
+                    console.warn('[chat_attachments] save failed:', e?.message || e, e);
+                } catch (e2) {}
+            }
         },
         async bootstrapTargetUser(userId) {
             this.isLoadingTargetUser = true;
@@ -1638,7 +1709,11 @@ export default {
                     message: { msg: 'NEW', type: 'text', createdAt: nowIso }
                 };
 
-                await backend.putObject('db://chat_rooms', room);
+                const orchestration = (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
+                const canWrite = this.shouldClientWriteChatDb(orchestration);
+                if (canWrite) {
+                    await backend.putObject('db://chat_rooms', room);
+                }
 
                 const msgUuid = this.uuid();
                 const msg = {
@@ -1656,7 +1731,9 @@ export default {
                     pdfFile: fileMeta.primary || null,
                     pdfFiles: fileMeta.files
                 };
-                await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+                if (canWrite) {
+                    await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+                }
 
                 // room last message
                 const fileName = (fileMeta.firstFileName || '').toString();
@@ -1664,8 +1741,13 @@ export default {
                     (text || '').substring(0, 50) ||
                     (hasFile ? (fileMeta.fileCount > 1 ? `${fileName} 외 ${fileMeta.fileCount - 1}개` : fileName).substring(0, 50) : '') ||
                     (hasImages ? `이미지 ${(payload?.images || []).length || 0}장` : '');
+                if (hasFile) {
+                    await this.saveChatAttachments(roomId, fileMeta.files);
+                }
                 room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
-                await backend.putObject('db://chat_rooms', room);
+                if (canWrite) {
+                    await backend.putObject('db://chat_rooms', room);
+                }
                 this.EventBus.emit('chat-rooms-updated');
 
                 // userId 컨텍스트 유지: 라우팅 없이 내부 상태로 전환
@@ -1714,7 +1796,11 @@ export default {
                     message: { msg: 'NEW', type: 'text', createdAt: nowIso }
                 };
 
-                await backend.putObject('db://chat_rooms', room);
+                const orchestration = (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
+                const canWrite = this.shouldClientWriteChatDb(orchestration);
+                if (canWrite) {
+                    await backend.putObject('db://chat_rooms', room);
+                }
 
                 const msgUuid = this.uuid();
                 const msg = {
@@ -1732,15 +1818,22 @@ export default {
                     pdfFile: fileMeta.primary || null,
                     pdfFiles: fileMeta.files
                 };
-                await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+                if (canWrite) {
+                    await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+                }
 
                 const fileName = (fileMeta.firstFileName || '').toString();
                 const preview =
                     (text || '').substring(0, 50) ||
                     (hasFile ? (fileMeta.fileCount > 1 ? `${fileName} 외 ${fileMeta.fileCount - 1}개` : fileName).substring(0, 50) : '') ||
                     (hasImages ? `이미지 ${(payload?.images || []).length || 0}장` : '');
+                if (hasFile) {
+                    await this.saveChatAttachments(roomId, fileMeta.files);
+                }
                 room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
-                await backend.putObject('db://chat_rooms', room);
+                if (canWrite) {
+                    await backend.putObject('db://chat_rooms', room);
+                }
                 this.EventBus.emit('chat-rooms-updated');
 
                 // embedded에서는 라우팅하지 않고 내부 state로 전환
@@ -1873,7 +1966,8 @@ export default {
             this.plannedToolsById = {};
             this.plannedSkills = [];
             this.plannedTodos = [];
-            this.planSideInfoEnabled = { tools: false, skills: false, todos: false };
+            this.plannedAttachments = [];
+            this.planSideInfoEnabled = { tools: false, skills: false, todos: false, attachments: false };
             try {
                 // 방 전환 시 히스토리 페이지네이션 상태 초기화
                 this.resetHistoryPagination();
@@ -1885,6 +1979,7 @@ export default {
                 this.restoreSideInfoFromRoomContext();
                 await this.loadMessages(roomId);
                 await this.subscribeToRoom(roomId);
+                await this.subscribeToAttachments(roomId);
                 this.EventBus.emit('chat-room-selected', roomId);
                 this.startChatAccessHeartbeat(roomId);
                 this.warmupAgentsForCurrentRoom();
@@ -1902,6 +1997,76 @@ export default {
             this.$nextTick(() => {
                 this.maybeKickoffFromSession(roomId).catch(() => {});
             });
+
+            // deepagents 재접속 복구: 토큰 이어붙이기 대신 최종 조회(assistant chats row 존재)로 복원
+            try {
+                const orch = this.getRoomOrchestration();
+                if (this.isDeepagentsOrchestration(orch)) {
+                    this.maybeStartAssistantRecoveryPoll(roomId);
+                }
+            } catch (e) {}
+        },
+        _roomHasAssistantRow(messages) {
+            const list = Array.isArray(messages) ? messages : [];
+            return list.some((m) => (m?.role || '').toString() === 'assistant');
+        },
+        _roomLooksInFlight(messages) {
+            const list = Array.isArray(messages) ? messages : [];
+            if (list.length === 0) return false;
+            const last = list[list.length - 1] || null;
+            const lastRole = (last?.role || '').toString();
+            if (lastRole !== 'user') {
+                if (lastRole === 'assistant' && last?.isLoading) return true;
+                return false;
+            }
+            return !this._roomHasAssistantRow(list);
+        },
+        async maybeStartAssistantRecoveryPoll(roomId) {
+            const targetRoomId = (roomId || this.currentChatRoom?.id || '').toString();
+            if (!targetRoomId) return;
+            if (!this._roomLooksInFlight(this.messages)) return;
+            await this.pollForAssistantRow(targetRoomId, { timeoutMs: 60_000, intervalMs: 1_200, pageSize: 20 });
+        },
+        async pollForAssistantRow(roomId, options = {}) {
+            const targetRoomId = (roomId || '').toString();
+            if (!targetRoomId) return;
+
+            this._assistantRecoveryPollSeq = (this._assistantRecoveryPollSeq || 0) + 1;
+            const seq = this._assistantRecoveryPollSeq;
+
+            const timeoutMs = Number.isFinite(options.timeoutMs) ? Number(options.timeoutMs) : 60_000;
+            const intervalMs = Number.isFinite(options.intervalMs) ? Number(options.intervalMs) : 1_200;
+            const pageSize = Number.isFinite(options.pageSize) ? Number(options.pageSize) : 20;
+            const startedAt = Date.now();
+
+            const sleep = (ms) =>
+                new Promise((resolve) => {
+                    setTimeout(resolve, Math.max(50, ms || 0));
+                });
+
+            while (true) {
+                if (seq !== this._assistantRecoveryPollSeq) return;
+                const stillSameRoom = (this.currentChatRoom?.id || this.roomId || '').toString() === targetRoomId;
+                if (!stillSameRoom) return;
+                if (Date.now() - startedAt > timeoutMs) return;
+
+                try {
+                    const rows = await backend.getMessages(targetRoomId, {
+                        size: pageSize,
+                        orderBy: `messages->>timeStamp`,
+                        sort: 'desc'
+                    });
+                    const list = Array.isArray(rows) ? rows : [];
+                    const hasAssistant = list.some((row) => (row?.messages?.role || '').toString() === 'assistant');
+                    if (hasAssistant) {
+                        await this.loadMessages(targetRoomId);
+                        return;
+                    }
+                } catch (e) {}
+
+                // eslint-disable-next-line no-await-in-loop
+                await sleep(intervalMs);
+            }
         },
         async maybeKickoffFromSession(roomId) {
             try {
@@ -1921,23 +2086,40 @@ export default {
                 // 1회만 실행
                 sessionStorage.removeItem(`chatKickoff:${roomId}`);
 
-                // kickoff payload와 room_context.orchestration을 동일하게 맞춘 뒤 스트림
+                // kickoff payload와 context.orchestration을 동일하게 맞춘 뒤 스트림
                 try {
                     const effectiveOrchestration =
                         ((payload?.orchestration != null ? String(payload.orchestration) : '') || '').trim() ||
                         this.getRoomOrchestration();
-                    await this.setRoomOrchestration(effectiveOrchestration);
+                    if (this.shouldClientWriteChatDb(effectiveOrchestration)) {
+                        await this.setRoomOrchestration(effectiveOrchestration);
+                    }
                     payload.orchestration = effectiveOrchestration;
+                } catch (e) {}
+
+                // 서버 dedupe용: kickoff payload에 message_uuid가 없으면 msgUuid로 보강
+                try {
+                    if (!payload.message_uuid && payload.msgUuid) {
+                        payload.message_uuid = payload.msgUuid;
+                    }
                 } catch (e) {}
 
                 const agentTargets = await this.resolveAgentTargetsForMessage(payload.text || '');
                 if (agentTargets.length > 0) {
                     const kickoffFiles = this.normalizePayloadFiles(payload);
+                    // definition-map kickoff 등 handleSendMessage를 거치지 않는 경로에서도 첨부를 chat_attachments에 저장
+                    if (kickoffFiles.length > 0) {
+                        try {
+                            await this.saveChatAttachments(roomId, kickoffFiles);
+                        } catch (e) {}
+                    }
                     await this.streamAgents(agentTargets, payload.text || '', {
                         images: payload.images || [],
                         file: kickoffFiles[0] || null,
                         files: kickoffFiles,
-                        orchestration: payload.orchestration
+                        orchestration: payload.orchestration,
+                        // 서버 dedupe용: kickoff 최초 user message uuid 전달
+                        message_uuid: payload.message_uuid || payload.msgUuid || null
                     });
                 }
             } catch (e) {}
@@ -1961,7 +2143,7 @@ export default {
             const found = (rooms || []).find((r) => r.id === roomId) || null;
             this.currentChatRoom = found || cachedRoom || { id: roomId, name: this.$t('chatListing.chat'), participants: [] };
 
-            // 최신 room_context 등을 위해 로컬 인덱스 갱신(가능하면)
+            // 최신 context 등을 위해 로컬 인덱스 갱신(가능하면)
             try {
                 if (this.currentChatRoom && this.currentChatRoom.id) {
                     const raw = localStorage.getItem('chatRoomIndex');
@@ -1972,10 +2154,10 @@ export default {
             } catch (e) {}
         },
 
-        /** chat_rooms.room_context → 우측 plan_* 박스 복원 */
+        /** chat_rooms.context → 우측 plan_* 박스 복원 (첨부는 chat_attachments에서 복원) */
         restoreSideInfoFromRoomContext() {
             try {
-                const ctx = this.currentChatRoom?.room_context || this.currentChatRoom?.roomContext || null;
+                const ctx = this.readChatRoomContext(this.currentChatRoom);
                 if (!ctx || typeof ctx !== 'object') return;
 
                 const enabled = ctx.enabled && typeof ctx.enabled === 'object' ? ctx.enabled : {};
@@ -2024,7 +2206,7 @@ export default {
 
         getRoomOrchestration() {
             try {
-                const ctx = this.currentChatRoom?.room_context || this.currentChatRoom?.roomContext || null;
+                const ctx = this.readChatRoomContext(this.currentChatRoom);
                 const value = (ctx?.orchestration || '').toString().trim();
                 return value || 'langchain-react';
             } catch (e) {
@@ -2044,20 +2226,20 @@ export default {
                 if (!this.currentChatRoom?.id) return;
                 const nextValue = (orchestration || '').toString().trim();
                 if (!nextValue) return;
-                const prevCtx = this.currentChatRoom?.room_context || this.currentChatRoom?.roomContext || null;
+                const prevCtx = this.readChatRoomContext(this.currentChatRoom);
                 const nextCtx = {
                     ...(prevCtx && typeof prevCtx === 'object' ? prevCtx : {}),
                     orchestration: nextValue,
                     updatedAt: new Date().toISOString()
                 };
-                this.currentChatRoom.room_context = nextCtx;
+                this.writeChatRoomContext(nextCtx, this.currentChatRoom);
                 await backend.putObject('db://chat_rooms', this.currentChatRoom);
             } catch (e) {
                 // ignore
             }
         },
 
-        /** 현재 plan_* 상태를 chat_rooms.room_context에 저장 */
+        /** 현재 plan_* 상태를 chat_rooms.context에 저장 */
         async persistRoomContext() {
             try {
                 if (!this.currentChatRoom?.id) return;
@@ -2071,22 +2253,25 @@ export default {
                 const skills = Array.isArray(this.plannedSkills) ? this.plannedSkills : [];
                 const todos = Array.isArray(this.plannedTodos) ? this.plannedTodos : [];
 
-                const prevCtx = this.currentChatRoom?.room_context || this.currentChatRoom?.roomContext || null;
+                const prevCtx = this.readChatRoomContext(this.currentChatRoom);
                 const preserved = prevCtx && typeof prevCtx === 'object' ? prevCtx : {};
+                const prevEnabled = preserved.enabled && typeof preserved.enabled === 'object' ? { ...preserved.enabled } : {};
 
                 const next = {
                     ...preserved,
                     enabled: {
+                        ...prevEnabled,
                         tools: !!this.planSideInfoEnabled?.tools,
                         skills: !!this.planSideInfoEnabled?.skills,
-                        todos: !!this.planSideInfoEnabled?.todos
+                        todos: !!this.planSideInfoEnabled?.todos,
+                        attachments: !!this.planSideInfoEnabled?.attachments
                     },
                     tools: tools.filter((t) => t && (t.tool || t.name || t.displayName)),
                     skills,
                     todos,
                     updatedAt: new Date().toISOString()
                 };
-                this.currentChatRoom.room_context = next;
+                this.writeChatRoomContext(next, this.currentChatRoom);
                 await backend.putObject('db://chat_rooms', this.currentChatRoom);
             } catch (e) {
                 // ignore
@@ -2280,6 +2465,29 @@ export default {
                 { filter: `id=eq.${roomId}` }
             );
         },
+        async subscribeToAttachments(roomId) {
+            try {
+                if (this.attachmentsWatchRef && typeof this.attachmentsWatchRef.unsubscribe === 'function') {
+                    await this.attachmentsWatchRef.unsubscribe();
+                }
+            } catch (e) {}
+            this.attachmentsWatchRef = null;
+            if (!roomId) return;
+            this.plannedAttachments = [];
+            this.planSideInfoEnabled.attachments = false;
+            this.attachmentsWatchRef = await backend.getAttachments(roomId, (attachment) => {
+                try {
+                    if (!attachment) return;
+                    const list = Array.isArray(this.plannedAttachments) ? this.plannedAttachments : [];
+                    const id = (attachment?.id || '').toString();
+                    const exists = id ? list.some((a) => (a?.id || '').toString() === id) : false;
+                    const next = exists ? list : [...list, attachment];
+                    this.plannedAttachments = next;
+                    this.planSideInfoEnabled.attachments = next.length > 0;
+                    if (this.planSideInfoEnabled.attachments) this.upsertAttachmentsPanel();
+                } catch (e) {}
+            });
+        },
         handleRealtimeMessage(payload) {
             try {
                 if (!payload) return;
@@ -2322,6 +2530,40 @@ export default {
                             : incoming;
                     return;
                 }
+                // 스트리밍 중 생성한 assistant "로딩 버블"과 서버 저장 assistant row의 uuid가 다를 수 있다.
+                // 이 경우 (uuid/email 불일치 등으로) 중복 표시가 발생하므로, 로딩 버블을 우선 교체한다.
+                try {
+                    if (typeof incoming === 'object' && (incoming.role || '').toString() === 'assistant') {
+                        const inAgentId = (incoming.agentId || '').toString();
+                        const inEmail = (incoming.email || '').toString();
+                        const inName = (incoming.userName || incoming.name || '').toString();
+                        const inTs = new Date(incoming.timeStamp || 0).getTime();
+
+                        const loadingIdx = this.messages.findIndex((m) => {
+                            if (!m) return false;
+                            if ((m.role || '').toString() !== 'assistant') return false;
+                            if (!m.isLoading) return false;
+                            // agent 식별 우선(가능하면), 없으면 표시 정보로 매칭
+                            const mAgentId = (m.agentId || '').toString();
+                            const mEmail = (m.email || '').toString();
+                            const mName = (m.userName || m.name || '').toString();
+                            const mts = new Date(m.timeStamp || 0).getTime();
+                            const near = Number.isFinite(inTs) && Number.isFinite(mts) ? Math.abs(mts - inTs) <= 5 * 60 * 1000 : false;
+                            const agentMatch = inAgentId && mAgentId ? inAgentId === mAgentId : false;
+                            const emailMatch = inEmail && mEmail ? inEmail === mEmail : false;
+                            const nameMatch = inName && mName ? inName === mName : false;
+                            return near && (agentMatch || emailMatch || nameMatch);
+                        });
+                        if (loadingIdx !== -1) {
+                            this.messages[loadingIdx] = this.normalizeAssistantMessageForDisplay({
+                                ...(this.messages[loadingIdx] || {}),
+                                ...incoming,
+                                isLoading: false
+                            });
+                            return;
+                        }
+                    }
+                } catch (e) {}
                 // uuid가 다르게 들어오는 경우(또는 이중 submit)로 인한 중복 방지: 내용/작성자/시간이 거의 동일하면 덮어쓰기
                 try {
                     const inRole = (incoming.role || '').toString();
@@ -2856,10 +3098,12 @@ export default {
             if (!text && !hasImages && !hasFile) return;
 
             try {
-                // UI(또는 기존 방) 기준 orchestration을 먼저 확정하고 room_context에 반영한 뒤, 동일 값으로 스트림 호출
+                // UI(또는 기존 방) 기준 orchestration을 먼저 확정하고 context에 반영한 뒤, 동일 값으로 스트림 호출
                 const effectiveOrchestration =
                     ((payload?.orchestration != null ? String(payload.orchestration) : '') || '').trim() || this.getRoomOrchestration();
-                await this.setRoomOrchestration(effectiveOrchestration);
+                if (this.shouldClientWriteChatDb(effectiveOrchestration)) {
+                    await this.setRoomOrchestration(effectiveOrchestration);
+                }
                 payload.orchestration = effectiveOrchestration;
 
                 const keyObj = {
@@ -2901,7 +3145,15 @@ export default {
                     replyUserName: payload?.reply?.name || null,
                     replyContent: payload?.reply?.content || null
                 };
-                await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: this.currentChatRoom.id, messages: msg });
+                // 서버 dedupe용: 클라이언트에서 생성한 user 메시지 UUID를 스트리밍 요청에 전달
+                payload.message_uuid = msgUuid;
+                if (hasFile) {
+                    await this.saveChatAttachments(this.currentChatRoom.id, fileMeta.files);
+                }
+                const canWrite = this.shouldClientWriteChatDb(payload?.orchestration || this.getRoomOrchestration());
+                if (canWrite) {
+                    await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: this.currentChatRoom.id, messages: msg });
+                }
 
                 // last message update
                 const fileName = (fileMeta.firstFileName || '').toString();
@@ -2910,7 +3162,9 @@ export default {
                     (hasFile ? (fileMeta.fileCount > 1 ? `${fileName} 외 ${fileMeta.fileCount - 1}개` : fileName).substring(0, 50) : '') ||
                     (hasImages ? `이미지 ${(payload?.images || []).length || 0}장` : '');
                 this.currentChatRoom.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
-                await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                if (canWrite) {
+                    await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                }
 
                 this.upsertMessageByKeys(msg);
                 this.EventBus.emit('chat-rooms-updated');
@@ -3707,7 +3961,7 @@ export default {
                 this.artifactPanels.push({ id, type: 'tools', label: 'Tools', data });
             }
             // side-info만 있을 때는 좁게 열기
-            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !['tools', 'skills', 'todos'].includes(p.type));
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
             if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
             // tools 이벤트가 오면 자동으로 열어줌(요구가 "간단"이므로)
             this.artifactSidebarVisible = true;
@@ -3727,7 +3981,7 @@ export default {
                 const id = `todos-${this.uuid()}`;
                 this.artifactPanels.push({ id, type: 'todos', label: 'Todos', data });
             }
-            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !['tools', 'skills', 'todos'].includes(p.type));
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
             if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
             this.artifactSidebarVisible = true;
         },
@@ -3750,7 +4004,26 @@ export default {
                 const id = `skills-${this.uuid()}`;
                 this.artifactPanels.push({ id, type: 'skills', label: 'Skills', data });
             }
-            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !['tools', 'skills', 'todos'].includes(p.type));
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
+            if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
+            this.artifactSidebarVisible = true;
+        },
+
+        /** 우측 사이드바에 첨부(chat_attachments) 패널 생성/갱신 */
+        upsertAttachmentsPanel() {
+            if (!this.planSideInfoEnabled?.attachments) return;
+            const items = Array.isArray(this.plannedAttachments) ? this.plannedAttachments : [];
+            const data = { enabled: true, items };
+
+            const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'attachments');
+            if (existingIdx !== -1) {
+                const existing = this.artifactPanels[existingIdx];
+                this.artifactPanels[existingIdx] = { ...existing, label: '첨부', data };
+            } else {
+                const id = `attachments-${this.uuid()}`;
+                this.artifactPanels.push({ id, type: 'attachments', label: '첨부', data });
+            }
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
             if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
             this.artifactSidebarVisible = true;
         },
@@ -4651,6 +4924,7 @@ export default {
             const requestFiles = this.normalizePayloadFiles(payload);
             const requestPrimaryFile = requestFiles[0] || null;
             const orchestration = (payload?.orchestration || this.getRoomOrchestration() || '').toString().trim() || 'langchain-react';
+            const canWrite = this.shouldClientWriteChatDb(orchestration);
             const router = this.getAgentRouterForOrchestration(orchestration);
             const mainAgentService = this.getMainAgentServiceForOrchestration(orchestration);
 
@@ -4741,6 +5015,11 @@ export default {
 
                 const commonParams = {
                     message: messageForAgent,
+                    // 서버 dedupe용: 클라이언트에서 생성한 user 메시지 UUID
+                    message_uuid:
+                        (payload?.message_uuid || payload?.messageUuid || '').toString().trim() ||
+                        (payload?.metadata?.message_uuid || payload?.metadata?.messageUuid || '').toString().trim() ||
+                        null,
                     tenant_id: tenantId,
                     user_uid: this.userInfo?.uid || this.userInfo?.id,
                     user_email: this.userInfo?.email,
@@ -4813,7 +5092,7 @@ export default {
                                 };
                             }
                             this.upsertToolsPanel();
-                            this.persistRoomContext();
+                            if (canWrite) this.persistRoomContext();
                         } catch (e) {}
                     },
                     onPlanSkills: (skills) => {
@@ -4822,7 +5101,7 @@ export default {
                             this.planSideInfoEnabled.skills = true;
                             this.plannedSkills = skills;
                             this.upsertSkillsPanel();
-                            this.persistRoomContext();
+                            if (canWrite) this.persistRoomContext();
                         } catch (e) {}
                     },
                     onPlanTodos: (todos) => {
@@ -4835,7 +5114,7 @@ export default {
                                 status: (t?.status || '').toString()
                             }));
                             this.upsertTodosPanel();
-                            this.persistRoomContext();
+                            if (canWrite) this.persistRoomContext();
                         } catch (e) {}
                     },
                     onToolStart: (tool, input, rawEvent) => {
@@ -4877,7 +5156,7 @@ export default {
                                     input: input ?? prev?.input ?? null
                                 };
                                 if (this.planSideInfoEnabled?.tools) this.upsertToolsPanel();
-                                if (this.planSideInfoEnabled?.tools) this.persistRoomContext();
+                                if (canWrite && this.planSideInfoEnabled?.tools) this.persistRoomContext();
                             }
 
                             const roomId = this.currentChatRoom?.id || this.roomId || null;
@@ -4942,7 +5221,7 @@ export default {
                                     output: output ?? prev?.output ?? null
                                 };
                                 if (this.planSideInfoEnabled?.tools) this.upsertToolsPanel();
-                                if (this.planSideInfoEnabled?.tools) this.persistRoomContext();
+                                if (canWrite && this.planSideInfoEnabled?.tools) this.persistRoomContext();
                             }
 
                             // list_reference_documents 등 human feedback 도구 결과 감지
@@ -5157,25 +5436,27 @@ export default {
                             });
                         }
 
-                        // DB 저장
-                        await backend.putObject(`db://chats/${assistantUuid}`, {
-                            uuid: assistantUuid,
-                            id: this.currentChatRoom?.id,
-                            messages: {
-                                ...(this.messages[idx] || assistantMsgBase),
-                                content: displayContent || safeFinal || full || '',
-                                isLoading: false
-                            }
-                        });
+                        if (canWrite) {
+                            // DB 저장
+                            await backend.putObject(`db://chats/${assistantUuid}`, {
+                                uuid: assistantUuid,
+                                id: this.currentChatRoom?.id,
+                                messages: {
+                                    ...(this.messages[idx] || assistantMsgBase),
+                                    content: displayContent || safeFinal || full || '',
+                                    isLoading: false
+                                }
+                            });
 
-                        // last message 업데이트(가장 마지막 완료 응답 기준으로 덮어쓰기)
-                        if (this.currentChatRoom) {
-                            this.currentChatRoom.message = {
-                                msg: (displayContent || safeFinal || full || '').substring(0, 50),
-                                type: 'text',
-                                createdAt: new Date().toISOString()
-                            };
-                            await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                            // last message 업데이트(가장 마지막 완료 응답 기준으로 덮어쓰기)
+                            if (this.currentChatRoom) {
+                                this.currentChatRoom.message = {
+                                    msg: (displayContent || safeFinal || full || '').substring(0, 50),
+                                    type: 'text',
+                                    createdAt: new Date().toISOString()
+                                };
+                                await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                            }
                         }
 
                         this.EventBus.emit('chat-rooms-updated');

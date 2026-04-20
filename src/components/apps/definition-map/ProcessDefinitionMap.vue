@@ -1396,8 +1396,8 @@ export default {
                 // primary_agent_id는 DB에 실제로 존재하는 에이전트가 아닐 수 있어 저장하지 않음
                 participants,
                 message: { msg: 'NEW', type: 'text', createdAt: nowIso },
-                // chat_rooms.room_context에 orchestration 저장 (tools/skills/todos와 충돌 방지: 최상위 키로 둔다)
-                room_context: {
+                // chat_rooms.context에 orchestration 저장 (tools/skills/todos와 충돌 방지: 최상위 키로 둔다)
+                context: {
                     orchestration,
                     updatedAt: nowIso
                 }
@@ -1421,6 +1421,31 @@ export default {
             };
 
             await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+
+            // 첨부 파일은 chat_attachments 테이블에 저장 (ChatRoomPage로 넘어가기 전에 선저장)
+            if (hasFile) {
+                try {
+                    const tenantId = window.$tenantName || localStorage.getItem('tenantId') || 'process-gpt';
+                    const userName = userInfo?.name || userInfo?.username || userInfo?.email || '';
+                    for (const f of messageFiles) {
+                        const fileName = (f?.fileName || f?.name || '').toString().trim();
+                        const filePath =
+                            (f?.fileUrl || f?.url || f?.publicUrl || f?.fullPath || f?.path || '').toString() || '';
+                        if (!fileName && !filePath) continue;
+                        // eslint-disable-next-line no-await-in-loop
+                        await backend.putObject('db://chat_attachments', {
+                            id: this.uuid(),
+                            file_name: fileName || (filePath ? String(filePath).split('/').pop() : '') || 'attachment',
+                            file_path: filePath,
+                            chat_room_id: roomId,
+                            user_name: userName,
+                            tenant_id: tenantId
+                        });
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
             // last message preview는 첨부 요약을 사용 (content는 비워둠)
             const fileName = (primaryFile?.name || primaryFile?.fileName || '').toString();
             const preview =
@@ -1437,6 +1462,8 @@ export default {
                     JSON.stringify({
                         roomId,
                         msgUuid,
+                        // 서버 dedupe용: 클라이언트에서 생성한 user 메시지 UUID
+                        message_uuid: msgUuid,
                         text,
                         images: message?.images || [],
                         file: primaryFile,
