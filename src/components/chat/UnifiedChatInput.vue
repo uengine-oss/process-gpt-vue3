@@ -155,12 +155,14 @@ export default {
         forwardSendMessage(message) {
             const messageFiles = Array.isArray(message?.files) ? message.files : Array.isArray(message?.file) ? message.file : [];
             const hasFiles = messageFiles.length > 0;
-            if (!message || (!message.text && !message.file && !hasFiles && (!message.images || message.images.length === 0))) return;
+            const hasRawFiles = Array.isArray(message?.rawFiles) && message.rawFiles.length > 0;
+            if (!message || (!message.text && !message.file && !hasFiles && !hasRawFiles && (!message.images || message.images.length === 0))) return;
             this.$emit('sendMessage', {
                 text: (message.text || '').trim(),
                 timestamp: new Date().toISOString(),
                 file: message.file || null,
                 files: hasFiles ? messageFiles : null,
+                rawFiles: hasRawFiles ? message.rawFiles : null,
                 images: message.images || null,
                 // orchestration pass-through (Chat.vue -> MainChatInput/ChatRoomPage)
                 orchestration:

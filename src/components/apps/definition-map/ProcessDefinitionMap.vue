@@ -1384,6 +1384,13 @@ export default {
             const nowIso = new Date().toISOString();
             const roomName = (text ? text.substring(0, 50) : '').trim() || '새 대화';
 
+            // raw File 객체가 있으면 ChatRoomPage에서 memento 업로드하도록 임시 전달
+            // (File 객체는 sessionStorage에 직렬화 불가 → window 임시 변수 사용)
+            const rawFiles = Array.isArray(message?.rawFiles) ? message.rawFiles.filter(Boolean) : [];
+            if (rawFiles.length > 0) {
+                window.__pendingMementoFiles = { roomId, files: rawFiles };
+            }
+
             const participants = [
                 me,
                 // 가상 에이전트는 DB에 저장되지 않으며 방 참가자에만 포함

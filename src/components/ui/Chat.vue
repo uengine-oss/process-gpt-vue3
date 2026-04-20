@@ -4694,25 +4694,28 @@ export default {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;
             } else {
-                // 파일이 선택된 경우: 전송 직전 업로드하여 fileInfo 배열 생성
-                if (
-                    Array.isArray(this.selectedPdfFiles) &&
-                    this.selectedPdfFiles.length > 0 &&
-                    (!Array.isArray(this.uploadedPdfInfos) || this.uploadedPdfInfos.length === 0)
-                ) {
-                    await this.ensurePdfUploadedFiles();
+                const roomId = (this.chatRoomId || this.currentChatRoom?.id || '').toString();
+                const hasRawFiles = Array.isArray(this.selectedPdfFiles) && this.selectedPdfFiles.length > 0;
+
+                // roomId가 있으면 즉시 memento 경유 업로드, 없으면 raw File을 부모에 위임
+                if (hasRawFiles && roomId) {
+                    if (!Array.isArray(this.uploadedPdfInfos) || this.uploadedPdfInfos.length === 0) {
+                        await this.ensurePdfUploadedFiles();
+                    }
                 }
+
                 const uploadedFiles = Array.isArray(this.uploadedPdfInfos) ? this.uploadedPdfInfos : [];
-                // 부모 컴포넌트로 메시지 전달 (기존 방식 유지: images에 url(base64 가능) 포함)
+                // roomId 없이 raw File이 남아있으면 부모 컴포넌트에 전달 (room 생성 후 업로드용)
+                const rawFiles = (!roomId && hasRawFiles) ? [...this.selectedPdfFiles] : [];
+
                 this.$emit('sendMessage', {
                     images: this.attachedImages,
                     text: this.newMessage,
                     mentionedUsers: this.mentionedUsers,
                     orchestration: (this.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
-                    // 하위 호환: 첫 파일은 file에 유지, 다중은 files로 전달
                     file: uploadedFiles[0] || this.uploadedPdfInfo,
                     files: uploadedFiles,
-                    // reply 메타데이터 (ChatRoomPage에서 저장/표시)
+                    rawFiles,
                     reply: this.isReply
                         ? {
                               uuid: this.replyUser?.uuid || null,
@@ -4820,11 +4823,17 @@ export default {
             this.isPdfUploading = true;
             try {
                 const uploaded = [];
+                const roomId = (this.chatRoomId || this.currentChatRoom?.id || '').toString();
                 for (const f of files) {
                     try {
                         // eslint-disable-next-line no-await-in-loop
-                        const uploadResult = await backend.uploadFile(f.name, f);
+                        let uploadResult;
+                        // memento /save-to-storage 경유 (임베딩 + 벡터 저장)
+                        const options = {};
+                        if (roomId) options.room_id = roomId;
+                        uploadResult = await backend.uploadFileToStorage(f, options);
                         const resolvedUrl =
+                            uploadResult?.public_url ||
                             uploadResult?.publicUrl ||
                             uploadResult?.fullPath ||
                             uploadResult?.fileUrl ||

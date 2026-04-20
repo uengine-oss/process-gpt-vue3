@@ -2086,6 +2086,49 @@ export default {
                 // 1회만 실행
                 sessionStorage.removeItem(`chatKickoff:${roomId}`);
 
+                // 메인 화면에서 전달된 raw File이 있으면 memento 경유 업로드 (임베딩 + 벡터 저장)
+                const pendingFiles = window.__pendingMementoFiles;
+                if (pendingFiles && pendingFiles.roomId === roomId && Array.isArray(pendingFiles.files) && pendingFiles.files.length > 0) {
+                    delete window.__pendingMementoFiles;
+                    const embeddingMsgUuid = this.uuid();
+                    const fileNames = pendingFiles.files.map((f) => f.name).join(', ');
+                    this.upsertMessageByKeys({
+                        uuid: embeddingMsgUuid,
+                        role: 'assistant',
+                        content: `📄 문서 임베딩 중... (${fileNames})`,
+                        timeStamp: new Date().toISOString(),
+                        isLoading: true
+                    });
+                    this.$nextTick(() => this.scrollToBottomSafe());
+
+                    for (const f of pendingFiles.files) {
+                        try {
+                            // eslint-disable-next-line no-await-in-loop
+                            const uploadResult = await backend.uploadFileToStorage(f, { room_id: roomId });
+                            const resolvedUrl = uploadResult?.public_url || uploadResult?.publicUrl || '';
+                            if (resolvedUrl) {
+                                const fileInfo = {
+                                    fileName: f.name,
+                                    fileUrl: resolvedUrl,
+                                    publicUrl: resolvedUrl,
+                                    fullPath: resolvedUrl,
+                                    fileType: f.type,
+                                    fileSize: f.size
+                                };
+                                // kickoff payload에 파일 정보 추가
+                                if (!payload.files) payload.files = [];
+                                payload.files.push(fileInfo);
+                                if (!payload.file) payload.file = fileInfo;
+                            }
+                        } catch (e) {
+                            console.error('[ChatRoomPage] memento 임베딩 실패:', e);
+                        }
+                    }
+
+                    // 임베딩 완료 → 상태 메시지 제거
+                    this.messages = this.messages.filter((m) => m?.uuid !== embeddingMsgUuid);
+                }
+
                 // kickoff payload와 context.orchestration을 동일하게 맞춘 뒤 스트림
                 try {
                     const effectiveOrchestration =
