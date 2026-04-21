@@ -2018,6 +2018,7 @@ export default {
 
         async bootstrapRoom(roomId) {
             this.isLoadingRoom = true;
+            let bootstrapSucceeded = false;
             // 방 전환 시 아티팩트 패널 초기화
             this.artifactPanels = [];
             this.activeArtifactId = null;
@@ -2039,18 +2040,22 @@ export default {
                 await this.loadRoom(roomId);
                 this.restoreSideInfoFromRoomContext();
                 await this.loadMessages(roomId);
-                await this.subscribeToRoom(roomId);
-                await this.subscribeToAttachments(roomId);
                 this.EventBus.emit('chat-room-selected', roomId);
                 this.startChatAccessHeartbeat(roomId);
                 this.warmupAgentsForCurrentRoom();
                 this.$nextTick(() => this.scrollToBottomSafe());
                 this.focusComposerInput();
+                bootstrapSucceeded = true;
             } catch (e) {
                 this.currentChatRoom = null;
                 this.messages = [];
             } finally {
                 this.isLoadingRoom = false;
+            }
+
+            // 실시간 구독은 화면 렌더를 막지 않도록 백그라운드에서 시작
+            if (bootstrapSucceeded) {
+                Promise.allSettled([this.subscribeToRoom(roomId), this.subscribeToAttachments(roomId)]).catch(() => {});
             }
 
             // definition-map 메인 채팅에서 생성된 방:
