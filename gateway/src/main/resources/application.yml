@@ -209,7 +209,7 @@ spring:
 
                 # Work Assistant Agent 서비스 (SSE 스트리밍 지원)
                 - id: agent
-                  uri: http://work-assistant-agent-service:8000
+                  uri: http://process-gpt-base-agent-langchain-react-service:8000
                   predicates:
                       - Path=/agent/**
                   filters:
