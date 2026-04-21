@@ -4838,6 +4838,7 @@ export default {
             this.isPdfUploading = true;
             try {
                 const uploaded = [];
+                const uploadErrors = [];
                 const roomId = (this.chatRoomId || this.currentChatRoom?.id || '').toString();
                 for (const f of files) {
                     try {
@@ -4875,10 +4876,13 @@ export default {
                                 path: '',
                                 fileType: f.type,
                                 fileSize: f.size,
-                                uploadError: true
+                                uploadError: true,
+                                uploadErrorMessage: '파일 URL을 생성하지 못했습니다.'
                             });
+                            uploadErrors.push(`[${f.name}] 파일 URL 생성 실패`);
                         }
                     } catch (e) {
+                        const msg = (e && (e.message || e.toString())) || '파일 업로드 실패';
                         uploaded.push({
                             fileName: f.name,
                             fileUrl: '',
@@ -4887,9 +4891,14 @@ export default {
                             path: '',
                             fileType: f.type,
                             fileSize: f.size,
-                            uploadError: true
+                            uploadError: true,
+                            uploadErrorMessage: msg
                         });
+                        uploadErrors.push(`[${f.name}] ${msg}`);
                     }
+                }
+                if (uploadErrors.length > 0) {
+                    alert(`첨부 파일 처리 중 오류가 발생했습니다.\n${uploadErrors.join('\n')}`);
                 }
                 this.uploadedPdfInfos = uploaded;
                 this.uploadedPdfInfo = uploaded[0] || null;

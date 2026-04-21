@@ -3967,7 +3967,21 @@ class ProcessGPTBackend implements Backend {
 
             return response.data;
         } catch (error) {
-            throw new Error(error);
+            const err: any = error;
+            const status = err?.response?.status;
+            const detail =
+                err?.response?.data?.detail ||
+                err?.response?.data?.message ||
+                err?.message ||
+                '알 수 없는 오류';
+
+            if (status === 504 || status === 408) {
+                throw new Error('파일 처리 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.');
+            }
+            if (typeof detail === 'string' && detail.toLowerCase().includes('timeout')) {
+                throw new Error('파일 처리 중 타임아웃이 발생했습니다. 파일 크기를 줄이거나 잠시 후 다시 시도해 주세요.');
+            }
+            throw new Error(`파일 업로드 실패: ${detail}`);
         }
     }
 
