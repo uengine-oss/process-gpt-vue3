@@ -89,7 +89,7 @@ spring:
             # 기본 타임아웃 설정
             httpclient:
                 connect-timeout: 10000
-                response-timeout: 60000 # 기본 응답 타임아웃: 60초
+                response-timeout: 600000 # 기본 응답 타임아웃: 600초
                 pool:
                     type: ELASTIC
                     max-connections: 100
