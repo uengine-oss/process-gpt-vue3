@@ -22,6 +22,7 @@
                 :inputOnly="variant === 'inline'"
                 :disableChat="disableChat"
                 :showStopButton="showStopButton"
+                :deferFileUploadToParent="deferFileUploadToParent"
                 :isMobile="false"
                 :userList="userList"
                 :currentChatRoom="currentChatRoom"
@@ -60,6 +61,11 @@ export default {
             default: false
         },
         showStopButton: {
+            type: Boolean,
+            default: false
+        },
+        // true면 Chat.vue에서 파일 업로드를 기다리지 않고 부모로 전송
+        deferFileUploadToParent: {
             type: Boolean,
             default: false
         },

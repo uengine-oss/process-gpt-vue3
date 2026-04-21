@@ -87,7 +87,8 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
     }
 
     private TokenValidationResult validateToken(String token, String expectedSubdomain, String requestPath) {
-        final boolean isAgentPath = requestPath != null && requestPath.startsWith("/agent/");
+        final boolean allowPayloadFallback = requestPath != null
+                && (requestPath.startsWith("/agent/") || requestPath.startsWith("/memento/"));
         final boolean skipTenantCheck = isLocalHost(expectedSubdomain);
         try {
             Claims claims = Jwts.parser()
@@ -118,13 +119,13 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
             return new TokenValidationResult(true, null, null);
         } catch (SignatureException e) {
             logger.error("SignatureException: Invalid token signature", e);
-            if (isAgentPath) {
+            if (allowPayloadFallback) {
                 return validateTokenByPayload(token, expectedSubdomain, skipTenantCheck);
             }
             return new TokenValidationResult(false, "TOKEN_INVALID", "Invalid token signature");
         } catch (Exception e) {
             logger.error("Exception during token validation", e);
-            if (isAgentPath) {
+            if (allowPayloadFallback) {
                 return validateTokenByPayload(token, expectedSubdomain, skipTenantCheck);
             }
             return new TokenValidationResult(false, "TOKEN_INVALID", "Token validation failed: " + e.getMessage());

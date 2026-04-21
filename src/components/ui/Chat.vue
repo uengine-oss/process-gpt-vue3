@@ -3081,6 +3081,11 @@ export default {
             type: Boolean,
             default: true
         },
+        // true면 전송 시 파일 업로드를 여기서 기다리지 않고 부모로 위임
+        deferFileUploadToParent: {
+            type: Boolean,
+            default: false
+        },
         // ChatRoomPage/WorkAssistantChatPanel: PDF2BPMN 진행 상태 표시
         pdf2bpmnProgress: {
             type: Object,
@@ -4698,23 +4703,33 @@ export default {
                 const hasRawFiles = Array.isArray(this.selectedPdfFiles) && this.selectedPdfFiles.length > 0;
 
                 // roomId가 있으면 즉시 memento 경유 업로드, 없으면 raw File을 부모에 위임
-                if (hasRawFiles && roomId) {
+                if (hasRawFiles && roomId && !this.deferFileUploadToParent) {
                     if (!Array.isArray(this.uploadedPdfInfos) || this.uploadedPdfInfos.length === 0) {
                         await this.ensurePdfUploadedFiles();
                     }
                 }
 
                 const uploadedFiles = Array.isArray(this.uploadedPdfInfos) ? this.uploadedPdfInfos : [];
-                // roomId 없이 raw File이 남아있으면 부모 컴포넌트에 전달 (room 생성 후 업로드용)
-                const rawFiles = (!roomId && hasRawFiles) ? [...this.selectedPdfFiles] : [];
+                const rawFiles = hasRawFiles ? [...this.selectedPdfFiles] : [];
+                const fallbackFiles = rawFiles.map((f) => ({
+                    fileName: f?.name || '',
+                    name: f?.name || '',
+                    fileUrl: '',
+                    publicUrl: '',
+                    fullPath: '',
+                    path: '',
+                    fileType: f?.type || '',
+                    fileSize: Number.isFinite(f?.size) ? f.size : null
+                }));
+                const filesForMessage = uploadedFiles.length > 0 ? uploadedFiles : fallbackFiles;
 
                 this.$emit('sendMessage', {
                     images: this.attachedImages,
                     text: this.newMessage,
                     mentionedUsers: this.mentionedUsers,
                     orchestration: (this.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
-                    file: uploadedFiles[0] || this.uploadedPdfInfo,
-                    files: uploadedFiles,
+                    file: filesForMessage[0] || null,
+                    files: filesForMessage,
                     rawFiles,
                     reply: this.isReply
                         ? {

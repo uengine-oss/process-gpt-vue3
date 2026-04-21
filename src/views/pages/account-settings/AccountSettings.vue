@@ -32,6 +32,11 @@
                                     <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                         <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                     </v-tab>
+                                    <!-- 용어집 관리 -->
+                                    <v-tab v-if="!isUEngineMode" value="GlossaryManage">
+                                        <v-icon class="mr-2" size="20">mdi-book-open-page-variant</v-icon>
+                                        {{ $t('accountTab.glossaryManage') }}
+                                    </v-tab>
                                     <!-- 업무 카탈로그 -->
                                     <v-tab v-if="!isUEngineMode" value="TaskCatalog">
                                         <v-icon class="mr-2" size="20">mdi-view-grid</v-icon> {{ $t('taskCatalog.catalog') }}
@@ -148,6 +153,16 @@
                                     variant="text"
                                     color="default"
                                     size="small"
+                                    @click="tab = 'GlossaryManage'"
+                                    :class="{ 'selected-tab': tab === 'GlossaryManage' }"
+                                >
+                                    <v-icon class="mr-2" size="16">mdi-book-open-page-variant</v-icon>{{ $t('accountTab.glossaryManage') }}
+                                </v-btn>
+                                <v-btn
+                                    v-if="!isUEngineMode"
+                                    variant="text"
+                                    color="default"
+                                    size="small"
                                     @click="tab = 'TaskCatalog'"
                                     :class="{ 'selected-tab': tab === 'TaskCatalog' }"
                                 >
@@ -221,6 +236,12 @@
                                 <ConnectionInfoTab />
                             </div>
                         </v-window-item>
+                        <!-- GlossaryManage: 용어집 관리 탭 (accountTab.glossaryManage) -->
+                        <v-window-item v-if="!isUEngineMode" value="GlossaryManage">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                                <GlossaryManageTab :glossary-url="glossaryFrontendUrl" />
+                            </div>
+                        </v-window-item>
 
                         <!-- MCP-Servers: MCP 서버 탭 (accountTab.mcpServers) -->
                         <v-window-item v-if="!isUEngineMode" value="MCP-Servers">
@@ -284,6 +305,7 @@ import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
 import SkillsTab from '@/components/pages/account-settings/SkillsTab.vue';
+import GlossaryManageTab from '@/components/pages/account-settings/GlossaryManageTab.vue';
 import TaskCatalogAdmin from '@/components/admin/TaskCatalogAdmin.vue';
 import TaskCatalogList from '@/components/admin/TaskCatalogList.vue';
 import OrgChartGroupTab from '@/components/pages/account-settings/OrgChartGroupTab.vue';
@@ -305,6 +327,7 @@ export default {
         MCPEnvSecretTab,
         ConnectionInfoTab,
         SkillsTab,
+        GlossaryManageTab,
         TaskCatalogAdmin,
         TaskCatalogList,
         OrgChartGroupTab
@@ -343,12 +366,25 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        glossaryFrontendUrl() {
+            const fromWindowEnv = window._env_?.VITE_GLOSSARY_FRONT_URL;
+            const fromBuildEnv = import.meta.env.VITE_GLOSSARY_FRONT_URL;
+            return (fromWindowEnv || fromBuildEnv || 'http://127.0.0.1:5173').toString();
+        }
+    },
+    watch: {
+        tab(newTab) {
+            if (newTab === 'GlossaryManage') {
+                this.openGlossaryManage();
+            }
+            this.ensureVisibleTab();
         }
     },
     methods: {
         ensureVisibleTab() {
-            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog']);
-            const hiddenInGs = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog', 'OrgChartGroup']);
+            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'GlossaryManage', 'TaskCatalog']);
+            const hiddenInGs = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'GlossaryManage', 'TaskCatalog', 'OrgChartGroup']);
             if (!this.tab) {
                 this.tab = 'Account';
                 return;
@@ -375,6 +411,9 @@ export default {
 
             // www로 이동하면서 로컬스토리지 클리어 파라미터 추가 (기존 changeTenant 로직)
             location.href = getMainDomainUrl('/tenant/manage?clear=true');
+        },
+        openGlossaryManage() {
+            window.open(this.glossaryFrontendUrl, '_blank', 'noopener,noreferrer');
         },
         changeLanguage(locale) {
             this.$try({

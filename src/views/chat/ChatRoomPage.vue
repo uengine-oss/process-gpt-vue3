@@ -192,6 +192,7 @@
                                 :showExamples="false"
                                 :disableChat="false"
                                 :showStopButton="hasAbortableStream"
+                                :deferFileUploadToParent="true"
                                 :userList="userList"
                                 :currentChatRoom="currentChatRoom"
                                 :desktopVoiceActive="isDesktopVoiceActive"
@@ -340,6 +341,7 @@
                             :showExamples="false"
                             :disableChat="false"
                             :showStopButton="hasAbortableStream"
+                            :deferFileUploadToParent="true"
                             :userList="userList"
                             :currentChatRoom="draftUserContextRoom"
                             :desktopVoiceActive="isDesktopVoiceActive"
@@ -469,6 +471,7 @@
                         :showExamples="false"
                         :disableChat="false"
                         :showStopButton="hasAbortableStream"
+                        :deferFileUploadToParent="true"
                         :userList="userList"
                         :currentChatRoom="draftContextRoom"
                         :desktopVoiceActive="isDesktopVoiceActive"
@@ -1622,6 +1625,64 @@ export default {
                 firstFileName: (primary?.name || primary?.fileName || '').toString()
             };
         },
+        getPayloadRawFiles(payload) {
+            const src = Array.isArray(payload?.rawFiles) ? payload.rawFiles : [];
+            return src.filter((f) => f && typeof f === 'object' && (f?.name || f?.fileName));
+        },
+        mapRawFilesToDisplayInfos(rawFiles) {
+            const list = Array.isArray(rawFiles) ? rawFiles : [];
+            return list.map((f) => ({
+                fileName: (f?.name || f?.fileName || '').toString(),
+                name: (f?.name || f?.fileName || '').toString(),
+                fileUrl: '',
+                publicUrl: '',
+                fullPath: '',
+                path: '',
+                fileType: (f?.type || '').toString(),
+                fileSize: Number.isFinite(f?.size) ? f.size : null
+            }));
+        },
+        async uploadRawFilesForRoom(roomId, rawFiles) {
+            const uploaded = [];
+            const list = Array.isArray(rawFiles) ? rawFiles : [];
+            for (const f of list) {
+                try {
+                    // eslint-disable-next-line no-await-in-loop
+                    const uploadResult = await backend.uploadFileToStorage(f, roomId ? { room_id: roomId } : {});
+                    const resolvedUrl =
+                        uploadResult?.public_url ||
+                        uploadResult?.publicUrl ||
+                        uploadResult?.fullPath ||
+                        uploadResult?.fileUrl ||
+                        uploadResult?.url ||
+                        uploadResult?.path ||
+                        '';
+                    uploaded.push({
+                        fileName: (f?.name || '').toString(),
+                        name: (f?.name || '').toString(),
+                        fileUrl: resolvedUrl,
+                        publicUrl: uploadResult?.publicUrl || resolvedUrl,
+                        fullPath: uploadResult?.fullPath || resolvedUrl,
+                        path: uploadResult?.path || '',
+                        fileType: (f?.type || '').toString(),
+                        fileSize: Number.isFinite(f?.size) ? f.size : null
+                    });
+                } catch (e) {
+                    uploaded.push({
+                        fileName: (f?.name || '').toString(),
+                        name: (f?.name || '').toString(),
+                        fileUrl: '',
+                        publicUrl: '',
+                        fullPath: '',
+                        path: '',
+                        fileType: (f?.type || '').toString(),
+                        fileSize: Number.isFinite(f?.size) ? f.size : null,
+                        uploadError: true
+                    });
+                }
+            }
+            return uploaded;
+        },
         normalizeChatAttachmentRow(file, roomId) {
             if (!file || typeof file !== 'object') return null;
             const fileName = (file.fileName || file.name || '').toString().trim();
@@ -2101,28 +2162,32 @@ export default {
                     });
                     this.$nextTick(() => this.scrollToBottomSafe());
 
+                    const uploadedKickoffFiles = [];
                     for (const f of pendingFiles.files) {
                         try {
                             // eslint-disable-next-line no-await-in-loop
                             const uploadResult = await backend.uploadFileToStorage(f, { room_id: roomId });
                             const resolvedUrl = uploadResult?.public_url || uploadResult?.publicUrl || '';
                             if (resolvedUrl) {
-                                const fileInfo = {
+                                uploadedKickoffFiles.push({
                                     fileName: f.name,
                                     fileUrl: resolvedUrl,
                                     publicUrl: resolvedUrl,
                                     fullPath: resolvedUrl,
                                     fileType: f.type,
                                     fileSize: f.size
-                                };
-                                // kickoff payload에 파일 정보 추가
-                                if (!payload.files) payload.files = [];
-                                payload.files.push(fileInfo);
-                                if (!payload.file) payload.file = fileInfo;
+                                });
                             }
                         } catch (e) {
                             console.error('[ChatRoomPage] memento 임베딩 실패:', e);
                         }
+                    }
+
+                    // definition-map kickoff에서는 placeholder 파일(다운로드 비활성)과
+                    // 업로드 완료 파일(다운로드 활성)이 중복되지 않도록 "교체"한다.
+                    if (uploadedKickoffFiles.length > 0) {
+                        payload.files = uploadedKickoffFiles;
+                        payload.file = uploadedKickoffFiles[0] || null;
                     }
 
                     // 임베딩 완료 → 상태 메시지 제거
@@ -2138,6 +2203,29 @@ export default {
                         await this.setRoomOrchestration(effectiveOrchestration);
                     }
                     payload.orchestration = effectiveOrchestration;
+                } catch (e) {}
+
+                // kickoff 업로드로 파일 정보가 생긴 경우: 기존 사용자 메시지 버블에도 즉시 반영
+                try {
+                    const kickoffFilesForUserMsg = this.normalizePayloadFiles(payload);
+                    if (kickoffFilesForUserMsg.length > 0 && payload?.msgUuid) {
+                        const idx = this.messages.findIndex((m) => m?.uuid === payload.msgUuid);
+                        if (idx !== -1) {
+                            const updated = {
+                                ...(this.messages[idx] || {}),
+                                pdfFile: kickoffFilesForUserMsg[0] || null,
+                                pdfFiles: kickoffFilesForUserMsg
+                            };
+                            this.messages[idx] = updated;
+                            if (this.shouldClientWriteChatDb(payload?.orchestration || this.getRoomOrchestration())) {
+                                await backend.putObject(`db://chats/${payload.msgUuid}`, {
+                                    uuid: payload.msgUuid,
+                                    id: roomId,
+                                    messages: updated
+                                });
+                            }
+                        }
+                    }
                 } catch (e) {}
 
                 // 서버 dedupe용: kickoff payload에 message_uuid가 없으면 msgUuid로 보강
@@ -3133,11 +3221,15 @@ export default {
 
         async handleSendMessage(payload) {
             const fileMeta = this.getPayloadFileSummary(payload);
-            if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !fileMeta.hasFile)) return;
+            const rawFiles = this.getPayloadRawFiles(payload);
+            const fallbackRawFileInfos = this.mapRawFilesToDisplayInfos(rawFiles);
+            const initialFiles = fileMeta.hasFile ? fileMeta.files : fallbackRawFileInfos;
+            const hasRawFiles = rawFiles.length > 0;
+            if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && initialFiles.length === 0 && !hasRawFiles)) return;
             if (!this.currentChatRoom?.id) return;
             const text = (payload.text || '').trim();
             const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
-            const hasFile = fileMeta.hasFile;
+            const hasFile = initialFiles.length > 0 || hasRawFiles;
             if (!text && !hasImages && !hasFile) return;
 
             try {
@@ -3152,7 +3244,7 @@ export default {
                 const keyObj = {
                     text: text || '',
                     imgCount: hasImages ? (payload.images || []).length : 0,
-                    fileNames: hasFile ? fileMeta.files.map((f) => f?.name || f?.fileName || '').filter(Boolean) : []
+                    fileNames: hasFile ? initialFiles.map((f) => f?.name || f?.fileName || '').filter(Boolean) : []
                 };
                 const key = JSON.stringify(keyObj);
                 const now = Date.now();
@@ -3165,6 +3257,8 @@ export default {
 
             this.isSending = true;
             try {
+                const roomId = this.currentChatRoom.id;
+                const canWrite = this.shouldClientWriteChatDb(payload?.orchestration || this.getRoomOrchestration());
                 const nowIso = new Date().toISOString();
                 const msgUuid = this.uuid();
                 const msg = {
@@ -3179,8 +3273,8 @@ export default {
                     name: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
                     userName: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
                     images: payload.images || [],
-                    pdfFile: fileMeta.primary || null,
-                    pdfFiles: fileMeta.files,
+                    pdfFile: initialFiles[0] || null,
+                    pdfFiles: initialFiles,
                     // mention 메타데이터 (UI 표시 + 라우팅에 사용)
                     mentionedUsers: Array.isArray(payload?.mentionedUsers) ? payload.mentionedUsers : [],
                     // reply 메타데이터 (UI에서 표시)
@@ -3190,30 +3284,71 @@ export default {
                 };
                 // 서버 dedupe용: 클라이언트에서 생성한 user 메시지 UUID를 스트리밍 요청에 전달
                 payload.message_uuid = msgUuid;
-                if (hasFile) {
-                    await this.saveChatAttachments(this.currentChatRoom.id, fileMeta.files);
-                }
-                const canWrite = this.shouldClientWriteChatDb(payload?.orchestration || this.getRoomOrchestration());
+
+                // 입력창은 즉시 초기화되므로, 사용자 메시지를 먼저 화면에 반영한다.
+                this.upsertMessageByKeys(msg);
+                this.$nextTick(() => this.scrollToBottomSafe());
+                this.focusComposerInput();
+                this.updateChatAccessPage(roomId);
+
                 if (canWrite) {
-                    await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: this.currentChatRoom.id, messages: msg });
+                    await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+                }
+
+                // raw File이 있으면 전송 이후 백그라운드 업로드를 수행하고,
+                // 업로드 완료 시 사용자 메시지/요청 payload를 URL 기반 정보로 교체한다.
+                if (hasRawFiles) {
+                    const embeddingMsgUuid = this.uuid();
+                    const fileNames = rawFiles.map((f) => (f?.name || '').toString()).filter(Boolean).join(', ');
+                    this.upsertMessageByKeys({
+                        uuid: embeddingMsgUuid,
+                        role: 'assistant',
+                        content: `📄 문서 임베딩 중... (${fileNames})`,
+                        timeStamp: new Date().toISOString(),
+                        isLoading: true
+                    });
+                    this.$nextTick(() => this.scrollToBottomSafe());
+                    try {
+                        const uploadedInfos = await this.uploadRawFilesForRoom(roomId, rawFiles);
+                        const uploadedUsable = uploadedInfos.filter(
+                            (f) => !!(f?.fileUrl || f?.url || f?.publicUrl || f?.fullPath || f?.path)
+                        );
+                        if (uploadedUsable.length > 0) {
+                            payload.file = uploadedUsable[0] || null;
+                            payload.files = uploadedUsable;
+                            msg.pdfFile = uploadedUsable[0] || null;
+                            msg.pdfFiles = uploadedUsable;
+                            this.upsertMessageByKeys(msg);
+                            if (canWrite) {
+                                await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+                            }
+                        }
+                    } finally {
+                        this.messages = this.messages.filter((m) => m?.uuid !== embeddingMsgUuid);
+                    }
+                }
+
+                const requestFiles = this.normalizePayloadFiles(payload);
+                const requestUsableFiles = requestFiles.filter((f) => !!(f?.fileUrl || f?.url || f?.publicUrl || f?.fullPath || f?.path));
+                payload.file = requestUsableFiles[0] || null;
+                payload.files = requestUsableFiles;
+                if (requestUsableFiles.length > 0) {
+                    await this.saveChatAttachments(roomId, requestUsableFiles);
                 }
 
                 // last message update
-                const fileName = (fileMeta.firstFileName || '').toString();
+                const firstFile = (requestUsableFiles[0] || requestFiles[0] || initialFiles[0] || null);
+                const fileName = (firstFile?.name || firstFile?.fileName || '').toString();
+                const fileCount = requestFiles.length > 0 ? requestFiles.length : initialFiles.length;
                 const preview =
                     (text || '').substring(0, 50) ||
-                    (hasFile ? (fileMeta.fileCount > 1 ? `${fileName} 외 ${fileMeta.fileCount - 1}개` : fileName).substring(0, 50) : '') ||
+                    (hasFile ? (fileCount > 1 ? `${fileName} 외 ${fileCount - 1}개` : fileName).substring(0, 50) : '') ||
                     (hasImages ? `이미지 ${(payload?.images || []).length || 0}장` : '');
                 this.currentChatRoom.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 if (canWrite) {
                     await backend.putObject('db://chat_rooms', this.currentChatRoom);
                 }
-
-                this.upsertMessageByKeys(msg);
                 this.EventBus.emit('chat-rooms-updated');
-                this.$nextTick(() => this.scrollToBottomSafe());
-                this.focusComposerInput();
-                this.updateChatAccessPage(this.currentChatRoom?.id);
 
                 const pageEdit = this.parseHwpxPageInstruction(msg.content || '');
                 if (pageEdit) {
