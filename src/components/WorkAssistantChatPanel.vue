@@ -102,6 +102,8 @@
                 :disableChat="isLoading"
                 :isMobile="false"
                 :showStopButton="isLoading"
+                :chatRoomId="currentRoomId"
+                :currentChatRoom="currentRoom"
                 @stopMessage="stopAgent(currentRoomId)"
                 @sendMessage="handleChatInputMessage"
             />
@@ -705,12 +707,35 @@ export default {
             this.messages.push(userMsgObj);
             await this.saveMessage(userMsgObj);
 
+            // 현재 방(room)에 지금까지 업로드된 파일들을 누적 수집
+            // — 에이전트가 이전 턴에 올라온 파일까지 deterministic하게 볼 수 있도록 session_files에 담아 매 턴 전달
+            const sessionFilesMap = {};
+            const pushSessionFile = (f) => {
+                if (!f) return;
+                const name = f.fileName || f.name;
+                const url = f.fileUrl || f.url;
+                if (!name || !url) return;
+                if (sessionFilesMap[url]) return;
+                sessionFilesMap[url] = {
+                    fileName: name,
+                    fileUrl: url,
+                    fileType: f.fileType || f.type || '',
+                    fileSize: f.fileSize || f.size || 0,
+                };
+            };
+            for (const m of this.messages || []) {
+                if (m && m.role === 'user' && m.pdfFile) pushSessionFile(m.pdfFile);
+            }
+            if (currentPdfFile) pushSessionFile(currentPdfFile);
+            const sessionFiles = Object.values(sessionFilesMap);
+
             // 기존 방식 유지: 첨부 정보는 [InputData]로 텍스트에 포함시켜 에이전트에게 전달
             let messageForAgent = userMessage;
-            if ((currentImages && currentImages.length > 0) || currentPdfFile) {
+            if ((currentImages && currentImages.length > 0) || currentPdfFile || sessionFiles.length > 0) {
                 const inputData = {};
                 if (currentImages && currentImages.length > 0) inputData.images = currentImages;
                 if (currentPdfFile) inputData.file = currentPdfFile;
+                if (sessionFiles.length > 0) inputData.session_files = sessionFiles;
                 messageForAgent += `\n\n[InputData]\n${JSON.stringify(inputData)}`;
                 console.log('[WorkAssistantChatPanel] [InputData] 추가됨:', inputData);
             }
