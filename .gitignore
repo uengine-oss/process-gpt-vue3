@@ -81,3 +81,4 @@ playwright/.cache/
 docker-compose-gs/
 
 helm/kind-test/
+supabase/snippets/
