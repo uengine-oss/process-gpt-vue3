@@ -388,8 +388,8 @@
                                                 <span class="file-name">{{ file.file_name || file.name || `file-${idx + 1}` }}</span>
                                                 <div class="file-actions">
                                                     <v-btn
-                                                        v-if="file.file_path"
-                                                        @click="openFileLink(file.file_path)"
+                                                        v-if="getFileUrl(file)"
+                                                        @click="openFileLink(getFileUrl(file))"
                                                         size="small"
                                                         variant="elevated"
                                                         color="primary"
@@ -750,7 +750,10 @@ export default {
         },
         isFileLikeItem(item) {
             if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
-            return Boolean(item.file_path || item.file_name || item.name || item.url);
+            return Boolean(item.file_path || item.file_url || item.url || item.file_name || item.name);
+        },
+        getFileUrl(file) {
+            return file?.file_path || file?.file_url || file?.url || '';
         },
         getFileList(content) {
             if (!content) return [];
@@ -765,9 +768,21 @@ export default {
 
             if (Array.isArray(parsed)) return parsed.filter((f) => this.isFileLikeItem(f));
             if (parsed && typeof parsed === 'object') {
-                if (Array.isArray(parsed.files)) return parsed.files.filter((f) => this.isFileLikeItem(f));
-                if (Array.isArray(parsed.results)) return parsed.results.filter((f) => this.isFileLikeItem(f));
-                if (Array.isArray(parsed.data)) return parsed.data.filter((f) => this.isFileLikeItem(f));
+                // 명시적으로 파일 리스트를 담는 키를 우선 처리
+                const fileKeys = ['files', 'results', 'data', 'docx_files', 'hwpx_files', 'pdf_files', 'slide_files'];
+                for (const key of fileKeys) {
+                    if (Array.isArray(parsed[key])) {
+                        return parsed[key].filter((f) => this.isFileLikeItem(f));
+                    }
+                }
+                // fallback: 값 중 파일 리스트 형태인 배열을 모두 합친다 (docx + hwpx 동시 반환 케이스)
+                const merged = [];
+                for (const value of Object.values(parsed)) {
+                    if (Array.isArray(value) && value.every((f) => this.isFileLikeItem(f))) {
+                        merged.push(...value);
+                    }
+                }
+                if (merged.length) return merged;
             }
 
             return [];

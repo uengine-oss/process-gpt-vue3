@@ -35,7 +35,7 @@ class DeepAgentRouterService {
     }
 
     async sendMessageStream(agentId, params, callbacks = {}, options = {}) {
-        const { onToken, onToolStart, onToolEnd, onPlanTools, onPlanSkills, onPlanTodos, onDone, onError, onMetadata, onAbort } = callbacks;
+        const { onToken, onToolStart, onToolEnd, onPlanTools, onPlanSkills, onPlanTodos, onDone, onError, onMetadata, onAbort, onOpenUi } = callbacks;
 
         try {
             const response = await fetch(`${this.baseUrl}/${agentId}/chat/stream`, {
@@ -113,6 +113,9 @@ class DeepAgentRouterService {
                                 }
                                 case 'tool_end':
                                     if (onToolEnd) onToolEnd(parsed.output, parsed);
+                                    break;
+                                case 'openui':
+                                    if (onOpenUi) onOpenUi(parsed);
                                     break;
                                 case 'done':
                                     if (onDone) onDone(parsed.content);

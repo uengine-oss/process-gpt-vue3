@@ -651,6 +651,14 @@
                                                                                 v-html="linkify(message.content)"
                                                                             ></pre>
 
+                                                                            <!-- OpenUI: DeepAgents openui 이벤트로 전달된 openui_lang을 UI로 렌더링 -->
+                                                                            <div v-if="message.openuiLang" class="mt-2">
+                                                                                <OpenUiRenderer
+                                                                                    :response="message.openuiLang"
+                                                                                    :isStreaming="Boolean(message.openuiIsStreaming)"
+                                                                                />
+                                                                            </div>
+
                                                                             <pre
                                                                                 v-if="message.jsonContent && message.contentType != 'html'"
                                                                                 class="text-body-1"
@@ -1117,6 +1125,14 @@
                                                             "
                                                         >
                                                             <div v-html="renderedMarkdown(message.content)" class="markdown-content"></div>
+
+                                                            <!-- OpenUI: 메시지 텍스트(마크다운)와 무관하게 항상 렌더링 -->
+                                                            <div v-if="message.openuiLang" class="mt-2">
+                                                                <OpenUiRenderer
+                                                                    :response="message.openuiLang"
+                                                                    :isStreaming="Boolean(message.openuiIsStreaming)"
+                                                                />
+                                                            </div>
 
                                                             <div
                                                                 v-if="shouldDisplayMessageTimestamp(message, index)"
@@ -2975,6 +2991,7 @@ import ProcessWorkResult from './ProcessWorkResult.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import AgentMessagePanel from '@/components/ui/AgentMessagePanel.vue';
 import { marked } from 'marked';
+import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -2990,7 +3007,8 @@ export default {
         SummaryButton,
         ProcessWorkResult,
         DetailComponent,
-        AgentMessagePanel
+        AgentMessagePanel,
+        OpenUiRenderer
     },
     mixins: [ProgressAnimated, ScrollBottomHandle],
     props: {
