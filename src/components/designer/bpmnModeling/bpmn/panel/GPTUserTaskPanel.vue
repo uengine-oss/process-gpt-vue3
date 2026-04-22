@@ -498,8 +498,8 @@ export default {
             // 패널 로드시 tool 기준을 processDefinition.activities 값으로 재정렬
             const activityFromDefinition =
                 me.processDefinition && Array.isArray(me.processDefinition.activities)
-                ? me.processDefinition.activities.find((activity) => activity.id === me.element.id)
-                : null;
+                    ? me.processDefinition.activities.find((activity) => activity.id === me.element.id)
+                    : null;
             if (activityFromDefinition) {
                 me.activity = { ...me.activity, ...activityFromDefinition };
             }
