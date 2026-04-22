@@ -231,7 +231,7 @@ export default {
 
         // processDefinition에서 기본값 설정 (편집 내용이 사라진 경우 폴백 처리)
         if (this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
-            const activity = this.processDefinition.activities.find((activity) => this.element.id.includes(activity.id));
+            const activity = this.processDefinition.activities.find((activity) => activity.id === this.element.id);
             if (activity) {
                 this.activity = { ...this.activity, ...activity };
             }
@@ -498,7 +498,7 @@ export default {
             // 패널 로드시 tool 기준을 processDefinition.activities 값으로 재정렬
             const activityFromDefinition =
                 me.processDefinition && Array.isArray(me.processDefinition.activities)
-                    ? me.processDefinition.activities.find((activity) => me.element.id.includes(activity.id))
+                    ? me.processDefinition.activities.find((activity) => activity.id === me.element.id)
                     : null;
             if (activityFromDefinition) {
                 me.activity = { ...me.activity, ...activityFromDefinition };
