@@ -3189,10 +3189,6 @@ export default {
             isPdfUploading: false,
             // orchestration: which chat server/runtime to use
             orchestration: 'langchain-react',
-            orchestrationOptions: [
-                { label: 'LangChain React', value: 'langchain-react' },
-                { label: 'DeepAgents', value: 'deepagents' }
-            ],
             isDragOverTextarea: false,
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
@@ -3325,6 +3321,12 @@ export default {
         }
     },
     computed: {
+        orchestrationOptions() {
+            return [
+                { label: this.$t('chats.basicAgent'), value: 'langchain-react' },
+                { label: this.$t('chats.deepAgent'), value: 'deepagents' }
+            ];
+        },
         isSystemMentioned() {
             return (
                 this.mentionedUsers.some((user) => user.id === 'system_id') ||

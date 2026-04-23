@@ -34,6 +34,7 @@
 
         <div v-if="useAgentSelect" class="mt-4">
             <user-select-field
+                ref="agentUserSelectField"
                 v-model="selectedAgent"
                 :name="$t('organizationChartDefinition.agent')"
                 :hide-details="true"
@@ -101,9 +102,10 @@
         </div>
 
         <div v-if="isExecute" class="d-flex justify-end mt-2" style="gap: 8px">
-            <v-btn v-if="showQuickCreate" @click="selectBasicLlmAgent" color="gray" variant="flat" density="compact" class="rounded-pill">
+            <!-- 기존 빠른 초안 생성 버튼 -->
+            <!-- <v-btn v-if="showQuickCreate" @click="selectBasicLlmAgent" color="gray" variant="flat" density="compact" class="rounded-pill">
                 {{ $t('WorkItem.quickCreate') }}
-            </v-btn>
+            </v-btn> -->
             <v-btn @click="selectAgent" color="primary" variant="flat" density="compact" class="rounded-pill">
                 {{ $t('WorkItem.select') }}
             </v-btn>
@@ -410,6 +412,12 @@ export default {
         },
         selectAgent() {
             this.$emit('update:modelValue', this.activity);
+        },
+        expandAgentUserSelectField() {
+            const userSelectFieldRef = this.$refs.agentUserSelectField;
+            if (userSelectFieldRef && typeof userSelectFieldRef.openAgentSelectMenu === 'function') {
+                userSelectFieldRef.openAgentSelectMenu();
+            }
         }
     }
 };

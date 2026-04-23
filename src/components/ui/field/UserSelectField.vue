@@ -1,7 +1,9 @@
 <template>
     <div class="form-user-select-field">
         <v-autocomplete
+            ref="agentSelectAutocomplete"
             v-model="localModelValue"
+            v-model:menu="isAgentSelectMenuOpen"
             :items="usersToSelect"
             :label="localAlias && localAlias.length > 0 ? localAlias : localName"
             :disabled="localDisabled"
@@ -126,7 +128,9 @@ export default {
             usersToSelect: [],
             userList: [],
 
-            backend: null
+            backend: null,
+
+            isAgentSelectMenuOpen: false
         };
     },
 
@@ -299,6 +303,10 @@ export default {
             }
 
             this.localModelValue = result;
+        },
+
+        openAgentSelectMenu() {
+            this.isAgentSelectMenuOpen = true;
         },
 
         getAgentType(agentType) {

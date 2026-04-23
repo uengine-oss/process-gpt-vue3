@@ -361,6 +361,7 @@
                                         v-model="researchMethodMenu"
                                         :close-on-content-click="false"
                                         location="bottom"
+                                        eager
                                     >
                                         <template v-slot:activator="{ props }">
                                             <v-btn
@@ -369,22 +370,25 @@
                                                 rounded
                                                 color="gray"
                                                 variant="flat"
-                                                v-bind="props"
                                                 :loading="isGeneratingExample"
                                                 :disabled="isGeneratingExample"
+                                                @click="triggerBasicLlmAgentFromResearchMethod"
                                             >
                                                 <Icons :icon="'sparkles'" :size="20" />
                                                 <span class="ms-2">{{ $t('WorkItem.researchMethod') }}</span>
                                                 <v-icon
+                                                    v-bind="props"
                                                     :icon="researchMethodMenu ? 'mdi-chevron-up' : 'mdi-chevron-down'"
                                                     size="16"
                                                     class="ms-1"
+                                                    @click.stop
                                                 />
                                             </v-btn>
                                         </template>
 
                                         <v-card min-width="400" class="px-4 pt-1 pb-4">
                                             <AgentSelectField
+                                                ref="researchMethodAgentSelectField"
                                                 :model-value="selectedAgent"
                                                 :backend="backend"
                                                 :is-execute="true"
@@ -1017,6 +1021,16 @@ export default {
                 this.isMobile = true;
             } else {
                 this.isMobile = false;
+            }
+        },
+        researchMethodMenu(isOpen) {
+            if (isOpen) {
+                this.$nextTick(() => {
+                    const agentSelectFieldRef = this.$refs.researchMethodAgentSelectField;
+                    if (agentSelectFieldRef && typeof agentSelectFieldRef.expandAgentUserSelectField === 'function') {
+                        agentSelectFieldRef.expandAgentUserSelectField();
+                    }
+                });
             }
         },
         $route: {
@@ -2317,6 +2331,13 @@ export default {
                 //     this.beforeGenerateExample();
                 // });
                 console.log('[WorkItem] 브라우저 유즈 완료 - 자동 초안 생성 스킵');
+            }
+        },
+
+        triggerBasicLlmAgentFromResearchMethod() {
+            const agentSelectFieldRef = this.$refs.researchMethodAgentSelectField;
+            if (agentSelectFieldRef && typeof agentSelectFieldRef.selectBasicLlmAgent === 'function') {
+                agentSelectFieldRef.selectBasicLlmAgent();
             }
         },
 
