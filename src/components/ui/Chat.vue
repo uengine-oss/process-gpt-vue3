@@ -2576,7 +2576,7 @@
     <!-- 프로세스 정의 체계도 상단 chat UI -->
     <div v-else>
         <v-card
-            :elevation="inputOnly ? 0 : 10"
+            flat
             :class="['chat-input-card', inputOnly ? 'pa-0 chat-input-card--inline' : 'pa-4']"
             :style="inputOnly ? 'background: transparent; border-radius: 0; box-shadow: none;' : ''"
         >
