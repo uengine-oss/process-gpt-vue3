@@ -64,12 +64,115 @@ export default {
                 }
             }
             const processDefinition = await this.convertXMLToJSON(xmlString);
+            if (processDefinition?.activities && this.processDefinition) {
+                processDefinition.activities = this.mergeActivitiesPreservingMetadata(
+                    processDefinition.activities,
+                    this.processDefinition
+                );
+            }
             if (callback && typeof callback === 'function') {
                 callback(processDefinition);
             }
         });
     },
     methods: {
+        cloneJsonSafe(obj) {
+            if (obj === null || obj === undefined) return obj;
+            try {
+                return JSON.parse(JSON.stringify(obj));
+            } catch (e) {
+                return obj;
+            }
+        },
+        isPlainObject(value) {
+            return value !== null && typeof value === 'object' && !Array.isArray(value);
+        },
+        isPlaceholderString(value) {
+            if (typeof value !== 'string') return false;
+            const normalized = value.trim();
+            return normalized === 'formHandler:defaultform' || normalized === 'Process_1';
+        },
+        shouldFallbackToPrevious(previousValue, newValue) {
+            if (previousValue === undefined) return false;
+            if (newValue === undefined || newValue === null) return true;
+
+            if (typeof newValue === 'string') {
+                const normalizedNew = newValue.trim();
+                const normalizedPrev = typeof previousValue === 'string' ? previousValue.trim() : previousValue;
+                if (normalizedNew === '' && normalizedPrev !== '') return true;
+                if (this.isPlaceholderString(normalizedNew) && normalizedPrev && normalizedPrev !== normalizedNew) {
+                    return true;
+                }
+            }
+
+            if (Array.isArray(newValue)) {
+                return newValue.length === 0 && Array.isArray(previousValue) && previousValue.length > 0;
+            }
+
+            return false;
+        },
+        mergeValueWithFallback(previousValue, newValue) {
+            if (this.isPlainObject(previousValue) && this.isPlainObject(newValue)) {
+                const merged = {};
+                const keys = new Set([...Object.keys(previousValue), ...Object.keys(newValue)]);
+                keys.forEach((key) => {
+                    merged[key] = this.mergeValueWithFallback(previousValue[key], newValue[key]);
+                });
+                return merged;
+            }
+
+            if (Array.isArray(previousValue) && Array.isArray(newValue)) {
+                if (this.shouldFallbackToPrevious(previousValue, newValue)) {
+                    return this.cloneJsonSafe(previousValue);
+                }
+                return this.cloneJsonSafe(newValue);
+            }
+
+            if (this.shouldFallbackToPrevious(previousValue, newValue)) {
+                return this.cloneJsonSafe(previousValue);
+            }
+
+            return this.cloneJsonSafe(newValue);
+        },
+        collectActivitiesForMerge(definition, bucket = []) {
+            if (!definition || typeof definition !== 'object') return bucket;
+
+            if (Array.isArray(definition.activities)) {
+                bucket.push(...definition.activities.filter((item) => item && item.id));
+            }
+            if (Array.isArray(definition.elements)) {
+                bucket.push(...definition.elements.filter((item) => item && item.id && item.elementType === 'Activity'));
+            }
+            if (Array.isArray(definition.subProcesses)) {
+                definition.subProcesses.forEach((subProcess) => {
+                    if (subProcess?.children) {
+                        this.collectActivitiesForMerge(subProcess.children, bucket);
+                    }
+                });
+            }
+            return bucket;
+        },
+        mergeActivitiesPreservingMetadata(newActivities, previousDefinition) {
+            if (!Array.isArray(newActivities) || !previousDefinition) return newActivities;
+
+            const previousActivities = this.collectActivitiesForMerge(previousDefinition, []);
+            const previousActivityMap = new Map();
+            previousActivities.forEach((activity) => {
+                if (activity?.id && !previousActivityMap.has(activity.id)) {
+                    previousActivityMap.set(activity.id, activity);
+                }
+            });
+
+            return newActivities.map((newActivity) => {
+                const previousActivity = previousActivityMap.get(newActivity?.id);
+                if (!previousActivity) return newActivity;
+
+                // 기본값/빈값으로 떨어진 필드만 이전값으로 보완하고, 실제 변경값은 신규값을 우선한다.
+                const merged = this.mergeValueWithFallback(previousActivity, newActivity);
+                if (newActivity?.id) merged.id = newActivity.id;
+                return merged;
+            });
+        },
         async checkedFormData() {
             console.log('[FORM_DEBUG] checkedFormData called', {
                 hasElements: !!this.processDefinition?.elements,
@@ -650,24 +753,11 @@ export default {
                             //     });
                             // }
 
-                            // activities의 tool 정보 복원
                             if (newProcessDefinition.activities) {
-                                // 기존 processDefinition에서 activities 찾기 (activities 또는 elements에서)
-                                let oldActivities = [];
-                                if (me.processDefinition.elements) {
-                                    oldActivities = me.processDefinition.elements.filter((el) => el.elementType === 'Activity');
-                                }
-
-                                // tool 정보 복원
-                                if (oldActivities.length > 0) {
-                                    newProcessDefinition.activities = newProcessDefinition.activities.map((newActivity) => {
-                                        const oldActivity = oldActivities.find((oldActivity) => oldActivity.id === newActivity.id);
-                                        if (oldActivity && oldActivity.tool) {
-                                            newActivity.tool = oldActivity.tool;
-                                        }
-                                        return newActivity;
-                                    });
-                                }
+                                newProcessDefinition.activities = this.mergeActivitiesPreservingMetadata(
+                                    newProcessDefinition.activities,
+                                    me.processDefinition
+                                );
                             }
 
                             me.processDefinition = newProcessDefinition;
@@ -757,15 +847,11 @@ export default {
                         const updatedProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
                         updatedProcessDefinition.data = me.processVariables;
 
-                        // tool 정보 복원
                         if (updatedProcessDefinition.activities && me.processDefinition.activities) {
-                            updatedProcessDefinition.activities = updatedProcessDefinition.activities.map((newActivity) => {
-                                const oldActivity = me.processDefinition.activities.find((old) => old.id === newActivity.id);
-                                if (oldActivity && oldActivity.tool) {
-                                    newActivity.tool = oldActivity.tool;
-                                }
-                                return newActivity;
-                            });
+                            updatedProcessDefinition.activities = this.mergeActivitiesPreservingMetadata(
+                                updatedProcessDefinition.activities,
+                                me.processDefinition
+                            );
                         }
 
                         if (info.name && info.name != '') {
@@ -2114,8 +2200,15 @@ export default {
         },
 
         async optimizeDefinition(processDefinition) {
+            const previousDefinitionSnapshot = this.cloneJsonSafe(this.processDefinition);
             if (!processDefinition || !processDefinition.activities) {
                 processDefinition = await this.convertXMLToJSON(this.bpmn);
+                if (processDefinition?.activities && previousDefinitionSnapshot) {
+                    processDefinition.activities = this.mergeActivitiesPreservingMetadata(
+                        processDefinition.activities,
+                        previousDefinitionSnapshot
+                    );
+                }
             }
 
             return new Promise((resolve, reject) => {

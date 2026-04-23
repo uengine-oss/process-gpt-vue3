@@ -33,6 +33,12 @@ spring:
                       - Path=/memento/**
                   filters:
                       - RewritePath=/memento/?(?<segment>.*), /$\{segment}
+                - id: glossary-backend
+                  uri: http://localhost:5504
+                  predicates:
+                      - Path=/robo,/robo/**
+                  filters:
+                      - RewritePath=/robo/?(?<segment>.*), /robo/$\{segment}
                 - id: agent-feedback
                   uri: http://localhost:6789
                   predicates:
@@ -169,6 +175,15 @@ spring:
                   filters:
                       - RewritePath=/memento/?(?<segment>.*), /$\{segment}
                   order: 30
+
+                # Glossary 백엔드 서비스
+                - id: glossary-backend
+                  uri: http://robo-data-glossary-backend:5504
+                  predicates:
+                      - Path=/robo,/robo/**
+                  filters:
+                      - RewritePath=/robo/?(?<segment>.*), /robo/$\{segment}
+                  order: 31
 
                 # voice 서비스
                 - id: voice

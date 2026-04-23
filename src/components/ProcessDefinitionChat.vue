@@ -1032,7 +1032,7 @@ export default {
                 info.skipSaveProcMap = true;
             }
             if (this.useOptimize) {
-                this.optimizeDefinition(info.definition);
+                await this.optimizeDefinition(info.definition);
             }
             if (window.$pal) {
                 await this.beforeSavePALUserTasks(info);

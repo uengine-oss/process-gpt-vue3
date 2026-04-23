@@ -239,7 +239,7 @@
                         <!-- GlossaryManage: 용어집 관리 탭 (accountTab.glossaryManage) -->
                         <v-window-item v-if="!isUEngineMode" value="GlossaryManage">
                             <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
-                                <GlossaryManageTab :glossary-url="glossaryFrontendUrl" />
+                                <GlossaryManageTab />
                             </div>
                         </v-window-item>
 
@@ -366,18 +366,10 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
-        },
-        glossaryFrontendUrl() {
-            const fromWindowEnv = window._env_?.VITE_GLOSSARY_FRONT_URL;
-            const fromBuildEnv = import.meta.env.VITE_GLOSSARY_FRONT_URL;
-            return (fromWindowEnv || fromBuildEnv || 'http://127.0.0.1:5173').toString();
         }
     },
     watch: {
         tab(newTab) {
-            if (newTab === 'GlossaryManage') {
-                this.openGlossaryManage();
-            }
             this.ensureVisibleTab();
         }
     },
@@ -411,9 +403,6 @@ export default {
 
             // www로 이동하면서 로컬스토리지 클리어 파라미터 추가 (기존 changeTenant 로직)
             location.href = getMainDomainUrl('/tenant/manage?clear=true');
-        },
-        openGlossaryManage() {
-            window.open(this.glossaryFrontendUrl, '_blank', 'noopener,noreferrer');
         },
         changeLanguage(locale) {
             this.$try({

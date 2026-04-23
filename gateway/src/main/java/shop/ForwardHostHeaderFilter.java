@@ -55,7 +55,8 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
                 "/completion/(?!set-tenant|complete|vision-complete|invite-user|create-user|update-user|set-initial-info).*",
                 "/memento/.*",
                 "/agent/.*",
-                "/mcp/.*");
+                "/mcp/.*",
+                "/robo/.*");
 
         boolean requiresAuth = false;
 
@@ -67,12 +68,22 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
         }
 
         if (requiresAuth) {
+            String token = null;
             List<HttpCookie> cookies = request.getCookies().getOrDefault("access_token", Collections.emptyList());
-            if (cookies.isEmpty()) {
+            if (!cookies.isEmpty()) {
+                token = cookies.get(0).getValue();
+            }
+            if (token == null || token.isBlank()) {
+                String authorization = request.getHeaders().getFirst("Authorization");
+                if (authorization != null && authorization.toLowerCase(Locale.ROOT).startsWith("bearer ")) {
+                    token = authorization.substring(7).trim();
+                }
+            }
+            if (token == null || token.isBlank()) {
                 return buildErrorResponse(exchange, "TOKEN_MISSING", "Access token is missing");
             }
-            
-            TokenValidationResult validationResult = validateToken(cookies.get(0).getValue(), subdomain, requestPath);
+
+            TokenValidationResult validationResult = validateToken(token, subdomain, requestPath);
             if (!validationResult.isValid()) {
                 return buildErrorResponse(exchange, validationResult.getErrorCode(), validationResult.getErrorMessage());
             }
@@ -81,6 +92,7 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
         // 안전한 헤더 수정 방식 사용
         ServerHttpRequest updatedRequest = request.mutate()
                 .header("X-Forwarded-Host", originalHost)
+                .header("X-Tenant-Id", subdomain)
                 .build();
 
         return chain.filter(exchange.mutate().request(updatedRequest).build());
@@ -88,7 +100,7 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
 
     private TokenValidationResult validateToken(String token, String expectedSubdomain, String requestPath) {
         final boolean allowPayloadFallback = requestPath != null
-                && (requestPath.startsWith("/agent/") || requestPath.startsWith("/memento/"));
+                && (requestPath.startsWith("/agent/") || requestPath.startsWith("/memento/") || requestPath.startsWith("/robo/"));
         final boolean skipTenantCheck = isLocalHost(expectedSubdomain);
         try {
             Claims claims = Jwts.parser()
