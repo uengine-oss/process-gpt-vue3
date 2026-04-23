@@ -12,6 +12,7 @@
                         class="process-definition-resize"
                         :bpmn="bpmn"
                         :isViewMode="true"
+                        :allowDefaultBpmnOnEmpty="shouldShowDefaultBpmn"
                         :key="processDefinitionRenderKey"
                         :isXmlMode="isXmlMode"
                         :definitionPath="fullPath"
@@ -54,6 +55,7 @@
                     :bpmn="bpmn"
                     :isAIGenerated="isAIGenerated"
                     :processDefinition="processDefinition"
+                    :allowDefaultBpmnOnEmpty="shouldShowDefaultBpmn"
                     :key="processDefinitionRenderKey"
                     :isViewMode="isViewMode"
                     :isXmlMode="isXmlMode"
@@ -561,7 +563,8 @@ export default {
         resetWarningResolver: null,
         // Phase 4-5: AI Copilot URL input
         showUrlInput: false,
-        aiCopilotUrl: ''
+        aiCopilotUrl: '',
+        loadDataRequestId: 0
     }),
     async created() {
         $try(async () => {
@@ -739,6 +742,12 @@ export default {
         },
         hasValidationErrors() {
             return this.validationResults.some((item) => item.level === 'error');
+        },
+        shouldShowDefaultBpmn() {
+            const pathMatch = this.$route?.params?.pathMatch;
+            const lastPath = Array.isArray(pathMatch) && pathMatch.length > 0 ? pathMatch[pathMatch.length - 1] : null;
+            // 신규 생성(/definitions/chat)인 경우에만 기본 BPMN을 허용
+            return lastPath === 'chat';
         }
     },
     async beforeRouteUpdate(to, from, next) {
@@ -1616,11 +1625,61 @@ export default {
             // this.bpmn = this.createBpmnXml(val)
             this.isChanged = true;
         },
+        createFallbackStartTaskEndBpmn(processId = 'Process_1') {
+            const normalizedProcessId = (processId || 'Process_1').replace(/[^a-zA-Z0-9_:-]/g, '_');
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_${normalizedProcessId}"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="${normalizedProcessId}" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_1" name="Task">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_1" name="End">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_1" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_1" targetRef="EndEvent_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${normalizedProcessId}">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_1_di" bpmnElement="Task_1">
+        <dc:Bounds x="250" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="422" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="250" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="350" y="120" />
+        <di:waypoint x="422" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
+        },
         async loadData(path) {
             const me = this;
+            const requestId = ++this.loadDataRequestId;
+            const isStale = () => requestId !== this.loadDataRequestId;
 
             try {
                 const externalSystems = await backend.getSystemList();
+                if (isStale()) return;
                 if (externalSystems) {
                     externalSystems.forEach(async (externalSystem) => {
                         const system = await backend.getSystem(externalSystem.name.replace('.json', ''));
@@ -1632,10 +1691,12 @@ export default {
                 let lastPath = me.$route.params.pathMatch ? me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1] : null;
                 if (fullPath && fullPath != 'definitions-tree' && lastPath != 'chat') {
                     let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
+                    if (isStale()) return;
                     let rawDefinition = null;
                     // raw BPMN이 없는 경우 저장된 processDefinition(JSON)으로 XML 재생성
                     if (!bpmn) {
                         rawDefinition = await backend.getRawDefinition(fullPath);
+                        if (isStale()) return;
                         if (rawDefinition && rawDefinition.definition) {
                             try {
                                 // 저장된 definition 원본은 절대 직접 mutate하지 않는다.
@@ -1671,16 +1732,21 @@ export default {
                                 console.warn('[loadData] raw BPMN not found. Rebuilt from processDefinition:', fullPath);
                             } catch (rebuildError) {
                                 console.error('[loadData] failed to rebuild BPMN from processDefinition:', rebuildError);
+                                bpmn = me.createFallbackStartTaskEndBpmn(fullPath || 'Process_1');
+                                console.warn('[loadData] rebuild failed. Fallback BPMN is applied:', fullPath);
                             }
                         }
                     }
-                    me.bpmn = bpmn;
+                    if (isStale()) return;
+                    me.bpmn = typeof bpmn === 'string' && bpmn.trim().length > 0 ? bpmn : null;
                     me.definitionChangeCount++;
                     let isDeleted = await backend.getRawDefinition(fullPath, { type: 'deleted' });
+                    if (isStale()) return;
                     me.isDefinitionDeleted = isDeleted;
                     if (me.useLock) {
                         // ProcessGPT 모드
                         const value = rawDefinition || (await backend.getRawDefinition(fullPath));
+                        if (isStale()) return;
                         if (value) {
                             me.processDefinition = value.definition;
                             me.processDefinition.processDefinitionId = value.id;
@@ -1694,6 +1760,7 @@ export default {
                         const role = localStorage.getItem('role');
                         if (role !== 'superAdmin' && !me.isAdmin) {
                             const permission = await backend.checkProcessPermission(lastPath);
+                            if (isStale()) return;
                             me.hasWritePermission = permission.writable || permission.isPublic;
                             if (permission.writable || permission.isPublic) {
                                 me.isEditable = true;
@@ -1761,6 +1828,7 @@ export default {
                     me.disableChat = true;
                 }
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
+                if (isStale()) return;
             } catch (e) {
                 console.log(e);
                 alert(e);

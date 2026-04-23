@@ -29,6 +29,7 @@
                     <template v-else>
                         <div v-show="!isBpmnLoading" style="height: 100%">
                             <BpmnuEngine
+                                v-if="shouldMountBpmnEngine"
                                 ref="bpmnVue"
                                 :key="bpmnKey"
                                 :bpmn="bpmn"
@@ -97,6 +98,7 @@
                                     </v-tooltip>
                                 </template>
                             </BpmnuEngine>
+                            <div v-else class="bpmn-empty-canvas"></div>
                         </div>
                         <!-- Task Catalog Section for drag & drop -->
                         <TaskCatalogSection
@@ -416,6 +418,10 @@ export default {
         generateFormTask: Object,
         isPreviewPDFDialog: Boolean,
         isAIGenerated: Boolean,
+        allowDefaultBpmnOnEmpty: {
+            type: Boolean,
+            default: false
+        },
         showValidationConsole: Boolean,
         consoleValidationItems: {
             type: Array,
@@ -528,6 +534,13 @@ export default {
             } else {
                 return Object.values(this.commentCounts).reduce((sum, item) => sum + (item.unresolved || 0), 0);
             }
+        },
+        hasRenderableBpmn() {
+            return typeof this.bpmn === 'string' && this.bpmn.trim().length > 0;
+        },
+        shouldMountBpmnEngine() {
+            // 신규 생성 화면에서는 비어있는 bpmn이어도 기본 다이어그램을 허용한다.
+            return this.hasRenderableBpmn || this.allowDefaultBpmnOnEmpty;
         }
     },
     watch: {
@@ -1624,6 +1637,12 @@ export default {
     flex-direction: column;
     min-height: 0;
     overflow: auto;
+}
+
+.bpmn-empty-canvas {
+    height: 100%;
+    width: 100%;
+    background-color: #fff;
 }
 
 /* Slide Panel Animation */
