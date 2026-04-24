@@ -191,6 +191,43 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <!-- 출처(참고자료) 호버 툴팁 -->
+        <div
+            v-if="sourceTooltip.visible"
+            class="hwpx-source-tooltip"
+            :style="{ top: sourceTooltip.top + 'px', left: sourceTooltip.left + 'px' }"
+            @mouseenter="sourceTooltip.hovering = true"
+            @mouseleave="hideSourceTooltip(true)"
+        >
+            <div class="hwpx-source-tooltip__header">
+                <v-icon size="14" class="mr-1" color="success">mdi-book-open-variant</v-icon>
+                참고 출처 {{ sourceTooltip.sources.length }}개
+            </div>
+            <div
+                v-for="(src, i) in sourceTooltip.sources"
+                :key="i"
+                class="hwpx-source-tooltip__item"
+            >
+                <div class="hwpx-source-tooltip__file">
+                    <span class="hwpx-source-tooltip__file-name">{{ src.file_name || src.title || '내부 문서' }}</span>
+                    <span v-if="src.page != null" class="hwpx-source-tooltip__page">p.{{ src.page }}</span>
+                </div>
+                <div v-if="src.section_title" class="hwpx-source-tooltip__section">
+                    <v-icon size="11" class="mr-1">mdi-bookmark-outline</v-icon>
+                    {{ src.section_title }}
+                </div>
+                <div v-if="src.snippet" class="hwpx-source-tooltip__snippet">{{ src.snippet }}</div>
+                <a
+                    v-if="src.url"
+                    :href="src.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="hwpx-source-tooltip__link"
+                    @click.stop
+                >원본 열기 <v-icon size="11">mdi-open-in-new</v-icon></a>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -246,7 +283,17 @@ export default {
             imgEnhancedSrc: '',
             imgComparePos: 50,
             imgEnhanceError: '',
-            compareDragging: false
+            compareDragging: false,
+            // 출처 hover 툴팁
+            sourceTooltip: {
+                visible: false,
+                sources: [],
+                top: 0,
+                left: 0,
+                targetEl: null,
+                hovering: false
+            },
+            sourceTooltipHideTimer: null
         };
     },
     computed: {
@@ -828,7 +875,90 @@ export default {
                 this.styleElement.parentNode.removeChild(this.styleElement);
             }
             this.styleElement = null;
+        },
+        // ──── 출처(참고자료) hover 툴팁 ────
+        onSourceMouseOver(e) {
+            const el = e.target && e.target.closest ? e.target.closest('[data-sources]') : null;
+            if (!el) return;
+            // 편집 모드에서는 편집 UX 우선
+            if (this.isEditing || this.sectionEditMode) return;
+            let sources;
+            try {
+                sources = JSON.parse(el.getAttribute('data-sources') || '[]');
+            } catch (_err) {
+                return;
+            }
+            if (!Array.isArray(sources) || sources.length === 0) return;
+            if (this.sourceTooltipHideTimer) {
+                clearTimeout(this.sourceTooltipHideTimer);
+                this.sourceTooltipHideTimer = null;
+            }
+            const rect = el.getBoundingClientRect();
+            // 툴팁은 대상 요소 오른쪽에 붙이되, 화면 밖으로 나가면 왼쪽으로 반전.
+            const MAX_W = 360;
+            let left = rect.right + 8;
+            if (left + MAX_W > window.innerWidth - 12) {
+                left = Math.max(12, rect.left - MAX_W - 8);
+            }
+            let top = rect.top;
+            if (top + 40 > window.innerHeight) top = Math.max(12, window.innerHeight - 120);
+            this.sourceTooltip = {
+                visible: true,
+                sources,
+                top,
+                left,
+                targetEl: el,
+                hovering: false
+            };
+        },
+        onSourceMouseOut(e) {
+            // mouseout은 자식으로 이동할 때도 발생하므로 관련 타겟이 현재 대상 안쪽이면 무시
+            const toEl = e.relatedTarget;
+            const targetEl = this.sourceTooltip.targetEl;
+            if (!targetEl) return;
+            if (toEl && (targetEl.contains(toEl) || toEl === targetEl)) return;
+            this.hideSourceTooltip();
+        },
+        hideSourceTooltip(force) {
+            if (force) {
+                this.sourceTooltip.visible = false;
+                this.sourceTooltip.hovering = false;
+                this.sourceTooltip.targetEl = null;
+                return;
+            }
+            // 툴팁 자체로 커서가 이동할 수 있도록 약간 지연
+            if (this.sourceTooltipHideTimer) clearTimeout(this.sourceTooltipHideTimer);
+            this.sourceTooltipHideTimer = setTimeout(() => {
+                if (!this.sourceTooltip.hovering) {
+                    this.sourceTooltip.visible = false;
+                    this.sourceTooltip.targetEl = null;
+                }
+            }, 120);
+        },
+        attachSourceHoverListeners() {
+            const host = this.$refs.editor;
+            if (!host || this._sourceHoverAttached) return;
+            this._boundSourceOver = this.onSourceMouseOver.bind(this);
+            this._boundSourceOut = this.onSourceMouseOut.bind(this);
+            host.addEventListener('mouseover', this._boundSourceOver);
+            host.addEventListener('mouseout', this._boundSourceOut);
+            this._sourceHoverAttached = true;
+        },
+        detachSourceHoverListeners() {
+            const host = this.$refs.editor;
+            if (!host || !this._sourceHoverAttached) return;
+            host.removeEventListener('mouseover', this._boundSourceOver);
+            host.removeEventListener('mouseout', this._boundSourceOut);
+            this._sourceHoverAttached = false;
         }
+    },
+    mounted() {
+        this.$nextTick(() => this.attachSourceHoverListeners());
+    },
+    updated() {
+        // bodyHtml이 바뀌어 editor가 새로 그려져도 컨테이너(ref)는 유지되므로
+        // 위임 리스너는 한 번만 붙이면 된다.
+        if (!this._sourceHoverAttached) this.attachSourceHoverListeners();
     },
     beforeUnmount() {
         if (this.loadTimer) clearTimeout(this.loadTimer);
@@ -839,6 +969,9 @@ export default {
             this.editHighlightTimers.forEach((t) => clearTimeout(t));
         }
         this.editHighlightTimers = [];
+        if (this.sourceTooltipHideTimer) clearTimeout(this.sourceTooltipHideTimer);
+        this.sourceTooltipHideTimer = null;
+        this.detachSourceHoverListeners();
         this.removeStyleTag();
     }
 };
@@ -907,6 +1040,127 @@ export default {
 :deep(.hwpx-viewer__html.section-edit-mode [data-id]:hover) {
     outline: 2px dashed rgba(0, 133, 219, 0.6);
     cursor: pointer;
+}
+
+/* ──── 출처 참조 시각 마커 + 호버 툴팁 ──── */
+/* 참고자료를 근거로 작성된 노드는 좌측에 옅은 녹색 바로 표시 */
+:deep(.hwpx-viewer__html [data-sources]) {
+    position: relative;
+    transition: background 0.15s ease;
+}
+:deep(.hwpx-viewer__html p[data-sources]),
+:deep(.hwpx-viewer__html div[data-sources]) {
+    border-left: 3px solid rgba(56, 176, 100, 0.45);
+    padding-left: 6px;
+    margin-left: -9px;
+}
+:deep(.hwpx-viewer__html td[data-sources]) {
+    /* 표 셀 레이아웃 깨지 않게 box-shadow로 내부 좌측 바 */
+    box-shadow: inset 3px 0 0 rgba(56, 176, 100, 0.5);
+}
+/* 편집 모드 아닐 때만 hover 효과 */
+:deep(.hwpx-viewer__html:not(.is-editing):not(.section-edit-mode) [data-sources]:hover) {
+    background: rgba(56, 176, 100, 0.08);
+    cursor: help;
+}
+
+.hwpx-source-tooltip {
+    position: fixed;
+    z-index: 3000;
+    max-width: 360px;
+    min-width: 240px;
+    background: #ffffff;
+    border: 1px solid rgba(56, 176, 100, 0.4);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #1f2937;
+    animation: hwpxSourceTipIn 0.12s ease;
+    pointer-events: auto;
+}
+
+@keyframes hwpxSourceTipIn {
+    from { opacity: 0; transform: translateY(-2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.hwpx-source-tooltip__header {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    font-size: 12px;
+    color: #1b8048;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.hwpx-source-tooltip__item {
+    padding: 6px 0;
+    border-top: 1px dashed rgba(0, 0, 0, 0.05);
+}
+.hwpx-source-tooltip__item:first-of-type {
+    border-top: none;
+}
+
+.hwpx-source-tooltip__file {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+}
+
+.hwpx-source-tooltip__file-name {
+    font-weight: 600;
+    color: #111827;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hwpx-source-tooltip__page {
+    font-size: 10px;
+    color: #1b8048;
+    background: rgba(56, 176, 100, 0.12);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.hwpx-source-tooltip__section {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: #4b5563;
+    margin-bottom: 3px;
+}
+
+.hwpx-source-tooltip__snippet {
+    color: #374151;
+    font-size: 11px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+}
+
+.hwpx-source-tooltip__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-top: 4px;
+    color: #1b8048;
+    font-size: 11px;
+    text-decoration: none;
+}
+.hwpx-source-tooltip__link:hover {
+    text-decoration: underline;
 }
 
 .hwpx-selection-rect {
