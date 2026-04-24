@@ -217,28 +217,19 @@
                     <v-icon size="11" class="mr-1">mdi-bookmark-outline</v-icon>
                     {{ src.section_title }}
                 </div>
-                <!-- PDF 하이라이트 썸네일 (file_id + bboxes_json 있을 때) -->
+                <!-- PDF 하이라이트 썸네일 — 백엔드가 문서 생성 시 미리 렌더링한 URL을 그대로 사용 -->
                 <div
-                    v-if="isHighlightable(src)"
+                    v-if="src.preview_url"
                     class="hwpx-source-tooltip__thumb-wrap"
-                    :class="{ 'is-failed': getThumbState(src) === 'failed' }"
-                    @click.stop="getThumbState(src) === 'ok' && openHighlightModal(src)"
+                    @click.stop="openHighlightModal(src)"
                 >
                     <img
-                        v-if="getThumbState(src) === 'ok'"
-                        :src="getThumbUrl(src)"
+                        :src="src.preview_url"
                         class="hwpx-source-tooltip__thumb"
                         alt="원본 페이지 미리보기"
                         title="클릭하면 크게 보기"
+                        loading="lazy"
                     />
-                    <div v-else-if="getThumbState(src) === 'failed'" class="hwpx-source-tooltip__thumb-failed">
-                        <v-icon size="14" class="mr-1" color="grey">mdi-image-off-outline</v-icon>
-                        <span>미리보기 불러오기 실패</span>
-                    </div>
-                    <div v-else class="hwpx-source-tooltip__thumb-loading">
-                        <v-progress-circular indeterminate size="16" width="2" />
-                        <span class="ml-1">미리보기 생성 중...</span>
-                    </div>
                 </div>
                 <div v-if="src.snippet" class="hwpx-source-tooltip__snippet">{{ src.snippet }}</div>
                 <a
@@ -253,7 +244,7 @@
         </div>
 
         <!-- PDF 하이라이트 Full-size 모달 -->
-        <v-dialog v-model="highlightModal.visible" max-width="1100" @update:model-value="(v) => !v && closeHighlightModal()">
+        <v-dialog v-model="highlightModal.visible" max-width="1100">
             <v-card class="hwpx-highlight-modal">
                 <v-card-title class="d-flex align-center pa-3 pb-2">
                     <v-icon class="mr-2" color="success" size="18">mdi-book-open-page-variant</v-icon>
@@ -266,12 +257,8 @@
                     </v-btn>
                 </v-card-title>
                 <v-card-text class="pa-3 pt-0 text-center">
-                    <div v-if="!highlightModal.url" class="hwpx-highlight-modal__loading">
-                        <v-progress-circular indeterminate color="primary" size="28" />
-                        <div class="text-caption mt-2">원본 페이지 렌더링 중...</div>
-                    </div>
                     <img
-                        v-else
+                        v-if="highlightModal.url"
                         :src="highlightModal.url"
                         class="hwpx-highlight-modal__img"
                         alt="원본 페이지 하이라이트"
@@ -345,9 +332,7 @@ export default {
                 hovering: false
             },
             sourceTooltipHideTimer: null,
-            // PDF 하이라이트 썸네일 캐시: cacheKey → url (null=로딩 중, false=실패)
-            highlightThumbs: {},
-            // Full-size 모달
+            // PDF 하이라이트 full-size 모달 (썸네일/모달 둘 다 백엔드가 preview_url을 미리 박아둠)
             highlightModal: {
                 visible: false,
                 url: '',
@@ -1011,104 +996,13 @@ export default {
             host.removeEventListener('mouseout', this._boundSourceOut);
             this._sourceHoverAttached = false;
         },
-        // ──── PDF 하이라이트 썸네일 ────
-        _parseBboxEntry(src) {
-            // bboxes_json → 첫 번째 {page, bbox, ...} 반환
-            if (!src || !src.bboxes_json) return null;
-            try {
-                const arr = JSON.parse(src.bboxes_json);
-                if (!Array.isArray(arr) || arr.length === 0) return null;
-                const e = arr[0];
-                if (!e || !Array.isArray(e.bbox) || e.bbox.length !== 4) return null;
-                return e;
-            } catch (_err) {
-                return null;
-            }
-        },
-        _cacheKey(src) {
-            const e = this._parseBboxEntry(src);
-            if (!e || !src.file_id) return '';
-            return `${src.file_id}|${e.page}|${e.bbox.join(',')}`;
-        },
-        isHighlightable(src) {
-            return !!(src && src.file_id && this._parseBboxEntry(src));
-        },
-        getThumbUrl(src) {
-            const key = this._cacheKey(src);
-            if (!key) return '';
-            const cached = this.highlightThumbs[key];
-            if (cached === undefined) {
-                // 로딩 시작 (비동기, 재진입 방지 위해 null로 마킹)
-                this.highlightThumbs[key] = null;
-                this._fetchHighlight(src, key);
-                return '';
-            }
-            if (cached === null || cached === false) return '';
-            return cached;
-        },
-        getThumbState(src) {
-            // 'loading' | 'ok' | 'failed' — 최초 호출 시 로딩도 트리거
-            const key = this._cacheKey(src);
-            if (!key) return 'failed';
-            const cached = this.highlightThumbs[key];
-            if (cached === undefined) {
-                this.highlightThumbs[key] = null;
-                this._fetchHighlight(src, key);
-                return 'loading';
-            }
-            if (cached === null) return 'loading';
-            if (cached === false) return 'failed';
-            return 'ok';
-        },
-        async _fetchHighlight(src, cacheKey, dpi = 120) {
-            const entry = this._parseBboxEntry(src);
-            if (!entry) return;
-            // tenant_id는 현재 컨텍스트에서 가져옴 (localStorage 또는 스토어)
-            const tenantId = (window.localStorage && localStorage.getItem('tenant')) || 'localhost';
-            const params = new URLSearchParams({
-                tenant_id: tenantId,
-                file_id: src.file_id,
-                page: String(entry.page ?? 0),
-                bbox: entry.bbox.map((v) => String(v)).join(','),
-                dpi: String(dpi)
-            });
-            try {
-                const resp = await fetch(`/preview/pdf-highlight?${params.toString()}`);
-                if (!resp.ok) {
-                    this.highlightThumbs[cacheKey] = false;
-                    return;
-                }
-                const data = await resp.json();
-                if (data && data.url) {
-                    this.highlightThumbs[cacheKey] = data.url;
-                } else {
-                    this.highlightThumbs[cacheKey] = false;
-                }
-            } catch (err) {
-                console.warn('[pdf-highlight] 실패:', err);
-                this.highlightThumbs[cacheKey] = false;
-            }
-        },
+        // ──── PDF 하이라이트 모달 (백엔드가 미리 렌더링한 preview_url 사용) ────
         openHighlightModal(src) {
-            const entry = this._parseBboxEntry(src);
-            if (!entry) return;
+            if (!src || !src.preview_url) return;
             this.highlightModal.visible = true;
             this.highlightModal.fileName = src.file_name || src.title || '참고 문서';
-            const pageNum = src.page != null ? src.page : (entry.page != null ? entry.page + 1 : null);
-            this.highlightModal.pageLabel = pageNum != null ? `페이지 ${pageNum}` : '';
-            this.highlightModal.url = '';
-            // 고해상도 이미지 로드 (썸네일과는 다른 cacheKey)
-            const hiResKey = `${this._cacheKey(src)}|hi`;
-            if (this.highlightThumbs[hiResKey]) {
-                this.highlightModal.url = this.highlightThumbs[hiResKey];
-                return;
-            }
-            this.highlightThumbs[hiResKey] = null;
-            this._fetchHighlight(src, hiResKey, 220).then(() => {
-                if (this.highlightModal.visible) {
-                    this.highlightModal.url = this.highlightThumbs[hiResKey] || '';
-                }
-            });
+            this.highlightModal.pageLabel = src.page != null ? `페이지 ${src.page}` : '';
+            this.highlightModal.url = src.preview_url;
         },
         closeHighlightModal() {
             this.highlightModal.visible = false;
@@ -1345,34 +1239,6 @@ export default {
     max-height: 160px;
     object-fit: contain;
     background: #fff;
-}
-.hwpx-source-tooltip__thumb-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 80px;
-    font-size: 11px;
-    color: #6b7280;
-}
-.hwpx-source-tooltip__thumb-failed {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 60px;
-    font-size: 11px;
-    color: #9ca3af;
-    background: #fafafa;
-}
-.hwpx-source-tooltip__thumb-wrap.is-failed {
-    cursor: default;
-}
-.hwpx-source-tooltip__thumb-wrap.is-failed:hover {
-    transform: none;
-    border-color: rgba(0, 0, 0, 0.08);
-}
-
-.hwpx-highlight-modal__loading {
-    padding: 60px 0;
 }
 .hwpx-highlight-modal__img {
     max-width: 100%;

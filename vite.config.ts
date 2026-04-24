@@ -74,11 +74,6 @@ export default defineConfig({
                 target: 'http://localhost:8005',
                 changeOrigin: true
             },
-            '/preview': {
-                // PDF 하이라이트 썸네일 프리뷰 (memento /preview/pdf-highlight)
-                target: 'http://localhost:8005',
-                changeOrigin: true
-            },
             '/complete': {
                 // Windows에서 localhost가 IPv6(::1)로 붙으면서 WSL/Docker 리스너로 가는 경우가 있어 IPv4로 고정
                 target: 'http://127.0.0.1:8000',
