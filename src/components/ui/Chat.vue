@@ -1487,7 +1487,7 @@
                                                                                     )
                                                                                 "
                                                                             ></div>
-                                                                            <div
+                                                                            <!-- <div
                                                                                 v-if="isInlineProcessPreviewTarget(message, index)"
                                                                                 class="mt-2"
                                                                             >
@@ -1502,7 +1502,7 @@
                                                                                         {{ getInlineProcessButtonLabel() }}
                                                                                     </v-btn>
                                                                                 </div>
-                                                                            </div>
+                                                                            </div> -->
 
                                                                             <!-- PDF2BPMN 결과 카드 -->
                                                                             <div

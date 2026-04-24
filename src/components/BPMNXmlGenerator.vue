@@ -100,6 +100,64 @@ export default {
                     return this.ELEMENT_TYPES.USER_TASK;
             }
         },
+        ensureSequenceGuardrails(jsonModel) {
+            if (!jsonModel || !jsonModel.elements) {
+                return jsonModel;
+            }
+
+            const elements = Array.isArray(jsonModel.elements) ? jsonModel.elements : Object.values(jsonModel.elements);
+            const nonSequenceElements = elements.filter((element) => element && element.elementType !== 'Sequence' && element.id);
+            const existingSequenceKeys = new Set(
+                elements
+                    .filter((element) => element && element.elementType === 'Sequence' && element.source && element.target)
+                    .map((sequence) => `${sequence.source}__${sequence.target}`)
+            );
+
+            const generatedSequences = [];
+
+            nonSequenceElements.forEach((element) => {
+                const sourceId = element.source;
+
+                if (!sourceId || sourceId === 'none' || sourceId === element.id) {
+                    return;
+                }
+
+                const sequenceKey = `${sourceId}__${element.id}`;
+                if (existingSequenceKeys.has(sequenceKey)) {
+                    return;
+                }
+
+                existingSequenceKeys.add(sequenceKey);
+                generatedSequences.push({
+                    elementType: 'Sequence',
+                    id: `seq_${sourceId}_${element.id}`,
+                    source: sourceId,
+                    target: element.id,
+                    condition: ''
+                });
+            });
+
+            if (generatedSequences.length === 0) {
+                return jsonModel;
+            }
+
+            if (Array.isArray(jsonModel.elements)) {
+                jsonModel.elements.push(...generatedSequences);
+            } else {
+                generatedSequences.forEach((sequence) => {
+                    let key = sequence.id;
+                    let suffix = 1;
+                    while (jsonModel.elements[key]) {
+                        key = `${sequence.id}_${suffix}`;
+                        suffix += 1;
+                    }
+                    jsonModel.elements[key] = sequence;
+                });
+            }
+
+            console.log(`Guardrail: source 기반 누락 시퀀스 ${generatedSequences.length}개를 자동 보정했습니다.`);
+            return jsonModel;
+        },
         transformJsonModel(jsonModel) {
             console.log('원본 jsonModel:', jsonModel);
 
@@ -1444,6 +1502,9 @@ export default {
         },
         createBpmnXml(jsonModel, horizontal) {
             jsonModel.isAutoLayout = true;
+
+            // LLM이 source 필드만 생성하고 Sequence element를 누락한 경우를 보정
+            jsonModel = this.ensureSequenceGuardrails(jsonModel);
 
             // jsonModel의 isHorizontal 값을 사용하거나 기본값으로 false 사용
             let isHorizontal = jsonModel.isHorizontal;

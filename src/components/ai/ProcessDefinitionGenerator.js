@@ -156,6 +156,16 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
       12. If a non-sequence element includes a source, you must define a corresponding sequence element that connects from the source.
       13. If there is an external customer or participant in the role, the endpoint of that role is fixed as 'external_customer'.
       14. All activities must include at least one outputData entry. The outputData array must not be empty or omitted.
+      15. Sequence-flow integrity is mandatory for every non-sequence element:
+         - StartEvent: must have at least one outgoing sequence.
+         - EndEvent: must have at least one incoming sequence.
+         - Every other element (activities, gateways, intermediate events, subprocess nodes): must have at least one incoming sequence and at least one outgoing sequence.
+         - Never leave any non-start/end element dangling without both input and output sequence connections.
+      16. The "source" field in Event/Activity/Gateway is only a reference and never replaces a Sequence element. For every source relation, you must create an explicit Sequence element with both source and target.
+      17. Before finalizing JSON, run a strict self-check:
+         - There is at least one Sequence from StartEvent to the first executable node.
+         - Every relation implied by source fields exists as a Sequence in elements.
+         - StartEvent has outgoing and EndEvent has incoming in the generated sequences.
 
 
 

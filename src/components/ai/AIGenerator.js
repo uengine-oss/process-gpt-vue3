@@ -480,6 +480,7 @@ export default class AIGenerator {
 
         this._addDetailHighToImageUrl(messages);
         const data = {
+            // model: this.model,
             messages: messages,
             stream: this.options.isStream || true,
             modelConfig: this.forced_model_config || this.modelConfig
