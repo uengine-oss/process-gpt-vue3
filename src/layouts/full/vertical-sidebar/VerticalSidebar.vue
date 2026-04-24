@@ -112,8 +112,11 @@
                     </v-col>
                 </div> -->
 
+                <!-- 대화목록 -->
+                <ChatList v-if="!gs" />
+
                 <!-- 인스턴스 타이틀 + 목록 -->
-                <v-col v-if="isShowInstances" class="pa-0 mb-4">
+                <v-col v-if="isShowInstances" class="pa-0 mb-4 mt-8">
                     <div v-if="!pal && !JMS" class="d-flex align-center">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.instanceList') }}
@@ -195,32 +198,6 @@
                     </v-row>
                     <v-col class="pa-0">
                         <SkillList />
-                    </v-col>
-                </div>
-
-                <!-- 대화목록 -->
-                <ChatList v-if="!gs" />
-
-                <!-- Analytics 타이틀 + 목록 -->
-                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4 mt-8">
-                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
-                        {{ $t('VerticalSidebar.analytics') }}
-                    </div>
-                    <v-col class="pa-0">
-                        <v-list-item
-                            v-for="item in analyticsItem"
-                            :key="item.title"
-                            :to="item.to"
-                            :disabled="item.disable"
-                            density="compact"
-                            class="leftPadding sidebar-list-hover-bg"
-                            :class="{ 'sidebar-list-hover-bg--active': isAnalyticsItemActive(item) }"
-                        >
-                            <template v-slot:prepend>
-                                <Icons :icon="item.icon" :size="20" class="mr-2" />
-                            </template>
-                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
-                        </v-list-item>
                     </v-col>
                 </div>
 
@@ -356,6 +333,29 @@
                         </template>
                     </ExpandableList>
                 </v-col>
+
+                <!-- 분석(Analytics) 타이틀 + 목록 -->
+                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4 mt-8">
+                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                        {{ $t('VerticalSidebar.analytics') }}
+                    </div>
+                    <v-col class="pa-0">
+                        <v-list-item
+                            v-for="item in analyticsItem"
+                            :key="item.title"
+                            :to="item.to"
+                            :disabled="item.disable"
+                            density="compact"
+                            class="leftPadding sidebar-list-hover-bg"
+                            :class="{ 'sidebar-list-hover-bg--active': isAnalyticsItemActive(item) }"
+                        >
+                            <template v-slot:prepend>
+                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                            </template>
+                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                        </v-list-item>
+                    </v-col>
+                </div>
             </v-list>
             <Footer class="mt-2" />
         </div>
