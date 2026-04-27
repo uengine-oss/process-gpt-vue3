@@ -11,7 +11,7 @@ import {
 import type { ComponentRenderProps } from '@openuidev/vue-lang';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
-import { computed, defineComponent as defineVueComponent, h, ref, type PropType } from 'vue';
+import { computed, defineComponent as defineVueComponent, h, ref, watchEffect, type PropType } from 'vue';
 import { z } from 'zod/v4';
 
 type RenderFn = ComponentRenderProps['renderNode'];
@@ -1151,6 +1151,17 @@ const Input = defineOpenUiComponent({
             const name = computed(() => compProps.props.name);
             const value = computed(() => getFieldValue(formName?.value, name.value) ?? compProps.props.value ?? '');
 
+            watchEffect(() => {
+                const fn = formName?.value;
+                const fieldName = name.value;
+                if (!fn || !fieldName) return;
+                const existing = getFieldValue(fn, fieldName);
+                if (existing !== undefined) return;
+                // props.value가 undefined가 아니라면(빈 문자열 포함) 초기값을 state에 주입
+                if (compProps.props.value === undefined) return;
+                setFieldValue(fn, 'Input', fieldName, compProps.props.value, true);
+            });
+
             return () =>
                 h('label', { class: 'openui-field' }, [
                     compProps.props.label
@@ -1195,6 +1206,17 @@ const Select = defineOpenUiComponent({
             const isStreaming = useIsStreaming();
             const name = computed(() => compProps.props.name);
             const value = computed(() => getFieldValue(formName?.value, name.value) ?? compProps.props.value ?? '');
+
+            watchEffect(() => {
+                const fn = formName?.value;
+                const fieldName = name.value;
+                if (!fn || !fieldName) return;
+                const existing = getFieldValue(fn, fieldName);
+                if (existing !== undefined) return;
+                const initial = compProps.props.value;
+                if (initial === undefined) return;
+                setFieldValue(fn, 'Select', fieldName, initial, true);
+            });
 
             return () => {
                 const options = normalizeOptions(compProps.props.options);
@@ -1250,6 +1272,16 @@ const Checkbox = defineOpenUiComponent({
                 return fieldValue === undefined ? compProps.props.checked : Boolean(fieldValue);
             });
 
+            watchEffect(() => {
+                const fn = formName?.value;
+                const fieldName = name.value;
+                if (!fn || !fieldName) return;
+                const existing = getFieldValue(fn, fieldName);
+                if (existing !== undefined) return;
+                // Checkbox는 기본 checked(false 포함)를 초기 state에 주입
+                setFieldValue(fn, 'Checkbox', fieldName, Boolean(compProps.props.checked), true);
+            });
+
             return () =>
                 h('label', { class: 'openui-checkbox' }, [
                     h('input', {
@@ -1263,6 +1295,145 @@ const Checkbox = defineOpenUiComponent({
                     }),
                     h('span', { class: 'openui-checkbox__box' }),
                     h('span', { class: 'openui-checkbox__label' }, renderPrimitiveOrNode(compProps.props.label ?? compProps.props.value, compProps.renderNode))
+                ]);
+        }
+    })
+});
+
+const Radio = defineOpenUiComponent({
+    name: 'Radio',
+    description:
+        'Radio group for forms: one string value among options. Use Radio("fieldName", "Group label", {"val": "Label"}, "defaultValue"). Options accept the same shapes as Select.',
+    props: z.object({
+        name: z.string(),
+        label: z.any().optional(),
+        options: z.any().optional(),
+        value: z.any().optional()
+    }),
+    component: defineVueComponent({
+        name: 'OpenUiRadio',
+        props: renderProps,
+        setup(compProps) {
+            const formName = useFormName();
+            const getFieldValue = useGetFieldValue();
+            const setFieldValue = useSetFieldValue();
+            const isStreaming = useIsStreaming();
+            const name = computed(() => compProps.props.name);
+            const selected = computed(() => {
+                const fieldValue = getFieldValue(formName?.value, name.value);
+                if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
+                    return String(fieldValue);
+                }
+                const initial = compProps.props.value;
+                return initial !== undefined && initial !== null ? String(initial) : '';
+            });
+
+            watchEffect(() => {
+                const fn = formName?.value;
+                const fieldName = name.value;
+                if (!fn || !fieldName) return;
+                const existing = getFieldValue(fn, fieldName);
+                if (existing !== undefined) return;
+                const initial = compProps.props.value;
+                if (initial === undefined) return;
+                setFieldValue(fn, 'Radio', fieldName, initial, true);
+            });
+
+            return () => {
+                const options = normalizeOptions(compProps.props.options);
+
+                return h('div', { class: 'openui-field openui-field--radio' }, [
+                    compProps.props.label
+                        ? h('span', { class: 'openui-field__label' }, renderPrimitiveOrNode(compProps.props.label, compProps.renderNode))
+                        : null,
+                    h(
+                        'div',
+                        { class: 'openui-radio-group', role: 'radiogroup', 'aria-label': toDisplayText(compProps.props.label) || name.value },
+                        options.map((option) =>
+                            h('label', { class: 'openui-radio-option' }, [
+                                h('input', {
+                                    class: 'openui-radio-option__input',
+                                    type: 'radio',
+                                    name: name.value,
+                                    value: String(option.value),
+                                    checked: selected.value === String(option.value),
+                                    disabled: isStreaming.value,
+                                    onChange: () => {
+                                        setFieldValue(formName?.value, 'Radio', name.value, option.value, true);
+                                    }
+                                }),
+                                h('span', { class: 'openui-radio-option__label' }, option.label)
+                            ])
+                        )
+                    )
+                ]);
+            };
+        }
+    })
+});
+
+const Textarea = defineOpenUiComponent({
+    name: 'Textarea',
+    description: 'Multi-line text field for forms. Use Textarea("fieldName", "Label", "default", "placeholder", rows).',
+    props: z.object({
+        name: z.string(),
+        label: z.any().optional(),
+        value: z.any().optional(),
+        placeholder: z.any().optional(),
+        rows: z.number().optional().default(4)
+    }),
+    component: defineVueComponent({
+        name: 'OpenUiTextarea',
+        props: renderProps,
+        setup(compProps) {
+            const formName = useFormName();
+            const getFieldValue = useGetFieldValue();
+            const setFieldValue = useSetFieldValue();
+            const isStreaming = useIsStreaming();
+            const name = computed(() => compProps.props.name);
+            const text = computed(() => getFieldValue(formName?.value, name.value) ?? compProps.props.value ?? '');
+
+            watchEffect(() => {
+                const fn = formName?.value;
+                const fieldName = name.value;
+                if (!fn || !fieldName) return;
+                const existing = getFieldValue(fn, fieldName);
+                if (existing !== undefined) return;
+                if (compProps.props.value === undefined) return;
+                setFieldValue(fn, 'Textarea', fieldName, compProps.props.value, true);
+            });
+
+            return () =>
+                h('label', { class: 'openui-field' }, [
+                    compProps.props.label
+                        ? h('span', { class: 'openui-field__label' }, renderPrimitiveOrNode(compProps.props.label, compProps.renderNode))
+                        : null,
+                    h('textarea', {
+                        class: 'openui-textarea',
+                        name: name.value,
+                        rows: compProps.props.rows ?? 4,
+                        value: text.value,
+                        placeholder: toDisplayText(compProps.props.placeholder),
+                        disabled: isStreaming.value,
+                        onInput: (event: Event) => {
+                            setFieldValue(
+                                formName?.value,
+                                'Textarea',
+                                name.value,
+                                (event.target as HTMLTextAreaElement).value,
+                                false
+                            );
+                        },
+                        onBlur: (event: Event) => {
+                            setFieldValue(
+                                formName?.value,
+                                'Textarea',
+                                name.value,
+                                (event.target as HTMLTextAreaElement).value,
+                                true
+                            );
+                        }
+                    })
                 ]);
         }
     })
@@ -1461,7 +1632,7 @@ export const openUiComponentGroups = [
     },
     {
         name: 'Forms',
-        components: ['Form', 'Input', 'Select', 'Checkbox']
+        components: ['Form', 'Input', 'Textarea', 'Select', 'Checkbox', 'Radio']
     },
     {
         name: 'Actions',
@@ -1491,7 +1662,15 @@ chart = BarChart({"대기": 7, "진행": 12, "완료": 31}, "상태별 건수")`
 tab1 = TabItem("요약", [Paragraph("핵심 분석 결과입니다."), Progress(72, "완료율")])
 tab2 = TabItem("상세", [KeyValueList({"프로세스 ID": "i_3_2_3", "역할": "없음"}), Timeline([step1, step2])])
 step1 = TimelineItem("컨텍스트 확인", "1단계", "BPMN에서 기본 정보를 수집합니다.", "success")
-step2 = TimelineItem("세부 분석", "2단계", "활동과 역할 정보가 필요합니다.", "warning")`
+step2 = TimelineItem("세부 분석", "2단계", "활동과 역할 정보가 필요합니다.", "warning")`,
+    `root = Card([header, formBlock])
+header = CardHeader("요청 접수", "Form 필드(Input, Textarea, Select, Radio, Checkbox) 예시")
+formBlock = Form([nameField, detailField, roleField, priorityField, urgentField], "아래 양식을 작성한 뒤 제출하세요.", "접수 등록")
+nameField = Input("requestTitle", "제목", "")
+detailField = Textarea("requestBody", "상세 내용", "", "재현 단계·기대 동작 등을 적어주세요.", 4)
+roleField = Select("requestType", "유형", {"support": "지원 요청", "improvement": "개선 제안"}, "support", "유형을 선택하세요")
+priorityField = Radio("priority", "우선순위", {"low": "일반", "normal": "보통", "high": "긴급"}, "normal")
+urgentField = Checkbox("urgent", "긴급 처리 요청", false)`
 ];
 
 export const openUiPromptOptions = {
@@ -1503,7 +1682,7 @@ export const openUiPromptOptions = {
         'Use KeyValueList for compact facts and MetricCard or MetricGrid for numeric summaries.',
         'Use Chart, BarChart, LineChart, or PieChart for small visual summaries.',
         'Use Tabs or Accordion only when the answer has distinct sections.',
-        'Use Form with Input, Select, and Checkbox only when the user needs to submit structured input.',
+        'Use Form with Input, Textarea, Select, Radio, and Checkbox only when the user needs to submit structured input.',
         'Use MarkDownRenderer or MarkdownRenderer for markdown tables or formatted long text.',
         'Use FollowUpBlock with FollowUpItem for suggested next questions.',
         'Keep generated UI concise and task-focused.'
@@ -1549,8 +1728,10 @@ export const openUiLibrary = createLibrary({
         FollowUpBlock,
         Form,
         Input,
+        Textarea,
         Select,
         Checkbox,
+        Radio,
         Chart,
         BarChart,
         LineChart,

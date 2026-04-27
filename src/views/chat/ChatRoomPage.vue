@@ -152,6 +152,9 @@
                                 @preview-integrated-graph="showIntegratedGraphByTask"
                                 @preview-image="openImagePreview"
                                 @open-external-url="openExternalUrl"
+                                @openui-action="handleOpenUiAction"
+                                @openui-state-update="handleOpenUiStateUpdate"
+                                @openui-parse-result="handleOpenUiParseResult"
                                 @beforeReply="handleBeforeReply"
                                 @invite-agent="handleInviteAgent"
                                 @getMoreChat="loadMoreMessages"
@@ -303,6 +306,9 @@
                             @preview-integrated-graph="showIntegratedGraphByTask"
                             @preview-image="openImagePreview"
                             @open-external-url="openExternalUrl"
+                            @openui-action="handleOpenUiAction"
+                            @openui-state-update="handleOpenUiStateUpdate"
+                            @openui-parse-result="handleOpenUiParseResult"
                             @beforeReply="handleBeforeReply"
                             @invite-agent="handleInviteAgent"
                             @getMoreChat="loadMoreMessages"
@@ -433,6 +439,9 @@
                         @preview-integrated-graph="showIntegratedGraphByTask"
                         @preview-image="openImagePreview"
                         @open-external-url="openExternalUrl"
+                        @openui-action="handleOpenUiAction"
+                        @openui-state-update="handleOpenUiStateUpdate"
+                        @openui-parse-result="handleOpenUiParseResult"
                         @beforeReply="handleBeforeReply"
                         @invite-agent="handleInviteAgent"
                         @getMoreChat="loadMoreMessages"
@@ -1382,6 +1391,104 @@ export default {
         window.removeEventListener('mouseup', this.stopArtifactSidebarResize);
     },
     methods: {
+        handleOpenUiStateUpdate(payload) {
+            try {
+                // payload: { messageUuid, state }
+                const messageUuid = payload?.messageUuid || null;
+                const idx = messageUuid ? this.messages.findIndex((m) => m?.uuid === messageUuid) : -1;
+                if (idx !== -1) {
+                    this.messages[idx].openuiState = payload?.state ?? null;
+                }
+            } catch (e) {
+                // ignore
+            }
+        },
+        handleOpenUiParseResult(payload) {
+            try {
+                // payload: { messageUuid, parseResult }
+                const messageUuid = payload?.messageUuid || null;
+                const idx = messageUuid ? this.messages.findIndex((m) => m?.uuid === messageUuid) : -1;
+                if (idx !== -1) {
+                    this.messages[idx].openuiParseResult = payload?.parseResult ?? null;
+                    this.messages[idx].openuiParseErrors = payload?.parseResult?.meta?.errors || [];
+                }
+            } catch (e) {
+                // ignore
+            }
+        },
+        async handleOpenUiAction(payload) {
+            try {
+                // payload: { messageUuid, action, state }
+                const messageUuid = payload?.messageUuid || null;
+                const idx = messageUuid ? this.messages.findIndex((m) => m?.uuid === messageUuid) : -1;
+                if (idx !== -1) {
+                    this.messages[idx].openuiLastAction = payload?.action ?? null;
+                }
+
+                const action = payload?.action || null;
+                const state = payload?.state || null;
+                const actionType = (action?.type || '').toString();
+                const formState = action?.formState ?? state ?? null;
+                const isFormSubmit =
+                    actionType === 'continue_conversation' ||
+                    !!(action && typeof action.formState === 'object') ||
+                    (action?.humanFriendlyMessage || '').toString().trim() === '제출';
+
+                if (!isFormSubmit || !formState || typeof formState !== 'object') return;
+                if (!this.currentChatRoom?.id) return;
+
+                const assistantMsg = idx !== -1 ? this.messages[idx] : null;
+                const agentIdForMention = assistantMsg?.agentId || null;
+                let mentionedUsers = [];
+                if (agentIdForMention) {
+                    const candidates = (typeof this.getAgentCandidates === 'function' && this.getAgentCandidates()) || [];
+                    const hit = Array.isArray(candidates) ? candidates.find((a) => a?.id === agentIdForMention) : null;
+                    if (hit) {
+                        mentionedUsers = [
+                            {
+                                id: hit.id,
+                                username: hit.username || hit.name || hit.id,
+                                mentionText: hit.username || hit.alias || hit.name || hit.id
+                            }
+                        ];
+                    } else {
+                        mentionedUsers = [
+                            {
+                                id: agentIdForMention,
+                                username: agentIdForMention,
+                                mentionText: agentIdForMention
+                            }
+                        ];
+                    }
+                }
+
+                const simplifiedFormState = this.simplifyOpenUiFormState(formState);
+                const submission = {
+                    type: actionType || 'continue_conversation',
+                    formName: action?.formName || null,
+                    params: action?.params && typeof action.params === 'object' ? action.params : {},
+                    formState: simplifiedFormState
+                };
+
+                const text = (action?.humanFriendlyMessage || '제출').toString().trim() || '제출';
+
+                const streamMetadata = { openui_form_submission: submission };
+                const runStateForMeta = this.getMessageRunStateForOpenUi(assistantMsg);
+                if (runStateForMeta) {
+                    streamMetadata.run_state = runStateForMeta;
+                }
+
+                await this.handleSendMessage({
+                    text,
+                    mentionedUsers,
+                    orchestration: this.getRoomOrchestration(),
+                    metadata: streamMetadata,
+                    openuiFormSubmission: submission
+                });
+            } catch (e) {
+                // ignore
+            }
+        },
         focusComposerInput() {
             try {
                 const composer = this.$refs?.composer;
@@ -3251,6 +3358,9 @@ export default {
                     imgCount: hasImages ? (payload.images || []).length : 0,
                     fileNames: hasFile ? initialFiles.map((f) => f?.name || f?.fileName || '').filter(Boolean) : []
                 };
+                if (payload?.openuiFormSubmission && typeof payload.openuiFormSubmission === 'object') {
+                    keyObj.openuiFormSubmission = JSON.stringify(payload.openuiFormSubmission);
+                }
                 const key = JSON.stringify(keyObj);
                 const now = Date.now();
                 if (this._lastClientSendKey === key && now - (this._lastClientSendAt || 0) < 800) {
@@ -4022,6 +4132,30 @@ export default {
             }
         },
 
+        /** OpenUI state: { formId: { field: { value, componentType } } } → { formId: { field: value } } */
+        simplifyOpenUiFormFieldValue(v) {
+            if (v == null) return v;
+            if (typeof v !== 'object' || Array.isArray(v)) return v;
+            if (Object.prototype.hasOwnProperty.call(v, 'value')) return v.value;
+            return v;
+        },
+        simplifyOpenUiFormState(formState) {
+            if (!formState || typeof formState !== 'object' || Array.isArray(formState)) return formState;
+            const out = {};
+            for (const [formId, block] of Object.entries(formState)) {
+                if (!block || typeof block !== 'object' || Array.isArray(block)) {
+                    out[formId] = block;
+                    continue;
+                }
+                const flat = {};
+                for (const [fieldKey, fieldVal] of Object.entries(block)) {
+                    flat[fieldKey] = this.simplifyOpenUiFormFieldValue(fieldVal);
+                }
+                out[formId] = flat;
+            }
+            return out;
+        },
+
         buildMessageForAgent(userText, payload, policy) {
             let messageForAgent = (userText || '').toString();
             // 첨부 정보는 기존 방식처럼 [InputData]로 전달
@@ -4037,6 +4171,11 @@ export default {
                 if (payload?.hwpxUrl) inputData.hwpx_url = payload.hwpxUrl;
                 if (payload?.hwpxEdit) inputData.hwpx_edit = payload.hwpxEdit;
                 messageForAgent += `\n\n[InputData]\n${JSON.stringify(inputData)}`;
+            }
+
+            // OpenUI 폼 제출: message 본문에도 구조화 블록(서버 파싱용) + metadata는 streamAgents에서 병합
+            if (payload?.openuiFormSubmission && typeof payload.openuiFormSubmission === 'object') {
+                messageForAgent += `\n\n[OpenUIForm]\n${JSON.stringify(payload.openuiFormSubmission)}`;
             }
 
             // must_reply (침묵 정책 제거)
@@ -5214,6 +5353,7 @@ export default {
                     files: requestFiles,
                     file_count: requestFiles.length,
                     metadata: {
+                        ...(payload?.metadata && typeof payload.metadata === 'object' ? payload.metadata : {}),
                         ...(agentTarget?.__routingDecision ? { routing: agentTarget.__routingDecision } : {}),
                         room_recent_history,
                         assigned_skills: assignedSkills,
@@ -5489,6 +5629,72 @@ export default {
                             message: event?.message || '프로세스 패치를 반영 중입니다...'
                         });
                     },
+                    onOpenUi: (payload) => {
+                        const convFromPayload = (payload?.conversation_id || '').toString();
+                        const roomId = (this.currentChatRoom?.id || this.roomId || '').toString();
+                        if (convFromPayload && roomId && convFromPayload !== roomId) {
+                            return;
+                        }
+
+                        let idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+                        if (idx === -1) {
+                            // messages가 방 동기화 등으로 갈아끼워지면 스트림 시작 시 uuid로는 못 찾는 경우가 있음
+                            for (let j = this.messages.length - 1; j >= 0; j--) {
+                                const m = this.messages[j];
+                                if ((m?.role === 'assistant' || m?.role === 'agent') && m?.agentId === agentId) {
+                                    idx = j;
+                                    break;
+                                }
+                            }
+                        }
+                        if (idx === -1) {
+                            return;
+                        }
+                        const msg = this.messages[idx];
+                        const op = String(payload?.op || '').toLowerCase();
+
+                        if (op === 'delta') {
+                            const chunk = typeof payload.openui_lang_chunk === 'string' ? payload.openui_lang_chunk : '';
+                            const qid = payload?.question_id;
+                            const seq = Number(payload?.seq);
+                            const newQuestion = qid != null && msg.openuiStreamQuestionId !== qid;
+                            if (newQuestion || seq === 0) {
+                                if (qid != null) {
+                                    msg.openuiStreamQuestionId = qid;
+                                }
+                                msg.openuiLang = chunk;
+                            } else {
+                                msg.openuiLang = (msg.openuiLang || '') + chunk;
+                            }
+                            msg.openuiIsStreaming = true;
+                            // done 이벤트 없이 openui만 오는 경우: 로딩 분기가 OpenUI v-sheet를 가림 → 즉시 해제
+                            msg.isLoading = false;
+                            if (payload?.run_state != null && typeof payload.run_state === 'object') {
+                                msg.runState = { ...(msg.runState || {}), ...payload.run_state };
+                                this._schedulePersistAssistantOpenUi(assistantUuid, canWrite);
+                            }
+                        } else if (op === 'end') {
+                            const finalLang =
+                                (typeof payload.openui_lang === 'string' && payload.openui_lang) ||
+                                (typeof payload.run_state?.openui_lang === 'string' && payload.run_state.openui_lang) ||
+                                msg.openuiLang ||
+                                '';
+                            msg.openuiLang = finalLang;
+                            msg.openuiIsStreaming = false;
+                            msg.isLoading = false;
+                            if (payload?.run_state != null && typeof payload.run_state === 'object') {
+                                msg.runState = { ...(msg.runState || {}), ...payload.run_state };
+                            }
+                            this.setAgentStatus(agentId, { state: 'ready', message: '' });
+                            if (this._openUiPersistTimers?.[assistantUuid]) {
+                                clearTimeout(this._openUiPersistTimers[assistantUuid]);
+                                delete this._openUiPersistTimers[assistantUuid];
+                            }
+                            if (canWrite) {
+                                void this.flushPersistAssistantOpenUiToDb(assistantUuid, canWrite);
+                            }
+                        }
+                    },
                     onDone: async (content) => {
                         const finalContent = (content || full || '').toString().trim();
                         // 침묵 정책 제거: NO_RESPONSE도 그대로 텍스트로 표시하지 않도록 빈 값 처리
@@ -5674,6 +5880,7 @@ export default {
                             const current = (this.messages[idx].content || '').toString();
                             this.messages[idx].content = current ? current : '(에이전트 응답 오류)';
                             this.messages[idx].isLoading = false;
+                            this.messages[idx].openuiIsStreaming = false;
                         }
                         const roomId = this.currentChatRoom?.id || this.roomId || null;
                         const state = this.getOrCreateProcessGenerationState(roomId);
@@ -5698,6 +5905,7 @@ export default {
                                 const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                                 if (idx !== -1) {
                                     this.messages[idx].isLoading = false;
+                                    this.messages[idx].openuiIsStreaming = false;
                                 }
                                 this.setAgentStatus(agentId, { state: 'ready', message: '' });
                             }
@@ -5715,6 +5923,7 @@ export default {
                                 const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                                 if (idx !== -1) {
                                     this.messages[idx].isLoading = false;
+                                    this.messages[idx].openuiIsStreaming = false;
                                 }
                                 this.setAgentStatus(agentId, { state: 'ready', message: '' });
                             }
@@ -7082,8 +7291,54 @@ export default {
             return text;
         },
 
+        /** DB/실시간 row의 snake·레거시 키 → 화면용 openuiLang / runState */
+        hydrateMessageOpenUiFromDb(message) {
+            if (!message || typeof message !== 'object') return message;
+            if (message.openuiLang == null && typeof message.openui_lang === 'string') {
+                message.openuiLang = message.openui_lang;
+            }
+            const rs = message.runState ?? message.run_state ?? message.openuiRunState;
+            if (rs != null && typeof rs === 'object') {
+                message.runState = rs;
+            }
+            return message;
+        },
+        getMessageRunStateForOpenUi(m) {
+            if (!m || typeof m !== 'object') return null;
+            const rs = m.runState ?? m.run_state ?? m.openuiRunState;
+            return rs != null && typeof rs === 'object' ? rs : null;
+        },
+        _schedulePersistAssistantOpenUi(assistantUuid, canWrite) {
+            if (!canWrite || !assistantUuid) return;
+            if (!this._openUiPersistTimers) this._openUiPersistTimers = {};
+            const key = assistantUuid;
+            if (this._openUiPersistTimers[key]) clearTimeout(this._openUiPersistTimers[key]);
+            this._openUiPersistTimers[key] = setTimeout(() => {
+                delete this._openUiPersistTimers[key];
+                this.flushPersistAssistantOpenUiToDb(assistantUuid, canWrite);
+            }, 450);
+        },
+        async flushPersistAssistantOpenUiToDb(assistantUuid, canWrite) {
+            if (!canWrite || !assistantUuid) return;
+            const roomId = (this.currentChatRoom?.id || this.roomId || '').toString();
+            if (!roomId) return;
+            const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+            if (idx === -1) return;
+            const msg = this.messages[idx];
+            try {
+                await backend.putObject(`db://chats/${assistantUuid}`, {
+                    uuid: assistantUuid,
+                    id: roomId,
+                    messages: { ...msg }
+                });
+            } catch (e) {
+                // ignore
+            }
+        },
+
         normalizeAssistantMessageForDisplay(message) {
             if (!message || typeof message !== 'object') return message;
+            this.hydrateMessageOpenUiFromDb(message);
             const role = (message.role || '').toString();
             const content = message.content;
             if (role !== 'assistant' || typeof content !== 'string') return message;

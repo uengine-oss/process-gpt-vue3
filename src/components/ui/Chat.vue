@@ -645,19 +645,20 @@
                                                                                     {{ u.username || u.mentionText || u.email || u.id }}
                                                                                 </v-chip>
                                                                             </div>
-                                                                            <pre
-                                                                                v-if="message.content && message.contentType != 'html'"
-                                                                                class="text-body-1"
-                                                                                v-html="linkify(message.content)"
-                                                                            ></pre>
-
-                                                                            <!-- OpenUI: DeepAgents openui 이벤트로 전달된 openui_lang을 UI로 렌더링 -->
-                                                                            <div v-if="message.openuiLang" class="mt-2">
+                                                                            <div v-if="message.openuiLang" class="mb-2">
                                                                                 <OpenUiRenderer
                                                                                     :response="message.openuiLang"
                                                                                     :isStreaming="Boolean(message.openuiIsStreaming)"
+                                                                                    @action="handleOpenUiAction(message, $event)"
+                                                                                    @state-update="handleOpenUiStateUpdate(message, $event)"
+                                                                                    @parse-result="handleOpenUiParseResult(message, $event)"
                                                                                 />
                                                                             </div>
+                                                                            <pre
+                                                                                v-else-if="message.content && message.contentType != 'html'"
+                                                                                class="text-body-1"
+                                                                                v-html="linkify(message.content)"
+                                                                            ></pre>
 
                                                                             <pre
                                                                                 v-if="message.jsonContent && message.contentType != 'html'"
@@ -1124,15 +1125,20 @@
                                                                 agentMessage || message.role == 'system' ? 'agent-message' : 'other-message'
                                                             "
                                                         >
-                                                            <div v-html="renderedMarkdown(message.content)" class="markdown-content"></div>
-
-                                                            <!-- OpenUI: 메시지 텍스트(마크다운)와 무관하게 항상 렌더링 -->
-                                                            <div v-if="message.openuiLang" class="mt-2">
+                                                            <div v-if="message.openuiLang" class="mb-2">
                                                                 <OpenUiRenderer
                                                                     :response="message.openuiLang"
                                                                     :isStreaming="Boolean(message.openuiIsStreaming)"
+                                                                    @action="handleOpenUiAction(message, $event)"
+                                                                    @state-update="handleOpenUiStateUpdate(message, $event)"
+                                                                    @parse-result="handleOpenUiParseResult(message, $event)"
                                                                 />
                                                             </div>
+                                                            <div
+                                                                v-else
+                                                                v-html="renderedMarkdown(message.content)"
+                                                                class="markdown-content"
+                                                            ></div>
 
                                                             <div
                                                                 v-if="shouldDisplayMessageTimestamp(message, index)"
@@ -1478,6 +1484,15 @@
                                                                                 v-html="message.htmlContent"
                                                                                 class="text-body-1"
                                                                             ></div>
+                                                                            <div v-else-if="message.openuiLang" class="mb-2">
+                                                                                <OpenUiRenderer
+                                                                                    :response="message.openuiLang"
+                                                                                    :isStreaming="Boolean(message.openuiIsStreaming)"
+                                                                                    @action="handleOpenUiAction(message, $event)"
+                                                                                    @state-update="handleOpenUiStateUpdate(message, $event)"
+                                                                                    @parse-result="handleOpenUiParseResult(message, $event)"
+                                                                                />
+                                                                            </div>
                                                                             <div
                                                                                 v-else
                                                                                 class="text-body-1 markdown-content"
@@ -3148,7 +3163,11 @@ export default {
         'recording-mode-change',
         'invite-agent',
         'human-feedback-submit',
-        'human-feedback-skip'
+        'human-feedback-skip',
+        // OpenUI 폼 상태/액션 전달
+        'openui-state-update',
+        'openui-action',
+        'openui-parse-result'
     ],
     data() {
         return {
@@ -3778,6 +3797,44 @@ export default {
             if (!url) return;
             this.$emit('open-external-url', url);
         },
+        handleOpenUiStateUpdate(message, state) {
+            try {
+                if (!message) return;
+                message.openuiState = state || null;
+                this.$emit('openui-state-update', {
+                    messageUuid: message.uuid || null,
+                    state: state || null
+                });
+            } catch (e) {
+                // ignore
+            }
+        },
+        handleOpenUiAction(message, actionEvent) {
+            try {
+                if (!message) return;
+                message.openuiLastAction = actionEvent || null;
+                this.$emit('openui-action', {
+                    messageUuid: message.uuid || null,
+                    action: actionEvent || null,
+                    state: message.openuiState || null
+                });
+            } catch (e) {
+                // ignore
+            }
+        },
+        handleOpenUiParseResult(message, parseResult) {
+            try {
+                if (!message) return;
+                message.openuiParseResult = parseResult || null;
+                message.openuiParseErrors = parseResult?.meta?.errors || [];
+                this.$emit('openui-parse-result', {
+                    messageUuid: message.uuid || null,
+                    parseResult: parseResult || null
+                });
+            } catch (e) {
+                // ignore
+            }
+        },
         isRecommendationInvited(message, agentId) {
             try {
                 const rec = message?.__agentInviteRecommendation || null;
@@ -3850,9 +3907,13 @@ export default {
                 const hasImage = !!message?.image;
                 const hasImages = Array.isArray(message?.images) && message.images.length > 0;
                 const hasFile = this.getMessageFiles(message).length > 0;
-                return hasText || hasImage || hasImages || hasFile;
+                const hasOpenUi = !!(message?.openuiLang && String(message.openuiLang).trim());
+                return hasText || hasImage || hasImages || hasFile || hasOpenUi;
             } catch (e) {
-                return !!message?.content;
+                return (
+                    !!message?.content ||
+                    !!(message?.openuiLang && String(message.openuiLang).trim())
+                );
             }
         },
         getFilenameFromUrl(url) {

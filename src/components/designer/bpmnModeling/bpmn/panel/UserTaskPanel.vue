@@ -39,7 +39,7 @@
             ></EventSynchronizationForm>
             <div v-else>
                 <DefaultArguments v-model="copyUengineProperties"></DefaultArguments>
-                <Instruction v-model="activity.instruction"></Instruction>
+                <Instruction v-model="activity.instruction" :isViewMode="isViewMode"></Instruction>
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points"></Checkpoints>
             </div>
         </div>
@@ -120,7 +120,7 @@
                 :showAttributes="false"
             ></EventSynchronizationForm>
             <div v-else>
-                <Instruction v-model="activity.instruction"></Instruction>
+                <Instruction v-model="activity.instruction" :isViewMode="isViewMode"></Instruction>
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points"></Checkpoints>
             </div>
         </div>

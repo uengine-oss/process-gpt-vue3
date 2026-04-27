@@ -983,7 +983,8 @@ function handleParseResult(result: ParseResult | null) {
 }
 
 .openui-input,
-.openui-select {
+.openui-select,
+.openui-textarea {
     width: 100%;
     min-height: 36px;
     border: 1px solid rgba(0, 0, 0, 0.14);
@@ -995,16 +996,59 @@ function handleParseResult(result: ParseResult | null) {
     outline: none;
 }
 
+.openui-textarea {
+    min-height: auto;
+    padding: 8px 10px;
+    line-height: 1.5;
+    resize: vertical;
+    font-family: inherit;
+}
+
 .openui-input:focus,
-.openui-select:focus {
+.openui-select:focus,
+.openui-textarea:focus {
     border-color: rgba(var(--v-theme-primary), 0.6);
     box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.1);
 }
 
 .openui-input:disabled,
-.openui-select:disabled {
+.openui-select:disabled,
+.openui-textarea:disabled {
     background: #f7f8fa;
     color: rgba(0, 0, 0, 0.42);
+}
+
+.openui-field--radio {
+    gap: 6px;
+}
+
+.openui-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.openui-radio-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.82);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.openui-radio-option__input {
+    margin: 2px 0 0;
+    flex: 0 0 auto;
+    accent-color: rgb(var(--v-theme-primary));
+}
+
+.openui-radio-option__label {
+    min-width: 0;
+    word-break: break-word;
 }
 
 .openui-checkbox {

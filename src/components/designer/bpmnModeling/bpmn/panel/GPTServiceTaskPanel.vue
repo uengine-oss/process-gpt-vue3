@@ -20,7 +20,7 @@
             ></v-select>
 
             <!-- Instruction -->
-            <Instruction v-model="activity.description" class="mb-4"></Instruction>
+            <Instruction v-model="activity.description" :isViewMode="isViewMode" class="mb-4"></Instruction>
             <!-- Checkpoints -->
             <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
 

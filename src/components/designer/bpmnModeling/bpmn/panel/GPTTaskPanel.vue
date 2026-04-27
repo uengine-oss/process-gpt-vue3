@@ -14,7 +14,7 @@
             <Description v-model="activity.description" class="mb-4"></Description>
 
             <!-- Instruction -->
-            <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
+            <Instruction v-model="activity.instruction" :isViewMode="isViewMode" class="mb-4"></Instruction>
 
             <v-divider class="mb-2"></v-divider>
 

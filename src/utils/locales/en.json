@@ -1691,7 +1691,13 @@
             "agent": "Agent",
             "skill": "Skill",
             "activity": "Activity"
-        }
+        },
+        "mcpServersSelection": "MCP servers",
+        "skillsSelection": "Skills",
+        "mcpSkillsLoading": "Loading lists…",
+        "mcpSkillsEmpty": "No items registered, or lists are unavailable in this mode.",
+        "skillsUploaded": "Uploaded skills",
+        "skillsBuiltin": "Built-in skills"
     },
     "KeyValueField": {
         "add": "Add",
@@ -3713,7 +3719,8 @@
         "edit": "Edit",
         "add": "Add",
         "close": "Close",
-        "reset": "Reset"
+        "reset": "Reset",
+        "none": "None"
     },
     "taskCatalog": {
         "title": "Task Catalog Management",

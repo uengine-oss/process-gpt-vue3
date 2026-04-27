@@ -1,20 +1,44 @@
 <template>
     <div class="instruction-field">
-        <v-menu v-model="showMentionMenu" :close-on-content-click="false" location="bottom">
+        <div v-if="isViewMode" class="instruction-view">
+            <div v-if="parsedSegments.length > 0" class="instruction-preview d-flex flex-wrap align-center">
+                <template v-for="(segment, index) in parsedSegments" :key="index">
+                    <v-chip
+                        v-if="segment.type === 'mention'"
+                        size="x-small"
+                        class="instruction-mention-chip mx-0.5 my-0.5"
+                        :color="getMentionTypeMeta(segment.mention.type).color"
+                        variant="tonal"
+                    >
+                        <v-icon start size="14">
+                            {{ getMentionTypeMeta(segment.mention.type).icon }}
+                        </v-icon>
+                        @{{ segment.mention.label }}
+                    </v-chip>
+                    <span v-else class="instruction-preview-text">{{ segment.text }}</span>
+                </template>
+            </div>
+            <div v-else class="instruction-preview text-medium-emphasis">-</div>
+        </div>
+
+        <v-menu v-else v-model="showMentionMenu" :close-on-content-click="false" location="bottom">
             <template v-slot:activator="{ props }">
-                <v-textarea
-                    v-bind="props"
-                    ref="instructionTextarea"
-                    v-model="instruction"
-                    :label="$t('BpmnPropertyPanel.instruction')"
-                    rows="3"
-                    auto-grow
-                    @input="onInput"
-                    @click="onCaretEvent"
-                    @keyup="onCaretEvent"
-                    @keydown.up="onArrowKey"
-                    @keydown.down="onArrowKey"
-                ></v-textarea>
+                <div v-bind="props" class="instruction-editor-wrap">
+                    <div class="instruction-editor-label text-caption text-medium-emphasis mb-1">
+                        {{ $t('BpmnPropertyPanel.instruction') }}
+                    </div>
+                    <div
+                        ref="instructionEditor"
+                        class="instruction-editor"
+                        contenteditable="true"
+                        spellcheck="false"
+                        @input="onEditorInput"
+                        @click="onEditorCaretEvent"
+                        @keyup="onEditorCaretEvent"
+                        @keydown.up="onArrowKey"
+                        @keydown.down="onArrowKey"
+                    ></div>
+                </div>
             </template>
 
             <v-card max-height="300" class="py-1 instruction-mention-menu">
@@ -39,26 +63,6 @@
                 </div>
             </v-card>
         </v-menu>
-
-        <div v-if="parsedSegments.length > 0" class="mt-2 instruction-preview d-flex flex-wrap align-center">
-            <span class="text-caption text-medium-emphasis mr-1"> {{ $t('BpmnPropertyPanel.instructionPreview') || '미리보기' }}: </span>
-
-            <template v-for="(segment, index) in parsedSegments" :key="index">
-                <v-chip
-                    v-if="segment.type === 'mention'"
-                    size="x-small"
-                    class="ma-1"
-                    :color="getMentionTypeMeta(segment.mention.type).color"
-                    variant="tonal"
-                >
-                    <v-icon start size="14">
-                        {{ getMentionTypeMeta(segment.mention.type).icon }}
-                    </v-icon>
-                    @{{ segment.mention.label }}
-                </v-chip>
-                <span v-else>{{ segment.text }}</span>
-            </template>
-        </div>
     </div>
 </template>
 
@@ -66,6 +70,10 @@
 export default {
     props: {
         modelValue: String,
+        isViewMode: {
+            type: Boolean,
+            default: false
+        },
         // [{ id, type: 'agent' | 'skill' | 'activity', label, description? }]
         mentionCandidates: {
             type: Array,
@@ -78,7 +86,8 @@ export default {
             showMentionMenu: false,
             mentionStartIndex: null,
             mentionQuery: '',
-            cursorPosition: 0
+            cursorPosition: 0,
+            editorRenderRaf: null
         };
     },
 
@@ -134,31 +143,170 @@ export default {
                 const value = this.normalizeInstructionValue(newVal ? JSON.parse(JSON.stringify(newVal)) : '');
                 if (value !== this.instruction) {
                     this.instruction = value;
+                    this.$nextTick(() => this.scheduleRenderEditorFromInstruction());
                 }
+            }
+        },
+        isViewMode: {
+            immediate: true,
+            handler() {
+                this.$nextTick(() => this.scheduleRenderEditorFromInstruction());
             }
         }
     },
+    mounted() {
+        this.$nextTick(() => this.scheduleRenderEditorFromInstruction());
+    },
+    beforeUnmount() {
+        try {
+            if (this.editorRenderRaf) cancelAnimationFrame(this.editorRenderRaf);
+        } catch (e) {
+            // ignore
+        }
+    },
     methods: {
-        onInput(event) {
-            const text = typeof event === 'string' ? event : (event && event.target && event.target.value) || this.instruction || '';
+        scheduleRenderEditorFromInstruction() {
+            if (this.isViewMode) return;
+            if (this.editorRenderRaf) return;
+            this.editorRenderRaf = requestAnimationFrame(() => {
+                this.editorRenderRaf = null;
+                this.renderEditorFromInstruction();
+            });
+        },
+        renderEditorFromInstruction() {
+            const editor = this.$refs.instructionEditor;
+            if (!editor) return;
 
+            // 현재 선택/커서 위치를 최대한 유지하려고 시도
+            const caretIndex = this.getEditorCaretIndexInSerializedText();
+
+            editor.innerHTML = '';
+            const segments = this.parseInstruction(this.instruction || '');
+            segments.forEach((seg) => {
+                if (seg.type === 'text') {
+                    editor.appendChild(document.createTextNode(seg.text || ''));
+                    return;
+                }
+
+                // mention: 실제 저장 토큰은 data-raw로 들고, 화면에는 라벨을 칩처럼 렌더
+                const chip = document.createElement('span');
+                chip.className = 'instruction-chip';
+                chip.setAttribute('contenteditable', 'false');
+                chip.dataset.raw = seg.raw || '';
+                chip.dataset.type = seg.mention && seg.mention.type ? String(seg.mention.type) : 'agent';
+                chip.textContent = `@${seg.mention && seg.mention.label != null ? String(seg.mention.label) : ''}`;
+                editor.appendChild(chip);
+            });
+
+            this.$nextTick(() => {
+                this.setEditorCaretBySerializedIndex(caretIndex);
+            });
+        },
+        serializeEditorToInstruction() {
+            const editor = this.$refs.instructionEditor;
+            if (!editor) return (this.instruction || '').toString();
+            let out = '';
+            editor.childNodes.forEach((node) => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    out += node.textContent || '';
+                    return;
+                }
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const el = node;
+                    if (el.classList && el.classList.contains('instruction-chip')) {
+                        out += el.dataset && el.dataset.raw ? el.dataset.raw : '';
+                    } else {
+                        out += el.textContent || '';
+                    }
+                }
+            });
+            return out;
+        },
+        getEditorCaretIndexInSerializedText() {
+            const editor = this.$refs.instructionEditor;
+            if (!editor) return 0;
+            const sel = window.getSelection && window.getSelection();
+            if (!sel || sel.rangeCount === 0) return 0;
+            const range = sel.getRangeAt(0);
+            if (!editor.contains(range.startContainer)) return 0;
+
+            let idx = 0;
+            const nodes = Array.from(editor.childNodes);
+            for (const node of nodes) {
+                if (node === range.startContainer || (node.nodeType === Node.ELEMENT_NODE && node.contains && node.contains(range.startContainer))) {
+                    // 커서가 텍스트 노드 안에 있을 때
+                    if (range.startContainer.nodeType === Node.TEXT_NODE) {
+                        idx += range.startOffset;
+                    }
+                    // 커서가 에디터 직속 노드 사이에 있을 때
+                    if (range.startContainer === editor) {
+                        // startOffset은 child index
+                        // 앞쪽 노드들의 길이를 이미 누적해둔 상태라 추가할 게 없다
+                    }
+                    break;
+                }
+
+                if (node.nodeType === Node.TEXT_NODE) {
+                    idx += (node.textContent || '').length;
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const el = node;
+                    if (el.classList && el.classList.contains('instruction-chip')) {
+                        idx += (el.dataset && el.dataset.raw ? el.dataset.raw : '').length;
+                    } else {
+                        idx += (el.textContent || '').length;
+                    }
+                }
+            }
+            return idx;
+        },
+        setEditorCaretBySerializedIndex(targetIdx) {
+            const editor = this.$refs.instructionEditor;
+            if (!editor) return;
+            const idx = Math.max(0, Number(targetIdx || 0));
+
+            let acc = 0;
+            const range = document.createRange();
+            const sel = window.getSelection && window.getSelection();
+
+            for (const node of Array.from(editor.childNodes)) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const len = (node.textContent || '').length;
+                    if (acc + len >= idx) {
+                        range.setStart(node, Math.max(0, idx - acc));
+                        range.collapse(true);
+                        sel && (sel.removeAllRanges(), sel.addRange(range));
+                        return;
+                    }
+                    acc += len;
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const el = node;
+                    const rawLen = el.classList && el.classList.contains('instruction-chip') ? ((el.dataset && el.dataset.raw ? el.dataset.raw : '').length) : (el.textContent || '').length;
+                    if (acc + rawLen >= idx) {
+                        // 칩 내부로 커서를 넣지 않고 칩 뒤로 보낸다
+                        range.setStartAfter(el);
+                        range.collapse(true);
+                        sel && (sel.removeAllRanges(), sel.addRange(range));
+                        return;
+                    }
+                    acc += rawLen;
+                }
+            }
+            // 끝으로
+            range.selectNodeContents(editor);
+            range.collapse(false);
+            sel && (sel.removeAllRanges(), sel.addRange(range));
+        },
+        onEditorInput() {
+            const text = this.serializeEditorToInstruction();
             this.instruction = text;
 
-            const textarea = this.getTextareaEl(event);
-            const caretPos = textarea && Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : text.length;
-
+            const caretPos = this.getEditorCaretIndexInSerializedText();
             this.cursorPosition = caretPos;
             this.updateMentionMenuState(text, caretPos);
         },
-        onCaretEvent(event) {
-            // 텍스트는 그대로 두고, 커서 위치만 기준으로 멘션 메뉴를 갱신한다.
-            const text = (this.instruction || '').toString();
-            const textarea = this.getTextareaEl(event);
-            if (!textarea) {
-                return;
-            }
-            const caretPos = textarea && Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : text.length;
-
+        onEditorCaretEvent() {
+            const text = this.serializeEditorToInstruction();
+            const caretPos = this.getEditorCaretIndexInSerializedText();
             this.cursorPosition = caretPos;
             this.updateMentionMenuState(text, caretPos);
         },
@@ -166,11 +314,7 @@ export default {
             // 방향키를 눌렀을 때, 현재 커서 위치가 멘션 영역이 아니라면
             // 멘션 메뉴를 닫고 기본 방향키 동작을 그대로 허용한다.
             const text = (this.instruction || '').toString();
-            const textarea = this.getTextareaEl(event);
-            if (!textarea) {
-                return;
-            }
-            const caretPos = textarea && Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : text.length;
+            const caretPos = this.getEditorCaretIndexInSerializedText();
 
             const ctx = this.getMentionContext(text, caretPos);
             if (!ctx) {
@@ -202,21 +346,6 @@ export default {
                 this.mentionQuery = '';
                 this.showMentionMenu = false;
             }
-        },
-        getTextareaEl(event) {
-            if (event && event.target && (event.target.tagName || '').toLowerCase() === 'textarea') {
-                return event.target;
-            }
-            try {
-                const ref = this.$refs.instructionTextarea;
-                if (ref && ref.$el) {
-                    const ta = ref.$el.querySelector('textarea');
-                    return ta || null;
-                }
-            } catch (e) {
-                return null;
-            }
-            return null;
         },
         getMentionContext(text, caretPos) {
             const s = (text || '').toString();
@@ -257,10 +386,10 @@ export default {
 
             this.$nextTick(() => {
                 try {
-                    const ta = this.getTextareaEl();
-                    if (!ta) return;
-                    ta.focus && ta.focus();
-                    ta.setSelectionRange && ta.setSelectionRange(nextPos, nextPos);
+                    const editor = this.$refs.instructionEditor;
+                    editor && editor.focus && editor.focus();
+                    this.renderEditorFromInstruction();
+                    this.setEditorCaretBySerializedIndex(nextPos);
                 } catch (e) {
                     // ignore
                 }
@@ -361,7 +490,8 @@ export default {
 
                 segments.push({
                     type: 'mention',
-                    mention: { type, id, label }
+                    mention: { type, id, label },
+                    raw: `@${token}`
                 });
                 lastIndex = regex.lastIndex;
             }
@@ -398,5 +528,63 @@ export default {
 .instruction-mention-list .v-list-item-subtitle {
     white-space: normal;
     word-break: break-word;
+}
+
+.instruction-preview {
+    min-height: 40px;
+    padding: 10px 12px;
+    border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+    border-radius: 6px;
+    background: rgba(var(--v-theme-surface), 0.9);
+}
+
+.instruction-preview-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.instruction-mention-chip {
+    vertical-align: middle;
+}
+
+.instruction-editor-wrap {
+    width: 100%;
+}
+
+.instruction-editor {
+    min-height: 96px;
+    max-height: 240px;
+    overflow: auto;
+    padding: 10px 12px;
+    border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+    border-radius: 6px;
+    background: rgb(var(--v-theme-surface));
+    color: rgb(var(--v-theme-on-surface));
+    white-space: pre-wrap;
+    word-break: break-word;
+    outline: none;
+    line-height: 1.5;
+}
+
+.instruction-editor:focus {
+    border-color: rgba(var(--v-theme-primary), 0.7);
+    box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.18);
+}
+
+.instruction-editor ::selection {
+    background: rgba(var(--v-theme-primary), 0.35);
+}
+
+.instruction-chip {
+    display: inline-block;
+    margin: 0 2px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(var(--v-theme-primary), 0.12);
+    color: rgb(var(--v-theme-primary));
+    font-size: 12px;
+    line-height: 1.4;
+    vertical-align: baseline;
+    user-select: none;
 }
 </style>

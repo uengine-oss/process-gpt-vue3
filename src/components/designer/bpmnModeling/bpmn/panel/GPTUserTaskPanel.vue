@@ -39,7 +39,7 @@
                 </v-btn>
 
                 <!-- Instruction -->
-                <Instruction v-model="activity.instruction" :mention-candidates="mentionCandidates" class="mb-4"></Instruction>
+                <Instruction v-model="activity.instruction" :mention-candidates="mentionCandidates" :isViewMode="isViewMode" class="mb-4"></Instruction>
 
                 <v-divider class="mb-2"></v-divider>
 
@@ -204,7 +204,9 @@ export default {
                 contractCost: null,
                 unitPrice: null,
                 hitlEnabled: false,
-                hitlCapabilities: []
+                hitlCapabilities: [],
+                tools: [],
+                skills: []
             },
             isGeneratingSummary: false,
             formId: '',
@@ -257,7 +259,11 @@ export default {
             if (this.copyUengineProperties.menuName !== undefined) this.activity.menuName = this.copyUengineProperties.menuName;
             if (this.copyUengineProperties.manualLinks !== undefined) this.activity.manualLinks = this.copyUengineProperties.manualLinks;
             if (this.copyUengineProperties.businessId !== undefined) this.activity.businessId = this.copyUengineProperties.businessId;
+            if (this.copyUengineProperties.tools !== undefined) this.activity.tools = this.copyUengineProperties.tools;
+            if (this.copyUengineProperties.skills !== undefined) this.activity.skills = this.copyUengineProperties.skills;
         }
+
+        this.normalizeActivityMcpSkillArrays();
 
         if (this.activity.inputData) {
             const formIds = [
@@ -368,6 +374,10 @@ export default {
         }
     },
     methods: {
+        normalizeActivityMcpSkillArrays() {
+            if (!Array.isArray(this.activity.tools)) this.activity.tools = [];
+            if (!Array.isArray(this.activity.skills)) this.activity.skills = [];
+        },
         // Phase 2-6: AI Summary generation
         async generateAISummary() {
             this.isGeneratingSummary = true;
@@ -503,6 +513,7 @@ export default {
             if (activityFromDefinition) {
                 me.activity = { ...me.activity, ...activityFromDefinition };
             }
+            me.normalizeActivityMcpSkillArrays();
 
             me.formId =
                 me.activity.tool != '' && me.activity.tool.includes('formHandler:') ? me.activity.tool.replace('formHandler:', '') : '';
@@ -589,7 +600,29 @@ export default {
             if (me.processDefinition && Array.isArray(me.processDefinition.activities)) {
                 const targetActivity = me.processDefinition.activities.find((activity) => activity.id === me.element.id);
                 if (targetActivity) {
+                    // 패널 재오픈 시(created()에서 processDefinition.activities를 먼저 merge) 값이 되돌아가지 않도록
+                    // 현재 activity 상태를 processDefinition.activities에도 동기화한다.
+                    targetActivity.role = me.activity.role || '';
+                    targetActivity.duration = me.activity.duration;
+                    targetActivity.description = me.activity.description || '';
+                    targetActivity.instruction = me.activity.instruction || '';
+                    targetActivity.checkpoints = Array.isArray(me.activity.checkpoints) ? [...me.activity.checkpoints] : [];
+
+                    targetActivity.agent = me.activity.agent || null;
+                    targetActivity.agentMode = me.activity.agentMode || null;
+                    targetActivity.orchestration = me.activity.orchestration || null;
+
+                    targetActivity.attachments = Array.isArray(me.activity.attachments) ? [...me.activity.attachments] : [];
+                    targetActivity.inputData = Array.isArray(me.activity.inputData) ? [...me.activity.inputData] : [];
+                    targetActivity.customProperties = Array.isArray(me.activity.customProperties) ? [...me.activity.customProperties] : [];
+
+                    targetActivity.systemName = me.activity.systemName || '';
+                    targetActivity.menuName = me.activity.menuName || '';
+                    if (me.activity.businessId !== undefined) targetActivity.businessId = me.activity.businessId;
+
                     targetActivity.tool = me.activity.tool;
+                    targetActivity.tools = Array.isArray(me.activity.tools) ? [...me.activity.tools] : [];
+                    targetActivity.skills = Array.isArray(me.activity.skills) ? [...me.activity.skills] : [];
                 }
             }
 
@@ -612,7 +645,9 @@ export default {
                 tool: me.activity.tool,
                 customProperties: me.activity.customProperties,
                 systemName: me.activity.systemName,
-                menuName: me.activity.menuName
+                menuName: me.activity.menuName,
+                tools: Array.isArray(me.activity.tools) ? [...me.activity.tools] : [],
+                skills: Array.isArray(me.activity.skills) ? [...me.activity.skills] : []
             };
 
             me.$emit('update:uengineProperties', me.copyUengineProperties);
