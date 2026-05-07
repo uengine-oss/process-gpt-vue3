@@ -1669,9 +1669,11 @@
         "referenceInfo": "참조 정보",
         "edit": "폼 편집",
         "preview": "폼 미리보기",
+        "agentTab": "에이전트",
         "duration": "소요시간",
         "attachments": "첨부파일",
-        "agentMode": "에이전트 모드 사용",
+        "agentMode": "완료 수준",
+        "usePresetAgent": "미리 설정된 에이전트 사용",
         "orchestration": "에이전트 연구 방식",
         "days": "일",
         "selectForm": "참조할 폼 선택",
@@ -2250,7 +2252,7 @@
         },
         "orchestration": {
             "none": {
-                "title": "없음",
+                "title": "사용 안함",
                 "description": "연구 불필요 — 이미 충분한 정보가 있을 때",
                 "detailDesc": {
                     "title": "추가 연구 없이 바로 작업 시작",
@@ -2319,7 +2321,7 @@
                 }
             },
             "deepagents": {
-                "title": "DeepAgents",
+                "title": "딥 에이전트",
                 "description": "여러 전문 에이전트를 조합해 단계별로 심층 분석과 산출물을 생성. ex) 조사→분석→초안→검증 (5~15분 소요)",
                 "detailDesc": {
                     "title": "역할 기반 에이전트가 단계적으로 협업",

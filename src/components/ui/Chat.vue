@@ -645,7 +645,12 @@
                                                                                     {{ u.username || u.mentionText || u.email || u.id }}
                                                                                 </v-chip>
                                                                             </div>
-                                                                            <div v-if="message.openuiLang" class="mb-2">
+                                                                            <pre
+                                                                                v-if="message.content && message.contentType != 'html'"
+                                                                                class="text-body-1"
+                                                                                v-html="linkify(message.content)"
+                                                                            ></pre>
+                                                                            <div v-if="message.openuiLang" class="mt-2">
                                                                                 <OpenUiRenderer
                                                                                     :response="message.openuiLang"
                                                                                     :isStreaming="Boolean(message.openuiIsStreaming)"
@@ -654,11 +659,6 @@
                                                                                     @parse-result="handleOpenUiParseResult(message, $event)"
                                                                                 />
                                                                             </div>
-                                                                            <pre
-                                                                                v-else-if="message.content && message.contentType != 'html'"
-                                                                                class="text-body-1"
-                                                                                v-html="linkify(message.content)"
-                                                                            ></pre>
 
                                                                             <pre
                                                                                 v-if="message.jsonContent && message.contentType != 'html'"
@@ -1125,7 +1125,12 @@
                                                                 agentMessage || message.role == 'system' ? 'agent-message' : 'other-message'
                                                             "
                                                         >
-                                                            <div v-if="message.openuiLang" class="mb-2">
+                                                            <div
+                                                                v-if="message.content"
+                                                                v-html="renderedMarkdown(message.content)"
+                                                                class="markdown-content"
+                                                            ></div>
+                                                            <div v-if="message.openuiLang" class="mt-2">
                                                                 <OpenUiRenderer
                                                                     :response="message.openuiLang"
                                                                     :isStreaming="Boolean(message.openuiIsStreaming)"
@@ -1134,11 +1139,6 @@
                                                                     @parse-result="handleOpenUiParseResult(message, $event)"
                                                                 />
                                                             </div>
-                                                            <div
-                                                                v-else
-                                                                v-html="renderedMarkdown(message.content)"
-                                                                class="markdown-content"
-                                                            ></div>
 
                                                             <div
                                                                 v-if="shouldDisplayMessageTimestamp(message, index)"
@@ -1484,15 +1484,6 @@
                                                                                 v-html="message.htmlContent"
                                                                                 class="text-body-1"
                                                                             ></div>
-                                                                            <div v-else-if="message.openuiLang" class="mb-2">
-                                                                                <OpenUiRenderer
-                                                                                    :response="message.openuiLang"
-                                                                                    :isStreaming="Boolean(message.openuiIsStreaming)"
-                                                                                    @action="handleOpenUiAction(message, $event)"
-                                                                                    @state-update="handleOpenUiStateUpdate(message, $event)"
-                                                                                    @parse-result="handleOpenUiParseResult(message, $event)"
-                                                                                />
-                                                                            </div>
                                                                             <div
                                                                                 v-else
                                                                                 class="text-body-1 markdown-content"
@@ -1502,6 +1493,18 @@
                                                                                     )
                                                                                 "
                                                                             ></div>
+                                                                            <div
+                                                                                v-if="message.openuiLang"
+                                                                                class="mt-2"
+                                                                            >
+                                                                                <OpenUiRenderer
+                                                                                    :response="message.openuiLang"
+                                                                                    :isStreaming="Boolean(message.openuiIsStreaming)"
+                                                                                    @action="handleOpenUiAction(message, $event)"
+                                                                                    @state-update="handleOpenUiStateUpdate(message, $event)"
+                                                                                    @parse-result="handleOpenUiParseResult(message, $event)"
+                                                                                />
+                                                                            </div>
                                                                             <!-- <div
                                                                                 v-if="isInlineProcessPreviewTarget(message, index)"
                                                                                 class="mt-2"

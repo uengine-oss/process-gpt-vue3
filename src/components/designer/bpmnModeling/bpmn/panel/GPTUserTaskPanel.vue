@@ -2,6 +2,7 @@
     <div>
         <v-tabs v-model="activeTab" class="pl-4 pr-4">
             <v-tab value="setting">{{ $t('BpmnPropertyPanel.setting') }}</v-tab>
+            <v-tab value="agent">{{ $t('BpmnPropertyPanel.agentTab') }}</v-tab>
             <v-tab value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
             <v-tab value="edit">{{ $t('BpmnPropertyPanel.edit') }}</v-tab>
             <v-tab value="preview">{{ $t('BpmnPropertyPanel.preview') }}</v-tab>
@@ -67,15 +68,6 @@
                     </div>
                 </div> -->
 
-                <AgentSelectField
-                    v-model="activity"
-                    :backend="backend"
-                    @update:modelValue="(newVal) => (activity = newVal)"
-                    class="mb-4"
-                ></AgentSelectField>
-
-                <v-divider class="mb-4"></v-divider>
-
                 <!-- Custom Properties (Key-Value) -->
                 <KeyValueField
                     v-model="activity.customProperties"
@@ -83,6 +75,14 @@
                     :readonly="isViewMode"
                     class="mb-4"
                 ></KeyValueField>
+            </v-window-item>
+
+            <v-window-item value="agent" class="pa-4">
+                <AgentSelectField
+                    v-model="activity"
+                    :backend="backend"
+                    @update:modelValue="(newVal) => (activity = newVal)"
+                ></AgentSelectField>
             </v-window-item>
 
             <!-- Input Data -->

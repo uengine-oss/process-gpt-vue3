@@ -103,6 +103,10 @@ export default {
             type: Boolean,
             default: false
         },
+        allowedAgentTypes: {
+            type: Array,
+            default: null
+        },
         isExecute: {
             type: Boolean,
             default: false
@@ -193,6 +197,10 @@ export default {
                 const agentList = this.userList.filter((member) => member.is_agent);
                 this.userList = agentList;
                 this.userList = this.userList.filter((member) => member.alias !== 'default');
+            }
+
+            if (Array.isArray(this.allowedAgentTypes) && this.allowedAgentTypes.length > 0) {
+                this.userList = this.userList.filter((member) => this.allowedAgentTypes.includes(member.agent_type));
             }
         } else {
             const normalUserList = this.userList.filter((member) => !member.is_agent);

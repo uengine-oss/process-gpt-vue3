@@ -59,63 +59,69 @@
         </div>
 
         <!-- Orchestration-dependent configuration -->
-        <v-row v-if="showEngineConfig" class="mt-4" dense>
-            <!-- Left: agent mode / 담당 에이전트 -->
-            <v-col cols="12" md="6">
-                <div v-if="!isExecute">
-                    <v-select
-                        v-model="activity.agentMode"
-                        :items="agentModeItems"
-                        item-title="titleKey"
-                        item-value="value"
-                        density="compact"
-                        :label="$t('BpmnPropertyPanel.agentMode')"
-                        variant="outlined"
-                        :hide-details="true"
-                    >
-                        <template v-slot:selection="{ item }">
-                            <span>{{ item?.raw?.icon || '' }} {{ item?.raw?.titleKey ? $t(item.raw.titleKey) : '' }}</span>
-                        </template>
-                        <template v-slot:item="{ item, props }">
-                            <v-list-item v-bind="props">
-                                <template v-slot:title>
-                                    <div class="d-flex align-center">
-                                        <span class="font-weight-medium">{{ item?.raw?.titleKey ? $t(item.raw.titleKey) : '' }}</span>
-                                        <v-chip
-                                            v-if="item.raw.badge"
-                                            size="x-small"
-                                            class="ml-2"
-                                            :color="item.raw.badgeColor || 'primary'"
-                                        >
-                                            {{ item.raw.badge }}
-                                        </v-chip>
+        <div class="mt-4">
+            <!-- 완료 수준 -->
+            <div v-if="!isExecute">
+                <div class="text-caption text-medium-emphasis mb-2">
+                    {{ $t('BpmnPropertyPanel.agentMode') }}
+                </div>
+                <v-radio-group v-model="activity.agentMode" :hide-details="true" :disabled="engineConfigDisabled">
+                    <v-row dense>
+                        <v-col v-for="item in agentModeItems" :key="item.value" cols="6">
+                            <v-radio :value="item.value" density="compact" :disabled="engineConfigDisabled">
+                                <template #label>
+                                    <div class="d-flex flex-column">
+                                        <div class="d-flex align-center">
+                                            <span class="font-weight-medium">{{ item?.titleKey ? $t(item.titleKey) : '' }}</span>
+                                            <v-chip
+                                                v-if="item.badge"
+                                                size="x-small"
+                                                class="ml-2"
+                                                :color="item.badgeColor || 'primary'"
+                                            >
+                                                {{ item.badge }}
+                                            </v-chip>
+                                        </div>
+                                        <div v-if="item?.descKey" class="text-caption text-medium-emphasis mt-1">
+                                            {{ $t(item.descKey) }}
+                                        </div>
                                     </div>
                                 </template>
-                                <template v-slot:subtitle>
-                                    <div class="text-wrap mt-1">{{ item?.raw?.descKey ? $t(item.raw.descKey) : '' }}</div>
-                                </template>
-                            </v-list-item>
-                        </template>
-                    </v-select>
-                </div>
+                            </v-radio>
+                        </v-col>
+                    </v-row>
+                </v-radio-group>
+            </div>
 
-                <div class="mt-4">
-                    <user-select-field
-                        ref="agentUserSelectField"
-                        v-model="selectedAgent"
-                        :name="$t('organizationChartDefinition.agent')"
-                        :hide-details="true"
-                        :return-object="true"
-                        :use-agent="true"
-                        :use-multiple="true"
-                        :only-agent="true"
-                        :is-execute="isExecute"
-                    ></user-select-field>
-                </div>
-            </v-col>
+            <!-- 미리 설정된 에이전트 사용 (+체크 시 에이전트 선택) -->
+            <div class="mt-4">
+                <v-checkbox
+                    v-model="activity.usePresetAgent"
+                    density="compact"
+                    :hide-details="true"
+                    :label="$t('BpmnPropertyPanel.usePresetAgent')"
+                    :disabled="engineConfigDisabled"
+                />
+            </div>
 
-            <!-- Right: tools / skills -->
-            <v-col cols="12" md="6">
+            <div v-if="activity.usePresetAgent" class="mt-2">
+                <user-select-field
+                    ref="agentUserSelectField"
+                    v-model="selectedAgent"
+                    :name="$t('organizationChartDefinition.agent')"
+                    :hide-details="true"
+                    :return-object="true"
+                    :use-agent="true"
+                    :use-multiple="true"
+                    :only-agent="true"
+                    :allowed-agent-types="['agent']"
+                    :is-execute="isExecute"
+                    :disabled="engineConfigDisabled ? 'true' : 'false'"
+                ></user-select-field>
+            </div>
+
+            <!-- 도구/스킬 -->
+            <div class="mt-4">
                 <v-select
                     v-model="activity.tools"
                     :items="toolList"
@@ -128,7 +134,7 @@
                     closable-chips
                     variant="outlined"
                     density="compact"
-                    :disabled="isSingleAgentType"
+                    :disabled="engineConfigDisabled || activity.usePresetAgent"
                     :loading="toolsSkillsLoading"
                 >
                     <template #item="{ item, props }">
@@ -157,7 +163,7 @@
                     variant="outlined"
                     density="compact"
                     class="mt-4"
-                    :disabled="isSingleAgentType"
+                    :disabled="engineConfigDisabled || activity.usePresetAgent"
                     :loading="toolsSkillsLoading"
                 >
                     <template #item="{ item, props }">
@@ -175,8 +181,8 @@
                         </v-tooltip>
                     </template>
                 </v-select>
-            </v-col>
-        </v-row>
+            </div>
+        </div>
 
         <div v-if="isExecute" class="d-flex justify-end mt-2" style="gap: 8px">
             <!-- 기존 빠른 초안 생성 버튼 -->
@@ -242,27 +248,48 @@ export default {
             toolsSkillsLoading: false,
             orchestrationItems: [
                 {
-                    titleKey: 'common.none',
+                    titleKey: 'AgentSelectInfo.orchestration.none.title',
                     value: null,
                     descKey: ''
                 },
                 {
-                    titleKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.title',
-                    value: 'crewai-deep-research',
+                    titleKey: 'AgentSelectInfo.orchestration.deepagents.title',
+                    value: 'deepagents',
                     icon: 'playoff',
-                    descKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.description',
-                    costKey: 'AgentSelectInfo.cost.medium',
+                    descKey: 'AgentSelectInfo.orchestration.deepagents.description',
+                    costKey: 'AgentSelectInfo.cost.high',
                     detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.title',
+                        title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.title',
                         details: [
                             {
-                                title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.0.title'
+                                title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.0.title'
                             },
                             {
-                                title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.1.title'
+                                title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.1.title'
                             },
                             {
-                                title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.2.title'
+                                title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.2.title'
+                            }
+                        ]
+                    }
+                },
+                {
+                    titleKey: 'AgentSelectInfo.orchestration.langchainReact.title',
+                    value: 'langchain-react',
+                    icon: 'flowchart',
+                    descKey: 'AgentSelectInfo.orchestration.langchainReact.description',
+                    costKey: 'AgentSelectInfo.cost.low',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.title',
+                        details: [
+                            {
+                                title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.0.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.1.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.2.title'
                             }
                         ]
                     }
@@ -287,48 +314,6 @@ export default {
                             }
                         ]
                     }
-                },
-                {
-                    titleKey: 'AgentSelectInfo.orchestration.crewaiAction.title',
-                    value: 'crewai-action',
-                    icon: 'flowchart',
-                    descKey: 'AgentSelectInfo.orchestration.crewaiAction.description',
-                    costKey: 'AgentSelectInfo.cost.low',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.title',
-                        details: [
-                            {
-                                title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.0.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.1.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.2.title'
-                            }
-                        ]
-                    }
-                },
-                {
-                    titleKey: 'AgentSelectInfo.orchestration.deepagents.title',
-                    value: 'deepagents',
-                    icon: 'playoff',
-                    descKey: 'AgentSelectInfo.orchestration.deepagents.description',
-                    costKey: 'AgentSelectInfo.cost.medium',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.title',
-                        details: [
-                            {
-                                title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.0.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.1.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.2.title'
-                            }
-                        ]
-                    }
                 }
             ],
 
@@ -341,9 +326,9 @@ export default {
         isSingleAgentType() {
             return this.agentType === 'pgagent' || this.agentType === 'a2a';
         },
-        showEngineConfig() {
-            // pgagent/a2a 선택 시에도 하단 섹션이 "숨김"이 아니라 disable 상태로 보이도록 유지
-            return this.isSingleAgentType || !!this.activity.orchestration;
+        engineConfigDisabled() {
+            // orchestration이 '없음'(null)인 경우: 하위 영역은 노출하되 비활성화
+            return this.isSingleAgentType || !this.activity.orchestration;
         },
         skillItemsForSelect() {
             const items = [];
@@ -372,6 +357,19 @@ export default {
                     this.activity.agent = newVal.agent;
                     if (newVal.tools !== undefined) this.activity.tools = newVal.tools;
                     if (newVal.skills !== undefined) this.activity.skills = newVal.skills;
+                    this.activity.usePresetAgent = newVal.usePresetAgent !== undefined ? !!newVal.usePresetAgent : !!newVal.agent;
+                }
+            }
+        },
+        'activity.usePresetAgent': {
+            handler(newVal) {
+                if (newVal) {
+                    // 미리 설정된 에이전트 사용 시 도구/스킬은 불필요하므로 초기화 + (UI에서 disabled 처리)
+                    this.activity.tools = [];
+                    this.activity.skills = [];
+                } else {
+                    this.selectedAgent = null;
+                    this.activity.agent = null;
                 }
             }
         },
@@ -386,6 +384,12 @@ export default {
                     if (!this.activity.agentMode) this.activity.agentMode = 'draft';
                 } else {
                     this.activity.agentMode = null;
+                    // orchestration이 '없음'이 되면 하위 값들은 초기화하고 조작도 막는다.
+                    this.activity.usePresetAgent = false;
+                    this.selectedAgent = null;
+                    this.activity.agent = null;
+                    this.activity.tools = [];
+                    this.activity.skills = [];
                 }
             }
         },
@@ -439,17 +443,20 @@ export default {
             }
             this.activity.orchestration = this.modelValue.orchestration || null;
             this.activity.agent = this.modelValue.agent || null;
+            this.activity.usePresetAgent =
+                this.modelValue.usePresetAgent !== undefined ? !!this.modelValue.usePresetAgent : !!this.modelValue.agent;
         } else {
             this.activity = {
                 agent: null,
                 agentMode: null,
-                orchestration: null
+                orchestration: null,
+                usePresetAgent: false
             };
         }
     },
     async mounted() {
         await this.loadToolsAndSkills();
-        if (this.activity.agent && this.activity.agent !== null) {
+        if (this.activity.usePresetAgent && this.activity.agent && this.activity.agent !== null) {
             if (this.activity.agent.includes(',')) {
                 const agents = this.activity.agent.split(',');
                 const selectedAgents = [];
