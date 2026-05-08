@@ -7020,15 +7020,26 @@ export default {
 
             return '';
         },
+        _getCurrentTenantId() {
+            try {
+                return String(window?.$tenantName || localStorage.getItem('tenantId') || '').trim();
+            } catch (e) {
+                return '';
+            }
+        },
+
         async showIntegratedGraphByTask(taskId) {
             const me = this;
             const resolvedTaskId = String(taskId || '').trim();
             if (!resolvedTaskId) return;
 
+            const tenantId = me._getCurrentTenantId();
+
             me.selectedBpmn = {
                 process_name: 'PDF2BPMN 통합 그래프',
                 isIntegratedGraph: true,
-                task_id: resolvedTaskId
+                task_id: resolvedTaskId,
+                tenant_id: tenantId
             };
             me.bpmnViewMode = 'ontology';
             me.neo4jGraphLoading = true;
@@ -7038,7 +7049,12 @@ export default {
 
             try {
                 const base = await me._resolvePdf2BpmnApiBase();
-                const url = `${base}/graph/requests/${encodeURIComponent(resolvedTaskId)}`;
+                // tenant_id + task_id 를 함께 전달하여 백엔드가 정확한
+                // `g_<tenant>_<task_id>` 그래프를 짚을 수 있도록 한다.
+                const params = new URLSearchParams();
+                if (tenantId) params.set('tenant_id', tenantId);
+                const qs = params.toString();
+                const url = `${base}/graph/requests/${encodeURIComponent(resolvedTaskId)}${qs ? `?${qs}` : ''}`;
                 const res = await fetch(url, { method: 'GET' });
                 if (!res.ok) throw new Error(`status=${res.status}`);
 
@@ -7061,6 +7077,9 @@ export default {
                     : [];
 
                 me.neo4jGraphElements = elements;
+                if (data?.graph_name && me.selectedBpmn) {
+                    me.selectedBpmn.graph_name = data.graph_name;
+                }
                 if (elements.length === 0) {
                     me.neo4jGraphError = '통합 그래프 데이터가 비어있습니다.';
                 }
@@ -7146,6 +7165,23 @@ export default {
             return (ex && String(ex.neo4j_proc_id || '').trim()) || '';
         },
 
+        _getNeo4jGraphScopeFromDefinition(definition) {
+            // 한 todo 의 모든 프로세스는 `g_<tenant>_<task_id>` 그래프 하나에 누적된다.
+            // pdf2bpmn 워커가 definition.extraction 에 graph_name / tenant_id / task_id
+            // 를 함께 저장하므로, 그 값을 그대로 백엔드에 전달하면 가장 정확하게 그래프를 짚을 수 있다.
+            const def = definition && typeof definition === 'object' ? definition : null;
+            const ex = def && def.extraction && typeof def.extraction === 'object' ? def.extraction : null;
+            const fallbackTenantId = this._getCurrentTenantId();
+            return {
+                graph_name: (ex && String(ex.neo4j_graph_name || '').trim()) || '',
+                tenant_id: (ex && String(ex.tenant_id || '').trim()) || fallbackTenantId || '',
+                task_id:
+                    (ex && String(ex.task_id || ex.todo_id || '').trim()) ||
+                    String(this.selectedBpmn?.task_id || '').trim() ||
+                    ''
+            };
+        },
+
         async ensureNeo4jGraphLoaded() {
             const me = this;
             if (!me.selectedBpmn) return;
@@ -7164,7 +7200,14 @@ export default {
 
             try {
                 const base = await me._resolvePdf2BpmnApiBase();
-                const url = `${base}/processes/${encodeURIComponent(neo4jProcId)}/graph`;
+                const scope = me._getNeo4jGraphScopeFromDefinition(me.selectedBpmn?.definition);
+                const params = new URLSearchParams();
+                // 우선순위: graph_name (가장 정확) -> tenant_id + task_id (재구성 가능)
+                if (scope.graph_name) params.set('graph_name', scope.graph_name);
+                if (scope.tenant_id) params.set('tenant_id', scope.tenant_id);
+                if (scope.task_id) params.set('task_id', scope.task_id);
+                const qs = params.toString();
+                const url = `${base}/processes/${encodeURIComponent(neo4jProcId)}/graph${qs ? `?${qs}` : ''}`;
                 const res = await fetch(url, { method: 'GET' });
                 if (!res.ok) throw new Error(`status=${res.status}`);
                 const ct = String(res.headers.get('content-type') || '').toLowerCase();
