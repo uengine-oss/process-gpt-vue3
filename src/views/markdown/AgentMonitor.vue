@@ -199,19 +199,36 @@ export default {
             // 공통 옵션 배열
             orchestrationOptions: [
                 {
-                    titleKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.title',
-                    value: 'crewai-deep-research',
-                    label: this.$t('AgentSelectInfo.orchestration.crewaiDeepResearch.title'),
-                    startLabel: 'CrewAI Deep Research',
+                    titleKey: 'AgentSelectInfo.orchestration.deepagents.title',
+                    value: 'deepagents',
+                    label: this.$t('AgentSelectInfo.orchestration.deepagents.title'),
+                    startLabel: 'DeepAgents',
                     icon: 'playoff',
-                    descKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.description',
-                    costKey: 'AgentSelectInfo.cost.medium',
+                    descKey: 'AgentSelectInfo.orchestration.deepagents.description',
+                    costKey: 'AgentSelectInfo.cost.high',
                     detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.title',
+                        title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.title',
                         details: [
-                            { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.0.title' },
-                            { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.1.title' },
-                            { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.2.title' }
+                            { title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.2.title' }
+                        ]
+                    }
+                },
+                {
+                    titleKey: 'AgentSelectInfo.orchestration.langchainReact.title',
+                    value: 'langchain-react',
+                    label: this.$t('AgentSelectInfo.orchestration.langchainReact.title'),
+                    startLabel: 'LangChain React',
+                    icon: 'flowchart',
+                    descKey: 'AgentSelectInfo.orchestration.langchainReact.description',
+                    costKey: 'AgentSelectInfo.cost.low',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.2.title' }
                         ]
                     }
                 },
@@ -229,40 +246,6 @@ export default {
                             { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.0.title' },
                             { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.1.title' },
                             { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.2.title' }
-                        ]
-                    }
-                },
-                {
-                    titleKey: 'AgentSelectInfo.orchestration.crewaiAction.title',
-                    value: 'crewai-action',
-                    label: this.$t('AgentSelectInfo.orchestration.crewaiAction.title'),
-                    startLabel: 'CrewAI Action',
-                    icon: 'flowchart',
-                    descKey: 'AgentSelectInfo.orchestration.crewaiAction.description',
-                    costKey: 'AgentSelectInfo.cost.low',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.title',
-                        details: [
-                            { title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.0.title' },
-                            { title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.1.title' },
-                            { title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.2.title' }
-                        ]
-                    }
-                },
-                {
-                    titleKey: 'AgentSelectInfo.orchestration.deepagents.title',
-                    value: 'deepagents',
-                    label: this.$t('AgentSelectInfo.orchestration.deepagents.title'),
-                    startLabel: 'DeepAgents',
-                    icon: 'playoff',
-                    descKey: 'AgentSelectInfo.orchestration.deepagents.description',
-                    costKey: 'AgentSelectInfo.cost.medium',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.title',
-                        details: [
-                            { title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.0.title' },
-                            { title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.1.title' },
-                            { title: 'AgentSelectInfo.orchestration.deepagents.detailDesc.details.2.title' }
                         ]
                     }
                 }
@@ -464,8 +447,13 @@ export default {
             return usageMap;
         },
         isQueued() {
-            // 유효한 orchestration 값이 있는지 확인
-            const validOrch = this.todoStatus && this.todoStatus.agent_orch !== null && this.todoStatus.agent_orch !== '';
+            // 연구 방식이 '사용 안함'(null)이거나, 현재 지원하는 orchestration이 아니면 대기 UI를 표시하지 않는다.
+            const currentOrch =
+                this.selectedOrchestrationMethod || this.selectedAgent?.orchestration || this.workItem?.worklist?.orchestration || null;
+            if (!currentOrch) return false;
+
+            const allowedOrchs = this.orchestrationOptions.map((o) => o.value).filter((v) => v);
+            const validOrch = this.todoStatus && allowedOrchs.includes(this.todoStatus.agent_orch);
             // 시작 직후(첫 이벤트 이전)에도 대기 문구가 뜨도록 hasReceivedEvent 조건 제거
             return (
                 this.todoStatus &&
@@ -490,10 +478,9 @@ export default {
         isGeneralAgent() {
             if (this.selectedAgent) {
                 return (
-                    this.selectedAgent.orchestration === 'crewai-action' ||
-                    this.selectedAgent.orchestration === 'crewai-deep-research' ||
                     this.selectedAgent.orchestration === 'deep-research-custom' ||
-                    this.selectedAgent.orchestration === 'deepagents'
+                    this.selectedAgent.orchestration === 'deepagents' ||
+                    this.selectedAgent.orchestration === 'langchain-react'
                 );
             }
             return false;
@@ -1445,7 +1432,7 @@ export default {
                         this.selectedAgent?.orchestration ||
                         this.workItem?.worklist?.orchestration ||
                         this.todoStatus?.agent_orch ||
-                        'crewai-action';
+                        'deepagents';
                     await this.backend.putWorkItem(taskId, {
                         status: 'IN_PROGRESS',
                         description: content.text,
@@ -1615,7 +1602,7 @@ export default {
         document.addEventListener('click', this.handleOutsideClick);
 
         if (this.workItem && this.workItem.worklist) {
-            this.selectedOrchestrationMethod = this.workItem.worklist.orchestration || 'crewai-action';
+            this.selectedOrchestrationMethod = this.workItem.worklist.orchestration || 'deepagents';
         }
 
         if (this.selectedAgentType) {

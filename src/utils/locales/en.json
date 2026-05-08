@@ -1669,9 +1669,11 @@
         "referenceInfo": "Reference Information",
         "edit": "Edit",
         "preview": "Preview",
+        "agentTab": "Agent",
         "duration": "Duration",
         "attachments": "Attachments",
-        "agentMode": "Agent Mode",
+        "agentMode": "Completion Level",
+        "usePresetAgent": "Use preset agent",
         "orchestration": "Orchestration",
         "days": "days",
         "selectForm": "Select Form to Reference",
@@ -2250,7 +2252,7 @@
         },
         "orchestration": {
             "none": {
-                "title": "None",
+                "title": "Disabled",
                 "description": "No research needed — when you already have sufficient information",
                 "detailDesc": {
                     "title": "Start working immediately without additional research",

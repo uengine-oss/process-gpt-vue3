@@ -92,7 +92,7 @@ export default {
         workItemsByTab: {}, // 탭 ID별 워크아이템 저장
         defaultWorkItem: {
             worklist: {
-                orchestration: 'crewai-action'
+                orchestration: 'deepagents'
             }
         },
         howToUseInfo: {
@@ -103,7 +103,7 @@ export default {
         selectedAgent: {
             agent: '',
             agentMode: 'draft',
-            orchestration: 'crewai-action'
+            orchestration: 'deepagents'
         },
         instId: '',
         isInitialized: false, // 초기화 완료 플래그
@@ -131,7 +131,7 @@ export default {
                         this.selectedAgent = {
                             agent: newVal.id,
                             agentMode: 'draft',
-                            orchestration: newVal.agent_type === 'agent' ? 'crewai-action' : newVal.alias
+                            orchestration: newVal.agent_type === 'agent' ? 'deepagents' : newVal.alias
                         };
                         if (newVal.agent_type) {
                             this.defaultWorkItem.worklist.orchestration = newVal.alias;
@@ -168,7 +168,7 @@ export default {
             this.selectedAgent = {
                 agent: this.agentInfo.id,
                 agentMode: 'draft',
-                orchestration: this.agentInfo.agent_type === 'agent' ? 'crewai-action' : this.agentInfo.alias
+                orchestration: this.agentInfo.agent_type === 'agent' ? 'deepagents' : this.agentInfo.alias
             };
             if (this.agentInfo.agent_type) {
                 this.defaultWorkItem.worklist.orchestration = this.agentInfo.alias;
@@ -299,13 +299,13 @@ export default {
                 // 새 탭으로 전환
                 this.currentTabIndex = this.tabs.length - 1;
 
-                let agentOrch = 'crewai-action';
+                let agentOrch = 'deepagents';
                 if (this.agentInfo?.agent_type === 'pgagent') {
                     agentOrch = this.agentInfo?.alias;
                 } else if (this.agentInfo?.agent_type === 'a2a') {
                     agentOrch = this.agentInfo?.agent_type;
                 } else {
-                    agentOrch = 'crewai-action';
+                    agentOrch = 'deepagents';
                 }
                 // 새 워크아이템 생성
                 const newWorkItem = await this.createWorkItem({
@@ -373,7 +373,7 @@ export default {
         // 새로운 workItem 생성
         async createWorkItem(data) {
             try {
-                const agentOrch = data.agentOrch || 'crewai-action';
+                const agentOrch = data.agentOrch || 'deepagents';
                 const taskId = this.uuid();
                 const newWorkItem = await backend.putWorkItem(taskId, {
                     id: taskId,
@@ -384,7 +384,7 @@ export default {
                     tool: 'formHandler:defaultform',
                     status: 'NEW',
                     agent_mode: 'DRAFT',
-                    agent_orch: agentOrch || 'crewai-action',
+                    agent_orch: agentOrch || 'deepagents',
                     start_date: new Date().toISOString()
                 });
                 const workItem = await backend.getWorkItem(taskId);

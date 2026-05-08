@@ -1680,6 +1680,60 @@ export default {
             delete r.room_context;
             delete r.roomContext;
         },
+        normalizeRoomContext(ctx) {
+            if (ctx == null) return {};
+            if (typeof ctx === 'string') {
+                try {
+                    const parsed = JSON.parse(ctx);
+                    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+                } catch (e) {
+                    return {};
+                }
+            }
+            return ctx && typeof ctx === 'object' && !Array.isArray(ctx) ? ctx : {};
+        },
+        isPlainObject(v) {
+            return v !== null && typeof v === 'object' && !Array.isArray(v) && Object.prototype.toString.call(v) === '[object Object]';
+        },
+        deepMergeObjects(base, patch) {
+            const a = this.isPlainObject(base) ? base : {};
+            const b = this.isPlainObject(patch) ? patch : {};
+            const out = { ...a };
+            Object.keys(b).forEach((k) => {
+                const bv = b[k];
+                const av = a[k];
+                if (this.isPlainObject(av) && this.isPlainObject(bv)) {
+                    out[k] = this.deepMergeObjects(av, bv);
+                } else {
+                    out[k] = bv;
+                }
+            });
+            return out;
+        },
+        /**
+         * chat_rooms 업데이트 시, 서버에서 갱신한 context(예: tool 호출 내역)가
+         * 오래된 클라이언트 payload로 덮어써지지 않도록 DB 최신 context를 읽어 merge 후 저장한다.
+         */
+        async putChatRoomMerged(room) {
+            const r = room !== undefined && room !== null ? room : this.currentChatRoom;
+            if (!r || !r.id) return;
+            try {
+                const { data: existing, error } = await window.$supabase
+                    .from('chat_rooms')
+                    .select('context')
+                    .eq('id', r.id)
+                    .maybeSingle();
+                if (!error) {
+                    const existingCtx = this.normalizeRoomContext(existing?.context);
+                    const incomingCtx = this.normalizeRoomContext(r.context);
+                    const merged = this.deepMergeObjects(existingCtx, incomingCtx);
+                    this.writeChatRoomContext(merged, r);
+                }
+            } catch (e) {
+                // ignore: merge 실패해도 아래 저장은 진행
+            }
+            await backend.putObject('db://chat_rooms', r);
+        },
         normalizePayloadFiles(payload) {
             const files = [];
             const pushIfFile = (candidate) => {
@@ -2476,7 +2530,7 @@ export default {
                     updatedAt: new Date().toISOString()
                 };
                 this.writeChatRoomContext(nextCtx, this.currentChatRoom);
-                await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                await this.putChatRoomMerged(this.currentChatRoom);
             } catch (e) {
                 // ignore
             }
@@ -2515,7 +2569,7 @@ export default {
                     updatedAt: new Date().toISOString()
                 };
                 this.writeChatRoomContext(next, this.currentChatRoom);
-                await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                await this.putChatRoomMerged(this.currentChatRoom);
             } catch (e) {
                 // ignore
             }
@@ -2884,7 +2938,7 @@ export default {
             try {
                 if (this.currentChatRoom?.id) {
                     this.currentChatRoom.name = trimmed;
-                    await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                    await this.putChatRoomMerged(this.currentChatRoom);
                     this.EventBus.emit('chat-rooms-updated');
                 } else {
                     // draft
@@ -2921,7 +2975,7 @@ export default {
                 const ensureMe = me && !normalized.some((p) => this.participantMatches(p, me)) ? [...normalized, me] : normalized;
                 if (this.currentChatRoom?.id) {
                     this.currentChatRoom.participants = ensureMe;
-                    await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                    await this.putChatRoomMerged(this.currentChatRoom);
                     this.EventBus.emit('chat-rooms-updated');
                     this.warmupAgentsForCurrentRoom();
                 } else {
@@ -3461,7 +3515,7 @@ export default {
                     (hasImages ? `이미지 ${(payload?.images || []).length || 0}장` : '');
                 this.currentChatRoom.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 if (canWrite) {
-                    await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                    await this.putChatRoomMerged(this.currentChatRoom);
                 }
                 this.EventBus.emit('chat-rooms-updated');
 
@@ -3631,7 +3685,7 @@ export default {
                 const exists = normalized.some((p) => this.participantMatches(p, agentPart));
                 if (!exists) {
                     this.currentChatRoom.participants = [...curParts, agentPart].filter(Boolean);
-                    await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                    await this.putChatRoomMerged(this.currentChatRoom);
                     this.EventBus.emit('chat-rooms-updated');
                 }
 
@@ -5844,7 +5898,7 @@ export default {
                                     type: 'text',
                                     createdAt: new Date().toISOString()
                                 };
-                                await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                                await this.putChatRoomMerged(this.currentChatRoom);
                             }
                         }
 
@@ -6028,7 +6082,7 @@ export default {
                             type: 'text',
                             createdAt: new Date().toISOString()
                         };
-                        await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                        await this.putChatRoomMerged(this.currentChatRoom);
                     }
                 }
 
@@ -6104,7 +6158,7 @@ export default {
                         type: 'text',
                         createdAt: msg.timeStamp
                     };
-                    await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                    await this.putChatRoomMerged(this.currentChatRoom);
                 }
             } catch (e) {
                 // ignore
