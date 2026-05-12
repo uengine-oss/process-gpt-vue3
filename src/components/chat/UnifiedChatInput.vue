@@ -8,6 +8,24 @@
             </div>
         </div>
 
+        <!-- 지식 베이스 선택 칩 (입력창 위) -->
+        <div v-if="enableKnowledgeBase && selectedKnowledgeDocs.length > 0" class="knowledge-chip-row">
+            <v-chip
+                v-for="doc in selectedKnowledgeDocs"
+                :key="doc.id"
+                color="primary"
+                variant="tonal"
+                size="small"
+                closable
+                @click:close="removeKnowledgeDoc(doc.id)"
+                @click="openKnowledgePicker"
+                class="knowledge-chip"
+            >
+                <v-icon size="14" start :color="mimeIcon(doc.mimeType).color">{{ mimeIcon(doc.mimeType).icon }}</v-icon>
+                {{ doc.name }}
+            </v-chip>
+        </div>
+
         <!-- 입력 필드 - Chat 컴포넌트 사용 -->
         <div
             class="input-wrapper"
@@ -32,17 +50,42 @@
                 @stopMessage="$emit('stopMessage')"
                 @recording-mode-change="(v) => $emit('recording-mode-change', v)"
                 @desktop-voice-toggle="$emit('desktop-voice-toggle')"
-            />
+            >
+                <template v-if="enableKnowledgeBase" v-slot:custom-input-tools>
+                    <v-btn
+                        @click="openKnowledgePicker"
+                        class="ml-2 text-medium-emphasis knowledge-tool-btn"
+                        :class="{ 'has-selected': selectedKnowledgeDocs.length > 0 }"
+                        variant="outlined"
+                        rounded="pill"
+                        prepend-icon="mdi-bookshelf"
+                    >
+                        <span class="knowledge-tool-btn__label">지식 베이스</span>
+                        <span v-if="selectedKnowledgeDocs.length > 0" class="knowledge-tool-btn__count">
+                            {{ selectedKnowledgeDocs.length }}
+                        </span>
+                    </v-btn>
+                </template>
+            </Chat>
         </div>
+
+        <KnowledgeSpacePicker
+            v-if="enableKnowledgeBase"
+            v-model="knowledgePickerOpen"
+            :initiallySelectedIds="selectedKnowledgeIds"
+            @confirm="handleKnowledgeConfirm"
+        />
     </div>
 </template>
 
 <script>
 import Chat from '@/components/ui/Chat.vue';
+import KnowledgeSpacePicker from '@/components/knowledge/KnowledgeSpacePicker.vue';
+import { mimeIcon } from '@/utils/fileIcon';
 
 export default {
     name: 'UnifiedChatInput',
-    components: { Chat },
+    components: { Chat, KnowledgeSpacePicker },
     props: {
         /**
          * - panel: 기존 메인/definition-map 스타일(파란 톤 배경 + 패딩/테두리)
@@ -88,9 +131,25 @@ export default {
         enableDesktopVoice: {
             type: Boolean,
             default: false
+        },
+        // 지식 베이스(Google Drive) 피커 활성화
+        enableKnowledgeBase: {
+            type: Boolean,
+            default: false
+        },
+        // 외부에서 주입된 선택된 문서 (아티팩트 패널과 동기화)
+        knowledgeDocs: {
+            type: Array,
+            default: () => []
         }
     },
-    emits: ['sendMessage', 'recording-mode-change', 'stopMessage', 'desktop-voice-toggle'],
+    emits: [
+        'sendMessage',
+        'recording-mode-change',
+        'stopMessage',
+        'desktop-voice-toggle',
+        'update:knowledgeDocs'
+    ],
     computed: {
         containerVariantClass() {
             return this.variant === 'inline' ? 'main-chat-input-container--inline' : 'main-chat-input-container--panel';
@@ -118,14 +177,35 @@ export default {
                     type: 'question'
                 }
             ];
+        },
+        selectedKnowledgeDocs() {
+            return this.knowledgeDocs && this.knowledgeDocs.length > 0 ? this.knowledgeDocs : this.internalKnowledgeDocs;
+        },
+        selectedKnowledgeIds() {
+            return this.selectedKnowledgeDocs.map((d) => d.id);
         }
     },
     data() {
         return {
-            isDragOver: false
+            isDragOver: false,
+            knowledgePickerOpen: false,
+            internalKnowledgeDocs: []
         };
     },
     methods: {
+        mimeIcon,
+        openKnowledgePicker() {
+            this.knowledgePickerOpen = true;
+        },
+        handleKnowledgeConfirm(docs) {
+            this.internalKnowledgeDocs = docs;
+            this.$emit('update:knowledgeDocs', docs);
+        },
+        removeKnowledgeDoc(id) {
+            const next = this.selectedKnowledgeDocs.filter((d) => d.id !== id);
+            this.internalKnowledgeDocs = next;
+            this.$emit('update:knowledgeDocs', next);
+        },
         handleWrapperDrop(e) {
             this.isDragOver = false;
             const files = e.dataTransfer?.files;
@@ -176,7 +256,9 @@ export default {
                 // mention 메타데이터 pass-through (Chat.vue -> ChatRoomPage 라우팅)
                 mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],
                 // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)
-                reply: message.reply || null
+                reply: message.reply || null,
+                // 지식 베이스에서 선택된 문서 (RAG 컨텍스트로 사용)
+                knowledgeDocs: this.selectedKnowledgeDocs
             });
         }
     }
@@ -225,6 +307,73 @@ export default {
     background: #f1f5f9;
     border-color: #cbd5e1;
     color: #808080;
+}
+
+/* 지식 베이스 선택 칩 (textarea 위) */
+.knowledge-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px 8px 6px;
+}
+
+.knowledge-chip {
+    max-width: 240px;
+}
+
+.knowledge-chip :deep(.v-chip__content) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+/* 입력 툴바의 지식 베이스 버튼 (Chat custom-input-tools 슬롯) */
+.knowledge-tool-btn {
+    border-color: #e0e0e0 !important;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+    font-size: 13px;
+    height: 36px !important;
+    padding: 0 14px !important;
+}
+
+.knowledge-tool-btn :deep(.v-btn__prepend) {
+    margin-inline-end: 6px;
+}
+
+.knowledge-tool-btn :deep(.v-icon) {
+    font-size: 18px !important;
+}
+
+.knowledge-tool-btn.has-selected {
+    border-color: rgba(var(--v-theme-primary), 0.5) !important;
+    color: rgb(var(--v-theme-primary)) !important;
+    background: rgba(var(--v-theme-primary), 0.05);
+}
+
+.knowledge-tool-btn.has-selected :deep(.v-icon) {
+    color: rgb(var(--v-theme-primary));
+}
+
+.knowledge-tool-btn__label {
+    margin-left: 2px;
+}
+
+.knowledge-tool-btn__count {
+    margin-left: 6px;
+    background: rgb(var(--v-theme-primary));
+    color: #fff;
+    border-radius: 8px;
+    min-width: 18px;
+    height: 16px;
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* 입력 필드 */

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"hwpx\\\\|hwp\\\\|preview\" c:/Users/sh/Desktop/uengine_source/process-gpt/process-gpt-vue3/src --include=*.vue --include=*.ts -l)",
+      "Bash(grep -E '\\\\.\\(py|json|md|txt\\)$|^d')",
+      "Bash(pip show:*)",
+      "Bash(python -c \"import fastmcp; print\\(fastmcp.__file__\\)\")",
+      "Bash(find C:/Users/sh/Desktop/uengine_source/process-gpt/process-gpt-completion/.venv/Lib/site-packages/fastmcp -name client* -type f)",
+      "Bash(grep -r \"save-to-drive\\\\|process/drive\\\\|auth/google\" c:/Users/sh/Desktop/uengine_source/process-gpt/process-gpt-vue3/src --include=*.ts --include=*.vue --include=*.js)"
+    ]
+  }
+}

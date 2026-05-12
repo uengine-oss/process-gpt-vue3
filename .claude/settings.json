@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/sh/Desktop/uengine_source/hwpx-mcp/**)",
+      "Bash(find c:UsersshDesktopuengine_sourcehwpx-mcp -type f -name *.toml -o -name *.py -o -name *.cfg -o -name Dockerfile* -o -name docker-compose*)",
+      "Bash(python -c \"import office_mcp\")"
+    ]
+  }
+}

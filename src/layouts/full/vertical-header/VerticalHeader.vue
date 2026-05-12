@@ -26,6 +26,18 @@ const globalIsMobile = computed(() => {
 
 const workItemNotiBadge = ref(localStorage.getItem('notificationBadge_workitem') === 'true');
 
+// 지식 베이스 버튼 표시 여부 (uEngine 모드에서는 숨김)
+const showKnowledgeBase = computed(() => (window as any).$mode !== 'uEngine');
+
+function goToKnowledgeBase() {
+    if (router.currentRoute.value.path !== '/knowledge') {
+        router.push('/knowledge');
+    }
+    if (window.innerWidth <= 768) {
+        customizer.SET_SIDEBAR_DRAWER();
+    }
+}
+
 interface SidebarItem {
     title: string;
     icon: string;
@@ -243,6 +255,12 @@ function handleNotificationBadgeUpdate(event: Event) {
                             </v-btn>
                         </div>
                     </template>
+                    <div v-if="showKnowledgeBase" class="mr-2">
+                        <v-btn @click="goToKnowledgeBase" class="mobile-nav-btn pr-2 pl-2" variant="text">
+                            <v-icon class="mr-2">mdi-bookshelf</v-icon>
+                            {{ $t('headerMenu.knowledgeBase') }}
+                        </v-btn>
+                    </div>
                 </v-row>
             </v-container>
             <v-divider></v-divider>
@@ -286,6 +304,13 @@ function handleNotificationBadgeUpdate(event: Event) {
                                 @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)"
                             >
                                 <Icons :icon="'dashboard'" />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                    <v-tooltip v-if="showKnowledgeBase" :text="$t('headerMenu.knowledgeBase')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon @click="goToKnowledgeBase">
+                                <v-icon>mdi-bookshelf</v-icon>
                             </v-btn>
                         </template>
                     </v-tooltip>

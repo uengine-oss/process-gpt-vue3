@@ -1476,6 +1476,8 @@ export default {
                         file: primaryFile,
                         files: messageFiles,
                         orchestration,
+                        // 메인 화면에서 선택한 지식 베이스 문서 (sourceRef/file_id 등 포함)
+                        knowledgeDocs: Array.isArray(message?.knowledgeDocs) ? message.knowledgeDocs : [],
                         createdAt: nowIso
                     })
                 );

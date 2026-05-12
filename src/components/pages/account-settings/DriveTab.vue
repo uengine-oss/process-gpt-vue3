@@ -60,6 +60,7 @@
         </v-card-text>
 
         <v-card-actions class="justify-end">
+
             <v-btn
                 v-if="!isEditMode"
                 @click="processDriveFolderDocuments"
@@ -87,6 +88,7 @@ export default {
     data: () => ({
         isEditMode: false,
         isProcessingDriveFolder: false,
+        isReauthorizing: false,
         driveFolderJobId: null,
         driveFolderJobStatus: 'idle', // idle | running | completed | failed
         driveFolderJobProgress: null,
@@ -272,6 +274,25 @@ export default {
                 },
                 successMsg: '구글 드라이브 연동 정보가 저장되었습니다.'
             });
+        },
+        async reauthorizeGoogleDrive() {
+            this.isReauthorizing = true;
+            try {
+                const axios = (await import('axios')).default;
+                const response = await axios.get('/memento/auth/google/url', {
+                    params: { tenant_id: window.$tenantName }
+                });
+                if (response.data && response.data.auth_url) {
+                    window.location.href = response.data.auth_url;
+                } else {
+                    this.notifySnackbar('인증 URL을 받지 못했습니다', 'error', JSON.stringify(response.data));
+                    this.isReauthorizing = false;
+                }
+            } catch (e) {
+                console.error('Google Drive 재인증 실패:', e);
+                this.notifySnackbar('재인증 요청 실패', 'error', e?.response?.data?.detail || e?.message);
+                this.isReauthorizing = false;
+            }
         },
         processDriveFolderDocuments() {
             const me = this;

@@ -1970,3 +1970,146 @@ on conflict (user_id, tenant_id, skill_name) do nothing;
 ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS drive_folder_id TEXT;
 ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 CREATE INDEX IF NOT EXISTS documents_drive_folder_id_idx ON public.documents (drive_folder_id);
+
+-- =====================================================
+-- knowledge_files: 내부 지식공간 파일 메타/상태 관리
+-- (Drive 인덱싱 + 추후 직접 업로드 공통 관리 테이블)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS public.knowledge_files (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id text NOT NULL,
+    source_type text NOT NULL,
+    source_ref text NOT NULL,
+    file_name text NOT NULL,
+    folder_path text NULL,
+    drive_folder_id text NULL,
+    mime_type text NULL,
+    size_bytes bigint NULL,
+    modified_time timestamptz NULL,
+    owner text NULL,
+    uploaded_by_uid text NULL,
+    uploaded_by_name text NULL,
+    index_status text NOT NULL DEFAULT 'pending',
+    index_error text NULL,
+    indexed_at timestamptz NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 컬럼 보강 (이미 테이블이 있고 일부 컬럼만 빠진 경우 대비)
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS source_type text;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS source_ref text;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS file_name text;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS folder_path text;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS drive_folder_id text;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS mime_type text;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS size_bytes bigint;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS modified_time timestamptz;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS owner text;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS uploaded_by_uid text;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS uploaded_by_name text;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS file_hash char(64);
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS index_status text NOT NULL DEFAULT 'pending';
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS index_error text;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS indexed_at timestamptz;
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.knowledge_files ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+-- 제약 (이미 있으면 무시)
+DO $$ BEGIN
+    ALTER TABLE public.knowledge_files
+        ADD CONSTRAINT knowledge_files_unique_source UNIQUE (tenant_id, source_type, source_ref);
+EXCEPTION WHEN duplicate_table THEN NULL;
+WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE public.knowledge_files
+        ADD CONSTRAINT knowledge_files_tenant_fk FOREIGN KEY (tenant_id)
+            REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE public.knowledge_files
+        ADD CONSTRAINT knowledge_files_status_check CHECK (
+            index_status IN ('pending', 'processing', 'indexed', 'failed', 'excluded')
+        );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_knowledge_files_tenant ON public.knowledge_files (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_files_tenant_status ON public.knowledge_files (tenant_id, index_status);
+CREATE INDEX IF NOT EXISTS idx_knowledge_files_tenant_folder ON public.knowledge_files (tenant_id, folder_path);
+CREATE INDEX IF NOT EXISTS idx_knowledge_files_tenant_source ON public.knowledge_files (tenant_id, source_type);
+CREATE INDEX IF NOT EXISTS idx_knowledge_files_tenant_hash ON public.knowledge_files (tenant_id, file_hash) WHERE file_hash IS NOT NULL;
+
+-- updated_at 자동 갱신 트리거
+DROP TRIGGER IF EXISTS set_updated_at ON public.knowledge_files;
+CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON public.knowledge_files
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+-- RLS
+ALTER TABLE public.knowledge_files ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS knowledge_files_select_policy ON public.knowledge_files;
+CREATE POLICY knowledge_files_select_policy ON public.knowledge_files
+    FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS knowledge_files_insert_policy ON public.knowledge_files;
+CREATE POLICY knowledge_files_insert_policy ON public.knowledge_files
+    FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS knowledge_files_update_policy ON public.knowledge_files;
+CREATE POLICY knowledge_files_update_policy ON public.knowledge_files
+    FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS knowledge_files_delete_policy ON public.knowledge_files;
+CREATE POLICY knowledge_files_delete_policy ON public.knowledge_files
+    FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+-- =====================================================
+-- knowledge_folders: 빈 폴더 영속화
+-- =====================================================
+CREATE TABLE IF NOT EXISTS public.knowledge_folders (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id text NOT NULL,
+    folder_path text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+DO $$ BEGIN
+    ALTER TABLE public.knowledge_folders
+        ADD CONSTRAINT knowledge_folders_unique UNIQUE (tenant_id, folder_path);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE public.knowledge_folders
+        ADD CONSTRAINT knowledge_folders_tenant_fk FOREIGN KEY (tenant_id)
+            REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_folders_tenant ON public.knowledge_folders (tenant_id);
+
+ALTER TABLE public.knowledge_folders ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS knowledge_folders_select_policy ON public.knowledge_folders;
+CREATE POLICY knowledge_folders_select_policy ON public.knowledge_folders
+    FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS knowledge_folders_insert_policy ON public.knowledge_folders;
+CREATE POLICY knowledge_folders_insert_policy ON public.knowledge_folders
+    FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS knowledge_folders_update_policy ON public.knowledge_folders;
+CREATE POLICY knowledge_folders_update_policy ON public.knowledge_folders
+    FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS knowledge_folders_delete_policy ON public.knowledge_folders;
+CREATE POLICY knowledge_folders_delete_policy ON public.knowledge_folders
+    FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
