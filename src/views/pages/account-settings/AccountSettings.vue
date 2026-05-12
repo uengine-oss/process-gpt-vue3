@@ -18,6 +18,11 @@
                                     <v-tab v-if="superAdmin && !isUEngineMode" value="Drive">
                                         <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }}
                                     </v-tab>
+                                    <!-- 지식 베이스 파일 관리 -->
+                                    <v-tab v-if="!isUEngineMode" value="KnowledgeFiles">
+                                        <v-icon class="mr-2" size="20">mdi-folder-text-outline</v-icon>
+                                        지식 베이스
+                                    </v-tab>
                                     <!-- MCP 서버 -->
                                     <v-tab v-if="!isUEngineMode" value="MCP-Servers">
                                         <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }}
@@ -230,6 +235,13 @@
                             </div>
                         </v-window-item>
 
+                        <!-- KnowledgeFiles: 지식 베이스 파일 관리 -->
+                        <v-window-item v-if="!isUEngineMode" value="KnowledgeFiles">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                                <KnowledgeFilesTab />
+                            </div>
+                        </v-window-item>
+
                         <!-- ConnectionInfo: 데이터소스 탭 (accountTab.dataSource) -->
                         <v-window-item v-if="!isUEngineMode" value="ConnectionInfo">
                             <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
@@ -301,6 +313,7 @@ import { getMainDomainUrl } from '@/utils/domainUtils';
 import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
 import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
+import KnowledgeFilesTab from '@/components/pages/account-settings/KnowledgeFilesTab.vue';
 import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
@@ -323,6 +336,7 @@ export default {
         AccountTab,
         ManageAccessTab,
         DriveTab,
+        KnowledgeFilesTab,
         MCPServerTab,
         MCPEnvSecretTab,
         ConnectionInfoTab,

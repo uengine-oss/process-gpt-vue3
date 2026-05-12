@@ -1,6 +1,49 @@
 <template>
     <div v-if="hasSideInfo" class="side-info">
-        <details v-if="showAttachmentsBlock" class="side-info__box" open>
+        <details v-if="showActivityBlock" class="side-info__box" open>
+            <summary class="side-info__summary">
+                <span class="side-info__title">활동</span>
+                <span class="side-info__count">{{ activityList.length }}</span>
+            </summary>
+            <ul class="side-info__list">
+                <li v-for="a in activityList" :key="a.key" class="side-info__item">
+                    <span class="side-info__item-label activity-row">
+                        <v-icon
+                            size="14"
+                            class="activity-icon"
+                            :color="a.kind === 'subagent' ? 'primary' : undefined"
+                        >
+                            {{ a.kind === 'subagent' ? 'mdi-robot-outline' : 'mdi-wrench-outline' }}
+                        </v-icon>
+                        <span class="activity-kind" :class="`is-${a.kind}`">
+                            {{ a.kind === 'subagent' ? '서브에이전트' : '도구' }}
+                        </span>
+                        <strong v-if="a.kind === 'subagent'" class="activity-name">
+                            {{ a.subagentType || 'subagent' }}
+                        </strong>
+                        <span v-else class="activity-name">{{ a.label }}</span>
+                    </span>
+                    <span class="side-info__chip" :class="`is-${a.status || 'running'}`">{{ a.status || 'running' }}</span>
+                </li>
+            </ul>
+        </details>
+
+        <details v-if="showKnowledgeBlock" class="side-info__box" open>
+            <summary class="side-info__summary">
+                <span class="side-info__title">지식 베이스</span>
+                <span class="side-info__count">{{ knowledgeList.length }}</span>
+            </summary>
+            <ul class="side-info__list">
+                <li v-for="d in knowledgeList" :key="d.key" class="side-info__item">
+                    <span class="side-info__item-label">{{ d.label }}</span>
+                    <span v-if="d.source" class="side-info__chip" :class="`is-${d.source}`">
+                        {{ d.source === 'drive' ? 'Drive' : 'Storage' }}
+                    </span>
+                </li>
+            </ul>
+        </details>
+
+        <details v-if="showAttachmentsBlock" class="side-info__box" :open="!showKnowledgeBlock">
             <summary class="side-info__summary">
                 <span class="side-info__title">업로드</span>
                 <span class="side-info__count">{{ attachmentsList.length }}</span>
@@ -51,7 +94,7 @@
 
 <script>
 /** 에이전트 채팅방 컨텍스트(할일·스킬·도구 등) — 아티팩트 탭과 구분되는 패널 타입. ArtifactPanel 등에서 import */
-export const AGENT_CHAT_ROOM_CONTEXT_TYPES = new Set(['attachments', 'tools', 'skills', 'todos']);
+export const AGENT_CHAT_ROOM_CONTEXT_TYPES = new Set(['activity', 'attachments', 'tools', 'skills', 'todos', 'knowledge']);
 
 export default {
     name: 'AgentChatRoomContext',
@@ -67,6 +110,27 @@ export default {
             });
             return map;
         },
+        activityList() {
+            const p = this.sideInfoPanels.get('activity');
+            const items = Array.isArray(p?.data?.items) ? p.data.items : [];
+            return items
+                .map((it, idx) => {
+                    const kind = (it?.kind || (it?.tool === 'task' ? 'subagent' : 'tool')).toString();
+                    const subagentType = (it?.subagentType || it?.subagent_type || '').toString();
+                    const baseLabel =
+                        kind === 'subagent'
+                            ? subagentType || 'subagent'
+                            : (it?.displayName || it?.name || it?.tool || '').toString();
+                    return {
+                        key: (it?.id || `act-${idx}`).toString(),
+                        label: baseLabel,
+                        kind,
+                        subagentType,
+                        status: (it?.status || 'running').toString()
+                    };
+                })
+                .filter((x) => x.label);
+        },
         attachmentsList() {
             const p = this.sideInfoPanels.get('attachments');
             const items = Array.isArray(p?.data?.items) ? p.data.items : [];
@@ -78,6 +142,17 @@ export default {
                         label: label || (a?.file_path || a?.fileUrl || a?.url || a?.path || `첨부 ${idx + 1}`).toString()
                     };
                 })
+                .filter((x) => x.label);
+        },
+        knowledgeList() {
+            const p = this.sideInfoPanels.get('knowledge');
+            const items = Array.isArray(p?.data?.items) ? p.data.items : [];
+            return items
+                .map((d, idx) => ({
+                    key: (d?.id || d?.sourceRef || d?.source_ref || `knw-${idx}`).toString(),
+                    label: (d?.name || d?.file_name || d?.label || '').toString(),
+                    source: (d?.sourceType || d?.source_type || '').toString()
+                }))
                 .filter((x) => x.label);
         },
         toolsList() {
@@ -127,6 +202,12 @@ export default {
                 }))
                 .filter((x) => x.label);
         },
+        showActivityBlock() {
+            return this.activityEnabled && this.activityList.length > 0;
+        },
+        showKnowledgeBlock() {
+            return this.knowledgeEnabled && this.knowledgeList.length > 0;
+        },
         showAttachmentsBlock() {
             return this.attachmentsEnabled && this.attachmentsList.length > 0;
         },
@@ -141,11 +222,19 @@ export default {
         },
         hasSideInfo() {
             return (
+                this.showActivityBlock ||
+                this.showKnowledgeBlock ||
                 this.showAttachmentsBlock ||
                 this.showTodosBlock ||
                 this.showSkillsBlock ||
                 this.showToolsBlock
             );
+        },
+        activityEnabled() {
+            return !!this.sideInfoPanels.get('activity')?.data?.enabled;
+        },
+        knowledgeEnabled() {
+            return !!this.sideInfoPanels.get('knowledge')?.data?.enabled;
         },
         attachmentsEnabled() {
             return !!this.sideInfoPanels.get('attachments')?.data?.enabled;
@@ -262,5 +351,38 @@ export default {
     border-color: rgba(var(--v-theme-info), 0.35);
     color: rgb(var(--v-theme-info));
     background: rgba(var(--v-theme-info), 0.08);
+}
+
+.activity-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.activity-icon {
+    flex-shrink: 0;
+}
+
+.activity-kind {
+    font-size: 10px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--v-theme-borderColor), 0.55);
+    color: rgba(var(--v-theme-on-surface), 0.6);
+    background: rgba(var(--v-theme-on-surface), 0.03);
+    flex-shrink: 0;
+}
+
+.activity-kind.is-subagent {
+    border-color: rgba(var(--v-theme-primary), 0.4);
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.activity-name {
+    word-break: break-all;
+    min-width: 0;
 }
 </style>

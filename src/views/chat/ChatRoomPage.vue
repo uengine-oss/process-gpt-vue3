@@ -208,6 +208,9 @@
                                 :currentChatRoom="currentChatRoom"
                                 :desktopVoiceActive="isDesktopVoiceActive"
                                 :enableDesktopVoice="isVoiceEnabled"
+                                :enableKnowledgeBase="true"
+                                :knowledgeDocs="selectedKnowledgeDocs"
+                                @update:knowledgeDocs="onKnowledgeDocsUpdate"
                                 @sendMessage="handleSendMessage"
                                 @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
                                 @desktop-voice-toggle="toggleDesktopVoice"
@@ -931,6 +934,7 @@ export default {
 
             // 산출물 미리보기 패널 (공통)
             artifactPanels: [], // [{ id, type, label, data: { htmlUrl, fileUrl, messageId } }]
+            selectedKnowledgeDocs: [], // 지식 베이스(Google Drive) RAG 컨텍스트로 선택된 문서
             activeArtifactId: null, // 현재 활성 탭 ID
             artifactSidebarVisible: false,
             artifactSidebarWidth: 820,
@@ -945,11 +949,17 @@ export default {
             plannedTodos: [], // [{ content, status, ... }]
             /** chat_attachments 테이블에서 읽은 첨부 목록 */
             plannedAttachments: [],
+            /** 우측 사이드바 활동(현재 실행 중인 tool / 서브에이전트) — id 키 기반 */
+            plannedActivityById: {},
+            /** 활동 패널의 시각적 정렬용 단조 증가 카운터 */
+            _activityOrder: 0,
             planSideInfoEnabled: {
+                activity: false,
                 tools: false,
                 skills: false,
                 todos: false,
-                attachments: false
+                attachments: false,
+                knowledge: true
             },
             // 우측 사이드바 폭 정책
             artifactSidebarWideWidth: 820,
@@ -1897,19 +1907,26 @@ export default {
             try {
                 const files = this.normalizePayloadFiles({ files: rawFiles });
                 if (!roomId || files.length === 0) return;
+                const list = Array.isArray(this.plannedAttachments) ? this.plannedAttachments : [];
                 const seen = new Set(
-                    (Array.isArray(this.plannedAttachments) ? this.plannedAttachments : [])
-                        .map((a) => `${a?.file_path || ''}|${a?.file_name || ''}`)
-                        .filter(Boolean)
+                    list.map((a) => `${a?.file_path || ''}|${a?.file_name || ''}`).filter(Boolean)
                 );
+                const localAdded = [];
                 for (const f of files) {
                     const row = this.normalizeChatAttachmentRow(f, roomId);
                     if (!row) continue;
                     const key = `${row.file_path || ''}|${row.file_name || ''}`;
                     if (key && seen.has(key)) continue;
                     seen.add(key);
+                    localAdded.push(row);
                     // eslint-disable-next-line no-await-in-loop
                     await backend.putObject('db://chat_attachments', row);
+                }
+                // realtime 구독 콜백을 기다리지 않고 즉시 사이드바 반영
+                if (localAdded.length > 0) {
+                    this.plannedAttachments = [...list, ...localAdded];
+                    this.planSideInfoEnabled.attachments = true;
+                    this.upsertAttachmentsPanel();
                 }
             } catch (e) {
                 // 첨부 저장 실패해도 메시지는 진행 (단, 디버깅 위해 로그는 남긴다)
@@ -2224,7 +2241,11 @@ export default {
             this.plannedSkills = [];
             this.plannedTodos = [];
             this.plannedAttachments = [];
-            this.planSideInfoEnabled = { tools: false, skills: false, todos: false, attachments: false };
+            this.planSideInfoEnabled = { activity: false, tools: false, skills: false, todos: false, attachments: false, knowledge: true };
+            this.plannedActivityById = {};
+            this._activityOrder = 0;
+            // 방 전환 시 지식 베이스 선택 상태도 초기화 (kickoff에서 새로 세팅 가능)
+            this.selectedKnowledgeDocs = [];
             try {
                 // 방 전환 시 히스토리 페이지네이션 상태 초기화
                 this.resetHistoryPagination();
@@ -2346,6 +2367,12 @@ export default {
 
                 // 1회만 실행
                 sessionStorage.removeItem(`chatKickoff:${roomId}`);
+
+                // 메인 화면에서 선택한 지식 베이스 문서를 채팅방으로 인계 — 입력창 칩 + 사이드 컨텍스트 표시
+                if (Array.isArray(payload?.knowledgeDocs) && payload.knowledgeDocs.length > 0) {
+                    this.selectedKnowledgeDocs = payload.knowledgeDocs;
+                    this.upsertKnowledgePanel();
+                }
 
                 // 메인 화면에서 전달된 raw File이 있으면 memento 경유 업로드 (임베딩 + 벡터 저장)
                 const pendingFiles = window.__pendingMementoFiles;
@@ -4406,6 +4433,40 @@ export default {
             this.artifactSidebarVisible = true;
         },
 
+        /** 우측 사이드바에 활동(현재 실행 중 tool / 서브에이전트) 패널 생성/갱신 */
+        upsertActivityPanel() {
+            if (!this.planSideInfoEnabled?.activity) return;
+            const items = Object.values(this.plannedActivityById || {})
+                .sort((a, b) => (a.__order ?? 0) - (b.__order ?? 0));
+            const data = { enabled: true, items };
+            const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'activity');
+            if (existingIdx !== -1) {
+                const existing = this.artifactPanels[existingIdx];
+                this.artifactPanels[existingIdx] = { ...existing, label: '활동', data };
+            } else {
+                const id = `activity-${this.uuid()}`;
+                this.artifactPanels.push({ id, type: 'activity', label: '활동', data });
+            }
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
+            if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
+            this.artifactSidebarVisible = true;
+        },
+        /** 활동 패널에 한 항목 추가/갱신. status 변경에도 사용. */
+        recordActivity(entry) {
+            if (!entry) return;
+            const id = (entry.id || `${entry.tool || 'tool'}-${this._activityOrder}`).toString();
+            const prev = this.plannedActivityById[id] || null;
+            const merged = {
+                ...(prev || {}),
+                ...entry,
+                id,
+                __order: prev?.__order ?? ++this._activityOrder
+            };
+            this.plannedActivityById = { ...this.plannedActivityById, [id]: merged };
+            if (!this.planSideInfoEnabled.activity) this.planSideInfoEnabled.activity = true;
+            this.upsertActivityPanel();
+        },
+
         /** 우측 사이드바에 Tools 정보 패널(숨김 타입) 생성/갱신 */
         upsertToolsPanel() {
             if (!this.planSideInfoEnabled?.tools) return;
@@ -4491,6 +4552,38 @@ export default {
         },
 
         /** ArtifactPanel의 panel-action 이벤트 중앙 처리 */
+        // 지식 베이스(Google Drive) — 입력창 칩 선택 변경
+        onKnowledgeDocsUpdate(docs) {
+            this.selectedKnowledgeDocs = Array.isArray(docs) ? docs : [];
+            this.upsertKnowledgePanel();
+        },
+
+        /** 우측 사이드바에 지식 베이스 컨텍스트 패널 생성/갱신 */
+        upsertKnowledgePanel() {
+            const items = Array.isArray(this.selectedKnowledgeDocs) ? this.selectedKnowledgeDocs : [];
+            const enabled = !!this.planSideInfoEnabled?.knowledge;
+            const data = { enabled, items };
+
+            const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'knowledge');
+            if (items.length === 0) {
+                if (existingIdx !== -1) this.artifactPanels.splice(existingIdx, 1);
+                if (this.artifactPanels.length === 0) {
+                    this.artifactSidebarVisible = false;
+                }
+                return;
+            }
+            if (existingIdx !== -1) {
+                const existing = this.artifactPanels[existingIdx];
+                this.artifactPanels[existingIdx] = { ...existing, label: '지식 베이스', data };
+            } else {
+                const id = `knowledge-${this.uuid()}`;
+                this.artifactPanels.push({ id, type: 'knowledge', label: '지식 베이스', data });
+            }
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
+            if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
+            this.artifactSidebarVisible = true;
+        },
+
         handleArtifactAction({ type, action, panelId, payload }) {
             if (type === 'hwpx') {
                 if (action === 'page-edit-request') {
@@ -5498,12 +5591,23 @@ export default {
                         room_recent_history,
                         assigned_skills: assignedSkills,
                         agent_profile: agentProfileForRuntime,
-                        // 사용자가 [도구 설정] 다이얼로그에서 선택한 도구별 처리 강도.
-                        // 메인 에이전트는 도구 호출 시(create_pdf2bpmn_workitem 등) 이 값을
-                        // 그대로 인자로 전달해야 한다.
-                        // - 영속화는 Chat.vue 가 담당하므로 여기서는 localStorage 에서 직접 읽어
-                        //   항상 최신값을 전송한다 (메시지 직전에 변경되었더라도 반영됨).
                         tool_settings: this.readToolsSettingsFromStorage(),
+                        // 지식 베이스(Google Drive)에서 사용자가 선택한 문서 목록.
+                        // 백엔드(memento)는 metadata.file_id 에 prefix 없는 원본 키
+                        // (Drive file id 또는 Storage path)를 저장하므로,
+                        // picker UI 의 prefix 키(`drive:`/`upload:`)가 아닌
+                        // sourceRef 를 그대로 id 로 보낸다.
+                        knowledge_docs: Array.isArray(this.selectedKnowledgeDocs)
+                            ? this.selectedKnowledgeDocs
+                                  .filter((d) => d && d.sourceRef)
+                                  .map((d) => ({
+                                      id: d.sourceRef,
+                                      source_type: d.sourceType || 'drive',
+                                      file_name: d.file_name || d.name || '',
+                                      mime_type: d.mimeType || '',
+                                      folder_path: d.folderPath || ''
+                                  }))
+                            : [],
                         input_data: {
                             file: requestPrimaryFile,
                             files: requestFiles,
@@ -5609,6 +5713,27 @@ export default {
                                 detail: { input }
                             });
 
+                            // 우측 활동 패널 갱신 (모든 tool/subagent 호출 시각화)
+                            try {
+                                const subagentType =
+                                    name === 'task'
+                                        ? (input?.subagent_type || input?.subagentType || '').toString()
+                                        : '';
+                                const activityId =
+                                    (rawEvent?.id || rawEvent?.tool_call_id || rawEvent?.run_id || '').toString() ||
+                                    `${name}:${Date.now()}`;
+                                this.recordActivity({
+                                    id: activityId,
+                                    tool: name,
+                                    name,
+                                    displayName: this.formatToolName(name),
+                                    kind: name === 'task' ? 'subagent' : 'tool',
+                                    subagentType,
+                                    status: 'running',
+                                    input: input ?? null
+                                });
+                            } catch (e) {}
+
                             // 우측 Tools 패널 상태 업데이트 (id 매칭)
                             const toolId = (rawEvent?.id || rawEvent?.tool_call_id || '').toString();
                             if (toolId) {
@@ -5674,6 +5799,23 @@ export default {
                                 detail: { output }
                             });
 
+                            // 우측 활동 패널 — running 상태인 항목을 done 으로 마감
+                            try {
+                                const eventId =
+                                    (rawEvent?.id || rawEvent?.tool_call_id || rawEvent?.run_id || '').toString();
+                                let target = eventId ? this.plannedActivityById[eventId] : null;
+                                if (!target) {
+                                    // id 매칭 실패 시 가장 최근 running 항목 done 처리
+                                    const items = Object.values(this.plannedActivityById || {});
+                                    target = items
+                                        .filter((x) => x.status === 'running')
+                                        .sort((a, b) => (b.__order ?? 0) - (a.__order ?? 0))[0];
+                                }
+                                if (target) {
+                                    this.recordActivity({ ...target, status: 'done' });
+                                }
+                            } catch (e) {}
+
                             // 우측 Tools 패널 상태 업데이트 (id 매칭)
                             const toolId = (rawEvent?.id || rawEvent?.tool_call_id || '').toString();
                             if (toolId) {
@@ -5715,6 +5857,8 @@ export default {
                             // 슬라이드 아티팩트 감지
                             if (this.isSlidePayload(parsed)) {
                                 this.pushSlideArtifact(parsed, idx);
+                            } else if (this.isDocxPayload(parsed)) {
+                                this.pushDocxArtifact(parsed, idx);
                             } else {
                                 this.pushHwpxArtifact(parsed, idx);
                                 if (!this.hasArtifactPanel) {

@@ -601,6 +601,35 @@ create table if not exists public.processed_files (
     constraint processed_files_file_id_tenant_id_key unique (file_id, tenant_id)
 ) tablespace pg_default;
 
+-- 내부 지식공간 파일 메타/상태 (Drive 인덱싱 + 추후 직접 업로드 공통 관리)
+create table if not exists public.knowledge_files (
+    id uuid primary key default uuid_generate_v4(),
+    tenant_id text not null,
+    source_type text not null,           -- 'drive' | 'upload' | (future: 'sharepoint' 등)
+    source_ref text not null,            -- drive: file_id, upload: storage path
+    file_name text not null,
+    folder_path text null,               -- 표시용 폴더 경로 (e.g. "회사정책/2026")
+    drive_folder_id text null,           -- (옵션) Drive 부모 폴더 id
+    mime_type text null,
+    size_bytes bigint null,
+    modified_time timestamptz null,      -- 원본의 최종 수정 시각
+    owner text null,                     -- 원본 소유자 표시 (drive: 드라이브 소유자)
+    uploaded_by_uid text null,           -- 직접 업로드한 사용자 uid (upload 소스)
+    uploaded_by_name text null,          -- 직접 업로드한 사용자 표시명
+    file_hash char(64) null,             -- SHA-256 (hex). 동일 테넌트 내 중복 업로드 감지용
+    index_status text not null default 'pending',
+    index_error text null,
+    indexed_at timestamptz null,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    constraint knowledge_files_unique_source unique (tenant_id, source_type, source_ref),
+    constraint knowledge_files_tenant_fk foreign key (tenant_id)
+        references public.tenants (id) on update cascade on delete cascade,
+    constraint knowledge_files_status_check check (
+        index_status in ('pending', 'processing', 'indexed', 'failed', 'excluded')
+    )
+) tablespace pg_default;
+
 create table if not exists public.documents (
     id uuid primary key,
     content text,
@@ -795,6 +824,25 @@ CREATE TABLE public.credit_usage (
 -- Create indexes
 create index if not exists idx_processed_files_tenant_id on public.processed_files using btree (tenant_id) tablespace pg_default;
 create index if not exists idx_processed_files_file_id on public.processed_files using btree (file_id) tablespace pg_default;
+
+create index if not exists idx_knowledge_files_tenant on public.knowledge_files using btree (tenant_id) tablespace pg_default;
+create index if not exists idx_knowledge_files_tenant_status on public.knowledge_files using btree (tenant_id, index_status) tablespace pg_default;
+create index if not exists idx_knowledge_files_tenant_folder on public.knowledge_files using btree (tenant_id, folder_path) tablespace pg_default;
+create index if not exists idx_knowledge_files_tenant_source on public.knowledge_files using btree (tenant_id, source_type) tablespace pg_default;
+create index if not exists idx_knowledge_files_tenant_hash on public.knowledge_files using btree (tenant_id, file_hash) tablespace pg_default where file_hash is not null;
+
+-- 빈 폴더 영속화 (업로드 트리 구조 유지)
+create table if not exists public.knowledge_folders (
+    id uuid primary key default uuid_generate_v4(),
+    tenant_id text not null,
+    folder_path text not null,
+    created_at timestamptz not null default now(),
+    constraint knowledge_folders_unique unique (tenant_id, folder_path),
+    constraint knowledge_folders_tenant_fk foreign key (tenant_id)
+        references public.tenants (id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_knowledge_folders_tenant on public.knowledge_folders using btree (tenant_id) tablespace pg_default;
 
 CREATE UNIQUE INDEX IF NOT EXISTS unique_proc_def_id_per_tenant ON proc_def (id, tenant_id);
 CREATE UNIQUE INDEX IF NOT EXISTS unique_form_def_id_per_tenant ON form_def (id, tenant_id);
@@ -1291,6 +1339,11 @@ CREATE TRIGGER set_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON public.knowledge_files
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER before_insert_user_permissions
     BEFORE INSERT ON public.user_permissions
     FOR EACH ROW
@@ -1342,6 +1395,8 @@ ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proc_def_marketplace ENABLE ROW LEVEL SECURITY;
 ALTER TABLE form_def_marketplace ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_oauth ENABLE ROW LEVEL SECURITY;
+ALTER TABLE knowledge_files ENABLE ROW LEVEL SECURITY;
+ALTER TABLE knowledge_folders ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- Tenants policies
@@ -1456,6 +1511,18 @@ CREATE POLICY tenant_oauth_insert_policy ON tenant_oauth FOR INSERT TO authentic
 CREATE POLICY tenant_oauth_select_policy ON tenant_oauth FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
 CREATE POLICY tenant_oauth_update_policy ON tenant_oauth FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
 CREATE POLICY tenant_oauth_delete_policy ON tenant_oauth FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
+
+-- Knowledge files policies (테넌트 단위 격리)
+CREATE POLICY knowledge_files_select_policy ON knowledge_files FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY knowledge_files_insert_policy ON knowledge_files FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY knowledge_files_update_policy ON knowledge_files FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY knowledge_files_delete_policy ON knowledge_files FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+-- Knowledge folders policies
+CREATE POLICY knowledge_folders_select_policy ON knowledge_folders FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY knowledge_folders_insert_policy ON knowledge_folders FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY knowledge_folders_update_policy ON knowledge_folders FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY knowledge_folders_delete_policy ON knowledge_folders FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
 
 -- Storage policies
 CREATE POLICY "Allow authenticated users to upload" ON storage.objects FOR INSERT WITH CHECK (auth.role() = 'authenticated');

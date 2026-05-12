@@ -174,6 +174,11 @@ const allRoutes = [
         path: '/account-settings',
         component: () => import('@/views/pages/account-settings/AccountSettings.vue')
     },
+    {
+        name: 'Knowledge Base',
+        path: '/knowledge',
+        component: () => import('@/views/knowledge/KnowledgeBasePage.vue')
+    },
 
     {
         name: 'Skills Management',

@@ -2,6 +2,9 @@
     <UnifiedChatInput
         :showExamples="true"
         :disableChat="isUploading"
+        :enableKnowledgeBase="true"
+        :knowledgeDocs="selectedKnowledgeDocs"
+        @update:knowledgeDocs="(docs) => (selectedKnowledgeDocs = docs)"
         @sendMessage="handleUnifiedSend"
         @recording-mode-change="handleRecordingModeChange"
     />
@@ -28,7 +31,8 @@ export default {
     data() {
         return {
             isUploading: false,
-            recordingMode: false
+            recordingMode: false,
+            selectedKnowledgeDocs: []
         };
     },
     methods: {

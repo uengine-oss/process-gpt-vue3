@@ -1260,7 +1260,10 @@
                                                                                 width="2"
                                                                                 color="primary"
                                                                             />
-                                                                            <span class="ml-2">{{ getLoadingLabel(message) }}</span>
+                                                                            <div
+                                                                                class="ml-2 markdown-content streaming-content"
+                                                                                v-html="renderStreamingMarkdown(message)"
+                                                                            ></div>
                                                                         </template>
                                                                         <div
                                                                             v-if="getAgentPlanSummary(message)"
@@ -2880,6 +2883,7 @@
                                         </v-tooltip>
                                     </v-row>
                                 </v-form>
+                                <slot name="custom-input-tools"></slot>
                             </div>
                         </v-row>
                     </div>
@@ -3779,6 +3783,20 @@ export default {
         },
         getLoadingLabel(message) {
             return message?.content || '생각 중...';
+        },
+        /**
+         * 스트리밍 중(isLoading=true) 단계의 마크다운 렌더.
+         * 토큰이 도착하기 전이거나 placeholder 만 있는 경우엔 회색 안내 텍스트,
+         * 실제 콘텐츠가 들어오면 marked() + linkify 로 마크다운 렌더링.
+         */
+        renderStreamingMarkdown(message) {
+            const raw = (message?.content || '').toString();
+            const t = raw.trim();
+            if (!t || t === '...' || t === '….' || t === '생각 중...' || t === '생각 중…' || t === 'AI 생성중...' || t === 'AI 생성 중...') {
+                return '<span style="color:rgba(0,0,0,0.55)">생각 중...</span>';
+            }
+            marked.setOptions({ breaks: true, gfm: true });
+            return marked(this.linkify(raw));
         },
         getRunningToolCall(message) {
             try {
