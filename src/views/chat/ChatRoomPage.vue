@@ -117,6 +117,14 @@
                                                         {{ $t('chatListing.selectParticipants') || '참여자 변경' }}
                                                     </v-list-item-title>
                                                 </v-list-item>
+                                                <v-list-item @click="openToolsSettingsDialog">
+                                                    <template v-slot:prepend>
+                                                        <v-icon size="18">mdi-tune-variant</v-icon>
+                                                    </template>
+                                                    <v-list-item-title>
+                                                        {{ $t('chatListing.toolsSettings') || '도구 설정' }}
+                                                    </v-list-item-title>
+                                                </v-list-item>
                                                 <v-divider class="my-1" />
                                                 <v-list-item @click="openDeleteConfirm">
                                                     <template v-slot:prepend>
@@ -280,6 +288,14 @@
                                                     {{ $t('chatListing.changeParticipants') }}
                                                 </v-list-item-title>
                                             </v-list-item>
+                                            <v-list-item @click="openToolsSettingsDialog">
+                                                <template v-slot:prepend>
+                                                    <v-icon size="18">mdi-tune-variant</v-icon>
+                                                </template>
+                                                <v-list-item-title>
+                                                    {{ $t('chatListing.toolsSettings') || '도구 설정' }}
+                                                </v-list-item-title>
+                                            </v-list-item>
                                         </v-list>
                                     </v-card>
                                 </v-menu>
@@ -411,6 +427,14 @@
                                             </template>
                                             <v-list-item-title>
                                                 {{ $t('chatListing.selectParticipants') || '참여자 변경' }}
+                                            </v-list-item-title>
+                                        </v-list-item>
+                                        <v-list-item @click="openToolsSettingsDialog">
+                                            <template v-slot:prepend>
+                                                <v-icon size="18">mdi-tune-variant</v-icon>
+                                            </template>
+                                            <v-list-item-title>
+                                                {{ $t('chatListing.toolsSettings') || '도구 설정' }}
                                             </v-list-item-title>
                                         </v-list-item>
                                     </v-list>
@@ -590,6 +614,10 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <!-- 도구 설정 다이얼로그는 Chat.vue 내부로 이동.
+             ChatRoomPage 의 설정 메뉴에서는 $refs.chatView.openToolsSettings() 로 open 신호만 보낸다.
+             영속화(localStorage)는 Chat.vue 가 담당하며, 백엔드 전송 시에는 동일 키에서 직접 읽는다. -->
 
         <!-- 참여자 변경 -->
         <v-dialog v-model="participantsDialog" persistent max-width="600px">
@@ -892,6 +920,12 @@ export default {
             neo4jGraphError: '',
             neo4jGraphElements: [],
             pdf2bpmnApiBaseResolved: '',
+            // pdf2bpmn 워커가 처리 종료 직전에 전달한 그래프 미리보기 payload 캐시.
+            //   { [taskId]: { integratedGraph, processGraphs, graphName } }
+            // ScaledJob 환경에서는 처리 후 AGE 그래프가 drop 되므로,
+            // 프론트는 이 캐시(또는 메시지 pdf2bpmnResult.integratedGraph/processGraphs)
+            // 를 우선 사용해 외부 API 호출 없이 그래프를 렌더링한다.
+            pdf2bpmnGraphCache: {},
             imagePreviewDialog: false,
             previewImageUrl: null,
 
@@ -2602,6 +2636,25 @@ export default {
                 const asc = mapped.reverse();
                 this.messages = asc;
 
+                // 채팅 메시지에 박혀있는 pdf2bpmn 그래프 payload 를 캐시로 hydrate.
+                // 새로고침/방 재진입 시 외부 API 호출 없이 그래프 미리보기가 가능해진다.
+                try {
+                    for (const m of this.messages || []) {
+                        const r = m && m.pdf2bpmnResult;
+                        if (!r) continue;
+                        if (!r.taskId) continue;
+                        if (!r.integratedGraph && !(r.processGraphs && Object.keys(r.processGraphs).length)) continue;
+                        this._cachePdf2bpmnGraphPayload({
+                            taskId: r.taskId,
+                            integratedGraph: r.integratedGraph,
+                            processGraphs: r.processGraphs,
+                            graphName: r.graphName
+                        });
+                    }
+                } catch (e) {
+                    // ignore
+                }
+
                 this.hasMoreHistory = mapped.length >= this.historyPageSize;
                 this.oldestLoadedTimeStamp = this.messages?.[0]?.timeStamp || null;
             } catch (e) {
@@ -3025,6 +3078,39 @@ export default {
             this.EventBus.emit('chat-room-unselected');
             await this.$router.replace({ path: '/chat' });
         },
+
+        // 설정 메뉴의 [도구 설정] 클릭 핸들러.
+        // 다이얼로그 UI/영속화는 모두 Chat.vue 내부에서 처리하므로, ref 로 open 신호만 보낸다.
+        // (v-menu close-on-content-click 으로 메뉴가 닫히는 시점과 겹칠 수 있어 nextTick 사용)
+        openToolsSettingsDialog() {
+            this.settingsMenu = false;
+            this.$nextTick(() => {
+                const chatView = this.$refs.chatView;
+                if (chatView && typeof chatView.openToolsSettings === 'function') {
+                    chatView.openToolsSettings();
+                }
+            });
+        },
+        // 백엔드 전송 시 메타데이터로 실어보낼 도구 설정값 — Chat.vue 와 동일한 localStorage 키에서 직접 읽는다.
+        // (Chat 인스턴스가 어느 곳에서 변경했든 항상 최신값이 보장된다)
+        readToolsSettingsFromStorage() {
+            const STORAGE_KEY = 'process-gpt:toolsSettings';
+            const allowedLevels = new Set(['concise', 'standard', 'detailed']);
+            const fallback = { pdf2bpmnLevel: 'standard' };
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return fallback;
+                const parsed = JSON.parse(raw);
+                if (!parsed || typeof parsed !== 'object') return fallback;
+                const lv = typeof parsed.pdf2bpmnLevel === 'string' && allowedLevels.has(parsed.pdf2bpmnLevel)
+                    ? parsed.pdf2bpmnLevel
+                    : 'standard';
+                return { ...parsed, pdf2bpmnLevel: lv };
+            } catch (e) {
+                return fallback;
+            }
+        },
+
         // ===== 데스크탑 음성 에이전트 =====
         toggleDesktopVoice() {
             if (this.isDesktopVoiceActive) {
@@ -5412,6 +5498,12 @@ export default {
                         room_recent_history,
                         assigned_skills: assignedSkills,
                         agent_profile: agentProfileForRuntime,
+                        // 사용자가 [도구 설정] 다이얼로그에서 선택한 도구별 처리 강도.
+                        // 메인 에이전트는 도구 호출 시(create_pdf2bpmn_workitem 등) 이 값을
+                        // 그대로 인자로 전달해야 한다.
+                        // - 영속화는 Chat.vue 가 담당하므로 여기서는 localStorage 에서 직접 읽어
+                        //   항상 최신값을 전송한다 (메시지 직전에 변경되었더라도 반영됨).
+                        tool_settings: this.readToolsSettingsFromStorage(),
                         input_data: {
                             file: requestPrimaryFile,
                             files: requestFiles,
@@ -6600,6 +6692,12 @@ export default {
                         let content = `✅ **PDF2BPMN 변환 완료**\n\n`;
                         content += `${processCount}개의 프로세스가 생성되었습니다.`;
 
+                        const integratedGraph =
+                            resultData?.integrated_graph || resultData?.integratedGraph || null;
+                        const processGraphs =
+                            resultData?.process_graphs || resultData?.processGraphs || {};
+                        const graphName = String(resultData?.graph_name || '').trim();
+
                         const msgObj = me.createMessageObj(content, 'assistant');
                         msgObj.pdf2bpmnResult = {
                             processCount,
@@ -6607,8 +6705,12 @@ export default {
                             generatedBpmns,
                             taskId,
                             savedSkills: resultData.saved_skills || resultData.savedSkills || [],
-                            savedAgents: resultData.saved_agents || resultData.savedAgents || []
+                            savedAgents: resultData.saved_agents || resultData.savedAgents || [],
+                            integratedGraph,
+                            processGraphs,
+                            graphName
                         };
+                        me._cachePdf2bpmnGraphPayload({ taskId, integratedGraph, processGraphs, graphName });
                         if (me.currentChatRoom?.id === targetRoomId) {
                             me.messages.push(msgObj);
                             me.$nextTick(() => me.scrollToBottomSafe());
@@ -6911,6 +7013,17 @@ export default {
             content += `${processCount}개의 프로세스가 생성되었습니다.\n\n`;
             content += `\n프로세스 정의가 저장되었습니다. 왼쪽 메뉴에서 확인할 수 있습니다.`;
 
+            // 워커가 결과 이벤트에 함께 실어준 그래프 미리보기 payload.
+            //  - ScaledJob 환경에서는 워커 종료 후 AGE 그래프가 drop 되므로,
+            //    프론트는 외부 API 호출 없이 이 데이터를 그대로 렌더링한다.
+            //  - integrated_graph: { elements, counts } (todo 단위 통합 그래프)
+            //  - process_graphs: { neo4j_proc_id: { elements, counts } } (프로세스별)
+            const integratedGraph =
+                resultData?.integrated_graph || resultData?.integratedGraph || null;
+            const processGraphs =
+                resultData?.process_graphs || resultData?.processGraphs || {};
+            const graphName = String(resultData?.graph_name || '').trim();
+
             const msgObj = me.createMessageObj(content, 'assistant');
             msgObj.pdf2bpmnResult = {
                 processCount,
@@ -6918,8 +7031,14 @@ export default {
                 generatedBpmns: progressState.generatedBpmns,
                 taskId,
                 savedSkills: resultData.saved_skills || resultData.savedSkills || [],
-                savedAgents: resultData.saved_agents || resultData.savedAgents || []
+                savedAgents: resultData.saved_agents || resultData.savedAgents || [],
+                integratedGraph,
+                processGraphs,
+                graphName
             };
+
+            // 동일 todo/프로세스 캐시(이 페이지 내) — 다른 메시지에서도 즉시 재사용
+            me._cachePdf2bpmnGraphPayload({ taskId, integratedGraph, processGraphs, graphName });
 
             if (me.currentChatRoom?.id === targetRoomId) {
                 // 중복 결과 메시지 방지
@@ -7082,6 +7201,61 @@ export default {
             }
         },
 
+        /**
+         * 워커가 처리 종료 직전 전달한 그래프 payload 를 캐시에 저장한다.
+         *  - taskId(=todo id) 단위로 보관: 동일 todo 의 모든 프로세스가 한 그래프를 공유.
+         *  - 메시지 자체에도 같은 payload 가 pdf2bpmnResult 안에 박혀 영속되므로,
+         *    이 캐시는 페이지 내 즉시 사용을 위한 보조 저장소다.
+         */
+        _cachePdf2bpmnGraphPayload({ taskId, integratedGraph, processGraphs, graphName }) {
+            const key = String(taskId || '').trim();
+            if (!key) return;
+            const prev = (this.pdf2bpmnGraphCache && this.pdf2bpmnGraphCache[key]) || {};
+            const merged = {
+                integratedGraph: integratedGraph || prev.integratedGraph || null,
+                processGraphs: { ...(prev.processGraphs || {}), ...(processGraphs || {}) },
+                graphName: (graphName || prev.graphName || '').trim()
+            };
+            if (!this.pdf2bpmnGraphCache) this.pdf2bpmnGraphCache = {};
+            this.pdf2bpmnGraphCache = { ...this.pdf2bpmnGraphCache, [key]: merged };
+        },
+
+        /**
+         * 캐시 또는 채팅 메시지(pdf2bpmnResult)에서 taskId 매칭되는 그래프 payload 를 찾아 반환.
+         * 페이지 새로고침 후에도 메시지가 재로드되면 메시지에서 복원 가능하다.
+         */
+        _lookupPdf2bpmnGraphFromCache(taskId) {
+            const key = String(taskId || '').trim();
+            if (!key) return null;
+            const cached = this.pdf2bpmnGraphCache && this.pdf2bpmnGraphCache[key];
+            if (cached && (cached.integratedGraph || Object.keys(cached.processGraphs || {}).length)) {
+                return cached;
+            }
+            try {
+                const matchedMsg = (this.messages || []).find((m) => {
+                    const r = m && m.pdf2bpmnResult;
+                    if (!r) return false;
+                    if (!r.taskId) return false;
+                    if (String(r.taskId).trim() !== key) return false;
+                    return r.integratedGraph || (r.processGraphs && Object.keys(r.processGraphs).length);
+                });
+                if (matchedMsg) {
+                    const r = matchedMsg.pdf2bpmnResult;
+                    const fromMsg = {
+                        integratedGraph: r.integratedGraph || null,
+                        processGraphs: r.processGraphs || {},
+                        graphName: String(r.graphName || '').trim()
+                    };
+                    // 다음 호출부터는 캐시 hit
+                    this._cachePdf2bpmnGraphPayload({ taskId: key, ...fromMsg });
+                    return fromMsg;
+                }
+            } catch (e) {
+                // ignore
+            }
+            return null;
+        },
+
         async showIntegratedGraphByTask(taskId) {
             const me = this;
             const resolvedTaskId = String(taskId || '').trim();
@@ -7100,6 +7274,23 @@ export default {
             me.neo4jGraphError = '';
             me.neo4jGraphElements = [];
             me.bpmnPreviewDialog = true;
+
+            // 1) 워커가 처리 종료 직전에 메시지로 함께 전달한 payload 우선 사용
+            //    (ScaledJob 환경에서는 외부 API 가 없으므로 이 데이터가 정상 경로)
+            try {
+                const cached = me._lookupPdf2bpmnGraphFromCache(resolvedTaskId);
+                const elementsFromCache = cached?.integratedGraph?.elements;
+                if (Array.isArray(elementsFromCache) && elementsFromCache.length > 0) {
+                    me.neo4jGraphElements = elementsFromCache;
+                    if (cached.graphName && me.selectedBpmn) {
+                        me.selectedBpmn.graph_name = cached.graphName;
+                    }
+                    me.neo4jGraphLoading = false;
+                    return;
+                }
+            } catch (e) {
+                // 캐시 lookup 실패는 무시하고 외부 API fallback 으로 진행
+            }
 
             try {
                 const base = await me._resolvePdf2BpmnApiBase();
@@ -7249,6 +7440,26 @@ export default {
                 return;
             }
 
+            // 1) 워커가 메시지로 함께 보낸 process_graphs[proc_id] 캐시 우선 사용
+            try {
+                const scope = me._getNeo4jGraphScopeFromDefinition(me.selectedBpmn?.definition);
+                const taskIdForCache = String(scope.task_id || '').trim();
+                if (taskIdForCache) {
+                    const cached = me._lookupPdf2bpmnGraphFromCache(taskIdForCache);
+                    const procGraph = cached && cached.processGraphs && cached.processGraphs[neo4jProcId];
+                    const elementsFromCache = procGraph && procGraph.elements;
+                    if (Array.isArray(elementsFromCache) && elementsFromCache.length > 0) {
+                        me.neo4jGraphElements = elementsFromCache;
+                        if (cached.graphName && me.selectedBpmn) {
+                            me.selectedBpmn.graph_name = cached.graphName;
+                        }
+                        return;
+                    }
+                }
+            } catch (e) {
+                // 캐시 조회 실패는 무시하고 API fallback 으로 진행
+            }
+
             me.neo4jGraphLoading = true;
             me.neo4jGraphError = '';
 
@@ -7382,6 +7593,9 @@ export default {
                 }
                 if (parsed.waiting_for_user_input === true && question) {
                     return question;
+                }
+                if (parsed.message) {
+                    return parsed.message.trim();
                 }
             }
 

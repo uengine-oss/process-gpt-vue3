@@ -1720,6 +1720,10 @@ export default {
                         let content = `✅ **PDF2BPMN 변환 완료**\n\n`;
                         content += `${processCount}개의 프로세스가 생성되었습니다.`;
 
+                        const integratedGraph = resultData?.integrated_graph || resultData?.integratedGraph || null;
+                        const processGraphs = resultData?.process_graphs || resultData?.processGraphs || {};
+                        const graphName = String(resultData?.graph_name || '').trim();
+
                         const msgObj = me.createMessageObj(content, 'assistant');
                         msgObj.pdf2bpmnResult = {
                             processCount: processCount,
@@ -1727,7 +1731,10 @@ export default {
                             generatedBpmns: generatedBpmns,
                             taskId: resultData.task_id || resultData.taskId || resultData.todo_id || resultData.id || '',
                             savedSkills: resultData.saved_skills || resultData.savedSkills || [],
-                            savedAgents: resultData.saved_agents || resultData.savedAgents || []
+                            savedAgents: resultData.saved_agents || resultData.savedAgents || [],
+                            integratedGraph,
+                            processGraphs,
+                            graphName
                         };
                         // UI에는 현재 방일 때만 추가, DB에는 항상 저장
                         if (me.currentRoomId === targetRoomId) {
@@ -2149,6 +2156,13 @@ export default {
 
             content += `\n프로세스 정의가 저장되었습니다. 왼쪽 메뉴에서 확인할 수 있습니다.`;
 
+            // 워커가 결과 이벤트에 함께 실어준 그래프 미리보기 payload 를 메시지에 보존.
+            //  - ScaledJob 환경에서는 워커 종료 후 AGE 그래프가 drop 되므로,
+            //    프론트는 외부 API 호출 없이 이 데이터를 그대로 렌더링한다.
+            const integratedGraph = resultData?.integrated_graph || resultData?.integratedGraph || null;
+            const processGraphs = resultData?.process_graphs || resultData?.processGraphs || {};
+            const graphName = String(resultData?.graph_name || '').trim();
+
             const msgObj = me.createMessageObj(content, 'assistant');
             msgObj.pdf2bpmnResult = {
                 processCount: processCount,
@@ -2156,7 +2170,10 @@ export default {
                 generatedBpmns: progressState.generatedBpmns,
                 taskId: resultData.task_id || resultData.taskId || resultData.todo_id || resultData.id || '',
                 savedSkills: resultData.saved_skills || resultData.savedSkills || [],
-                savedAgents: resultData.saved_agents || resultData.savedAgents || []
+                savedAgents: resultData.saved_agents || resultData.savedAgents || [],
+                integratedGraph,
+                processGraphs,
+                graphName
             };
 
             // UI에는 현재 방일 때만 추가, DB에는 항상 저장

@@ -2777,6 +2777,10 @@
                                     class="ml-2 orchestration-select"
                                     style="max-width: 150px"
                                 />
+                                <v-btn v-if="orchestration === 'langchain-react'" icon variant="text" class="text-medium-emphasis" @click="openController()" v-bind="props"
+                                    style="width:30px; height:30px;">
+                                    <Icons :icon="'filter'" :size="20" />
+                                </v-btn>
                                 <v-tooltip text="Draft Agent">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
@@ -2988,6 +2992,86 @@
         :chatRoomId="chatRoomId"
         :recordingMode="recordingMode"
     />
+
+    <!-- 도구 설정 다이얼로그 (ChatRoomPage 등 부모에서도 ref.openToolsSettings() 로 호출) -->
+    <v-dialog v-model="toolsSettingsDialog" max-width="560" persistent>
+        <v-card class="pa-2" style="border-radius: 16px">
+            <v-card-title class="d-flex align-center pa-3 pb-1">
+                <div class="text-subtitle-1 font-weight-bold">
+                    {{ $t('chatListing.toolsSettings') || '도구 설정' }}
+                </div>
+                <v-spacer></v-spacer>
+                <v-btn icon variant="text" @click="closeToolsSettingsDialog">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-card-title>
+            <v-card-text class="pa-3 pt-2">
+                <div class="text-caption text-medium-emphasis mb-3">
+                    도구별 처리 강도를 조절합니다. 변경한 설정은 이 브라우저에 저장되며, 이후 처리부터 반영됩니다.
+                </div>
+
+                <!-- pdf2bpmn 섹션 -->
+                <div class="d-flex align-center mb-2" style="gap: 6px">
+                    <div class="text-subtitle-2 font-weight-medium">pdf2bpmn</div>
+                    <v-tooltip location="top" max-width="380">
+                        <template v-slot:activator="{ props }">
+                            <v-icon v-bind="props" size="16" color="grey">mdi-help-circle-outline</v-icon>
+                        </template>
+                        <div class="text-caption" style="white-space: normal; line-height: 1.5">
+                            <div class="font-weight-bold mb-1">처리 강도 안내</div>
+                            <div class="mb-1">
+                                <b>간결</b> — 유사도 평가를 관대하게 적용합니다. 표현이 조금 다른 단계도 같은 활동으로 묶어 흐름을 압축해서 보여줍니다. 핵심 골격만 빠르게 파악하고 싶을 때 적합합니다.
+                            </div>
+                            <div class="mb-1">
+                                <b>표준</b> — 권장 기본값입니다. 명백히 같은 단계만 합치고, 지침/설명이 다르면 분리해 균형 잡힌 결과를 보여줍니다.
+                            </div>
+                            <div>
+                                <b>상세</b> — 엄격하게 분리합니다. 이름이 같아도 지침/설명이 조금이라도 다르면 별개 단계로 유지하여, 원문 절차에 가장 가까운 자세한 결과를 보여줍니다.
+                            </div>
+                        </div>
+                    </v-tooltip>
+                </div>
+                <div class="text-caption text-medium-emphasis mb-2">
+                    문서에서 추출한 단계와 역할의 정규화·중복 제거 강도입니다.
+                </div>
+                <v-btn-toggle
+                    v-model="toolsSettingsDraft.pdf2bpmnLevel"
+                    mandatory
+                    color="primary"
+                    density="comfortable"
+                    variant="outlined"
+                    divided
+                    class="d-flex"
+                >
+                    <v-btn
+                        v-for="opt in pdf2bpmnLevelOptions"
+                        :key="opt.value"
+                        :value="opt.value"
+                        class="flex-grow-1"
+                        style="text-transform: none"
+                    >
+                        <div class="d-flex flex-column align-center" style="gap: 2px">
+                            <span class="text-body-2">{{ opt.label }}</span>
+                            <span class="text-caption text-medium-emphasis">{{ opt.short }}</span>
+                        </div>
+                    </v-btn>
+                </v-btn-toggle>
+                <div class="text-caption text-medium-emphasis mt-3" style="line-height: 1.5">
+                    {{ pdf2bpmnLevelOptions.find(o => o.value === toolsSettingsDraft.pdf2bpmnLevel)?.detail }}
+                </div>
+            </v-card-text>
+            <v-card-actions class="pa-3 pt-0">
+                <v-btn variant="text" size="small" @click="resetToolsSettingsDraft">
+                    기본값
+                </v-btn>
+                <v-spacer></v-spacer>
+                <v-btn variant="text" @click="closeToolsSettingsDialog">취소</v-btn>
+                <v-btn color="primary" variant="flat" rounded @click="confirmToolsSettings">
+                    {{ $t('chatListing.save') || '저장' }}
+                </v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -3271,12 +3355,50 @@ export default {
                 { title: 'chat.helpDocumentGeneration' },
                 { title: 'chat.helpTodoRegistration' },
                 { title: 'chat.helpNote' }
+            ],
+
+            // 도구 설정 (브라우저 localStorage 기반 영구 상태).
+            // - 채팅방/사용자가 아닌 "이 브라우저"에 저장하여 모든 Chat 인스턴스가 동일 키를 공유한다.
+            // - 다이얼로그 UI/영속화/draft 관리까지 모두 Chat 내부에서 처리한다.
+            // - 외부(ChatRoomPage 등)는 `$refs.<chat>.openToolsSettings()` 로 열기만 하면 되고,
+            //   백엔드 전송 시에는 동일한 localStorage 키를 직접 읽으면 항상 최신값을 얻는다.
+            toolsSettings: {
+                pdf2bpmnLevel: 'standard'
+            },
+            toolsSettingsDialog: false,
+            toolsSettingsDraft: {
+                pdf2bpmnLevel: 'standard'
+            },
+            pdf2bpmnLevelOptions: [
+                {
+                    value: 'concise',
+                    label: '간결',
+                    short: '간략한 결과',
+                    detail:
+                        '유사도 평가를 관대하게 적용해 표현이 조금 다른 단계도 같은 활동으로 묶습니다. 결과 BPMN 의 단계 수가 줄어 핵심 흐름만 빠르게 파악할 수 있습니다.'
+                },
+                {
+                    value: 'standard',
+                    label: '표준',
+                    short: '권장 기본값',
+                    detail:
+                        '지침/설명이 유사한 단계만 병합하고, 지침/설명이 다르면 분리합니다. 정확성과 가독성의 균형을 잡은 권장 설정입니다.'
+                },
+                {
+                    value: 'detailed',
+                    label: '상세',
+                    short: '원문에 가까운 결과',
+                    detail:
+                        '엄격하게 분리합니다. 문서 내 지침/설명이 조금이라도 다르면 별개 단계로 유지하여 원문 절차에 가장 가까운 자세한 결과를 보여줍니다.'
+                }
             ]
         };
     },
     created() {
         // 창 크기 변경 시 높이 조정을 위한 이벤트 리스너 추가
         window.addEventListener('resize', this.handleResize);
+        // 도구 설정은 채팅방/사용자가 아닌 "이 브라우저" 설정 → 컴포넌트 생성 직후 localStorage 에서 로드.
+        this.loadToolsSettings();
     },
     mounted() {
         var me = this;
@@ -3557,6 +3679,64 @@ export default {
         }
     },
     methods: {
+        openController() {
+            this.openToolsSettings();
+        },
+        // ===== 도구 설정 (브라우저 localStorage) =====
+        // 키 네임스페이스: "process-gpt"
+        // 저장 형태: { pdf2bpmnLevel: "concise" | "standard" | "detailed", ... }
+        // - 모든 Chat 인스턴스가 동일 키를 공유하므로, open 시점에 항상 재로드하여 동기화한다.
+        // - 백엔드 전송측(ChatRoomPage 의 send payload 등)도 동일 키를 직접 읽으면 항상 최신값을 얻는다.
+        loadToolsSettings() {
+            const STORAGE_KEY = 'process-gpt:toolsSettings';
+            const allowedLevels = new Set(['concise', 'standard', 'detailed']);
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return;
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') {
+                    const lv = parsed.pdf2bpmnLevel;
+                    if (typeof lv === 'string' && allowedLevels.has(lv)) {
+                        this.toolsSettings.pdf2bpmnLevel = lv;
+                    }
+                }
+            } catch (e) {
+                // localStorage 접근 불가 환경(시크릿 모드 등)에서는 기본값 유지.
+            }
+        },
+        persistToolsSettings() {
+            const STORAGE_KEY = 'process-gpt:toolsSettings';
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(this.toolsSettings));
+            } catch (e) {
+                // 저장 실패는 사용자 경험을 막지 않는다 (메모리 상태는 이미 갱신됨).
+            }
+        },
+        // 외부(ChatRoomPage 등)에서 ref 로 호출하는 공개 메서드.
+        // 다른 Chat 인스턴스가 변경했을 가능성이 있으므로 매번 localStorage 에서 재로드.
+        openToolsSettings() {
+            this.loadToolsSettings();
+            this.toolsSettingsDraft = {
+                pdf2bpmnLevel: this.toolsSettings?.pdf2bpmnLevel || 'standard'
+            };
+            this.toolsSettingsDialog = true;
+        },
+        closeToolsSettingsDialog() {
+            this.toolsSettingsDialog = false;
+        },
+        resetToolsSettingsDraft() {
+            this.toolsSettingsDraft = { pdf2bpmnLevel: 'standard' };
+        },
+        confirmToolsSettings() {
+            const lv = this.toolsSettingsDraft?.pdf2bpmnLevel || 'standard';
+            const allowed = new Set(['concise', 'standard', 'detailed']);
+            this.toolsSettings = {
+                ...(this.toolsSettings || {}),
+                pdf2bpmnLevel: allowed.has(lv) ? lv : 'standard'
+            };
+            this.persistToolsSettings();
+            this.toolsSettingsDialog = false;
+        },
         emitHumanFeedbackSubmit(feedbackResult) {
             this.$emit('human-feedback-submit', this.pendingHumanFeedback || null, feedbackResult);
         },

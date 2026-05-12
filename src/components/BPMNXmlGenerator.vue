@@ -158,6 +158,152 @@ export default {
             console.log(`Guardrail: source 기반 누락 시퀀스 ${generatedSequences.length}개를 자동 보정했습니다.`);
             return jsonModel;
         },
+
+        /**
+         * 시퀀스 흐름을 따라 jsonModel.roles[] 의 배열 순서를 가시성이 좋게 재정렬한다.
+         *
+         * 원리:
+         *  - 모든 lane (createLaneSet / createLaneShapesInAutoLayout / createLaneShapes) 은
+         *    jsonModel.roles[] 의 _배열 순서_ 그대로 lane 의 시각적 순서가 결정된다.
+         *    가로 모드 → 위→아래, 세로 모드 → 좌→우.
+         *  - 따라서 roles[] 만 정렬해도 task 위치 / sequence edge 는 자동으로 따라간다.
+         *
+         * 알고리즘 (First-Appearance):
+         *  1) Start Event 의 role 을 첫 번째로 고정 (사용자 요구사항).
+         *  2) start event 부터 sequence flow 를 BFS 로 순회하면서, 처음 만나는 새 role 을
+         *     순서대로 수집한다.
+         *  3) BFS 가 닿지 못한 고립된 role 들은 원래 순서대로 끝에 추가.
+         *
+         * 왕복 흐름 (예: 고객 → 담당자 → 시스템 → 고객 → 시스템 → 시스템 → 고객 → 담당자) 도
+         * "처음 등장한 순" 으로 정렬되므로 → 고객 → 담당자 → 시스템.
+         * 어차피 왕복이 있으면 어떤 정렬에서도 교차 선이 생기지만, first-appearance 는
+         * 사용자가 직관적으로 "왜 이 순서인지" 이해할 수 있는 가장 자연스러운 기준이다.
+         */
+        reorderRolesBySequenceFlow(jsonModel) {
+            if (!jsonModel || !Array.isArray(jsonModel.roles) || jsonModel.roles.length <= 1) {
+                return jsonModel;
+            }
+            if (!jsonModel.elements) {
+                return jsonModel;
+            }
+
+            const elements = Array.isArray(jsonModel.elements)
+                ? jsonModel.elements
+                : Object.values(jsonModel.elements);
+
+            if (elements.length === 0) {
+                return jsonModel;
+            }
+
+            // 1) id → role 매핑 (Sequence 제외, role 정보가 있는 element 만)
+            const idToRole = new Map();
+            elements.forEach((el) => {
+                if (!el || !el.id || el.elementType === 'Sequence') return;
+                if (el.role) {
+                    idToRole.set(el.id, String(el.role));
+                }
+            });
+
+            // 2) 인접 리스트 — Sequence element 의 source/target + non-Seq 의 source 도 폴백
+            //    (ensureSequenceGuardrails 와 동일 휴리스틱)
+            const outgoing = new Map();
+            const addEdge = (src, tgt) => {
+                if (!src || !tgt || src === tgt) return;
+                if (!outgoing.has(src)) outgoing.set(src, []);
+                outgoing.get(src).push(tgt);
+            };
+            elements.forEach((el) => {
+                if (!el) return;
+                if (el.elementType === 'Sequence') {
+                    addEdge(el.source, el.target);
+                }
+            });
+            elements.forEach((el) => {
+                if (!el || el.elementType === 'Sequence') return;
+                if (el.source && el.source !== 'none' && el.id && el.source !== el.id) {
+                    addEdge(el.source, el.id);
+                }
+            });
+
+            // 3) Start Event 찾기 → 없으면 첫 non-Seq element 로 폴백
+            let startId = null;
+            for (const el of elements) {
+                if (el && el.elementType === 'Event' && el.type === 'StartEvent' && el.id) {
+                    startId = el.id;
+                    break;
+                }
+            }
+            if (!startId) {
+                for (const el of elements) {
+                    if (el && el.elementType !== 'Sequence' && el.id && el.role) {
+                        startId = el.id;
+                        break;
+                    }
+                }
+            }
+            if (!startId) {
+                return jsonModel;
+            }
+
+            // 4) BFS — first-appearance 순으로 role 수집
+            const validRoleNames = new Set(jsonModel.roles.map((r) => r && r.name).filter(Boolean));
+            const ordered = [];
+            const seenRoles = new Set();
+
+            const tryAddRoleOf = (id) => {
+                const r = idToRole.get(id);
+                if (r && validRoleNames.has(r) && !seenRoles.has(r)) {
+                    seenRoles.add(r);
+                    ordered.push(r);
+                }
+            };
+
+            const visited = new Set();
+            const queue = [startId];
+            visited.add(startId);
+            tryAddRoleOf(startId);
+
+            while (queue.length > 0) {
+                const cur = queue.shift();
+                const nexts = outgoing.get(cur) || [];
+                for (const n of nexts) {
+                    if (visited.has(n)) continue;
+                    visited.add(n);
+                    tryAddRoleOf(n);
+                    queue.push(n);
+                }
+            }
+
+            // 5) BFS 가 닿지 못한 고립 role 들을 원래 순서대로 끝에 추가
+            jsonModel.roles.forEach((r) => {
+                if (r && r.name && !seenRoles.has(r.name)) {
+                    ordered.push(r.name);
+                    seenRoles.add(r.name);
+                }
+            });
+
+            // 6) 변경 없으면 no-op
+            const currentOrder = jsonModel.roles.map((r) => r && r.name);
+            const isSame =
+                currentOrder.length === ordered.length &&
+                currentOrder.every((name, idx) => name === ordered[idx]);
+            if (isSame) {
+                console.log('레인 순서 재정렬: 이미 시퀀스 흐름순 — 변경 없음');
+                return jsonModel;
+            }
+
+            // 7) jsonModel.roles 재정렬
+            const roleByName = new Map(jsonModel.roles.map((r) => [r && r.name, r]));
+            jsonModel.roles = ordered
+                .map((name) => roleByName.get(name))
+                .filter(Boolean);
+
+            console.log(
+                `레인 순서 재정렬 (first-appearance): [${currentOrder.join(' → ')}] ⇒ [${ordered.join(' → ')}]`
+            );
+            return jsonModel;
+        },
+
         transformJsonModel(jsonModel) {
             console.log('원본 jsonModel:', jsonModel);
 
@@ -1505,6 +1651,13 @@ export default {
 
             // LLM이 source 필드만 생성하고 Sequence element를 누락한 경우를 보정
             jsonModel = this.ensureSequenceGuardrails(jsonModel);
+
+            // 가시성 개선: 시퀀스 흐름 (Start Event 부터 BFS) 의 first-appearance 순으로
+            // jsonModel.roles[] 를 재정렬한다. 모든 lane 생성 코드가 roles[] 배열 순서를
+            // 그대로 lane 의 시각적 순서 (가로=상→하, 세로=좌→우) 로 사용하므로,
+            // roles[] 정렬만으로 task 위치와 sequence edge 모두 자동으로 깔끔해진다.
+            // Start Event 가 있는 role 이 자연스럽게 첫 번째 lane 이 된다.
+            jsonModel = this.reorderRolesBySequenceFlow(jsonModel);
 
             // jsonModel의 isHorizontal 값을 사용하거나 기본값으로 false 사용
             let isHorizontal = jsonModel.isHorizontal;
