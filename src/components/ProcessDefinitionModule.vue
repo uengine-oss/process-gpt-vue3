@@ -1501,16 +1501,21 @@ export default {
                     return task;
                 };
 
-                const buildGateway = (gateway, lanesForRole, parentLanes) => ({
-                    id: gateway.id || 'Gateway',
-                    name: gateway.name || 'Gateway',
-                    type: gateway.type,
-                    description: (gateway.name || 'Gateway') + ' description',
-                    process: gateway.process,
-                    role: resolveRole(gateway.id, lanesForRole, parentLanes),
-                    condition: window.$mode == 'ProcessGPT' ? gateway.condition || '' : (getPropsJson(gateway) || {})?.condition || '',
-                    properties: gateway['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
-                });
+                const buildGateway = (gateway, lanesForRole, parentLanes) => {
+                    const propsJson = getPropsJson(gateway) || {};
+                    return {
+                        id: gateway.id || 'Gateway',
+                        name: gateway.name || 'Gateway',
+                        type: gateway.type,
+                        description: (gateway.name || 'Gateway') + ' description',
+                        process: gateway.process,
+                        role: resolveRole(gateway.id, lanesForRole, parentLanes),
+                        condition: window.$mode == 'ProcessGPT' ? gateway.condition || '' : propsJson?.condition || '',
+                        // 게이트웨이 참조정보(분기 판단용 폼/필드 키): ["form_id.field_id", ...]
+                        conditionData: Array.isArray(propsJson?.conditionData) ? propsJson.conditionData : [],
+                        properties: gateway['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
+                    };
+                };
 
                 const buildSequence = (flow) => {
                     let condition = '';

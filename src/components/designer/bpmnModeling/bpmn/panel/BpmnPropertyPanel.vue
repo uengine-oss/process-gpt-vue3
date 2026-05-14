@@ -332,7 +332,12 @@ export default {
                 }
             }
             if (type.indexOf('gateway') > -1) {
-                type = 'gateway';
+                // GPT 모드 + Exclusive 게이트웨이 전용 패널 (참조정보 설정 지원)
+                if (this.isGPTMode && type === 'exclusive-gateway') {
+                    type = 'gpt-exclusive-gateway';
+                } else {
+                    type = 'gateway';
+                }
             }
             return type + '-panel';
         },

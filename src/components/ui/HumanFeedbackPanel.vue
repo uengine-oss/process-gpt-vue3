@@ -207,16 +207,61 @@ export default {
         submittedText: {
             type: String,
             default: '응답 완료'
+        },
+        /**
+         * 초기 선택 상태 (제출 완료 후 readonly 표시할 때 사용).
+         * 부모가 제출 시 message.__humanFeedback.__selectedIds 등에 저장해두면
+         * 페이지 리로드/리렌더 후에도 사용자가 무엇을 골랐는지 그대로 보인다.
+         */
+        initialSelectedIds: {
+            type: Array,
+            default: () => []
+        },
+        initialSelectedSuggestion: {
+            type: String,
+            default: null
+        },
+        initialDecision: {
+            type: String,
+            default: ''
+        },
+        initialFreeText: {
+            type: String,
+            default: ''
         }
     },
     emits: ['submit', 'skip'],
     data() {
         return {
-            selectedIds: new Set(),
-            selectedSuggestion: null,
-            decision: '',
-            freeText: ''
+            selectedIds: new Set(this.initialSelectedIds || []),
+            selectedSuggestion: this.initialSelectedSuggestion || null,
+            decision: this.initialDecision || '',
+            freeText: this.initialFreeText || ''
         };
+    },
+    watch: {
+        // 부모가 readonly 상태로 전환하면서 새 초기 선택값을 넘겨준 경우 동기화.
+        // (component 가 unmount 되지 않는 일반 케이스에서는 이미 data 에 보존됨)
+        initialSelectedIds(val) {
+            if (this.submitted && Array.isArray(val) && val.length > 0 && this.selectedIds.size === 0) {
+                this.selectedIds = new Set(val);
+            }
+        },
+        initialSelectedSuggestion(val) {
+            if (this.submitted && val && !this.selectedSuggestion) {
+                this.selectedSuggestion = val;
+            }
+        },
+        initialDecision(val) {
+            if (this.submitted && val && !this.decision) {
+                this.decision = val;
+            }
+        },
+        initialFreeText(val) {
+            if (this.submitted && val && !this.freeText) {
+                this.freeText = val;
+            }
+        }
     },
     computed: {
         canSubmit() {

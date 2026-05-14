@@ -129,6 +129,54 @@
                                             <v-divider class="date-separator-line"></v-divider>
                                         </div>
 
+                                        <!--
+                                            HITL 생성형 UI (PDF2BPMN 워커 시작 전 단계 등 일반 ask_user)
+                                            - pdf2bpmnProgress.isActive 와 무관하게 메시지에 __humanFeedback 이 첨부되면 렌더
+                                            - 워커 진행 중 'waiting_for_user' 패널과 중복 회피
+                                            - 제출 후에도 패널은 mounted 상태를 유지해(:submitted=true) 사용자가 무엇을 골랐는지 보이도록 함.
+                                              패널 내부 selectedIds 가 보존되므로 체크 상태가 그대로 표시되고, 클릭은 비활성화된다.
+                                        -->
+                                        <div
+                                            v-if="
+                                                message &&
+                                                message.__humanFeedback &&
+                                                !(
+                                                    pdf2bpmnProgress &&
+                                                    pdf2bpmnProgress.isActive &&
+                                                    (pdf2bpmnProgress.status === 'waiting_for_user' ||
+                                                        (pdf2bpmnProgress.message || '').includes('사용자 확인 대기'))
+                                                )
+                                            "
+                                            class="hitl-feedback-wrap mb-2 mt-2"
+                                        >
+                                            <HumanFeedbackPanel
+                                                :feedbackType="
+                                                    message.__humanFeedback.feedback_type ||
+                                                    message.__humanFeedback.user_request_type ||
+                                                    'approve_reject_with_edit'
+                                                "
+                                                :question="message.__humanFeedback.question || '확인이 필요합니다.'"
+                                                :context="message.__humanFeedback.context || ''"
+                                                :items="message.__humanFeedback.items || []"
+                                                :suggestions="message.__humanFeedback.suggestions || []"
+                                                :evidenceSpans="message.__humanFeedback.evidence_spans || []"
+                                                :impactPreview="message.__humanFeedback.impact_preview || []"
+                                                :allowMultiple="message.__humanFeedback.allow_multiple !== false"
+                                                :minSelect="message.__humanFeedback.min_select || 1"
+                                                :allowSkip="message.__humanFeedback.allow_skip || false"
+                                                :submitted="!!message.__humanFeedback.__submitted"
+                                                :submittedText="message.__humanFeedback.__submittedText || '응답 완료'"
+                                                :initialSelectedIds="message.__humanFeedback.__selectedIds || []"
+                                                :initialSelectedSuggestion="message.__humanFeedback.__selectedSuggestion || null"
+                                                :initialDecision="message.__humanFeedback.__decision || ''"
+                                                :initialFreeText="message.__humanFeedback.__freeText || ''"
+                                                :headerIcon="'mdi-comment-question-outline'"
+                                                :submitLabel="'응답 제출'"
+                                                @submit="(fb) => emitHumanFeedbackSubmit(fb, message)"
+                                                @skip="emitHumanFeedbackSkip"
+                                            />
+                                        </div>
+
                                         <!-- PDF2BPMN 진행 카드 (마지막 메시지 하단) -->
                                         <div
                                             v-if="
@@ -198,18 +246,22 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- HITL 질문 카드: PDF2BPMN 로딩 UI 내부 -->
+                                                <!-- HITL 질문 카드: PDF2BPMN 로딩 UI 내부.
+                                                     제출 후에도 카드는 유지(:submitted=true) — 어떤 옵션을 골랐는지 보이도록 -->
                                                 <div
                                                     v-if="
                                                         pendingHumanFeedback &&
-                                                        !pendingHumanFeedback.__submitted &&
                                                         (pdf2bpmnProgress.status === 'waiting_for_user' ||
                                                             (pdf2bpmnProgress.message || '').includes('사용자 확인 대기'))
                                                     "
                                                     class="mt-3"
                                                 >
                                                     <HumanFeedbackPanel
-                                                        :feedbackType="pendingHumanFeedback.user_request_type || 'approve_reject_with_edit'"
+                                                        :feedbackType="
+                                                            pendingHumanFeedback.feedback_type ||
+                                                            pendingHumanFeedback.user_request_type ||
+                                                            'approve_reject_with_edit'
+                                                        "
                                                         :question="pendingHumanFeedback.question || '확인이 필요합니다.'"
                                                         :context="pendingHumanFeedback.context || ''"
                                                         :items="pendingHumanFeedback.items || []"
@@ -219,7 +271,12 @@
                                                         :allowMultiple="pendingHumanFeedback.allow_multiple !== false"
                                                         :minSelect="pendingHumanFeedback.min_select || 1"
                                                         :allowSkip="pendingHumanFeedback.allow_skip || false"
-                                                        :submitted="false"
+                                                        :submitted="!!pendingHumanFeedback.__submitted"
+                                                        :submittedText="pendingHumanFeedback.__submittedText || '응답 완료'"
+                                                        :initialSelectedIds="pendingHumanFeedback.__selectedIds || []"
+                                                        :initialSelectedSuggestion="pendingHumanFeedback.__selectedSuggestion || null"
+                                                        :initialDecision="pendingHumanFeedback.__decision || ''"
+                                                        :initialFreeText="pendingHumanFeedback.__freeText || ''"
                                                         :headerIcon="'mdi-file-document-edit-outline'"
                                                         :submitLabel="'응답 제출'"
                                                         @submit="emitHumanFeedbackSubmit"
@@ -2780,10 +2837,10 @@
                                     class="ml-2 orchestration-select"
                                     style="max-width: 150px"
                                 />
-                                <v-btn v-if="orchestration === 'langchain-react'" icon variant="text" class="text-medium-emphasis" @click="openController()" v-bind="props"
+                                <!-- <v-btn v-if="orchestration === 'langchain-react'" icon variant="text" class="text-medium-emphasis" @click="openController()" v-bind="props"
                                     style="width:30px; height:30px;">
                                     <Icons :icon="'filter'" :size="20" />
-                                </v-btn>
+                                </v-btn> -->
                                 <v-tooltip text="Draft Agent">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
@@ -3545,7 +3602,20 @@ export default {
             const myEmail = localStorage.getItem('email');
             if (this.messages && this.messages.length > 0) {
                 this.messages.forEach((item) => {
+                    // __hidden 플래그: HITL 도구 옵션 응답("standard" 같은 id) 등 화면 표시가 불필요한 메시지.
+                    // upsertMessageByKeys 는 hideUserMessage 일 때 호출되지 않지만, 다른 경로로 들어온 경우의 안전망.
+                    if (item && item.__hidden) {
+                        return;
+                    }
                     let data = JSON.parse(JSON.stringify(item));
+                    // CRITICAL: __humanFeedback 은 deep copy 하면 안 된다.
+                    // 인라인 HumanFeedbackPanel 이 사용자의 제출 결과(__submitted, __selectedIds 등)를
+                    // 이 객체에 직접 기록하는데, deep copy 본이면 원본(this.messages[i]) 에 반영이 안 되어
+                    // computed 재실행 시 매번 새 deep copy 가 만들어져 readonly 상태가 사라진다.
+                    // → __humanFeedback 만 원본 참조를 그대로 유지해 모든 갱신이 원본에 반영되게 한다.
+                    if (item && item.__humanFeedback) {
+                        data.__humanFeedback = item.__humanFeedback;
+                    }
 
                     // 프로세스 실행 메시지에 formValues 초기화
                     if (data.work === 'StartProcessInstance' && data.firstActivityForm && !data.formValues) {
@@ -3741,11 +3811,16 @@ export default {
             this.persistToolsSettings();
             this.toolsSettingsDialog = false;
         },
-        emitHumanFeedbackSubmit(feedbackResult) {
-            this.$emit('human-feedback-submit', this.pendingHumanFeedback || null, feedbackResult);
+        emitHumanFeedbackSubmit(feedbackResult, message = null) {
+            // 메시지가 명시적으로 전달된 경우(메시지 인라인 HITL 패널) 그 메시지 객체를 emit 첫 인자로.
+            // 부모(ChatRoomPage.handleHumanFeedbackSubmit)가 .__humanFeedback 으로 정확한 매칭 가능.
+            // 메시지가 없으면 기존 동작 유지(pendingHumanFeedback - 가장 최근 미제출 피드백).
+            const firstArg = (message && message.__humanFeedback) ? message : (this.pendingHumanFeedback || null);
+            this.$emit('human-feedback-submit', firstArg, feedbackResult);
         },
-        emitHumanFeedbackSkip() {
-            this.$emit('human-feedback-skip', this.pendingHumanFeedback || null);
+        emitHumanFeedbackSkip(message = null) {
+            const firstArg = (message && message.__humanFeedback) ? message : (this.pendingHumanFeedback || null);
+            this.$emit('human-feedback-skip', firstArg);
         },
         startAgentPanelResize(e) {
             e.preventDefault();

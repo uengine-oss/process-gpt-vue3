@@ -868,7 +868,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
     if (actions['append.append-task']) {
         // uEngine·PAL 모드: 추가되는 태스크는 UserTask, 그 외는 ManualTask
         const appendTaskType =
-            typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal) ? 'bpmn:UserTask' : 'bpmn:ManualTask';
+            typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$mode === 'ProcessGPT' || window.$pal) ? 'bpmn:UserTask' : 'bpmn:ManualTask';
         const newAction = appendAction(appendTaskType, actions['append.append-task'].className, i18n.global.t('customContextPad.task'), {});
 
         actions['append.append-task'].action = newAction.action;
