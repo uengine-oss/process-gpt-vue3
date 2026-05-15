@@ -135,9 +135,83 @@
                                             - 워커 진행 중 'waiting_for_user' 패널과 중복 회피
                                             - 제출 후에도 패널은 mounted 상태를 유지해(:submitted=true) 사용자가 무엇을 골랐는지 보이도록 함.
                                               패널 내부 selectedIds 가 보존되므로 체크 상태가 그대로 표시되고, 클릭은 비활성화된다.
+                                            - questions 배열이 있으면 multi-question 모드: 각 질문을 inline 패널로 렌더하고
+                                              하나의 통합 "응답 제출" 버튼으로 모든 응답을 batch 전송 (사용자 개입 1회).
                                         -->
+
+                                        <!-- multi-question 모드: questions 배열이 있을 때 -->
                                         <div
                                             v-if="
+                                                message &&
+                                                message.__humanFeedback &&
+                                                Array.isArray(message.__humanFeedback.questions) &&
+                                                message.__humanFeedback.questions.length > 0 &&
+                                                !(
+                                                    pdf2bpmnProgress &&
+                                                    pdf2bpmnProgress.isActive &&
+                                                    (pdf2bpmnProgress.status === 'waiting_for_user' ||
+                                                        (pdf2bpmnProgress.message || '').includes('사용자 확인 대기'))
+                                                )
+                                            "
+                                            class="hitl-feedback-multi-wrap mb-2 mt-2"
+                                        >
+                                            <div class="hitl-multi-header">
+                                                <v-icon size="18" color="primary">mdi-comment-question-outline</v-icon>
+                                                <span class="hitl-multi-title">
+                                                    {{ message.__humanFeedback.question || '아래 항목들에 한 번에 응답해 주세요.' }}
+                                                </span>
+                                                <v-chip size="x-small" variant="tonal" color="primary" class="ml-2">
+                                                    {{ message.__humanFeedback.questions.length }}개 질문
+                                                </v-chip>
+                                            </div>
+
+                                            <div
+                                                v-for="(q, qIdx) in message.__humanFeedback.questions"
+                                                :key="q.question_id || qIdx"
+                                                class="hitl-multi-section"
+                                            >
+                                                <HumanFeedbackPanel
+                                                    :ref="(el) => registerMultiPanelRef(message.uuid, qIdx, el)"
+                                                    :feedbackType="q.feedback_type || 'select_items'"
+                                                    :question="q.prompt || '선택해 주세요.'"
+                                                    :context="q.context || ''"
+                                                    :items="Array.isArray(q.items) ? q.items : []"
+                                                    :suggestions="Array.isArray(q.suggestions) ? q.suggestions : (Array.isArray(q.choices) ? q.choices : [])"
+                                                    :evidenceSpans="Array.isArray(q.evidence_spans) ? q.evidence_spans : []"
+                                                    :impactPreview="Array.isArray(q.impact_preview) ? q.impact_preview : []"
+                                                    :allowMultiple="!!q.allow_multiple"
+                                                    :minSelect="typeof q.min_select === 'number' ? q.min_select : (q.feedback_type === 'select_items' ? 0 : 1)"
+                                                    :allowSkip="false"
+                                                    :allowOther="!!q.allow_other"
+                                                    :submitted="!!message.__humanFeedback.__submitted"
+                                                    :submittedText="getMultiSectionSubmittedText(message, qIdx)"
+                                                    :initialSelectedIds="getMultiInitialSelectedIds(message, qIdx)"
+                                                    :initialCustomText="getMultiInitialCustomText(message, qIdx)"
+                                                    :hideSubmit="true"
+                                                    :headerIcon="'mdi-help-circle-outline'"
+                                                />
+                                            </div>
+
+                                            <div v-if="!message.__humanFeedback.__submitted" class="hitl-multi-actions">
+                                                <v-spacer />
+                                                <v-btn
+                                                    color="primary"
+                                                    size="small"
+                                                    variant="flat"
+                                                    @click="submitMultiHumanFeedback(message)"
+                                                >
+                                                    응답 제출
+                                                </v-btn>
+                                            </div>
+                                            <div v-else class="hitl-multi-submitted">
+                                                <v-icon size="14" color="success">mdi-check-circle</v-icon>
+                                                <span>{{ message.__humanFeedback.__submittedText || '응답 완료' }}</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- single-question 모드 (기존): questions 배열이 없을 때 -->
+                                        <div
+                                            v-else-if="
                                                 message &&
                                                 message.__humanFeedback &&
                                                 !(
@@ -164,12 +238,14 @@
                                                 :allowMultiple="message.__humanFeedback.allow_multiple !== false"
                                                 :minSelect="message.__humanFeedback.min_select || 1"
                                                 :allowSkip="message.__humanFeedback.allow_skip || false"
+                                                :allowOther="!!message.__humanFeedback.allow_other"
                                                 :submitted="!!message.__humanFeedback.__submitted"
                                                 :submittedText="message.__humanFeedback.__submittedText || '응답 완료'"
                                                 :initialSelectedIds="message.__humanFeedback.__selectedIds || []"
                                                 :initialSelectedSuggestion="message.__humanFeedback.__selectedSuggestion || null"
                                                 :initialDecision="message.__humanFeedback.__decision || ''"
                                                 :initialFreeText="message.__humanFeedback.__freeText || ''"
+                                                :initialCustomText="message.__humanFeedback.__customText || ''"
                                                 :headerIcon="'mdi-comment-question-outline'"
                                                 :submitLabel="'응답 제출'"
                                                 @submit="(fb) => emitHumanFeedbackSubmit(fb, message)"
@@ -271,12 +347,14 @@
                                                         :allowMultiple="pendingHumanFeedback.allow_multiple !== false"
                                                         :minSelect="pendingHumanFeedback.min_select || 1"
                                                         :allowSkip="pendingHumanFeedback.allow_skip || false"
+                                                        :allowOther="!!pendingHumanFeedback.allow_other"
                                                         :submitted="!!pendingHumanFeedback.__submitted"
                                                         :submittedText="pendingHumanFeedback.__submittedText || '응답 완료'"
                                                         :initialSelectedIds="pendingHumanFeedback.__selectedIds || []"
                                                         :initialSelectedSuggestion="pendingHumanFeedback.__selectedSuggestion || null"
                                                         :initialDecision="pendingHumanFeedback.__decision || ''"
                                                         :initialFreeText="pendingHumanFeedback.__freeText || ''"
+                                                        :initialCustomText="pendingHumanFeedback.__customText || ''"
                                                         :headerIcon="'mdi-file-document-edit-outline'"
                                                         :submitLabel="'응답 제출'"
                                                         @submit="emitHumanFeedbackSubmit"
@@ -3822,6 +3900,67 @@ export default {
             const firstArg = (message && message.__humanFeedback) ? message : (this.pendingHumanFeedback || null);
             this.$emit('human-feedback-skip', firstArg);
         },
+
+        // ===================================================================
+        // multi-question (통합) HITL 패널 — 사용자 개입 1회로 모든 질문 응답
+        // ===================================================================
+        registerMultiPanelRef(messageUuid, qIdx, el) {
+            // Vue 3 ref callback. el 이 null 이면 unmount 시 정리.
+            if (!this._multiPanelRefs) this._multiPanelRefs = {};
+            if (!this._multiPanelRefs[messageUuid]) this._multiPanelRefs[messageUuid] = {};
+            if (el == null) {
+                delete this._multiPanelRefs[messageUuid][qIdx];
+            } else {
+                this._multiPanelRefs[messageUuid][qIdx] = el;
+            }
+        },
+        getMultiInitialSelectedIds(message, qIdx) {
+            const responses = message?.__humanFeedback?.__responses;
+            if (!Array.isArray(responses)) return [];
+            const r = responses[qIdx];
+            return (r && Array.isArray(r.selectedIds)) ? r.selectedIds : [];
+        },
+        getMultiInitialCustomText(message, qIdx) {
+            const responses = message?.__humanFeedback?.__responses;
+            if (!Array.isArray(responses)) return '';
+            const r = responses[qIdx];
+            return (r && r.customText) ? String(r.customText) : '';
+        },
+        getMultiSectionSubmittedText(message, qIdx) {
+            const responses = message?.__humanFeedback?.__responses;
+            if (!Array.isArray(responses)) return '응답 완료';
+            const r = responses[qIdx];
+            if (!r) return '응답 완료';
+            const items = r.selectedItems || [];
+            const labels = items.map((it) => it?.label).filter(Boolean);
+            let summary = labels.length > 0 ? `선택됨: ${labels.join(', ')}` : '응답 완료';
+            if (r.customText) {
+                const preview = r.customText.length > 30 ? r.customText.slice(0, 30) + '…' : r.customText;
+                summary = summary === '응답 완료' ? `직접 입력: "${preview}"` : `${summary} · 직접 입력: "${preview}"`;
+            }
+            return summary;
+        },
+        submitMultiHumanFeedback(message) {
+            const refs = (this._multiPanelRefs || {})[message.uuid] || {};
+            const questions = message?.__humanFeedback?.questions || [];
+            const responses = [];
+            for (let i = 0; i < questions.length; i++) {
+                const panel = refs[i];
+                if (!panel || typeof panel.getResponse !== 'function') {
+                    responses.push({ question_id: questions[i]?.question_id || '', skipped: true });
+                    continue;
+                }
+                const resp = panel.getResponse();
+                if (!resp) {
+                    // canSubmit=false (필수 입력 누락 등) — empty 로 보냄. 백엔드는 hitl_is_skipped 처리.
+                    responses.push({ question_id: questions[i]?.question_id || '', skipped: true });
+                    continue;
+                }
+                responses.push({ ...resp, question_id: questions[i]?.question_id || '' });
+            }
+            // 부모(ChatRoomPage)로 multi 응답 전달
+            this.$emit('human-feedback-submit', message, { type: 'multi', responses });
+        },
         startAgentPanelResize(e) {
             e.preventDefault();
             this.isResizingAgentPanel = true;
@@ -6431,6 +6570,62 @@ pre {
 .date-separator-line {
     flex: 1;
     opacity: 0.3;
+}
+
+/* HITL — multi-question 통합 패널 컨테이너 */
+.hitl-feedback-multi-wrap {
+    background: rgba(var(--v-theme-surface-variant), 0.05);
+    border: 1px solid rgba(var(--v-theme-primary), 0.2);
+    border-radius: 14px;
+    padding: 12px 14px;
+    max-width: 520px;
+    margin-right: auto;
+}
+.hitl-multi-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: rgb(var(--v-theme-on-surface));
+}
+.hitl-multi-title {
+    flex: 1;
+    line-height: 1.3;
+}
+.hitl-multi-section {
+    margin-bottom: 6px;
+}
+.hitl-multi-section + .hitl-multi-section {
+    border-top: 1px dashed rgba(var(--v-theme-on-surface), 0.1);
+    padding-top: 6px;
+}
+.hitl-multi-section :deep(.human-feedback-panel) {
+    /* 각 섹션 내부 패널은 외곽선 제거 — 컨테이너가 외곽선 갖고 있음 */
+    border: none;
+    background: transparent;
+    padding: 6px 4px;
+    margin: 0;
+    max-width: none;
+}
+.hitl-multi-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+.hitl-multi-submitted {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+    font-size: 12px;
+    color: rgba(var(--v-theme-on-surface), 0.6);
 }
 
 .date-separator-text {

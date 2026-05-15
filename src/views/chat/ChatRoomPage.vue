@@ -3423,13 +3423,31 @@ export default {
             if (targetMessage && targetMessage.__humanFeedback) {
                 const fb = targetMessage.__humanFeedback;
                 fb.__submitted = true;
-                if (feedbackResult.type === 'select_items') {
+                if (feedbackResult.type === 'multi') {
+                    // multi 응답: __responses 에 각 섹션 응답 저장 + 워커에 batch 전송
+                    fb.__responses = (feedbackResult.responses || []).slice();
+                    const total = (feedbackResult.responses || []).length;
+                    const answered = (feedbackResult.responses || []).filter((r) => !r.skipped).length;
+                    fb.__submittedText = `${answered}/${total}개 응답 완료`;
+                } else if (feedbackResult.type === 'select_items') {
                     fb.__selectedIds = (feedbackResult.selectedIds || []).slice();
                     fb.__selectedItems = (feedbackResult.selectedItems || []).slice();
+                    fb.__customText = (feedbackResult.customText || '').toString();
                     const labels = (feedbackResult.selectedItems || [])
                         .map((it) => it?.label)
                         .filter(Boolean);
-                    fb.__submittedText = labels.length > 0 ? `선택됨: ${labels.join(', ')}` : `${feedbackResult.selectedItems?.length || 0}개 선택됨`;
+                    let summary = '';
+                    if (labels.length > 0) summary = `선택됨: ${labels.join(', ')}`;
+                    else if (feedbackResult.selectedItems?.length) summary = `${feedbackResult.selectedItems.length}개 선택됨`;
+                    if (fb.__customText) {
+                        const preview = fb.__customText.length > 30
+                            ? fb.__customText.slice(0, 30) + '…'
+                            : fb.__customText;
+                        summary = summary
+                            ? `${summary} · 직접 입력: "${preview}"`
+                            : `직접 입력: "${preview}"`;
+                    }
+                    fb.__submittedText = summary || '응답 완료';
                 } else if (feedbackResult.type === 'approve_reject_with_edit') {
                     fb.__decision = feedbackResult.decision || '';
                     fb.__freeText = (feedbackResult.reason || '').toString();
@@ -3463,16 +3481,116 @@ export default {
             // 사용했던 변수명 유지 (이후 코드 호환)
             const message = targetMessage;
 
-            // PDF2BPMN HITL 응답은 todolist.output에 직접 기록 (하드 대기 해제 트리거)
+            // ============================================================
+            // PDF2BPMN 워커 HITL 응답을 todolist.output 에 기록 (워커 폴링이 이를 감지해 재개)
+            // - approve_reject_with_edit  : 기존 (gateway/모호성 검토)
+            // - select_items              : 스킬 승인 / DMN 생성 여부 등
+            // - multi                     : 여러 question 을 한 번에 batch 전송 (사용자 개입 1회)
+            //   option_meta.tool === 'pdf2bpmn' 또는 task_id 가 있으면 워커 응답으로 라우팅
+            // ============================================================
+            const hitl = feedback || {};
+            const optMeta = (hitl.option_meta && typeof hitl.option_meta === 'object') ? hitl.option_meta : null;
+            const isWorkerHitl =
+                !!hitl.task_id ||
+                (optMeta && optMeta.tool === 'pdf2bpmn' && optMeta.task_id);
+
+            // multi 응답: questions 배열의 각 question_id 에 대해 batch 로 todolist.output 에 기록
+            if (feedbackResult.type === 'multi') {
+                const taskId = hitl.task_id || optMeta?.task_id || this._resolvePdf2bpmnTaskId({}, this.currentChatRoom?.id);
+                const questions = Array.isArray(hitl.questions) ? hitl.questions : [];
+                const responses = Array.isArray(feedbackResult.responses) ? feedbackResult.responses : [];
+                for (let i = 0; i < responses.length; i++) {
+                    const r = responses[i] || {};
+                    const q = questions[i] || {};
+                    const qid = r.question_id || q.question_id || '';
+                    if (!qid) continue;
+                    if (r.skipped) {
+                        await this.submitPdf2BpmnHumanFeedback(taskId, {
+                            question_id: qid,
+                            action: 'skip',
+                            answer: '응답 없음',
+                            reason: '',
+                            target_type: q.target_type || (q.option_meta && q.option_meta.stage) || '',
+                            target_id: q.target_id || ''
+                        });
+                        continue;
+                    }
+                    if (r.type === 'select_items') {
+                        const ids = (r.selectedIds || []).map((x) => String(x));
+                        const items = r.selectedItems || [];
+                        const labels = items.map((it) => it?.label).filter(Boolean);
+                        await this.submitPdf2BpmnHumanFeedback(taskId, {
+                            question_id: qid,
+                            action: 'select_items',
+                            selected_ids: ids,
+                            selected_items: items,
+                            custom_text: r.customText || '',
+                            answer: labels.length ? labels.join(', ') : (ids.join(', ') || '선택 없음'),
+                            reason: r.customText || '',
+                            target_type: q.target_type || (q.option_meta && q.option_meta.stage) || '',
+                            target_id: q.target_id || ''
+                        });
+                    } else if (r.type === 'approve_reject_with_edit') {
+                        await this.submitPdf2BpmnHumanFeedback(taskId, {
+                            question_id: qid,
+                            action: r.decision === 'approve' ? 'approve' : 'reject',
+                            answer: r.answer || (r.decision === 'approve' ? '승인' : '반려'),
+                            reason: r.reason || r.selectedSuggestion || '',
+                            target_type: q.target_type || '',
+                            target_id: q.target_id || ''
+                        });
+                    } else if (r.type === 'suggestions') {
+                        await this.submitPdf2BpmnHumanFeedback(taskId, {
+                            question_id: qid,
+                            action: 'suggestions',
+                            answer: r.selected || '',
+                            reason: r.customText || '',
+                            target_type: q.target_type || '',
+                            target_id: q.target_id || ''
+                        });
+                    } else {
+                        await this.submitPdf2BpmnHumanFeedback(taskId, {
+                            question_id: qid,
+                            action: 'confirm',
+                            answer: '확인',
+                            reason: '',
+                            target_type: q.target_type || '',
+                            target_id: q.target_id || ''
+                        });
+                    }
+                }
+                return;
+            }
+
             if (feedbackResult.type === 'approve_reject_with_edit') {
-                const hitl = feedback || {};
-                const taskId = hitl.task_id || this._resolvePdf2bpmnTaskId({}, this.currentChatRoom?.id);
+                const taskId = hitl.task_id || optMeta?.task_id || this._resolvePdf2bpmnTaskId({}, this.currentChatRoom?.id);
                 const payload = {
                     question_id: hitl.question_id || hitl.id || '',
                     action: feedbackResult.decision === 'approve' ? 'approve' : 'reject',
                     answer: feedbackResult.answer || (feedbackResult.decision === 'approve' ? '승인' : '반려'),
                     reason: feedbackResult.reason || feedbackResult.selectedSuggestion || '',
                     target_type: hitl.target_type || '',
+                    target_id: hitl.target_id || ''
+                };
+                await this.submitPdf2BpmnHumanFeedback(taskId, payload);
+                return;
+            }
+
+            if (feedbackResult.type === 'select_items' && isWorkerHitl) {
+                const taskId = hitl.task_id || optMeta?.task_id;
+                const ids = (feedbackResult.selectedIds || []).map((x) => String(x));
+                const items = feedbackResult.selectedItems || [];
+                const customText = (feedbackResult.customText || '').toString();
+                const labels = items.map((it) => it?.label).filter(Boolean);
+                const payload = {
+                    question_id: hitl.question_id || optMeta?.question_id || '',
+                    action: 'select_items',
+                    selected_ids: ids,
+                    selected_items: items,
+                    custom_text: customText,
+                    answer: labels.length ? labels.join(', ') : (ids.join(', ') || '선택 없음'),
+                    reason: customText,
+                    target_type: hitl.target_type || optMeta?.stage || '',
                     target_id: hitl.target_id || ''
                 };
                 await this.submitPdf2BpmnHumanFeedback(taskId, payload);
@@ -3553,11 +3671,15 @@ export default {
                 const { error: updateError } = await window.$supabase.from('todolist').update({ output }).eq('id', tid);
                 if (updateError) throw updateError;
 
-                const text = `HITL 응답 전달: ${feedbackEntry.answer}${feedbackEntry.reason ? ` (${feedbackEntry.reason})` : ''}`;
-                const msgObj = this.createMessageObj(text, 'user');
-                if (this.currentChatRoom?.id) {
-                    this.messages.push(msgObj);
-                    await this.saveMessageToRoom(msgObj, this.currentChatRoom.id);
+                // HumanFeedbackPanel 의 readonly 상태가 이미 사용자 선택을 보여주므로, 채팅에는 간결한 알림만.
+                // 도구 옵션성 응답(action='select_items') 은 본문 노출 없이 조용히 처리.
+                if (payload.action !== 'select_items') {
+                    const text = `HITL 응답 전달: ${feedbackEntry.answer}${feedbackEntry.reason ? ` (${feedbackEntry.reason})` : ''}`;
+                    const msgObj = this.createMessageObj(text, 'user');
+                    if (this.currentChatRoom?.id) {
+                        this.messages.push(msgObj);
+                        await this.saveMessageToRoom(msgObj, this.currentChatRoom.id);
+                    }
                 }
             } catch (e) {
                 console.warn('[HITL] submitPdf2BpmnHumanFeedback failed:', e);
@@ -7255,25 +7377,52 @@ export default {
             const hasSame = me.messages.some((m) => m?.__humanFeedback?.question_id === questionId && !m?.__humanFeedback?.__submitted);
             if (hasSame) return;
 
-            const content = '모호한 항목이 감지되었습니다. 아래 내용을 확인하고 승인/반려 또는 보정 의견을 입력해 주세요.';
+            // 워커가 보낸 question.feedback_type 을 그대로 따름. 없으면 기존 호환 (approve_reject_with_edit).
+            const fbType = question?.feedback_type || 'approve_reject_with_edit';
+            // select_items 모드면 워커가 items 를 직접 실어 보낸다 (스킬 후보, DMN 옵션 등).
+            const incomingItems = Array.isArray(question?.items) ? question.items : [];
+
+            // multi-question 모드: eventData.questions 가 2개 이상이면 통합 패널로 묶는다.
+            const allQuestions = Array.isArray(eventData?.questions) ? eventData.questions : [];
+            const isMulti = allQuestions.length > 1;
+
+            const content =
+                isMulti
+                    ? (eventData?.message || `${allQuestions.length}개의 질문에 한 번에 응답해 주세요.`)
+                    : fbType === 'select_items'
+                        ? (question?.prompt || '아래에서 선택해 주세요.')
+                        : '모호한 항목이 감지되었습니다. 아래 내용을 확인하고 승인/반려 또는 보정 의견을 입력해 주세요.';
             const msgObj = me.createMessageObj(content, 'assistant');
             msgObj.__humanFeedback = {
-                user_request_type: 'approve_reject_with_edit',
-                question: question?.prompt || eventData?.message || '확인이 필요합니다.',
-                context: '아래 근거와 예상 반영 결과를 확인한 후 응답해 주세요.',
-                suggestions: Array.isArray(question?.choices) ? question.choices : [],
-                items: [],
-                allow_multiple: false,
-                min_select: 1,
-                allow_skip: false,
+                user_request_type: fbType,
+                feedback_type: fbType,
+                question: isMulti
+                    ? (eventData?.message || `${allQuestions.length}개 결정이 필요합니다.`)
+                    : (question?.prompt || eventData?.message || '확인이 필요합니다.'),
+                context: question?.context || '아래 내용을 확인한 후 응답해 주세요.',
+                suggestions: Array.isArray(question?.choices) ? question.choices : (
+                    Array.isArray(question?.suggestions) ? question.suggestions : []
+                ),
+                items: incomingItems,
+                allow_multiple: !!question?.allow_multiple,
+                min_select: typeof question?.min_select === 'number' ? question.min_select : (fbType === 'select_items' ? 0 : 1),
+                allow_other: !!question?.allow_other,
+                allow_skip: !!question?.allow_skip,
+                // multi 모드: questions 배열 전체를 그대로 보존 → Chat.vue 가 v-for 로 렌더
+                questions: isMulti ? allQuestions : null,
                 question_id: questionId,
                 target_type: question?.target_type || '',
                 target_id: question?.target_id || '',
                 evidence_spans: Array.isArray(question?.evidence_spans) ? question.evidence_spans : [],
                 impact_preview: Array.isArray(question?.impact_preview) ? question.impact_preview : [],
                 task_id: taskId,
+                option_meta: question?.option_meta && typeof question.option_meta === 'object'
+                    ? question.option_meta
+                    : null,
                 __submitted: false,
-                __submittedText: ''
+                __submittedText: '',
+                // multi 응답 보존용 (제출 후 readonly 표시 시 각 섹션 선택 복원)
+                __responses: null
             };
 
             if (me.currentChatRoom?.id === targetRoomId) {

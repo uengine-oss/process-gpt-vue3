@@ -66,6 +66,32 @@
             </v-chip>
         </div>
 
+        <!--
+            "직접 입력" (Other) — claude code 식 A/B/C/Other 패턴.
+            select_items / suggestions 모드에서 allowOther=true 면 표시.
+            사용자는 옵션 선택 + 자유 의견 추가 또는 자유 의견만 단독 제출 가능.
+        -->
+        <div
+            v-if="
+                allowOther &&
+                (feedbackType === 'select_items' || feedbackType === 'suggestions')
+            "
+            class="human-feedback-panel__other"
+        >
+            <div class="human-feedback-panel__other-label">직접 입력 (선택)</div>
+            <v-textarea
+                v-model="customText"
+                :disabled="submitted"
+                variant="outlined"
+                density="compact"
+                rows="2"
+                auto-grow
+                hide-details
+                placeholder="원하시는 내용을 자유롭게 입력하세요"
+                class="human-feedback-panel__other-input"
+            />
+        </div>
+
         <!-- 승인/반려 + 보정 입력 (approve_reject_with_edit) -->
         <div v-else-if="feedbackType === 'approve_reject_with_edit'" class="human-feedback-panel__decision">
             <div class="human-feedback-panel__decision-buttons">
@@ -116,8 +142,8 @@
             />
         </div>
 
-        <!-- 확인/전송 영역 -->
-        <div v-if="!submitted" class="human-feedback-panel__actions">
+        <!-- 확인/전송 영역 (multi-question 컨테이너에 들어가 hideSubmit=true 면 숨김) -->
+        <div v-if="!submitted && !hideSubmit" class="human-feedback-panel__actions">
             <span v-if="feedbackType === 'select_items' && selectedIds.size > 0" class="human-feedback-panel__count">
                 {{ selectedIds.size }}개 선택됨
             </span>
@@ -228,6 +254,23 @@ export default {
         initialFreeText: {
             type: String,
             default: ''
+        },
+        initialCustomText: {
+            type: String,
+            default: ''
+        },
+        /** "직접 입력" (Other) 옵션 활성화. select_items / suggestions 모드에 자유 텍스트 추가. */
+        allowOther: {
+            type: Boolean,
+            default: false
+        },
+        /**
+         * 자체 "응답 제출" 버튼 숨김. 부모 컨테이너가 multi-question 통합 제출 버튼을 가질 때 사용.
+         * 부모는 ref 로 패널의 getResponse() 를 호출해 응답 수집.
+         */
+        hideSubmit: {
+            type: Boolean,
+            default: false
         }
     },
     emits: ['submit', 'skip'],
@@ -236,7 +279,8 @@ export default {
             selectedIds: new Set(this.initialSelectedIds || []),
             selectedSuggestion: this.initialSelectedSuggestion || null,
             decision: this.initialDecision || '',
-            freeText: this.initialFreeText || ''
+            freeText: this.initialFreeText || '',
+            customText: this.initialCustomText || ''
         };
     },
     watch: {
@@ -261,15 +305,22 @@ export default {
             if (this.submitted && val && !this.freeText) {
                 this.freeText = val;
             }
+        },
+        initialCustomText(val) {
+            if (this.submitted && val && !this.customText) {
+                this.customText = val;
+            }
         }
     },
     computed: {
         canSubmit() {
+            // allowOther + customText 가 있으면 옵션 미선택 상태에서도 제출 가능
+            const hasCustom = this.allowOther && (this.customText || '').trim().length > 0;
             if (this.feedbackType === 'select_items') {
-                return this.selectedIds.size >= this.minSelect;
+                return this.selectedIds.size >= this.minSelect || hasCustom;
             }
             if (this.feedbackType === 'suggestions') {
-                return this.selectedSuggestion !== null;
+                return this.selectedSuggestion !== null || hasCustom;
             }
             if (this.feedbackType === 'approve_reject_with_edit') {
                 return this.decision === 'approve' || this.decision === 'reject';
@@ -304,17 +355,21 @@ export default {
         },
         handleSubmit() {
             if (!this.canSubmit) return;
+            // allowOther 활성 시 customText 를 모든 응답에 포함 (도구는 비어있으면 무시)
+            const customText = this.allowOther ? (this.customText || '').trim() : '';
             if (this.feedbackType === 'select_items') {
                 const selectedItems = this.items.filter((item) => this.selectedIds.has(item.id));
                 this.$emit('submit', {
                     type: 'select_items',
                     selectedIds: [...this.selectedIds],
-                    selectedItems
+                    selectedItems,
+                    customText
                 });
             } else if (this.feedbackType === 'suggestions') {
                 this.$emit('submit', {
                     type: 'suggestions',
-                    selected: this.selectedSuggestion
+                    selected: this.selectedSuggestion,
+                    customText
                 });
             } else if (this.feedbackType === 'approve_reject_with_edit') {
                 this.$emit('submit', {
@@ -330,6 +385,45 @@ export default {
         },
         handleSkip() {
             this.$emit('skip');
+        },
+        /**
+         * 부모(multi-question 컨테이너) 가 ref 로 호출.
+         * emit 없이 현재 입력 상태를 응답 객체로 반환.
+         * canSubmit=false 면 null 반환.
+         */
+        getResponse() {
+            if (!this.canSubmit) return null;
+            const customText = this.allowOther ? (this.customText || '').trim() : '';
+            if (this.feedbackType === 'select_items') {
+                const selectedItems = this.items.filter((item) => this.selectedIds.has(item.id));
+                return {
+                    type: 'select_items',
+                    selectedIds: [...this.selectedIds],
+                    selectedItems,
+                    customText
+                };
+            }
+            if (this.feedbackType === 'suggestions') {
+                return {
+                    type: 'suggestions',
+                    selected: this.selectedSuggestion,
+                    customText
+                };
+            }
+            if (this.feedbackType === 'approve_reject_with_edit') {
+                return {
+                    type: 'approve_reject_with_edit',
+                    decision: this.decision,
+                    answer: this.decision === 'approve' ? '승인' : '반려',
+                    reason: (this.freeText || '').trim(),
+                    selectedSuggestion: this.selectedSuggestion || null
+                };
+            }
+            return { type: 'confirm' };
+        },
+        /** 부모가 통합 submit 버튼 활성화 여부 결정에 사용. */
+        getCanSubmit() {
+            return !!this.canSubmit;
         }
     }
 };
@@ -461,6 +555,25 @@ export default {
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 10px;
+}
+
+/* "직접 입력" 영역 (allowOther) */
+.human-feedback-panel__other {
+    margin-top: 6px;
+    margin-bottom: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(var(--v-theme-on-surface), 0.12);
+}
+
+.human-feedback-panel__other-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.6);
+    margin-bottom: 4px;
+}
+
+.human-feedback-panel__other-input {
+    width: 100%;
 }
 
 .human-feedback-panel__decision-buttons {
