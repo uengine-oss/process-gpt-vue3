@@ -155,7 +155,7 @@ PaletteProvider.prototype.adjustParticipantBoundsByLanes = function (participant
     });
 };
 
-PaletteProvider.prototype.applyAutoLayout = function (onLoadStart = () => {}, onLoadEnd = () => {}) {
+PaletteProvider.prototype.applyAutoLayout = function (onLoadStart = () => { }, onLoadEnd = () => { }) {
     var injector = this._injector;
     var elementFactory = this._elementFactory;
     var eventBus = this._eventBus;
@@ -228,7 +228,7 @@ PaletteProvider.prototype._rotateRelativePosition = function (relativeX, relativ
 };
 
 // 함수 정의를 getPaletteEntries 바깥으로 옮긴다
-PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (event, element, onLoadStart = () => {}, onLoadEnd = () => {}) {
+PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (event, element, onLoadStart = () => { }, onLoadEnd = () => { }) {
     onLoadStart();
     const modeling = this._modeling;
     const logPrefix = '[changeParticipantOrientation]';
@@ -437,7 +437,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
     }
 };
 
-PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (event, element, onLoadStart = () => {}, onLoadEnd = () => {}) {
+PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (event, element, onLoadStart = () => { }, onLoadEnd = () => { }) {
     onLoadStart();
     const modeling = this._modeling;
     const logPrefix = '[changeParticipantOrientation]';
@@ -778,16 +778,12 @@ PaletteProvider.prototype.getPaletteEntries = function (element) {
     });
 
     // Add task types based on palette settings
-    // uEngine·PAL 모드: 팔레트에는 "사용자 작업"만 표시 (ManualTask 대신 UserTask 사용)
-    var isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
-    var enabledTaskTypes = window.$enabledPaletteTaskTypes || [];
-    var visibleTaskTypes =
-        enabledTaskTypes.length > 0
-            ? enabledTaskTypes.map((t) => t.task_type)
-            : window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask'];
-    if (isUEngineOrPal) {
-        visibleTaskTypes = ['bpmn:UserTask'];
-    }
+    // var enabledTaskTypes = window.$enabledPaletteTaskTypes || [];
+    // var visibleTaskTypes =
+    //     enabledTaskTypes.length > 0
+    //         ? enabledTaskTypes.map((t) => t.task_type)
+    //         : window.$paletteSettings?.visibleTaskTypes || ['bpmn:UserTask'];
+    var visibleTaskTypes = 'bpmn:UserTask';
 
     if (visibleTaskTypes.includes('bpmn:ManualTask')) {
         actions['create.manual-task'] = createAction(

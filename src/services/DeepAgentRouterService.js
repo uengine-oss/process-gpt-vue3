@@ -11,34 +11,48 @@ class DeepAgentRouterService {
         this.baseUrl = DEEP_AGENT_ROUTER_BASE_URL;
     }
 
-    async routeAgents(payload) {
-        const response = await fetch(`${this.baseUrl}/route`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json; charset=utf-8' },
-            body: JSON.stringify(payload || {})
-        });
+    async healthCheck() {
+        const response = await fetch(`${this.baseUrl}/health`);
         if (!response.ok) {
-            throw new Error(`DeepAgentRouter route error: ${response.status}`);
+            throw new Error(`DeepAgentRouter health error: ${response.status}`);
         }
-        return await response.json();
+        return await response.json().catch(() => ({}));
+    }
+
+    async routeAgents(payload) {
+        await this.healthCheck();
+        const selected = payload.room_participant_ids.filter((id) => id !== payload.user_uid && payload.candidate_agent_ids.includes(id));
+        return {
+            should_intervene: true,
+            selected_agent_ids: selected
+        };
     }
 
     async warmup(agentId) {
-        const response = await fetch(`${this.baseUrl}/${agentId}/warmup`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json; charset=utf-8' }
-        });
-        if (!response.ok) {
-            throw new Error(`DeepAgentRouter warmup error: ${response.status}`);
-        }
-        return await response.json();
+        const response = await this.healthCheck();
+        response['agent_id'] = agentId;
+        return response;
     }
 
     async sendMessageStream(agentId, params, callbacks = {}, options = {}) {
         const { onToken, onToolStart, onToolEnd, onPlanTools, onPlanSkills, onPlanTodos, onDone, onError, onMetadata, onAbort, onOpenUi } = callbacks;
 
         try {
-            const response = await fetch(`${this.baseUrl}/${agentId}/chat/stream`, {
+            let meta = params.metadata;
+            if (meta.agent_profile && meta.agent_profile.id !== 'process-gpt-agent') {
+                meta.agent_profile = {
+                    "id": "process-gpt-agent",
+                    "username": "Process GPT Agent",
+                    "alias": "",
+                    "role": "",
+                    "goal": "",
+                    "persona": "",
+                    "description": "",
+                    "tools": "",
+                    "skills": []
+                };
+            }
+            const response = await fetch(`${this.baseUrl}/chat/stream`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json; charset=utf-8'
@@ -59,8 +73,8 @@ class DeepAgentRouterService {
                     file_count: Number.isFinite(params.file_count)
                         ? params.file_count
                         : Array.isArray(params.files)
-                        ? params.files.length
-                        : 0,
+                            ? params.files.length
+                            : 0,
                     stream: true,
                     metadata: params.metadata || {}
                 })

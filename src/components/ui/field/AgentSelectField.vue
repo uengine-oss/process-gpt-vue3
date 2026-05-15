@@ -13,7 +13,7 @@
                 :menu-props="{ maxHeight: 600 }"
                 :hide-details="true"
                 clearable
-                :disabled="isSingleAgentType"
+                :disabled="orchestrationSelectDisabled"
             >
                 <template v-slot:selection="{ item }">
                     <v-row class="ma-0 pa-0 align-center">
@@ -100,7 +100,7 @@
                     density="compact"
                     :hide-details="true"
                     :label="$t('BpmnPropertyPanel.usePresetAgent')"
-                    :disabled="engineConfigDisabled"
+                    :disabled="engineConfigDisabled || activity.orchestration === 'a2a'"
                 />
             </div>
 
@@ -114,9 +114,10 @@
                     :use-agent="true"
                     :use-multiple="true"
                     :only-agent="true"
-                    :allowed-agent-types="['agent']"
+                    :allowed-agent-types="presetAllowedAgentTypes"
                     :is-execute="isExecute"
                     :disabled="engineConfigDisabled ? 'true' : 'false'"
+                    :key="presetAgentUserSelectKey"
                 ></user-select-field>
             </div>
 
@@ -163,7 +164,7 @@
                     variant="outlined"
                     density="compact"
                     class="mt-4"
-                    :disabled="engineConfigDisabled || activity.usePresetAgent"
+                    :disabled="engineConfigDisabled || activity.usePresetAgent || activity.orchestration === 'langchain-react'"
                     :loading="toolsSkillsLoading"
                 >
                     <template #item="{ item, props }">
@@ -295,6 +296,30 @@ export default {
                     }
                 },
                 {
+                    titleKey: 'AgentSelectInfo.orchestration.agentToAgent.title',
+                    value: 'a2a',
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.agentToAgent.description',
+                    costKey: 'AgentSelectInfo.cost.medium',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.title',
+                        details: [
+                            {
+                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.0.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.1.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.2.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.3.title'
+                            }
+                        ]
+                    }
+                },
+                {
                     titleKey: 'AgentSelectInfo.orchestration.deepResearchCustom.title',
                     value: 'deep-research-custom',
                     icon: 'playoff',
@@ -326,7 +351,21 @@ export default {
         isSingleAgentType() {
             return this.agentType === 'pgagent' || this.agentType === 'a2a';
         },
+        /** 연구 방식(오케스트레이션) 변경 불가: 단독 pgagent/a2a 담당자 모드일 때만 (단, orchestration이 a2a인 프리셋 모드는 예외) */
+        orchestrationSelectDisabled() {
+            if (this.agentType === 'pgagent') return true;
+            if (this.agentType === 'a2a' && this.activity.orchestration !== 'a2a') return true;
+            return false;
+        },
+        presetAllowedAgentTypes() {
+            return this.activity.orchestration === 'a2a' ? ['a2a'] : ['agent'];
+        },
+        presetAgentUserSelectKey() {
+            return `preset-agent-${this.activity.orchestration === 'a2a' ? 'a2a' : 'agent'}`;
+        },
         engineConfigDisabled() {
+            // orchestration이 'a2a'인 경우: 미리 설정 에이전트·완료 수준 등은 사용 가능
+            if (this.activity.orchestration === 'a2a') return false;
             // orchestration이 '없음'(null)인 경우: 하위 영역은 노출하되 비활성화
             return this.isSingleAgentType || !this.activity.orchestration;
         },
@@ -358,6 +397,9 @@ export default {
                     if (newVal.tools !== undefined) this.activity.tools = newVal.tools;
                     if (newVal.skills !== undefined) this.activity.skills = newVal.skills;
                     this.activity.usePresetAgent = newVal.usePresetAgent !== undefined ? !!newVal.usePresetAgent : !!newVal.agent;
+                    if (newVal.orchestration === 'a2a') {
+                        this.activity.usePresetAgent = true;
+                    }
                 }
             }
         },
@@ -375,11 +417,21 @@ export default {
         },
         'activity.orchestration': {
             handler(newVal) {
+                if (newVal === 'a2a') {
+                    this.activity.usePresetAgent = true;
+                    if (this.selectedAgent && this.selectedAgent.length > 0) {
+                        const allA2a = this.selectedAgent.every((a) => a.agentType === 'a2a');
+                        if (!allA2a) {
+                            this.selectedAgent = null;
+                            this.activity.agent = null;
+                        }
+                    }
+                }
                 // 기본값 규칙:
                 // - 오케스트레이션이 선택되면 agentMode는 기본 'draft'
                 // - 오케스트레이션이 '없음'(null)이면 agentMode도 '없음'(null)
                 // - 단, 담당 에이전트가 pgagent/a2a이면 예외(자동 변경하지 않음)
-                if (this.isSingleAgentType) return;
+                if (this.isSingleAgentType && newVal !== 'a2a') return;
                 if (newVal) {
                     if (!this.activity.agentMode) this.activity.agentMode = 'draft';
                 } else {
@@ -401,7 +453,7 @@ export default {
                     newVal.forEach((agent) => {
                         this.agentType = agent.agentType;
                         this.agentAlias = agent.alias;
-                        if (this.isSingleAgentType) {
+                        if (this.isSingleAgentType && this.activity.orchestration !== 'a2a') {
                             // 단일 에이전트 타입에서는 멀티 오케스트레이션 및 도구/스킬 사용을 비활성화한다.
                             this.activity.orchestration = null;
                             this.activity.tools = [];
@@ -445,6 +497,9 @@ export default {
             this.activity.agent = this.modelValue.agent || null;
             this.activity.usePresetAgent =
                 this.modelValue.usePresetAgent !== undefined ? !!this.modelValue.usePresetAgent : !!this.modelValue.agent;
+            if (this.activity.orchestration === 'a2a') {
+                this.activity.usePresetAgent = true;
+            }
         } else {
             this.activity = {
                 agent: null,

@@ -1709,12 +1709,8 @@ export default {
             const ctx = r.context ?? r.room_context ?? r.roomContext;
             return ctx != null && typeof ctx === 'object' ? ctx : null;
         },
-        isDeepagentsOrchestration(orchestration) {
-            return (orchestration || '').toString().trim() === 'deepagents';
-        },
-        shouldClientWriteChatDb(orchestration) {
-            // deepagents orchestration에서는 클라이언트가 DB write를 하지 않는다.
-            return !this.isDeepagentsOrchestration(orchestration);
+        shouldClientWriteChatDb(_orchestration) {
+            return true;
         },
         /** DB/putObject용: context 단일 필드로 쓰고 구 키는 제거 */
         writeChatRoomContext(nextCtx, room) {
@@ -1972,6 +1968,8 @@ export default {
                 const roomId = this.uuid();
                 const nowIso = new Date().toISOString();
 
+                const orchestration = (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
+                const canWrite = this.shouldClientWriteChatDb(orchestration);
                 const room = {
                     id: roomId,
                     name:
@@ -1979,11 +1977,11 @@ export default {
                             .trim()
                             .substring(0, 50) || this.$t('chatListing.newChat'),
                     participants: this.getDraftParticipantsFallback([me, tu]),
-                    message: { msg: 'NEW', type: 'text', createdAt: nowIso }
+                    message: { msg: 'NEW', type: 'text', createdAt: nowIso },
+                    context: {
+                        orchestration: orchestration
+                    }
                 };
-
-                const orchestration = (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
-                const canWrite = this.shouldClientWriteChatDb(orchestration);
                 if (canWrite) {
                     await backend.putObject('db://chat_rooms', room);
                 }
@@ -2029,6 +2027,30 @@ export default {
                 this.currentChatRoom = room;
                 this.upsertMessageByKeys(msg);
                 this.$nextTick(() => this.scrollToBottomSafe());
+
+                if (orchestration) {
+                    payload.orchestration = orchestration;
+                    payload.message_uuid = msgUuid;
+
+                    // roomId watcher에 의해 bootstrapRoom이 실행되어 this.messages가 초기화되는 것을
+                    // 기다린 후 streamAgents를 호출해야 '생각 중...' 로딩 메시지가 사라지지 않음
+                    await this.$nextTick();
+                    if (this.isLoadingRoom) {
+                        await new Promise((resolve) => {
+                            const unwatch = this.$watch('isLoadingRoom', (newVal) => {
+                                if (!newVal) {
+                                    unwatch();
+                                    resolve();
+                                }
+                            });
+                        });
+                    }
+
+                    const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', payload.mentionedUsers || []);
+                    if (agentTargets.length > 0) {
+                        await this.streamAgents(agentTargets, msg.content || '', payload);
+                    }
+                }
             } catch (e) {
                 // ignore
             } finally {
@@ -2059,6 +2081,8 @@ export default {
                 const roomId = this.uuid();
                 const nowIso = new Date().toISOString();
 
+                const orchestration = (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
+                const canWrite = this.shouldClientWriteChatDb(orchestration);
                 const room = {
                     id: roomId,
                     name:
@@ -2066,11 +2090,12 @@ export default {
                             .trim()
                             .substring(0, 50) || this.$t('chatListing.newChat'),
                     participants: this.getDraftParticipantsFallback([me, ag]),
-                    message: { msg: 'NEW', type: 'text', createdAt: nowIso }
+                    message: { msg: 'NEW', type: 'text', createdAt: nowIso },
+                    context: {
+                        orchestration: orchestration
+                    }
                 };
 
-                const orchestration = (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
-                const canWrite = this.shouldClientWriteChatDb(orchestration);
                 if (canWrite) {
                     await backend.putObject('db://chat_rooms', room);
                 }
@@ -2115,6 +2140,30 @@ export default {
                 this.currentChatRoom = room;
                 this.upsertMessageByKeys(msg);
                 this.$nextTick(() => this.scrollToBottomSafe());
+
+                if (orchestration) {
+                    payload.orchestration = orchestration;
+                    payload.message_uuid = msgUuid;
+
+                    // roomId watcher에 의해 bootstrapRoom이 실행되어 this.messages가 초기화되는 것을
+                    // 기다린 후 streamAgents를 호출해야 '생각 중...' 로딩 메시지가 사라지지 않음
+                    await this.$nextTick();
+                    if (this.isLoadingRoom) {
+                        await new Promise((resolve) => {
+                            const unwatch = this.$watch('isLoadingRoom', (newVal) => {
+                                if (!newVal) {
+                                    unwatch();
+                                    resolve();
+                                }
+                            });
+                        });
+                    }
+
+                    const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', payload.mentionedUsers || []);
+                    if (agentTargets.length > 0) {
+                        await this.streamAgents(agentTargets, msg.content || '', payload);
+                    }
+                }
             } catch (e) {
                 // ignore
             } finally {
@@ -2280,12 +2329,8 @@ export default {
                 this.maybeKickoffFromSession(roomId).catch(() => {});
             });
 
-            // deepagents 재접속 복구: 토큰 이어붙이기 대신 최종 조회(assistant chats row 존재)로 복원
             try {
-                const orch = this.getRoomOrchestration();
-                if (this.isDeepagentsOrchestration(orch)) {
-                    this.maybeStartAssistantRecoveryPoll(roomId);
-                }
+                this.maybeStartAssistantRecoveryPoll(roomId);
             } catch (e) {}
         },
         _roomHasAssistantRow(messages) {
@@ -2597,44 +2642,6 @@ export default {
             }
         },
 
-        /** 현재 plan_* 상태를 chat_rooms.context에 저장 */
-        async persistRoomContext() {
-            try {
-                if (!this.currentChatRoom?.id) return;
-                const tools = Object.values(this.plannedToolsById || {}).map((t) => ({
-                    id: t?.id || null,
-                    tool: t?.tool || null,
-                    name: t?.name || null,
-                    displayName: t?.displayName || null,
-                    status: t?.status || null
-                }));
-                const skills = Array.isArray(this.plannedSkills) ? this.plannedSkills : [];
-                const todos = Array.isArray(this.plannedTodos) ? this.plannedTodos : [];
-
-                const prevCtx = this.readChatRoomContext(this.currentChatRoom);
-                const preserved = prevCtx && typeof prevCtx === 'object' ? prevCtx : {};
-                const prevEnabled = preserved.enabled && typeof preserved.enabled === 'object' ? { ...preserved.enabled } : {};
-
-                const next = {
-                    ...preserved,
-                    enabled: {
-                        ...prevEnabled,
-                        tools: !!this.planSideInfoEnabled?.tools,
-                        skills: !!this.planSideInfoEnabled?.skills,
-                        todos: !!this.planSideInfoEnabled?.todos,
-                        attachments: !!this.planSideInfoEnabled?.attachments
-                    },
-                    tools: tools.filter((t) => t && (t.tool || t.name || t.displayName)),
-                    skills,
-                    todos,
-                    updatedAt: new Date().toISOString()
-                };
-                this.writeChatRoomContext(next, this.currentChatRoom);
-                await this.putChatRoomMerged(this.currentChatRoom);
-            } catch (e) {
-                // ignore
-            }
-        },
         async loadMessages(roomId) {
             this.messages = [];
             this.resetHistoryPagination();
@@ -3084,6 +3091,7 @@ export default {
                         await router.warmup(id);
                         this.setAgentStatus(id, { state: 'ready', message: '' });
                     } catch (e) {
+                        console.error('warmupAgentsForCurrentRoom', e);
                         this.setAgentStatus(id, { state: 'error', message: '준비 실패' });
                     }
                 })
@@ -4029,7 +4037,12 @@ export default {
                 const resendPayload = {
                     images: Array.isArray(triggerMsg?.images) ? triggerMsg.images : [],
                     file: triggerFiles[0] || null,
-                    files: triggerFiles
+                    files: triggerFiles,
+                    metadata: {
+                        // deepagents orchestration에서는 "참가(참여) 에이전트 목록"을 메타데이터로 전달한다.
+                        // (초대된 에이전트도 participants에 반영된 뒤 이 목록에 포함됨)
+                        participant_agent_ids: [agentId]
+                    }
                 };
 
                 const agentTarget = {
@@ -5723,7 +5736,12 @@ export default {
             const routingUuid = (agentTargets || []).find((t) => t?.__routingLoadingUuid)?.__routingLoadingUuid || null;
             if (routingUuid) this.removeRoutingLoadingMessage(routingUuid);
 
-            const promises = agentTargets.map(async (agentTarget) => {
+            let finalTargets = agentTargets;
+            if (orchestration === 'deepagents' && agentTargets.length > 0) {
+                finalTargets = [agentTargets[0]];
+            }
+
+            const promises = finalTargets.map(async (agentTarget) => {
                 const agentId = agentTarget.id;
                 if (!agentId) return;
 
@@ -5778,6 +5796,7 @@ export default {
                         await router.warmup(agentId);
                         this.setAgentStatus(agentId, { state: 'ready', message: '' });
                     } catch (e) {
+                        console.error('streamAgents warmup error', e);
                         this.setAgentStatus(agentId, { state: 'error', message: '준비 실패' });
                         const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                         if (idx !== -1) {
@@ -5848,7 +5867,8 @@ export default {
                             file: requestPrimaryFile,
                             files: requestFiles,
                             fileCount: requestFiles.length
-                        }
+                        },
+                        participant_agent_ids: this.agentParticipants.map((p) => p.id).filter(Boolean)
                     }
                 };
 
@@ -5901,7 +5921,6 @@ export default {
                                 };
                             }
                             this.upsertToolsPanel();
-                            if (canWrite) this.persistRoomContext();
                         } catch (e) {}
                     },
                     onPlanSkills: (skills) => {
@@ -5910,7 +5929,6 @@ export default {
                             this.planSideInfoEnabled.skills = true;
                             this.plannedSkills = skills;
                             this.upsertSkillsPanel();
-                            if (canWrite) this.persistRoomContext();
                         } catch (e) {}
                     },
                     onPlanTodos: (todos) => {
@@ -5923,7 +5941,6 @@ export default {
                                 status: (t?.status || '').toString()
                             }));
                             this.upsertTodosPanel();
-                            if (canWrite) this.persistRoomContext();
                         } catch (e) {}
                     },
                     onToolStart: (tool, input, rawEvent) => {
@@ -5986,7 +6003,6 @@ export default {
                                     input: input ?? prev?.input ?? null
                                 };
                                 if (this.planSideInfoEnabled?.tools) this.upsertToolsPanel();
-                                if (canWrite && this.planSideInfoEnabled?.tools) this.persistRoomContext();
                             }
 
                             const roomId = this.currentChatRoom?.id || this.roomId || null;
@@ -6068,7 +6084,6 @@ export default {
                                     output: output ?? prev?.output ?? null
                                 };
                                 if (this.planSideInfoEnabled?.tools) this.upsertToolsPanel();
-                                if (canWrite && this.planSideInfoEnabled?.tools) this.persistRoomContext();
                             }
 
                             // human feedback 도구 결과 감지 (일반화)
@@ -6213,7 +6228,6 @@ export default {
                             msg.isLoading = false;
                             if (payload?.run_state != null && typeof payload.run_state === 'object') {
                                 msg.runState = { ...(msg.runState || {}), ...payload.run_state };
-                                this._schedulePersistAssistantOpenUi(assistantUuid, canWrite);
                             }
                         } else if (op === 'end') {
                             const finalLang =
@@ -6228,13 +6242,6 @@ export default {
                                 msg.runState = { ...(msg.runState || {}), ...payload.run_state };
                             }
                             this.setAgentStatus(agentId, { state: 'ready', message: '' });
-                            if (this._openUiPersistTimers?.[assistantUuid]) {
-                                clearTimeout(this._openUiPersistTimers[assistantUuid]);
-                                delete this._openUiPersistTimers[assistantUuid];
-                            }
-                            if (canWrite) {
-                                void this.flushPersistAssistantOpenUiToDb(assistantUuid, canWrite);
-                            }
                         }
                     },
                     onDone: async (content) => {
@@ -6367,27 +6374,13 @@ export default {
                             });
                         }
 
-                        if (canWrite) {
-                            // DB 저장
-                            await backend.putObject(`db://chats/${assistantUuid}`, {
-                                uuid: assistantUuid,
-                                id: this.currentChatRoom?.id,
-                                messages: {
-                                    ...(this.messages[idx] || assistantMsgBase),
-                                    content: displayContent || safeFinal || full || '',
-                                    isLoading: false
-                                }
-                            });
-
-                            // last message 업데이트(가장 마지막 완료 응답 기준으로 덮어쓰기)
-                            if (this.currentChatRoom) {
-                                this.currentChatRoom.message = {
-                                    msg: (displayContent || safeFinal || full || '').substring(0, 50),
-                                    type: 'text',
-                                    createdAt: new Date().toISOString()
-                                };
-                                await this.putChatRoomMerged(this.currentChatRoom);
-                            }
+                        if (canWrite && this.currentChatRoom) {
+                            this.currentChatRoom.message = {
+                                msg: (displayContent || safeFinal || full || '').substring(0, 50),
+                                type: 'text',
+                                createdAt: new Date().toISOString()
+                            };
+                            await this.putChatRoomMerged(this.currentChatRoom);
                         }
 
                         this.EventBus.emit('chat-rooms-updated');
@@ -6568,12 +6561,6 @@ export default {
                         this.messages[idx].contentType = 'text';
                         this.messages[idx].isLoading = false;
                     }
-
-                    await backend.putObject(`db://chats/${assistantUuid}`, {
-                        uuid: assistantUuid,
-                        id: this.currentChatRoom?.id,
-                        messages: { ...(this.messages[idx] || msg), content: consultingStartMessage, isLoading: false }
-                    });
 
                     if (this.currentChatRoom) {
                         this.currentChatRoom.message = {
@@ -8052,33 +8039,6 @@ export default {
             if (!m || typeof m !== 'object') return null;
             const rs = m.runState ?? m.run_state ?? m.openuiRunState;
             return rs != null && typeof rs === 'object' ? rs : null;
-        },
-        _schedulePersistAssistantOpenUi(assistantUuid, canWrite) {
-            if (!canWrite || !assistantUuid) return;
-            if (!this._openUiPersistTimers) this._openUiPersistTimers = {};
-            const key = assistantUuid;
-            if (this._openUiPersistTimers[key]) clearTimeout(this._openUiPersistTimers[key]);
-            this._openUiPersistTimers[key] = setTimeout(() => {
-                delete this._openUiPersistTimers[key];
-                this.flushPersistAssistantOpenUiToDb(assistantUuid, canWrite);
-            }, 450);
-        },
-        async flushPersistAssistantOpenUiToDb(assistantUuid, canWrite) {
-            if (!canWrite || !assistantUuid) return;
-            const roomId = (this.currentChatRoom?.id || this.roomId || '').toString();
-            if (!roomId) return;
-            const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-            if (idx === -1) return;
-            const msg = this.messages[idx];
-            try {
-                await backend.putObject(`db://chats/${assistantUuid}`, {
-                    uuid: assistantUuid,
-                    id: roomId,
-                    messages: { ...msg }
-                });
-            } catch (e) {
-                // ignore
-            }
         },
 
         normalizeAssistantMessageForDisplay(message) {
