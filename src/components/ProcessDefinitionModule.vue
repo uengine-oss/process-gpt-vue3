@@ -1309,11 +1309,12 @@ export default {
                 };
 
                 // ---------- 재귀 파서 ----------
-                function processSubProcess(subProcessTmp, processId) {
+                function processSubProcess(subProcessTmp, processId, key) {
+                    const type = key ? key.replace('bpmn:', '') : 'subProcess';
                     if (Array.isArray(subProcessTmp)) {
-                        return subProcessTmp.map((obj) => ({ ...obj, type: 'subProcess', process: processId }));
+                        return subProcessTmp.map((obj) => ({ ...obj, type: type, process: processId }));
                     } else {
-                        return [{ ...subProcessTmp, type: 'subProcess', process: processId }];
+                        return [{ ...subProcessTmp, type: type, process: processId }];
                     }
                 }
 
@@ -1373,8 +1374,8 @@ export default {
                                 ? val.map((o) => ({ ...o, type: key.replace('bpmn:', ''), process: proc.id }))
                                 : [{ ...val, type: key.replace('bpmn:', ''), process: proc.id }];
                             gateways = gateways.concat(list);
-                        } else if (key.includes('subProcess')) {
-                            const subs = processSubProcess(val, proc.id);
+                        } else if (key.toLowerCase().includes('subprocess')) {
+                            const subs = processSubProcess(val, proc.id, key);
 
                             subs.forEach((sp) => {
                                 const subRes = processBpmnProcess(sp);

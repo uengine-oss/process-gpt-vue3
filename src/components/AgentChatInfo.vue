@@ -449,14 +449,14 @@ export default {
                     { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' },
                     { label: this.$t('AgentChatInfo.tabs.learning'), value: 'learning', icon: 'mdi-school' },
                     { label: this.$t('AgentChatInfo.tabs.question'), value: 'question', icon: 'mdi-chat' },
-                    { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' },
+                    // { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' },
                     { label: this.$t('AgentChatInfo.tabs.knowledge'), value: 'knowledge', icon: 'mdi-database' }
                 ];
             } else {
                 this.agentType = this.agentInfo?.agent_type;
                 return [
                     { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' },
-                    { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
+                    // { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
                 ];
             }
         },

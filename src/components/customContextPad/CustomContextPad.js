@@ -83,84 +83,84 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
 
         const append = autoPlace
             ? function (_, element) {
-                  const shape = elementFactory.createShape(assign({ type }, options));
+                const shape = elementFactory.createShape(assign({ type }, options));
 
-                  // Check if this is a Task type (for middle insertion)
-                  const isTaskType = type.includes('Task');
+                // Check if this is a Task type (for middle insertion)
+                const isTaskType = type.includes('Task');
 
-                  // Check if source element is a Gateway (don't insert in middle for Gateway sources)
-                  const isSourceGateway = element.type && element.type.includes('Gateway');
+                // Check if source element is a Gateway (don't insert in middle for Gateway sources)
+                const isSourceGateway = element.type && element.type.includes('Gateway');
 
-                  // Check if we should insert in the middle of a flow
-                  // Only for Task types, and not when source is a Gateway
-                  if (isTaskType && !isSourceGateway) {
-                      const outgoingConnections = element.outgoing || [];
+                // Check if we should insert in the middle of a flow
+                // Only for Task types, and not when source is a Gateway
+                if (isTaskType && !isSourceGateway) {
+                    const outgoingConnections = element.outgoing || [];
 
-                      // Only insert in middle if there's exactly one outgoing connection
-                      if (outgoingConnections.length === 1) {
-                          const connection = outgoingConnections[0];
-                          const targetElement = connection.target;
+                    // Only insert in middle if there's exactly one outgoing connection
+                    if (outgoingConnections.length === 1) {
+                        const connection = outgoingConnections[0];
+                        const targetElement = connection.target;
 
-                          // Insert in middle if there's a valid target
-                          if (targetElement) {
-                              try {
-                                  // Calculate position for new shape (between source and target)
-                                  const sourceCenter = {
-                                      x: element.x + element.width / 2,
-                                      y: element.y + element.height / 2
-                                  };
-                                  const targetCenter = {
-                                      x: targetElement.x + targetElement.width / 2,
-                                      y: targetElement.y + targetElement.height / 2
-                                  };
+                        // Insert in middle if there's a valid target
+                        if (targetElement) {
+                            try {
+                                // Calculate position for new shape (between source and target)
+                                const sourceCenter = {
+                                    x: element.x + element.width / 2,
+                                    y: element.y + element.height / 2
+                                };
+                                const targetCenter = {
+                                    x: targetElement.x + targetElement.width / 2,
+                                    y: targetElement.y + targetElement.height / 2
+                                };
 
-                                  // Position new shape in the middle
-                                  const newPosition = {
-                                      x: (sourceCenter.x + targetCenter.x) / 2,
-                                      y: (sourceCenter.y + targetCenter.y) / 2
-                                  };
+                                // Position new shape in the middle
+                                const newPosition = {
+                                    x: (sourceCenter.x + targetCenter.x) / 2,
+                                    y: (sourceCenter.y + targetCenter.y) / 2
+                                };
 
-                                  // Store original target before modifying
-                                  const originalTarget = targetElement;
+                                // Store original target before modifying
+                                const originalTarget = targetElement;
 
-                                  // Create the new shape at the calculated position
-                                  const newShape = modeling.createShape(shape, newPosition, element.parent);
+                                // Create the new shape at the calculated position
+                                const newShape = modeling.createShape(shape, newPosition, element.parent);
 
-                                  // Reconnect: element -> newShape (modify existing connection)
-                                  modeling.reconnectEnd(connection, newShape, {
-                                      x: newShape.x + newShape.width / 2,
-                                      y: newShape.y + newShape.height / 2
-                                  });
+                                // Reconnect: element -> newShape (modify existing connection)
+                                modeling.reconnectEnd(connection, newShape, {
+                                    x: newShape.x + newShape.width / 2,
+                                    y: newShape.y + newShape.height / 2
+                                });
 
-                                  // Create new connection: newShape -> originalTarget
-                                  modeling.connect(newShape, originalTarget);
+                                // Create new connection: newShape -> originalTarget
+                                modeling.connect(newShape, originalTarget);
 
-                                  return;
-                              } catch (e) {
-                                  console.warn('Failed to insert task in middle of flow:', e);
-                                  // Fall through to default behavior
-                              }
-                          }
-                      }
-                  }
+                                return;
+                            } catch (e) {
+                                console.warn('Failed to insert task in middle of flow:', e);
+                                // Fall through to default behavior
+                            }
+                        }
+                    }
+                }
 
-                  // Default behavior: append without insertion
-                  autoPlace.append(element, shape);
-              }
+                // Default behavior: append without insertion
+                autoPlace.append(element, shape);
+            }
             : appendStart;
 
         const previewAppend = autoPlace
             ? function (_, element) {
-                  try {
-                      appendPreview.create(element, type, options);
-                  } catch (e) {
-                      console.warn('[appendPreview] 실패:', e);
-                  }
+                try {
+                    appendPreview.create(element, type, options);
+                } catch (e) {
+                    console.warn('[appendPreview] 실패:', e);
+                }
 
-                  return () => {
-                      appendPreview.cleanUp();
-                  };
-              }
+                return () => {
+                    appendPreview.cleanUp();
+                };
+            }
             : null;
 
         return {
@@ -744,21 +744,21 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                         ? 'mdi mdi-arrow-up-bold'
                         : 'mdi mdi-arrow-left-bold'
                     : isHorizontal
-                    ? 'bpmn-icon-lane-insert-above'
-                    : 'bpmn-icon-lane-insert-above icon-rotate-270',
+                        ? 'bpmn-icon-lane-insert-above'
+                        : 'bpmn-icon-lane-insert-above icon-rotate-270',
                 title: usePhaseAdd
                     ? isPhaseVertical
                         ? i18n.global.t('customContextPad.phaseAbove')
                         : i18n.global.t('customContextPad.phaseLeft')
                     : isHorizontal
-                    ? i18n.global.t('customContextPad.laneAbove')
-                    : i18n.global.t('customContextPad.laneToTheLeft'),
+                        ? i18n.global.t('customContextPad.laneAbove')
+                        : i18n.global.t('customContextPad.laneToTheLeft'),
                 action: {
                     click: usePhaseAdd
                         ? function (event, el) {
-                              if (isPhase) insertPhaseAt(el, 'left');
-                              else addPhaseToContainer(el, 'start');
-                          }
+                            if (isPhase) insertPhaseAt(el, 'left');
+                            else addPhaseToContainer(el, 'start');
+                        }
                         : actions['lane-insert-above'] && actions['lane-insert-above'].action.click
                 }
             },
@@ -769,49 +769,49 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                         ? 'mdi mdi-arrow-down-bold'
                         : 'mdi mdi-arrow-right-bold'
                     : isHorizontal
-                    ? 'bpmn-icon-lane-insert-below'
-                    : 'bpmn-icon-lane-insert-below icon-rotate-270',
+                        ? 'bpmn-icon-lane-insert-below'
+                        : 'bpmn-icon-lane-insert-below icon-rotate-270',
                 title: usePhaseAdd
                     ? isPhaseVertical
                         ? i18n.global.t('customContextPad.phaseBelow')
                         : i18n.global.t('customContextPad.phaseRight')
                     : isHorizontal
-                    ? i18n.global.t('customContextPad.laneBelow')
-                    : i18n.global.t('customContextPad.laneToTheRight'),
+                        ? i18n.global.t('customContextPad.laneBelow')
+                        : i18n.global.t('customContextPad.laneToTheRight'),
                 action: {
                     click: usePhaseAdd
                         ? function (event, el) {
-                              if (isPhase) insertPhaseAt(el, 'right');
-                              else addPhaseToContainer(el, 'end');
-                          }
+                            if (isPhase) insertPhaseAt(el, 'right');
+                            else addPhaseToContainer(el, 'end');
+                        }
                         : actions['lane-insert-below'] && actions['lane-insert-below'].action.click
                 }
             },
             ...(usePhaseAdd
                 ? {}
                 : {
-                      'lane-divide-two': {
-                          group: 'lane',
-                          className: isHorizontal ? 'bpmn-icon-lane-divide-two' : 'bpmn-icon-lane-divide-two icon-rotate-270',
-                          title: i18n.global.t('customContextPad.laneDivideTwo'),
-                          action: { click: divideIntoTwoLanes }
-                      },
-                      'lane-divide-three': {
-                          group: 'lane',
-                          className: isHorizontal ? 'bpmn-icon-lane-divide-three' : 'bpmn-icon-lane-divide-three icon-rotate-270',
-                          title: i18n.global.t('customContextPad.laneDivideThree'),
-                          action: { click: divideIntoThreeLanes }
-                      },
-                      'lane-insert-single': {
-                          group: 'lane',
-                          className: isHorizontal ? 'bpmn-icon-participant' : 'bpmn-icon-participant icon-rotate-90',
-                          title: isHorizontal ? i18n.global.t('customContextPad.lane') : i18n.global.t('customContextPad.laneToTheLeft'),
-                          action: function (event, element) {
-                              const laneCount = element.children.filter((child) => child.type === 'bpmn:Lane').length;
-                              insertLanes(1);
-                          }
-                      }
-                  }),
+                    'lane-divide-two': {
+                        group: 'lane',
+                        className: isHorizontal ? 'bpmn-icon-lane-divide-two' : 'bpmn-icon-lane-divide-two icon-rotate-270',
+                        title: i18n.global.t('customContextPad.laneDivideTwo'),
+                        action: { click: divideIntoTwoLanes }
+                    },
+                    'lane-divide-three': {
+                        group: 'lane',
+                        className: isHorizontal ? 'bpmn-icon-lane-divide-three' : 'bpmn-icon-lane-divide-three icon-rotate-270',
+                        title: i18n.global.t('customContextPad.laneDivideThree'),
+                        action: { click: divideIntoThreeLanes }
+                    },
+                    'lane-insert-single': {
+                        group: 'lane',
+                        className: isHorizontal ? 'bpmn-icon-participant' : 'bpmn-icon-participant icon-rotate-90',
+                        title: isHorizontal ? i18n.global.t('customContextPad.lane') : i18n.global.t('customContextPad.laneToTheLeft'),
+                        action: function (event, element) {
+                            const laneCount = element.children.filter((child) => child.type === 'bpmn:Lane').length;
+                            insertLanes(1);
+                        }
+                    }
+                }),
             'lane-equalize': {
                 group: 'lane',
                 className: 'mdi mdi-equal',
@@ -866,9 +866,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         actions['append.gateway'].title = i18n.global.t('customContextPad.gateway');
     }
     if (actions['append.append-task']) {
-        // uEngine·PAL 모드: 추가되는 태스크는 UserTask, 그 외는 ManualTask
-        const appendTaskType =
-            typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal) ? 'bpmn:UserTask' : 'bpmn:ManualTask';
+        const appendTaskType = 'bpmn:UserTask';
         const newAction = appendAction(appendTaskType, actions['append.append-task'].className, i18n.global.t('customContextPad.task'), {});
 
         actions['append.append-task'].action = newAction.action;
@@ -951,12 +949,10 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
             }
         ];
 
-        // 활성화된 Task 타입만 필터링 (uEngine·PAL 모드: UserTask만)
-        const isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
-        const enabledTypes = isUEngineOrPal
-            ? ['bpmn:UserTask']
-            : window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
-              window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask'];
+        // 활성화된 Task 타입만 필터링
+        const enabledTypes =
+            window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
+            window.$paletteSettings?.visibleTaskTypes || ['bpmn:UserTask'];
 
         const filteredTaskTypes = taskTypes.filter((t) => enabledTypes.includes(t.type));
 
@@ -1147,12 +1143,10 @@ function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, 
         { type: 'bpmn:ReceiveTask', label: i18n.global.t('CustomReplaceElement.replace-with-receive-task') || 'Receive Task', icon: '📥' }
     ];
 
-    // 활성화된 Task 타입만 필터링 (uEngine·PAL 모드: UserTask만)
-    const isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
-    const enabledTypes = isUEngineOrPal
-        ? ['bpmn:UserTask']
-        : window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
-          window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask'];
+    // 활성화된 Task 타입만 필터링
+    const enabledTypes =
+        window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
+        window.$paletteSettings?.visibleTaskTypes || ['bpmn:UserTask'];
 
     const filteredTaskTypes = taskTypes.filter((t) => enabledTypes.includes(t.type));
 

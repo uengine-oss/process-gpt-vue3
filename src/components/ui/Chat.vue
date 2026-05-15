@@ -2769,7 +2769,7 @@
                                     </template>
                                 </v-tooltip>
                                 <v-select
-                                    v-if="workAssistantAgentMode && !inputOnly"
+                                    v-if="selectableOrchestration"
                                     v-model="orchestration"
                                     :items="orchestrationOptions"
                                     item-title="label"
@@ -3299,6 +3299,7 @@ export default {
             isPdfUploading: false,
             // orchestration: which chat server/runtime to use
             orchestration: 'langchain-react',
+            selectableOrchestration: false,
             isDragOverTextarea: false,
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
@@ -3453,6 +3454,11 @@ export default {
                     }
                     const ctx = newRoom?.context ?? newRoom?.room_context ?? newRoom?.roomContext ?? null;
                     const v = (ctx?.orchestration || '').toString().trim();
+                    if (v == '' || v == null) {
+                        this.selectableOrchestration = true;
+                    } else {
+                        this.selectableOrchestration = false;
+                    }
                     this.orchestration = v === 'deepagents' ? 'deepagents' : 'langchain-react';
                 } catch (e) {}
             }

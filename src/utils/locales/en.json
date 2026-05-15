@@ -2253,16 +2253,16 @@
         },
         "orchestration": {
             "none": {
-                "title": "Disabled",
-                "description": "No research needed — when you already have sufficient information",
+                "title": "Disabled (Human performs)",
+                "description": "No AI research or orchestration — a person carries out the work directly",
                 "detailDesc": {
-                    "title": "Start working immediately without additional research",
+                    "title": "Handle the task directly without automated research",
                     "details": [
                         {
-                            "title": "💡 Use when:\n• You already have all needed information\n• Simple task or question\n• Need quick response"
+                            "title": "💡 Use when:\n• A person will do the work instead of delegating to AI agents\n• No extra information gathering or deep research is needed\n• You want to process it manually and quickly"
                         },
                         {
-                            "title": "📝 Examples:\n• Summarize documents\n• Code refactoring\n• Text translation"
+                            "title": "📝 Examples:\n• Writing a short reply or response\n• Following an established procedure\n• Approvals or reviews that need human judgment"
                         }
                     ]
                 }
@@ -2286,7 +2286,7 @@
                 }
             },
             "deepResearchCustom": {
-                "title": "Deep Research Custom",
+                "title": "Deep Research",
                 "description": "Custom deep research pipeline for dedicated server. ex) Specialized data collection, tailored analysis, custom report (5~15 minutes)",
                 "detailDesc": {
                     "title": "Custom research flow optimized for your environment",
@@ -2322,7 +2322,7 @@
                 }
             },
             "deepagents": {
-                "title": "DeepAgents",
+                "title": "Agent",
                 "description": "Combine multiple specialist agents to produce step-by-step deep analysis and deliverables. ex) Research→Analyze→Draft→Verify (5~15 minutes)",
                 "detailDesc": {
                     "title": "Role-based agents collaborate in stages",
@@ -2400,8 +2400,8 @@
                 }
             },
             "langchainReact": {
-                "title": "LangChain Research",
-                "description": "Call various tools to achieve goals. ex) Image generation, code execution and analysis (3~5 minutes)",
+                "title": "Basic Agent",
+                "description": "Proceed by selecting and calling the necessary tools. Skill selection is not supported in this mode. (3–5 minutes)",
                 "detailDesc": {
                     "title": "Call various tools to achieve goals",
                     "details": [
@@ -2415,7 +2415,7 @@
                             "title": "📝 Examples:\n• \"Analyze CSV with Python\"\n• \"Draw a graph\"\n• \"Generate image\"\n• \"Fetch info from weather API\""
                         },
                         {
-                            "title": "📊 Output: Structured data/code\n✅ Pros: Fast, stable, easy to automate\n⚠️ Limit: No direct web UI control"
+                            "title": "📊 Output: Structured data/code\n✅ Pros: Fast, stable, easy to automate\n⚠️ Limit: No direct web UI control\nℹ️ Note: Skills are unavailable"
                         }
                     ]
                 }
