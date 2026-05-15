@@ -1679,6 +1679,7 @@
         "days": "일",
         "selectForm": "참조할 폼 선택",
         "noFormSelected": "폼을 선택해주세요",
+        "gatewayConditionDataHelp": "이 게이트웨이의 분기 판단에 사용할 참조 폼/필드를 선택합니다. 선택된 값만 우선 컨텍스트로 LLM/식 평가에 전달됩니다.",
         "instruction": "지침",
         "scriptVariable": "스크립트 내부에서 사용할 변수는 프로세스 변수에 정의해야 합니다.",
         "customProperties": "사용자 정의 속성",

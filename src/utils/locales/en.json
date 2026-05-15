@@ -1679,6 +1679,7 @@
         "days": "days",
         "selectForm": "Select Form to Reference",
         "noFormSelected": "Sel  ect a form to reference",
+        "gatewayConditionDataHelp": "Select reference forms/fields to use for this gateway's branching decision. Only the selected values are passed to the LLM/expression evaluator as the primary context.",
         "instruction": "Instruction",
         "scriptVariable": "Variables used in the script must be defined in the process variables.",
         "customProperties": "Custom Properties",

@@ -3417,20 +3417,59 @@ export default {
             if (!feedbackResult) return;
             console.log('[HumanFeedback] handleHumanFeedbackSubmit:', feedbackResult);
 
-            const message = messageOrFeedback && messageOrFeedback.__humanFeedback ? messageOrFeedback : this.pendingHumanFeedbackMessage;
-            const feedback = messageOrFeedback && !messageOrFeedback.__humanFeedback ? messageOrFeedback : message?.__humanFeedback;
+            const messageRef = messageOrFeedback && messageOrFeedback.__humanFeedback ? messageOrFeedback : this.pendingHumanFeedbackMessage;
+            const feedback = messageOrFeedback && !messageOrFeedback.__humanFeedback ? messageOrFeedback : messageRef?.__humanFeedback;
 
-            // 메시지를 제출 완료 상태로 변경
-            if (message && message.__humanFeedback) {
-                message.__humanFeedback.__submitted = true;
+            // CRITICAL: 인라인 패널의 message 는 filteredMessages 의 deep copy 일 수 있으므로,
+            // 원본 this.messages 에서 같은 uuid 를 찾아 그 객체를 갱신해야 readonly 상태가 보존된다.
+            const realMessage = (messageRef && messageRef.uuid)
+                ? this.messages.find((m) => m && m.uuid === messageRef.uuid) || messageRef
+                : messageRef;
+            const targetMessage = realMessage || messageRef;
+
+            // 메시지를 제출 완료 상태로 변경 + 사용자가 무엇을 골랐는지 저장 (readonly 표시용)
+            if (targetMessage && targetMessage.__humanFeedback) {
+                const fb = targetMessage.__humanFeedback;
+                fb.__submitted = true;
                 if (feedbackResult.type === 'select_items') {
-                    message.__humanFeedback.__submittedText = `${feedbackResult.selectedItems?.length || 0}개 문서 선택됨`;
+                    fb.__selectedIds = (feedbackResult.selectedIds || []).slice();
+                    fb.__selectedItems = (feedbackResult.selectedItems || []).slice();
+                    const labels = (feedbackResult.selectedItems || [])
+                        .map((it) => it?.label)
+                        .filter(Boolean);
+                    fb.__submittedText = labels.length > 0 ? `선택됨: ${labels.join(', ')}` : `${feedbackResult.selectedItems?.length || 0}개 선택됨`;
                 } else if (feedbackResult.type === 'approve_reject_with_edit') {
-                    message.__humanFeedback.__submittedText = feedbackResult.decision === 'approve' ? '승인됨' : '반려됨';
+                    fb.__decision = feedbackResult.decision || '';
+                    fb.__freeText = (feedbackResult.reason || '').toString();
+                    fb.__selectedSuggestion = feedbackResult.selectedSuggestion || null;
+                    fb.__submittedText = feedbackResult.decision === 'approve' ? '승인됨' : '반려됨';
+                } else if (feedbackResult.type === 'suggestions') {
+                    fb.__selectedSuggestion = feedbackResult.selected || null;
+                    fb.__submittedText = feedbackResult.selected ? `선택됨: ${feedbackResult.selected}` : '응답 완료';
                 } else {
-                    message.__humanFeedback.__submittedText = '응답 완료';
+                    fb.__submittedText = '응답 완료';
+                }
+
+                // DB 저장: __submitted/__selectedIds 등이 reload 후에도 살아남도록 chats 에 putObject.
+                // (assistant 메시지가 이미 DB 에 저장된 상태에서 __humanFeedback 만 갱신해 덮어쓴다)
+                try {
+                    const roomId = this.currentChatRoom?.id || null;
+                    const canWrite = this.shouldClientWriteChatDb(this.getRoomOrchestration());
+                    const msgUuid = targetMessage.uuid;
+                    if (canWrite && roomId && msgUuid) {
+                        await backend.putObject(`db://chats/${msgUuid}`, {
+                            uuid: msgUuid,
+                            id: roomId,
+                            messages: { ...targetMessage }
+                        });
+                    }
+                } catch (persistErr) {
+                    console.warn('[HumanFeedback] 제출 상태 DB 저장 실패:', persistErr);
                 }
             }
+
+            // 사용했던 변수명 유지 (이후 코드 호환)
+            const message = targetMessage;
 
             // PDF2BPMN HITL 응답은 todolist.output에 직접 기록 (하드 대기 해제 트리거)
             if (feedbackResult.type === 'approve_reject_with_edit') {
@@ -3449,17 +3488,46 @@ export default {
             }
 
             let userText = '';
+            // 옵션 응답인지 식별: 백엔드가 ask_user 응답에 option_meta = {tool, key} 를 실어 보낸다.
+            // 옵션 응답이면 본문은 선택 id 만 보내고, localStorage 의 tool_settings[key] 도 함께 갱신해
+            // 다음 /chat/stream 요청의 metadata.tool_settings 에 자동 포함되게 한다.
+            const optionMeta = (feedback && typeof feedback.option_meta === 'object') ? feedback.option_meta : null;
+            // 도구 옵션 응답(예: pdf2bpmnLevel="standard")은 채팅 본문에 노출하지 않는다.
+            // HumanFeedbackPanel 의 readonly 상태가 이미 사용자에게 무엇을 골랐는지 보여주므로 중복 표시 불필요.
+            let hideUserMessage = false;
+
             if (feedbackResult.type === 'select_items') {
-                const selectedLabels = feedbackResult.selectedItems.map((item) => item.label);
-                userText = `다음 문서를 참고해서 작성해 주세요: ${selectedLabels.join(', ')}`;
+                const selectedItems = Array.isArray(feedbackResult.selectedItems) ? feedbackResult.selectedItems : [];
+
+                if (optionMeta && optionMeta.tool && optionMeta.key && selectedItems.length > 0) {
+                    // === 제너릭 도구 옵션 응답 처리 (PDF2BPMN 레벨/언어/노드수 등 어떤 옵션이든 동일하게 동작) ===
+                    const valueId = String(selectedItems[0]?.id || '').toLowerCase();
+                    userText = valueId;
+                    hideUserMessage = true; // id 텍스트("standard")는 채팅에 노출하지 않음
+                    // localStorage 갱신: 'process-gpt:toolsSettings'.<key> = valueId
+                    try {
+                        const STORAGE_KEY = 'process-gpt:toolsSettings';
+                        const raw = localStorage.getItem(STORAGE_KEY);
+                        const prev = raw ? (JSON.parse(raw) || {}) : {};
+                        const next = { ...(typeof prev === 'object' && prev ? prev : {}), [optionMeta.key]: valueId };
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+                    } catch (e) {
+                        // 백엔드 pending_action 으로도 진행되므로 비치명 — 경고만
+                        console.warn('[HumanFeedback] tool_settings localStorage 갱신 실패:', e);
+                    }
+                } else {
+                    // 기존 문서 선택 케이스(예: list_reference_documents) — label 들을 합쳐 본문 구성
+                    const selectedLabels = selectedItems.map((item) => item.label);
+                    userText = `다음 문서를 참고해서 작성해 주세요: ${selectedLabels.join(', ')}`;
+                }
             } else if (feedbackResult.type === 'suggestions') {
                 userText = feedbackResult.selected;
             } else {
                 userText = '확인';
             }
 
-            // handleSendMessage를 통해 에이전트에 전송
-            await this.handleSendMessage({ text: userText });
+            // handleSendMessage를 통해 에이전트에 전송 (hideUserMessage=true 면 채팅 본문/DB 모두 스킵)
+            await this.handleSendMessage({ text: userText, hideUserMessage });
         },
 
         async submitPdf2BpmnHumanFeedback(taskId, payload) {
@@ -3551,6 +3619,12 @@ export default {
                 const canWrite = this.shouldClientWriteChatDb(payload?.orchestration || this.getRoomOrchestration());
                 const nowIso = new Date().toISOString();
                 const msgUuid = this.uuid();
+                // hideUserMessage 플래그: HITL 옵션 응답("standard" 같은 id) 처럼 사용자에게
+                // 채팅 본문으로 노출할 필요가 없는 메시지를 가릴 때 사용한다.
+                // - 화면: filteredMessages 가 __hidden 항목을 걸러냄
+                // - DB: 사용자 메시지 저장 스킵 (리로드 시 다시 안 보이게)
+                // - 백엔드: streamAgents 에는 그대로 text 가 전달되어 정상 동작
+                const hideUserMessage = !!payload?.hideUserMessage;
                 const msg = {
                     uuid: msgUuid,
                     // 클라이언트에서 생성한 안정적인 ID(optimistic/realtime dedupe에 사용)
@@ -3570,18 +3644,23 @@ export default {
                     // reply 메타데이터 (UI에서 표시)
                     replyUuid: payload?.reply?.uuid || null,
                     replyUserName: payload?.reply?.name || null,
-                    replyContent: payload?.reply?.content || null
+                    replyContent: payload?.reply?.content || null,
+                    // 채팅 본문에 노출하지 않음 (filteredMessages 에서 걸러진다)
+                    __hidden: hideUserMessage
                 };
                 // 서버 dedupe용: 클라이언트에서 생성한 user 메시지 UUID를 스트리밍 요청에 전달
                 payload.message_uuid = msgUuid;
 
                 // 입력창은 즉시 초기화되므로, 사용자 메시지를 먼저 화면에 반영한다.
-                this.upsertMessageByKeys(msg);
+                // 다만 hideUserMessage=true 인 경우는 messages 배열에 추가하지 않아 UI 에도 표시 안 됨.
+                if (!hideUserMessage) {
+                    this.upsertMessageByKeys(msg);
+                }
                 this.$nextTick(() => this.scrollToBottomSafe());
                 this.focusComposerInput();
                 this.updateChatAccessPage(roomId);
 
-                if (canWrite) {
+                if (canWrite && !hideUserMessage) {
                     await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
                 }
 
@@ -4340,14 +4419,49 @@ export default {
             let messageForAgent = (userText || '').toString();
             // 첨부 정보는 기존 방식처럼 [InputData]로 전달
             const normalizedFiles = this.normalizePayloadFiles(payload);
-            if ((payload?.images && payload.images.length > 0) || normalizedFiles.length > 0 || payload?.hwpxUrl || payload?.hwpxEdit) {
+
+            // 방(room)에 누적된 모든 파일을 session_files 로 모아 매 턴 LLM 에게 전달.
+            // → 사용자가 "다시 생성" 처럼 파일 재첨부 없이 후속 요청을 보내도 LLM 이 이전 파일 컨텍스트를
+            //   알 수 있어 create_pdf2bpmn_workitem 등에서 placeholder([PDF_FILE_URL]) 를 쓰는 사고 방지.
+            const sessionFilesMap = {};
+            const pushSessionFile = (f) => {
+                if (!f || typeof f !== 'object') return;
+                const name = f.fileName || f.originalFileName || f.name || '';
+                const url = f.fileUrl || f.url || f.publicUrl || f.fullPath || '';
+                if (!name || !url) return;
+                if (sessionFilesMap[url]) return;
+                sessionFilesMap[url] = {
+                    fileName: name,
+                    fileUrl: url,
+                    fileType: f.fileType || f.type || '',
+                    fileSize: f.fileSize || f.size || 0,
+                };
+            };
+            try {
+                for (const m of this.messages || []) {
+                    if (!m || m.role !== 'user') continue;
+                    if (m.pdfFile) pushSessionFile(m.pdfFile);
+                    if (Array.isArray(m.pdfFiles)) m.pdfFiles.forEach(pushSessionFile);
+                }
+            } catch (e) {
+                // 누적 수집 실패해도 nominal flow 는 유지
+            }
+            // 현재 턴 첨부도 합쳐 항상 최신 상태가 되게
+            normalizedFiles.forEach(pushSessionFile);
+            const sessionFiles = Object.values(sessionFilesMap);
+
+            const hasImages = payload?.images && payload.images.length > 0;
+            const hasCurrentFile = normalizedFiles.length > 0;
+            const hasSessionFile = sessionFiles.length > 0;
+            if (hasImages || hasCurrentFile || hasSessionFile || payload?.hwpxUrl || payload?.hwpxEdit) {
                 const inputData = {};
-                if (payload?.images && payload.images.length > 0) inputData.images = payload.images;
-                if (normalizedFiles.length > 0) {
+                if (hasImages) inputData.images = payload.images;
+                if (hasCurrentFile) {
                     // 하위 호환: 첫 파일은 file, 전체는 files
                     inputData.file = normalizedFiles[0];
                     inputData.files = normalizedFiles;
                 }
+                if (hasSessionFile) inputData.session_files = sessionFiles;
                 if (payload?.hwpxUrl) inputData.hwpx_url = payload.hwpxUrl;
                 if (payload?.hwpxEdit) inputData.hwpx_edit = payload.hwpxEdit;
                 messageForAgent += `\n\n[InputData]\n${JSON.stringify(inputData)}`;
@@ -5651,7 +5765,7 @@ export default {
                         if (idx !== -1) {
                             // human feedback이 감지된 경우 간결한 안내만 표시
                             if (hasHumanFeedback) {
-                                this.messages[idx].content = '참고할 문서를 검색했습니다. 아래에서 선택해 주세요.';
+                                this.messages[idx].content = '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.';
                             } else {
                                 this.messages[idx].content = full.length === 0 ? '생각 중...' : full;
                             }
@@ -5850,17 +5964,33 @@ export default {
                                 if (this.planSideInfoEnabled?.tools) this.upsertToolsPanel();
                             }
 
-                            // list_reference_documents 등 human feedback 도구 결과 감지
-                            if (lastRunningTool && lastRunningTool.name && lastRunningTool.name.includes('list_reference_documents')) {
+                            // human feedback 도구 결과 감지 (일반화)
+                            //   1) 레거시: list_reference_documents 가 select_items 응답을 반환
+                            //   2) 신규  : ANY 도구의 ask_user 응답에 feedback_type/items 또는 option_meta 가 포함된 경우
+                            //             → HumanFeedbackPanel(생성형 UI) 로 자동 렌더
+                            if (lastRunningTool && lastRunningTool.name) {
                                 try {
                                     const fbParsed = typeof output === 'string' ? JSON.parse(output) : output;
-                                    if (fbParsed && fbParsed.user_request_type === 'select_items' && fbParsed.items) {
-                                        lastRunningTool.__humanFeedback = fbParsed;
-                                        hasHumanFeedback = true;
-                                        // 즉시 메시지 내용을 간결하게 교체
-                                        const msgIdx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                                        if (msgIdx !== -1) {
-                                            this.messages[msgIdx].content = '참고할 문서를 검색했습니다. 아래에서 선택해 주세요.';
+                                    if (fbParsed && typeof fbParsed === 'object') {
+                                        const isLegacyListRef =
+                                            lastRunningTool.name.includes('list_reference_documents') &&
+                                            fbParsed.user_request_type === 'select_items' &&
+                                            Array.isArray(fbParsed.items);
+                                        const isAskUserWithUI =
+                                            fbParsed.user_request_type === 'ask_user' &&
+                                            (typeof fbParsed.feedback_type === 'string' ||
+                                                Array.isArray(fbParsed.items) ||
+                                                (fbParsed.option_meta && typeof fbParsed.option_meta === 'object'));
+                                        if (isLegacyListRef || isAskUserWithUI) {
+                                            lastRunningTool.__humanFeedback = fbParsed;
+                                            hasHumanFeedback = true;
+                                            const msgIdx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+                                            if (msgIdx !== -1) {
+                                                const fallbackText = isLegacyListRef
+                                                    ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
+                                                    : (fbParsed.question || '생성 옵션을 선택해 주세요.');
+                                                this.messages[msgIdx].content = fallbackText;
+                                            }
                                         }
                                     }
                                 } catch (e) {
@@ -6005,7 +6135,7 @@ export default {
                             if (feedbackTC) {
                                 this.messages[idx].__humanFeedback = feedbackTC.__humanFeedback;
                                 // AI가 문서 목록을 텍스트로 나열한 부분 제거 → 간결한 안내만 표시
-                                safeFinal = '참고할 문서를 검색했습니다. 아래에서 선택해 주세요.';
+                                safeFinal = '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.';
                                 console.log(
                                     '[HumanFeedback] ✅ 메시지에 __humanFeedback 첨부됨, items:',
                                     feedbackTC.__humanFeedback?.items?.length
@@ -6178,20 +6308,39 @@ export default {
                     }
                 };
 
+                // 중지 버튼 동작: 빈 placeholder("생각 중...") 상태였으면 메시지 자체를 제거,
+                // 응답이 일부라도 생성된 경우 그대로 유지하고 로딩만 해제.
+                const onAbortHandler = () => {
+                    delete this.agentAbortControllers[abortKey];
+                    const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+                    if (idx !== -1) {
+                        const msg = this.messages[idx];
+                        const content = (msg?.content || '').toString().trim();
+                        const isPlaceholder =
+                            !content ||
+                            content === '...' ||
+                            content === '생각 중' ||
+                            content === '생각 중...' ||
+                            content === '생각중...' ||
+                            content === '생각중';
+                        if (isPlaceholder) {
+                            // 사용자가 답변 시작 전에 중지함 → 메시지 자체를 제거
+                            this.messages.splice(idx, 1);
+                        } else {
+                            // 부분 응답이라도 있으면 그대로 보존하고 로딩만 해제
+                            msg.isLoading = false;
+                            msg.openuiIsStreaming = false;
+                        }
+                    }
+                    this.setAgentStatus(agentId, { state: 'ready', message: '' });
+                };
+
                 if (agentId === PROCESS_GPT_AGENT_ID) {
                     await mainAgentService.sendMessageStream(
                         commonParams,
                         {
                             ...callbacks,
-                            onAbort: () => {
-                                delete this.agentAbortControllers[abortKey];
-                                const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                                if (idx !== -1) {
-                                    this.messages[idx].isLoading = false;
-                                    this.messages[idx].openuiIsStreaming = false;
-                                }
-                                this.setAgentStatus(agentId, { state: 'ready', message: '' });
-                            }
+                            onAbort: onAbortHandler
                         },
                         { signal: abortController.signal }
                     );
@@ -6201,15 +6350,7 @@ export default {
                         commonParams,
                         {
                             ...callbacks,
-                            onAbort: () => {
-                                delete this.agentAbortControllers[abortKey];
-                                const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                                if (idx !== -1) {
-                                    this.messages[idx].isLoading = false;
-                                    this.messages[idx].openuiIsStreaming = false;
-                                }
-                                this.setAgentStatus(agentId, { state: 'ready', message: '' });
-                            }
+                            onAbort: onAbortHandler
                         },
                         { signal: abortController.signal }
                     );

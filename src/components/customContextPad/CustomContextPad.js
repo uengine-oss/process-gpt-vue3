@@ -866,7 +866,8 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         actions['append.gateway'].title = i18n.global.t('customContextPad.gateway');
     }
     if (actions['append.append-task']) {
-        const appendTaskType = 'bpmn:UserTask';
+        const appendTaskType =
+            typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$mode === 'ProcessGPT' || window.$pal) ? 'bpmn:UserTask' : 'bpmn:ManualTask';
         const newAction = appendAction(appendTaskType, actions['append.append-task'].className, i18n.global.t('customContextPad.task'), {});
 
         actions['append.append-task'].action = newAction.action;
