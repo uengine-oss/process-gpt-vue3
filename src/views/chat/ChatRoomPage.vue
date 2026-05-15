@@ -2914,40 +2914,28 @@ export default {
                             : incoming;
                     return;
                 }
-                // 스트리밍 중 생성한 assistant "로딩 버블"과 서버 저장 assistant row의 uuid가 다를 수 있다.
-                // 이 경우 (uuid/email 불일치 등으로) 중복 표시가 발생하므로, 로딩 버블을 우선 교체한다.
+                // 스트리밍 중 생성한 임시(isOptimistic) 메시지가 있다면 제거한다.
+                // 서버에서 저장된 정식 메시지가 실시간으로 들어오므로, 임시는 삭제하고 정식을 push하게 함.
                 try {
                     if (typeof incoming === 'object' && (incoming.role || '').toString() === 'assistant') {
                         const inAgentId = (incoming.agentId || '').toString();
                         const inEmail = (incoming.email || '').toString();
-                        const inName = (incoming.userName || incoming.name || '').toString();
-                        const inTs = new Date(incoming.timeStamp || 0).getTime();
 
-                        const loadingIdx = this.messages.findIndex((m) => {
+                        const optimisticIdx = this.messages.findIndex((m) => {
                             if (!m) return false;
-                            if ((m.role || '').toString() !== 'assistant') return false;
-                            if (!m.isLoading) return false;
-                            // agent 식별 우선(가능하면), 없으면 표시 정보로 매칭
-                            const mAgentId = (m.agentId || '').toString();
-                            const mEmail = (m.email || '').toString();
-                            const mName = (m.userName || m.name || '').toString();
-                            const mts = new Date(m.timeStamp || 0).getTime();
-                            const near = Number.isFinite(inTs) && Number.isFinite(mts) ? Math.abs(mts - inTs) <= 5 * 60 * 1000 : false;
-                            const agentMatch = inAgentId && mAgentId ? inAgentId === mAgentId : false;
-                            const emailMatch = inEmail && mEmail ? inEmail === mEmail : false;
-                            const nameMatch = inName && mName ? inName === mName : false;
-                            return near && (agentMatch || emailMatch || nameMatch);
+                            return m.isOptimistic && (
+                                (m.agentId && m.agentId.toString() === inAgentId) || 
+                                (m.email && m.email.toString() === inEmail)
+                            );
                         });
-                        if (loadingIdx !== -1) {
-                            this.messages[loadingIdx] = this.normalizeAssistantMessageForDisplay({
-                                ...(this.messages[loadingIdx] || {}),
-                                ...incoming,
-                                isLoading: false
-                            });
-                            return;
+
+                        if (optimisticIdx !== -1) {
+                            this.messages.splice(optimisticIdx, 1);
                         }
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.error('Optimistic cleanup error:', e);
+                }
                 // uuid가 다르게 들어오는 경우(또는 이중 submit)로 인한 중복 방지: 내용/작성자/시간이 거의 동일하면 덮어쓰기
                 try {
                     const inRole = (incoming.role || '').toString();
@@ -5632,6 +5620,7 @@ export default {
                     content: '생각 중...',
                     contentType: 'text',
                     isLoading: true,
+                    isOptimistic: true, // 프론트엔드 전용 임시 메시지 식별자
                     toolCalls: [],
                     timeStamp: new Date().toISOString(),
                     email: agentTarget.email || `agent:${agentId}`,
@@ -6207,6 +6196,16 @@ export default {
                             displayContent = this.extractDisplayAssistantContent(this.messages[idx].content);
                             this.messages[idx].isLoading = false;
                             this.messages[idx].contentType = 'text';
+
+                            // 실시간 이벤트로 정식 메시지가 들어올 것이므로 클라이언트의 임시 메시지는 제거한다.
+                            setTimeout(() => {
+                                const currentIdx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+                                if (currentIdx !== -1) {
+                                    this.messages.splice(currentIdx, 1);
+                                    this.$nextTick(() => this.scrollToBottomSafe());
+                                }
+                            }, 500); // 0.5초 대기 후 삭제 (사용자가 읽는 흐름 유지 및 실시간 이벤트 대기)
+                            
                             this.applyHwpxViewerFromToolCalls(this.messages[idx].toolCalls, idx);
                             if (!this.hasArtifactPanel) {
                                 const urlFromText = this.extractHwpxHtmlUrlFromText(this.messages[idx].content);
