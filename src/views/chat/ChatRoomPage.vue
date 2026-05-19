@@ -6112,6 +6112,14 @@ export default {
                                                     ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
                                                     : (fbParsed.question || '생성 옵션을 선택해 주세요.');
                                                 this.messages[msgIdx].content = fallbackText;
+                                                // HITL 패널은 msg.__humanFeedback 으로 렌더된다.
+                                                // tool_end 시점에 곧바로 메시지에 부착해, SSE done 이 늦거나
+                                                // Supabase 실시간 INSERT 가 먼저 도착해 우리 optimistic 메시지의 uuid 가
+                                                // DB row uuid 로 덮어써져 onDone 의 findIndex 가 실패하더라도
+                                                // 패널이 안정적으로 렌더되도록 한다.
+                                                if (!this.messages[msgIdx].__humanFeedback) {
+                                                    this.messages[msgIdx].__humanFeedback = fbParsed;
+                                                }
                                             }
                                         }
                                     }
