@@ -5931,7 +5931,8 @@ export default {
                                         .sort((a, b) => (b.__order ?? 0) - (a.__order ?? 0))[0];
                                 }
                                 if (target) {
-                                    this.recordActivity({ ...target, status: 'done' });
+                                    const nextStatus = rawEvent?.error ? 'error' : 'done';
+                                    this.recordActivity({ ...target, status: nextStatus });
                                 }
                             } catch (e) {}
 

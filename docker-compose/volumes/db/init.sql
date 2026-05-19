@@ -620,6 +620,13 @@ create table if not exists public.knowledge_files (
     index_status text not null default 'pending',
     index_error text null,
     indexed_at timestamptz null,
+    -- 자료 역할(doc_role) — 에이전트가 자료를 어떻게 활용할지 결정
+    --   content   : 일반 검색·요약 대상 (기본값)
+    --   glossary  : 용어 사전 — 답변 작성 시 컨텍스트로 자동 주입
+    --   template  : 보고서·계약서 양식 — DOCX 생성 시 양식으로 활용
+    --   reference : 법령·표준 등 참조 자료 — 인용 시 우선
+    --   dataset   : 정량 분석 대상(엑셀/CSV) — data-analyst 서브에이전트가 코드 실행으로 처리
+    doc_role text not null default 'content',
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     constraint knowledge_files_unique_source unique (tenant_id, source_type, source_ref),
@@ -627,6 +634,9 @@ create table if not exists public.knowledge_files (
         references public.tenants (id) on update cascade on delete cascade,
     constraint knowledge_files_status_check check (
         index_status in ('pending', 'processing', 'indexed', 'failed', 'excluded')
+    ),
+    constraint knowledge_files_role_check check (
+        doc_role in ('content', 'glossary', 'template', 'reference', 'dataset')
     )
 ) tablespace pg_default;
 
@@ -836,13 +846,18 @@ create table if not exists public.knowledge_folders (
     id uuid primary key default uuid_generate_v4(),
     tenant_id text not null,
     folder_path text not null,
+    doc_role text not null default 'content',  -- 폴더가 속한 자료 역할 (knowledge_files.doc_role 와 동일 의미)
     created_at timestamptz not null default now(),
-    constraint knowledge_folders_unique unique (tenant_id, folder_path),
+    constraint knowledge_folders_unique unique (tenant_id, doc_role, folder_path),
     constraint knowledge_folders_tenant_fk foreign key (tenant_id)
-        references public.tenants (id) on update cascade on delete cascade
+        references public.tenants (id) on update cascade on delete cascade,
+    constraint knowledge_folders_role_check check (
+        doc_role in ('content', 'glossary', 'template', 'reference', 'dataset')
+    )
 ) tablespace pg_default;
 
 create index if not exists idx_knowledge_folders_tenant on public.knowledge_folders using btree (tenant_id) tablespace pg_default;
+create index if not exists idx_knowledge_folders_tenant_role on public.knowledge_folders using btree (tenant_id, doc_role) tablespace pg_default;
 
 CREATE UNIQUE INDEX IF NOT EXISTS unique_proc_def_id_per_tenant ON proc_def (id, tenant_id);
 CREATE UNIQUE INDEX IF NOT EXISTS unique_form_def_id_per_tenant ON form_def (id, tenant_id);
@@ -3723,3 +3738,126 @@ END;
 $$ LANGUAGE plpgsql STABLE;
 
 GRANT EXECUTE ON FUNCTION public.agent_needing_knowledge_setup(integer) TO anon;
+
+
+-- =====================================================
+-- document_pages + knowledge_files.doc_card
+-- agent navigation (catalog + grep + page-read) 인프라.
+-- 기존 청크 RAG (documents 테이블 + Chroma) 는 건드리지 않는 add-only.
+-- =====================================================
+
+-- knowledge_files 에 doc_card JSONB 컬럼 추가
+-- 스키마(현행 최소):
+--   { "abstract": "...", "n_pages": int, "generated_at": "ISO8601Z",
+--     "generation_model": "..." }
+ALTER TABLE public.knowledge_files
+    ADD COLUMN IF NOT EXISTS doc_card jsonb;
+
+-- 페이지 단위 본문 저장. agent 의 read_document_page / grep_in_document 가 읽음.
+-- file_id 는 knowledge_files.source_ref 와 동일 값
+-- (drive: 파일ID / upload: storage path). documents 테이블의 metadata.file_id 와도 동일.
+create table if not exists public.document_pages (
+    id            uuid primary key default uuid_generate_v4(),
+    tenant_id     text not null,
+    file_id       text not null,
+    page_number   int  not null,
+    content       text not null,
+    page_meta     jsonb not null default '{}'::jsonb,
+    created_at    timestamptz not null default now(),
+    constraint document_pages_unique_page unique (tenant_id, file_id, page_number),
+    constraint document_pages_tenant_fk foreign key (tenant_id)
+        references public.tenants(id) on update cascade on delete cascade
+);
+
+create index if not exists idx_document_pages_tenant_file
+    on public.document_pages using btree (tenant_id, file_id) tablespace pg_default;
+
+ALTER TABLE public.document_pages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY document_pages_select_policy ON public.document_pages FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY document_pages_insert_policy ON public.document_pages FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY document_pages_update_policy ON public.document_pages FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY document_pages_delete_policy ON public.document_pages FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+
+-- =====================================================
+-- knowledge_files.doc_summary — summary-pipeline mini-summary 캐시.
+-- memento /summarize 가 batch 별 LLM 콜 결과를 통째로 컬럼에 캐싱해 재요약 비용 절감.
+-- 스키마: { batch_size, n_pages, n_batches, abstract, batches:[...], model, generated_at }
+-- 같은 file_id (= source_ref) 면 cache hit. 파일 재인덱싱 시
+-- document_pages._delete_existing_pages 와 같은 시점에 NULL 로 무효화.
+-- =====================================================
+ALTER TABLE public.knowledge_files
+    ADD COLUMN IF NOT EXISTS doc_summary jsonb;
+
+
+-- =====================================================
+-- knowledge_files.doc_role — 자료 역할 분류 (에이전트 활용 패턴 분기용)
+--   content   : 일반 검색·요약 대상 본문 (기본값)
+--   glossary  : 용어 사전 — 답변 작성 시 컨텍스트로 자동 주입
+--   template  : 보고서·계약서 양식 — DOCX 생성 시 양식으로 활용
+--   reference : 법령·표준 등 참조 자료 — 인용 시 우선
+-- =====================================================
+ALTER TABLE public.knowledge_files
+    ADD COLUMN IF NOT EXISTS doc_role text NOT NULL DEFAULT 'content';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'knowledge_files_role_check'
+    ) THEN
+        ALTER TABLE public.knowledge_files
+            ADD CONSTRAINT knowledge_files_role_check
+            CHECK (doc_role IN ('content', 'glossary', 'template', 'reference', 'dataset'));
+    END IF;
+END $$;
+
+create index if not exists idx_knowledge_files_tenant_role
+    on public.knowledge_files using btree (tenant_id, doc_role) tablespace pg_default;
+
+
+-- =====================================================
+-- knowledge_folders.doc_role — 폴더에도 역할 부여
+-- 빈 폴더가 어느 role 탭에 속하는지 결정. unique key 가
+-- (tenant_id, folder_path) → (tenant_id, doc_role, folder_path) 로 변경됨.
+-- =====================================================
+ALTER TABLE public.knowledge_folders
+    ADD COLUMN IF NOT EXISTS doc_role text NOT NULL DEFAULT 'content';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'knowledge_folders_role_check'
+    ) THEN
+        ALTER TABLE public.knowledge_folders
+            ADD CONSTRAINT knowledge_folders_role_check
+            CHECK (doc_role IN ('content', 'glossary', 'template', 'reference', 'dataset'));
+    END IF;
+
+    -- (tenant_id, folder_path) unique 제약을 (tenant_id, doc_role, folder_path) 로 교체.
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'knowledge_folders_unique' AND conrelid = 'public.knowledge_folders'::regclass
+    ) THEN
+        ALTER TABLE public.knowledge_folders DROP CONSTRAINT knowledge_folders_unique;
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'knowledge_folders_unique_role' AND conrelid = 'public.knowledge_folders'::regclass
+    ) THEN
+        ALTER TABLE public.knowledge_folders
+            ADD CONSTRAINT knowledge_folders_unique_role UNIQUE (tenant_id, doc_role, folder_path);
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_folders_tenant_role
+    ON public.knowledge_folders USING btree (tenant_id, doc_role) TABLESPACE pg_default;
+
+
+-- =====================================================
+-- knowledge_files.glossary_compact — 용어 사전 정제 본문
+-- doc_role='glossary' 자료를 ingest 시 LLM 이 page batch 단위로 추출·압축한 텍스트.
+-- 형식 자유 (한 줄 = 한 용어). 채팅 진입 시 /glossary/inline 이 우선 활용.
+-- =====================================================
+ALTER TABLE public.knowledge_files
+    ADD COLUMN IF NOT EXISTS glossary_compact text;
