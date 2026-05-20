@@ -30,15 +30,21 @@
                 v-for="item in items"
                 :key="item.id"
                 class="human-feedback-panel__item"
-                :class="{ 'is-selected': selectedIds.has(item.id), 'is-disabled': submitted }"
-                @click="!submitted && toggleItem(item.id)"
+                :class="{ 'is-selected': isItemSelected(item.id), 'is-disabled': submitted }"
+                role="checkbox"
+                :aria-checked="isItemSelected(item.id)"
+                :tabindex="submitted ? -1 : 0"
+                @click="onItemRowActivate(item.id)"
+                @keydown.enter.prevent="onItemRowActivate(item.id)"
+                @keydown.space.prevent="onItemRowActivate(item.id)"
             >
                 <v-checkbox
-                    :model-value="selectedIds.has(item.id)"
+                    :model-value="isItemSelected(item.id)"
                     density="compact"
                     hide-details
                     :disabled="submitted"
-                    @click.stop="!submitted && toggleItem(item.id)"
+                    tabindex="-1"
+                    readonly
                     color="primary"
                     class="human-feedback-panel__checkbox"
                 />
@@ -93,7 +99,7 @@
         </div>
 
         <!-- 승인/반려 + 보정 입력 (approve_reject_with_edit) -->
-        <div v-else-if="feedbackType === 'approve_reject_with_edit'" class="human-feedback-panel__decision">
+        <div v-if="feedbackType === 'approve_reject_with_edit'" class="human-feedback-panel__decision">
             <div class="human-feedback-panel__decision-buttons">
                 <v-btn
                     size="small"
@@ -154,8 +160,8 @@
             </v-btn>
         </div>
 
-        <!-- 제출 완료 표시 -->
-        <div v-else class="human-feedback-panel__submitted">
+        <!-- 제출 완료 표시 (hideSubmit=true 면 숨김 — multi-step 에서 체크박스 유지) -->
+        <div v-else-if="submitted" class="human-feedback-panel__submitted">
             <v-icon size="14" color="success">mdi-check-circle</v-icon>
             <span>{{ submittedText }}</span>
         </div>
@@ -273,23 +279,30 @@ export default {
             default: false
         }
     },
-    emits: ['submit', 'skip'],
+    emits: ['submit', 'skip', 'selection-change'],
     data() {
         return {
-            selectedIds: new Set(this.initialSelectedIds || []),
+            selectedIds: new Set(
+                (this.initialSelectedIds || []).map((x) => String(x ?? '').trim()).filter(Boolean)
+            ),
             selectedSuggestion: this.initialSelectedSuggestion || null,
             decision: this.initialDecision || '',
             freeText: this.initialFreeText || '',
-            customText: this.initialCustomText || ''
+            customText: this.initialCustomText || '',
+            _selectionNotifyTimer: null
         };
     },
     watch: {
         // 부모가 readonly 상태로 전환하면서 새 초기 선택값을 넘겨준 경우 동기화.
         // (component 가 unmount 되지 않는 일반 케이스에서는 이미 data 에 보존됨)
         initialSelectedIds(val) {
-            if (this.submitted && Array.isArray(val) && val.length > 0 && this.selectedIds.size === 0) {
-                this.selectedIds = new Set(val);
+            if (!Array.isArray(val) || val.length === 0) return;
+            const next = new Set(val.map((x) => String(x ?? '').trim()).filter(Boolean));
+            if (this.submitted) {
+                if (this.selectedIds.size === 0) this.selectedIds = next;
+                return;
             }
+            this.selectedIds = next;
         },
         initialSelectedSuggestion(val) {
             if (this.submitted && val && !this.selectedSuggestion) {
@@ -310,6 +323,9 @@ export default {
             if (this.submitted && val && !this.customText) {
                 this.customText = val;
             }
+        },
+        customText() {
+            this.notifySelectionChange();
         }
     },
     computed: {
@@ -328,19 +344,55 @@ export default {
             return true; // confirm 모드
         }
     },
+    beforeUnmount() {
+        if (this._selectionNotifyTimer) {
+            clearTimeout(this._selectionNotifyTimer);
+            this._selectionNotifyTimer = null;
+        }
+    },
     methods: {
+        notifySelectionChange() {
+            if (this.submitted) return;
+            if (this._selectionNotifyTimer) {
+                clearTimeout(this._selectionNotifyTimer);
+            }
+            const delay = this.hideSubmit
+                ? 0
+                : (this.feedbackType === 'select_items' && this.allowMultiple ? 700 : 120);
+            this._selectionNotifyTimer = setTimeout(() => {
+                this._selectionNotifyTimer = null;
+                this.$emit('selection-change', {
+                    canSubmit: this.canSubmit,
+                    feedbackType: this.feedbackType
+                });
+            }, delay);
+        },
+        itemKey(id) {
+            return String(id ?? '').trim();
+        },
+        isItemSelected(id) {
+            const key = this.itemKey(id);
+            return key ? this.selectedIds.has(key) : false;
+        },
+        onItemRowActivate(id) {
+            if (this.submitted) return;
+            this.toggleItem(id);
+        },
         toggleItem(id) {
             if (this.submitted) return;
+            const key = this.itemKey(id);
+            if (!key) return;
             const newSet = new Set(this.selectedIds);
-            if (newSet.has(id)) {
-                newSet.delete(id);
+            if (newSet.has(key)) {
+                newSet.delete(key);
             } else {
                 if (!this.allowMultiple) {
                     newSet.clear();
                 }
-                newSet.add(id);
+                newSet.add(key);
             }
             this.selectedIds = newSet;
+            this.notifySelectionChange();
         },
         selectSuggestion(suggestion) {
             if (this.submitted) return;
@@ -348,6 +400,7 @@ export default {
             if (this.feedbackType === 'approve_reject_with_edit' && !this.freeText) {
                 this.freeText = suggestion;
             }
+            this.notifySelectionChange();
         },
         setDecision(value) {
             if (this.submitted) return;
@@ -358,7 +411,7 @@ export default {
             // allowOther 활성 시 customText 를 모든 응답에 포함 (도구는 비어있으면 무시)
             const customText = this.allowOther ? (this.customText || '').trim() : '';
             if (this.feedbackType === 'select_items') {
-                const selectedItems = this.items.filter((item) => this.selectedIds.has(item.id));
+                const selectedItems = this.items.filter((item) => this.isItemSelected(item.id));
                 this.$emit('submit', {
                     type: 'select_items',
                     selectedIds: [...this.selectedIds],
@@ -391,11 +444,10 @@ export default {
          * emit 없이 현재 입력 상태를 응답 객체로 반환.
          * canSubmit=false 면 null 반환.
          */
-        getResponse() {
-            if (!this.canSubmit) return null;
+        snapshotResponse() {
             const customText = this.allowOther ? (this.customText || '').trim() : '';
             if (this.feedbackType === 'select_items') {
-                const selectedItems = this.items.filter((item) => this.selectedIds.has(item.id));
+                const selectedItems = this.items.filter((item) => this.isItemSelected(item.id));
                 return {
                     type: 'select_items',
                     selectedIds: [...this.selectedIds],
@@ -420,6 +472,10 @@ export default {
                 };
             }
             return { type: 'confirm' };
+        },
+        getResponse() {
+            if (!this.canSubmit) return null;
+            return this.snapshotResponse();
         },
         /** 부모가 통합 submit 버튼 활성화 여부 결정에 사용. */
         getCanSubmit() {
@@ -500,12 +556,17 @@ export default {
 
 .human-feedback-panel__item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 6px;
     padding: 6px 10px;
     border-radius: 8px;
     cursor: pointer;
     transition: background 0.15s;
+    user-select: none;
+}
+
+.human-feedback-panel__item:not(.is-disabled) .human-feedback-panel__checkbox {
+    pointer-events: none;
 }
 
 .human-feedback-panel__item:hover:not(.is-disabled) {
@@ -528,9 +589,11 @@ export default {
 
 .human-feedback-panel__item-content {
     display: flex;
+    flex: 1;
     flex-direction: column;
     min-width: 0;
     text-align: left;
+    cursor: pointer;
 }
 
 .human-feedback-panel__item-label {

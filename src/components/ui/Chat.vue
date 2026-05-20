@@ -132,26 +132,20 @@
                                         <!--
                                             HITL 생성형 UI (PDF2BPMN 워커 시작 전 단계 등 일반 ask_user)
                                             - pdf2bpmnProgress.isActive 와 무관하게 메시지에 __humanFeedback 이 첨부되면 렌더
-                                            - 워커 진행 중 'waiting_for_user' 패널과 중복 회피
                                             - 제출 후에도 패널은 mounted 상태를 유지해(:submitted=true) 사용자가 무엇을 골랐는지 보이도록 함.
+                                            - HITL 질문은 로딩바가 아닌 이 메시지 패널에만 표시 (생성 강도 UI 등과 분리)
                                               패널 내부 selectedIds 가 보존되므로 체크 상태가 그대로 표시되고, 클릭은 비활성화된다.
                                             - questions 배열이 있으면 multi-question 모드: 각 질문을 inline 패널로 렌더하고
                                               하나의 통합 "응답 제출" 버튼으로 모든 응답을 batch 전송 (사용자 개입 1회).
                                         -->
 
-                                        <!-- multi-question 모드: questions 배열이 있을 때 -->
+                                        <!-- multi-question 모드: questions 배열이 있을 때 (페이지네이션 형태로 1개씩 표시) -->
                                         <div
                                             v-if="
                                                 message &&
                                                 message.__humanFeedback &&
                                                 Array.isArray(message.__humanFeedback.questions) &&
-                                                message.__humanFeedback.questions.length > 0 &&
-                                                !(
-                                                    pdf2bpmnProgress &&
-                                                    pdf2bpmnProgress.isActive &&
-                                                    (pdf2bpmnProgress.status === 'waiting_for_user' ||
-                                                        (pdf2bpmnProgress.message || '').includes('사용자 확인 대기'))
-                                                )
+                                                message.__humanFeedback.questions.length > 0
                                             "
                                             class="hitl-feedback-multi-wrap mb-2 mt-2"
                                         >
@@ -161,13 +155,32 @@
                                                     {{ message.__humanFeedback.question || '아래 항목들에 한 번에 응답해 주세요.' }}
                                                 </span>
                                                 <v-chip size="x-small" variant="tonal" color="primary" class="ml-2">
-                                                    {{ message.__humanFeedback.questions.length }}개 질문
+                                                    {{ getMultiCurrentStep(message) + 1 }} / {{ message.__humanFeedback.questions.length }}
                                                 </v-chip>
                                             </div>
 
-                                            <div
+                                            <!-- 스텝 인디케이터(dots) - 클릭으로 임의 스텝 이동(이미 제출됐을 때도 응답 확인 가능) -->
+                                            <div class="hitl-multi-steps">
+                                                <span
+                                                    v-for="(_q, sIdx) in message.__humanFeedback.questions"
+                                                    :key="`step-${sIdx}`"
+                                                    class="hitl-multi-step-dot"
+                                                    :class="{
+                                                        'is-active': getMultiCurrentStep(message) === sIdx,
+                                                        'is-done': hasMultiAnswerForStep(message, sIdx)
+                                                    }"
+                                                    @click="setMultiCurrentStep(message, sIdx)"
+                                                ></span>
+                                            </div>
+
+                                            <!-- 현재 스텝만 mount (v-show 겹침으로 2·3번째 질문 클릭 불가 방지).
+                                                 이전 스텝 응답은 __responses 에 보관. -->
+                                            <template
                                                 v-for="(q, qIdx) in message.__humanFeedback.questions"
                                                 :key="q.question_id || qIdx"
+                                            >
+                                            <div
+                                                v-if="getMultiCurrentStep(message) === qIdx"
                                                 class="hitl-multi-section"
                                             >
                                                 <HumanFeedbackPanel
@@ -175,7 +188,7 @@
                                                     :feedbackType="q.feedback_type || 'select_items'"
                                                     :question="q.prompt || '선택해 주세요.'"
                                                     :context="q.context || ''"
-                                                    :items="Array.isArray(q.items) ? q.items : []"
+                                                    :items="getHitlQuestionItems(q)"
                                                     :suggestions="Array.isArray(q.suggestions) ? q.suggestions : (Array.isArray(q.choices) ? q.choices : [])"
                                                     :evidenceSpans="Array.isArray(q.evidence_spans) ? q.evidence_spans : []"
                                                     :impactPreview="Array.isArray(q.impact_preview) ? q.impact_preview : []"
@@ -184,17 +197,39 @@
                                                     :allowSkip="false"
                                                     :allowOther="!!q.allow_other"
                                                     :submitted="!!message.__humanFeedback.__submitted"
-                                                    :submittedText="getMultiSectionSubmittedText(message, qIdx)"
+                                                    :submittedText="message.__humanFeedback.__submitted ? getMultiSectionSubmittedText(message, qIdx) : ''"
                                                     :initialSelectedIds="getMultiInitialSelectedIds(message, qIdx)"
                                                     :initialCustomText="getMultiInitialCustomText(message, qIdx)"
                                                     :hideSubmit="true"
                                                     :headerIcon="'mdi-help-circle-outline'"
+                                                    @selection-change="() => syncMultiStepSelection(message, qIdx)"
                                                 />
                                             </div>
+                                            </template>
 
                                             <div v-if="!message.__humanFeedback.__submitted" class="hitl-multi-actions">
+                                                <v-btn
+                                                    variant="text"
+                                                    size="small"
+                                                    :disabled="getMultiCurrentStep(message) === 0"
+                                                    @click="prevMultiStep(message)"
+                                                >
+                                                    <v-icon size="16" start>mdi-chevron-left</v-icon>
+                                                    이전
+                                                </v-btn>
                                                 <v-spacer />
                                                 <v-btn
+                                                    v-if="!isLastMultiStep(message)"
+                                                    color="primary"
+                                                    size="small"
+                                                    variant="tonal"
+                                                    @click="goNextMultiStep(message)"
+                                                >
+                                                    다음
+                                                    <v-icon size="16" end>mdi-chevron-right</v-icon>
+                                                </v-btn>
+                                                <v-btn
+                                                    v-else
                                                     color="primary"
                                                     size="small"
                                                     variant="flat"
@@ -203,9 +238,31 @@
                                                     응답 제출
                                                 </v-btn>
                                             </div>
-                                            <div v-else class="hitl-multi-submitted">
-                                                <v-icon size="14" color="success">mdi-check-circle</v-icon>
-                                                <span>{{ message.__humanFeedback.__submittedText || '응답 완료' }}</span>
+                                            <div v-else class="hitl-multi-actions">
+                                                <v-btn
+                                                    variant="text"
+                                                    size="small"
+                                                    :disabled="getMultiCurrentStep(message) === 0"
+                                                    @click="prevMultiStep(message)"
+                                                >
+                                                    <v-icon size="16" start>mdi-chevron-left</v-icon>
+                                                    이전
+                                                </v-btn>
+                                                <v-spacer />
+                                                <div class="hitl-multi-submitted">
+                                                    <v-icon size="14" color="success">mdi-check-circle</v-icon>
+                                                    <span>{{ message.__humanFeedback.__submittedText || '응답 완료' }}</span>
+                                                </div>
+                                                <v-spacer />
+                                                <v-btn
+                                                    variant="text"
+                                                    size="small"
+                                                    :disabled="isLastMultiStep(message)"
+                                                    @click="setMultiCurrentStep(message, getMultiCurrentStep(message) + 1)"
+                                                >
+                                                    다음
+                                                    <v-icon size="16" end>mdi-chevron-right</v-icon>
+                                                </v-btn>
                                             </div>
                                         </div>
 
@@ -213,13 +270,7 @@
                                         <div
                                             v-else-if="
                                                 message &&
-                                                message.__humanFeedback &&
-                                                !(
-                                                    pdf2bpmnProgress &&
-                                                    pdf2bpmnProgress.isActive &&
-                                                    (pdf2bpmnProgress.status === 'waiting_for_user' ||
-                                                        (pdf2bpmnProgress.message || '').includes('사용자 확인 대기'))
-                                                )
+                                                message.__humanFeedback
                                             "
                                             class="hitl-feedback-wrap mb-2 mt-2"
                                         >
@@ -231,7 +282,7 @@
                                                 "
                                                 :question="message.__humanFeedback.question || '확인이 필요합니다.'"
                                                 :context="message.__humanFeedback.context || ''"
-                                                :items="message.__humanFeedback.items || []"
+                                                    :items="getHitlQuestionItems(message.__humanFeedback)"
                                                 :suggestions="message.__humanFeedback.suggestions || []"
                                                 :evidenceSpans="message.__humanFeedback.evidence_spans || []"
                                                 :impactPreview="message.__humanFeedback.impact_preview || []"
@@ -322,45 +373,6 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- HITL 질문 카드: PDF2BPMN 로딩 UI 내부.
-                                                     제출 후에도 카드는 유지(:submitted=true) — 어떤 옵션을 골랐는지 보이도록 -->
-                                                <div
-                                                    v-if="
-                                                        pendingHumanFeedback &&
-                                                        (pdf2bpmnProgress.status === 'waiting_for_user' ||
-                                                            (pdf2bpmnProgress.message || '').includes('사용자 확인 대기'))
-                                                    "
-                                                    class="mt-3"
-                                                >
-                                                    <HumanFeedbackPanel
-                                                        :feedbackType="
-                                                            pendingHumanFeedback.feedback_type ||
-                                                            pendingHumanFeedback.user_request_type ||
-                                                            'approve_reject_with_edit'
-                                                        "
-                                                        :question="pendingHumanFeedback.question || '확인이 필요합니다.'"
-                                                        :context="pendingHumanFeedback.context || ''"
-                                                        :items="pendingHumanFeedback.items || []"
-                                                        :suggestions="pendingHumanFeedback.suggestions || []"
-                                                        :evidenceSpans="pendingHumanFeedback.evidence_spans || []"
-                                                        :impactPreview="pendingHumanFeedback.impact_preview || []"
-                                                        :allowMultiple="pendingHumanFeedback.allow_multiple !== false"
-                                                        :minSelect="pendingHumanFeedback.min_select || 1"
-                                                        :allowSkip="pendingHumanFeedback.allow_skip || false"
-                                                        :allowOther="!!pendingHumanFeedback.allow_other"
-                                                        :submitted="!!pendingHumanFeedback.__submitted"
-                                                        :submittedText="pendingHumanFeedback.__submittedText || '응답 완료'"
-                                                        :initialSelectedIds="pendingHumanFeedback.__selectedIds || []"
-                                                        :initialSelectedSuggestion="pendingHumanFeedback.__selectedSuggestion || null"
-                                                        :initialDecision="pendingHumanFeedback.__decision || ''"
-                                                        :initialFreeText="pendingHumanFeedback.__freeText || ''"
-                                                        :initialCustomText="pendingHumanFeedback.__customText || ''"
-                                                        :headerIcon="'mdi-file-document-edit-outline'"
-                                                        :submitLabel="'응답 제출'"
-                                                        @submit="emitHumanFeedbackSubmit"
-                                                        @skip="emitHumanFeedbackSkip"
-                                                    />
-                                                </div>
                                             </v-card>
                                         </div>
 
@@ -3448,6 +3460,10 @@ export default {
             highlightedMessageUuid: null,
             _highlightTimer: null,
 
+            // multi-question HITL UI 의 현재 페이지 인덱스를 message.uuid 별로 보관.
+            // 반응형으로 유지해 v-show / 다음·이전 버튼 disabled 등이 즉시 갱신되게 한다.
+            multiStepIndexByMessage: {},
+
             // assistantChat
             checked: true,
             isOpenedChatMenu: false,
@@ -3920,11 +3936,149 @@ export default {
                 this._multiPanelRefs[messageUuid][qIdx] = el;
             }
         },
+        // ===================================================================
+        // multi-question 페이지네이션 헬퍼
+        // ===================================================================
+        getMultiQuestions(message) {
+            const qs = message?.__humanFeedback?.questions;
+            return Array.isArray(qs) ? qs : [];
+        },
+        getHitlQuestionItems(q) {
+            if (!q || typeof q !== 'object') return [];
+            const raw = Array.isArray(q.items) ? q.items : [];
+            return raw
+                .map((it, idx) => {
+                    if (!it || typeof it !== 'object') return null;
+                    const id = String(it.id ?? it.candidate_id ?? `opt-${idx}`).trim();
+                    if (!id) return null;
+                    return {
+                        id,
+                        label: String(it.label ?? it.name ?? id),
+                        description: String(it.description ?? '')
+                    };
+                })
+                .filter(Boolean);
+        },
+        getMultiCurrentStep(message) {
+            const key = message?.uuid;
+            if (!key) return 0;
+            const idx = this.multiStepIndexByMessage[key];
+            const len = this.getMultiQuestions(message).length;
+            if (!Number.isInteger(idx) || idx < 0) return 0;
+            if (len > 0 && idx >= len) return len - 1;
+            return idx;
+        },
+        setMultiCurrentStep(message, idx) {
+            const key = message?.uuid;
+            if (!key) return;
+            const len = this.getMultiQuestions(message).length;
+            if (len === 0) return;
+            const clamped = Math.max(0, Math.min(len - 1, Number(idx) || 0));
+            this.multiStepIndexByMessage = {
+                ...this.multiStepIndexByMessage,
+                [key]: clamped
+            };
+        },
+        prevMultiStep(message) {
+            const cur = this.getMultiCurrentStep(message);
+            this.setMultiCurrentStep(message, cur - 1);
+        },
+        buildMultiStepResponse(message, qIdx) {
+            const panel = (this._multiPanelRefs || {})[message?.uuid]?.[qIdx];
+            if (!panel || typeof panel.getResponse !== 'function') return null;
+            const questions = this.getMultiQuestions(message);
+            const q = questions[qIdx] || {};
+            const resp = panel.getResponse();
+            if (!resp) return null;
+            return { ...resp, question_id: q.question_id || '' };
+        },
+        hasMultiStepUserSelection(resp) {
+            if (!resp) return false;
+            if (resp.type === 'select_items') {
+                const ids = resp.selectedIds || [];
+                const custom = (resp.customText || '').trim();
+                return ids.length > 0 || custom.length > 0;
+            }
+            if (resp.type === 'suggestions') {
+                return !!(resp.selected || (resp.customText || '').trim());
+            }
+            if (resp.type === 'approve_reject_with_edit') {
+                return resp.decision === 'approve' || resp.decision === 'reject';
+            }
+            return true;
+        },
+        saveMultiStepResponseToMessage(message, qIdx, resp) {
+            const hitl = message?.__humanFeedback;
+            if (!hitl || !resp) return;
+            const questions = this.getMultiQuestions(message);
+            if (!Array.isArray(hitl.__responses)) {
+                hitl.__responses = questions.map(() => null);
+            }
+            while (hitl.__responses.length < questions.length) {
+                hitl.__responses.push(null);
+            }
+            const q = questions[qIdx] || {};
+            hitl.__responses[qIdx] = {
+                ...resp,
+                question_id: resp.question_id || q.question_id || ''
+            };
+        },
+        /** 선택 즉시 message.__humanFeedback.__responses[qIdx] 에만 반영 (DB 는 최종 제출 시) */
+        syncMultiStepSelection(message, qIdx) {
+            if (!message || message.__humanFeedback?.__submitted) return;
+            const panel = (this._multiPanelRefs || {})[message?.uuid]?.[qIdx];
+            if (!panel) return;
+            const resp =
+                (typeof panel.getResponse === 'function' && panel.getResponse()) ||
+                (typeof panel.snapshotResponse === 'function' && panel.snapshotResponse());
+            if (!resp) return;
+            this.saveMultiStepResponseToMessage(message, qIdx, resp);
+        },
+        goNextMultiStep(message) {
+            if (!message || message.__humanFeedback?.__submitted) return;
+            const cur = this.getMultiCurrentStep(message);
+            this.syncMultiStepSelection(message, cur);
+            if (this.isLastMultiStep(message)) {
+                this.submitMultiHumanFeedback(message);
+                return;
+            }
+            this.setMultiCurrentStep(message, cur + 1);
+        },
+        isLastMultiStep(message) {
+            const len = this.getMultiQuestions(message).length;
+            return len === 0 || this.getMultiCurrentStep(message) >= len - 1;
+        },
+        hasMultiAnswerForStep(message, qIdx) {
+            const responses = message?.__humanFeedback?.__responses;
+            if (Array.isArray(responses) && responses[qIdx]) {
+                const r = responses[qIdx];
+                if (r.skipped) return false;
+                if (Array.isArray(r.selectedIds) && r.selectedIds.length > 0) return true;
+                if (typeof r.customText === 'string' && r.customText.trim().length > 0) return true;
+                if (r.selected) return true;
+                if (r.decision) return true;
+            }
+            const cur = this.getMultiCurrentStep(message);
+            if (cur === qIdx) {
+                const resp = this.buildMultiStepResponse(message, qIdx);
+                if (resp && this.hasMultiStepUserSelection(resp)) return true;
+            }
+            return false;
+        },
+        findFirstUnansweredMultiStep(message) {
+            const questions = this.getMultiQuestions(message);
+            for (let i = 0; i < questions.length; i++) {
+                if (!this.hasMultiAnswerForStep(message, i)) return i;
+            }
+            return -1;
+        },
         getMultiInitialSelectedIds(message, qIdx) {
             const responses = message?.__humanFeedback?.__responses;
             if (!Array.isArray(responses)) return [];
             const r = responses[qIdx];
-            return (r && Array.isArray(r.selectedIds)) ? r.selectedIds : [];
+            return (r && Array.isArray(r.selectedIds))
+                ? r.selectedIds.map((x) => String(x ?? '').trim()).filter(Boolean)
+                : [];
         },
         getMultiInitialCustomText(message, qIdx) {
             const responses = message?.__humanFeedback?.__responses;
@@ -3947,24 +4101,27 @@ export default {
             return summary;
         },
         submitMultiHumanFeedback(message) {
-            const refs = (this._multiPanelRefs || {})[message.uuid] || {};
-            const questions = message?.__humanFeedback?.questions || [];
+            if (!message || message.__humanFeedback?.__submitted) return;
+            const cur = this.getMultiCurrentStep(message);
+            this.syncMultiStepSelection(message, cur);
+
+            const questions = this.getMultiQuestions(message);
+            const hitl = message.__humanFeedback;
+            if (!Array.isArray(hitl.__responses)) {
+                hitl.__responses = questions.map(() => null);
+            }
             const responses = [];
             for (let i = 0; i < questions.length; i++) {
-                const panel = refs[i];
-                if (!panel || typeof panel.getResponse !== 'function') {
-                    responses.push({ question_id: questions[i]?.question_id || '', skipped: true });
-                    continue;
+                const prior = hitl.__responses[i];
+                if (!prior) {
+                    this.setMultiCurrentStep(message, i);
+                    return;
                 }
-                const resp = panel.getResponse();
-                if (!resp) {
-                    // canSubmit=false (필수 입력 누락 등) — empty 로 보냄. 백엔드는 hitl_is_skipped 처리.
-                    responses.push({ question_id: questions[i]?.question_id || '', skipped: true });
-                    continue;
-                }
-                responses.push({ ...resp, question_id: questions[i]?.question_id || '' });
+                responses.push({
+                    ...prior,
+                    question_id: prior.question_id || questions[i]?.question_id || ''
+                });
             }
-            // 부모(ChatRoomPage)로 multi 응답 전달
             this.$emit('human-feedback-submit', message, { type: 'multi', responses });
         },
         startAgentPanelResize(e) {
@@ -6603,10 +6760,6 @@ pre {
 .hitl-multi-section {
     margin-bottom: 6px;
 }
-.hitl-multi-section + .hitl-multi-section {
-    border-top: 1px dashed rgba(var(--v-theme-on-surface), 0.1);
-    padding-top: 6px;
-}
 .hitl-multi-section :deep(.human-feedback-panel) {
     /* 각 섹션 내부 패널은 외곽선 제거 — 컨테이너가 외곽선 갖고 있음 */
     border: none;
@@ -6614,6 +6767,31 @@ pre {
     padding: 6px 4px;
     margin: 0;
     max-width: none;
+}
+.hitl-multi-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 6px 0 10px 0;
+}
+.hitl-multi-step-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(var(--v-theme-on-surface), 0.18);
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.hitl-multi-step-dot:hover {
+    transform: scale(1.2);
+}
+.hitl-multi-step-dot.is-done {
+    background: rgba(var(--v-theme-success), 0.65);
+}
+.hitl-multi-step-dot.is-active {
+    background: rgb(var(--v-theme-primary));
+    transform: scale(1.25);
 }
 .hitl-multi-actions {
     display: flex;
@@ -6624,12 +6802,9 @@ pre {
     border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 .hitl-multi-submitted {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding-top: 8px;
-    margin-top: 4px;
-    border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
     font-size: 12px;
     color: rgba(var(--v-theme-on-surface), 0.6);
 }

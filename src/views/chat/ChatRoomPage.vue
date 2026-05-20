@@ -996,6 +996,7 @@ export default {
                 const msg = this.messages[i];
                 const feedback = msg && msg.__humanFeedback ? msg.__humanFeedback : null;
                 const hasOptions =
+                    (Array.isArray(feedback?.questions) && feedback.questions.length > 0) ||
                     (Array.isArray(feedback?.items) && feedback.items.length > 0) ||
                     (Array.isArray(feedback?.suggestions) && feedback.suggestions.length > 0) ||
                     feedback?.user_request_type === 'approve_reject_with_edit' ||
@@ -1015,6 +1016,7 @@ export default {
                 const msg = this.messages[i];
                 const feedback = msg && msg.__humanFeedback ? msg.__humanFeedback : null;
                 const hasOptions =
+                    (Array.isArray(feedback?.questions) && feedback.questions.length > 0) ||
                     (Array.isArray(feedback?.items) && feedback.items.length > 0) ||
                     (Array.isArray(feedback?.suggestions) && feedback.suggestions.length > 0) ||
                     feedback?.user_request_type === 'approve_reject_with_edit' ||
@@ -2668,6 +2670,15 @@ export default {
                 });
                 // desc로 받아왔으니 asc로 정렬된 형태가 되도록 reverse
                 const asc = mapped.reverse();
+                // ===== 시간순 정렬 보강 =====
+                // chats 테이블은 created_at 컬럼이 없고 timeStamp 는 messages JSONB 내부에 저장된다.
+                // 과거 SDK 가 timeStamp 를 넣지 않은 메시지들(NULL timeStamp)이 섞여 있으면
+                // ORDER BY messages->>timeStamp DESC NULLS FIRST 결과를 reverse 했을 때
+                // NULL timeStamp 가 항상 배열 끝으로 밀려나 순서가 어긋난다.
+                // 1) NULL timeStamp 항목은 양쪽 이웃의 timeStamp 사이로 보간(neighbor interpolation).
+                // 2) 그 후 (timeStamp, rowUuid) 기준으로 안정 정렬해 결정성을 보장한다.
+                this._backfillMissingTimeStamps(asc);
+                this._stableSortMessages(asc);
                 this.messages = asc;
 
                 // 채팅 메시지에 박혀있는 pdf2bpmn 그래프 payload 를 캐시로 hydrate.
@@ -2811,7 +2822,11 @@ export default {
                     return !keys.some((k) => existingKeys.has(k));
                 });
                 if (toPrepend.length > 0) {
-                    this.messages = [...toPrepend, ...(this.messages || [])];
+                    // legacy 메시지(timeStamp 없음)는 backfill 후 (timeStamp asc, rowUuid asc) 로 안정 정렬
+                    const merged = [...toPrepend, ...(this.messages || [])];
+                    this._backfillMissingTimeStamps(merged);
+                    this._stableSortMessages(merged);
+                    this.messages = merged;
                     this.oldestLoadedTimeStamp = this.messages?.[0]?.timeStamp || this.oldestLoadedTimeStamp;
                 }
 
@@ -2908,14 +2923,24 @@ export default {
                 });
                 if (exists !== -1) {
                     // 기존 optimistic 메시지를 실시간 데이터로 최신화(필드 merge)
+                    const prevSnapshot = this.messages[exists] || {};
                     this.messages[exists] =
                         typeof incoming === 'object'
-                            ? this.normalizeAssistantMessageForDisplay({ ...(this.messages[exists] || {}), ...incoming })
+                            ? this.normalizeAssistantMessageForDisplay({ ...prevSnapshot, ...incoming })
                             : incoming;
+                    // optimistic 에만 있던 프런트엔드 전용 상태(__humanFeedback / toolCalls /
+                    // pdf2bpmnResult 등) 가 merge 로 살아남았다면, 같은 row 를 UPDATE 해
+                    // 새로고침 후에도 HITL 패널·진행상황·미리보기가 유지되게 한다.
+                    this.persistMessageFrontendState(this.messages[exists], roomId);
                     return;
                 }
                 // 스트리밍 중 생성한 임시(isOptimistic) 메시지가 있다면 제거한다.
                 // 서버에서 저장된 정식 메시지가 실시간으로 들어오므로, 임시는 삭제하고 정식을 push하게 함.
+                // 단, __humanFeedback / toolCalls / processPreview / pdf2bpmnResult / runState /
+                // openuiLang 등은 백엔드 DB 에 저장되지 않는 프런트엔드 전용 상태이므로,
+                // 삭제 직전에 incoming 으로 이관하여 HITL 패널(예: pdf2bpmn 강도 선택)이 사라지지 않게 한다.
+                // 또한 __humanFeedback 이 이관됐다면 chats.messages jsonb 에도 같이 영속화하여
+                // 새로고침 후에도 패널이 살아남도록 한다.
                 try {
                     if (typeof incoming === 'object' && (incoming.role || '').toString() === 'assistant') {
                         const inAgentId = (incoming.agentId || '').toString();
@@ -2930,7 +2955,11 @@ export default {
                         });
 
                         if (optimisticIdx !== -1) {
+                            this.carryOptimisticOnlyFields(this.messages[optimisticIdx], incoming);
                             this.messages.splice(optimisticIdx, 1);
+                            // 옮긴 프런트엔드 전용 상태를 DB jsonb 에도 저장해
+                            // 새로고침 후 채팅방을 다시 열어도 그대로 복원되도록 한다.
+                            this.persistMessageFrontendState(incoming, roomId);
                         }
                     }
                 } catch (e) {
@@ -2960,11 +2989,19 @@ export default {
                         } else {
                             this.messages[dupIdx] = incoming;
                         }
+                        // dupe 머지 시에도 carry 된 프런트엔드 상태를 jsonb 에 영속화.
+                        this.persistMessageFrontendState(this.messages[dupIdx], roomId);
                         return;
                     }
                 } catch (e) {}
+                // 새로 들어온 메시지에 timeStamp 가 없으면 현재 시각으로 설정해
+                // 실시간 도착 순서가 유지되도록 한다(legacy SDK 응답 대비 안전망).
+                if (incoming && typeof incoming === 'object' && !incoming.timeStamp) {
+                    incoming.timeStamp = new Date().toISOString();
+                    incoming.__synthTimeStamp = true;
+                }
                 this.messages.push(incoming);
-                this.messages.sort((a, b) => new Date(a.timeStamp) - new Date(b.timeStamp));
+                this._stableSortMessages(this.messages);
                 this.$nextTick(() => this.scrollToBottomSafe());
             } catch (e) {}
         },
@@ -3382,6 +3419,69 @@ export default {
          * HumanFeedbackPanel에서 사용자가 선택을 완료했을 때 호출
          * 선택 결과를 사용자 메시지로 변환하여 에이전트에게 전송
          */
+        async _submitOnePdf2bpmnHitlResponse(hitl, taskId, q, r) {
+            const qid = r.question_id || q.question_id || '';
+            if (!qid) return;
+            if (r.skipped) {
+                await this.submitPdf2BpmnHumanFeedback(taskId, {
+                    question_id: qid,
+                    action: 'skip',
+                    answer: '응답 없음',
+                    reason: '',
+                    target_type: q.target_type || (q.option_meta && q.option_meta.stage) || '',
+                    target_id: q.target_id || ''
+                });
+                return;
+            }
+            if (r.type === 'select_items') {
+                const ids = (r.selectedIds || []).map((x) => String(x));
+                const items = r.selectedItems || [];
+                const labels = items.map((it) => it?.label).filter(Boolean);
+                await this.submitPdf2BpmnHumanFeedback(taskId, {
+                    question_id: qid,
+                    action: 'select_items',
+                    selected_ids: ids,
+                    selected_items: items,
+                    custom_text: r.customText || '',
+                    answer: labels.length ? labels.join(', ') : (ids.join(', ') || '선택 없음'),
+                    reason: r.customText || '',
+                    target_type: q.target_type || (q.option_meta && q.option_meta.stage) || '',
+                    target_id: q.target_id || ''
+                });
+                return;
+            }
+            if (r.type === 'approve_reject_with_edit') {
+                await this.submitPdf2BpmnHumanFeedback(taskId, {
+                    question_id: qid,
+                    action: r.decision === 'approve' ? 'approve' : 'reject',
+                    answer: r.answer || (r.decision === 'approve' ? '승인' : '반려'),
+                    reason: r.reason || r.selectedSuggestion || '',
+                    target_type: q.target_type || '',
+                    target_id: q.target_id || ''
+                });
+                return;
+            }
+            if (r.type === 'suggestions') {
+                await this.submitPdf2BpmnHumanFeedback(taskId, {
+                    question_id: qid,
+                    action: 'suggestions',
+                    answer: r.selected || '',
+                    reason: r.customText || '',
+                    target_type: q.target_type || '',
+                    target_id: q.target_id || ''
+                });
+                return;
+            }
+            await this.submitPdf2BpmnHumanFeedback(taskId, {
+                question_id: qid,
+                action: 'confirm',
+                answer: '확인',
+                reason: '',
+                target_type: q.target_type || '',
+                target_id: q.target_id || ''
+            });
+        },
+
         handleHumanFeedbackSkip(messageOrFeedback) {
             const message = messageOrFeedback && messageOrFeedback.__humanFeedback ? messageOrFeedback : this.pendingHumanFeedbackMessage;
             const feedback = messageOrFeedback && !messageOrFeedback.__humanFeedback ? messageOrFeedback : message?.__humanFeedback;
@@ -3490,7 +3590,7 @@ export default {
                 !!hitl.task_id ||
                 (optMeta && optMeta.tool === 'pdf2bpmn' && optMeta.task_id);
 
-            // multi 응답: questions 배열의 각 question_id 에 대해 batch 로 todolist.output 에 기록
+            // multi 응답: 최종 제출 시에만 todolist.output.hitl_feedbacks 에 일괄 기록
             if (feedbackResult.type === 'multi') {
                 const taskId = hitl.task_id || optMeta?.task_id || this._resolvePdf2bpmnTaskId({}, this.currentChatRoom?.id);
                 const questions = Array.isArray(hitl.questions) ? hitl.questions : [];
@@ -3500,61 +3600,12 @@ export default {
                     const q = questions[i] || {};
                     const qid = r.question_id || q.question_id || '';
                     if (!qid) continue;
-                    if (r.skipped) {
-                        await this.submitPdf2BpmnHumanFeedback(taskId, {
-                            question_id: qid,
-                            action: 'skip',
-                            answer: '응답 없음',
-                            reason: '',
-                            target_type: q.target_type || (q.option_meta && q.option_meta.stage) || '',
-                            target_id: q.target_id || ''
-                        });
-                        continue;
-                    }
-                    if (r.type === 'select_items') {
-                        const ids = (r.selectedIds || []).map((x) => String(x));
-                        const items = r.selectedItems || [];
-                        const labels = items.map((it) => it?.label).filter(Boolean);
-                        await this.submitPdf2BpmnHumanFeedback(taskId, {
-                            question_id: qid,
-                            action: 'select_items',
-                            selected_ids: ids,
-                            selected_items: items,
-                            custom_text: r.customText || '',
-                            answer: labels.length ? labels.join(', ') : (ids.join(', ') || '선택 없음'),
-                            reason: r.customText || '',
-                            target_type: q.target_type || (q.option_meta && q.option_meta.stage) || '',
-                            target_id: q.target_id || ''
-                        });
-                    } else if (r.type === 'approve_reject_with_edit') {
-                        await this.submitPdf2BpmnHumanFeedback(taskId, {
-                            question_id: qid,
-                            action: r.decision === 'approve' ? 'approve' : 'reject',
-                            answer: r.answer || (r.decision === 'approve' ? '승인' : '반려'),
-                            reason: r.reason || r.selectedSuggestion || '',
-                            target_type: q.target_type || '',
-                            target_id: q.target_id || ''
-                        });
-                    } else if (r.type === 'suggestions') {
-                        await this.submitPdf2BpmnHumanFeedback(taskId, {
-                            question_id: qid,
-                            action: 'suggestions',
-                            answer: r.selected || '',
-                            reason: r.customText || '',
-                            target_type: q.target_type || '',
-                            target_id: q.target_id || ''
-                        });
-                    } else {
-                        await this.submitPdf2BpmnHumanFeedback(taskId, {
-                            question_id: qid,
-                            action: 'confirm',
-                            answer: '확인',
-                            reason: '',
-                            target_type: q.target_type || '',
-                            target_id: q.target_id || ''
-                        });
-                    }
+                    await this._submitOnePdf2bpmnHitlResponse(hitl, taskId, q, r.skipped ? { ...r, skipped: true } : r);
                 }
+                const allQids = questions
+                    .map((q) => String(q?.question_id || '').trim())
+                    .filter(Boolean);
+                await this.requestPdf2BpmnWorkerResume(taskId, allQids);
                 return;
             }
 
@@ -3569,6 +3620,10 @@ export default {
                     target_id: hitl.target_id || ''
                 };
                 await this.submitPdf2BpmnHumanFeedback(taskId, payload);
+                const approveQid = String(payload.question_id || '').trim();
+                if (approveQid) {
+                    await this.requestPdf2BpmnWorkerResume(taskId, [approveQid]);
+                }
                 return;
             }
 
@@ -3590,6 +3645,10 @@ export default {
                     target_id: hitl.target_id || ''
                 };
                 await this.submitPdf2BpmnHumanFeedback(taskId, payload);
+                const singleQid = String(payload.question_id || '').trim();
+                if (singleQid) {
+                    await this.requestPdf2BpmnWorkerResume(taskId, [singleQid]);
+                }
                 return;
             }
 
@@ -3634,6 +3693,73 @@ export default {
 
             // handleSendMessage를 통해 에이전트에 전송 (hideUserMessage=true 면 채팅 본문/DB 모두 스킵)
             await this.handleSendMessage({ text: userText, hideUserMessage });
+        },
+
+        /**
+         * pdf2bpmn HITL: 모든 question_id 에 응답이 있으면 워커 재개(FB_REQUESTED) 트리거.
+         */
+        async requestPdf2BpmnWorkerResume(taskId, questionIds) {
+            const tid = String(taskId || '').trim();
+            const qids = (Array.isArray(questionIds) ? questionIds : [])
+                .map((q) => String(q || '').trim())
+                .filter(Boolean);
+            if (!tid || !qids.length || !window.$supabase) return false;
+
+            try {
+                const { data, error } = await window.$supabase
+                    .from('todolist')
+                    .select('id, output, status, draft_status')
+                    .eq('id', tid)
+                    .limit(1);
+                if (error) throw error;
+                const row = Array.isArray(data) && data.length ? data[0] : null;
+                if (!row || String(row.status || '').toUpperCase() === 'DONE') return false;
+
+                let output = row.output;
+                if (typeof output === 'string') {
+                    try {
+                        output = JSON.parse(output);
+                    } catch (e) {
+                        output = {};
+                    }
+                }
+                if (!output || typeof output !== 'object') output = {};
+
+                const waitStarted = String(output.hitl_wait_started_at || '');
+                const feedbacks = Array.isArray(output.hitl_feedbacks) ? output.hitl_feedbacks : [];
+                const waitTs = waitStarted ? Date.parse(waitStarted) : NaN;
+
+                const hasValid = (fb) => {
+                    if (!fb || typeof fb !== 'object') return false;
+                    const submitted = String(fb.submitted_at || '');
+                    if (waitStarted && submitted) {
+                        const subTs = Date.parse(submitted);
+                        if (!Number.isNaN(waitTs) && !Number.isNaN(subTs) && subTs < waitTs) {
+                            return false;
+                        }
+                    }
+                    return true;
+                };
+
+                const answered = new Set(
+                    feedbacks
+                        .filter(hasValid)
+                        .map((fb) => String(fb.question_id || '').trim())
+                        .filter(Boolean)
+                );
+                const allAnswered = qids.every((qid) => answered.has(qid));
+                if (!allAnswered) return false;
+
+                const { error: updateError } = await window.$supabase
+                    .from('todolist')
+                    .update({ draft_status: 'FB_REQUESTED' })
+                    .eq('id', tid);
+                if (updateError) throw updateError;
+                return true;
+            } catch (e) {
+                console.warn('[HITL] requestPdf2BpmnWorkerResume failed:', e);
+                return false;
+            }
         },
 
         async submitPdf2BpmnHumanFeedback(taskId, payload) {
@@ -6327,15 +6453,13 @@ export default {
                             this.messages[idx].isLoading = false;
                             this.messages[idx].contentType = 'text';
 
-                            // 실시간 이벤트로 정식 메시지가 들어올 것이므로 클라이언트의 임시 메시지는 제거한다.
-                            setTimeout(() => {
-                                const currentIdx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                                if (currentIdx !== -1) {
-                                    this.messages.splice(currentIdx, 1);
-                                    this.$nextTick(() => this.scrollToBottomSafe());
-                                }
-                            }, 500); // 0.5초 대기 후 삭제 (사용자가 읽는 흐름 유지 및 실시간 이벤트 대기)
-                            
+                            // NOTE: 이전에는 0.5초 후 optimistic 메시지를 강제 splice 했지만,
+                            // 그 사이에 __humanFeedback 같은 프런트엔드 전용 상태가 사라져
+                            // HITL 패널(예: pdf2bpmn 강도 선택)이 잠깐 떴다 즉시 사라지는 문제가 있었다.
+                            // 정식 메시지의 realtime INSERT 는 handleRealtimeMessage 에서
+                            // optimistic 메시지를 찾아 제거(+필요한 프런트엔드 필드 이관)하므로,
+                            // 여기서는 별도 삭제를 트리거하지 않는다.
+
                             this.applyHwpxViewerFromToolCalls(this.messages[idx].toolCalls, idx);
                             if (!this.hasArtifactPanel) {
                                 const urlFromText = this.extractHwpxHtmlUrlFromText(this.messages[idx].content);
@@ -7270,7 +7394,7 @@ export default {
                         progressState.isActive = true;
                         progressState.status = 'waiting_for_user';
                         progressState.progress = Math.max(progressState.progress, progress || 72);
-                        progressState.message = message || '사용자 확인이 필요합니다.';
+                        progressState.message = '사용자 확인이 필요합니다. 아래 질문에 응답해 주세요.';
                         me.addPdf2BpmnHumanQuestionMessage(messageData, targetRoomId, eventTaskId);
                         break;
                     }
@@ -7335,7 +7459,7 @@ export default {
                             progressState.isActive = true;
                             progressState.status = 'waiting_for_user';
                             progressState.progress = Math.max(progressState.progress, progress || 72);
-                            progressState.message = message || '사용자 확인이 필요합니다.';
+                            progressState.message = '사용자 확인이 필요합니다. 아래 질문에 응답해 주세요.';
                             me.addPdf2BpmnHumanQuestionMessage(
                                 {
                                     ...messageData,
@@ -7365,20 +7489,29 @@ export default {
             if (!targetRoomId) return;
             const taskId = String(explicitTaskId || me._resolvePdf2bpmnTaskId(eventData, targetRoomId) || '').trim();
 
+            const allQuestions = Array.isArray(eventData?.questions) ? eventData.questions : [];
+            const isMulti = allQuestions.length > 1;
             const question =
-                Array.isArray(eventData?.questions) && eventData.questions.length ? eventData.questions[0] : eventData?.question || {};
-            const questionId = question?.question_id || `${taskId}-q`;
-            const hasSame = me.messages.some((m) => m?.__humanFeedback?.question_id === questionId && !m?.__humanFeedback?.__submitted);
+                isMulti ? allQuestions[0] : (eventData?.question || allQuestions[0] || {});
+            const questionIds = isMulti
+                ? allQuestions.map((q) => String(q?.question_id || '').trim()).filter(Boolean)
+                : [String(question?.question_id || `${taskId}-q`).trim()].filter(Boolean);
+            const batchKey = questionIds.length
+                ? `${taskId}::${questionIds.sort().join('|')}`
+                : `${taskId}::single`;
+            const hasSame = me.messages.some((m) => {
+                const fb = m?.__humanFeedback;
+                if (!fb || fb.__submitted) return false;
+                if (fb.__hitlBatchKey === batchKey) return true;
+                if (!isMulti && fb.question_id === questionIds[0]) return true;
+                return false;
+            });
             if (hasSame) return;
 
             // 워커가 보낸 question.feedback_type 을 그대로 따름. 없으면 기존 호환 (approve_reject_with_edit).
             const fbType = question?.feedback_type || 'approve_reject_with_edit';
             // select_items 모드면 워커가 items 를 직접 실어 보낸다 (스킬 후보, DMN 옵션 등).
             const incomingItems = Array.isArray(question?.items) ? question.items : [];
-
-            // multi-question 모드: eventData.questions 가 2개 이상이면 통합 패널로 묶는다.
-            const allQuestions = Array.isArray(eventData?.questions) ? eventData.questions : [];
-            const isMulti = allQuestions.length > 1;
 
             const content =
                 isMulti
@@ -7404,7 +7537,8 @@ export default {
                 allow_skip: !!question?.allow_skip,
                 // multi 모드: questions 배열 전체를 그대로 보존 → Chat.vue 가 v-for 로 렌더
                 questions: isMulti ? allQuestions : null,
-                question_id: questionId,
+                question_id: questionIds[0] || `${taskId}-q`,
+                __hitlBatchKey: batchKey,
                 target_type: question?.target_type || '',
                 target_id: question?.target_id || '',
                 evidence_spans: Array.isArray(question?.evidence_spans) ? question.evidence_spans : [],
@@ -7415,8 +7549,8 @@ export default {
                     : null,
                 __submitted: false,
                 __submittedText: '',
-                // multi 응답 보존용 (제출 후 readonly 표시 시 각 섹션 선택 복원)
-                __responses: null
+                // multi 응답 보존용 — 선택 즉시 채움, DB 저장은 최종 제출만
+                __responses: isMulti ? allQuestions.map(() => null) : null
             };
 
             if (me.currentChatRoom?.id === targetRoomId) {
@@ -8062,6 +8196,201 @@ export default {
                 }
             }
             return message;
+        },
+
+        /**
+         * Optimistic(임시) assistant 메시지가 realtime INSERT 로 교체될 때,
+         * DB 에 저장되지 않는 프런트엔드 전용 상태를 incoming 메시지로 이관한다.
+         * - __humanFeedback: HITL 패널(pdf2bpmn 강도 선택 등) 렌더에 필수
+         * - toolCalls: 메시지 버블 안의 툴 호출 표시
+         * - processPreview / pdf2bpmnResult: 우측 패널/임베드 BPMN 미리보기
+         * - runState / openui*: OpenUI 스트리밍 상태
+         * - agentLogs / agentPlan: 사이드 패널 로그/계획
+         * 이관은 incoming 에 동일 키가 비어있을 때만 수행한다(서버 값을 덮어쓰지 않음).
+         */
+        /**
+         * 배열 내 timeStamp 가 비어있는(legacy) 메시지에 합리적인 타임스탬프를 채워 넣는다.
+         *
+         * 배경:
+         *   chats 테이블에는 created_at 컬럼이 없고, 정렬은 messages JSONB 의 timeStamp 키로 한다.
+         *   과거 SDK 가 timeStamp 를 넣지 않은 채 chats.messages 를 INSERT 한 메시지가 섞여있으면
+         *   ORDER BY messages->>timeStamp DESC NULLS FIRST 결과 → reverse 시 NULL 메시지가 모두
+         *   배열 끝으로 밀려나 시간 흐름이 깨진다.
+         *
+         * 동작:
+         *   - timeStamp 가 없는 항목은 (이전 timeStamped, 다음 timeStamped) 사이의 중간값으로 보간.
+         *   - 한쪽만 있으면 ±1ms 만큼 비껴 배치.
+         *   - 양쪽 모두 없으면 현재 시각으로 채움.
+         *   - 원본 객체에 __synthTimeStamp = true 를 표시해, 디버깅 / 차후 백필에 활용 가능.
+         */
+        _backfillMissingTimeStamps(list) {
+            if (!Array.isArray(list) || list.length === 0) return;
+            const tsOf = (m) => {
+                if (!m) return NaN;
+                const v = m.timeStamp;
+                if (!v) return NaN;
+                const t = new Date(v).getTime();
+                return Number.isFinite(t) ? t : NaN;
+            };
+            for (let i = 0; i < list.length; i++) {
+                if (Number.isFinite(tsOf(list[i]))) continue;
+                let prev = NaN;
+                let next = NaN;
+                for (let j = i - 1; j >= 0; j--) {
+                    const t = tsOf(list[j]);
+                    if (Number.isFinite(t)) { prev = t; break; }
+                }
+                for (let j = i + 1; j < list.length; j++) {
+                    const t = tsOf(list[j]);
+                    if (Number.isFinite(t)) { next = t; break; }
+                }
+                let synth;
+                if (Number.isFinite(prev) && Number.isFinite(next)) {
+                    synth = Math.floor((prev + next) / 2);
+                } else if (Number.isFinite(prev)) {
+                    synth = prev + 1;
+                } else if (Number.isFinite(next)) {
+                    synth = next - 1;
+                } else {
+                    synth = Date.now();
+                }
+                try {
+                    list[i].timeStamp = new Date(synth).toISOString();
+                    list[i].__synthTimeStamp = true;
+                } catch (_) {
+                    // ignore - keep as is
+                }
+            }
+        },
+
+        /**
+         * 메시지 배열을 (timeStamp asc, rowUuid asc) 기준으로 안정 정렬한다.
+         * NaN 타임스탬프는 Infinity 로 처리해 항상 뒤로 보낸다.
+         */
+        _stableSortMessages(list) {
+            if (!Array.isArray(list) || list.length <= 1) return;
+            const tsNum = (m) => {
+                if (!m) return Number.POSITIVE_INFINITY;
+                const t = new Date(m.timeStamp || 0).getTime();
+                return Number.isFinite(t) && t > 0 ? t : Number.POSITIVE_INFINITY;
+            };
+            list.sort((a, b) => {
+                const ta = tsNum(a);
+                const tb = tsNum(b);
+                if (ta !== tb) return ta - tb;
+                const ua = String(a?.rowUuid || a?.uuid || '');
+                const ub = String(b?.rowUuid || b?.uuid || '');
+                if (ua < ub) return -1;
+                if (ua > ub) return 1;
+                return 0;
+            });
+        },
+
+        carryOptimisticOnlyFields(fromMsg, toMsg) {
+            if (!fromMsg || !toMsg || typeof fromMsg !== 'object' || typeof toMsg !== 'object') return toMsg;
+            const carryKeys = [
+                '__humanFeedback',
+                'toolCalls',
+                'processPreview',
+                'pdf2bpmnResult',
+                'runState',
+                'openuiLang',
+                'openuiIsStreaming',
+                'openuiStreamQuestionId',
+                'agentLogs',
+                'agentPlan'
+            ];
+            for (const key of carryKeys) {
+                const incomingVal = toMsg[key];
+                const hasIncoming =
+                    incomingVal !== undefined &&
+                    incomingVal !== null &&
+                    !(Array.isArray(incomingVal) && incomingVal.length === 0);
+                if (!hasIncoming && fromMsg[key] !== undefined && fromMsg[key] !== null) {
+                    toMsg[key] = fromMsg[key];
+                }
+            }
+            return toMsg;
+        },
+
+        /**
+         * assistant 메시지에 붙어 있는 프런트엔드 전용 상태(__humanFeedback / toolCalls /
+         * pdf2bpmnResult / processPreview / runState / openui* / agentLogs / agentPlan)를
+         * chats.messages jsonb 에 영속화한다. 새로고침 후에도 HITL 패널·진행상황 UI·
+         * BPMN 미리보기 같은 ephemeral 상태가 채팅방별로 그대로 살아남게 하기 위함.
+         *
+         * SDK(persist_chat_to_db) 는 `content` + 기본 actor 정보만 INSERT 하므로,
+         * realtime INSERT 가 도착해 optimistic 메시지가 교체되는 시점에
+         * carryOptimisticOnlyFields 로 위 필드들을 옮긴 뒤 이 함수로 같은 row 를 UPDATE 한다.
+         *
+         * 멱등성: 저장된 필드 시그니처(__feStateKey) 가 동일하면 재저장하지 않는다.
+         * (우리가 만든 UPDATE 가 다시 realtime 이벤트로 돌아왔을 때 무한루프 방지)
+         */
+        async persistMessageFrontendState(msg, roomId) {
+            try {
+                if (!msg || typeof msg !== 'object') return;
+                const hasFeedback = !!msg.__humanFeedback;
+                const toolCallsArr = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
+                const hasToolCalls = toolCallsArr.length > 0;
+                const hasPdf2bpmnResult = !!msg.pdf2bpmnResult;
+                const hasProcessPreview = !!msg.processPreview;
+                const hasRunState = !!msg.runState && typeof msg.runState === 'object';
+                const hasOpenuiLang = typeof msg.openuiLang === 'string' && msg.openuiLang.length > 0;
+                const hasAgentLogs = Array.isArray(msg.agentLogs) && msg.agentLogs.length > 0;
+                const hasAgentPlan = !!msg.agentPlan;
+                if (
+                    !hasFeedback &&
+                    !hasToolCalls &&
+                    !hasPdf2bpmnResult &&
+                    !hasProcessPreview &&
+                    !hasRunState &&
+                    !hasOpenuiLang &&
+                    !hasAgentLogs &&
+                    !hasAgentPlan
+                ) {
+                    return;
+                }
+                const targetRoomId = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+                const msgUuid = (msg.rowUuid || msg.uuid || '').toString();
+                if (!targetRoomId || !msgUuid) return;
+                const stateKey = JSON.stringify({
+                    f: hasFeedback ? 1 : 0,
+                    tc: hasToolCalls ? toolCallsArr.length : 0,
+                    pr: hasPdf2bpmnResult ? 1 : 0,
+                    pp: hasProcessPreview ? 1 : 0,
+                    rs: hasRunState ? 1 : 0,
+                    ol: hasOpenuiLang ? (msg.openuiLang.length || 0) : 0,
+                    al: hasAgentLogs ? msg.agentLogs.length : 0,
+                    ap: hasAgentPlan ? 1 : 0
+                });
+                if (msg.__feStateKey === stateKey) return;
+                msg.__feStateKey = stateKey;
+                if (hasFeedback) {
+                    msg.__humanFeedbackPersisted = true;
+                }
+                const messagesToSave = { ...msg };
+                delete messagesToSave.rowUuid;
+                delete messagesToSave.isOptimistic;
+                delete messagesToSave.isLoading;
+                // 내부 멱등성 플래그는 DB jsonb 에 박힐 필요 없음
+                delete messagesToSave.__feStateKey;
+                delete messagesToSave.__humanFeedbackPersisted;
+                await backend.putObject(`db://chats/${msgUuid}`, {
+                    uuid: msgUuid,
+                    id: targetRoomId,
+                    messages: messagesToSave
+                });
+            } catch (e) {
+                console.warn('[FrontendState] persistMessageFrontendState 실패:', e);
+            }
+        },
+
+        /**
+         * 하위 호환 alias. 기존 호출부와의 의미를 보존하기 위해 남겨둔다.
+         * 내부적으로는 일반 영속화 헬퍼를 호출한다.
+         */
+        async persistMessageHumanFeedback(msg, roomId) {
+            return this.persistMessageFrontendState(msg, roomId);
         },
 
         // MCP 도구 output 파싱 (WorkAssistantChatPanel의 구현을 동일하게 사용)
