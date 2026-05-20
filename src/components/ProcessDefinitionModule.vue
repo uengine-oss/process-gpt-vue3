@@ -508,10 +508,35 @@ export default {
         applySubprocessProperties(modeler, subProcesses) {
             const list = Array.isArray(subProcesses) ? subProcesses : [];
             list.forEach((sp) => {
-                if (sp && sp.id && typeof sp.properties === 'string') {
-                    this.upsertElementJsonProperties(modeler, sp.id, sp.properties);
+                if (!sp?.id) return;
+
+                let props = {};
+                if (typeof sp.properties === 'string' && sp.properties.trim()) {
+                    try {
+                        props = JSON.parse(sp.properties);
+                    } catch {
+                        props = {};
+                    }
+                } else if (sp.properties && typeof sp.properties === 'object') {
+                    props = { ...sp.properties };
                 }
-                if (sp && sp.children && Array.isArray(sp.children?.subProcesses)) {
+
+                if (sp.description !== undefined && sp.description !== null) {
+                    props.description = sp.description;
+                }
+                if (sp.instruction !== undefined && sp.instruction !== null) {
+                    props.instruction = sp.instruction;
+                }
+                if (sp.duration !== undefined && sp.duration !== null) {
+                    props.duration = sp.duration;
+                }
+                if (sp.role) {
+                    props.role = sp.role;
+                }
+
+                this.upsertElementJsonProperties(modeler, sp.id, JSON.stringify(props));
+
+                if (sp.children && Array.isArray(sp.children?.subProcesses)) {
                     this.applySubprocessProperties(modeler, sp.children.subProcesses);
                 }
             });
@@ -1216,6 +1241,11 @@ export default {
                     return jsonCache.get(node);
                 };
 
+                const serializePropsJson = (node, propsJson) => {
+                    const parsed = propsJson ?? getPropsJson(node) ?? {};
+                    return JSON.stringify(parsed);
+                };
+
                 // ---------- route / meta ----------
                 let processDefinitionId = 'Unknown';
                 let definitionName = null;
@@ -1633,7 +1663,9 @@ export default {
                                 type: childSp.type,
                                 process: childSp.process,
                                 duration: propsJson?.duration ? propsJson.duration : 5,
-                                properties: childSp['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}',
+                                description: propsJson.description || '',
+                                instruction: propsJson.instruction || '',
+                                properties: serializePropsJson(childSp, propsJson),
                                 attachedEvents: childSp.attachedEvents || null,
                                 // 재귀
                                 children: buildSubprocessChildren(
@@ -1731,7 +1763,9 @@ export default {
                                 role: resolveRole(sp.id, lanes, []),
                                 process: sp.process,
                                 duration: propsJson?.duration ? propsJson.duration : 5,
-                                properties: sp['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}',
+                                description: propsJson.description || '',
+                                instruction: propsJson.instruction || '',
+                                properties: serializePropsJson(sp, propsJson),
                                 attachedEvents: sp.attachedEvents || null,
                                 children: buildSubprocessChildren(sp.childrenRaw, lanes, definitionName, processDefinitionId)
                             };

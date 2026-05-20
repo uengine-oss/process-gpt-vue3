@@ -2109,14 +2109,24 @@ export default {
             subProcessElement.setAttribute('id', subProcess.id);
             subProcessElement.setAttribute('name', subProcess.name || '');
 
-            // extensionElements 추가
-            const ext = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
-            const prop = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
-            const json = xmlDoc.createElementNS('http://uengine', 'uengine:json');
-            json.textContent = '{}';
-            prop.appendChild(json);
-            ext.appendChild(prop);
-            subProcessElement.appendChild(ext);
+            // extensionElements 추가 (description/instruction 등 uengine 속성 포함)
+            const paramObj = {};
+            if (subProcess.description) paramObj.description = subProcess.description;
+            if (subProcess.instruction) paramObj.instruction = subProcess.instruction;
+            if (subProcess.role) paramObj.role = subProcess.role;
+            if (subProcess.duration !== undefined && subProcess.duration !== null) {
+                paramObj.duration = Number(subProcess.duration);
+            }
+            if (typeof subProcess.properties === 'string' && subProcess.properties.trim()) {
+                try {
+                    Object.assign(paramObj, JSON.parse(subProcess.properties));
+                } catch {
+                    // ignore invalid properties JSON
+                }
+            } else if (subProcess.properties && typeof subProcess.properties === 'object') {
+                Object.assign(paramObj, subProcess.properties);
+            }
+            subProcessElement.appendChild(this.buildExtension(xmlDoc, paramObj));
 
             // 서브프로세스에 대한 incoming/outgoing 연결 추가
             if (inComing[subProcess.id] && inComing[subProcess.id].length > 0) {

@@ -4,6 +4,23 @@
             <v-row :class="isMobile ? 'ma-0 pa-4 pb-0 flex-column align-start' : 'ma-0 pa-4 pb-0 align-center'">
                 <div v-if="isSimulate == 'true'" class="text-h4 font-weight-semibold">{{ $t('ProcessGPTExecute.processSimulate') }}</div>
                 <div v-else class="text-h4 font-weight-semibold">{{ processDefinition.processDefinitionName }}</div>
+                <!-- 시뮬레이션 모드일 때만 단위 테스트 탭 노출 -->
+                <v-tabs
+                    v-if="isSimulate == 'true'"
+                    v-model="topTab"
+                    color="primary"
+                    density="compact"
+                    class="ml-4"
+                >
+                    <v-tab value="execute">
+                        <v-icon start size="18">mdi-play-circle-outline</v-icon>
+                        {{ $t('ProcessGPTExecute.processSimulate') }}
+                    </v-tab>
+                    <v-tab value="unit-test">
+                        <v-icon start size="18">mdi-clipboard-check-multiple-outline</v-icon>
+                        {{ $t('ProcessUnitTest.unitTest') }}
+                    </v-tab>
+                </v-tabs>
                 <v-spacer v-if="!isMobile"></v-spacer>
                 <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
                     <v-btn @click="closeDialog" rounded density="compact" style="background-color: #808080; color: white">닫기</v-btn>
@@ -15,7 +32,32 @@
                 </div>
             </v-row>
 
-            <div :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
+            <!-- 단위 테스트 탭 -->
+            <div v-if="isSimulate == 'true' && topTab === 'unit-test'" class="pa-4">
+                <v-row class="ma-0">
+                    <v-col cols="12" md="6" class="pa-2">
+                        <v-card variant="outlined" class="pa-2" style="height: calc(100vh - 200px); overflow: auto">
+                            <BpmnUengine
+                                ref="unitTestBpmnVue"
+                                :bpmn="effectiveBpmn || bpmn"
+                                :options="bpmnViewerOptions"
+                                :isViewMode="true"
+                                style="height: 100%"
+                            />
+                        </v-card>
+                    </v-col>
+                    <v-col cols="12" md="6" class="pa-2" style="max-height: calc(100vh - 200px); overflow-y: auto">
+                        <ProcessUnitTestPanel
+                            :definition-id="resolvedDefinitionId"
+                            :bpmn="effectiveBpmn || bpmn"
+                            :bpmn-viewer-component="$refs.unitTestBpmnVue"
+                            :process-definition="processDefinition"
+                        />
+                    </v-col>
+                </v-row>
+            </div>
+
+            <div v-else :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
                 <div v-if="isSimulate == 'false'" class="pa-4">
                     <v-row class="ma-0 pa-0">
                         <div class="text-h5 font-weight-semibold">{{ $t('ProcessGPTExecute.roleMapping') }}</div>
@@ -90,11 +132,15 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import WorkItem from '@/components/apps/todolist/WorkItem.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import InstanceSource from '@/components/apps/todolist/InstanceSource.vue';
+import ProcessUnitTestPanel from '@/components/apps/definition-map/ProcessUnitTestPanel.vue';
+import BpmnUengine from '@/components/BpmnUengineViewer.vue';
+import customBpmnModule from '@/components/customBpmn';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 import { useDefaultSetting } from '@/stores/defaultSetting';
+import { useBpmnStore } from '@/stores/bpmn';
 
 export default {
     setup() {
@@ -107,7 +153,9 @@ export default {
         AppBaseCard,
         WorkItem,
         UserSelectField,
-        InstanceSource
+        InstanceSource,
+        ProcessUnitTestPanel,
+        BpmnUengine
     },
     props: {
         definitionId: String,
@@ -137,7 +185,12 @@ export default {
         activityIndex: 0,
         renderKey: 0,
         simulationInstances: [],
-        isStarted: true
+        isStarted: true,
+        // 시뮬레이션/단위테스트 전환용 상단 탭.
+        topTab: 'execute',
+        bpmnViewerOptions: {
+            additionalModules: [customBpmnModule]
+        }
     }),
     async mounted() {
         const defId = this.resolvedDefinitionId;
@@ -195,6 +248,12 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.checkIfMobile);
+        // 단위 테스트 인스턴스 잔재 정리.
+        try {
+            const store = useBpmnStore();
+            store.clearRunningActivityIds();
+            store.clearCompletedActivityIds();
+        } catch (e) { /* ignore */ }
     },
     computed: {
         resolvedDefinitionId() {
@@ -208,9 +267,58 @@ export default {
         },
         disableAdvancedResearch() {
             return this.isSimulate == 'true' ? true : false;
+        },
+        unitTestMarkerSnapshot() {
+            const store = useBpmnStore();
+            const running = Array.isArray(store.runningActivityIds) ? store.runningActivityIds : [];
+            const completed = Array.isArray(store.completedActivityIds) ? store.completedActivityIds : [];
+            return running.join(',') + '|' + completed.join(',');
+        }
+    },
+    watch: {
+        // 단위 테스트 실행 중 활성/완료 활동 id 변경을 임베드된 viewer 캔버스에 반영.
+        unitTestMarkerSnapshot() {
+            this.applyUnitTestMarkers();
+        },
+        topTab(newVal) {
+            // 단위 테스트 탭으로 전환 시 마커 재적용 (viewer 재마운트 대비).
+            if (newVal === 'unit-test') {
+                this.$nextTick(() => this.applyUnitTestMarkers());
+            }
         }
     },
     methods: {
+        // 단위 테스트 진행 상황을 임베드된 BpmnUengineViewer 캔버스에 반영.
+        applyUnitTestMarkers() {
+            const viewer = this.$refs.unitTestBpmnVue && this.$refs.unitTestBpmnVue.bpmnViewer;
+            if (!viewer) return;
+            let canvas, elementRegistry;
+            try {
+                canvas = viewer.get('canvas');
+                elementRegistry = viewer.get('elementRegistry');
+            } catch (e) { return; }
+            const store = useBpmnStore();
+            const running = new Set((store.runningActivityIds || []).filter(Boolean).map(String));
+            const completed = new Set((store.completedActivityIds || []).filter(Boolean).map(String));
+            const prevRunning = this._markedRunningIds instanceof Set ? this._markedRunningIds : new Set();
+            const prevCompleted = this._markedCompletedIds instanceof Set ? this._markedCompletedIds : new Set();
+            const diff = (prev, next, marker) => {
+                prev.forEach((id) => {
+                    if (!next.has(id) && elementRegistry.get(id)) {
+                        try { canvas.removeMarker(id, marker); } catch (e) {}
+                    }
+                });
+                next.forEach((id) => {
+                    if (elementRegistry.get(id)) {
+                        try { canvas.addMarker(id, marker); } catch (e) {}
+                    }
+                });
+            };
+            diff(prevRunning, running, 'running');
+            diff(prevCompleted, completed, 'completed');
+            this._markedRunningIds = running;
+            this._markedCompletedIds = completed;
+        },
         findStartActivity() {
             const startSequence = this.processDefinition.sequences.find((sequence) => sequence.source === 'start_event');
             if (startSequence) {

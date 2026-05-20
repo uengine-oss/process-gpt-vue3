@@ -6,6 +6,7 @@
             <v-tab value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
             <v-tab value="edit">{{ $t('BpmnPropertyPanel.edit') }}</v-tab>
             <v-tab value="preview">{{ $t('BpmnPropertyPanel.preview') }}</v-tab>
+            <v-tab value="unitTest">{{ $t('ProcessUnitTest.unitTest') }}</v-tab>
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
@@ -81,6 +82,7 @@
                 <AgentSelectField
                     v-model="activity"
                     :backend="backend"
+                    :is-sub-agent-profile="isSubAgentProfile"
                     @update:modelValue="(newVal) => (activity = newVal)"
                 ></AgentSelectField>
             </v-window-item>
@@ -138,6 +140,17 @@
             <v-window-item value="preview">
                 <FormDefinition ref="formDefinitionPreview" type="preview" :formId="formId" v-model="tempFormHtml" />
             </v-window-item>
+            <v-window-item value="unitTest" eager>
+                <UserTaskUnitTest
+                    v-if="element"
+                    :element="element"
+                    :processDefinitionId="processDefinitionId"
+                    :definition="definition"
+                    :uengineProperties="copyUengineProperties"
+                    :activity="activity"
+                    :availableForms="availableForms"
+                />
+            </v-window-item>
         </v-window>
     </div>
 </template>
@@ -149,12 +162,14 @@ import Description from '@/components/designer/DescriptionField.vue';
 import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import ManualLinkField from '@/components/ui/ManualLinkField.vue';
+import UserTaskUnitTest from './UserTaskUnitTest.vue';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
 
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessSummaryGenerator from '@/components/ai/ProcessSummaryGenerator.js';
+import { useBpmnStore } from '@/stores/bpmn';
 
 export default {
     name: 'gpt-user-task-panel',
@@ -165,7 +180,8 @@ export default {
         FormDefinition,
         AgentSelectField,
         KeyValueField,
-        ManualLinkField
+        ManualLinkField,
+        UserTaskUnitTest
     },
     props: {
         uengineProperties: Object,
@@ -306,7 +322,7 @@ export default {
                     }
 
                     // 참조정보 탭으로 들어갈 때 이전 폼 목록 로드
-                    if (newVal === 'inputData') {
+                    if (newVal === 'inputData' || newVal === 'unitTest') {
                         await this.getPreviousForms();
                     }
                 }
@@ -371,9 +387,40 @@ export default {
                 'Technical Expertise',
                 'Process Improvement'
             ];
+        },
+        isSubAgentProfile() {
+            return this.resolveSubAgentProfile();
         }
     },
     methods: {
+        isAdHocSubProcessType(type) {
+            const normalized = (type || '').toString().toLowerCase();
+            return normalized === 'bpmn:adhocsubprocess' || normalized.endsWith('adhocsubprocess');
+        },
+        resolveSubAgentProfile() {
+            const elementId = this.element?.id;
+            if (elementId) {
+                try {
+                    const modeler = useBpmnStore().getModeler;
+                    const diagramElement = modeler?.get('elementRegistry')?.get(elementId);
+                    let parent = diagramElement?.parent;
+                    while (parent) {
+                        if (this.isAdHocSubProcessType(parent.type)) return true;
+                        parent = parent.parent;
+                    }
+                } catch (error) {
+                    // eslint-disable-next-line no-console
+                    console.error('[GPTUserTaskPanel] resolveSubAgentProfile error', error);
+                }
+            }
+
+            let parent = this.element?.$parent;
+            while (parent) {
+                if (this.isAdHocSubProcessType(parent.$type)) return true;
+                parent = parent.$parent;
+            }
+            return false;
+        },
         normalizeActivityMcpSkillArrays() {
             if (!Array.isArray(this.activity.tools)) this.activity.tools = [];
             if (!Array.isArray(this.activity.skills)) this.activity.skills = [];
@@ -693,8 +740,10 @@ export default {
                         me.availableForms = prevForms.map((form) => {
                             return {
                                 formId: form.id,
+                                activityId: form.activityId,
                                 title: form.title,
-                                fields: form.fields_json || []
+                                fields: form.fields_json || [],
+                                html: form.html || ''
                             };
                         });
                     });

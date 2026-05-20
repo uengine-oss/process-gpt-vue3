@@ -169,6 +169,25 @@
                 <!-- Upload 탭 -->
                 <!-- =============================== -->
                 <v-window-item value="upload">
+                    <!-- 자료 역할(doc_role) sub-tabs -->
+                    <div class="kft-role-tabs">
+                        <button
+                            v-for="r in roleOptions"
+                            :key="r.value"
+                            class="kft-role-tab"
+                            :class="{ 'is-active': currentRole === r.value, [`is-${r.value}`]: true }"
+                            @click="currentRole = r.value"
+                        >
+                            <v-icon size="16" class="mr-1">{{ r.icon }}</v-icon>
+                            <span>{{ r.label }}</span>
+                            <span class="kft-role-tab-count">{{ roleCounts[r.value] || 0 }}</span>
+                        </button>
+                    </div>
+                    <div class="kft-role-desc">
+                        <v-icon size="14" class="mr-1" :color="currentRoleMeta.color">mdi-information-outline</v-icon>
+                        <span>{{ currentRoleMeta.desc }}</span>
+                    </div>
+
                     <div class="kft-upload-layout">
                         <!-- 좌측: 폴더 사이드바 -->
                         <div class="kft-folder-sidebar">
@@ -192,7 +211,7 @@
                                 >
                                     <v-icon size="14">mdi-folder-outline</v-icon>
                                     <span class="kft-folder-name">전체</span>
-                                    <span class="kft-folder-count">{{ uploadFiles.length }}</span>
+                                    <span class="kft-folder-count">{{ roleScopedUpload.length }}</span>
                                 </button>
                                 <div
                                     v-for="node in folderNodes"
@@ -255,19 +274,28 @@
                             <!-- 업로드 드롭존 -->
                             <div
                                 class="kft-dropzone"
-                                :class="{ 'is-drag-over': isDragOver, 'is-uploading': uploadQueue.length > 0 }"
+                                :class="{ 'is-drag-over': isDragOver, 'is-uploading': uploadQueue.length > 0, [`is-role-${uploadTargetRole}`]: true }"
                                 @dragover.prevent="isDragOver = true"
                                 @dragleave.prevent="isDragOver = false"
                                 @drop.prevent="onDrop"
                                 @click="$refs.fileInput.click()"
                             >
-                                <v-icon size="32" color="primary">mdi-cloud-upload-outline</v-icon>
+                                <v-icon size="32" :color="uploadTargetRoleMeta.color">mdi-cloud-upload-outline</v-icon>
                                 <div class="kft-dropzone-text">
                                     <strong>{{ currentFolder ? `"${currentFolder}" 폴더에 업로드` : '루트에 업로드' }}</strong>
                                     <div class="text-caption text-medium-emphasis mt-1">
                                         파일을 끌어다 놓거나 클릭하세요 — 자동으로 RAG 인덱싱됩니다
                                     </div>
                                 </div>
+                                <v-chip
+                                    size="small"
+                                    :color="uploadTargetRoleMeta.color"
+                                    variant="tonal"
+                                    class="kft-dropzone-role"
+                                >
+                                    <v-icon start size="14">{{ uploadTargetRoleMeta.icon }}</v-icon>
+                                    {{ uploadTargetRoleMeta.label }}로 분류
+                                </v-chip>
                                 <input ref="fileInput" type="file" multiple class="d-none" @change="onFileInput" />
                             </div>
 
@@ -278,6 +306,15 @@
                                         {{ u.status === 'failed' ? 'mdi-alert-circle' : u.status === 'done' ? 'mdi-check-circle' : 'mdi-progress-upload' }}
                                     </v-icon>
                                     <span class="kft-upload-name">{{ u.name }}</span>
+                                    <v-chip
+                                        v-if="u.role"
+                                        size="x-small"
+                                        :color="roleMeta(u.role).color"
+                                        variant="tonal"
+                                    >
+                                        <v-icon start size="11">{{ roleMeta(u.role).icon }}</v-icon>
+                                        {{ roleMeta(u.role).label }}
+                                    </v-chip>
                                     <span v-if="u.folder" class="text-caption text-medium-emphasis">→ {{ u.folder || '루트' }}</span>
                                     <v-progress-linear
                                         v-if="u.status === 'uploading'"
@@ -367,6 +404,16 @@
                                 </template>
                                 <template v-slot:[`item.folder_path`]="{ item }">
                                     <span class="text-caption">{{ item.folder_path || '(루트)' }}</span>
+                                </template>
+                                <template v-slot:[`item.doc_role`]="{ item }">
+                                    <v-chip
+                                        size="x-small"
+                                        :color="roleMeta(roleOf(item)).color"
+                                        variant="tonal"
+                                    >
+                                        <v-icon start size="12">{{ roleMeta(roleOf(item)).icon }}</v-icon>
+                                        {{ roleMeta(roleOf(item)).label }}
+                                    </v-chip>
                                 </template>
                                 <template v-slot:[`item.uploaded_by_name`]="{ item }">
                                     <span class="text-caption">{{ item.uploaded_by_name || '-' }}</span>
@@ -681,6 +728,15 @@ export default {
                 { value: 'failed', label: '실패' },
                 { value: 'excluded', label: '제외' }
             ],
+            // ─── 자료 역할(doc_role) — 각 role 이 독립 작업공간. '전체' 개념 없음. ───
+            currentRole: 'content', // 'content' | 'glossary' | 'template' | 'reference' | 'dataset'
+            roleOptions: [
+                { value: 'content',   label: '일반 자료', icon: 'mdi-file-document-outline',   color: 'primary',         desc: '검색·요약 대상이 되는 본문 자료 (기본값)' },
+                { value: 'glossary',  label: '용어 사전', icon: 'mdi-book-alphabet',           color: 'deep-purple',     desc: '한↔영 등 용어 매핑. 답변 작성 시 자동 참조' },
+                { value: 'template',  label: '양식',      icon: 'mdi-file-table-outline',      color: 'orange-darken-2', desc: '보고서/계약서 양식. 문서 생성 시 활용' },
+                { value: 'reference', label: '참조',      icon: 'mdi-bookmark-outline',        color: 'teal',            desc: '법령·규제·표준 등 인용용 참조' },
+                { value: 'dataset',   label: '데이터',    icon: 'mdi-table',                   color: 'cyan-darken-2',   desc: '엑셀/CSV 정량 데이터. 분석 질문 시 코드 실행으로 처리' }
+            ],
             driveHeaders: [
                 { title: '파일명', key: 'file_name', sortable: true },
                 { title: '폴더', key: 'folder_path' },
@@ -693,6 +749,7 @@ export default {
             uploadHeaders: [
                 { title: '파일명', key: 'file_name', sortable: true },
                 { title: '폴더', key: 'folder_path' },
+                { title: '역할', key: 'doc_role', width: 110 },
                 { title: '업로더', key: 'uploaded_by_name', width: 130 },
                 { title: '크기', key: 'size_bytes', width: 90 },
                 { title: '업로드일', key: 'modified_time', width: 110 },
@@ -733,20 +790,50 @@ export default {
         filteredDrive() {
             return this.applyFilter(this.driveFiles, this.driveSearch, this.driveStatusFilter);
         },
+        // 역할(doc_role)로 1차 필터링된 upload 자료
+        roleScopedUpload() {
+            return this.uploadFiles.filter((f) => this.roleOf(f) === this.currentRole);
+        },
+        // 현재 role 안의 빈 폴더만 (knowledge_folders.doc_role 기준)
+        roleScopedEmptyFolders() {
+            return this.emptyFolders
+                .filter((f) => (f.doc_role || 'content') === this.currentRole)
+                .map((f) => f.folder_path);
+        },
         filteredUpload() {
-            const list = this.applyFilter(this.uploadFiles, this.uploadSearch, this.uploadStatusFilter);
+            const list = this.applyFilter(this.roleScopedUpload, this.uploadSearch, this.uploadStatusFilter);
             // currentFolder 적용 — 빈 문자열이면 전체, 아니면 그 폴더에 직접 속한 파일만 (하위 폴더 제외)
             if (!this.currentFolder) return list;
             return list.filter((f) => (f.folder_path || '') === this.currentFolder);
         },
-        // 폴더 노드 (트리, 들여쓰기 정보 포함)
-        folderNodes() {
-            // 모든 폴더 경로 수집
-            const set = new Set();
+        // 역할별 파일 개수 (sub-tab chip 표시용)
+        roleCounts() {
+            const c = { content: 0, glossary: 0, template: 0, reference: 0, dataset: 0 };
             for (const f of this.uploadFiles) {
+                const r = this.roleOf(f);
+                if (c[r] !== undefined) c[r]++;
+            }
+            return c;
+        },
+        // 현재 선택된 역할 메타 (드롭존·breadcrumb 표시용)
+        currentRoleMeta() {
+            return this.roleOptions.find((r) => r.value === this.currentRole) || this.roleOptions[0];
+        },
+        // 업로드 시 부여될 역할 — 항상 현재 role
+        uploadTargetRole() {
+            return this.currentRole;
+        },
+        uploadTargetRoleMeta() {
+            return this.roleOptions.find((r) => r.value === this.uploadTargetRole) || this.roleOptions[0];
+        },
+        // 폴더 노드 (트리, 들여쓰기 정보 포함). 현재 역할 scope 기준.
+        folderNodes() {
+            const scopedFiles = this.roleScopedUpload; // 역할 필터 적용된 파일
+            const scopedEmpty = this.roleScopedEmptyFolders; // 같은 role 의 빈 폴더만
+            const set = new Set();
+            for (const f of scopedFiles) {
                 const p = (f.folder_path || '').trim();
                 if (!p) continue;
-                // 자기 자신 + 모든 조상 추가
                 const segs = p.split('/').filter(Boolean);
                 let acc = '';
                 for (const s of segs) {
@@ -754,7 +841,7 @@ export default {
                     set.add(acc);
                 }
             }
-            for (const p of this.emptyFolders) {
+            for (const p of scopedEmpty) {
                 if (!p) continue;
                 const segs = p.split('/').filter(Boolean);
                 let acc = '';
@@ -764,10 +851,10 @@ export default {
                 }
             }
             const paths = [...set].sort();
-            const emptyFolderSet = new Set(this.emptyFolders);
+            const emptyFolderSet = new Set(scopedEmpty);
             return paths.map((path) => {
                 const segs = path.split('/');
-                const fileCount = this.uploadFiles.filter((f) => {
+                const fileCount = scopedFiles.filter((f) => {
                     const p = f.folder_path || '';
                     return p === path || p.startsWith(path + '/');
                 }).length;
@@ -785,6 +872,13 @@ export default {
         },
         uploadCountsByStatus() {
             return this.countByStatus(this.uploadFiles);
+        }
+    },
+    watch: {
+        currentRole() {
+            // 역할 전환 시 폴더 컨텍스트 리셋 (역할별 폴더 트리가 다름)
+            this.currentFolder = '';
+            this.uploadSelected = [];
         }
     },
     mounted() {
@@ -809,6 +903,14 @@ export default {
         },
         rowKey(item) {
             return `${item.source_type}:${item.source_ref}`;
+        },
+        // ─── 역할(doc_role) helper ───
+        roleOf(item) {
+            // 백엔드 컬럼 추가 전이라 미지정은 'content' 기본
+            return (item && item.doc_role) || 'content';
+        },
+        roleMeta(role) {
+            return this.roleOptions.find((r) => r.value === role) || this.roleOptions[1];
         },
         canDelete(item) {
             if (this.isAdmin) return true;
@@ -861,7 +963,13 @@ export default {
                     axios.get('/memento/knowledge/folders', { params: { tenant_id: tenantId } })
                 ]);
                 this.files = Array.isArray(filesRes.data?.file_details) ? filesRes.data.file_details : [];
-                this.emptyFolders = Array.isArray(foldersRes.data?.folders) ? foldersRes.data.folders : [];
+                // 백엔드는 [{folder_path, doc_role}, ...] 반환. 문자열 배열도 backward-compat 으로 수용.
+                const rawFolders = Array.isArray(foldersRes.data?.folders) ? foldersRes.data.folders : [];
+                this.emptyFolders = rawFolders.map((f) =>
+                    typeof f === 'string'
+                        ? { folder_path: f, doc_role: 'content' }
+                        : { folder_path: f?.folder_path || '', doc_role: f?.doc_role || 'content' }
+                ).filter((f) => f.folder_path);
             } catch (e) {
                 console.error('[KnowledgeFilesTab] fetch failed', e);
                 this.notify('파일 목록 조회 실패', 'error', e?.message);
@@ -940,27 +1048,31 @@ export default {
             }
             if (!accepted.length) return;
 
+            const docRole = this.uploadTargetRole;
             const tasks = accepted.map(({ file, hash }) => {
                 const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-                this.uploadQueue.push({ id, name: file.name, folder, status: 'uploading', error: null });
-                return this.uploadOne(id, file, tenantId, folder, hash);
+                this.uploadQueue.push({ id, name: file.name, folder, role: docRole, status: 'uploading', error: null });
+                return this.uploadOne(id, file, tenantId, folder, hash, docRole);
             });
             await Promise.allSettled(tasks);
-            // 업로드 성공 시 emptyFolders에서 해당 경로 제거 (실제 파일이 들어왔으니 더 이상 "local only"가 아님)
+            // 업로드 성공 시 emptyFolders 에서 (해당 role 의 동일 경로) 제거
             if (folder) {
-                this.emptyFolders = this.emptyFolders.filter((p) => p !== folder);
+                this.emptyFolders = this.emptyFolders.filter(
+                    (f) => !(f.folder_path === folder && (f.doc_role || 'content') === docRole)
+                );
             }
             await this.fetchList();
             setTimeout(() => {
                 this.uploadQueue = this.uploadQueue.filter((u) => u.status === 'uploading');
             }, 3000);
         },
-        async uploadOne(id, file, tenantId, folderPath = '', fileHash = '') {
+        async uploadOne(id, file, tenantId, folderPath = '', fileHash = '', docRole = 'content') {
             const fd = new FormData();
             fd.append('file', file);
             fd.append('tenant_id', tenantId);
             if (folderPath) fd.append('folder_path', folderPath);
             if (fileHash) fd.append('file_hash', fileHash);
+            if (docRole) fd.append('doc_role', docRole);
             if (this.myUid) fd.append('uploaded_by_uid', this.myUid);
             if (this.myName) fd.append('uploaded_by_name', this.myName);
             try {
@@ -1004,10 +1116,14 @@ export default {
                 const fd = new FormData();
                 fd.append('tenant_id', window.$tenantName);
                 fd.append('folder_path', fullPath);
+                fd.append('doc_role', this.currentRole);
                 await axios.post('/memento/knowledge/folders', fd, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                if (!this.emptyFolders.includes(fullPath)) this.emptyFolders.push(fullPath);
+                const exists = this.emptyFolders.some(
+                    (f) => f.folder_path === fullPath && (f.doc_role || 'content') === this.currentRole
+                );
+                if (!exists) this.emptyFolders.push({ folder_path: fullPath, doc_role: this.currentRole });
                 this.currentFolder = fullPath;
                 this.newFolderDialog = false;
                 this.notify('폴더가 생성되었습니다');
@@ -1042,7 +1158,8 @@ export default {
                 fd.append('tenant_id', window.$tenantName);
                 fd.append('old_path', node.path);
                 fd.append('new_path', newPath);
-                fd.append('is_admin', this.isAdmin);
+                fd.append('requester_uid', this.myUid);
+                fd.append('doc_role', this.currentRole);
                 await axios.post('/memento/knowledge/folders/rename', fd, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
@@ -1069,7 +1186,12 @@ export default {
             this.deleteFolderLoading = true;
             try {
                 await axios.delete('/memento/knowledge/folders', {
-                    params: { tenant_id: window.$tenantName, folder_path: node.path, is_admin: this.isAdmin }
+                    params: {
+                        tenant_id: window.$tenantName,
+                        folder_path: node.path,
+                        requester_uid: this.myUid,
+                        doc_role: this.currentRole
+                    }
                 });
                 if (this.currentFolder === node.path || this.currentFolder.startsWith(node.path + '/')) {
                     this.currentFolder = '';
@@ -1121,8 +1243,7 @@ export default {
                                 tenant_id: window.$tenantName,
                                 source_type: item.source_type,
                                 source_ref: item.source_ref,
-                                requester_uid: this.myUid,
-                                is_admin: this.isAdmin
+                                requester_uid: this.myUid
                             }
                         }).then(() => this.rowKey(item))
                     )
@@ -1171,8 +1292,7 @@ export default {
                         tenant_id: window.$tenantName,
                         source_type: item.source_type,
                         source_ref: item.source_ref,
-                        requester_uid: this.myUid,
-                        is_admin: this.isAdmin
+                        requester_uid: this.myUid
                     }
                 });
                 this.files = this.files.filter((f) => this.rowKey(f) !== key);
@@ -1206,6 +1326,96 @@ export default {
 
 .kft-source-tabs {
     margin-bottom: 0;
+}
+
+/* ── 역할(doc_role) sub-tabs ── */
+.kft-role-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 8px;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.025);
+    border-radius: 8px;
+}
+
+.kft-role-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.7);
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.kft-role-tab:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.kft-role-tab-count {
+    margin-left: 4px;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    padding: 1px 7px;
+    min-width: 22px;
+    text-align: center;
+}
+
+.kft-role-tab.is-active {
+    font-weight: 600;
+    border-color: currentColor;
+}
+
+.kft-role-tab.is-active.is-all       { color: #616161; background: rgba(97, 97, 97, 0.08); }
+.kft-role-tab.is-active.is-content   { color: rgb(var(--v-theme-primary)); background: rgba(var(--v-theme-primary), 0.1); }
+.kft-role-tab.is-active.is-glossary  { color: #6741d9; background: rgba(103, 65, 217, 0.1); }
+.kft-role-tab.is-active.is-template  { color: #ef6c00; background: rgba(239, 108, 0, 0.1); }
+.kft-role-tab.is-active.is-reference { color: #00897b; background: rgba(0, 137, 123, 0.1); }
+.kft-role-tab.is-active.is-dataset   { color: #00838f; background: rgba(0, 131, 143, 0.1); }
+
+.kft-role-tab.is-active .kft-role-tab-count {
+    background: rgba(255, 255, 255, 0.7);
+    color: inherit;
+}
+
+.kft-role-desc {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    padding: 4px 8px 12px;
+}
+
+/* 드롭존 역할별 색 hint */
+.kft-dropzone-role {
+    margin-left: auto;
+}
+
+.kft-dropzone.is-role-glossary {
+    border-color: rgba(103, 65, 217, 0.4);
+    background: rgba(103, 65, 217, 0.04);
+}
+
+.kft-dropzone.is-role-template {
+    border-color: rgba(239, 108, 0, 0.4);
+    background: rgba(239, 108, 0, 0.04);
+}
+
+.kft-dropzone.is-role-reference {
+    border-color: rgba(0, 137, 123, 0.4);
+    background: rgba(0, 137, 123, 0.04);
+}
+
+.kft-dropzone.is-role-dataset {
+    border-color: rgba(0, 131, 143, 0.4);
+    background: rgba(0, 131, 143, 0.04);
 }
 
 /* upload 탭 좌우 분할 */
