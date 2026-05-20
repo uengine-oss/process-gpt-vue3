@@ -42,26 +42,66 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    __testRawStorageKey() {
+        return 'processgpt_test_raw_definition_v1';
+    }
+    __loadTestRawMap(): Record<string, string> {
+        try {
+            const raw = localStorage.getItem(this.__testRawStorageKey());
+            const parsed = raw ? JSON.parse(raw) : {};
+            return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+    __saveTestRawMap(map: Record<string, string>) {
+        try {
+            localStorage.setItem(this.__testRawStorageKey(), JSON.stringify(map || {}));
+        } catch (e) {
+            // ignore
+        }
+    }
+
     async deleteTest(_path: string, _tracingTag: string, _index: number): Promise<void> {
-        console.warn(`[ProcessGPT] deleteTest은 ProcessGPT 모드에서 지원되지 않습니다.`);
-        return null as any;
+        const map = this.__loadTestRawMap();
+        const key = String(_path || '').replace(/\.unit$/i, '');
+        const raw = map[key];
+        if (!raw) return;
+
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const entries = Object.entries(parsed || {});
+        const target = entries[_index];
+        if (target) {
+            delete parsed[target[0]];
+            map[key] = JSON.stringify(parsed);
+            this.__saveTestRawMap(map);
+        }
     }
 
     async deleteRecordTest(path: string, index: number): Promise<void> {
-        console.warn(`[ProcessGPT] deleteRecordTest은 ProcessGPT 모드에서 지원되지 않습니다.`);
-        return null as any;
+        await this.deleteTest(`${path}/record`, '', index);
     }
 
     async releaseVersion(releaseName: string): Promise<any> {}
 
     async testList(_path: string): Promise<any> {
-        console.warn(`[ProcessGPT] testList은 ProcessGPT 모드에서 지원되지 않습니다.`);
-        return null as any;
+        const map = this.__loadTestRawMap();
+        const prefix = String(_path || '').replace(/\/+$/g, '');
+        return Object.entries(map)
+            .filter(([key]) => key.startsWith(prefix))
+            .map(([key, value]) => {
+                const name = key.slice(prefix.length).replace(/^\/+/, '').split('/')[0];
+                return {
+                    name: name || key,
+                    path: key,
+                    directory: false,
+                    definition: value
+                };
+            });
     }
 
     async testRecordList(_path: string): Promise<any> {
-        console.warn(`[ProcessGPT] testRecordList은 ProcessGPT 모드에서 지원되지 않습니다.`);
-        return null as any;
+        return this.testList(`${_path}/record`);
     }
 
     async findCurrentWorkItemByInstId(_instId: string): Promise<any> {
@@ -221,8 +261,19 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (options && options.type === 'unit') {
-                console.warn(`[ProcessGPT] putRawDefinition(type: 'unit')은 ProcessGPT 모드에서 지원되지 않습니다.`);
-                return null as any;
+                const map = this.__loadTestRawMap();
+                const key = String(defId || '').replace(/\.unit$/i, '');
+                map[key] = typeof xml === 'string' ? xml : JSON.stringify(xml);
+                this.__saveTestRawMap(map);
+                return;
+            }
+
+            if (options && options.type === 'json') {
+                const map = this.__loadTestRawMap();
+                const key = String(defId || '').replace(/\.json$/i, '');
+                map[key] = typeof xml === 'string' ? xml : JSON.stringify(xml);
+                this.__saveTestRawMap(map);
+                return;
             }
 
             // 폼 정보를 저장하기 위해서
@@ -414,8 +465,15 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (options && options.type === 'unit') {
-                console.warn(`[ProcessGPT] getRawDefinition(type: 'unit')은 ProcessGPT 모드에서 지원되지 않습니다.`);
-                return null;
+                const map = this.__loadTestRawMap();
+                const key = String(defId || '').replace(/\.unit$/i, '');
+                return map[key] ?? null;
+            }
+
+            if (options && options.type === 'json') {
+                const map = this.__loadTestRawMap();
+                const key = String(defId || '').replace(/\.json$/i, '');
+                return map[key] ?? null;
             }
 
             if (options) {
@@ -1430,6 +1488,7 @@ class ProcessGPTBackend implements Backend {
                         if (form) {
                             // DB에 저장된 경우
                             form['title'] = activity.name;
+                            form['activityId'] = activity.id;
                             return form;
                         } else {
                             // DB에 저장 전인 경우 > 로컬스토리지에서 조회
@@ -1438,6 +1497,7 @@ class ProcessGPTBackend implements Backend {
                                 const fields = this.extractFields(formHtml);
                                 return {
                                     id: formId,
+                                    activityId: activity.id,
                                     title: activity.name || activity.id,
                                     html: formHtml,
                                     fields_json: fields
@@ -1832,29 +1892,122 @@ class ProcessGPTBackend implements Backend {
     // Business Rule Test (룰 테스트 실행)
     // =========================
     async executeBusinessRule(ruleId: string, inputs: Record<string, any>): Promise<any> {
-        // ProcessGPT 모드에서는 룰 실행 기능 미지원
-        console.warn(`[ProcessGPT] executeBusinessRule은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}`);
-        return null as any;
+        const startedAt = performance.now();
+        const rule = await this.getBusinessRule(ruleId);
+        if (!rule) {
+            throw new Error('룰을 찾을 수 없습니다.');
+        }
+
+        const rules = Array.isArray(rule.rules) ? rule.rules : [];
+        const matchedRuleIndex = rules.findIndex((candidate: any) => this.__matchesBusinessRule(candidate, inputs || {}));
+        const matchedRule = matchedRuleIndex >= 0 ? rules[matchedRuleIndex] : null;
+        const result = matchedRule?.result || {};
+
+        return {
+            outcome: result.outcome ?? result.value ?? 'none',
+            note: result.note ?? '',
+            matchedRuleIndex: matchedRuleIndex >= 0 ? matchedRuleIndex : undefined,
+            executionTime: Math.round(performance.now() - startedAt)
+        };
     }
 
     async saveRuleTestCase(ruleId: string, testCase: any): Promise<void> {
-        // ProcessGPT 모드에서는 테스트 케이스 저장 기능 미지원
-        console.warn(`[ProcessGPT] saveRuleTestCase은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}`);
-        return null as any;
+        if (!ruleId || !testCase) {
+            throw new Error('룰 ID와 테스트 케이스가 필요합니다.');
+        }
+
+        const testCaseId = testCase.id || this.uuid();
+        const testCaseData = {
+            ...testCase,
+            id: testCaseId,
+            ruleId,
+            updatedAt: new Date().toISOString(),
+            createdAt: testCase.createdAt || new Date().toISOString()
+        };
+
+        await this.putRawDefinition(
+            JSON.stringify(testCaseData),
+            `businessRules/${encodeURIComponent(ruleId)}/testCases/${encodeURIComponent(testCaseId)}`,
+            { type: 'json' }
+        );
     }
 
     async getRuleTestCases(ruleId: string): Promise<any[]> {
-        // ProcessGPT 모드에서는 테스트 케이스 조회 기능 미지원
-        console.warn(`[ProcessGPT] getRuleTestCases은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}`);
-        return [];
+        if (!ruleId) return [];
+
+        const prefix = `businessRules/${encodeURIComponent(ruleId)}/testCases/`;
+        const map = this.__loadTestRawMap();
+        return Object.entries(map)
+            .filter(([key]) => key.startsWith(prefix))
+            .map(([key, raw]) => {
+                try {
+                    const testCase = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    const fileName = key.slice(prefix.length);
+                    return {
+                        id: testCase.id || fileName,
+                        name: testCase.name || fileName,
+                        inputs: testCase.inputs || {},
+                        expectedOutcome: testCase.expectedOutcome,
+                        expectedNote: testCase.expectedNote,
+                        createdAt: testCase.createdAt,
+                        updatedAt: testCase.updatedAt
+                    };
+                } catch (e) {
+                    return null;
+                }
+            })
+            .filter(Boolean)
+            .sort((a: any, b: any) => {
+                const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+                const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+                return dateB - dateA;
+            });
     }
 
     async deleteRuleTestCase(ruleId: string, testCaseId: string): Promise<void> {
-        // ProcessGPT 모드에서는 테스트 케이스 삭제 기능 미지원
-        console.warn(
-            `[ProcessGPT] deleteRuleTestCase은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}, testCaseId: ${testCaseId}`
-        );
-        return null as any;
+        if (!ruleId || !testCaseId) {
+            throw new Error('룰 ID와 테스트 케이스 ID가 필요합니다.');
+        }
+
+        const map = this.__loadTestRawMap();
+        const key = `businessRules/${encodeURIComponent(ruleId)}/testCases/${encodeURIComponent(testCaseId)}`;
+        delete map[key];
+        this.__saveTestRawMap(map);
+    }
+
+    __matchesBusinessRule(rule: any, inputs: Record<string, any>) {
+        const conditions = Array.isArray(rule?.conditions) ? rule.conditions : [];
+        if (conditions.length === 0) return true;
+        return conditions.every((condition: any) => this.__matchesBusinessCondition(condition, inputs));
+    }
+
+    __matchesBusinessCondition(condition: any, inputs: Record<string, any>) {
+        const key = condition?.key || condition?.item;
+        const actual = inputs?.[key];
+        const expected = condition?.value;
+        switch (condition?.operator) {
+            case 'ne':
+                return actual !== expected;
+            case 'gt':
+                return Number(actual) > Number(expected);
+            case 'gte':
+                return Number(actual) >= Number(expected);
+            case 'lt':
+                return Number(actual) < Number(expected);
+            case 'lte':
+                return Number(actual) <= Number(expected);
+            case 'contains':
+                return String(actual ?? '').includes(String(expected ?? ''));
+            case 'notContains':
+                return !String(actual ?? '').includes(String(expected ?? ''));
+            case 'startsWith':
+                return String(actual ?? '').startsWith(String(expected ?? ''));
+            case 'endsWith':
+                return String(actual ?? '').endsWith(String(expected ?? ''));
+            case 'eq':
+            default:
+                return actual === expected;
+        }
     }
 
     async filterProcDefMap(map: any) {
@@ -8770,6 +8923,44 @@ class ProcessGPTBackend implements Backend {
             console.error('[ProcessGPTBackend] getLatestVersionNumber error:', e);
             return '1.0';
         }
+    }
+
+    // ---------------------------------------------------------------
+    // BPMN 인앱 단위 테스트 — 백엔드 test_mode.py 라우트 호출.
+    // 경로: 게이트웨이 /completion/** → completion-service(/test/*)
+    // ---------------------------------------------------------------
+    async testInitiate(payload: {
+        process_definition_id: string;
+        target_activity_id?: string;
+        given?: Record<string, any>;
+        version_tag?: string;
+        version?: number | string;
+        email?: string;
+    }) {
+        const input: any = { ...payload };
+        if (!input.email) input.email = localStorage.getItem('email') || undefined;
+        input.tenant_id = window.$tenantName;
+        const response = await axios.post('/completion/test/initiate', { input }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return response?.data || null;
+    }
+
+    async testComplete(payload: { task_id: string; form_values?: Record<string, any>; timeout_ms?: number }) {
+        const input: any = { ...payload };
+        input.tenant_id = window.$tenantName;
+        const response = await axios.post('/completion/test/complete', { input }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return response?.data || null;
+    }
+
+    async testCleanup(procInstId: string) {
+        if (!procInstId) return null;
+        const response = await axios.post(`/completion/test/cleanup/${encodeURIComponent(procInstId)}`, {}, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return response?.data || null;
     }
 }
 
