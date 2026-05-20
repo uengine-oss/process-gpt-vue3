@@ -1,11 +1,16 @@
 <template>
-    <v-dialog :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)" max-width="780" scrollable>
+    <v-dialog
+        :modelValue="modelValue"
+        @update:modelValue="$emit('update:modelValue', $event)"
+        max-width="780"
+        class="ksp-dialog"
+    >
         <v-card class="ksp-card">
             <div class="ksp-header">
                 <div class="ksp-title">
                     <v-icon size="20" color="primary" class="mr-2">mdi-bookshelf</v-icon>
                     <span>지식 베이스</span>
-                    <span class="ksp-subtitle">RAG 컨텍스트로 사용할 문서를 선택하세요</span>
+                    <span class="ksp-subtitle">채팅에 활용할 자료를 선택하세요</span>
                 </div>
                 <v-btn icon variant="text" size="small" @click="reload" :disabled="loading">
                     <v-icon>mdi-refresh</v-icon>
@@ -29,6 +34,32 @@
                 </v-tab>
             </v-tabs>
             <v-divider />
+
+            <!-- 역할(doc_role) 필터 — Storage 탭에서만. 자료 종류별로 좁혀 보기. -->
+            <div v-if="activeSource === 'upload'" class="ksp-role-bar">
+                <button
+                    v-for="r in roleFilterOptions"
+                    :key="r.value"
+                    class="ksp-role-chip"
+                    :class="{ 'is-active': currentRole === r.value, [`is-${r.value}`]: true }"
+                    @click="currentRole = r.value"
+                >
+                    <v-icon size="13" class="mr-1">{{ r.icon }}</v-icon>
+                    <span>{{ r.label }}</span>
+                    <span class="ksp-role-chip-count">{{ roleCounts[r.value] || 0 }}</span>
+                </button>
+            </div>
+
+            <!-- 자동 활용 안내 배너 — 사전/양식이 선택돼 있으면 사용자가 의미를 알도록 -->
+            <div v-if="autoUseHints.length > 0" class="ksp-auto-banner">
+                <v-icon size="14" color="primary" class="mr-1">mdi-auto-fix</v-icon>
+                <span class="text-caption">
+                    <span v-for="(h, i) in autoUseHints" :key="h.role">
+                        <span v-if="i > 0"> · </span>
+                        <strong>{{ h.label }} {{ h.count }}개</strong> {{ h.action }}
+                    </span>
+                </span>
+            </div>
 
             <div class="ksp-toolbar">
                 <v-text-field
@@ -123,6 +154,13 @@
                         <div class="ksp-file-body">
                             <div class="ksp-file-name">
                                 {{ f.name }}
+                                <span
+                                    v-if="f.docRole && f.docRole !== 'content'"
+                                    class="ksp-role-badge"
+                                    :class="`is-${f.docRole}`"
+                                >
+                                    {{ roleMeta(f.docRole).short }}
+                                </span>
                                 <span class="ksp-status-badge" :class="`is-${f.indexStatus}`" v-if="f.indexStatus">
                                     {{ statusLabel(f.indexStatus) }}
                                 </span>
@@ -299,10 +337,19 @@ export default {
             search: '',
             loading: false,
             error: '',
-            allFiles: [], // [{ key, name, folderPath, mimeType, sourceType, ... }]
+            allFiles: [], // [{ key, name, folderPath, mimeType, sourceType, docRole, ... }]
             expandedPaths: new Set(),
             selectedKeysSet: new Set(),
-            activeSource: 'drive' // 'drive' | 'upload'
+            activeSource: 'drive', // 'drive' | 'upload'
+            // 역할(doc_role) 필터 — Storage 탭에서만 적용. 항상 단일 role 만 활성.
+            currentRole: 'content',
+            roleFilterOptions: [
+                { value: 'content',   label: '일반',     icon: 'mdi-file-document-outline',   short: '일반' },
+                { value: 'glossary',  label: '용어 사전', icon: 'mdi-book-alphabet',           short: '사전' },
+                { value: 'template',  label: '양식',     icon: 'mdi-file-document-edit-outline', short: '양식' },
+                { value: 'reference', label: '참조',     icon: 'mdi-bookmark-outline',        short: '참조' },
+                { value: 'dataset',   label: '데이터',    icon: 'mdi-table',                   short: '데이터' }
+            ]
         };
     },
     computed: {
@@ -317,9 +364,42 @@ export default {
             }
             return c;
         },
-        // 현재 탭에 속하는 파일들
+        // 현재 탭에 속하는 파일들 (Drive 탭은 role 필터 적용 안 함)
         tabFiles() {
-            return this.allFiles.filter((f) => f.sourceType === this.activeSource);
+            const bySource = this.allFiles.filter((f) => f.sourceType === this.activeSource);
+            if (this.activeSource !== 'upload') return bySource;
+            return bySource.filter((f) => (f.docRole || 'content') === this.currentRole);
+        },
+        // 현재 Storage 탭 안 role 별 개수 (role 칩 카운트용)
+        roleCounts() {
+            const c = { all: 0, content: 0, glossary: 0, template: 0, reference: 0, dataset: 0 };
+            for (const f of this.allFiles) {
+                if (f.sourceType !== 'upload') continue;
+                c.all++;
+                const r = f.docRole || 'content';
+                if (c[r] !== undefined) c[r]++;
+            }
+            return c;
+        },
+        // 선택된 자료 중 사전·양식이 있으면 사용자에게 자동 활용 의미 안내
+        autoUseHints() {
+            const hits = { glossary: 0, template: 0, dataset: 0 };
+            for (const f of this.allFiles) {
+                if (!this.selectedKeysSet.has(f.key)) continue;
+                const r = f.docRole || 'content';
+                if (r in hits) hits[r]++;
+            }
+            const out = [];
+            if (hits.glossary > 0) {
+                out.push({ role: 'glossary', label: '용어 사전', count: hits.glossary, action: '→ 답변 작성 시 용어 매핑으로 자동 참조됩니다' });
+            }
+            if (hits.template > 0) {
+                out.push({ role: 'template', label: '양식', count: hits.template, action: '→ DOCX 생성 시 양식으로 활용됩니다' });
+            }
+            if (hits.dataset > 0) {
+                out.push({ role: 'dataset', label: '데이터', count: hits.dataset, action: '→ 정량 분석 질문 시 코드 실행으로 처리됩니다' });
+            }
+            return out;
         },
         // 현재 탭 기준 트리
         tree() {
@@ -362,12 +442,24 @@ export default {
             }
         },
         activeSource() {
-            // 탭 전환 시 검색 초기화 + 첫 폴더 펼치기
+            // 탭 전환 시 검색 초기화 + 역할 필터를 기본(일반)으로 리셋
+            this.search = '';
+            this.currentRole = 'content';
+            this.expandToSelected();
+        },
+        currentRole() {
+            // role 필터 전환 시 검색 초기화 (트리 컨텍스트 리셋)
             this.search = '';
             this.expandToSelected();
         }
     },
     methods: {
+        roleMeta(role) {
+            return (
+                this.roleFilterOptions.find((r) => r.value === role) ||
+                this.roleFilterOptions[1] // content
+            );
+        },
         iconOf(name) {
             return mimeIcon(extToMime(name));
         },
@@ -426,7 +518,8 @@ export default {
                     owner: d.owner,
                     indexStatus: d.index_status,
                     indexError: d.index_error,
-                    indexedAt: d.indexed_at
+                    indexedAt: d.indexed_at,
+                    docRole: d.doc_role || 'content'
                 }));
                 this.expandToSelected();
             } catch (e) {
@@ -533,10 +626,17 @@ export default {
 </script>
 
 <style scoped>
+/* v-dialog 래퍼 자체에 height를 잡아야 v-card height가 안정적으로 적용된다.
+   scoped + :deep — Vuetify 내부 클래스(.v-overlay__content)를 타겟. */
+.ksp-dialog :deep(.v-overlay__content) {
+    height: min(720px, 80vh);
+    /* 모바일에서 좌우 패딩 고려해 width는 max-width prop에 위임 */
+}
+
 .ksp-card {
     display: flex;
     flex-direction: column;
-    max-height: 80vh;
+    height: 100%;
 }
 
 .ksp-header {
@@ -567,6 +667,80 @@ export default {
     flex: 0 0 auto;
 }
 
+/* ─── 역할(doc_role) 필터 칩 바 ─── */
+.ksp-role-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 20px 4px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.ksp-role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 10px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.7);
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.ksp-role-chip:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.ksp-role-chip.is-active.is-all       { background: rgba(97, 97, 97, 0.12); border-color: rgba(97, 97, 97, 0.4); color: #424242; }
+.ksp-role-chip.is-active.is-content   { background: rgba(25, 118, 210, 0.12); border-color: rgba(25, 118, 210, 0.5); color: #1976d2; }
+.ksp-role-chip.is-active.is-glossary  { background: rgba(123, 31, 162, 0.12); border-color: rgba(123, 31, 162, 0.5); color: #7b1fa2; }
+.ksp-role-chip.is-active.is-template  { background: rgba(239, 108, 0, 0.12); border-color: rgba(239, 108, 0, 0.5); color: #ef6c00; }
+.ksp-role-chip.is-active.is-reference { background: rgba(56, 142, 60, 0.12); border-color: rgba(56, 142, 60, 0.5); color: #388e3c; }
+.ksp-role-chip.is-active.is-dataset   { background: rgba(0, 137, 123, 0.12); border-color: rgba(0, 137, 123, 0.5); color: #00897b; }
+
+.ksp-role-chip-count {
+    margin-left: 4px;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.06);
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.ksp-role-chip.is-active .ksp-role-chip-count {
+    background: rgba(255, 255, 255, 0.6);
+    color: inherit;
+}
+
+/* ─── 자동 활용 안내 배너 ─── */
+.ksp-auto-banner {
+    display: flex;
+    align-items: center;
+    padding: 8px 20px;
+    margin: 8px 20px 0;
+    background: rgba(var(--v-theme-primary), 0.07);
+    border-left: 3px solid rgb(var(--v-theme-primary));
+    border-radius: 4px;
+}
+
+/* ─── 행에 표시되는 role badge ─── */
+.ksp-role-badge {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+.ksp-role-badge.is-glossary  { background: rgba(123, 31, 162, 0.12); color: #7b1fa2; }
+.ksp-role-badge.is-template  { background: rgba(239, 108, 0, 0.12);  color: #ef6c00; }
+.ksp-role-badge.is-reference { background: rgba(56, 142, 60, 0.12);  color: #388e3c; }
+
 .ksp-toolbar {
     display: flex;
     align-items: center;
@@ -591,8 +765,8 @@ export default {
 .ksp-list {
     overflow-y: auto;
     padding: 6px 8px;
-    flex: 1;
-    min-height: 280px;
+    flex: 1 1 0;
+    min-height: 0;
 }
 
 .ksp-state {

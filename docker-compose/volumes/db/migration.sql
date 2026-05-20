@@ -2113,3 +2113,143 @@ CREATE POLICY knowledge_folders_update_policy ON public.knowledge_folders
 DROP POLICY IF EXISTS knowledge_folders_delete_policy ON public.knowledge_folders;
 CREATE POLICY knowledge_folders_delete_policy ON public.knowledge_folders
     FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+-- =====================================================
+-- document_pages + knowledge_files.doc_card
+-- agent navigation (catalog + grep + page-read) 인프라.
+-- 기존 청크 RAG (documents 테이블 + Chroma) 는 건드리지 않는 add-only 마이그레이션.
+-- =====================================================
+
+-- knowledge_files 에 doc_card JSONB 컬럼 추가
+-- 스키마(현행 최소):
+--   { "abstract": "...", "n_pages": int, "generated_at": "ISO8601Z",
+--     "generation_model": "..." }
+-- LLM 실패 시 NULL 로 두고 grep 폴백.
+ALTER TABLE public.knowledge_files
+    ADD COLUMN IF NOT EXISTS doc_card jsonb;
+
+-- 페이지 단위 본문 저장. agent 의 read_document_page / grep_in_document 가 읽음.
+-- file_id 는 knowledge_files.source_ref 와 동일 값
+-- (drive: 파일ID / upload: storage path). documents 테이블의 metadata.file_id 와도 동일.
+CREATE TABLE IF NOT EXISTS public.document_pages (
+    id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id     text NOT NULL,
+    file_id       text NOT NULL,
+    page_number   int  NOT NULL,                   -- 1-based
+    content       text NOT NULL,                   -- 정제된 페이지 본문
+    page_meta     jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at    timestamptz NOT NULL DEFAULT now()
+);
+
+DO $$ BEGIN
+    ALTER TABLE public.document_pages
+        ADD CONSTRAINT document_pages_unique_page UNIQUE (tenant_id, file_id, page_number);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE public.document_pages
+        ADD CONSTRAINT document_pages_tenant_fk FOREIGN KEY (tenant_id)
+            REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_document_pages_tenant_file
+    ON public.document_pages (tenant_id, file_id);
+
+ALTER TABLE public.document_pages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS document_pages_select_policy ON public.document_pages;
+CREATE POLICY document_pages_select_policy ON public.document_pages
+    FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS document_pages_insert_policy ON public.document_pages;
+CREATE POLICY document_pages_insert_policy ON public.document_pages
+    FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS document_pages_update_policy ON public.document_pages;
+CREATE POLICY document_pages_update_policy ON public.document_pages
+    FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS document_pages_delete_policy ON public.document_pages;
+CREATE POLICY document_pages_delete_policy ON public.document_pages
+    FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+
+-- =====================================================
+-- 2026-05-14: knowledge_files.doc_role — 자료 역할 분류
+-- 에이전트가 자료 역할(일반 본문 / 용어사전 / 양식 / 참조)에 따라 활용 패턴을 분기.
+-- =====================================================
+ALTER TABLE public.knowledge_files
+    ADD COLUMN IF NOT EXISTS doc_role text NOT NULL DEFAULT 'content';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'knowledge_files_role_check'
+    ) THEN
+        ALTER TABLE public.knowledge_files
+            ADD CONSTRAINT knowledge_files_role_check
+            CHECK (doc_role IN ('content', 'glossary', 'template', 'reference'));
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_files_tenant_role
+    ON public.knowledge_files USING btree (tenant_id, doc_role) TABLESPACE pg_default;
+
+
+-- =====================================================
+-- 2026-05-14: knowledge_folders.doc_role — 빈 폴더에도 역할 부여
+-- 빈 폴더가 어느 role 탭(content/glossary/template/reference)에 속하는지 결정.
+-- unique key 가 (tenant_id, folder_path) → (tenant_id, doc_role, folder_path) 로 변경.
+-- =====================================================
+ALTER TABLE public.knowledge_folders
+    ADD COLUMN IF NOT EXISTS doc_role text NOT NULL DEFAULT 'content';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'knowledge_folders_role_check'
+    ) THEN
+        ALTER TABLE public.knowledge_folders
+            ADD CONSTRAINT knowledge_folders_role_check
+            CHECK (doc_role IN ('content', 'glossary', 'template', 'reference'));
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'knowledge_folders_unique' AND conrelid = 'public.knowledge_folders'::regclass
+    ) THEN
+        ALTER TABLE public.knowledge_folders DROP CONSTRAINT knowledge_folders_unique;
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'knowledge_folders_unique_role' AND conrelid = 'public.knowledge_folders'::regclass
+    ) THEN
+        ALTER TABLE public.knowledge_folders
+            ADD CONSTRAINT knowledge_folders_unique_role UNIQUE (tenant_id, doc_role, folder_path);
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_folders_tenant_role
+    ON public.knowledge_folders USING btree (tenant_id, doc_role) TABLESPACE pg_default;
+
+
+-- =====================================================
+-- 2026-05-14: knowledge_files.glossary_compact — 용어 사전 정제 본문
+-- doc_role='glossary' 자료 ingest 시 LLM 추출 결과를 컬럼에 직접 저장.
+-- doc_card 에 박지 않고 전용 TEXT 컬럼 — 큰 텍스트 격리 + 부분 SELECT.
+-- =====================================================
+ALTER TABLE public.knowledge_files
+    ADD COLUMN IF NOT EXISTS glossary_compact text;
+
+
+-- =====================================================
+-- 2026-05-18: knowledge_files.doc_summary — summary-pipeline mini-summary 캐시.
+-- memento /summarize 가 batch 별 LLM 결과를 통째로 컬럼에 캐싱해 재요약 비용 절감.
+-- 스키마(jsonb): { batch_size, n_pages, n_batches, abstract, batches:[...], model, generated_at }
+-- 같은 file_id (= source_ref) 면 cache hit. 파일 재인덱싱 시
+-- document_pages._delete_existing_pages 와 같은 시점에 NULL 로 무효화.
+-- =====================================================
+ALTER TABLE public.knowledge_files
+    ADD COLUMN IF NOT EXISTS doc_summary jsonb;

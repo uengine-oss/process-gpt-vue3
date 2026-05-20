@@ -5,9 +5,16 @@
                 <span class="side-info__title">활동</span>
                 <span class="side-info__count">{{ activityList.length }}</span>
             </summary>
-            <ul class="side-info__list">
-                <li v-for="a in activityList" :key="a.key" class="side-info__item">
+            <ul class="side-info__list side-info__list--scroll">
+                <li
+                    v-for="a in activityList"
+                    :key="a.key"
+                    class="side-info__item activity-item"
+                    :class="{ 'is-nested': a.depth > 0 }"
+                    :style="{ '--activity-depth': a.depth }"
+                >
                     <span class="side-info__item-label activity-row">
+                        <span v-if="a.depth > 0" class="activity-indent" aria-hidden="true">↳</span>
                         <v-icon
                             size="14"
                             class="activity-icon"
@@ -117,6 +124,9 @@ export default {
                 .map((it, idx) => {
                     const kind = (it?.kind || (it?.tool === 'task' ? 'subagent' : 'tool')).toString();
                     const subagentType = (it?.subagentType || it?.subagent_type || '').toString();
+                    const parentSubagent = (it?.parentSubagent || it?.parent_subagent || '').toString();
+                    const rawDepth = Number(it?.depth);
+                    const depth = Number.isFinite(rawDepth) && rawDepth > 0 ? rawDepth : 0;
                     const baseLabel =
                         kind === 'subagent'
                             ? subagentType || 'subagent'
@@ -126,6 +136,8 @@ export default {
                         label: baseLabel,
                         kind,
                         subagentType,
+                        parentSubagent,
+                        depth,
                         status: (it?.status || 'running').toString()
                     };
                 })
@@ -305,6 +317,27 @@ export default {
     gap: 6px;
 }
 
+/* 활동처럼 끝없이 길어질 수 있는 리스트는 자체 스크롤 */
+.side-info__list--scroll {
+    max-height: 360px;
+    overflow-y: auto;
+    /* 스크롤바가 들여쓰기와 겹치지 않게 약간의 우측 여유 */
+    padding-right: 4px;
+    /* 얇은 스크롤바 (Firefox) */
+    scrollbar-width: thin;
+}
+
+.side-info__list--scroll::-webkit-scrollbar {
+    width: 6px;
+}
+.side-info__list--scroll::-webkit-scrollbar-thumb {
+    background: rgba(var(--v-theme-on-surface), 0.18);
+    border-radius: 3px;
+}
+.side-info__list--scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--v-theme-on-surface), 0.3);
+}
+
 .side-info__item {
     font-size: 11px;
     color: rgba(var(--v-theme-on-surface), 0.7);
@@ -353,6 +386,13 @@ export default {
     background: rgba(var(--v-theme-info), 0.08);
 }
 
+.side-info__chip.is-error,
+.side-info__chip.is-failed {
+    border-color: rgba(var(--v-theme-error), 0.4);
+    color: rgb(var(--v-theme-error));
+    background: rgba(var(--v-theme-error), 0.08);
+}
+
 .activity-row {
     display: inline-flex;
     align-items: center;
@@ -384,5 +424,18 @@ export default {
 .activity-name {
     word-break: break-all;
     min-width: 0;
+}
+
+.activity-item.is-nested {
+    padding-left: calc(var(--activity-depth, 0) * 14px);
+    position: relative;
+}
+
+.activity-indent {
+    color: rgba(var(--v-theme-on-surface), 0.4);
+    font-size: 11px;
+    line-height: 1;
+    margin-right: 2px;
+    flex-shrink: 0;
 }
 </style>
