@@ -971,19 +971,22 @@ export default {
                 });
                 await Promise.all(fieldValuePromises);
             } else {
-                const prevActivityId = definition.sequences.find((x) => x.target == me.workItem.activity.tracingTag).source;
-                const formInfo = await backend.getFormFields(null, prevActivityId, procDefId);
-                if (formInfo && formInfo.fields_json) {
-                    const fieldValuePromises = formInfo.fields_json.map(async (field) => {
-                        const fieldInfo = `${formInfo.id}.${field.key}`;
-                        const fieldValue = await backend.getFieldValue(fieldInfo, procDefId, me.workItem.worklist.instId);
-                        if (fieldValue) {
-                            inputFields[fieldInfo] = fieldValue;
-                        } else {
-                            inputFields[fieldInfo] = '';
-                        }
-                    });
-                    await Promise.all(fieldValuePromises);
+                const sequenceFlow = definition.sequences.find((x) => x.target == me.workItem.activity.tracingTag);
+                if (sequenceFlow && sequenceFlow.source) {
+                    const prevActivityId = sequenceFlow.source;
+                    const formInfo = await backend.getFormFields(null, prevActivityId, procDefId);
+                    if (formInfo && formInfo.fields_json) {
+                        const fieldValuePromises = formInfo.fields_json.map(async (field) => {
+                            const fieldInfo = `${formInfo.id}.${field.key}`;
+                            const fieldValue = await backend.getFieldValue(fieldInfo, procDefId, me.workItem.worklist.instId);
+                            if (fieldValue) {
+                                inputFields[fieldInfo] = fieldValue;
+                            } else {
+                                inputFields[fieldInfo] = '';
+                            }
+                        });
+                        await Promise.all(fieldValuePromises);
+                    }
                 }
             }
             inputFields = await backend.groupFieldsByForm(inputFields);

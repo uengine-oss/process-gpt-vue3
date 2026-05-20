@@ -82,6 +82,7 @@
                 <AgentSelectField
                     v-model="activity"
                     :backend="backend"
+                    :is-sub-agent-profile="isSubAgentProfile"
                     @update:modelValue="(newVal) => (activity = newVal)"
                 ></AgentSelectField>
             </v-window-item>
@@ -168,6 +169,7 @@ const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefin
 
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessSummaryGenerator from '@/components/ai/ProcessSummaryGenerator.js';
+import { useBpmnStore } from '@/stores/bpmn';
 
 export default {
     name: 'gpt-user-task-panel',
@@ -385,9 +387,40 @@ export default {
                 'Technical Expertise',
                 'Process Improvement'
             ];
+        },
+        isSubAgentProfile() {
+            return this.resolveSubAgentProfile();
         }
     },
     methods: {
+        isAdHocSubProcessType(type) {
+            const normalized = (type || '').toString().toLowerCase();
+            return normalized === 'bpmn:adhocsubprocess' || normalized.endsWith('adhocsubprocess');
+        },
+        resolveSubAgentProfile() {
+            const elementId = this.element?.id;
+            if (elementId) {
+                try {
+                    const modeler = useBpmnStore().getModeler;
+                    const diagramElement = modeler?.get('elementRegistry')?.get(elementId);
+                    let parent = diagramElement?.parent;
+                    while (parent) {
+                        if (this.isAdHocSubProcessType(parent.type)) return true;
+                        parent = parent.parent;
+                    }
+                } catch (error) {
+                    // eslint-disable-next-line no-console
+                    console.error('[GPTUserTaskPanel] resolveSubAgentProfile error', error);
+                }
+            }
+
+            let parent = this.element?.$parent;
+            while (parent) {
+                if (this.isAdHocSubProcessType(parent.$type)) return true;
+                parent = parent.$parent;
+            }
+            return false;
+        },
         normalizeActivityMcpSkillArrays() {
             if (!Array.isArray(this.activity.tools)) this.activity.tools = [];
             if (!Array.isArray(this.activity.skills)) this.activity.skills = [];

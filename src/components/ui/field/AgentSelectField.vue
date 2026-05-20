@@ -1,7 +1,7 @@
 <template>
     <div>
         <!-- Orchestration (top-level) -->
-        <div class="mt-4">
+        <div v-if="!isSubAgentProfile" class="mt-4">
             <v-select
                 v-model="activity.orchestration"
                 :items="orchestrationItems"
@@ -59,7 +59,7 @@
         </div>
 
         <!-- Orchestration-dependent configuration -->
-        <div class="mt-4">
+        <div :class="isSubAgentProfile ? '' : 'mt-4'">
             <!-- 완료 수준 -->
             <div v-if="!isExecute">
                 <div class="text-caption text-medium-emphasis mb-2">
@@ -94,7 +94,7 @@
             </div>
 
             <!-- 미리 설정된 에이전트 사용 (+체크 시 에이전트 선택) -->
-            <div class="mt-4">
+            <div v-if="!isSubAgentProfile" class="mt-4">
                 <v-checkbox
                     v-model="activity.usePresetAgent"
                     density="compact"
@@ -222,6 +222,10 @@ export default {
             default: false
         },
         showQuickCreate: {
+            type: Boolean,
+            default: false
+        },
+        isSubAgentProfile: {
             type: Boolean,
             default: false
         }
@@ -366,6 +370,8 @@ export default {
         engineConfigDisabled() {
             // orchestration이 'a2a'인 경우: 미리 설정 에이전트·완료 수준 등은 사용 가능
             if (this.activity.orchestration === 'a2a') return false;
+            // isSubAgentProfile: 서브 에이전트 프로필 설정 모드(연구방식 없이 프로필·도구·스킬 구성)
+            if (this.isSubAgentProfile) return this.isSingleAgentType;
             // orchestration이 '없음'(null)인 경우: 하위 영역은 노출하되 비활성화
             return this.isSingleAgentType || !this.activity.orchestration;
         },
@@ -392,7 +398,7 @@ export default {
             handler(newVal) {
                 if (newVal) {
                     this.activity.agentMode = /[A-Z]/.test(newVal.agentMode) ? newVal.agentMode.toLowerCase() : newVal.agentMode;
-                    this.activity.orchestration = newVal.orchestration;
+                    this.activity.orchestration = this.isSubAgentProfile ? 'deepagents' : newVal.orchestration;
                     this.activity.agent = newVal.agent;
                     if (newVal.tools !== undefined) this.activity.tools = newVal.tools;
                     if (newVal.skills !== undefined) this.activity.skills = newVal.skills;
@@ -417,6 +423,12 @@ export default {
         },
         'activity.orchestration': {
             handler(newVal) {
+                if (this.isSubAgentProfile) {
+                    if (newVal === 'a2a') {
+                        this.activity.usePresetAgent = true;
+                    }
+                    return;
+                }
                 if (newVal === 'a2a') {
                     this.activity.usePresetAgent = true;
                     if (this.selectedAgent && this.selectedAgent.length > 0) {
@@ -455,7 +467,7 @@ export default {
                         this.agentAlias = agent.alias;
                         if (this.isSingleAgentType && this.activity.orchestration !== 'a2a') {
                             // 단일 에이전트 타입에서는 멀티 오케스트레이션 및 도구/스킬 사용을 비활성화한다.
-                            this.activity.orchestration = null;
+                            this.activity.orchestration = this.isSubAgentProfile ? 'deepagents' : null;
                             this.activity.tools = [];
                             this.activity.skills = [];
                         }
@@ -493,7 +505,7 @@ export default {
                     ? this.modelValue.agentMode.toLowerCase()
                     : this.modelValue.agentMode;
             }
-            this.activity.orchestration = this.modelValue.orchestration || null;
+            this.activity.orchestration = this.isSubAgentProfile ? 'deepagents' : (this.modelValue.orchestration || null);
             this.activity.agent = this.modelValue.agent || null;
             this.activity.usePresetAgent =
                 this.modelValue.usePresetAgent !== undefined ? !!this.modelValue.usePresetAgent : !!this.modelValue.agent;
@@ -554,6 +566,8 @@ export default {
         }
 
         if (this.isExecute) {
+            this.activity.agentMode = 'draft';
+        } else if (this.isSubAgentProfile && !this.activity.agentMode && !this.isSingleAgentType) {
             this.activity.agentMode = 'draft';
         }
     },
