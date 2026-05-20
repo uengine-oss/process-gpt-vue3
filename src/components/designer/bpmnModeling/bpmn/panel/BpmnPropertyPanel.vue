@@ -327,7 +327,7 @@ export default {
                 type = 'pal-call-activity';
             }
             if (this.isGPTMode) {
-                if (type == 'user-task' || type == 'script-task' || type == 'service-task' || type == 'task' || type == 'lane') {
+                if (type == 'user-task' || type == 'script-task' || type == 'service-task' || type == 'task' || type == 'lane' || type == 'ad-hoc-sub-process') {
                     type = 'gpt-' + type;
                 }
             }
