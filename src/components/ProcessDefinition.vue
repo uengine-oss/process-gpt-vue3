@@ -491,6 +491,13 @@ export default {
         multiSelectedElements: []
     }),
     computed: {
+        // bpmn store 의 running/completed 활동 id 스냅샷. watch 트리거용.
+        runningStoreSnapshot() {
+            const store = useBpmnStore();
+            const running = Array.isArray(store.runningActivityIds) ? store.runningActivityIds : [];
+            const completed = Array.isArray(store.completedActivityIds) ? store.completedActivityIds : [];
+            return running.join(',') + '|' + completed.join(',');
+        },
         mode() {
             if (window.$mode == 'ProcessGPT') {
                 return 'LLM';
@@ -544,6 +551,10 @@ export default {
         }
     },
     watch: {
+        // store 의 활성/완료 활동 id 가 바뀌면 즉시 캔버스에 반영.
+        runningStoreSnapshot() {
+            this.applyCanvasMarkers();
+        },
         isViewMode(newVal, oldVal) {
             this.bpmnKey++;
         },
@@ -645,6 +656,9 @@ export default {
         // }
         // this.definitionPath = fullPath;
     },
+    beforeUnmount() {
+        this.clearCanvasMarkers();
+    },
     mounted() {
         // Initial Data
         var me = this;
@@ -686,8 +700,52 @@ export default {
         this.EventBus.on('autoLayout.complete', () => {
             this.applyAutoLayout();
         });
+        // 처음 진입 시 store 에 남은 잔재 정리 + 마커 동기화. (다른 화면에서 옮겨오며 잔존할 수 있음)
+        this.clearCanvasMarkers();
     },
     methods: {
+        // hli 패턴: bpmn store 의 runningActivityIds/completedActivityIds 를 그대로 캔버스 마커로 반영.
+        // 단위 테스트가 store 를 갱신하면 즉시 반영되고, 패널이 닫히거나 다음 실행 전까지 유지된다.
+        applyCanvasMarkers() {
+            const viewer = this.$refs.bpmnVue && this.$refs.bpmnVue.bpmnViewer;
+            if (!viewer) return;
+            let canvas;
+            let elementRegistry;
+            try {
+                canvas = viewer.get('canvas');
+                elementRegistry = viewer.get('elementRegistry');
+            } catch (e) {
+                return;
+            }
+            const store = useBpmnStore();
+            const running = new Set((store.runningActivityIds || []).filter(Boolean).map(String));
+            const completed = new Set((store.completedActivityIds || []).filter(Boolean).map(String));
+            const prevRunning = this._markedRunningIds instanceof Set ? this._markedRunningIds : new Set();
+            const prevCompleted = this._markedCompletedIds instanceof Set ? this._markedCompletedIds : new Set();
+            const diff = (prev, next, marker) => {
+                prev.forEach((id) => {
+                    if (!next.has(id) && elementRegistry.get(id)) {
+                        try { canvas.removeMarker(id, marker); } catch (e) {}
+                    }
+                });
+                next.forEach((id) => {
+                    if (elementRegistry.get(id)) {
+                        try { canvas.addMarker(id, marker); } catch (e) {}
+                    }
+                });
+            };
+            diff(prevRunning, running, 'running');
+            diff(prevCompleted, completed, 'completed');
+            this._markedRunningIds = running;
+            this._markedCompletedIds = completed;
+        },
+        clearCanvasMarkers() {
+            // beforeUnmount 에서 호출. store 도 비워서 다음 진입 시 깨끗한 상태로 시작.
+            const store = useBpmnStore();
+            try { store.clearRunningActivityIds(); } catch (e) {}
+            try { store.clearCompletedActivityIds(); } catch (e) {}
+            this.applyCanvasMarkers();
+        },
         // 댓글 관련 메서드
         toggleCommentPanel() {
             this.showCommentPanel = !this.showCommentPanel;

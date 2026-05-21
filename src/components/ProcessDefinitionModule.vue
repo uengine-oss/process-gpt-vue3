@@ -662,6 +662,15 @@ export default {
                     await me.setDefinitionInfo(info);
 
                     const savedFormDrafts = Array.isArray(me.processDefinition?.formDrafts) ? [...me.processDefinition.formDrafts] : [];
+                    // pdf2bpmn 이 생성한 DMN 메타(dmn_decisions/dmn_rules)는 BPMN XML 에 직렬화되지
+                    // 않으므로 convertXMLToJSON 왕복 시 유실된다. formDrafts 와 동일하게 저장 전 보존했다가
+                    // XML 변환 후 복원한다.
+                    const savedDmnDecisions = Array.isArray(me.processDefinition?.dmn_decisions)
+                        ? me.processDefinition.dmn_decisions
+                        : null;
+                    const savedDmnRules = Array.isArray(me.processDefinition?.dmn_rules)
+                        ? me.processDefinition.dmn_rules
+                        : null;
                     console.log('[FORM_DEBUG] saveDefinition start', {
                         savedFormDraftsCount: savedFormDrafts.length,
                         drafts: savedFormDrafts.map((d) => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length }))
@@ -789,6 +798,12 @@ export default {
                         }
 
                         if (savedFormDrafts.length > 0) me.processDefinition.formDrafts = savedFormDrafts;
+                        if (savedDmnDecisions && !me.processDefinition.dmn_decisions) {
+                            me.processDefinition.dmn_decisions = savedDmnDecisions;
+                        }
+                        if (savedDmnRules && !me.processDefinition.dmn_rules) {
+                            me.processDefinition.dmn_rules = savedDmnRules;
+                        }
                         console.log('[FORM_DEBUG] after Path1 processDefinition replaced', {
                             formDraftsCount: me.processDefinition.formDrafts?.length,
                             savedFormDraftsCount: savedFormDrafts.length
@@ -885,6 +900,12 @@ export default {
 
                         if (savedFormDrafts.length > 0) {
                             updatedProcessDefinition.formDrafts = savedFormDrafts;
+                        }
+                        if (savedDmnDecisions && !updatedProcessDefinition.dmn_decisions) {
+                            updatedProcessDefinition.dmn_decisions = savedDmnDecisions;
+                        }
+                        if (savedDmnRules && !updatedProcessDefinition.dmn_rules) {
+                            updatedProcessDefinition.dmn_rules = savedDmnRules;
                         }
 
                         me.processDefinition = updatedProcessDefinition;

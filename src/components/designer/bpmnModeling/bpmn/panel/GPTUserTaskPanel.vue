@@ -6,6 +6,7 @@
             <v-tab value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
             <v-tab value="edit">{{ $t('BpmnPropertyPanel.edit') }}</v-tab>
             <v-tab value="preview">{{ $t('BpmnPropertyPanel.preview') }}</v-tab>
+            <v-tab value="unitTest">{{ $t('ProcessUnitTest.unitTest') }}</v-tab>
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
@@ -139,6 +140,17 @@
             <v-window-item value="preview">
                 <FormDefinition ref="formDefinitionPreview" type="preview" :formId="formId" v-model="tempFormHtml" />
             </v-window-item>
+            <v-window-item value="unitTest" eager>
+                <UserTaskUnitTest
+                    v-if="element"
+                    :element="element"
+                    :processDefinitionId="processDefinitionId"
+                    :definition="definition"
+                    :uengineProperties="copyUengineProperties"
+                    :activity="activity"
+                    :availableForms="availableForms"
+                />
+            </v-window-item>
         </v-window>
     </div>
 </template>
@@ -150,6 +162,7 @@ import Description from '@/components/designer/DescriptionField.vue';
 import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import ManualLinkField from '@/components/ui/ManualLinkField.vue';
+import UserTaskUnitTest from './UserTaskUnitTest.vue';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
@@ -167,7 +180,8 @@ export default {
         FormDefinition,
         AgentSelectField,
         KeyValueField,
-        ManualLinkField
+        ManualLinkField,
+        UserTaskUnitTest
     },
     props: {
         uengineProperties: Object,
@@ -308,7 +322,7 @@ export default {
                     }
 
                     // 참조정보 탭으로 들어갈 때 이전 폼 목록 로드
-                    if (newVal === 'inputData') {
+                    if (newVal === 'inputData' || newVal === 'unitTest') {
                         await this.getPreviousForms();
                     }
                 }
@@ -726,8 +740,10 @@ export default {
                         me.availableForms = prevForms.map((form) => {
                             return {
                                 formId: form.id,
+                                activityId: form.activityId,
                                 title: form.title,
-                                fields: form.fields_json || []
+                                fields: form.fields_json || [],
+                                html: form.html || ''
                             };
                         });
                     });

@@ -63,7 +63,9 @@ export default {
 
     data() {
         return {
-            localModelValue: '',
+            // modelValue 로 초기화: async modelValue 워처가 await 동안, immediate localModelValue
+            // 워처가 빈 기본값을 부모로 emit 해 저장값을 덮어쓰는 문제 방지.
+            localModelValue: this.modelValue ?? '',
 
             localName: '',
             localAlias: '',

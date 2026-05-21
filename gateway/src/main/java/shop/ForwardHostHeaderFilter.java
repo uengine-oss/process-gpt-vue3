@@ -73,13 +73,13 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
             if (!cookies.isEmpty()) {
                 token = cookies.get(0).getValue();
             }
-            if (token == null || token.isBlank()) {
+            if (isBlank(token)) {
                 String authorization = request.getHeaders().getFirst("Authorization");
                 if (authorization != null && authorization.toLowerCase(Locale.ROOT).startsWith("bearer ")) {
                     token = authorization.substring(7).trim();
                 }
             }
-            if (token == null || token.isBlank()) {
+            if (isBlank(token)) {
                 return buildErrorResponse(exchange, "TOKEN_MISSING", "Access token is missing");
             }
 
@@ -96,6 +96,10 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
                 .build();
 
         return chain.filter(exchange.mutate().request(updatedRequest).build());
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private TokenValidationResult validateToken(String token, String expectedSubdomain, String requestPath) {
