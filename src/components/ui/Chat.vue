@@ -315,8 +315,8 @@
                                             class="pdf2bpmn-progress-wrap mb-2"
                                         >
                                             <div class="d-flex align-center mb-1">
-                                                <v-icon size="16" color="primary" class="mr-1">mdi-file-pdf-box</v-icon>
-                                                <span class="text-caption font-weight-bold">PDF → BPMN 변환</span>
+                                                <v-icon size="16" color="primary" class="mr-1">mdi-sitemap</v-icon>
+                                                <span class="text-caption font-weight-bold">BPMN 프로세스 생성</span>
                                                 <v-chip
                                                     size="x-small"
                                                     class="ml-2"
@@ -1682,7 +1682,7 @@
                                                                                         >mdi-check-circle</v-icon
                                                                                     >
                                                                                     <span class="text-caption font-weight-bold">
-                                                                                        PDF2BPMN 생성 결과
+                                                                                        BPMN 프로세스 생성 결과
                                                                                     </span>
                                                                                     <v-spacer />
                                                                                     <v-btn

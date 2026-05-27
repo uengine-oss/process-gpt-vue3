@@ -92,32 +92,64 @@ export default {
     },
     methods: {
         async getExamples() {
-            const process = await this.backend.getRawDefinition(this.processDefinitionId);
-            this.processDefinition = process.definition;
-            if (this.processDefinition && this.element && this.element.id) {
-                const sequence = this.processDefinition.sequences.find((sequence) => sequence.id === this.element.id);
+            let process = null;
+            try {
+                process = await this.backend.getRawDefinition(this.processDefinitionId);
+            } catch (e) {
+                console.error('[ConditionExampleField] getRawDefinition 실패:', e);
+            }
+            this.processDefinition = (process && process.definition) || null;
+            const sequences =
+                this.processDefinition && Array.isArray(this.processDefinition.sequences)
+                    ? this.processDefinition.sequences
+                    : [];
+            if (sequences.length && this.element && this.element.id) {
+                // 디자이너는 시퀀스플로우 element id 를 'SequenceFlow_<src>_<tgt>' 로 재생성하므로
+                // proc_def 의 sequence.id('seq_...' 등)와 일치하지 않을 수 있다.
+                // → id 직접 매칭에 더해 source/target 으로도 매칭한다 ('id_' 접두사는 정규화).
+                const norm = (v) => String(v || '').replace(/^id_/, '');
+                const refId = (r) => (r && typeof r === 'object' ? r.id : r) || '';
+                const el = this.element;
+                const elSrc = norm(
+                    refId(el.source) || refId(el.sourceRef) || refId(el.businessObject && el.businessObject.sourceRef)
+                );
+                const elTgt = norm(
+                    refId(el.target) || refId(el.targetRef) || refId(el.businessObject && el.businessObject.targetRef)
+                );
+                const sequence = sequences.find(
+                    (s) =>
+                        s &&
+                        (s.id === this.element.id ||
+                            (elSrc && elTgt && norm(s.source) === elSrc && norm(s.target) === elTgt))
+                );
                 if (sequence) {
-                    const properties = JSON.parse(sequence.properties);
-                    const today = new Date().toISOString();
-                    if (properties.examples) {
-                        this.goodExamples = properties.examples.good_examples;
-                        if (this.goodExamples) {
-                            this.goodExamples.forEach((example) => {
-                                example.valid_at = example.valid_at ? example.valid_at : today;
-                            });
-                        }
-                        this.badExamples = properties.examples.bad_examples;
-                        if (this.badExamples) {
-                            this.badExamples.forEach((example) => {
-                                example.invalid_at = example.invalid_at ? example.invalid_at : today;
-                            });
+                    let properties = sequence.properties;
+                    if (typeof properties === 'string') {
+                        try {
+                            properties = JSON.parse(properties || '{}');
+                        } catch (e) {
+                            properties = {};
                         }
                     }
+                    if (!properties || typeof properties !== 'object') {
+                        properties = {};
+                    }
+                    const today = new Date().toISOString();
+                    if (properties.examples) {
+                        this.goodExamples = properties.examples.good_examples || [];
+                        this.goodExamples.forEach((example) => {
+                            example.valid_at = example.valid_at ? example.valid_at : today;
+                        });
+                        this.badExamples = properties.examples.bad_examples || [];
+                        this.badExamples.forEach((example) => {
+                            example.invalid_at = example.invalid_at ? example.invalid_at : today;
+                        });
+                        return;
+                    }
                 }
-            } else {
-                this.goodExamples = [];
-                this.badExamples = [];
             }
+            this.goodExamples = [];
+            this.badExamples = [];
         },
         async generateExamples() {
             this.isGenerating = true;

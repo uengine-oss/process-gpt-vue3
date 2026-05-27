@@ -831,10 +831,10 @@ const MAIN_PROCESS_GPT_AGENT_META = {
         '프로세스 실행(폼 필드 조회 포함)',
         '프로세스/인스턴스/할 일/결과 조회',
         '조직도 조회',
-        'PDF → BPMN 변환 작업 감지/추적',
+        'BPMN 프로세스 생성 작업 감지/추적',
         '이미지 분석'
     ].join(', '),
-    tools: 'get_process_list, get_process_detail, get_form_fields, execute_process, get_instance_list, get_todolist, get_organization, generate_process, start_process_consulting, create_pdf2bpmn_workitem'
+    tools: 'get_process_list, get_process_detail, get_form_fields, execute_process, get_instance_list, get_todolist, get_organization, ask_user, create_consulting_process_workitem, create_pdf2bpmn_workitem'
 };
 
 export default {
@@ -3686,7 +3686,12 @@ export default {
                     userText = `다음 문서를 참고해서 작성해 주세요: ${selectedLabels.join(', ')}`;
                 }
             } else if (feedbackResult.type === 'suggestions') {
-                userText = feedbackResult.selected;
+                // 선택지 + "직접 입력"(allowOther) 자유 의견을 모두 반영해 에이전트로 전달.
+                // (컨설팅 패널: "이대로 생성" 선택 또는 자유 의견 입력이 모두 가능)
+                const sel = (feedbackResult.selected || '').toString().trim();
+                const custom = (feedbackResult.customText || '').toString().trim();
+                userText = [sel, custom].filter(Boolean).join('\n');
+                if (!userText) userText = '확인';
             } else {
                 userText = '확인';
             }
@@ -5829,8 +5834,8 @@ export default {
                 get_instance_list: '인스턴스 목록 조회',
                 get_todolist: '할일 목록 조회',
                 get_organization: '조직도 조회',
-                start_process_consulting: '프로세스 컨설팅 시작',
-                generate_process: '프로세스 생성',
+                ask_user: '사용자 확인 요청',
+                create_consulting_process_workitem: '컨설팅 기반 프로세스 생성',
                 create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청'
             };
             return toolNameMap[key] || key;
@@ -6121,17 +6126,11 @@ export default {
                             }
 
                             const roomId = this.currentChatRoom?.id || this.roomId || null;
-                            if (name.includes('generate_process')) {
+                            if (name.includes('create_consulting_process_workitem')) {
                                 this.updateProcessGenerationProgress(roomId, {
                                     isActive: true,
                                     status: 'generating',
-                                    message: '프로세스를 생성 중입니다...'
-                                });
-                            } else if (name.includes('start_process_consulting')) {
-                                this.updateProcessGenerationProgress(roomId, {
-                                    isActive: true,
-                                    status: 'consulting',
-                                    message: '프로세스 컨설팅을 진행 중입니다...'
+                                    message: '컨설팅 내용으로 프로세스를 생성 중입니다...'
                                 });
                             }
                             this.setAgentStatus(agentId, { state: 'streaming', message: '' });
@@ -6617,8 +6616,8 @@ export default {
         /**
          * 도구 호출 기반 후처리
          * - edit_hwpx_page_html: 기존과 동일하게 즉시 반영
-         * - start_process_consulting/generate_process: 레거시 프론트 LLM/라우팅 전환 로직은 비활성화
-         *   (DeepAgent 스킬 기반으로 채팅 내에서 직접 처리)
+         * - 프로세스 컨설팅/생성은 work-assistant-agent 강제 라우팅(컨설팅 흐름)이 직접 처리하므로
+         *   프론트 후처리(레거시 start_process_consulting/generate_process)는 제거되었다.
          */
         async handleAgentDirectiveToolCalls({ assistantUuid, userText, agentId }) {
             const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
@@ -6632,13 +6631,9 @@ export default {
                 .reverse()
                 .find((tc) => typeof tc?.name === 'string' && tc.name.includes('edit_hwpx_page_html'));
 
-            const startConsultingToolCall = [...toolCalls]
-                .reverse()
-                .find((tc) => typeof tc?.name === 'string' && tc.name.includes('start_process_consulting'));
-            const generateProcessToolCall = [...toolCalls]
-                .reverse()
-                .find((tc) => typeof tc?.name === 'string' && tc.name.includes('generate_process'));
-            if (!pageEditToolCall?.name && !startConsultingToolCall?.name && !generateProcessToolCall?.name) return;
+            // 프로세스 컨설팅/생성은 work-assistant-agent 강제 라우팅(컨설팅 흐름)이 직접 처리하므로
+            // 프론트의 레거시 start_process_consulting/generate_process 후처리는 제거되었다.
+            if (!pageEditToolCall?.name) return;
 
             if (pageEditToolCall?.name) {
                 try {
@@ -6666,69 +6661,6 @@ export default {
                     this.$refs.hwpxViewer?.showEditNotice?.('페이지 수정 중 오류가 발생했습니다.', 'error');
                 }
             }
-
-            
-            // 1) 프로세스 컨설팅 시작 → 컨설팅 다이얼로그 오픈 + 초기 메시지 전달
-            if (startConsultingToolCall?.name?.includes('start_process_consulting')) {
-                // 메인 에이전트(work-assistant / process-gpt-agent)에서만 컨설팅 트리거 허용 (오동작 방지)
-                if (agentId && agentId !== PROCESS_GPT_AGENT_ID) return;
-
-                let imageAnalysis = null;
-                let parsedDirective = null;
-                try {
-                    const parsed = this.parseToolOutput(startConsultingToolCall.output);
-                    parsedDirective = parsed && typeof parsed === 'object' ? parsed : null;
-                    if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
-                        imageAnalysis = parsed.image_analysis_result;
-                    }
-                } catch (e) {
-                    // ignore
-                }
-
-                const shouldShowConsultingNotice = parsedDirective?.user_request_type === 'start_process_consulting';
-                if (shouldShowConsultingNotice) {
-                    const consultingStartMessage = '프로세스 컨설팅을 시작합니다. 말씀하신 내용의 프로세스 초안을 생성하겠습니다.';
-                    if (this.messages[idx]) {
-                        this.messages[idx].content = consultingStartMessage;
-                        this.messages[idx].contentType = 'text';
-                        this.messages[idx].isLoading = false;
-                    }
-
-                    if (this.currentChatRoom) {
-                        this.currentChatRoom.message = {
-                            msg: consultingStartMessage.substring(0, 50),
-                            type: 'text',
-                            createdAt: new Date().toISOString()
-                        };
-                        await this.putChatRoomMerged(this.currentChatRoom);
-                    }
-                }
-
-                const originalMessage = imageAnalysis
-                    ? `${(userText || '').toString()}\n\n[이미지 분석 결과]\n${imageAnalysis}`
-                    : `${(userText || '').toString()}\n\n[전체 요청 및 첨부 이미지 분석 내용]: ${JSON.stringify(
-                          startConsultingToolCall.output ?? null
-                      )}`;
-
-                // WorkAssistantChatPanel 방식: 컨설팅은 다이얼로그가 아니라 ConsultingGenerator 1회 실행으로 처리
-                await this.switchToConsultingMode(originalMessage, { keepLastAssistantMessage: shouldShowConsultingNotice });
-                return;
-            }
-
-            // 2) 생성 확정 → definitions 생성 화면으로 전환
-            if (generateProcessToolCall?.name?.includes('generate_process')) {
-                if (agentId && agentId !== PROCESS_GPT_AGENT_ID) return;
-                const messagesForDefinition = this.buildMessagesForDefinitionGeneration();
-                this.$store.dispatch('updateMessages', messagesForDefinition);
-                this.$router.push('/definitions/chat');
-            }
-            
-            // if (startConsultingToolCall?.name?.includes('start_process_consulting')) {
-            //     console.info('[ChatRoomPage] 레거시 start_process_consulting 후처리는 비활성화되었습니다.');
-            // }
-            // if (generateProcessToolCall?.name?.includes('generate_process')) {
-            //     console.info('[ChatRoomPage] 레거시 generate_process 화면 전환은 비활성화되었습니다.');
-            // }
         },
 
         // ===== ConsultingGenerator (WorkAssistantChatPanel 방식) =====
@@ -7118,7 +7050,12 @@ export default {
                 const toolCalls = Array.isArray(msg?.toolCalls) ? msg.toolCalls : [];
                 if (toolCalls.length === 0) continue;
 
-                const pdf2bpmnTool = toolCalls.find((t) => t?.name && t.name.includes('create_pdf2bpmn_workitem'));
+                const pdf2bpmnTool = toolCalls.find(
+                    (t) =>
+                        t?.name &&
+                        (t.name.includes('create_pdf2bpmn_workitem') ||
+                            t.name.includes('create_consulting_process_workitem'))
+                );
                 const outputStr = pdf2bpmnTool?.output;
                 if (!outputStr) continue;
 
@@ -7215,7 +7152,7 @@ export default {
                     if (!hasResult && generatedBpmns.length > 0) {
                         const processCount = resultData.process_count || generatedBpmns.length;
                         const taskId = String(explicitTaskId || me._resolvePdf2bpmnTaskId(resultData, targetRoomId) || '').trim();
-                        let content = `✅ **PDF2BPMN 변환 완료**\n\n`;
+                        let content = `✅ **BPMN 프로세스 생성 완료**\n\n`;
                         content += `${processCount}개의 프로세스가 생성되었습니다.`;
 
                         const integratedGraph =
@@ -7306,7 +7243,7 @@ export default {
                 progress.taskId = taskId;
                 progress.status = 'started';
                 progress.progress = Math.max(progress.progress || 0, 0);
-                progress.message = progress.message || 'PDF2BPMN 작업 시작 대기 중...';
+                progress.message = progress.message || 'BPMN 프로세스 생성 작업 시작 대기 중...';
                 progress.generatedBpmns = progress.generatedBpmns || [];
             }
 
@@ -7389,7 +7326,7 @@ export default {
                         progressState.isActive = true;
                         progressState.status = 'started';
                         progressState.progress = progress || 5;
-                        progressState.message = message || 'PDF2BPMN 작업 시작됨';
+                        progressState.message = message || 'BPMN 프로세스 생성 작업 시작됨';
                         break;
                     case 'waiting_for_user': {
                         progressState.isActive = true;
@@ -7448,7 +7385,7 @@ export default {
                         progressState.isActive = true;
                         progressState.status = 'failed';
                         progressState.message = messageData.error || message || '작업 실패';
-                        const errorMsg = me.createMessageObj(`PDF2BPMN 변환 실패: ${messageData.error || '알 수 없는 오류'}`, 'assistant');
+                        const errorMsg = me.createMessageObj(`BPMN 프로세스 생성 실패: ${messageData.error || '알 수 없는 오류'}`, 'assistant');
                         if (me.currentChatRoom?.id === targetRoomId) {
                             me.messages.push(errorMsg);
                         }
@@ -7500,11 +7437,15 @@ export default {
             const batchKey = questionIds.length
                 ? `${taskId}::${questionIds.sort().join('|')}`
                 : `${taskId}::single`;
+            // 같은 질문(batchKey 또는 question_id)이 이미 있으면 추가하지 않는다.
+            // __submitted(답변 완료) 여부와 무관하게 검사해야 한다 — 새로고침 시
+            // waiting_for_user 이벤트가 재처리되어도, 이미 답변한 질문이 빈 UI 로
+            // 중복 생성되지 않도록 한다.
             const hasSame = me.messages.some((m) => {
                 const fb = m?.__humanFeedback;
-                if (!fb || fb.__submitted) return false;
-                if (fb.__hitlBatchKey === batchKey) return true;
-                if (!isMulti && fb.question_id === questionIds[0]) return true;
+                if (!fb) return false;
+                if (batchKey && fb.__hitlBatchKey === batchKey) return true;
+                if (!isMulti && questionIds[0] && fb.question_id === questionIds[0]) return true;
                 return false;
             });
             if (hasSame) return;
@@ -7572,7 +7513,7 @@ export default {
             const savedProcesses = resultData.saved_processes || [];
             const taskId = String(explicitTaskId || me._resolvePdf2bpmnTaskId(resultData, targetRoomId) || '').trim();
 
-            let content = `✅ **PDF2BPMN 변환 완료**\n\n`;
+            let content = `✅ **BPMN 프로세스 생성 완료**\n\n`;
             content += `${processCount}개의 프로세스가 생성되었습니다.\n\n`;
             content += `\n프로세스 정의가 저장되었습니다. 왼쪽 메뉴에서 확인할 수 있습니다.`;
 
@@ -7623,7 +7564,11 @@ export default {
             // 1) toolCalls에서 create_pdf2bpmn_workitem 찾기
             if (toolCalls && toolCalls.length > 0) {
                 const pdf2bpmnTool = toolCalls.find(
-                    (t) => t?.name && (t.name.includes('create_pdf2bpmn_workitem') || t.name.includes('pdf2bpmn'))
+                    (t) =>
+                        t?.name &&
+                        (t.name.includes('create_pdf2bpmn_workitem') ||
+                            t.name.includes('create_consulting_process_workitem') ||
+                            t.name.includes('pdf2bpmn'))
                 );
                 if (pdf2bpmnTool) {
                     const outputStr = pdf2bpmnTool.output || pdf2bpmnTool.result || pdf2bpmnTool.content;
@@ -7827,7 +7772,7 @@ export default {
             const tenantId = me._getCurrentTenantId();
 
             me.selectedBpmn = {
-                process_name: 'PDF2BPMN 통합 그래프',
+                process_name: 'BPMN 통합 그래프',
                 isIntegratedGraph: true,
                 task_id: resolvedTaskId,
                 tenant_id: tenantId
@@ -8512,13 +8457,6 @@ export default {
 
             const parsed = tryParseFromText(outputStr);
             if (parsed) return parsed;
-
-            if (outputStr.includes('"user_request_type": "start_process_consulting"')) {
-                return { user_request_type: 'start_process_consulting' };
-            }
-            if (outputStr.includes('"user_request_type": "generate_process"')) {
-                return { user_request_type: 'generate_process' };
-            }
 
             console.warn('[ChatRoomPage.parseToolOutput] JSON 파싱 실패');
             return null;
