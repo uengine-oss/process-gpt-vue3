@@ -4110,12 +4110,26 @@ export default {
             if (!Array.isArray(hitl.__responses)) {
                 hitl.__responses = questions.map(() => null);
             }
+            // 미응답(=한 번도 방문하지 않았거나 선택 없이 넘어간) 스텝은 "생성하지 않음" 의사로 간주.
+            // - 방문 자체를 안 한 경우 prior 가 null → 빈 select_items 응답으로 채운다.
+            // - 방문은 했으나 아무것도 선택/입력하지 않은 경우 customText='skipped' 마커를 박아 백엔드/로그에서 식별 가능하게 한다.
             const responses = [];
             for (let i = 0; i < questions.length; i++) {
-                const prior = hitl.__responses[i];
+                let prior = hitl.__responses[i];
                 if (!prior) {
-                    this.setMultiCurrentStep(message, i);
-                    return;
+                    prior = {
+                        type: 'select_items',
+                        selectedIds: [],
+                        selectedItems: [],
+                        customText: ''
+                    };
+                }
+                if (
+                    Array.isArray(prior.selectedItems) &&
+                    prior.selectedItems.length === 0 &&
+                    (prior.customText || '') === ''
+                ) {
+                    prior.customText = 'skipped';
                 }
                 responses.push({
                     ...prior,
