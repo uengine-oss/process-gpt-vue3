@@ -379,7 +379,7 @@
                                         <!-- 라우팅(에이전트 선정) 로딩: 아바타/헤더 없이 '...' 버블만 표시(상대방 버블 색상과 동일) -->
                                         <div v-if="message && message.__routingLoading">
                                             <div class="message-bubble-wrap message-bubble-wrap--other">
-                                                <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
+                                                <v-sheet class="other-message rounded-md pa-0 chat-message-bubble ai-message-bubble">
                                                     <div class="pa-2">
                                                         <pre class="text-body-1 routing-loading-text">{{ message.content || '...' }}</pre>
                                                     </div>
@@ -391,7 +391,7 @@
                                             <!-- 라우팅(에이전트 선정) 로딩: 아바타/헤더 없이 '...' 버블만 표시(상대방 버블 색상과 동일) -->
                                             <div v-if="message && message.__routingLoading">
                                                 <div class="message-bubble-wrap message-bubble-wrap--other">
-                                                    <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
+                                                    <v-sheet class="other-message rounded-md pa-0 chat-message-bubble ai-message-bubble">
                                                         <div class="pa-2">
                                                             <pre class="text-body-1 routing-loading-text">{{
                                                                 message.content || '...'
@@ -1238,6 +1238,12 @@
                                                                               message.email
                                                                     }}
                                                                 </div>
+                                                                <span
+                                                                    v-if="(message.role === 'assistant' || message.role === 'agent') && message.timeStamp"
+                                                                    class="chat-room-timestamp-text ml-2"
+                                                                >
+                                                                    {{ formatTime(message.timeStamp) }}
+                                                                </span>
                                                             </v-row>
                                                         </v-row>
 
@@ -1423,11 +1429,12 @@
                                                                     <v-sheet
                                                                         v-else
                                                                         class="other-message rounded-md pa-0"
-                                                                        :class="
+                                                                        :class="[
                                                                             showTeamMemberSelector === index
                                                                                 ? 'chat-message-bubble-select-team-member'
-                                                                                : 'chat-message-bubble'
-                                                                        "
+                                                                                : 'chat-message-bubble',
+                                                                            (message.role === 'assistant' || message.role === 'agent') ? 'ai-message-bubble' : ''
+                                                                        ]"
                                                                     >
                                                                         <div class="pa-2">
                                                                             <!-- <div v-if="chatRoomMode && hasAgentLogs(message)" class="mb-2">
@@ -2281,6 +2288,7 @@
                                                                         :class="{ 'is-hover': replyIndex === index, 'is-mobile': isMobile }"
                                                                     >
                                                                         <span
+                                                                            v-if="!(message.role === 'assistant' || message.role === 'agent')"
                                                                             class="chat-room-timestamp-text"
                                                                             :style="
                                                                                 shouldDisplayMessageTimestamp(message, index)
@@ -6488,6 +6496,10 @@ pre {
     border-radius: 8px !important;
     background-color: #f5f5f5 !important;
     max-width: min(720px, 80vw);
+}
+
+.ai-message-bubble {
+    background-color: transparent !important;
 }
 
 .agent-message {

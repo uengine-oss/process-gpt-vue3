@@ -233,7 +233,27 @@
                             <div v-if="index === 0" style="font-size: 14px" class="text-medium-emphasis cp-menu flex-shrink-0 mr-1">
                                 {{ $t(item.header) }}
                             </div>
-                            <v-row class="pa-0 ma-0 flex-nowrap">
+                            <v-row class="pa-0 ma-0 pt-1 flex-nowrap">
+                                <!-- 프로세스 정의 버튼 -->
+                                <v-tooltip
+                                    v-for="procItem in processSectionListItems"
+                                    :key="procItem.title"
+                                    location="bottom"
+                                    :text="$t(procItem.title)"
+                                >
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            @click="navigateTo(procItem.to)"
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
+                                            class="text-medium-emphasis cp-menu"
+                                            density="comfortable"
+                                        >
+                                            <Icons :icon="procItem.icon" :size="20" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
                                 <template v-for="subItem in definitionItem" :key="subItem.title">
                                     <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
                                         <template v-slot:activator="{ props }">
@@ -257,56 +277,39 @@
                                         </template>
                                     </v-tooltip>
                                 </template>
+                                <!-- 업로드/릴리즈 드롭다운 -->
+                                <div v-if="processSectionDropdownItems.length > 0" @click.stop.prevent>
+                                    <v-menu location="end" :close-on-content-click="true">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                class="text-medium-emphasis cp-menu"
+                                                density="comfortable"
+                                                @click.stop.prevent
+                                            >
+                                                <v-icon icon="mdi-dots-vertical" size="20" />
+                                            </v-btn>
+                                        </template>
+                                        <v-list density="compact" min-width="160">
+                                            <v-list-item
+                                                v-for="dropItem in processSectionDropdownItems"
+                                                :key="dropItem.title"
+                                                @click="handleProcessSectionClick(dropItem)"
+                                            >
+                                                <template v-slot:prepend>
+                                                    <Icons :icon="dropItem.icon" :size="18" class="mr-2" />
+                                                </template>
+                                                <v-list-item-title>{{ $t(dropItem.title) }}</v-list-item-title>
+                                            </v-list-item>
+                                        </v-list>
+                                    </v-menu>
+                                </div>
                             </v-row>
                         </div>
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
-                </v-col>
-                <!-- 프로세스 섹션: 프로세스 정의 + 옆 작은 버튼 클릭 시 업로드/내보내기 드롭다운 -->
-                <v-col v-if="isAdmin && processSectionListItems.length > 0" class="pa-0">
-                    <v-list-item
-                        v-for="item in processSectionListItems"
-                        :key="item.title"
-                        :to="item.to"
-                        density="compact"
-                        class="leftPadding"
-                    >
-                        <template v-slot:prepend>
-                            <Icons v-if="item.icon" :icon="item.icon" :size="20" class="mr-2" />
-                        </template>
-                        <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
-                        <template v-slot:append v-if="processSectionDropdownItems.length > 0">
-                            <div @click.stop.prevent>
-                                <v-menu location="end" :close-on-content-click="true">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-bind="props"
-                                            icon
-                                            variant="text"
-                                            size="small"
-                                            density="comfortable"
-                                            class="mr-1 process-section-dropdown-btn"
-                                            @click.stop.prevent
-                                        >
-                                            <v-icon icon="mdi-dots-vertical" size="20" />
-                                        </v-btn>
-                                    </template>
-                                    <v-list density="compact" min-width="160">
-                                        <v-list-item
-                                            v-for="dropItem in processSectionDropdownItems"
-                                            :key="dropItem.title"
-                                            @click="handleProcessSectionClick(dropItem)"
-                                        >
-                                            <template v-slot:prepend>
-                                                <Icons :icon="dropItem.icon" :size="18" class="mr-2" />
-                                            </template>
-                                            <v-list-item-title>{{ $t(dropItem.title) }}</v-list-item-title>
-                                        </v-list-item>
-                                    </v-list>
-                                </v-menu>
-                            </div>
-                        </template>
-                    </v-list-item>
                 </v-col>
                 <!-- 정의 목록 -->
                 <v-col v-if="isAdmin" class="pa-0">
@@ -601,15 +604,15 @@ export default {
                         BgColor: 'primary',
                         to: '/system',
                         disable: true
-                    },
-                    {
-                        title: 'definitionManagement.defaultForm',
-                        icon: 'formList',
-                        BgColor: 'primary',
-                        disable: true,
-                        to: '/ui-definitions/defaultform',
-                        size: 24
                     }
+                    // {
+                    //     title: 'definitionManagement.defaultForm',
+                    //     icon: 'formList',
+                    //     BgColor: 'primary',
+                    //     disable: true,
+                    //     to: '/ui-definitions/defaultform',
+                    //     size: 24
+                    // }
                 ];
 
                 if (this.mode === 'ProcessGPT') {
@@ -1112,11 +1115,5 @@ export default {
     right: 16px;
     bottom: 58px;
     z-index: 999;
-}
-
-/* 프로세스 정의 옆 점 세 개 버튼 클릭 영역 확대 */
-.process-section-dropdown-btn {
-    min-width: 36px !important;
-    min-height: 36px !important;
 }
 </style>
