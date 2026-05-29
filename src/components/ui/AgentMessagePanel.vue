@@ -164,7 +164,7 @@
                                         <div v-if="hasPdf2bpmnResultSections(message)" class="pdf2bpmn-result-container mt-3">
                                             <div class="d-flex align-center mb-2">
                                                 <v-icon size="16" color="success" class="mr-1">mdi-check-circle</v-icon>
-                                                <span class="text-caption font-weight-bold">PDF2BPMN 생성 결과</span>
+                                                <span class="text-caption font-weight-bold">BPMN 프로세스 생성 결과</span>
                                             </div>
                                             <div
                                                 v-if="

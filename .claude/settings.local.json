@@ -6,7 +6,12 @@
       "Bash(pip show:*)",
       "Bash(python -c \"import fastmcp; print\\(fastmcp.__file__\\)\")",
       "Bash(find C:/Users/sh/Desktop/uengine_source/process-gpt/process-gpt-completion/.venv/Lib/site-packages/fastmcp -name client* -type f)",
-      "Bash(grep -r \"save-to-drive\\\\|process/drive\\\\|auth/google\" c:/Users/sh/Desktop/uengine_source/process-gpt/process-gpt-vue3/src --include=*.ts --include=*.vue --include=*.js)"
+      "Bash(grep -r \"save-to-drive\\\\|process/drive\\\\|auth/google\" c:/Users/sh/Desktop/uengine_source/process-gpt/process-gpt-vue3/src --include=*.ts --include=*.vue --include=*.js)",
+      "Bash(cd /c/Users/user/Desktop/work-assistant-agent && find . -type f -name \"*.py\" | head -20)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\user\\\\Desktop\\\\pdf2bpmn\" -Recurse -File | Where-Object {$_.Extension -match '\\\\.\\(ts|js|json|md|yml|yaml\\)$'} | Select-Object FullName | Sort-Object FullName)",
+      "Bash(grep -E \"\\\\.\\(ts|js|json\\)$\")",
+      "Bash(xargs grep -l \"pdf2bpmnResult\\\\|integratedGraph\")",
+      "Bash(dir \"C:\\\\Users\\\\user\\\\Desktop\\\\ProcessGPT\\\\process-gpt-vue3\\\\src\\\\components\\\\agent-pods\")"
     ]
   }
 }

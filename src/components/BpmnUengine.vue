@@ -95,7 +95,7 @@ import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRul
 import '@/components/autoLayout/bpmn-auto-layout.js';
 import { markRaw } from 'vue';
 import minimapModule from 'diagram-js-minimap';
-import { uengineJsonElementToAttr, uengineJsonAttrToElement, isUengineMode } from '@/utils/uengineXmlTransform';
+import { uengineJsonElementToAttr, uengineJsonAttrToElement, normalizeUengineBpmnXmlForBackend, isUengineMode } from '@/utils/uengineXmlTransform';
 import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 
@@ -218,7 +218,10 @@ export default {
         async getXML() {
             let xmlObj = await this.bpmnViewer.saveXML({ format: true, preamble: true });
             let xml = xmlObj.xml;
-            if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
+            if (isUengineMode()) {
+                xml = uengineJsonAttrToElement(xml);
+                xml = normalizeUengineBpmnXmlForBackend(xml, null);
+            }
             return xml;
         },
         mode() {
@@ -1142,7 +1145,10 @@ export default {
                 if (self.bpmn) {
                     self.$nextTick(async () => {
                         let { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                        if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
+                        if (isUengineMode()) {
+                            xml = uengineJsonAttrToElement(xml);
+                            xml = normalizeUengineBpmnXmlForBackend(xml, null);
+                        }
                         self.bpmnXML = xml;
                         self.validate();
                     });
@@ -1396,7 +1402,10 @@ export default {
                     console.log('commandStack.changed');
                     if (self.bpmn) {
                         let { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                        if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
+                        if (isUengineMode()) {
+                            xml = uengineJsonAttrToElement(xml);
+                            xml = normalizeUengineBpmnXmlForBackend(xml, null);
+                        }
                         self.bpmnXML = xml;
                         self.validate();
                     }

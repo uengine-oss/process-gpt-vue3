@@ -107,7 +107,7 @@
                     <div v-if="hasPdf2bpmnResultSections(msg)" class="pdf2bpmn-result-container mt-3">
                         <div class="result-header">
                             <v-icon size="18" color="success" class="mr-2">mdi-check-circle</v-icon>
-                            <span class="result-title">PDF2BPMN 생성 결과</span>
+                            <span class="result-title">BPMN 프로세스 생성 결과</span>
                         </div>
                         <div
                             v-if="msg.pdf2bpmnResult.generatedBpmns && msg.pdf2bpmnResult.generatedBpmns.length > 0"
@@ -189,7 +189,7 @@
                 </div>
                 <div class="message-content">
                     <div class="message-header">
-                        <span class="message-sender">PDF → BPMN 변환</span>
+                        <span class="message-sender">BPMN 프로세스 생성</span>
                         <v-chip size="x-small" :color="getProgressChipColor(pdf2bpmnProgress.status)" class="ml-2">
                             {{ pdf2bpmnProgress.status }}
                         </v-chip>

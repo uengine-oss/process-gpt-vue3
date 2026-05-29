@@ -1,0 +1,71 @@
+name: Publish uEngine Docker image
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  publish-uengine-image:
+    name: Build and push uEngine image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build and push Docker Hub image
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          IMAGE_NAME: uengine/process-gpt-vue3
+        run: |
+          set +e
+
+          if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "::warning title=Docker image publish skipped::DOCKERHUB_USERNAME or DOCKERHUB_TOKEN is not configured."
+            echo "Docker image publish skipped because Docker Hub credentials are missing." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          SHORT_SHA="$(echo "$GITHUB_SHA" | cut -c1-7)"
+          TAG_SHA="${IMAGE_NAME}:uengine-${SHORT_SHA}"
+          TAG_LATEST="${IMAGE_NAME}:uengine-latest"
+
+          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          LOGIN_STATUS=$?
+          if [ $LOGIN_STATUS -ne 0 ]; then
+            echo "::warning title=Docker image publish failed::Docker Hub login failed with exit code $LOGIN_STATUS."
+            echo "Docker Hub login failed with exit code $LOGIN_STATUS." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          docker build \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.title=process-gpt-vue3-uengine" \
+            -t "$TAG_SHA" \
+            -t "$TAG_LATEST" \
+            .
+          BUILD_STATUS=$?
+          if [ $BUILD_STATUS -ne 0 ]; then
+            echo "::warning title=Docker image publish failed::Docker build failed with exit code $BUILD_STATUS."
+            echo "Docker build failed with exit code $BUILD_STATUS." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          docker push "$TAG_SHA"
+          PUSH_SHA_STATUS=$?
+          docker push "$TAG_LATEST"
+          PUSH_LATEST_STATUS=$?
+
+          if [ $PUSH_SHA_STATUS -ne 0 ] || [ $PUSH_LATEST_STATUS -ne 0 ]; then
+            echo "::warning title=Docker image publish failed::Docker push failed. sha=$PUSH_SHA_STATUS latest=$PUSH_LATEST_STATUS."
+            echo "Docker push failed. sha=$PUSH_SHA_STATUS latest=$PUSH_LATEST_STATUS." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "Published $TAG_SHA and $TAG_LATEST." >> "$GITHUB_STEP_SUMMARY"

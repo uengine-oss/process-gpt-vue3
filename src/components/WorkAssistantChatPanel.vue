@@ -1717,7 +1717,7 @@ export default {
                     if (!hasResult && generatedBpmns.length > 0) {
                         // 결과 메시지 추가
                         const processCount = resultData.process_count || generatedBpmns.length;
-                        let content = `✅ **PDF2BPMN 변환 완료**\n\n`;
+                        let content = `✅ **BPMN 프로세스 생성 완료**\n\n`;
                         content += `${processCount}개의 프로세스가 생성되었습니다.`;
 
                         const integratedGraph = resultData?.integrated_graph || resultData?.integratedGraph || null;
@@ -1829,7 +1829,7 @@ export default {
                 progress.taskId = taskId;
                 progress.status = 'started';
                 progress.progress = Math.max(progress.progress || 0, 0);
-                progress.message = progress.message || 'PDF2BPMN 작업 시작 대기 중...';
+                progress.message = progress.message || 'BPMN 프로세스 생성 작업 시작 대기 중...';
                 progress.generatedBpmns = progress.generatedBpmns || [];
             }
 
@@ -1937,7 +1937,7 @@ export default {
                         progressState.isActive = true;
                         progressState.status = 'started';
                         progressState.progress = progress || 5;
-                        progressState.message = message || 'PDF2BPMN 작업 시작됨';
+                        progressState.message = message || 'BPMN 프로세스 생성 작업 시작됨';
                         break;
 
                     case 'tool_usage_started':
@@ -1989,7 +1989,7 @@ export default {
                         progressState.message = messageData.error || message || '작업 실패';
 
                         // 에러 메시지를 채팅에 추가
-                        const errorMsg = me.createMessageObj(`PDF2BPMN 변환 실패: ${messageData.error || '알 수 없는 오류'}`, 'assistant');
+                        const errorMsg = me.createMessageObj(`BPMN 프로세스 생성 실패: ${messageData.error || '알 수 없는 오류'}`, 'assistant');
                         if (me.currentRoomId === targetRoomId) {
                             me.messages.push(errorMsg);
                         }
@@ -2139,7 +2139,7 @@ export default {
             const processCount = resultData.process_count || progressState.generatedBpmns.length;
             const savedProcesses = resultData.saved_processes || [];
 
-            let content = `✅ **PDF2BPMN 변환 완료**\n\n`;
+            let content = `✅ **BPMN 프로세스 생성 완료**\n\n`;
             content += `${processCount}개의 프로세스가 생성되었습니다.\n\n`;
 
             if (savedProcesses.length > 0) {
