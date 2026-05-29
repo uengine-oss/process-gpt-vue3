@@ -196,7 +196,7 @@
         "@vitejs/plugin-vue": "4.0.0",
         "@vitejs/plugin-vue-jsx": "^2.0.1",
         "@vue-js-cron/core": "^5.3.1",
-        "@vue/eslint-config-prettier": "^7.0.0",
+        "@vue/eslint-config-prettier": "^10.2.0",
         "@vue/eslint-config-typescript": "^10.0.0",
         "@vue/tsconfig": "^0.7.0",
         "@vueup/vue-quill": "^1.2.0",
