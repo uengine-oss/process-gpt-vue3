@@ -3631,6 +3631,17 @@ export default {
             if (newVal) {
                 this.previewMessage = null;
             }
+        },
+        // 내가 보낸 메시지가 마지막이면 생성된 작업목록 표시를 잠깐(3s) 숨겼다 보여주는 UI 게이팅.
+        // 과거에는 filteredMessages computed getter 안에서 setRenderTime() 을 직접 호출했으나,
+        // computed 안의 reactive write 는 anti-pattern 이라 부작용을 이 watcher 로 분리했다.
+        filteredMessages(list) {
+            if (Array.isArray(list) && list.length > 0) {
+                const last = list[list.length - 1];
+                if (last && last.email == localStorage.getItem('email')) {
+                    this.setRenderTime();
+                }
+            }
         }
     },
     computed: {
@@ -3741,9 +3752,8 @@ export default {
                     }
                 });
             }
-            if (list.length > 0 && list[list.length - 1].email == myEmail) {
-                this.setRenderTime();
-            }
+            // NOTE: setRenderTime() 같은 reactive write 는 computed getter 안에서 호출하면 안 된다.
+            // (computed 는 순수해야 하며, 부작용은 watch 'filteredMessages' 로 분리했다.)
             const seenRecommendationKeys = new Set();
             list = list.filter((m) => {
                 if (!m || !m.__agentInviteRecommendation) return true;
@@ -3936,6 +3946,8 @@ export default {
         // ===================================================================
         registerMultiPanelRef(messageUuid, qIdx, el) {
             // Vue 3 ref callback. el 이 null 이면 unmount 시 정리.
+            // _multiPanelRefs 는 data() 에 선언하지 않은 비반응형(non-reactive) 인스턴스 필드이므로,
+            // 여기에 write 해도 render-effect 를 무효화하지 않는다(루프 안전).
             if (!this._multiPanelRefs) this._multiPanelRefs = {};
             if (!this._multiPanelRefs[messageUuid]) this._multiPanelRefs[messageUuid] = {};
             if (el == null) {
@@ -4057,6 +4069,13 @@ export default {
             return len === 0 || this.getMultiCurrentStep(message) >= len - 1;
         },
         hasMultiAnswerForStep(message, qIdx) {
+            // 렌더 단계에서 호출되는 순수 getter 여야 한다.
+            // 과거에는 현재 스텝에 대해 buildMultiStepResponse() 로 살아있는 자식 HumanFeedbackPanel
+            // 인스턴스의 reactive 상태(items/selectedIds 등)를 읽었는데, 부모가 매 렌더마다 새 배열을
+            // 자식 prop 으로 써넣기 때문에 "render 중 read + patch 중 write" 가 맞물려 무한 재렌더
+            // (운영 빌드에서 브라우저 멈춤)를 유발했다.
+            // 현재 스텝 선택값은 @selection-change → syncMultiStepSelection 으로 __responses 에 저장되므로,
+            // 저장된 데이터만 보고 판단하면 동일한 UX 를 유지하면서 루프를 제거할 수 있다.
             const responses = message?.__humanFeedback?.__responses;
             if (Array.isArray(responses) && responses[qIdx]) {
                 const r = responses[qIdx];
@@ -4065,11 +4084,6 @@ export default {
                 if (typeof r.customText === 'string' && r.customText.trim().length > 0) return true;
                 if (r.selected) return true;
                 if (r.decision) return true;
-            }
-            const cur = this.getMultiCurrentStep(message);
-            if (cur === qIdx) {
-                const resp = this.buildMultiStepResponse(message, qIdx);
-                if (resp && this.hasMultiStepUserSelection(resp)) return true;
             }
             return false;
         },

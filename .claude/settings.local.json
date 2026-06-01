@@ -10,7 +10,8 @@
       "Bash(cd /c/Users/user/Desktop/work-assistant-agent && find . -type f -name \"*.py\" | head -20)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\user\\\\Desktop\\\\pdf2bpmn\" -Recurse -File | Where-Object {$_.Extension -match '\\\\.\\(ts|js|json|md|yml|yaml\\)$'} | Select-Object FullName | Sort-Object FullName)",
       "Bash(grep -E \"\\\\.\\(ts|js|json\\)$\")",
-      "Bash(xargs grep -l \"pdf2bpmnResult\\\\|integratedGraph\")"
+      "Bash(xargs grep -l \"pdf2bpmnResult\\\\|integratedGraph\")",
+      "Bash(dir \"C:\\\\Users\\\\user\\\\Desktop\\\\ProcessGPT\\\\process-gpt-vue3\\\\src\\\\components\\\\agent-pods\")"
     ]
   }
 }

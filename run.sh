@@ -26,7 +26,9 @@ if [ -f /opt/www/index.html ]; then
     VITE_KEYCLOAK_CLIENT_ID: "'$VITE_KEYCLOAK_CLIENT_ID'",\
     VITE_UPSTAGE_API_KEY: "'$VITE_UPSTAGE_API_KEY'",\
     VITE_GS_MODE: "'$VITE_GS_MODE'",\
+    VITE_MODE: "'$VITE_MODE'",\
   };\
+  window.$mode = window._env_.VITE_MODE || window.$mode;\
   </script>' /opt/www/index.html
 else
   echo "Warning: index.html file not found at /opt/www/index.html"

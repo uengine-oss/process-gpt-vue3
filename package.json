@@ -4,7 +4,7 @@
     "version": "1.4.0",
     "scripts": {
         "dev": "vite --host",
-        "build": "NODE_OPTIONS=\"--max-old-space-size=4096\" vue-tsc --noEmit && vite build",
+        "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vue-tsc --noEmit && vite build",
         "preview": "vite preview --port 5050",
         "typecheck": "vue-tsc --noEmit",
         "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
@@ -200,6 +200,7 @@
         "@vue/eslint-config-typescript": "^10.0.0",
         "@vue/tsconfig": "^0.7.0",
         "@vueup/vue-quill": "^1.2.0",
+        "cross-env": "^10.1.0",
         "cypress": "^13.7.0",
         "cypress-drag-drop": "^1.1.1",
         "docx": "^8.0.0",
