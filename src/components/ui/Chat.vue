@@ -6656,7 +6656,7 @@ pre {
     gap: 8px;
     padding: 10px 12px;
     border-radius: 12px;
-    background: #f5f5f5;
+    background: transparent;
     max-width: min(720px, 80vw);
     color: rgba(0, 0, 0, 0.87);
     font-size: 13px;
