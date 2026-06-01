@@ -202,6 +202,8 @@ export default {
             loading: false,
             // { activityId: [cases...] } — UserTaskUnitTest.vue 와 동일한 저장 포맷.
             allCases: {},
+            // 폼 필드 메타맵: fieldKey → { label, valueLabels }. 화면 표시(키→이름)에만 쓴다.
+            fieldMeta: {},
             runningCaseIds: new Set(),
             runAllProgress: { running: false, total: 0, current: 0, abort: false },
             // best-effort cleanup 을 위한 인플라이트 인스턴스 id 추적.
@@ -303,11 +305,19 @@ export default {
             handler() {
                 this.loadCases();
             }
+        },
+        // bpmn 이 created 이후 늦게 도착하면 fieldMeta 가 비어 키로만 표시되므로 재적재.
+        bpmn: {
+            immediate: false,
+            handler() {
+                this.loadFieldMeta();
+            }
         }
     },
     created() {
         this.backend = BackendFactory.createBackend();
         this.loadCases();
+        this.loadFieldMeta();
     },
     beforeUnmount() {
         try {
@@ -373,10 +383,47 @@ export default {
         formatObject(value) {
             try {
                 if (!value || typeof value !== 'object' || Object.keys(value).length === 0) return '-';
-                return JSON.stringify(value);
+                return Object.entries(value)
+                    .map(([k, v]) => `${this.fieldLabel(k)}: ${this.formatValue(v, k)}`)
+                    .join(' · ');
             } catch (e) {
                 return this.$t('ProcessUnitTest.serializeFailed');
             }
+        },
+        // 표시용 필드 라벨. 폼 정의에 있으면 사람이 보는 이름, 없으면 키 그대로.
+        // 성공/실패 판정은 키로 하므로 이 매핑은 화면 표시에만 영향을 준다.
+        fieldLabel(key) {
+            const meta = this.fieldMeta && this.fieldMeta[key];
+            return (meta && meta.label) || key;
+        },
+        // 선택형 필드의 옵션 값(예: "approved")을 사람이 보는 라벨(예: "결재 완료")로. 없으면 null.
+        valueLabel(key, raw) {
+            const meta = this.fieldMeta && this.fieldMeta[key];
+            if (meta && meta.valueLabels && Object.prototype.hasOwnProperty.call(meta.valueLabels, raw)) {
+                return meta.valueLabels[raw];
+            }
+            return null;
+        },
+        // 값 하나를 사람이 읽기 좋은 짧은 문자열로. 중첩 객체/배열은 개수로 요약한다.
+        formatValue(v, key) {
+            if (v === null || v === undefined || v === '') return this.$t('ProcessUnitTest.noneLabel');
+            if (typeof v === 'boolean') return this.$t(v ? 'ProcessUnitTest.boolTrue' : 'ProcessUnitTest.boolFalse');
+            if (Array.isArray(v)) {
+                if (v.length === 0) return this.$t('ProcessUnitTest.noneLabel');
+                if (v.every((item) => item == null || typeof item !== 'object')) {
+                    return v.map((item) => {
+                        if (item == null || item === '') return this.$t('ProcessUnitTest.noneLabel');
+                        return this.valueLabel(key, item) || String(item);
+                    }).join(', ');
+                }
+                return this.$t('ProcessUnitTest.itemCount', { count: v.length });
+            }
+            if (typeof v === 'object') {
+                const keys = Object.keys(v);
+                if (keys.length === 0) return this.$t('ProcessUnitTest.noneLabel');
+                return this.$t('ProcessUnitTest.itemCount', { count: keys.length });
+            }
+            return this.valueLabel(key, v) || String(v);
         },
         processStatusLabel(status) {
             if (status === 'RUNNING') return this.$t('ProcessUnitTest.statusRunning');
@@ -641,6 +688,55 @@ export default {
             } catch (e) {
                 return [];
             }
+        },
+        // 폼 필드 메타맵을 미리 적재 — 화면 표시(키→이름)에만 쓰며 성공/실패 판정에는 영향이 없다.
+        async loadFieldMeta() {
+            if (!this.backend) return;
+            try {
+                const activityIds = this.bpmnFlowNodes
+                    .filter((n) => /usertask$/i.test(n.tag))
+                    .map((n) => n.id);
+                const meta = {};
+                for (const aid of activityIds) {
+                    try {
+                        const forms = await this.backend.getPreviousForms(aid, this.processDefinition || undefined);
+                        (forms || []).forEach((form) => this.parseFormHtmlMeta(form && form.html, meta));
+                    } catch (e) { /* 한 활동 실패해도 계속 */ }
+                }
+                this.fieldMeta = meta;
+            } catch (e) { /* 라벨 못 받으면 키로 표시 */ }
+        },
+        // 폼 HTML에서 필드 메타 추출 → meta[name] = { label, valueLabels }.
+        // label/valueLabels 는 화면 표시 전용 — 성공/실패 판정에는 쓰지 않는다.
+        parseFormHtmlMeta(html, meta) {
+            if (!html || typeof html !== 'string') return;
+            try {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                doc.querySelectorAll('[name]').forEach((el) => {
+                    const tag = (el.tagName || '').toLowerCase();
+                    // *-field 태그 또는 alias 를 가진 컨테이너(반복 섹션 등)만 대상.
+                    if (!tag.endsWith('-field') && !el.hasAttribute('alias')) return;
+                    const key = el.getAttribute('name');
+                    if (!key || meta[key]) return;
+                    const alias = (el.getAttribute('alias') || '').trim();
+                    const valueLabels = {};
+                    const itemsAttr = el.getAttribute('items');
+                    if (itemsAttr) {
+                        try {
+                            const items = JSON.parse(itemsAttr.replace(/'/g, '"'));
+                            (Array.isArray(items) ? items : []).forEach((it) => {
+                                if (!it || typeof it !== 'object') return;
+                                if (it.value !== undefined && (it.text !== undefined || it.label !== undefined)) {
+                                    valueLabels[it.value] = it.text != null ? it.text : it.label;
+                                } else {
+                                    Object.entries(it).forEach(([k, v]) => { valueLabels[k] = v; });
+                                }
+                            });
+                        } catch (e) { /* items 파싱 실패 시 값은 키 그대로 */ }
+                    }
+                    meta[key] = { label: alias || key, valueLabels };
+                });
+            } catch (e) { /* HTML 파싱 실패 시 키 그대로 표시 */ }
         },
         async computeGivenOptions(activityId) {
             if (!this.backend || !activityId) return [];
