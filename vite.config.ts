@@ -10,6 +10,7 @@ const env = loadEnv('development', process.cwd(), '');
 
 const require = createRequire(import.meta.url);
 const monacoEditorPlugin = require('vite-plugin-monaco-editor').default || require('vite-plugin-monaco-editor');
+const uengineGatewayTarget = env.VITE_UENGINE_GATEWAY_URL || 'http://127.0.0.1:8088';
 
 function spaFallbackPlugin() {
     return {
@@ -137,6 +138,58 @@ export default defineConfig({
                 timeout: 0,
                 proxyTimeout: 0,
                 rewrite: (path) => path.replace(/^\/process-gpt-deepagents/, '')
+            },
+            '/definition': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/version': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/versions': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/instance': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/instances': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/work-item': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/worklist': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/dry-run': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/start-and-complete': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/validate': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/test': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/download': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
+            },
+            '/business-rules': {
+                target: uengineGatewayTarget,
+                changeOrigin: true
             }
         }
     },

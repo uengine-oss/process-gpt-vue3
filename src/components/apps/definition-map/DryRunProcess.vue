@@ -67,11 +67,6 @@ export default {
         let me = this;
         me.backend = BackendFactory.createBackend();
         me.userName = localStorage.getItem('userName');
-        me.roleMappings.push({
-            name: me.userName,
-            endpoints: [],
-            resourceNames: []
-        });
         me.dryRun();
     },
     mounted() {
@@ -91,9 +86,12 @@ export default {
                 action: async () => {
                     console.log(me.isSimulate);
                     const command = {
-                        processDefinitionId: me.definitionId,
-                        roleMappings: me.roleMappings
+                        processDefinitionId: me.definitionId
                     };
+                    const roleMappings = me.roleMappings.filter((role) => role.endpoints && role.endpoints.length > 0);
+                    if (roleMappings.length > 0) {
+                        command.roleMappings = roleMappings;
+                    }
                     me.dryRunWorkItem = await me.backend.dryRun(me.isSimulate, command);
                 }
             });

@@ -313,6 +313,19 @@ export default {
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
         }
+        if (this._layoutTimeout) {
+            clearTimeout(this._layoutTimeout);
+            this._layoutTimeout = null;
+        }
+        if (this.bpmnViewer && typeof this.bpmnViewer.destroy === 'function') {
+            try {
+                this.bpmnViewer.destroy();
+            } catch (e) {
+                console.warn('[BpmnUengine] destroy failed:', e);
+            }
+        }
+        this.bpmnViewer = null;
+        this.bpmnModeler = null;
     },
     watch: {
         bpmn: {
@@ -1545,7 +1558,9 @@ export default {
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
                 // PAL 모드에서도 엑셀 등으로 BPMN 로드 시 자동 레이아웃 적용
-                self.applyAutoLayout();
+                if (window.$mode !== 'uEngine') {
+                    self.applyAutoLayout();
+                }
                 self.resetZoom();
             });
 
