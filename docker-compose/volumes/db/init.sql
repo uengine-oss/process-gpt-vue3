@@ -548,6 +548,8 @@ create table public.tenant_oauth (
     updated_at timestamp with time zone null default now(),
     google_credentials jsonb null,
     google_credentials_updated_at timestamp with time zone null,
+    github_token text null,
+    github_username text null,
     constraint tenant_oauth_pkey primary key (tenant_id),
     constraint tenant_oauth_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

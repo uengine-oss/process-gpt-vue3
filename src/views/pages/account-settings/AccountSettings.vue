@@ -37,6 +37,10 @@
                                     <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                         <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                     </v-tab>
+                                    <!-- GitHub 계정 설정 -->
+                                    <v-tab v-if="!isUEngineMode" value="Github">
+                                        <v-icon class="mr-2" size="20">mdi-github</v-icon>{{ $t('accountTab.github') }}
+                                    </v-tab>
                                     <!-- 용어집 관리 -->
                                     <v-tab v-if="!isUEngineMode" value="GlossaryManage">
                                         <v-icon class="mr-2" size="20">mdi-book-open-page-variant</v-icon>
@@ -158,6 +162,16 @@
                                     variant="text"
                                     color="default"
                                     size="small"
+                                    @click="tab = 'Github'"
+                                    :class="{ 'selected-tab': tab === 'Github' }"
+                                >
+                                    <v-icon class="mr-2" size="16">mdi-github</v-icon>{{ $t('accountTab.github') }}
+                                </v-btn>
+                                <v-btn
+                                    v-if="!isUEngineMode"
+                                    variant="text"
+                                    color="default"
+                                    size="small"
                                     @click="tab = 'GlossaryManage'"
                                     :class="{ 'selected-tab': tab === 'GlossaryManage' }"
                                 >
@@ -248,6 +262,14 @@
                                 <ConnectionInfoTab />
                             </div>
                         </v-window-item>
+
+                        <!-- Github: GitHub 계정 설정 탭 (accountTab.github) -->
+                        <v-window-item v-if="!isUEngineMode" value="Github">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                                <GithubTab />
+                            </div>
+                        </v-window-item>
+
                         <!-- GlossaryManage: 용어집 관리 탭 (accountTab.glossaryManage) -->
                         <v-window-item v-if="!isUEngineMode" value="GlossaryManage">
                             <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
@@ -322,6 +344,7 @@ import GlossaryManageTab from '@/components/pages/account-settings/GlossaryManag
 import TaskCatalogAdmin from '@/components/admin/TaskCatalogAdmin.vue';
 import TaskCatalogList from '@/components/admin/TaskCatalogList.vue';
 import OrgChartGroupTab from '@/components/pages/account-settings/OrgChartGroupTab.vue';
+import GithubTab from '@/components/pages/account-settings/GithubTab.vue';
 
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
@@ -344,7 +367,8 @@ export default {
         GlossaryManageTab,
         TaskCatalogAdmin,
         TaskCatalogList,
-        OrgChartGroupTab
+        OrgChartGroupTab,
+        GithubTab
     },
     data() {
         return {

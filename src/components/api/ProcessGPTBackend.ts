@@ -4215,6 +4215,38 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getGithubInfo() {
+        try {
+            const response = await storage.getObject('tenant_oauth', {
+                match: {
+                    tenant_id: window.$tenantName
+                }
+            });
+            return response
+                ? { github_username: response.github_username || '', github_token: response.github_token || '' }
+                : { github_username: '', github_token: '' };
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async saveGithubInfo(githubInfo: { github_username: string; github_token: string }) {
+        try {
+            const existing = await storage.getObject('tenant_oauth', {
+                match: { tenant_id: window.$tenantName }
+            });
+            const payload = {
+                ...(existing || {}),
+                tenant_id: window.$tenantName,
+                github_username: githubInfo.github_username,
+                github_token: githubInfo.github_token
+            };
+            await storage.putObject('tenant_oauth', payload);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
     async callbackOAuth() {
         try {
             const urlParams = new URLSearchParams(window.location.search);

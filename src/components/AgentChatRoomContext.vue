@@ -85,17 +85,6 @@
             </ul>
         </details>
 
-        <details v-if="showToolsBlock" class="side-info__box" :open="!showAttachmentsBlock && !showTodosBlock && !showSkillsBlock">
-            <summary class="side-info__summary">
-                <span class="side-info__title">도구</span>
-                <span class="side-info__count">{{ toolsList.length }}</span>
-            </summary>
-            <ul class="side-info__list">
-                <li v-for="t in toolsList" :key="t.key" class="side-info__item">
-                    <span class="side-info__item-label">{{ t.label }}</span>
-                </li>
-            </ul>
-        </details>
     </div>
 </template>
 
@@ -167,24 +156,6 @@ export default {
                 }))
                 .filter((x) => x.label);
         },
-        toolsList() {
-            const p = this.sideInfoPanels.get('tools');
-            const items = Array.isArray(p?.data?.items) ? p.data.items : [];
-            const list = items
-                .map((t, idx) => ({
-                    key: (t?.id || t?.name || t?.tool || `tool-${idx}`).toString(),
-                    label: (t?.displayName || t?.name || t?.tool || '').toString()
-                }))
-                .filter((x) => x.label);
-            const seen = new Set();
-            return list.filter((x) => {
-                const k = x.label.trim();
-                if (!k) return false;
-                if (seen.has(k)) return false;
-                seen.add(k);
-                return true;
-            });
-        },
         skillsList() {
             const p = this.sideInfoPanels.get('skills');
             const items = Array.isArray(p?.data?.items) ? p.data.items : [];
@@ -229,17 +200,13 @@ export default {
         showSkillsBlock() {
             return this.skillsEnabled && this.skillsList.length > 0;
         },
-        showToolsBlock() {
-            return this.toolsEnabled && this.toolsList.length > 0;
-        },
         hasSideInfo() {
             return (
                 this.showActivityBlock ||
                 this.showKnowledgeBlock ||
                 this.showAttachmentsBlock ||
                 this.showTodosBlock ||
-                this.showSkillsBlock ||
-                this.showToolsBlock
+                this.showSkillsBlock
             );
         },
         activityEnabled() {
@@ -250,9 +217,6 @@ export default {
         },
         attachmentsEnabled() {
             return !!this.sideInfoPanels.get('attachments')?.data?.enabled;
-        },
-        toolsEnabled() {
-            return !!this.sideInfoPanels.get('tools')?.data?.enabled;
         },
         skillsEnabled() {
             return !!this.sideInfoPanels.get('skills')?.data?.enabled;
