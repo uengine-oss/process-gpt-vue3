@@ -324,6 +324,52 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         return phaseContainer.height > phaseContainer.width;
     }
 
+  function getShapeCenter(bounds) {
+    return {
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2
+    };
+  }
+
+  function getPhaseChildren(phaseContainer) {
+    return (phaseContainer.children || []).filter(child =>
+      child.type === 'phase:Phase' ||
+      child.businessObject?.$type === 'phase:Phase'
+    );
+  }
+
+  function getPhaseStripBounds(phaseContainer, isVertical) {
+    const phases = getPhaseChildren(phaseContainer);
+    if (!phases.length) {
+      return {
+        x: phaseContainer.x,
+        y: phaseContainer.y,
+        width: phaseContainer.width,
+        height: phaseContainer.height
+      };
+    }
+
+    if (isVertical) {
+      const minX = Math.min(...phases.map(phase => phase.x));
+      const maxX = Math.max(...phases.map(phase => phase.x + phase.width));
+      return {
+        x: minX,
+        y: phaseContainer.y,
+        width: maxX - minX,
+        height: phaseContainer.height
+      };
+    }
+
+    const minY = Math.min(...phases.map(phase => phase.y));
+    const maxY = Math.max(...phases.map(phase => phase.y + phase.height));
+    return {
+      x: phaseContainer.x,
+      y: minY,
+      width: phaseContainer.width,
+      height: maxY - minY
+    };
+  }
+
     /** Phase 좌/우에 새 Phase 추가 후 전체 너비 재배분 */
     function insertPhaseAt(phaseElement, side) {
         const phaseContainer = phaseElement.parent;
@@ -346,13 +392,15 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
             name: `Phase ${laneSet.lanes.length + 1}`
         });
 
-        const pcX = phaseContainer.x;
-        const pcY = phaseContainer.y;
-        const pcW = phaseContainer.width;
-        const pcH = phaseContainer.height;
-        const newPhaseCount = laneSet.lanes.length + 1;
+        const isVerticalContainer = isPhaseContainerVertical(phaseContainer);
+    const stripBounds = getPhaseStripBounds(phaseContainer, isVerticalContainer);
+    const pcX = stripBounds.x;
+    const pcY = stripBounds.y;
+    const pcW = stripBounds.width;
+    const pcH = stripBounds.height;
+    const newPhaseCount = laneSet.lanes.length + 1;
 
-        if (isPhaseContainerVertical(phaseContainer)) {
+        if (isVerticalContainer) {
             const phaseHeight = pcH / newPhaseCount;
             const newBounds = { x: pcX, y: pcY + insertIndex * phaseHeight, width: pcW, height: phaseHeight };
             const newPhaseShape = elementFactory.createShape({
@@ -362,7 +410,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                 height: newBounds.height,
                 isHorizontal: true
             });
-            modeling.createShape(newPhaseShape, newBounds, phaseContainer);
+            modeling.createShape(newPhaseShape, getShapeCenter(newBounds), phaseContainer);
             const addedIndex = laneSet.lanes.indexOf(newPhaseBo);
             if (addedIndex >= 0) {
                 laneSet.lanes.splice(addedIndex, 1);
@@ -376,7 +424,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                 const bounds = { x: pcX, y: pcY + i * phaseHeightFinal, width: pcW, height: h };
                 const existing = phaseContainer.children.find((c) => c.businessObject === phaseBo);
                 if (existing) {
-                    modeling.resizeShape(existing, bounds);
+        modeling.resizeShape(existing, bounds);
                 } else {
                     const phaseShape = elementFactory.createShape({
                         type: 'phase:Phase',
@@ -385,7 +433,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                         height: bounds.height,
                         isHorizontal: true
                     });
-                    modeling.createShape(phaseShape, bounds, phaseContainer);
+                    modeling.createShape(phaseShape, getShapeCenter(bounds), phaseContainer);
                 }
             }
             if (selection && newPhaseShape) selection.select(newPhaseShape);
@@ -401,7 +449,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
             height: newBounds.height,
             isHorizontal: false
         });
-        modeling.createShape(newPhaseShape, newBounds, phaseContainer);
+        modeling.createShape(newPhaseShape, getShapeCenter(newBounds), phaseContainer);
         const addedIndex = laneSet.lanes.indexOf(newPhaseBo);
         if (addedIndex >= 0) {
             laneSet.lanes.splice(addedIndex, 1);
@@ -410,13 +458,15 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
 
         const phaseCount = laneSet.lanes.length;
         const phaseWidthFinal = pcW / phaseCount;
-        for (let i = 0; i < phaseCount; i++) {
+    let selectedPhase = null;
+    for (let i = 0; i < phaseCount; i++) {
             const phaseBo = laneSet.lanes[i];
             const w = i === phaseCount - 1 ? pcW - phaseWidthFinal * (phaseCount - 1) : phaseWidthFinal;
             const bounds = { x: pcX + i * phaseWidthFinal, y: pcY, width: w, height: pcH };
             const existing = phaseContainer.children.find((c) => c.businessObject === phaseBo);
             if (existing) {
-                modeling.resizeShape(existing, bounds);
+        modeling.resizeShape(existing, bounds);
+        if (phaseBo === newPhaseBo) selectedPhase = existing;
             } else {
                 const phaseShape = elementFactory.createShape({
                     type: 'phase:Phase',
@@ -425,10 +475,11 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                     height: bounds.height,
                     isHorizontal: false
                 });
-                modeling.createShape(phaseShape, bounds, phaseContainer);
+                modeling.createShape(phaseShape, getShapeCenter(bounds), phaseContainer);
+                if (phaseBo === newPhaseBo) selectedPhase = phaseShape;
             }
         }
-        if (selection && newPhaseShape) selection.select(newPhaseShape);
+        if (selection && selectedPhase) selection.select(selectedPhase);
     }
 
     /** PhaseContainer 맨 앞/맨 뒤에 Phase 하나 추가 후 전체 너비 재배분 */
@@ -442,14 +493,16 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
             name: `Phase ${laneSet.lanes.length + 1}`
         });
 
-        const pcX = phaseContainerElement.x;
-        const pcY = phaseContainerElement.y;
-        const pcW = phaseContainerElement.width;
-        const pcH = phaseContainerElement.height;
-        const newPhaseCount = laneSet.lanes.length + 1;
+        const isVerticalContainer = isPhaseContainerVertical(phaseContainerElement);
+    const stripBounds = getPhaseStripBounds(phaseContainerElement, isVerticalContainer);
+    const pcX = stripBounds.x;
+    const pcY = stripBounds.y;
+    const pcW = stripBounds.width;
+    const pcH = stripBounds.height;
+    const newPhaseCount = laneSet.lanes.length + 1;
         const insertIndex = position === 'start' ? 0 : laneSet.lanes.length;
 
-        if (isPhaseContainerVertical(phaseContainerElement)) {
+        if (isVerticalContainer) {
             const phaseHeight = pcH / newPhaseCount;
             const newBounds = { x: pcX, y: pcY + insertIndex * phaseHeight, width: pcW, height: phaseHeight };
             const newPhaseShape = elementFactory.createShape({
@@ -459,7 +512,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                 height: newBounds.height,
                 isHorizontal: true
             });
-            modeling.createShape(newPhaseShape, newBounds, phaseContainerElement);
+            modeling.createShape(newPhaseShape, getShapeCenter(newBounds), phaseContainerElement);
             if (position === 'start') {
                 const addedIndex = laneSet.lanes.indexOf(newPhaseBo);
                 if (addedIndex >= 0) {
@@ -475,7 +528,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                 const bounds = { x: pcX, y: pcY + i * phaseHeightFinal, width: pcW, height: h };
                 const existing = phaseContainerElement.children.find((c) => c.businessObject === phaseBo);
                 if (existing) {
-                    modeling.resizeShape(existing, bounds);
+        modeling.resizeShape(existing, bounds);
                 } else {
                     const phaseShape = elementFactory.createShape({
                         type: 'phase:Phase',
@@ -484,7 +537,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                         height: bounds.height,
                         isHorizontal: true
                     });
-                    modeling.createShape(phaseShape, bounds, phaseContainerElement);
+                    modeling.createShape(phaseShape, getShapeCenter(bounds), phaseContainerElement);
                 }
             }
             if (selection && newPhaseShape) selection.select(newPhaseShape);
@@ -500,7 +553,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
             height: newBounds.height,
             isHorizontal: false
         });
-        modeling.createShape(newPhaseShape, newBounds, phaseContainerElement);
+        modeling.createShape(newPhaseShape, getShapeCenter(newBounds), phaseContainerElement);
         if (position === 'start') {
             const addedIndex = laneSet.lanes.indexOf(newPhaseBo);
             if (addedIndex >= 0) {
@@ -511,13 +564,15 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
 
         const phaseCount = laneSet.lanes.length;
         const phaseWidthFinal = pcW / phaseCount;
-        for (let i = 0; i < phaseCount; i++) {
+    let selectedPhase = null;
+    for (let i = 0; i < phaseCount; i++) {
             const phaseBo = laneSet.lanes[i];
             const w = i === phaseCount - 1 ? pcW - phaseWidthFinal * (phaseCount - 1) : phaseWidthFinal;
             const bounds = { x: pcX + i * phaseWidthFinal, y: pcY, width: w, height: pcH };
             const existing = phaseContainerElement.children.find((c) => c.businessObject === phaseBo);
             if (existing) {
-                modeling.resizeShape(existing, bounds);
+        modeling.resizeShape(existing, bounds);
+        if (phaseBo === newPhaseBo) selectedPhase = existing;
             } else {
                 const phaseShape = elementFactory.createShape({
                     type: 'phase:Phase',
@@ -526,10 +581,11 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                     height: bounds.height,
                     isHorizontal: false
                 });
-                modeling.createShape(phaseShape, bounds, phaseContainerElement);
+                modeling.createShape(phaseShape, getShapeCenter(bounds), phaseContainerElement);
+                if (phaseBo === newPhaseBo) selectedPhase = phaseShape;
             }
         }
-        if (selection && newPhaseShape) selection.select(newPhaseShape);
+        if (selection && selectedPhase) selection.select(selectedPhase);
     }
 
     function addPhaseContainer(participantElement) {
@@ -634,7 +690,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                     height: bounds.height,
                     isHorizontal: true
                 });
-                modeling.createShape(phaseShape, bounds, phaseContainer);
+                modeling.createShape(phaseShape, getShapeCenter(bounds), phaseContainer);
             }
             console.log('✅ PhaseContainer + Phase 3개 생성 완료 (세로 participant, 왼쪽, isHorizontal: true):', phaseContainer);
             return phaseContainer;
@@ -712,7 +768,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                 height: bounds.height,
                 isHorizontal: false
             });
-            modeling.createShape(phaseShape, bounds, phaseContainer);
+            modeling.createShape(phaseShape, getShapeCenter(bounds), phaseContainer);
         }
 
         console.log('✅ PhaseContainer + Phase 3개 생성 완료 (heonum 구조):', phaseContainer);

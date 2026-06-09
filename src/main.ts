@@ -187,7 +187,7 @@ window.addEventListener('resize', () => {
 
 Object.defineProperty(window, '$mode', {
     // value: 'uEngine',
-    value: window._env_?.VITE_MODE || window.$mode || 'ProcessGPT',
+    value: window._env_?.VITE_MODE || import.meta.env.VITE_MODE || window.$mode || 'ProcessGPT',
     writable: false,
     configurable: false
 });

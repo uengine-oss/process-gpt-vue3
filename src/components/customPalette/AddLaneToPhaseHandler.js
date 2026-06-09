@@ -50,6 +50,52 @@ export default function AddLaneToPhaseHandler(commandStack, modeling, elementFac
         return phaseContainer.height > phaseContainer.width;
     }
 
+  function getShapeCenter(bounds) {
+    return {
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2
+    };
+  }
+
+  function getPhaseChildren(phaseContainer) {
+    return (phaseContainer.children || []).filter(child =>
+      child.type === 'phase:Phase' ||
+      child.businessObject?.$type === 'phase:Phase'
+    );
+  }
+
+  function getPhaseStripBounds(phaseContainer, isVertical) {
+    const phases = getPhaseChildren(phaseContainer);
+    if (!phases.length) {
+      return {
+        x: phaseContainer.x,
+        y: phaseContainer.y,
+        width: phaseContainer.width,
+        height: phaseContainer.height
+      };
+    }
+
+    if (isVertical) {
+      const minX = Math.min(...phases.map(phase => phase.x));
+      const maxX = Math.max(...phases.map(phase => phase.x + phase.width));
+      return {
+        x: minX,
+        y: phaseContainer.y,
+        width: maxX - minX,
+        height: phaseContainer.height
+      };
+    }
+
+    const minY = Math.min(...phases.map(phase => phase.y));
+    const maxY = Math.max(...phases.map(phase => phase.y + phase.height));
+    return {
+      x: phaseContainer.x,
+      y: minY,
+      width: phaseContainer.width,
+      height: maxY - minY
+    };
+  }
+
     function addPhaseAndSetNewLane(context) {
         const shape = context.shape;
         const location = context.location;
@@ -81,13 +127,15 @@ export default function AddLaneToPhaseHandler(commandStack, modeling, elementFac
         });
         // laneSet.lanes에 수동 추가하지 않음 → createShape 시 BpmnUpdater가 추가한 뒤, 원하는 인덱스로 재정렬
 
-        const pcX = phaseContainer.x;
-        const pcY = phaseContainer.y;
-        const pcW = phaseContainer.width;
-        const pcH = phaseContainer.height;
-        const newPhaseCount = laneSet.lanes.length + 1;
+        const isVerticalContainer = isPhaseContainerVertical(phaseContainer);
+    const stripBounds = getPhaseStripBounds(phaseContainer, isVerticalContainer);
+    const pcX = stripBounds.x;
+    const pcY = stripBounds.y;
+    const pcW = stripBounds.width;
+    const pcH = stripBounds.height;
+    const newPhaseCount = laneSet.lanes.length + 1;
 
-        if (isPhaseContainerVertical(phaseContainer)) {
+        if (isVerticalContainer) {
             // 세로 PhaseContainer: 높이로 분할, isHorizontal: true
             const phaseHeight = pcH / newPhaseCount;
             const newBounds = { x: pcX, y: pcY + insertIndex * phaseHeight, width: pcW, height: phaseHeight };
@@ -98,7 +146,7 @@ export default function AddLaneToPhaseHandler(commandStack, modeling, elementFac
                 height: newBounds.height,
                 isHorizontal: true
             });
-            modeling.createShape(newPhaseShape, newBounds, phaseContainer);
+            modeling.createShape(newPhaseShape, getShapeCenter(newBounds), phaseContainer);
             const addedIndex = laneSet.lanes.indexOf(newPhaseBo);
             if (addedIndex >= 0) {
                 laneSet.lanes.splice(addedIndex, 1);
@@ -123,7 +171,7 @@ export default function AddLaneToPhaseHandler(commandStack, modeling, elementFac
                         height: bounds.height,
                         isHorizontal: true
                     });
-                    modeling.createShape(phaseShape, bounds, phaseContainer);
+                    modeling.createShape(phaseShape, getShapeCenter(bounds), phaseContainer);
                     newShape = phaseShape;
                 }
             }
@@ -142,7 +190,7 @@ export default function AddLaneToPhaseHandler(commandStack, modeling, elementFac
             height: newBounds.height,
             isHorizontal: false
         });
-        modeling.createShape(newPhaseShape, newBounds, phaseContainer);
+        modeling.createShape(newPhaseShape, getShapeCenter(newBounds), phaseContainer);
         const addedIndex = laneSet.lanes.indexOf(newPhaseBo);
         if (addedIndex >= 0) {
             laneSet.lanes.splice(addedIndex, 1);
@@ -168,7 +216,7 @@ export default function AddLaneToPhaseHandler(commandStack, modeling, elementFac
                     height: bounds.height,
                     isHorizontal: false
                 });
-                modeling.createShape(phaseShape, bounds, phaseContainer);
+                modeling.createShape(phaseShape, getShapeCenter(bounds), phaseContainer);
                 newShape = phaseShape;
             }
         }
