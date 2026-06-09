@@ -93,6 +93,10 @@ import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
 import '@/components/autoLayout/bpmn-auto-layout.js';
+import '@/components/autoLayout/edge-router-orthogonal.js';
+import '@/components/autoLayout/bpmn-waypoints-refresh.js';
+import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequence-flow-final-module.js';
+import sequenceFlowManualCropSkipModule from '@/components/autoLayout/sequence-flow-manual-crop-skip-module.js';
 import { markRaw } from 'vue';
 import minimapModule from 'diagram-js-minimap';
 import { uengineJsonElementToAttr, uengineJsonAttrToElement, normalizeUengineBpmnXmlForBackend, isUengineMode } from '@/utils/uengineXmlTransform';
@@ -1090,7 +1094,18 @@ export default {
                     element.di.isHorizontal = true;
                 }
             });
-            self.resetZoom();
+            const refreshLabels = () => {
+                window.BpmnAutoLayout?.adjustLabelsAfterLayout?.(self.bpmnViewer);
+            };
+            setTimeout(() => {
+                refreshLabels();
+                requestAnimationFrame(() => requestAnimationFrame(refreshLabels));
+                setTimeout(refreshLabels, 120);
+                setTimeout(() => {
+                    refreshLabels();
+                    self.resetZoom();
+                }, 300);
+            }, 0);
         },
         initDefaultOrientation(orientation = null) {
             let self = this;
@@ -1658,6 +1673,8 @@ export default {
                         },
                         additionalModules: [
                             customBpmnModule,
+                            customSequenceFlowFinalModule,
+                            sequenceFlowManualCropSkipModule,
                             {
                                 __init__: ['paletteProvider'],
                                 paletteProvider: ['type', paletteProvider],
@@ -1694,6 +1711,8 @@ export default {
                     },
                     additionalModules: [
                         customBpmnModule,
+                        customSequenceFlowFinalModule,
+                        sequenceFlowManualCropSkipModule,
                         {
                             __init__: ['paletteProvider'],
                             paletteProvider: ['type', paletteProvider],
