@@ -139,7 +139,9 @@
                                               하나의 통합 "응답 제출" 버튼으로 모든 응답을 batch 전송 (사용자 개입 1회).
                                         -->
 
-                                        <!-- multi-question 모드: questions 배열이 있을 때 (페이지네이션 형태로 1개씩 표시) -->
+                                        <!-- multi-question 모드: questions 배열을 stage(스킬/에이전트/DMN)별 페이지로 묶고,
+                                             각 페이지 안에서 프로세스별 질문을 구분선과 함께 세로로 나열한다.
+                                             다음/이전(페이지네이션)으로 stage 페이지를 이동한다. -->
                                         <div
                                             v-if="
                                                 message &&
@@ -152,57 +154,58 @@
                                             <div class="hitl-multi-header">
                                                 <v-icon size="18" color="primary">mdi-comment-question-outline</v-icon>
                                                 <span class="hitl-multi-title">
-                                                    {{ message.__humanFeedback.question || '아래 항목들에 한 번에 응답해 주세요.' }}
+                                                    {{ getCurrentMultiGroup(message).label || message.__humanFeedback.question || '아래 항목에 응답해 주세요.' }}
                                                 </span>
                                                 <v-chip size="x-small" variant="tonal" color="primary" class="ml-2">
-                                                    {{ getMultiCurrentStep(message) + 1 }} / {{ message.__humanFeedback.questions.length }}
+                                                    {{ getMultiCurrentStep(message) + 1 }} / {{ getMultiGroupCount(message) }}
                                                 </v-chip>
                                             </div>
 
-                                            <!-- 스텝 인디케이터(dots) - 클릭으로 임의 스텝 이동(이미 제출됐을 때도 응답 확인 가능) -->
+                                            <!-- 스텝 인디케이터(dots) - 클릭으로 임의 stage 페이지로 이동 -->
                                             <div class="hitl-multi-steps">
                                                 <span
-                                                    v-for="(_q, sIdx) in message.__humanFeedback.questions"
+                                                    v-for="(_g, sIdx) in getMultiGroupCount(message)"
                                                     :key="`step-${sIdx}`"
                                                     class="hitl-multi-step-dot"
                                                     :class="{
                                                         'is-active': getMultiCurrentStep(message) === sIdx,
                                                         'is-done': hasMultiAnswerForStep(message, sIdx)
                                                     }"
-                                                    @click="setMultiCurrentStep(message, sIdx)"
+                                                    @click="gotoMultiStep(message, sIdx)"
                                                 ></span>
                                             </div>
 
-                                            <!-- 현재 스텝만 mount (v-show 겹침으로 2·3번째 질문 클릭 불가 방지).
-                                                 이전 스텝 응답은 __responses 에 보관. -->
+                                            <!-- 현재 stage 페이지의 프로세스별 질문들을 구분선과 함께 나열.
+                                                 (현재 페이지의 패널만 mount; 다른 페이지 응답은 __responses 에 보관) -->
                                             <template
-                                                v-for="(q, qIdx) in message.__humanFeedback.questions"
-                                                :key="q.question_id || qIdx"
+                                                v-for="(entry, eIdx) in getCurrentMultiGroup(message).items"
+                                                :key="entry.q.question_id || entry.idx"
                                             >
-                                            <div
-                                                v-if="getMultiCurrentStep(message) === qIdx"
-                                                class="hitl-multi-section"
-                                            >
+                                            <div class="hitl-multi-section">
+                                                <div class="hitl-multi-section-proc">
+                                                    <v-icon size="14" color="primary">mdi-shape-outline</v-icon>
+                                                    <span>{{ getProcessLabelForQuestion(entry.q) }}</span>
+                                                </div>
                                                 <HumanFeedbackPanel
-                                                    :ref="(el) => registerMultiPanelRef(message.uuid, qIdx, el)"
-                                                    :feedbackType="q.feedback_type || 'select_items'"
-                                                    :question="q.prompt || '선택해 주세요.'"
-                                                    :context="q.context || ''"
-                                                    :items="getHitlQuestionItems(q)"
-                                                    :suggestions="Array.isArray(q.suggestions) ? q.suggestions : (Array.isArray(q.choices) ? q.choices : [])"
-                                                    :evidenceSpans="Array.isArray(q.evidence_spans) ? q.evidence_spans : []"
-                                                    :impactPreview="Array.isArray(q.impact_preview) ? q.impact_preview : []"
-                                                    :allowMultiple="!!q.allow_multiple"
-                                                    :minSelect="typeof q.min_select === 'number' ? q.min_select : (q.feedback_type === 'select_items' ? 0 : 1)"
+                                                    :ref="(el) => registerMultiPanelRef(message.uuid, entry.idx, el)"
+                                                    :feedbackType="entry.q.feedback_type || 'select_items'"
+                                                    :question="entry.q.prompt || '선택해 주세요.'"
+                                                    :context="entry.q.context || ''"
+                                                    :items="getHitlQuestionItems(entry.q)"
+                                                    :suggestions="Array.isArray(entry.q.suggestions) ? entry.q.suggestions : (Array.isArray(entry.q.choices) ? entry.q.choices : [])"
+                                                    :evidenceSpans="Array.isArray(entry.q.evidence_spans) ? entry.q.evidence_spans : []"
+                                                    :impactPreview="Array.isArray(entry.q.impact_preview) ? entry.q.impact_preview : []"
+                                                    :allowMultiple="!!entry.q.allow_multiple"
+                                                    :minSelect="typeof entry.q.min_select === 'number' ? entry.q.min_select : (entry.q.feedback_type === 'select_items' ? 0 : 1)"
                                                     :allowSkip="false"
-                                                    :allowOther="!!q.allow_other"
+                                                    :allowOther="!!entry.q.allow_other"
                                                     :submitted="!!message.__humanFeedback.__submitted"
-                                                    :submittedText="message.__humanFeedback.__submitted ? getMultiSectionSubmittedText(message, qIdx) : ''"
-                                                    :initialSelectedIds="getMultiInitialSelectedIds(message, qIdx)"
-                                                    :initialCustomText="getMultiInitialCustomText(message, qIdx)"
+                                                    :submittedText="message.__humanFeedback.__submitted ? getMultiSectionSubmittedText(message, entry.idx) : ''"
+                                                    :initialSelectedIds="getMultiInitialSelectedIds(message, entry.idx)"
+                                                    :initialCustomText="getMultiInitialCustomText(message, entry.idx)"
                                                     :hideSubmit="true"
                                                     :headerIcon="'mdi-help-circle-outline'"
-                                                    @selection-change="() => syncMultiStepSelection(message, qIdx)"
+                                                    @selection-change="() => syncMultiStepSelection(message, entry.idx)"
                                                 />
                                             </div>
                                             </template>
@@ -3963,6 +3966,76 @@ export default {
             const qs = message?.__humanFeedback?.questions;
             return Array.isArray(qs) ? qs : [];
         },
+        /**
+         * flat questions 배열을 stage(스킬/에이전트/DMN) 페이지로 그룹핑한다.
+         * 워커는 [procA-skills, procA-agents, procB-skills, ...]+dmn 순으로 보내므로,
+         * 같은 stage 끼리 묶어 "한 페이지에 모든 프로세스의 해당 질문"이 나오게 한다.
+         * 각 entry 는 { q, idx } — idx 는 __responses 인덱싱용 원본 flat index.
+         */
+        getMultiQuestionGroups(message) {
+            const qs = this.getMultiQuestions(message);
+            if (!qs.length) return [];
+            const order = ['skills', 'agents', 'dmn'];
+            const labelOf = {
+                skills: '스킬 — 생성할 스킬 선택',
+                agents: '에이전트 — 생성/연결할 에이전트 선택',
+                dmn: 'DMN — 의사결정 테이블로 만들 게이트웨이 선택',
+                other: '추가 확인'
+            };
+            const stageOf = (q) => {
+                const t = String(q?.target_type || '').toLowerCase();
+                if (t.indexOf('skill') >= 0) return 'skills';
+                if (t.indexOf('agent') >= 0) return 'agents';
+                if (t.indexOf('dmn') >= 0) return 'dmn';
+                const s = String(q?.option_meta?.stage || '').toLowerCase();
+                if (order.indexOf(s) >= 0) return s;
+                return 'other';
+            };
+            const buckets = {};
+            qs.forEach((q, idx) => {
+                const st = stageOf(q);
+                (buckets[st] || (buckets[st] = [])).push({ q, idx });
+            });
+            const groups = [];
+            [...order, 'other'].forEach((st) => {
+                if (buckets[st] && buckets[st].length) {
+                    groups.push({ stage: st, label: labelOf[st] || st, items: buckets[st] });
+                }
+            });
+            return groups;
+        },
+        getMultiGroupCount(message) {
+            return this.getMultiQuestionGroups(message).length;
+        },
+        getCurrentMultiGroup(message) {
+            const groups = this.getMultiQuestionGroups(message);
+            if (!groups.length) return { stage: '', label: '', items: [] };
+            const idx = this.getMultiCurrentStep(message);
+            return groups[Math.max(0, Math.min(groups.length - 1, idx))] || groups[0];
+        },
+        /** 질문 prompt "[프로세스명] ..." 에서 프로세스명을 추출해 섹션 헤더로 사용. */
+        getProcessLabelForQuestion(q) {
+            const prompt = String(q?.prompt || '');
+            const m = prompt.match(/^\s*\[([^\]]+)\]/);
+            if (m && m[1]) return m[1].trim();
+            const tt = String(q?.target_type || '').toLowerCase();
+            if (tt.indexOf('dmn') >= 0) return '전체 프로세스';
+            return '프로세스';
+        },
+        /** 현재 stage 페이지의 모든 프로세스 질문 선택값을 __responses 로 동기화. */
+        syncMultiGroup(message, groupIdx) {
+            const groups = this.getMultiQuestionGroups(message);
+            const g = groups[groupIdx];
+            if (!g) return;
+            g.items.forEach((entry) => this.syncMultiStepSelection(message, entry.idx));
+        },
+        /** dot 클릭으로 임의 페이지 이동(현재 페이지 선택값 보존 후 이동). */
+        gotoMultiStep(message, idx) {
+            if (!message?.__humanFeedback?.__submitted) {
+                this.syncMultiGroup(message, this.getMultiCurrentStep(message));
+            }
+            this.setMultiCurrentStep(message, idx);
+        },
         getHitlQuestionItems(q) {
             if (!q || typeof q !== 'object') return [];
             const raw = Array.isArray(q.items) ? q.items : [];
@@ -3983,7 +4056,7 @@ export default {
             const key = message?.uuid;
             if (!key) return 0;
             const idx = this.multiStepIndexByMessage[key];
-            const len = this.getMultiQuestions(message).length;
+            const len = this.getMultiGroupCount(message);
             if (!Number.isInteger(idx) || idx < 0) return 0;
             if (len > 0 && idx >= len) return len - 1;
             return idx;
@@ -3991,7 +4064,7 @@ export default {
         setMultiCurrentStep(message, idx) {
             const key = message?.uuid;
             if (!key) return;
-            const len = this.getMultiQuestions(message).length;
+            const len = this.getMultiGroupCount(message);
             if (len === 0) return;
             const clamped = Math.max(0, Math.min(len - 1, Number(idx) || 0));
             this.multiStepIndexByMessage = {
@@ -4001,6 +4074,8 @@ export default {
         },
         prevMultiStep(message) {
             const cur = this.getMultiCurrentStep(message);
+            // 현재 페이지(stage) 선택값을 보존한 뒤 이전 페이지로 이동.
+            if (!message?.__humanFeedback?.__submitted) this.syncMultiGroup(message, cur);
             this.setMultiCurrentStep(message, cur - 1);
         },
         buildMultiStepResponse(message, qIdx) {
@@ -4057,7 +4132,8 @@ export default {
         goNextMultiStep(message) {
             if (!message || message.__humanFeedback?.__submitted) return;
             const cur = this.getMultiCurrentStep(message);
-            this.syncMultiStepSelection(message, cur);
+            // 현재 stage 페이지의 모든 프로세스 질문 선택값을 동기화한 뒤 다음 페이지로.
+            this.syncMultiGroup(message, cur);
             if (this.isLastMultiStep(message)) {
                 this.submitMultiHumanFeedback(message);
                 return;
@@ -4065,27 +4141,19 @@ export default {
             this.setMultiCurrentStep(message, cur + 1);
         },
         isLastMultiStep(message) {
-            const len = this.getMultiQuestions(message).length;
+            const len = this.getMultiGroupCount(message);
             return len === 0 || this.getMultiCurrentStep(message) >= len - 1;
         },
-        hasMultiAnswerForStep(message, qIdx) {
-            // 렌더 단계에서 호출되는 순수 getter 여야 한다.
-            // 과거에는 현재 스텝에 대해 buildMultiStepResponse() 로 살아있는 자식 HumanFeedbackPanel
-            // 인스턴스의 reactive 상태(items/selectedIds 등)를 읽었는데, 부모가 매 렌더마다 새 배열을
-            // 자식 prop 으로 써넣기 때문에 "render 중 read + patch 중 write" 가 맞물려 무한 재렌더
-            // (운영 빌드에서 브라우저 멈춤)를 유발했다.
-            // 현재 스텝 선택값은 @selection-change → syncMultiStepSelection 으로 __responses 에 저장되므로,
-            // 저장된 데이터만 보고 판단하면 동일한 UX 를 유지하면서 루프를 제거할 수 있다.
+        hasMultiAnswerForStep(message, groupIdx) {
+            // 렌더 단계에서 호출되는 순수 getter (라이브 자식 상태를 읽지 않고 __responses 만 본다).
+            // groupIdx 는 stage 페이지 인덱스 — 해당 페이지의 모든 프로세스 질문이 한 번이라도
+            // 동기화(방문)되어 __responses 가 채워졌으면 'done' 으로 표시한다.
+            const groups = this.getMultiQuestionGroups(message);
+            const g = groups[groupIdx];
+            if (!g || !g.items.length) return false;
             const responses = message?.__humanFeedback?.__responses;
-            if (Array.isArray(responses) && responses[qIdx]) {
-                const r = responses[qIdx];
-                if (r.skipped) return false;
-                if (Array.isArray(r.selectedIds) && r.selectedIds.length > 0) return true;
-                if (typeof r.customText === 'string' && r.customText.trim().length > 0) return true;
-                if (r.selected) return true;
-                if (r.decision) return true;
-            }
-            return false;
+            if (!Array.isArray(responses)) return false;
+            return g.items.every((entry) => !!responses[entry.idx]);
         },
         findFirstUnansweredMultiStep(message) {
             const questions = this.getMultiQuestions(message);
@@ -4124,10 +4192,13 @@ export default {
         },
         submitMultiHumanFeedback(message) {
             if (!message || message.__humanFeedback?.__submitted) return;
-            const cur = this.getMultiCurrentStep(message);
-            this.syncMultiStepSelection(message, cur);
-
             const questions = this.getMultiQuestions(message);
+            // 현재 페이지(stage)의 질문 패널은 mount 되어 있으므로 제출 직전 동기화한다.
+            // 다른 페이지는 이미 페이지 이동(goNext/prev/goto) 및 selection-change 시점에
+            // __responses 로 저장돼 있다(현재 페이지 외 패널은 unmount → 아래 호출은 no-op).
+            for (let i = 0; i < questions.length; i++) {
+                this.syncMultiStepSelection(message, i);
+            }
             const hitl = message.__humanFeedback;
             if (!Array.isArray(hitl.__responses)) {
                 hitl.__responses = questions.map(() => null);
@@ -6799,6 +6870,24 @@ pre {
 }
 .hitl-multi-section {
     margin-bottom: 6px;
+    padding-top: 8px;
+}
+.hitl-multi-section + .hitl-multi-section {
+    /* 같은 페이지 내 두 번째 프로세스부터 상단 구분선으로 경계를 명확히 한다 */
+    border-top: 1px dashed rgba(var(--v-theme-on-surface), 0.16);
+    margin-top: 4px;
+}
+.hitl-multi-section-proc {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 2px;
+    padding: 1px 8px;
+    border-radius: 6px;
+    background: rgba(var(--v-theme-primary), 0.08);
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(var(--v-theme-primary));
 }
 .hitl-multi-section :deep(.human-feedback-panel) {
     /* 각 섹션 내부 패널은 외곽선 제거 — 컨테이너가 외곽선 갖고 있음 */

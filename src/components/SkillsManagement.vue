@@ -454,7 +454,7 @@
                     <v-text-field
                         v-model="repositoryUrl"
                         :label="$t('SkillsManagement.repositoryUrl')"
-                        placeholder="https://github.com/username/repo.git"
+                        placeholder="https://github.com/username/repo"
                         variant="outlined"
                         density="compact"
                         hide-details
