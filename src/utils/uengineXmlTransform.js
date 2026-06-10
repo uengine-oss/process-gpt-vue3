@@ -99,3 +99,109 @@ export function uengineJsonAttrToElement(xmlString) {
 export function isUengineMode() {
     return typeof window !== 'undefined' && window.$mode === 'uEngine';
 }
+
+const BPMN_NS = 'http://www.omg.org/spec/BPMN/20100524/MODEL';
+
+function isValidJson(text) {
+    if (text == null || typeof text !== 'string') return false;
+    const trimmed = text.trim();
+    if (trimmed === '') return false;
+    try {
+        JSON.parse(trimmed);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export function normalizeUengineBpmnXmlForBackend(xmlString, definitionName) {
+    if (!xmlString || typeof xmlString !== 'string') {
+        return xmlString;
+    }
+
+    const name = definitionName != null && String(definitionName).trim() !== '' ? String(definitionName).trim() : null;
+
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xmlString, 'text/xml');
+        if (doc.querySelector('parsererror')) {
+            return xmlString;
+        }
+
+        const processes = doc.getElementsByTagNameNS(BPMN_NS, 'process');
+        if (!processes.length) {
+            return xmlString;
+        }
+
+        const proc = processes[0];
+        proc.setAttribute('isExecutable', 'true');
+        if (name) {
+            proc.setAttribute('name', name);
+        }
+
+        let ext = proc.getElementsByTagNameNS(BPMN_NS, 'extensionElements')[0];
+        if (!ext) {
+            ext = doc.createElementNS(BPMN_NS, 'bpmn:extensionElements');
+            proc.insertBefore(ext, proc.firstChild);
+        }
+
+        let uprops = ext.getElementsByTagNameNS(UENGINE_NS, 'properties')[0];
+        if (!uprops) {
+            uprops = doc.createElementNS(UENGINE_NS, 'uengine:properties');
+            ext.appendChild(uprops);
+        }
+
+        let jsonEl = uprops.getElementsByTagNameNS(UENGINE_NS, 'json')[0];
+        const jsonAttr = uprops.getAttribute('json');
+        let jsonObj = {};
+
+        if (jsonEl && (jsonEl.textContent || '').trim()) {
+            try {
+                jsonObj = JSON.parse(jsonEl.textContent.trim());
+            } catch {
+                jsonObj = {};
+            }
+        } else if (jsonAttr != null && String(jsonAttr).trim() !== '') {
+            try {
+                jsonObj = JSON.parse(unescapeXmlAttr(jsonAttr));
+            } catch {
+                jsonObj = {};
+            }
+            uprops.removeAttribute('json');
+            if (!jsonEl) {
+                jsonEl = doc.createElementNS(UENGINE_NS, 'uengine:json');
+                uprops.appendChild(jsonEl);
+            }
+        }
+
+        if (name) {
+            jsonObj.definitionName = name;
+        }
+
+        if (jsonEl || Object.keys(jsonObj).length > 0) {
+            if (!jsonEl) {
+                jsonEl = doc.createElementNS(UENGINE_NS, 'uengine:json');
+                uprops.appendChild(jsonEl);
+            }
+            jsonEl.textContent = JSON.stringify(jsonObj);
+        }
+
+        const jsonAttrs = doc.querySelectorAll('[json]');
+        jsonAttrs.forEach((el) => {
+            const attr = el.getAttribute('json');
+            if (attr == null) return;
+            const text = unescapeXmlAttr(attr);
+            if (!isValidJson(text)) return;
+
+            const child = doc.createElementNS(UENGINE_NS, 'uengine:json');
+            child.textContent = text;
+            el.removeAttribute('json');
+            el.appendChild(child);
+        });
+
+        return new XMLSerializer().serializeToString(doc);
+    } catch (e) {
+        console.warn('[uengineXmlTransform] normalizeUengineBpmnXmlForBackend failed:', e);
+        return xmlString;
+    }
+}

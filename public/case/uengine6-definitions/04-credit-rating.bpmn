@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" name="test/credit_rating" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_1" name="test/credit_rating" processRef="Process_1"/>
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1" name="test/credit_rating" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties>
+        <uengine:variable json="{&quot;key&quot;:&quot;&quot;,&quot;name&quot;:&quot;신용도&quot;,&quot;type&quot;:&quot;Number&quot;,&quot;defaultValue&quot;:&quot;&quot;,&quot;description&quot;:&quot;&quot;,&quot;datasource&quot;:{&quot;type&quot;:&quot;&quot;,&quot;sql&quot;:&quot;&quot;},&quot;table&quot;:&quot;&quot;,&quot;backend&quot;:null}" name="신용도" type="Number"/>
+        <uengine:variable json="{}" name="자산" type="Number"/>
+        <uengine:variable json="{&quot;defaultValue&quot;:&quot;&quot;}" name="평가 결과" type="Text"/>
+        <uengine:variable json="{&quot;defaultValue&quot;:&quot;&quot;}" name="Lane" type="Text"/>
+      <uengine:json>{"definitionName":"test/credit_rating","version":"0.28","shortDescription":{"text":""}}</uengine:json></uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_1" name="관리자">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;},&quot;dispatchingOption&quot;:1}"/>
+        </bpmn:extensionElements>
+        <bpmn:flowNodeRef>UserTask_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0pp60zy</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0qait6k</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1nz9s4l</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_0n9dnm4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_0cujsmm" name="신용담당자">
+        <bpmn:extensionElements>
+          <uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;process-manager&quot;,&quot;groupName&quot;:&quot;IT부서&quot;},&quot;dispatchingOption&quot;:1}"/>
+        </bpmn:extensionElements>
+        <bpmn:flowNodeRef>Activity_1c46ax2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1r38vdm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_03cyypp</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="UserTask_1"/>
+    <bpmn:userTask id="UserTask_1" name="신용 정보 입력">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;url&quot;:&quot;&quot;,&quot;eventSynchronizations&quot;:[{&quot;eventType&quot;:&quot;CREDIT_REGSTERED&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;권한&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;부서&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;신용도&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;자산&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;자산&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].자산&quot;,&quot;askWhenInit&quot;:false,&quot;isVolatile&quot;:false},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;신용도&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[Arguments].신용도&quot;,&quot;askWhenInit&quot;:false,&quot;isVolatile&quot;:false},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;[lanes].신용담당자&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;transformerMapping&quot;:{&quot;transformer&quot;:{&quot;_type&quot;:&quot;org.uengine.processdesigner.mapper.transformers.JsonBuildTransformer&quot;,&quot;name&quot;:&quot;JsonBuild&quot;,&quot;location&quot;:{&quot;x&quot;:407,&quot;y&quot;:461.09375},&quot;argumentSourceMap&quot;:{&quot;key1&quot;:{&quot;_type&quot;:&quot;org.uengine.processdesigner.mapper.TransformerMapping&quot;,&quot;transformer&quot;:{&quot;_type&quot;:&quot;org.uengine.processdesigner.mapper.transformers.DirectValueTransformer&quot;,&quot;name&quot;:&quot;DirectValue&quot;,&quot;location&quot;:{&quot;x&quot;:186,&quot;y&quot;:340.09375},&quot;argumentSourceMap&quot;:{},&quot;value&quot;:&quot;group&quot;},&quot;linkedArgumentName&quot;:&quot;out&quot;},&quot;key2&quot;:{&quot;_type&quot;:&quot;org.uengine.processdesigner.mapper.TransformerMapping&quot;,&quot;transformer&quot;:{&quot;_type&quot;:&quot;org.uengine.processdesigner.mapper.transformers.DirectValueTransformer&quot;,&quot;name&quot;:&quot;DirectValue 2&quot;,&quot;location&quot;:{&quot;x&quot;:180,&quot;y&quot;:446.09375},&quot;argumentSourceMap&quot;:{},&quot;value&quot;:&quot;role&quot;},&quot;linkedArgumentName&quot;:&quot;out&quot;},&quot;val1&quot;:&quot;[Arguments].부서&quot;,&quot;val2&quot;:&quot;[Arguments].권한&quot;}},&quot;linkedArgumentName&quot;:&quot;[lanes].신용담당자&quot;},&quot;isKey&quot;:false}]}}],&quot;_type&quot;:&quot;org.uengine.kernel.URLActivity&quot;,&quot;role&quot;:&quot;관리자&quot;}"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_15wd44x</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_15wd44x" sourceRef="UserTask_1" targetRef="Activity_1c46ax2"/>
+    <bpmn:sequenceFlow id="Flow_1vkw8st" name="거절" sourceRef="Gateway_0n9dnm4" targetRef="Activity_1r38vdm">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;평가 결과&quot;,&quot;value&quot;:&quot;reject&quot;,&quot;condition&quot;:&quot;==&quot;}}"/>
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1myyqv1" name="승인" sourceRef="Gateway_0n9dnm4" targetRef="Activity_0pp60zy">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;condition&quot;:{&quot;_type&quot;:&quot;org.uengine.kernel.Evaluate&quot;,&quot;key&quot;:&quot;평가 결과&quot;,&quot;value&quot;:&quot;approve&quot;,&quot;condition&quot;:&quot;==&quot;}}"/>
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1wx6vwf" sourceRef="Activity_0pp60zy" targetRef="Event_0qait6k"/>
+    <bpmn:sequenceFlow id="Flow_1yfum1e" sourceRef="Activity_1r38vdm" targetRef="Event_03cyypp"/>
+    <bpmn:sequenceFlow id="Flow_0su7rzh" sourceRef="Activity_1nz9s4l" targetRef="Gateway_0n9dnm4"/>
+    <bpmn:sequenceFlow id="Flow_16l96i8" sourceRef="Activity_1c46ax2" targetRef="Activity_1nz9s4l"/>
+    <bpmn:userTask id="Activity_0pp60zy" name="대출 실행">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;고장 내용&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].고장 내용&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;내용&quot;,&quot;askWhenInit&quot;:false,&quot;isVolatile&quot;:false},&quot;isKey&quot;:false}]}},&quot;_type&quot;:&quot;org.uengine.kernel.HumanActivity&quot;,&quot;role&quot;:&quot;관리자&quot;}"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1myyqv1</bpmn:incoming>
+      <bpmn:outgoing>Flow_1wx6vwf</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_0qait6k">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;관리자&quot;}"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1wx6vwf</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:businessRuleTask id="Activity_1nz9s4l" name="신용 평가">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;eventSynchronization&quot;:{&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;평가 결과&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;[businessRule].r_21444bd5_d2bb_453f_866a_2018396eb03f.out_outcome&quot;,&quot;askWhenInit&quot;:false,&quot;isVolatile&quot;:false},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;[businessRule].r_21444bd5_d2bb_453f_866a_2018396eb03f.in_key_1776997046655&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;신용도&quot;,&quot;askWhenInit&quot;:false,&quot;isVolatile&quot;:false},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;[businessRule].r_21444bd5_d2bb_453f_866a_2018396eb03f.in_자산&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;자산&quot;,&quot;askWhenInit&quot;:false,&quot;isVolatile&quot;:false},&quot;isKey&quot;:false}]}},&quot;businessRuleId&quot;:&quot;21444bd5-d2bb-453f-866a-2018396eb03f&quot;,&quot;_type&quot;:&quot;org.uengine.kernel.bpmn.BusinessRuleTask&quot;,&quot;role&quot;:&quot;관리자&quot;}"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_16l96i8</bpmn:incoming>
+      <bpmn:outgoing>Flow_0su7rzh</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="Gateway_0n9dnm4">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;관리자&quot;}"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0su7rzh</bpmn:incoming>
+      <bpmn:outgoing>Flow_1vkw8st</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1myyqv1</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Activity_1c46ax2" name="신용 정보 확인">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;신용 정보&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[]}},&quot;_type&quot;:&quot;org.uengine.kernel.HumanActivity&quot;,&quot;role&quot;:&quot;신용담당자&quot;}"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_15wd44x</bpmn:incoming>
+      <bpmn:outgoing>Flow_16l96i8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_1r38vdm" name="반려 통지">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;고장 내용&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].고장 내용&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;내용&quot;,&quot;askWhenInit&quot;:false,&quot;isVolatile&quot;:false},&quot;isKey&quot;:false}]}},&quot;_type&quot;:&quot;org.uengine.kernel.HumanActivity&quot;,&quot;role&quot;:&quot;신용담당자&quot;}"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1vkw8st</bpmn:incoming>
+      <bpmn:outgoing>Flow_1yfum1e</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_03cyypp">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;신용담당자&quot;}"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1yfum1e</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:extensionElements>
+        <uengine:properties json="{&quot;role&quot;:&quot;관리자&quot;,&quot;eventKey&quot;:&quot;START_CREDIT_RATING&quot;,&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;부서&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;권한&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;[lanes].관리자&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;transformerMapping&quot;:{&quot;transformer&quot;:{&quot;_type&quot;:&quot;org.uengine.processdesigner.mapper.transformers.JsonBuildTransformer&quot;,&quot;name&quot;:&quot;JsonBuild&quot;,&quot;location&quot;:{&quot;x&quot;:472,&quot;y&quot;:388.09375},&quot;argumentSourceMap&quot;:{&quot;key1&quot;:{&quot;_type&quot;:&quot;org.uengine.processdesigner.mapper.TransformerMapping&quot;,&quot;transformer&quot;:{&quot;_type&quot;:&quot;org.uengine.processdesigner.mapper.transformers.DirectValueTransformer&quot;,&quot;name&quot;:&quot;DirectValue&quot;,&quot;location&quot;:{&quot;x&quot;:205,&quot;y&quot;:264.09375},&quot;argumentSourceMap&quot;:{},&quot;value&quot;:&quot;group&quot;},&quot;linkedArgumentName&quot;:&quot;out&quot;},&quot;key2&quot;:{&quot;_type&quot;:&quot;org.uengine.processdesigner.mapper.TransformerMapping&quot;,&quot;transformer&quot;:{&quot;_type&quot;:&quot;org.uengine.processdesigner.mapper.transformers.DirectValueTransformer&quot;,&quot;name&quot;:&quot;DirectValue 2&quot;,&quot;location&quot;:{&quot;x&quot;:186,&quot;y&quot;:497.09375},&quot;argumentSourceMap&quot;:{},&quot;value&quot;:&quot;role&quot;},&quot;linkedArgumentName&quot;:&quot;out&quot;},&quot;val1&quot;:&quot;[Arguments].부서&quot;,&quot;val2&quot;:&quot;[Arguments].권한&quot;}},&quot;linkedArgumentName&quot;:&quot;[lanes].관리자&quot;},&quot;isKey&quot;:false}]}}}"/>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_1_di" bpmnElement="Participant_1" isHorizontal="true">
+        <dc:Bounds x="-30" y="0" width="1080" height="240"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0cujsmm_di" bpmnElement="Lane_0cujsmm" isHorizontal="true">
+        <dc:Bounds x="0" y="120" width="1050" height="120"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1_di" bpmnElement="Lane_1" isHorizontal="true">
+        <dc:Bounds x="0" y="0" width="1050" height="120"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_1_di" bpmnElement="UserTask_1">
+        <dc:Bounds x="140" y="20" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0pp60zy_di" bpmnElement="Activity_0pp60zy">
+        <dc:Bounds x="740" y="20" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0qait6k_di" bpmnElement="Event_0qait6k">
+        <dc:Bounds x="922" y="42" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1cp1p7v_di" bpmnElement="Activity_1nz9s4l">
+        <dc:Bounds x="440" y="20" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0n9dnm4_di" bpmnElement="Gateway_0n9dnm4" isMarkerVisible="true">
+        <dc:Bounds x="615" y="35" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1c46ax2_di" bpmnElement="Activity_1c46ax2">
+        <dc:Bounds x="290" y="140" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1r38vdm_di" bpmnElement="Activity_1r38vdm">
+        <dc:Bounds x="740" y="140" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_03cyypp_di" bpmnElement="Event_03cyypp">
+        <dc:Bounds x="922" y="162" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0nsotaz_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="22" y="42" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="28" y="85" width="25" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="58" y="60"/>
+        <di:waypoint x="140" y="60"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15wd44x_di" bpmnElement="Flow_15wd44x">
+        <di:waypoint x="240" y="60"/>
+        <di:waypoint x="260" y="60"/>
+        <di:waypoint x="260" y="180"/>
+        <di:waypoint x="290" y="180"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vkw8st_di" bpmnElement="Flow_1vkw8st">
+        <di:waypoint x="665" y="60"/>
+        <di:waypoint x="680" y="60"/>
+        <di:waypoint x="680" y="180"/>
+        <di:waypoint x="740" y="180"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="685" y="153" width="21" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1myyqv1_di" bpmnElement="Flow_1myyqv1">
+        <di:waypoint x="665" y="60"/>
+        <di:waypoint x="740" y="60"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="699" y="42" width="21" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1wx6vwf_di" bpmnElement="Flow_1wx6vwf">
+        <di:waypoint x="840" y="60"/>
+        <di:waypoint x="922" y="60"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1yfum1e_di" bpmnElement="Flow_1yfum1e">
+        <di:waypoint x="840" y="180"/>
+        <di:waypoint x="922" y="180"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0su7rzh_di" bpmnElement="Flow_0su7rzh">
+        <di:waypoint x="540" y="60"/>
+        <di:waypoint x="615" y="60"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16l96i8_di" bpmnElement="Flow_16l96i8">
+        <di:waypoint x="390" y="180"/>
+        <di:waypoint x="410" y="180"/>
+        <di:waypoint x="410" y="60"/>
+        <di:waypoint x="440" y="60"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

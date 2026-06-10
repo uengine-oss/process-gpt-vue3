@@ -1779,6 +1779,9 @@ export default {
                     } else {
                         // uEngine 모드
                         me.isEditable = true;
+                        me.lock = false;
+                        me.disableChat = false;
+                        me.isViewMode = false;
                     }
                 } else if (lastPath == 'chat') {
                     // me.processDefinition = null;
@@ -1814,8 +1817,14 @@ export default {
                     document.title = me.projectName;
                 }
                 if (me.$route.query && me.$route.query.edit) {
-                    me.lock = true;
-                    me.toggleLock();
+                    if (!me.useLock || window.$mode === 'uEngine') {
+                        me.lock = false;
+                        me.disableChat = false;
+                        me.isViewMode = false;
+                    } else {
+                        me.lock = true;
+                        me.toggleLock();
+                    }
                 }
                 // Review Mode: Board에서 [Review] 클릭 시 진입
                 if (me.$route.query && me.$route.query.reviewMode === 'true') {

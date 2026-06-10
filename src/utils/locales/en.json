@@ -1514,7 +1514,12 @@
         "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?",
         "skills": "Skills",
         "taskCatalog": "Task Catalog",
-        "orgChartGroup": "Org Groups"
+        "orgChartGroup": "Org Groups",
+        "github": "GitHub Settings",
+        "githubUsername": "GitHub Username",
+        "githubToken": "GitHub Token (Personal Access Token)",
+        "githubTokenHint": "You can generate a token at GitHub → Settings → Developer settings → Personal access tokens. The repo scope is required.",
+        "githubSaveSuccess": "GitHub account information has been saved."
     },
     "orgChartGroup": {
         "title": "Organization Group Management",
@@ -2676,6 +2681,9 @@
         "serializeFailed": "(cannot serialize)",
         "unknownError": "Unknown error",
         "noneLabel": "none",
+        "boolTrue": "Yes",
+        "boolFalse": "No",
+        "itemCount": "{count} item(s)",
         "formFallbackTitle": "Form",
         "noTaskId": "initiate response has no task_id",
         "formatNext": "Next: {names}",

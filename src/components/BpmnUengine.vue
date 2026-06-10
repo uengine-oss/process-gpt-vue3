@@ -93,9 +93,13 @@ import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
 import '@/components/autoLayout/bpmn-auto-layout.js';
+import '@/components/autoLayout/edge-router-orthogonal.js';
+import '@/components/autoLayout/bpmn-waypoints-refresh.js';
+import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequence-flow-final-module.js';
+import sequenceFlowManualCropSkipModule from '@/components/autoLayout/sequence-flow-manual-crop-skip-module.js';
 import { markRaw } from 'vue';
 import minimapModule from 'diagram-js-minimap';
-import { uengineJsonElementToAttr, uengineJsonAttrToElement, isUengineMode } from '@/utils/uengineXmlTransform';
+import { uengineJsonElementToAttr, uengineJsonAttrToElement, normalizeUengineBpmnXmlForBackend, isUengineMode } from '@/utils/uengineXmlTransform';
 import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 
@@ -218,7 +222,10 @@ export default {
         async getXML() {
             let xmlObj = await this.bpmnViewer.saveXML({ format: true, preamble: true });
             let xml = xmlObj.xml;
-            if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
+            if (isUengineMode()) {
+                xml = uengineJsonAttrToElement(xml);
+                xml = normalizeUengineBpmnXmlForBackend(xml, null);
+            }
             return xml;
         },
         mode() {
@@ -310,6 +317,19 @@ export default {
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
         }
+        if (this._layoutTimeout) {
+            clearTimeout(this._layoutTimeout);
+            this._layoutTimeout = null;
+        }
+        if (this.bpmnViewer && typeof this.bpmnViewer.destroy === 'function') {
+            try {
+                this.bpmnViewer.destroy();
+            } catch (e) {
+                console.warn('[BpmnUengine] destroy failed:', e);
+            }
+        }
+        this.bpmnViewer = null;
+        this.bpmnModeler = null;
     },
     watch: {
         bpmn: {
@@ -1074,7 +1094,18 @@ export default {
                     element.di.isHorizontal = true;
                 }
             });
-            self.resetZoom();
+            const refreshLabels = () => {
+                window.BpmnAutoLayout?.adjustLabelsAfterLayout?.(self.bpmnViewer);
+            };
+            setTimeout(() => {
+                refreshLabels();
+                requestAnimationFrame(() => requestAnimationFrame(refreshLabels));
+                setTimeout(refreshLabels, 120);
+                setTimeout(() => {
+                    refreshLabels();
+                    self.resetZoom();
+                }, 300);
+            }, 0);
         },
         initDefaultOrientation(orientation = null) {
             let self = this;
@@ -1142,7 +1173,10 @@ export default {
                 if (self.bpmn) {
                     self.$nextTick(async () => {
                         let { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                        if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
+                        if (isUengineMode()) {
+                            xml = uengineJsonAttrToElement(xml);
+                            xml = normalizeUengineBpmnXmlForBackend(xml, null);
+                        }
                         self.bpmnXML = xml;
                         self.validate();
                     });
@@ -1396,7 +1430,10 @@ export default {
                     console.log('commandStack.changed');
                     if (self.bpmn) {
                         let { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                        if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
+                        if (isUengineMode()) {
+                            xml = uengineJsonAttrToElement(xml);
+                            xml = normalizeUengineBpmnXmlForBackend(xml, null);
+                        }
                         self.bpmnXML = xml;
                         self.validate();
                     }
@@ -1536,7 +1573,9 @@ export default {
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
                 // PAL 모드에서도 엑셀 등으로 BPMN 로드 시 자동 레이아웃 적용
-                self.applyAutoLayout();
+                if (window.$mode !== 'uEngine') {
+                    self.applyAutoLayout();
+                }
                 self.resetZoom();
             });
 
@@ -1634,6 +1673,8 @@ export default {
                         },
                         additionalModules: [
                             customBpmnModule,
+                            customSequenceFlowFinalModule,
+                            sequenceFlowManualCropSkipModule,
                             {
                                 __init__: ['paletteProvider'],
                                 paletteProvider: ['type', paletteProvider],
@@ -1670,6 +1711,8 @@ export default {
                     },
                     additionalModules: [
                         customBpmnModule,
+                        customSequenceFlowFinalModule,
+                        sequenceFlowManualCropSkipModule,
                         {
                             __init__: ['paletteProvider'],
                             paletteProvider: ['type', paletteProvider],

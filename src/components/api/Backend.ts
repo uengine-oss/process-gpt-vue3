@@ -103,6 +103,8 @@ export interface Backend {
     downloadFile(path: string): Promise<any>;
     getTenant(tenantId: string): Promise<any>;
     setTenant(tenantId: string): Promise<any>;
+    getGithubInfo(): Promise<any>;
+    saveGithubInfo(githubInfo: { github_username: string; github_token: string }): Promise<any>;
     updateUser(userInfo: any): Promise<any>;
     getAllWorkListByInstId(instId: number): Promise<any>;
     listMarketplaceDefinition(): Promise<any>;

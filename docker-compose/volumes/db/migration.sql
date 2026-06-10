@@ -382,6 +382,8 @@ ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS google_credentials json
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS google_credentials_updated_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS github_token text;
+ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS github_username text;
 
 -- project table
 ALTER TABLE public.project ADD COLUMN IF NOT EXISTS name character varying;

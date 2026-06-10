@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0bfky9r" name="기자재 검토" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
+  <bpmn:collaboration id="Collaboration_1o6g9f5">
+    <bpmn:participant id="Participant_0bljboh" processRef="Process_1oscmbn">
+      <bpmn:extensionElements>
+        <uengine:properties>
+          <uengine:json>{}</uengine:json>
+        </uengine:properties>
+      </bpmn:extensionElements>
+    </bpmn:participant>
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1oscmbn" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties>
+        <uengine:json>{"definitionName":"기자재 검토","version":"1.0","shortDescription":{"text":null}}</uengine:json>
+      </uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_077pztp">
+      <bpmn:lane id="Lane_03wi015" name="본사">
+        <bpmn:extensionElements>
+          <uengine:properties>
+            <uengine:json>{}</uengine:json>
+          </uengine:properties>
+        </bpmn:extensionElements>
+        <bpmn:flowNodeRef>Activity_08fk7xu</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0k7oa7j</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1h86tkc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1to5rio</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1cyw7jh</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_057zmsx</bpmn:flowNodeRef>
+        <bpmn:childLaneSet id="LaneSet_0qijk4k">
+          <bpmn:lane id="Lane_174e16q" name="계약">
+            <bpmn:extensionElements>
+              <uengine:properties>
+                <uengine:json>{}</uengine:json>
+              </uengine:properties>
+            </bpmn:extensionElements>
+            <bpmn:flowNodeRef>Activity_1cyw7jh</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_057zmsx</bpmn:flowNodeRef>
+          </bpmn:lane>
+          <bpmn:lane id="Lane_0zz5wbl" name="플랜트구매">
+            <bpmn:extensionElements>
+              <uengine:properties>
+                <uengine:json>{}</uengine:json>
+              </uengine:properties>
+            </bpmn:extensionElements>
+            <bpmn:flowNodeRef>Activity_08fk7xu</bpmn:flowNodeRef>
+          </bpmn:lane>
+          <bpmn:lane id="Lane_1qj1nyd" name="조달실">
+            <bpmn:extensionElements>
+              <uengine:properties>
+                <uengine:json>{}</uengine:json>
+              </uengine:properties>
+            </bpmn:extensionElements>
+            <bpmn:flowNodeRef>Event_0k7oa7j</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1h86tkc</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1to5rio</bpmn:flowNodeRef>
+          </bpmn:lane>
+        </bpmn:childLaneSet>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_09su9lq" name="현장">
+        <bpmn:extensionElements>
+          <uengine:properties>
+            <uengine:json>{}</uengine:json>
+          </uengine:properties>
+        </bpmn:extensionElements>
+        <bpmn:flowNodeRef>Activity_0rruzt5</bpmn:flowNodeRef>
+        <bpmn:childLaneSet id="LaneSet_0kar5pm">
+          <bpmn:lane id="Lane_0fuvkx4" name="공정">
+            <bpmn:extensionElements>
+              <uengine:properties>
+                <uengine:json>{}</uengine:json>
+              </uengine:properties>
+            </bpmn:extensionElements>
+            <bpmn:flowNodeRef>Activity_0rruzt5</bpmn:flowNodeRef>
+          </bpmn:lane>
+        </bpmn:childLaneSet>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="Flow_182m6mx" sourceRef="Event_0k7oa7j" targetRef="Activity_1h86tkc" />
+    <bpmn:sequenceFlow id="Flow_0vbzvq8" sourceRef="Activity_1h86tkc" targetRef="Activity_1to5rio" />
+    <bpmn:sequenceFlow id="Flow_189dkjv" sourceRef="Activity_1to5rio" targetRef="Activity_0rruzt5" />
+    <bpmn:userTask id="Activity_0rruzt5" name="현장 적합성 판단">
+      <bpmn:extensionElements>
+        <uengine:properties>
+          <uengine:json>{"role":"현장"}</uengine:json>
+        </uengine:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_189dkjv</bpmn:incoming>
+      <bpmn:outgoing>Flow_170g4i6</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_170g4i6" sourceRef="Activity_0rruzt5" targetRef="Activity_08fk7xu" />
+    <bpmn:userTask id="Activity_08fk7xu" name="결재 요청">
+      <bpmn:extensionElements>
+        <uengine:properties>
+          <uengine:json>{"role":"본사"}</uengine:json>
+        </uengine:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_170g4i6</bpmn:incoming>
+      <bpmn:outgoing>Flow_0agw746</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:startEvent id="Event_0k7oa7j">
+      <bpmn:extensionElements>
+        <uengine:properties>
+          <uengine:json>{"role":"본사"}</uengine:json>
+        </uengine:properties>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_182m6mx</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Activity_1h86tkc" name="사양 확인">
+      <bpmn:extensionElements>
+        <uengine:properties>
+          <uengine:json>{"role":"본사"}</uengine:json>
+        </uengine:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_182m6mx</bpmn:incoming>
+      <bpmn:outgoing>Flow_0vbzvq8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_1to5rio" name="도면 검토">
+      <bpmn:extensionElements>
+        <uengine:properties>
+          <uengine:json>{"role":"본사"}</uengine:json>
+        </uengine:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0vbzvq8</bpmn:incoming>
+      <bpmn:outgoing>Flow_189dkjv</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_0agw746" sourceRef="Activity_08fk7xu" targetRef="Activity_1cyw7jh" />
+    <bpmn:userTask id="Activity_1cyw7jh" name="결재 승인">
+      <bpmn:extensionElements>
+        <uengine:properties>
+          <uengine:json>{"role":"본사"}</uengine:json>
+        </uengine:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0agw746</bpmn:incoming>
+      <bpmn:outgoing>Flow_1rtlcpj</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_057zmsx">
+      <bpmn:extensionElements>
+        <uengine:properties>
+          <uengine:json>{"role":"본사"}</uengine:json>
+        </uengine:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1rtlcpj</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1rtlcpj" sourceRef="Activity_1cyw7jh" targetRef="Event_057zmsx" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1o6g9f5">
+      <bpmndi:BPMNShape id="Participant_0bljboh_di" bpmnElement="Participant_0bljboh" isHorizontal="true">
+        <dc:Bounds x="200" y="-20" width="1070" height="470" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_09su9lq_di" bpmnElement="Lane_09su9lq" isHorizontal="true">
+        <dc:Bounds x="230" y="331" width="1040" height="119" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0fuvkx4_di" bpmnElement="Lane_0fuvkx4" isHorizontal="true">
+        <dc:Bounds x="260" y="331" width="1010" height="119" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_03wi015_di" bpmnElement="Lane_03wi015" isHorizontal="true">
+        <dc:Bounds x="230" y="-20" width="1040" height="351" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1qj1nyd_di" bpmnElement="Lane_1qj1nyd" isHorizontal="true">
+        <dc:Bounds x="260" y="220" width="1010" height="111" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0zz5wbl_di" bpmnElement="Lane_0zz5wbl" isHorizontal="true">
+        <dc:Bounds x="260" y="100" width="1010" height="120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_174e16q_di" bpmnElement="Lane_174e16q" isHorizontal="true">
+        <dc:Bounds x="260" y="-20" width="1010" height="120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0fjeoh2_di" bpmnElement="Activity_0rruzt5">
+        <dc:Bounds x="710" y="350" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0k3yjjx_di" bpmnElement="Activity_08fk7xu">
+        <dc:Bounds x="870" y="120" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0k7oa7j_di" bpmnElement="Event_0k7oa7j">
+        <dc:Bounds x="312" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_02wk72h_di" bpmnElement="Activity_1h86tkc">
+        <dc:Bounds x="390" y="230" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0zosisj_di" bpmnElement="Activity_1to5rio">
+        <dc:Bounds x="550" y="230" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0f9ydgl_di" bpmnElement="Activity_1cyw7jh">
+        <dc:Bounds x="1030" y="-10" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_057zmsx_di" bpmnElement="Event_057zmsx">
+        <dc:Bounds x="1192" y="12" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_182m6mx_di" bpmnElement="Flow_182m6mx">
+        <di:waypoint x="348" y="270" />
+        <di:waypoint x="390" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vbzvq8_di" bpmnElement="Flow_0vbzvq8">
+        <di:waypoint x="490" y="270" />
+        <di:waypoint x="550" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_189dkjv_di" bpmnElement="Flow_189dkjv">
+        <di:waypoint x="650" y="270" />
+        <di:waypoint x="680" y="270" />
+        <di:waypoint x="680" y="390" />
+        <di:waypoint x="710" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_170g4i6_di" bpmnElement="Flow_170g4i6">
+        <di:waypoint x="810" y="390" />
+        <di:waypoint x="840" y="390" />
+        <di:waypoint x="840" y="160" />
+        <di:waypoint x="870" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0agw746_di" bpmnElement="Flow_0agw746">
+        <di:waypoint x="970" y="160" />
+        <di:waypoint x="1000" y="160" />
+        <di:waypoint x="1000" y="30" />
+        <di:waypoint x="1030" y="30" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1rtlcpj_di" bpmnElement="Flow_1rtlcpj">
+        <di:waypoint x="1130" y="30" />
+        <di:waypoint x="1192" y="30" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

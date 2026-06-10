@@ -143,7 +143,7 @@
 
                             <Chat
                                 ref="chatView"
-                                :messages="messages"
+                                :messages="displayMessages"
                                 :userInfo="userInfo"
                                 :userList="userList"
                                 :currentChatRoom="currentChatRoom"
@@ -308,7 +308,7 @@
 
                         <Chat
                             ref="chatView"
-                            :messages="messages"
+                            :messages="displayMessages"
                             :userInfo="userInfo"
                             :userList="userList"
                             :currentChatRoom="draftUserContextRoom"
@@ -449,7 +449,7 @@
 
                     <Chat
                         ref="chatView"
-                        :messages="messages"
+                        :messages="displayMessages"
                         :userInfo="userInfo"
                         :userList="userList"
                         :currentChatRoom="draftContextRoom"
@@ -863,6 +863,7 @@ export default {
             isLoadingRoom: false,
             currentChatRoom: null,
             messages: [],
+            activeStreams: {}, // 스트리밍 중인 assistant 메시지 { [agentId]: msgObject }
             chatsWatchRef: null,
             attachmentsWatchRef: null,
 
@@ -985,15 +986,21 @@ export default {
         };
     },
     computed: {
+        // DB 확정 메시지 + 현재 스트리밍 중인 임시 메시지를 합쳐 Chat 컴포넌트에 전달
+        displayMessages() {
+            const streams = Object.values(this.activeStreams);
+            if (streams.length === 0) return this.messages;
+            return [...this.messages, ...streams];
+        },
         /**
          * 마지막 메시지에서 미제출 __humanFeedback 추출
          * 입력부 상단에 표시할 human feedback 데이터
          */
         pendingHumanFeedback() {
-            if (!this.messages || this.messages.length === 0) return null;
-            // 마지막부터 역순으로 찾기
-            for (let i = this.messages.length - 1; i >= 0; i--) {
-                const msg = this.messages[i];
+            // activeStreams 포함 전체 표시 메시지에서 미제출 HITL 피드백 탐색
+            const allMsgs = [...this.messages, ...Object.values(this.activeStreams)];
+            for (let i = allMsgs.length - 1; i >= 0; i--) {
+                const msg = allMsgs[i];
                 const feedback = msg && msg.__humanFeedback ? msg.__humanFeedback : null;
                 const hasOptions =
                     (Array.isArray(feedback?.questions) && feedback.questions.length > 0) ||
@@ -2566,7 +2573,6 @@ export default {
                 if (!ctx || typeof ctx !== 'object') return;
 
                 const enabled = ctx.enabled && typeof ctx.enabled === 'object' ? ctx.enabled : {};
-                const enabledTools = enabled.tools === true || Array.isArray(ctx.tools);
                 const enabledSkills = enabled.skills === true || Array.isArray(ctx.skills);
                 const enabledTodos = enabled.todos === true || Array.isArray(ctx.todos);
 
@@ -2574,23 +2580,31 @@ export default {
                 const skills = Array.isArray(ctx.skills) ? ctx.skills : [];
                 const todos = Array.isArray(ctx.todos) ? ctx.todos : [];
 
-                if (enabledTools) {
-                    this.planSideInfoEnabled.tools = true;
-                    const byId = {};
+                // ctx.tools → 활동 패널 복원 (도구·서브에이전트 실행 내역)
+                if (tools.length > 0) {
+                    this._activityOrder = 0;
+                    this.plannedActivityById = {};
                     for (let i = 0; i < tools.length; i++) {
                         const t = tools[i] || {};
-                        const id = (t.id || '').toString() || `restored-${i}`;
-                        byId[id] = {
-                            id,
-                            tool: (t.tool || t.name || '').toString(),
-                            name: (t.name || t.tool || '').toString(),
-                            displayName: (t.displayName || t.display_name || '').toString() || this.formatToolName(t.tool || t.name || ''),
-                            status: (t.status || 'planned').toString(),
-                            __order: i
-                        };
+                        const toolName = (t.tool || t.name || '').toString();
+                        if (!toolName) continue;
+                        this.recordActivity({
+                            id: (t.id || '').toString() || `restored-${i}`,
+                            tool: toolName,
+                            name: toolName,
+                            displayName: (t.displayName || t.display_name || '').toString() || this.formatToolName(toolName),
+                            kind: toolName === 'task' ? 'subagent' : 'tool',
+                            subagentType: (t.subagentType || t.subagent_type || '').toString(),
+                            status: (t.status || 'done').toString()
+                        });
                     }
-                    this.plannedToolsById = byId;
-                    this.upsertToolsPanel();
+                }
+
+                // ctx.knowledgeDocs → 지식 베이스 패널 복원
+                const knowledgeDocs = Array.isArray(ctx.knowledgeDocs) ? ctx.knowledgeDocs : [];
+                if (knowledgeDocs.length > 0) {
+                    this.selectedKnowledgeDocs = knowledgeDocs;
+                    this.upsertKnowledgePanel();
                 }
 
                 if (enabledSkills) {
@@ -2934,36 +2948,30 @@ export default {
                     this.persistMessageFrontendState(this.messages[exists], roomId);
                     return;
                 }
-                // 스트리밍 중 생성한 임시(isOptimistic) 메시지가 있다면 제거한다.
-                // 서버에서 저장된 정식 메시지가 실시간으로 들어오므로, 임시는 삭제하고 정식을 push하게 함.
-                // 단, __humanFeedback / toolCalls / processPreview / pdf2bpmnResult / runState /
-                // openuiLang 등은 백엔드 DB 에 저장되지 않는 프런트엔드 전용 상태이므로,
-                // 삭제 직전에 incoming 으로 이관하여 HITL 패널(예: pdf2bpmn 강도 선택)이 사라지지 않게 한다.
-                // 또한 __humanFeedback 이 이관됐다면 chats.messages jsonb 에도 같이 영속화하여
-                // 새로고침 후에도 패널이 살아남도록 한다.
+                // activeStreams에서 이 realtime 메시지에 대응하는 스트리밍 항목을 찾아 제거한다.
+                // 프런트엔드 전용 상태(__humanFeedback / toolCalls 등)는 incoming으로 이관해
+                // 새로고침 후에도 HITL 패널이 유지되도록 한다.
                 try {
                     if (typeof incoming === 'object' && (incoming.role || '').toString() === 'assistant') {
                         const inAgentId = (incoming.agentId || '').toString();
                         const inEmail = (incoming.email || '').toString();
 
-                        const optimisticIdx = this.messages.findIndex((m) => {
-                            if (!m) return false;
-                            return m.isOptimistic && (
-                                (m.agentId && m.agentId.toString() === inAgentId) || 
-                                (m.email && m.email.toString() === inEmail)
-                            );
-                        });
+                        const activeKeys = Object.keys(this.activeStreams);
+                        const matchKey = activeKeys.find((k) => {
+                            const s = this.activeStreams[k];
+                            if (inAgentId && s.agentId && s.agentId.toString() === inAgentId) return true;
+                            if (inEmail && s.email && s.email.toString() === inEmail) return true;
+                            return false;
+                        }) ?? (activeKeys.length === 1 ? activeKeys[0] : null);
 
-                        if (optimisticIdx !== -1) {
-                            this.carryOptimisticOnlyFields(this.messages[optimisticIdx], incoming);
-                            this.messages.splice(optimisticIdx, 1);
-                            // 옮긴 프런트엔드 전용 상태를 DB jsonb 에도 저장해
-                            // 새로고침 후 채팅방을 다시 열어도 그대로 복원되도록 한다.
+                        if (matchKey) {
+                            this.carryOptimisticOnlyFields(this.activeStreams[matchKey], incoming);
+                            delete this.activeStreams[matchKey];
                             this.persistMessageFrontendState(incoming, roomId);
                         }
                     }
                 } catch (e) {
-                    console.error('Optimistic cleanup error:', e);
+                    console.error('activeStreams cleanup error:', e);
                 }
                 // uuid가 다르게 들어오는 경우(또는 이중 submit)로 인한 중복 방지: 내용/작성자/시간이 거의 동일하면 덮어쓰기
                 try {
@@ -5071,13 +5079,13 @@ export default {
             }
         },
 
-        pushHwpxArtifact(parsed, msgIdx) {
+        pushHwpxArtifact(parsed, msgIdxOrRef) {
             const url = this.extractHwpxHtmlUrl(parsed);
             if (!url) return;
             const name = (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
             const isFilled = name.startsWith('filled-') || url.includes('filled-');
             if (!isFilled) return;
-            const msg = this.messages?.[msgIdx];
+            const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
             const fileUrl = parsed?.file_url || parsed?.fileUrl || msg?.hwpxFileUrl || '';
             if (msg) {
                 msg.hwpxHtmlUrl = url;
@@ -5091,11 +5099,11 @@ export default {
             });
         },
 
-        pushDocxArtifact(parsed, msgIdx) {
+        pushDocxArtifact(parsed, msgIdxOrRef) {
             const url = this.extractHwpxHtmlUrl(parsed);
             if (!url) return;
             const name = (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
-            const msg = this.messages?.[msgIdx];
+            const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
             const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
             this.pushArtifactPanel({
                 type: 'docx',
@@ -5110,10 +5118,10 @@ export default {
         },
 
         /** generate_slides 결과를 슬라이드 아티팩트 패널로 등록 */
-        pushSlideArtifact(parsed, msgIdx) {
+        pushSlideArtifact(parsed, msgIdxOrRef) {
             const md = parsed?.slide_markdown;
             if (!md) return;
-            const msg = this.messages?.[msgIdx];
+            const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
             const title = parsed?.deck_title || '슬라이드';
             const imageUrls = parsed?.image_urls || [];
             if (msg) {
@@ -5159,7 +5167,7 @@ export default {
             window.removeEventListener('mouseup', this.stopArtifactSidebarResize);
         },
 
-        applyHwpxViewerFromToolCalls(toolCalls, msgIdx) {
+        applyHwpxViewerFromToolCalls(toolCalls, msgIdxOrRef) {
             if (!Array.isArray(toolCalls) || toolCalls.length === 0) return;
             for (let i = toolCalls.length - 1; i >= 0; i--) {
                 const outputStr = toolCalls[i]?.output;
@@ -5167,21 +5175,21 @@ export default {
                 const parsed = this.parseToolOutput(outputStr);
                 // 슬라이드 아티팩트 감지
                 if (this.isSlidePayload(parsed)) {
-                    this.pushSlideArtifact(parsed, msgIdx);
+                    this.pushSlideArtifact(parsed, msgIdxOrRef);
                     return;
                 }
                 const url = this.extractHwpxHtmlUrl(parsed);
                 if (url) {
                     if (this.isDocxPayload(parsed)) {
-                        this.pushDocxArtifact(parsed, msgIdx);
+                        this.pushDocxArtifact(parsed, msgIdxOrRef);
                     } else {
-                        this.pushHwpxArtifact(parsed, msgIdx);
+                        this.pushHwpxArtifact(parsed, msgIdxOrRef);
                     }
                     return;
                 }
                 const textUrl = this.extractHwpxHtmlUrlFromText(outputStr);
                 if (textUrl) {
-                    this.pushHwpxArtifact({ html_url: textUrl }, msgIdx);
+                    this.pushHwpxArtifact({ html_url: textUrl }, msgIdxOrRef);
                     return;
                 }
             }
@@ -5784,9 +5792,10 @@ export default {
         },
 
         appendAgentLogToMessage(assistantUuid, entry) {
-            const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-            if (idx === -1) return;
-            const target = this.messages[idx];
+            const target =
+                Object.values(this.activeStreams).find((s) => s?.uuid === assistantUuid) ??
+                this.messages.find((m) => m?.uuid === assistantUuid);
+            if (!target) return;
             const logs = Array.isArray(target.agentLogs) ? target.agentLogs : [];
             logs.push({
                 ts: new Date().toISOString(),
@@ -5865,15 +5874,14 @@ export default {
                 if (!agentId) return;
 
                 const assistantUuid = this.uuid();
-                const assistantMsgBase = {
+                // activeStreams[agentId]에 스트리밍 메시지 등록 → displayMessages 통해 렌더됨
+                // DB 확정 메시지가 실시간으로 도착하면 handleRealtimeMessage에서 제거
+                this.activeStreams[agentId] = {
                     uuid: assistantUuid,
                     role: 'assistant',
-                    // WorkAssistantChatPanel 방식: 스트리밍 중엔 로딩 영역에서 텍스트가 늘어나고
-                    // 완료되면 같은 메시지 객체가 "최종 버블"로 확정됨
                     content: '생각 중...',
                     contentType: 'text',
                     isLoading: true,
-                    isOptimistic: true, // 프론트엔드 전용 임시 메시지 식별자
                     toolCalls: [],
                     timeStamp: new Date().toISOString(),
                     email: agentTarget.email || `agent:${agentId}`,
@@ -5888,14 +5896,8 @@ export default {
                 };
 
                 let full = '';
-                let created = false;
                 let lastScrollAt = 0;
                 const messageForAgent = this.buildMessageForAgent(userText, payload, agentTarget.policy);
-                const ensureCreated = () => {
-                    if (created) return;
-                    created = true;
-                    this.messages.push({ ...assistantMsgBase, content: assistantMsgBase.content || full || '' });
-                };
                 const maybeScroll = () => {
                     const now = Date.now();
                     if (now - lastScrollAt < 120) return;
@@ -5903,8 +5905,6 @@ export default {
                     this.$nextTick(() => this.scrollToBottomSafe());
                 };
 
-                // show loading bubble immediately (even while warmup is happening)
-                ensureCreated();
                 maybeScroll();
 
                 // warmup (process-gpt-agent는 라우터 warmup 대상이 아님)
@@ -5918,10 +5918,12 @@ export default {
                     } catch (e) {
                         console.error('streamAgents warmup error', e);
                         this.setAgentStatus(agentId, { state: 'error', message: '준비 실패' });
-                        const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                        if (idx !== -1) {
-                            this.messages[idx].content = '(에이전트 준비 실패)';
-                            this.messages[idx].isLoading = false;
+                        const warmupMsg = this.activeStreams[agentId];
+                        if (warmupMsg) {
+                            warmupMsg.content = '(에이전트 준비 실패)';
+                            warmupMsg.isLoading = false;
+                            this.messages.push(this.normalizeAssistantMessageForDisplay(warmupMsg));
+                            delete this.activeStreams[agentId];
                         }
                         return;
                     }
@@ -6003,15 +6005,12 @@ export default {
                 const callbacks = {
                     onToken: (token) => {
                         full += token;
-                        const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                        if (idx !== -1) {
-                            // human feedback이 감지된 경우 간결한 안내만 표시
-                            if (hasHumanFeedback) {
-                                this.messages[idx].content = '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.';
-                            } else {
-                                this.messages[idx].content = full.length === 0 ? '생각 중...' : full;
-                            }
-                            this.messages[idx].isLoading = true;
+                        const msg = this.activeStreams[agentId];
+                        if (msg) {
+                            msg.content = hasHumanFeedback
+                                ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
+                                : (full.length === 0 ? '생각 중...' : full);
+                            msg.isLoading = true;
                         }
                         this.setAgentStatus(agentId, { state: 'streaming', message: '' });
                         maybeScroll();
@@ -6065,20 +6064,19 @@ export default {
                     },
                     onToolStart: (tool, input, rawEvent) => {
                         try {
-                            const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                            if (idx === -1) return;
+                            const msg = this.activeStreams[agentId];
+                            if (!msg) return;
                             const name = (tool?.name || tool || '').toString();
                             if (!name) return;
-                            const cur = this.messages[idx];
-                            const toolCalls = Array.isArray(cur.toolCalls) ? cur.toolCalls : [];
+                            const toolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
                             // 중복 방지
                             const exists = toolCalls.some((t) => (t?.name || '') === name && (t?.status || '') === 'running');
                             if (!exists) {
                                 toolCalls.push({ name, status: 'running', input: input ?? null, startedAt: new Date().toISOString() });
                             }
-                            this.messages[idx].toolCalls = toolCalls;
+                            msg.toolCalls = toolCalls;
                             // WorkAssistantChatPanel처럼 현재 동작 텍스트로 표시
-                            this.messages[idx].content = `🔧 ${this.formatToolName(name)} 실행 중...`;
+                            msg.content = `🔧 ${this.formatToolName(name)} 실행 중...`;
                             this.appendAgentLogToMessage(assistantUuid, {
                                 level: 'info',
                                 category: 'tool',
@@ -6139,10 +6137,9 @@ export default {
                     },
                     onToolEnd: (output, rawEvent) => {
                         try {
-                            const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                            if (idx === -1) return;
-                            const cur = this.messages[idx];
-                            const toolCalls = Array.isArray(cur.toolCalls) ? cur.toolCalls : [];
+                            const msg = this.activeStreams[agentId];
+                            if (!msg) return;
+                            const toolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
                             // 마지막 running tool을 done 처리
                             let lastRunningTool = null;
                             for (let i = toolCalls.length - 1; i >= 0; i--) {
@@ -6157,7 +6154,7 @@ export default {
                                     break;
                                 }
                             }
-                            this.messages[idx].toolCalls = toolCalls;
+                            msg.toolCalls = toolCalls;
                             this.appendAgentLogToMessage(assistantUuid, {
                                 level: 'info',
                                 category: 'tool',
@@ -6202,9 +6199,6 @@ export default {
                             }
 
                             // human feedback 도구 결과 감지 (일반화)
-                            //   1) 레거시: list_reference_documents 가 select_items 응답을 반환
-                            //   2) 신규  : ANY 도구의 ask_user 응답에 feedback_type/items 또는 option_meta 가 포함된 경우
-                            //             → HumanFeedbackPanel(생성형 UI) 로 자동 렌더
                             if (lastRunningTool && lastRunningTool.name) {
                                 try {
                                     const fbParsed = typeof output === 'string' ? JSON.parse(output) : output;
@@ -6221,40 +6215,30 @@ export default {
                                         if (isLegacyListRef || isAskUserWithUI) {
                                             lastRunningTool.__humanFeedback = fbParsed;
                                             hasHumanFeedback = true;
-                                            const msgIdx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                                            if (msgIdx !== -1) {
-                                                const fallbackText = isLegacyListRef
-                                                    ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
-                                                    : (fbParsed.question || '생성 옵션을 선택해 주세요.');
-                                                this.messages[msgIdx].content = fallbackText;
-                                                // HITL 패널은 msg.__humanFeedback 으로 렌더된다.
-                                                // tool_end 시점에 곧바로 메시지에 부착해, SSE done 이 늦거나
-                                                // Supabase 실시간 INSERT 가 먼저 도착해 우리 optimistic 메시지의 uuid 가
-                                                // DB row uuid 로 덮어써져 onDone 의 findIndex 가 실패하더라도
-                                                // 패널이 안정적으로 렌더되도록 한다.
-                                                if (!this.messages[msgIdx].__humanFeedback) {
-                                                    this.messages[msgIdx].__humanFeedback = fbParsed;
-                                                }
+                                            const fallbackText = isLegacyListRef
+                                                ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
+                                                : (fbParsed.question || '생성 옵션을 선택해 주세요.');
+                                            msg.content = fallbackText;
+                                            if (!msg.__humanFeedback) {
+                                                msg.__humanFeedback = fbParsed;
                                             }
                                         }
                                     }
-                                } catch (e) {
-                                    // 파싱 실패 시 무시
-                                }
+                                } catch (e) {}
                             }
 
                             const parsed = this.parseToolOutput(output);
                             // 슬라이드 아티팩트 감지
                             if (this.isSlidePayload(parsed)) {
-                                this.pushSlideArtifact(parsed, idx);
+                                this.pushSlideArtifact(parsed, msg);
                             } else if (this.isDocxPayload(parsed)) {
-                                this.pushDocxArtifact(parsed, idx);
+                                this.pushDocxArtifact(parsed, msg);
                             } else {
-                                this.pushHwpxArtifact(parsed, idx);
+                                this.pushHwpxArtifact(parsed, msg);
                                 if (!this.hasArtifactPanel) {
                                     const urlFromText = this.extractHwpxHtmlUrlFromText(output);
                                     if (urlFromText) {
-                                        this.pushHwpxArtifact({ html_url: urlFromText }, idx);
+                                        this.pushHwpxArtifact({ html_url: urlFromText }, msg);
                                     }
                                 }
                             }
@@ -6285,11 +6269,9 @@ export default {
                             definition: event?.definition || null,
                             bpmn_xml: event?.bpmn_xml || ''
                         });
-                        const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                        if (idx !== -1) {
-                            this.messages[idx].processPreview = {
-                                ...preview
-                            };
+                        const msg = this.activeStreams[agentId];
+                        if (msg) {
+                            msg.processPreview = { ...preview };
                         }
                         this.updateProcessGenerationProgress(roomId, {
                             isActive: true,
@@ -6316,21 +6298,8 @@ export default {
                             return;
                         }
 
-                        let idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                        if (idx === -1) {
-                            // messages가 방 동기화 등으로 갈아끼워지면 스트림 시작 시 uuid로는 못 찾는 경우가 있음
-                            for (let j = this.messages.length - 1; j >= 0; j--) {
-                                const m = this.messages[j];
-                                if ((m?.role === 'assistant' || m?.role === 'agent') && m?.agentId === agentId) {
-                                    idx = j;
-                                    break;
-                                }
-                            }
-                        }
-                        if (idx === -1) {
-                            return;
-                        }
-                        const msg = this.messages[idx];
+                        const msg = this.activeStreams[agentId];
+                        if (!msg) return;
                         const op = String(payload?.op || '').toLowerCase();
 
                         if (op === 'delta') {
@@ -6369,10 +6338,10 @@ export default {
                     },
                     onDone: async (content) => {
                         const finalContent = (content || full || '').toString().trim();
-                        // 침묵 정책 제거: NO_RESPONSE도 그대로 텍스트로 표시하지 않도록 빈 값 처리
                         let safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
                         let displayContent = '';
 
+<<<<<<< HEAD
                         const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                         if (idx !== -1) {
                             // ── BPMN 프로세스 생성 스킬(서비스 모드) 결과 자동 저장 ──
@@ -6413,10 +6382,14 @@ export default {
                             }
 
                             const msgToolCalls = Array.isArray(this.messages[idx].toolCalls) ? this.messages[idx].toolCalls : [];
+=======
+                        const msg = this.activeStreams[agentId];
+                        if (msg) {
+                            const msgToolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
+>>>>>>> 87f10c473b04b1b9fcea1271ff9815a4f09bfd57
                             const feedbackTC = msgToolCalls.find((tc) => tc?.__humanFeedback);
                             if (feedbackTC) {
-                                this.messages[idx].__humanFeedback = feedbackTC.__humanFeedback;
-                                // AI가 문서 목록을 텍스트로 나열한 부분 제거 → 간결한 안내만 표시
+                                msg.__humanFeedback = feedbackTC.__humanFeedback;
                                 safeFinal = '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.';
                                 console.log(
                                     '[HumanFeedback] ✅ 메시지에 __humanFeedback 첨부됨, items:',
@@ -6426,8 +6399,7 @@ export default {
 
                             const hwpxPayload = this.extractHwpxPayload(safeFinal || full || '');
                             if (hwpxPayload && this.isSlidePayload(hwpxPayload)) {
-                                // 슬라이드 아티팩트 처리
-                                this.pushSlideArtifact(hwpxPayload, idx);
+                                this.pushSlideArtifact(hwpxPayload, msg);
                                 safeFinal = '슬라이드를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
                             } else if (hwpxPayload) {
                                 const pdfUrl = hwpxPayload.pdf_url || hwpxPayload.pdfUrl || '';
@@ -6442,7 +6414,7 @@ export default {
                                 const htmlUrl = this.extractHwpxHtmlUrl(hwpxPayload);
 
                                 if (pdfUrl) {
-                                    this.messages[idx].pdfFile = {
+                                    msg.pdfFile = {
                                         url: pdfUrl,
                                         fileUrl: pdfUrl,
                                         name: pdfName || 'filled.pdf',
@@ -6454,23 +6426,11 @@ export default {
                                     const base64 = hwpxPayload.base64_data || hwpxPayload.base64Data;
                                     const blobUrl = this.createBlobUrlFromBase64(base64, contentType);
                                     if (blobUrl) {
-                                        this.messages[idx].pdfFile = {
-                                            url: blobUrl,
-                                            fileUrl: blobUrl,
-                                            name: fileName,
-                                            fileName,
-                                            contentType
-                                        };
+                                        msg.pdfFile = { url: blobUrl, fileUrl: blobUrl, name: fileName, fileName, contentType };
                                     }
                                     safeFinal = 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
                                 } else if (fileUrl) {
-                                    this.messages[idx].pdfFile = {
-                                        url: fileUrl,
-                                        fileUrl,
-                                        name: fileName,
-                                        fileName,
-                                        contentType
-                                    };
+                                    msg.pdfFile = { url: fileUrl, fileUrl, name: fileName, fileName, contentType };
                                     safeFinal = this.isDocxPayload(hwpxPayload)
                                         ? 'DOCX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.'
                                         : 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
@@ -6478,44 +6438,46 @@ export default {
 
                                 if (htmlUrl) {
                                     if (this.isDocxPayload(hwpxPayload)) {
-                                        this.pushDocxArtifact(hwpxPayload, idx);
+                                        this.pushDocxArtifact(hwpxPayload, msg);
                                     } else {
-                                        this.pushHwpxArtifact(hwpxPayload, idx);
+                                        this.pushHwpxArtifact(hwpxPayload, msg);
                                     }
                                 }
                             }
 
-                            this.messages[idx].content = safeFinal || full || '';
-                            displayContent = this.extractDisplayAssistantContent(this.messages[idx].content);
-                            this.messages[idx].isLoading = false;
-                            this.messages[idx].contentType = 'text';
+                            msg.content = safeFinal || full || '';
+                            displayContent = this.extractDisplayAssistantContent(msg.content);
+                            msg.isLoading = false;
+                            msg.contentType = 'text';
 
-                            // NOTE: 이전에는 0.5초 후 optimistic 메시지를 강제 splice 했지만,
-                            // 그 사이에 __humanFeedback 같은 프런트엔드 전용 상태가 사라져
-                            // HITL 패널(예: pdf2bpmn 강도 선택)이 잠깐 떴다 즉시 사라지는 문제가 있었다.
-                            // 정식 메시지의 realtime INSERT 는 handleRealtimeMessage 에서
-                            // optimistic 메시지를 찾아 제거(+필요한 프런트엔드 필드 이관)하므로,
-                            // 여기서는 별도 삭제를 트리거하지 않는다.
-
-                            this.applyHwpxViewerFromToolCalls(this.messages[idx].toolCalls, idx);
+                            this.applyHwpxViewerFromToolCalls(msg.toolCalls, msg);
                             if (!this.hasArtifactPanel) {
-                                const urlFromText = this.extractHwpxHtmlUrlFromText(this.messages[idx].content);
+                                const urlFromText = this.extractHwpxHtmlUrlFromText(msg.content);
                                 if (urlFromText) {
-                                    this.pushHwpxArtifact({ html_url: urlFromText }, idx);
+                                    this.pushHwpxArtifact({ html_url: urlFromText }, msg);
                                 }
                             }
-                            // 패널 열림 여부와 무관하게 content에 raw hwpx 링크가 있으면 항상 정리
-                            // (tool_end로 패널이 이미 열려있어도 LLM 텍스트에 URL이 남아있을 수 있음)
                             const hasRawHwpxInContent =
-                                /https?:\/\/\S+\.hwpx/i.test(this.messages[idx].content) ||
-                                /https?:\/\/\S*filled-\S+\.html/i.test(this.messages[idx].content);
+                                /https?:\/\/\S+\.hwpx/i.test(msg.content) ||
+                                /https?:\/\/\S*filled-\S+\.html/i.test(msg.content);
                             if (hasRawHwpxInContent) {
-                                const cleaned = this.cleanupHwpxMessageContent(idx);
-                                if (cleaned !== null && cleaned !== this.messages[idx].content) {
-                                    this.messages[idx].content = cleaned;
-                                    safeFinal = cleaned;
-                                }
+                                // cleanupHwpxMessageContent는 messages 인덱스 기반이므로 직접 정리
+                                msg.content = msg.content
+                                    .replace(/https?:\/\/\S+\.hwpx\S*/gi, '')
+                                    .replace(/https?:\/\/\S*filled-\S+\.html\S*/gi, '')
+                                    .trim();
+                                safeFinal = msg.content;
                             }
+
+                            // realtime INSERT가 오지 않는 경우 대비: 10초 후 messages로 이관
+                            setTimeout(() => {
+                                if (this.activeStreams[agentId]) {
+                                    const stale = this.activeStreams[agentId];
+                                    this.messages.push(this.normalizeAssistantMessageForDisplay(stale));
+                                    delete this.activeStreams[agentId];
+                                    this._stableSortMessages(this.messages);
+                                }
+                            }, 10000);
                         }
                         if (!displayContent) {
                             displayContent = this.extractDisplayAssistantContent((safeFinal || full || '').toString());
@@ -6554,36 +6516,30 @@ export default {
                         this.EventBus.emit('chat-rooms-updated');
                         this.$nextTick(() => this.scrollToBottomSafe());
 
-                        // AbortController 정리
                         delete this.agentAbortControllers[abortKey];
 
-                        // WorkAssistantChatPanel의 "툴 호출 기반 동작"까지 동일하게 수행
                         try {
                             await this.handleAgentDirectiveToolCalls({ assistantUuid, userText, agentId });
-                        } catch (e) {
-                            // ignore
-                        }
+                        } catch (e) {}
 
-                        // PDF2BPMN 작업 감지 및 events watch 시작 (메인 에이전트 기준)
                         try {
                             if (agentId === PROCESS_GPT_AGENT_ID) {
-                                const msgObj = this.messages.find((m) => m?.uuid === assistantUuid);
-                                const toolCalls = Array.isArray(msgObj?.toolCalls) ? msgObj.toolCalls : [];
-                                const roomId = this.currentChatRoom?.id || this.roomId || null;
+                                const streamMsg = this.activeStreams[agentId];
+                                const toolCalls = Array.isArray(streamMsg?.toolCalls) ? streamMsg.toolCalls : [];
                                 this.checkAndSubscribePdf2Bpmn(safeFinal || full || '', toolCalls, roomId);
                             }
-                        } catch (e) {
-                            // ignore
-                        }
+                        } catch (e) {}
                     },
                     onError: async () => {
                         delete this.agentAbortControllers[abortKey];
-                        const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                        if (idx !== -1) {
-                            const current = (this.messages[idx].content || '').toString();
-                            this.messages[idx].content = current ? current : '(에이전트 응답 오류)';
-                            this.messages[idx].isLoading = false;
-                            this.messages[idx].openuiIsStreaming = false;
+                        const msg = this.activeStreams[agentId];
+                        if (msg) {
+                            msg.content = (msg.content || '').toString() || '(에이전트 응답 오류)';
+                            msg.isLoading = false;
+                            msg.openuiIsStreaming = false;
+                            // 에러 시 서버가 저장하지 않으므로 messages에 직접 이관
+                            this.messages.push(this.normalizeAssistantMessageForDisplay(msg));
+                            delete this.activeStreams[agentId];
                         }
                         const roomId = this.currentChatRoom?.id || this.roomId || null;
                         const state = this.getOrCreateProcessGenerationState(roomId);
@@ -6598,14 +6554,12 @@ export default {
                     }
                 };
 
-                // 중지 버튼 동작: 빈 placeholder("생각 중...") 상태였으면 메시지 자체를 제거,
-                // 응답이 일부라도 생성된 경우 그대로 유지하고 로딩만 해제.
+                // 중지 버튼: placeholder면 제거, 부분 응답이 있으면 messages로 이관 후 로딩 해제
                 const onAbortHandler = () => {
                     delete this.agentAbortControllers[abortKey];
-                    const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-                    if (idx !== -1) {
-                        const msg = this.messages[idx];
-                        const content = (msg?.content || '').toString().trim();
+                    const msg = this.activeStreams[agentId];
+                    if (msg) {
+                        const content = (msg.content || '').toString().trim();
                         const isPlaceholder =
                             !content ||
                             content === '...' ||
@@ -6613,14 +6567,12 @@ export default {
                             content === '생각 중...' ||
                             content === '생각중...' ||
                             content === '생각중';
-                        if (isPlaceholder) {
-                            // 사용자가 답변 시작 전에 중지함 → 메시지 자체를 제거
-                            this.messages.splice(idx, 1);
-                        } else {
-                            // 부분 응답이라도 있으면 그대로 보존하고 로딩만 해제
+                        if (!isPlaceholder) {
                             msg.isLoading = false;
                             msg.openuiIsStreaming = false;
+                            this.messages.push(this.normalizeAssistantMessageForDisplay(msg));
                         }
+                        delete this.activeStreams[agentId];
                     }
                     this.setAgentStatus(agentId, { state: 'ready', message: '' });
                 };
@@ -6657,10 +6609,11 @@ export default {
          *   프론트 후처리(레거시 start_process_consulting/generate_process)는 제거되었다.
          */
         async handleAgentDirectiveToolCalls({ assistantUuid, userText, agentId }) {
-            const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
-            if (idx === -1) return;
-
-            const msg = this.messages[idx] || {};
+            // onDone 직후에는 activeStreams에 있을 수 있고, realtime 도착 후에는 messages에 있음
+            const msg =
+                this.activeStreams[agentId] ??
+                this.messages.find((m) => m?.uuid === assistantUuid) ??
+                {};
             const toolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
             if (toolCalls.length === 0) return;
 

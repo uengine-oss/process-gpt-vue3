@@ -10,6 +10,7 @@ import partialParse from 'partial-json-parser';
 import JSON5 from 'json5';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 import { getBpmnModelService } from '@/services/bpmnModelService';
+import { normalizeUengineBpmnXmlForBackend } from '@/utils/uengineXmlTransform';
 
 const backend = BackendFactory.createBackend();
 
@@ -921,14 +922,21 @@ export default {
                     }
 
                     console.log('[FORM_DEBUG] before saveModel', { formDraftsCount: me.processDefinition?.formDrafts?.length });
-                    await me.saveModel(info, xmlObj.xml);
-                    me.bpmn = xmlObj.xml;
+                    let finalXml = xmlObj.xml;
+                    if (window.$mode === 'uEngine') {
+                        const resolvedDefinitionName =
+                            info.name || me.projectName || me.processDefinition?.processDefinitionName || me.processDefinition?.name || null;
+                        finalXml = normalizeUengineBpmnXmlForBackend(xmlObj.xml, resolvedDefinitionName);
+                    }
+
+                    await me.saveModel(info, finalXml);
+                    me.bpmn = finalXml;
 
                     // Phase 1: XML 파싱하여 정규화된 테이블에 저장 (비동기, 실패해도 저장은 진행)
                     try {
                         const bpmnModelService = getBpmnModelService();
                         await bpmnModelService.saveModel(info.proc_def_id, {
-                            xml_content: xmlObj.xml
+                            xml_content: finalXml
                         });
                         console.log('[saveDefinition] BPMN 모델 파싱 완료');
                     } catch (parseError) {
@@ -936,7 +944,7 @@ export default {
                     }
 
                     // 저장 성공 후 lastSavedXML 업데이트 (변경 감지용)
-                    me.lastSavedXML = xmlObj.xml;
+                    me.lastSavedXML = finalXml;
                     me.isChanged = false;
                     me.lastSavedTime = new Date();
 

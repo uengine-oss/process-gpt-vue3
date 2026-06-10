@@ -55,6 +55,7 @@ PaletteProvider.$inject = [
 const ROTATION_SCALE_FIX = 1 / 0.96; // 가로→세로 전환 시 레이아웃 깨짐 보정용 스케일
 const LANE_WIDTH_SCALE = 0.8; // lane 폭 스케일
 const LANE_HEIGHT_SCALE = 1.2; // lane 높이 스케일
+const LANE_BODY_PADDING = 36;
 
 // BoundaryEvent(Attacher) 회전 방향 상수
 const ATTACHER_ROTATION = {
@@ -219,6 +220,212 @@ PaletteProvider.prototype.revertLayout = function () {
         return false;
     }
 };
+
+
+function getElementBounds(element) {
+  if (!element) return null;
+  if (
+    typeof element.x === 'number' &&
+    typeof element.y === 'number' &&
+    typeof element.width === 'number' &&
+    typeof element.height === 'number'
+  ) {
+    return element;
+  }
+  return element.di && element.di.bounds ? element.di.bounds : null;
+}
+
+function isBoundsInLane(bounds, laneBounds, isHorizontal) {
+  if (!bounds || !laneBounds) return false;
+  const center = isHorizontal
+    ? bounds.y + bounds.height / 2
+    : bounds.x + bounds.width / 2;
+  const laneStart = isHorizontal ? laneBounds.y : laneBounds.x;
+  const laneEnd = laneStart + (isHorizontal ? laneBounds.height : laneBounds.width);
+  return center >= laneStart - 1 && center <= laneEnd + 1;
+}
+
+function hasMovingAncestor(element, movingIds) {
+  let current = element && element.parent;
+  while (current) {
+    if (movingIds.has(current.id)) return true;
+    current = current.parent;
+  }
+  return false;
+}
+
+function getLaneContentBounds(elementRegistry, lane, isHorizontal) {
+  if (!elementRegistry || !lane) return null;
+  const laneBounds = getElementBounds(lane);
+  if (!laneBounds) return null;
+
+  const children = elementRegistry.getAll().filter(element => {
+    const bounds = getElementBounds(element);
+    return element &&
+      element.id !== lane.id &&
+      !element.labelTarget &&
+      element.type !== 'bpmn:SequenceFlow' &&
+      element.type !== 'bpmn:MessageFlow' &&
+      element.type !== 'bpmn:Lane' &&
+      element.type !== 'bpmn:LaneSet' &&
+      element.type !== 'bpmn:Participant' &&
+      element.type !== 'bpmn:SubProcess' &&
+      element.type !== 'bpmn:CallActivity' &&
+      bounds &&
+      (
+        element.parent && element.parent.id === lane.id ||
+        isBoundsInLane(bounds, laneBounds, isHorizontal)
+      );
+  });
+
+  if (!children.length) return null;
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  children.forEach(child => {
+    const bounds = getElementBounds(child);
+    minX = Math.min(minX, bounds.x);
+    maxX = Math.max(maxX, bounds.x + bounds.width);
+    minY = Math.min(minY, bounds.y);
+    maxY = Math.max(maxY, bounds.y + bounds.height);
+  });
+
+  if (!isFinite(minX) || !isFinite(maxX) || !isFinite(minY) || !isFinite(maxY)) return null;
+  return { minX, maxX, minY, maxY };
+}
+
+function getLaneTopLevelContent(elementRegistry, lane, laneBounds, isHorizontal) {
+  if (!elementRegistry || !lane || !laneBounds) return [];
+
+  const moving = elementRegistry.getAll().filter(element => {
+    const bounds = getElementBounds(element);
+    return element &&
+      element.id !== lane.id &&
+      !element.labelTarget &&
+      element.type !== 'bpmn:SequenceFlow' &&
+      element.type !== 'bpmn:MessageFlow' &&
+      element.type !== 'bpmn:Lane' &&
+      element.type !== 'bpmn:LaneSet' &&
+      element.type !== 'bpmn:Participant' &&
+      bounds &&
+      (
+        element.parent && element.parent.id === lane.id ||
+        isBoundsInLane(bounds, laneBounds, isHorizontal)
+      );
+  });
+
+  const movingIds = new Set(moving.map(element => element.id));
+  return moving.filter(element => !hasMovingAncestor(element, movingIds));
+}
+
+function compactLanesAfterRotation(modeling, elementRegistry, participant, lanes, isHorizontal) {
+  if (!modeling || !elementRegistry || !participant || !lanes || !lanes.length) return;
+
+  const laneEntries = lanes
+    .map(lane => ({ lane, bounds: getElementBounds(lane) }))
+    .filter(entry =>
+      entry.bounds &&
+      Number.isFinite(entry.bounds.x) &&
+      Number.isFinite(entry.bounds.y) &&
+      Number.isFinite(entry.bounds.width) &&
+      Number.isFinite(entry.bounds.height)
+    )
+    .sort((a, b) => {
+      const aStart = isHorizontal ? a.bounds.y : a.bounds.x;
+      const bStart = isHorizontal ? b.bounds.y : b.bounds.x;
+      return aStart - bStart;
+    });
+
+  if (!laneEntries.length) return;
+
+  const minLaneSize = 120;
+  let offset = 0;
+  const firstEntry = laneEntries[0];
+  const firstContentBounds = firstEntry
+    ? getLaneContentBounds(elementRegistry, firstEntry.lane, isHorizontal)
+    : null;
+  const firstTrim = firstEntry && firstContentBounds
+    ? Math.max(
+      0,
+      isHorizontal
+        ? firstContentBounds.minY - (firstEntry.bounds.y + LANE_BODY_PADDING)
+        : firstContentBounds.minX - (firstEntry.bounds.x + LANE_BODY_PADDING)
+    )
+    : 0;
+
+  const plans = laneEntries.map((entry, index) => {
+    const laneBounds = entry.bounds;
+    const currentSize = isHorizontal ? laneBounds.height : laneBounds.width;
+    const contentBounds = getLaneContentBounds(elementRegistry, entry.lane, isHorizontal);
+    const desiredSize = contentBounds
+      ? (
+        isHorizontal
+          ? Math.max(minLaneSize, contentBounds.maxY - laneBounds.y + LANE_BODY_PADDING)
+          : Math.max(minLaneSize, contentBounds.maxX - laneBounds.x + LANE_BODY_PADDING)
+      )
+      : minLaneSize;
+    const newSize = Math.min(currentSize, desiredSize);
+    const currentOffset = offset;
+    const leadingTrim = index === 0 ? Math.min(firstTrim, Math.max(0, newSize - minLaneSize)) : 0;
+    const shiftedBounds = {
+      x: laneBounds.x + (isHorizontal ? 0 : currentOffset + leadingTrim),
+      y: laneBounds.y + (isHorizontal ? currentOffset + leadingTrim : 0),
+      width: isHorizontal ? laneBounds.width : newSize - leadingTrim,
+      height: isHorizontal ? newSize - leadingTrim : laneBounds.height
+    };
+    const delta = isHorizontal
+      ? { x: 0, y: currentOffset }
+      : { x: currentOffset, y: 0 };
+    const movingContent = getLaneTopLevelContent(elementRegistry, entry.lane, laneBounds, isHorizontal);
+
+    offset -= currentSize - newSize;
+
+    return { lane: entry.lane, oldBounds: laneBounds, newBounds: shiftedBounds, delta, movingContent };
+  });
+
+  const updatedLaneBounds = plans.map(plan => plan.newBounds);
+
+  plans.forEach(plan => {
+    const laneBounds = plan.oldBounds;
+    const shiftedBounds = plan.newBounds;
+    const delta = plan.delta;
+
+    if (Math.abs(delta.x) > 0.5 || Math.abs(delta.y) > 0.5) {
+      plan.movingContent.forEach(element => {
+        try {
+          modeling.moveShape(element, delta);
+        } catch (err) {
+          console.warn('[changeParticipantOrientation] Lane content compact move failed:', element.id, err);
+        }
+      });
+    }
+
+    if (
+      Math.abs(shiftedBounds.x - laneBounds.x) > 0.5 ||
+      Math.abs(shiftedBounds.y - laneBounds.y) > 0.5 ||
+      Math.abs(shiftedBounds.width - laneBounds.width) > 0.5 ||
+      Math.abs(shiftedBounds.height - laneBounds.height) > 0.5
+    ) {
+      modeling.resizeShape(plan.lane, shiftedBounds);
+    }
+  });
+
+  if (!updatedLaneBounds.length || Math.abs(offset) <= 0.5) return;
+
+  const minX = Math.min(...updatedLaneBounds.map(bounds => bounds.x));
+  const maxX = Math.max(...updatedLaneBounds.map(bounds => bounds.x + bounds.width));
+  const minY = Math.min(...updatedLaneBounds.map(bounds => bounds.y));
+  const maxY = Math.max(...updatedLaneBounds.map(bounds => bounds.y + bounds.height));
+
+  modeling.resizeShape(participant, {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY
+  });
+}
 
 PaletteProvider.prototype._rotateRelativePosition = function (relativeX, relativeY, scaleX, scaleY) {
     return {
@@ -421,6 +628,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
         });
 
         this.adjustParticipantBoundsByLanes(element, lanes, false);
+        compactLanesAfterRotation(modeling, this._injector && this._injector.get('elementRegistry'), element, lanes, false);
 
         // 💡 SequenceFlow 최종 waypoint 반영
         originalSequenceFlows.forEach((sequenceFlow) => {
@@ -627,6 +835,7 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (even
         });
 
         this.adjustParticipantBoundsByLanes(element, lanes, true);
+        compactLanesAfterRotation(modeling, this._injector && this._injector.get('elementRegistry'), element, lanes, true);
 
         // 💡 SequenceFlow 최종 waypoint 반영
         originalSequenceFlows.forEach((sequenceFlow) => {
