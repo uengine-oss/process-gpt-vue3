@@ -6341,9 +6341,52 @@ export default {
                         let safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
                         let displayContent = '';
 
+<<<<<<< HEAD
+                        const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
+                        if (idx !== -1) {
+                            // ── BPMN 프로세스 생성 스킬(서비스 모드) 결과 자동 저장 ──
+                            // deepagent가 bpmn-process-generation-skill 의 출력 계약(09-service-execution.md)
+                            // JSON 을 반환하면, 프론트에서 proc_def/form_def/users(agent)/skills 로 영속화한다.
+                            try {
+                                const rawPd = (safeFinal || full || finalContent || '').toString();
+                                const tryParsePd = (s) => {
+                                    try {
+                                        return JSON.parse(s);
+                                    } catch (e) {
+                                        return null;
+                                    }
+                                };
+                                let pdResult = tryParsePd(rawPd.trim());
+                                if (!pdResult) {
+                                    const fence = rawPd.match(/```(?:json)?\s*([\s\S]*?)```/i);
+                                    if (fence && fence[1]) pdResult = tryParsePd(fence[1].trim());
+                                }
+                                if (!pdResult) {
+                                    const objMatch = rawPd.match(/\{[\s\S]*"processDefinition"[\s\S]*\}/);
+                                    if (objMatch) pdResult = tryParsePd(objMatch[0]);
+                                }
+                                const isPd =
+                                    pdResult &&
+                                    (pdResult.type === 'process-definition-result' ||
+                                        pdResult.processDefinition ||
+                                        pdResult.process_definition);
+                                if (isPd) {
+                                    const savedPd = await backend.saveGeneratedProcessArtifacts(pdResult, { version: '1.0' });
+                                    this.messages[idx].procDefId = savedPd.procDefId;
+                                    safeFinal = `프로세스 정의를 저장했어요: **${savedPd.name || savedPd.procDefId}** (폼 ${
+                                        savedPd.forms.length
+                                    }개, 에이전트 ${savedPd.agents.length}개, DMN 규칙 ${savedPd.dmnRules}개). 프로세스 편집기에서 확인할 수 있어요.`;
+                                }
+                            } catch (e) {
+                                console.warn('[ChatRoomPage] 프로세스 정의 자동 저장 실패:', e);
+                            }
+
+                            const msgToolCalls = Array.isArray(this.messages[idx].toolCalls) ? this.messages[idx].toolCalls : [];
+=======
                         const msg = this.activeStreams[agentId];
                         if (msg) {
                             const msgToolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
+>>>>>>> 87f10c473b04b1b9fcea1271ff9815a4f09bfd57
                             const feedbackTC = msgToolCalls.find((tc) => tc?.__humanFeedback);
                             if (feedbackTC) {
                                 msg.__humanFeedback = feedbackTC.__humanFeedback;

@@ -6838,6 +6838,171 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * deepagent(bpmn-process-generation-skill)가 서비스 실행 모드에서 생성해 돌려준
+     * 프로세스 정의 결과를 기존 저장 API로 영속화한다.
+     * pdf2bpmn 백엔드의 후처리(_save_proc_def / _save_form_def / 스킬 동기화)와
+     * 동일한 결과를 프론트에서 수행한다.
+     *
+     * 입력 result (references/09-service-execution.md 출력 계약):
+     * {
+     *   type: 'process-definition-result',
+     *   processDefinition: { processDefinitionId, processDefinitionName, definition contract..., dmn_decisions, dmn_rules },
+     *   forms?: [{ activity_id, form_id, html }],
+     *   skills?: string[],
+     *   bpmn?: string | null
+     * }
+     * options: { version?, version_tag?, owner? }
+     */
+    async saveGeneratedProcessArtifacts(result: any, options: any = {}) {
+        if (!result) throw new Error('saveGeneratedProcessArtifacts: result is empty');
+
+        // deepagent done.content가 문자열(JSON)로 오는 경우 파싱
+        let payload: any = result;
+        if (typeof payload === 'string') {
+            try {
+                payload = JSON.parse(payload);
+            } catch (e) {
+                throw new Error('saveGeneratedProcessArtifacts: result JSON 파싱 실패');
+            }
+        }
+
+        // 최상위 래퍼 허용: { processDefinition: {...} } 또는 정의 객체 자체
+        const def = payload.processDefinition || payload.process_definition || payload.definition || payload;
+        const procDefId = def.processDefinitionId || def.processDefinitionID || def.id;
+        const procName = def.processDefinitionName || def.name;
+        if (!procDefId) {
+            throw new Error('saveGeneratedProcessArtifacts: processDefinitionId 누락');
+        }
+
+        const saved: any = { procDefId, name: procName, forms: [], agents: [], skills: [], dmnRules: 0 };
+
+        // 1) proc_def 저장 (definition JSON + bpmn). pdf2bpmn처럼 bpmn은 선택(없으면 null).
+        await this.putRawDefinition(payload.bpmn ?? null, procDefId, {
+            name: procName,
+            type: 'bpmn',
+            owner: options.owner || null,
+            definition: def,
+            version: options.version,
+            version_tag: options.version_tag
+        });
+
+        // 2) 폼 저장 (form_def). 각 폼 HTML을 활동에 연결.
+        const forms = Array.isArray(payload.forms) ? payload.forms : [];
+        for (const f of forms) {
+            const activityId = f.activity_id || f.activityId;
+            const html = f.html || f.content;
+            if (!activityId || !html) continue;
+            const formId =
+                f.form_id || f.formId || `${procDefId}_${String(activityId).toLowerCase()}_form`;
+            try {
+                await this.putRawDefinition(html, formId, {
+                    type: 'form',
+                    proc_def_id: procDefId,
+                    activity_id: activityId
+                });
+                saved.forms.push(formId);
+            } catch (e) {
+                console.warn('[saveGeneratedProcessArtifacts] form 저장 실패:', formId, e);
+            }
+        }
+
+        // 3) DMN 규칙 저장 (business rule raw). processDefinition.dmn_rules 또는 result.dmn 사용.
+        const dmnRules: any[] = def.dmn_rules || payload.dmn?.dmn_rules || payload.dmn_rules || [];
+        for (const rule of dmnRules) {
+            const ruleId = rule.rule_id || rule.id;
+            if (!ruleId) continue;
+            try {
+                await this.putRawDefinition(rule, ruleId, { type: 'rule' });
+                saved.dmnRules++;
+            } catch (e) {
+                console.warn('[saveGeneratedProcessArtifacts] dmn rule 저장 실패:', ruleId, e);
+            }
+        }
+
+        // 4) 에이전트 생성/매핑 (pdf2bpmn _insert_agent_user + _sync_skills_to_supabase 동일).
+        //    - users(is_agent=true) 행 생성. 중복은 username/role 기준으로 기존 agent 재사용.
+        //    - putAgent가 내부적으로 replaceAgentSkills로 agent_skills + users.skills 동기화.
+        const agents: any[] = Array.isArray(payload.agents)
+            ? payload.agents
+            : Array.isArray(def.agents)
+                ? def.agents
+                : [];
+        if (agents.length > 0) {
+            let existingAgents: any[] = [];
+            try {
+                existingAgents =
+                    (await storage.list('users', {
+                        match: { is_agent: true, tenant_id: window.$tenantName }
+                    })) || [];
+            } catch (e) {
+                /* best-effort: 기존 agent 조회 실패 시 신규 생성 */
+            }
+            const norm = (s: any) =>
+                String(s || '')
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, '');
+            for (const a of agents) {
+                try {
+                    const name = a.name || a.username;
+                    const role = a.role || '';
+                    // 중복 방지: username/role이 같은 기존 agent 재사용 (pdf2bpmn 동일)
+                    const dup = existingAgents.find(
+                        (u: any) => (name && norm(u.username) === norm(name)) || (role && norm(u.role) === norm(role))
+                    );
+                    const agentId =
+                        dup?.id ||
+                        a.id ||
+                        a.endpoint ||
+                        (typeof crypto !== 'undefined' && (crypto as any).randomUUID
+                            ? (crypto as any).randomUUID()
+                            : `agent_${Date.now()}_${saved.agents.length}`);
+                    const skills = Array.isArray(a.skills)
+                        ? a.skills
+                        : typeof a.skills === 'string'
+                            ? a.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
+                            : [];
+                    await this.putAgent({
+                        id: agentId,
+                        name,
+                        role,
+                        goal: a.goal || '',
+                        persona: a.persona || '',
+                        tools: a.tools || '',
+                        endpoint: a.endpoint || null,
+                        description: a.description || null,
+                        skills,
+                        model: a.model || null,
+                        isAgent: true,
+                        type: 'agent',
+                        alias: a.alias || null
+                    });
+                    saved.agents.push(agentId);
+                } catch (e) {
+                    console.warn('[saveGeneratedProcessArtifacts] agent 저장 실패:', a?.name, e);
+                }
+            }
+        }
+
+        // 5) 재사용 스킬명 등록 (tenants.skills). 에이전트별 매핑은 위 putAgent에서 이미 수행됨.
+        const skillNames: string[] = Array.isArray(payload.skills)
+            ? payload.skills
+            : Array.isArray(def.skills)
+                ? def.skills
+                : [];
+        if (skillNames.length > 0) {
+            try {
+                await this.saveSkills(skillNames);
+                saved.skills = skillNames;
+            } catch (e) {
+                console.warn('[saveGeneratedProcessArtifacts] skills 등록 실패:', e);
+            }
+        }
+
+        return saved;
+    }
+
     async uploadSkills(options: any) {
         try {
             let response: any = null;
