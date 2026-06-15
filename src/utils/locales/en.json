@@ -654,7 +654,7 @@
         "title": "System Definition"
     },
     "organizationChartDefinition": {
-        "title": "Organization Chart Management",
+        "title": "Organization & Agent Management",
         "cardTitle": "Organization Chart Management",
         "organizationChartExplanation": "Easily manage your organization chart interactively. You can add, edit, or remove teams (departments), roles, and employees.\nFor example, you can give commands such as: 'Add Development and Management teams, and register Hong Gil-dong as a new employee in the Management team. Set his role to Developer. Make Team Leader Amuge the head of the Management team.'",
         "addTeam": "Add Team",
@@ -666,6 +666,8 @@
         "teamMember": "Team Member",
         "role": "Role",
         "selectTeamMember": "Select Team Member",
+        "createAsTeamMember": "Create as Team Member",
+        "selectTeam": "Select Team",
         "deleteMessage": "Do you want to delete?",
         "deleteMessage1": "Do you want to delete?",
         "from": "From",
