@@ -3863,3 +3863,55 @@ CREATE INDEX IF NOT EXISTS idx_knowledge_folders_tenant_role
 -- =====================================================
 ALTER TABLE public.knowledge_files
     ADD COLUMN IF NOT EXISTS glossary_compact text;
+
+
+
+
+-- ================================================================
+-- tenant_git_config: 테넌트별 Git 서비스 연결 정보
+-- provider당 하나의 레코드, is_default=true가 기본 provider
+-- ================================================================
+
+CREATE TABLE IF NOT EXISTS tenant_git_config (
+    id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id    TEXT        NOT NULL,
+    provider     TEXT        NOT NULL CHECK (provider IN ('github', 'gitlab', 'gitea')),
+    base_url     TEXT,                        -- GitHub: NULL, GitLab/Gitea: 'https://gitlab.mycompany.com'
+    username     TEXT        NOT NULL,
+    token        TEXT        NOT NULL,        -- Personal Access Token (암호화 권장)
+    is_default   BOOLEAN     NOT NULL DEFAULT false,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    UNIQUE (tenant_id, provider)             -- 테넌트당 provider 하나
+);
+
+-- updated_at 자동 갱신 트리거
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tenant_git_config_updated_at
+    BEFORE UPDATE ON tenant_git_config
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ================================================================
+-- is_default 무결성: 테넌트당 is_default=true가 최대 1개여야 함
+-- ================================================================
+CREATE UNIQUE INDEX tenant_git_config_one_default
+    ON tenant_git_config (tenant_id)
+    WHERE is_default = true;
+
+-- ================================================================
+-- RLS (Row Level Security)
+-- ================================================================
+ALTER TABLE tenant_git_config ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_git_config_insert_policy ON tenant_git_config FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY tenant_git_config_select_policy ON tenant_git_config FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY tenant_git_config_update_policy ON tenant_git_config FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY tenant_git_config_delete_policy ON tenant_git_config FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());

@@ -37,9 +37,9 @@
                                     <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                         <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                     </v-tab>
-                                    <!-- GitHub 계정 설정 -->
+                                    <!-- Git 설정 -->
                                     <v-tab v-if="!isUEngineMode" value="Github">
-                                        <v-icon class="mr-2" size="20">mdi-github</v-icon>{{ $t('accountTab.github') }}
+                                        <v-icon class="mr-2" size="20">mdi-git</v-icon>{{ $t('accountTab.gitConfig') }}
                                     </v-tab>
                                     <!-- 용어집 관리 -->
                                     <v-tab v-if="!isUEngineMode" value="GlossaryManage">
@@ -165,7 +165,7 @@
                                     @click="tab = 'Github'"
                                     :class="{ 'selected-tab': tab === 'Github' }"
                                 >
-                                    <v-icon class="mr-2" size="16">mdi-github</v-icon>{{ $t('accountTab.github') }}
+                                    <v-icon class="mr-2" size="16">mdi-git</v-icon>{{ $t('accountTab.gitConfig') }}
                                 </v-btn>
                                 <v-btn
                                     v-if="!isUEngineMode"
@@ -344,7 +344,7 @@ import GlossaryManageTab from '@/components/pages/account-settings/GlossaryManag
 import TaskCatalogAdmin from '@/components/admin/TaskCatalogAdmin.vue';
 import TaskCatalogList from '@/components/admin/TaskCatalogList.vue';
 import OrgChartGroupTab from '@/components/pages/account-settings/OrgChartGroupTab.vue';
-import GithubTab from '@/components/pages/account-settings/GithubTab.vue';
+import GithubTab from '@/components/pages/account-settings/GitConfigTab.vue';
 
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';

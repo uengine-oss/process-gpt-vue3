@@ -3,9 +3,25 @@
         <AppBaseCard :custom-menu-name="$t('SkillDetail.title')">
             <template v-slot:leftpart="{ closeDrawer }">
                 <div class="leftpart-inner">
-                    <h6 class="text-h6 px-4 py-3 flex-shrink-0 text-left">
-                        {{ skillDisplayName || skillId }}
-                    </h6>
+                    <div class="d-flex align-center justify-space-between px-4 py-3 flex-shrink-0">
+                        <h6 class="text-h6 text-left">
+                            {{ skillDisplayName || skillId }}
+                        </h6>
+                        <v-tooltip location="bottom" :text="showGitHistory ? '편집기 보기' : 'GitHub 변경 이력'">
+                            <template v-slot:activator="{ props }">
+                                <v-btn
+                                    v-bind="props"
+                                    :icon="true"
+                                    variant="text"
+                                    size="small"
+                                    :color="showGitHistory ? 'primary' : undefined"
+                                    @click="showGitHistory = !showGitHistory"
+                                >
+                                    <v-icon>{{ showGitHistory ? 'mdi-file-edit-outline' : 'mdi-source-branch' }}</v-icon>
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                    </div>
                     <div class="skill-detail-left pa-2">
                         <div v-if="loadError" class="text-caption text-error py-4 text-center">
                             {{ $t('SkillDetail.loadError') }}
@@ -222,17 +238,23 @@
 
             <template v-slot:rightpart>
                 <div class="skill-detail-right d-flex flex-column">
-                    <AgentSkillEdit
-                        v-if="skillFile"
-                        :skillFile="skillFile"
-                        :read-only="isBuiltinSkill"
-                        @update:isLoading="isEditorLoading = $event"
-                        @file-saved="onFileSaved"
-                        @file-deleted="onFileDeleted"
+                    <SkillGitHistory
+                        v-if="showGitHistory"
+                        :skillName="skillDisplayName || skillId"
                     />
-                    <div v-else class="d-flex align-center justify-center flex-grow-1 text-body-2 text-medium-emphasis">
-                        {{ $t('SkillDetail.selectFile') }}
-                    </div>
+                    <template v-else>
+                        <AgentSkillEdit
+                            v-if="skillFile"
+                            :skillFile="skillFile"
+                            :read-only="isBuiltinSkill"
+                            @update:isLoading="isEditorLoading = $event"
+                            @file-saved="onFileSaved"
+                            @file-deleted="onFileDeleted"
+                        />
+                        <div v-else class="d-flex align-center justify-center flex-grow-1 text-body-2 text-medium-emphasis">
+                            {{ $t('SkillDetail.selectFile') }}
+                        </div>
+                    </template>
                 </div>
             </template>
 
@@ -336,6 +358,7 @@
 <script>
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import AgentSkillEdit from '@/components/AgentSkillEdit.vue';
+import SkillGitHistory from '@/components/SkillGitHistory.vue';
 import VTreeview from 'vue3-treeview';
 import BackendFactory from '@/components/api/BackendFactory';
 import cytoscape from 'cytoscape';
@@ -348,6 +371,7 @@ export default {
     components: {
         AppBaseCard,
         AgentSkillEdit,
+        SkillGitHistory,
         VTreeview
     },
     data() {
@@ -369,6 +393,7 @@ export default {
             editingFolderName: '',
             originalFolderName: '',
 
+            showGitHistory: false,
             leftViewMode: 'files',
             /** API에서 받은 스킬 전체 파일 목록 (그래프는 이걸 기준으로 항상 전체 파일 노드 생성) */
             skillFilesFromApi: [],
@@ -511,6 +536,7 @@ export default {
             this.nodes = {};
             this.config.roots = [];
             this.skillFilesFromApi = [];
+            this.showGitHistory = false;
             this.leftViewMode = 'files';
             this.destroyGraph();
             this.graphElements = [];

@@ -4215,33 +4215,51 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getGithubInfo() {
+    async getGitConfigs() {
         try {
-            const response = await storage.getObject('tenant_oauth', {
-                match: {
-                    tenant_id: window.$tenantName
-                }
-            });
-            return response
-                ? { github_username: response.github_username || '', github_token: response.github_token || '' }
-                : { github_username: '', github_token: '' };
+            return await storage.list('tenant_git_config', {
+                match: { tenant_id: window.$tenantName }
+            }) || [];
         } catch (error) {
             throw new Error(error.message);
         }
     }
 
-    async saveGithubInfo(githubInfo: { github_username: string; github_token: string }) {
+    async saveGitConfig(config: { id?: string; provider: string; base_url?: string; username: string; token: string; is_default: boolean }) {
         try {
-            const existing = await storage.getObject('tenant_oauth', {
-                match: { tenant_id: window.$tenantName }
-            });
-            const payload = {
-                ...(existing || {}),
+            if (config.is_default) {
+                const existing = await storage.list('tenant_git_config', {
+                    match: { tenant_id: window.$tenantName }
+                });
+                for (const item of existing || []) {
+                    if (item.id !== config.id && item.is_default) {
+                        await storage.putObject('tenant_git_config', { ...item, is_default: false }, { onConflict: 'id' });
+                    }
+                }
+            }
+            const payload: any = {
                 tenant_id: window.$tenantName,
-                github_username: githubInfo.github_username,
-                github_token: githubInfo.github_token
+                provider: config.provider,
+                base_url: config.base_url || null,
+                username: config.username,
+                token: config.token,
+                is_default: config.is_default,
+                updated_at: new Date().toISOString()
             };
-            await storage.putObject('tenant_oauth', payload);
+            if (config.id) {
+                payload.id = config.id;
+                await storage.putObject('tenant_git_config', payload, { onConflict: 'id' });
+            } else {
+                await storage.putObject('tenant_git_config', payload, { onConflict: 'tenant_id,provider' });
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteGitConfig(id: string) {
+        try {
+            await storage.delete(`tenant_git_config/${id}`, { key: 'id' });
         } catch (error) {
             throw new Error(error.message);
         }
