@@ -16,13 +16,14 @@
 
             <!-- 출처 탭 -->
             <v-tabs v-model="activeTab" color="primary" density="compact" class="kft-source-tabs">
-                <v-tab v-if="isAdmin" value="drive">
+                <!-- Google Drive 탭 숨김 (폐쇄망 운영) -->
+                <!-- <v-tab v-if="isAdmin" value="drive">
                     <v-icon start size="16">mdi-google-drive</v-icon>
                     Google Drive
                     <v-chip size="x-small" color="primary" variant="tonal" class="ml-2">
                         {{ counts.drive }}
                     </v-chip>
-                </v-tab>
+                </v-tab> -->
                 <v-tab value="upload">
                     <v-icon start size="16">mdi-cloud-upload-outline</v-icon>
                     Storage
@@ -296,7 +297,7 @@
                                     <v-icon start size="14">{{ uploadTargetRoleMeta.icon }}</v-icon>
                                     {{ uploadTargetRoleMeta.label }}로 분류
                                 </v-chip>
-                                <input ref="fileInput" type="file" multiple class="d-none" @change="onFileInput" />
+                                <input ref="fileInput" type="file" multiple :accept="uploadAccept" class="d-none" @change="onFileInput" />
                             </div>
 
                             <!-- 업로드 진행 -->
@@ -701,7 +702,8 @@ export default {
             myName: localStorage.getItem('userName') || localStorage.getItem('email') || '',
             files: [],
             loading: false,
-            activeTab: isAdmin ? 'drive' : 'upload',
+            // Google Drive 탭 숨김: 항상 Storage(upload) 탭으로 시작
+            activeTab: 'upload',
             driveSearch: '',
             driveStatusFilter: 'all',
             uploadSearch: '',
@@ -729,14 +731,17 @@ export default {
                 { value: 'excluded', label: '제외' }
             ],
             // ─── 자료 역할(doc_role) — 각 role 이 독립 작업공간. '전체' 개념 없음. ───
-            currentRole: 'content', // 'content' | 'glossary' | 'template' | 'reference' | 'dataset'
+            currentRole: 'content', // 'content' | 'glossary' | 'template' | 'reference' | 'dataset' | 'legal_review'
             roleOptions: [
-                { value: 'content',   label: '일반 자료', icon: 'mdi-file-document-outline',   color: 'primary',         desc: '검색·요약 대상이 되는 본문 자료 (기본값)' },
-                { value: 'glossary',  label: '용어 사전', icon: 'mdi-book-alphabet',           color: 'deep-purple',     desc: '한↔영 등 용어 매핑. 답변 작성 시 자동 참조' },
-                { value: 'template',  label: '양식',      icon: 'mdi-file-table-outline',      color: 'orange-darken-2', desc: '보고서/계약서 양식. 문서 생성 시 활용' },
-                { value: 'reference', label: '참조',      icon: 'mdi-bookmark-outline',        color: 'teal',            desc: '법령·규제·표준 등 인용용 참조' },
-                { value: 'dataset',   label: '데이터',    icon: 'mdi-table',                   color: 'cyan-darken-2',   desc: '엑셀/CSV 정량 데이터. 분석 질문 시 코드 실행으로 처리' }
+                { value: 'content',     label: '일반 자료', icon: 'mdi-file-document-outline',   color: 'primary',         desc: '검색·요약 대상이 되는 본문 자료 (기본값)' },
+                { value: 'glossary',    label: '용어 사전', icon: 'mdi-book-alphabet',           color: 'deep-purple',     desc: '한↔영 등 용어 매핑. 답변 작성 시 자동 참조' },
+                { value: 'template',    label: '양식',      icon: 'mdi-file-table-outline',      color: 'orange-darken-2', desc: '보고서/계약서 양식. 문서 생성 시 활용' },
+                { value: 'reference',   label: '참조',      icon: 'mdi-bookmark-outline',        color: 'teal',            desc: '법령·규제·표준 등 인용용 참조' },
+                { value: 'dataset',     label: '데이터',    icon: 'mdi-table',                   color: 'cyan-darken-2',   desc: '엑셀/CSV 정량 데이터. 분석 질문 시 코드 실행으로 처리' },
+                { value: 'legal_review', label: '검토 사례', icon: 'mdi-gavel',                  color: 'red-darken-2',    desc: '변호사 검토 메모가 달린 과거 계약서(NDA/MOU). 사업배경으로 검색돼 검토에 활용 · docx만 가능' }
             ],
+            // 조항 단위 구조화(메모 추출)가 docx XML 한정이라 검토 사례는 docx 전용
+            docxOnlyRoles: ['legal_review'],
             driveHeaders: [
                 { title: '파일명', key: 'file_name', sortable: true },
                 { title: '폴더', key: 'folder_path' },
@@ -808,7 +813,7 @@ export default {
         },
         // 역할별 파일 개수 (sub-tab chip 표시용)
         roleCounts() {
-            const c = { content: 0, glossary: 0, template: 0, reference: 0, dataset: 0 };
+            const c = { content: 0, glossary: 0, template: 0, reference: 0, dataset: 0, legal_review: 0 };
             for (const f of this.uploadFiles) {
                 const r = this.roleOf(f);
                 if (c[r] !== undefined) c[r]++;
@@ -825,6 +830,10 @@ export default {
         },
         uploadTargetRoleMeta() {
             return this.roleOptions.find((r) => r.value === this.uploadTargetRole) || this.roleOptions[0];
+        },
+        // docx 전용 role(검토 사례 등)이면 파일 피커를 .docx 로 제한
+        uploadAccept() {
+            return this.docxOnlyRoles.includes(this.uploadTargetRole) ? '.docx' : undefined;
         },
         // 폴더 노드 (트리, 들여쓰기 정보 포함). 현재 역할 scope 기준.
         folderNodes() {
@@ -1021,6 +1030,22 @@ export default {
             const tenantId = window.$tenantName || '';
             if (!tenantId) return;
             const folder = this.currentFolder || '';
+            const targetRole = this.uploadTargetRole;
+
+            // 검토 사례 등 docx 전용 role — 비 docx 파일 거부 (조항·메모 추출이 docx XML 한정).
+            // 백엔드도 400 으로 막지만 UX 상 미리 거른다.
+            if (this.docxOnlyRoles.includes(targetRole)) {
+                const bad = files.filter((f) => !/\.docx$/i.test(f.name || ''));
+                for (const f of bad) {
+                    this.uploadQueue.push({
+                        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                        name: f.name, folder, role: targetRole, status: 'failed',
+                        error: '검토 사례는 .docx 파일만 업로드할 수 있습니다'
+                    });
+                }
+                files = files.filter((f) => /\.docx$/i.test(f.name || ''));
+                if (!files.length) return;
+            }
 
             // 1) 해시 계산 + 중복 체크 (다이얼로그는 한 파일씩 순차로)
             const accepted = [];

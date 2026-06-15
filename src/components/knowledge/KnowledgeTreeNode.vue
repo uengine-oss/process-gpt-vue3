@@ -149,7 +149,7 @@ export default {
             }[s] || '';
         },
         roleShort(r) {
-            return { glossary: '사전', template: '양식', reference: '참조' }[r] || '';
+            return { glossary: '사전', template: '양식', reference: '참조', legal_review: '검토' }[r] || '';
         }
     }
 };

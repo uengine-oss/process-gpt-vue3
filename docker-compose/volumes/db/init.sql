@@ -634,10 +634,8 @@ create table if not exists public.knowledge_files (
         references public.tenants (id) on update cascade on delete cascade,
     constraint knowledge_files_status_check check (
         index_status in ('pending', 'processing', 'indexed', 'failed', 'excluded')
-    ),
-    constraint knowledge_files_role_check check (
-        doc_role in ('content', 'glossary', 'template', 'reference', 'dataset')
     )
+    -- doc_role 값 CHECK 제약 없음 — 새 role 추가 시 DB 변경 불필요 (앱 VALID_DOC_ROLES 로만 관리)
 ) tablespace pg_default;
 
 create table if not exists public.documents (
@@ -850,10 +848,8 @@ create table if not exists public.knowledge_folders (
     created_at timestamptz not null default now(),
     constraint knowledge_folders_unique unique (tenant_id, doc_role, folder_path),
     constraint knowledge_folders_tenant_fk foreign key (tenant_id)
-        references public.tenants (id) on update cascade on delete cascade,
-    constraint knowledge_folders_role_check check (
-        doc_role in ('content', 'glossary', 'template', 'reference', 'dataset')
-    )
+        references public.tenants (id) on update cascade on delete cascade
+    -- doc_role 값 CHECK 제약 없음 — 새 role 추가 시 DB 변경 불필요
 ) tablespace pg_default;
 
 create index if not exists idx_knowledge_folders_tenant on public.knowledge_folders using btree (tenant_id) tablespace pg_default;
@@ -3801,16 +3797,9 @@ ALTER TABLE public.knowledge_files
 ALTER TABLE public.knowledge_files
     ADD COLUMN IF NOT EXISTS doc_role text NOT NULL DEFAULT 'content';
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'knowledge_files_role_check'
-    ) THEN
-        ALTER TABLE public.knowledge_files
-            ADD CONSTRAINT knowledge_files_role_check
-            CHECK (doc_role IN ('content', 'glossary', 'template', 'reference', 'dataset'));
-    END IF;
-END $$;
+-- doc_role 값 CHECK 제약 제거 (새 role 추가 시 DB 마이그레이션 불필요). 과거 제약 있으면 삭제.
+ALTER TABLE public.knowledge_files
+    DROP CONSTRAINT IF EXISTS knowledge_files_role_check;
 
 create index if not exists idx_knowledge_files_tenant_role
     on public.knowledge_files using btree (tenant_id, doc_role) tablespace pg_default;
@@ -3824,16 +3813,12 @@ create index if not exists idx_knowledge_files_tenant_role
 ALTER TABLE public.knowledge_folders
     ADD COLUMN IF NOT EXISTS doc_role text NOT NULL DEFAULT 'content';
 
+-- doc_role 값 CHECK 제약 제거 (과거 제약 있으면 삭제).
+ALTER TABLE public.knowledge_folders
+    DROP CONSTRAINT IF EXISTS knowledge_folders_role_check;
+
 DO $$
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'knowledge_folders_role_check'
-    ) THEN
-        ALTER TABLE public.knowledge_folders
-            ADD CONSTRAINT knowledge_folders_role_check
-            CHECK (doc_role IN ('content', 'glossary', 'template', 'reference', 'dataset'));
-    END IF;
-
     -- (tenant_id, folder_path) unique 제약을 (tenant_id, doc_role, folder_path) 로 교체.
     IF EXISTS (
         SELECT 1 FROM pg_constraint

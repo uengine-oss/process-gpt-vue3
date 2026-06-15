@@ -2183,16 +2183,9 @@ CREATE POLICY document_pages_delete_policy ON public.document_pages
 ALTER TABLE public.knowledge_files
     ADD COLUMN IF NOT EXISTS doc_role text NOT NULL DEFAULT 'content';
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'knowledge_files_role_check'
-    ) THEN
-        ALTER TABLE public.knowledge_files
-            ADD CONSTRAINT knowledge_files_role_check
-            CHECK (doc_role IN ('content', 'glossary', 'template', 'reference'));
-    END IF;
-END $$;
+-- doc_role 값 CHECK 제약 제거 — 새 role 추가 시 DB 변경 불필요 (앱 VALID_DOC_ROLES 로만 관리).
+ALTER TABLE public.knowledge_files
+    DROP CONSTRAINT IF EXISTS knowledge_files_role_check;
 
 CREATE INDEX IF NOT EXISTS idx_knowledge_files_tenant_role
     ON public.knowledge_files USING btree (tenant_id, doc_role) TABLESPACE pg_default;
@@ -2206,16 +2199,11 @@ CREATE INDEX IF NOT EXISTS idx_knowledge_files_tenant_role
 ALTER TABLE public.knowledge_folders
     ADD COLUMN IF NOT EXISTS doc_role text NOT NULL DEFAULT 'content';
 
+ALTER TABLE public.knowledge_folders
+    DROP CONSTRAINT IF EXISTS knowledge_folders_role_check;
+
 DO $$
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'knowledge_folders_role_check'
-    ) THEN
-        ALTER TABLE public.knowledge_folders
-            ADD CONSTRAINT knowledge_folders_role_check
-            CHECK (doc_role IN ('content', 'glossary', 'template', 'reference'));
-    END IF;
-
     IF EXISTS (
         SELECT 1 FROM pg_constraint
         WHERE conname = 'knowledge_folders_unique' AND conrelid = 'public.knowledge_folders'::regclass

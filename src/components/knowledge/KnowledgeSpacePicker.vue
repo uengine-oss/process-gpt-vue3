@@ -22,11 +22,12 @@
 
             <!-- 출처 탭 -->
             <v-tabs v-model="activeSource" color="primary" density="compact" class="ksp-source-tabs">
-                <v-tab value="drive">
+                <!-- Google Drive 탭 숨김 (폐쇄망 운영) -->
+                <!-- <v-tab value="drive">
                     <v-icon start size="16">mdi-google-drive</v-icon>
                     Google Drive
                     <v-chip size="x-small" color="primary" variant="tonal" class="ml-2">{{ counts.drive }}</v-chip>
-                </v-tab>
+                </v-tab> -->
                 <v-tab value="upload">
                     <v-icon start size="16">mdi-cloud-upload-outline</v-icon>
                     Storage
@@ -340,7 +341,7 @@ export default {
             allFiles: [], // [{ key, name, folderPath, mimeType, sourceType, docRole, ... }]
             expandedPaths: new Set(),
             selectedKeysSet: new Set(),
-            activeSource: 'drive', // 'drive' | 'upload'
+            activeSource: 'upload', // 'drive' | 'upload' — Google Drive 탭 숨김으로 항상 upload 시작
             // 역할(doc_role) 필터 — Storage 탭에서만 적용. 항상 단일 role 만 활성.
             currentRole: 'content',
             roleFilterOptions: [
@@ -348,7 +349,8 @@ export default {
                 { value: 'glossary',  label: '용어 사전', icon: 'mdi-book-alphabet',           short: '사전' },
                 { value: 'template',  label: '양식',     icon: 'mdi-file-document-edit-outline', short: '양식' },
                 { value: 'reference', label: '참조',     icon: 'mdi-bookmark-outline',        short: '참조' },
-                { value: 'dataset',   label: '데이터',    icon: 'mdi-table',                   short: '데이터' }
+                { value: 'dataset',   label: '데이터',    icon: 'mdi-table',                   short: '데이터' },
+                { value: 'legal_review', label: '검토 사례', icon: 'mdi-gavel',                  short: '검토' }
             ]
         };
     },
@@ -372,7 +374,7 @@ export default {
         },
         // 현재 Storage 탭 안 role 별 개수 (role 칩 카운트용)
         roleCounts() {
-            const c = { all: 0, content: 0, glossary: 0, template: 0, reference: 0, dataset: 0 };
+            const c = { all: 0, content: 0, glossary: 0, template: 0, reference: 0, dataset: 0, legal_review: 0 };
             for (const f of this.allFiles) {
                 if (f.sourceType !== 'upload') continue;
                 c.all++;
@@ -616,7 +618,10 @@ export default {
                     sourceRef: f.sourceRef,
                     sizeBytes: f.sizeBytes,
                     modifiedTime: f.modifiedTime,
-                    owner: f.owner
+                    owner: f.owner,
+                    // 역할(양식/사업개요 등) — 백엔드가 템플릿/자료 구분에 사용. 누락 시 초안 템플릿 인식 불가.
+                    doc_role: f.docRole || 'content',
+                    docRole: f.docRole || 'content'
                 }));
             this.$emit('confirm', selectedDocs);
             this.$emit('update:modelValue', false);
