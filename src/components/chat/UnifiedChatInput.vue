@@ -225,10 +225,11 @@ export default {
         },
         selectExample(example) {
             if (!example) return;
-            let orchestration = 'langchain-react';
+            // 기본 에이전트 미사용: 항상 딥 에이전트로 고정
+            let orchestration = 'deepagents';
             try {
                 const o = this.$refs.inputChat?.orchestration;
-                if ((o || '').toString().trim() === 'deepagents') orchestration = 'deepagents';
+                if ((o || '').toString().trim() === 'langchain-react') orchestration = 'langchain-react';
             } catch (e) {}
             this.$emit('sendMessage', {
                 text: example.text,
@@ -251,8 +252,9 @@ export default {
                 rawFiles: hasRawFiles ? message.rawFiles : null,
                 images: message.images || null,
                 // orchestration pass-through (Chat.vue -> MainChatInput/ChatRoomPage)
+                // 기본 에이전트 미사용: 명시적 langchain-react 가 아니면 항상 딥 에이전트로 고정
                 orchestration:
-                    (message?.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
+                    (message?.orchestration || '').toString().trim() === 'langchain-react' ? 'langchain-react' : 'deepagents',
                 // mention 메타데이터 pass-through (Chat.vue -> ChatRoomPage 라우팅)
                 mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],
                 // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)

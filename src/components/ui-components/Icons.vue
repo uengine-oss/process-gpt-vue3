@@ -63,37 +63,17 @@ export default {
     },
     methods: {
         async loadSvg() {
-            const storageKey = `icons-${this.icon}`;
-            const hashKey = `icons-hash-${this.icon}`;
-
-            const response = await fetch(`/assets/images/icon/${this.icon}.svg`);
-            let svg = await response.text();
-
-            // 해시 값 계산
-            const hash = await this.calculateHash(svg);
-
-            const cachedHash = localStorage.getItem(hashKey);
-
-            if (cachedHash !== hash) {
-                // 해시 값이 다르면 업데이트
-                localStorage.setItem(storageKey, svg);
-                localStorage.setItem(hashKey, hash);
+            // 같은 오리진 로컬 SVG라 브라우저 HTTP 캐시로 충분하다.
+            // (이전엔 crypto.subtle 로 해시 캐싱을 했으나, crypto.subtle 은 secure context
+            //  에서만 동작하여 평문 HTTP/내부 IP 접속 환경에서 아이콘이 렌더되지 않는 문제가 있었음)
+            try {
+                const response = await fetch(`/assets/images/icon/${this.icon}.svg`);
+                if (!response.ok) return;
+                const svg = await response.text();
                 this.updateSvgContent(svg);
-            } else {
-                // 해시 값이 같으면 캐시된 SVG 사용
-                const cachedSvg = localStorage.getItem(storageKey);
-                if (cachedSvg) {
-                    this.updateSvgContent(cachedSvg);
-                }
+            } catch (e) {
+                console.warn(`[Icons] failed to load icon: ${this.icon}`, e);
             }
-        },
-        async calculateHash(content) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(content);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-            return hashHex;
         },
         shouldAddFill(svg) {
             return (

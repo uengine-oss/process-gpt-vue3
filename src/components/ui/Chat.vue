@@ -2915,7 +2915,8 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-select
+                                <!-- 기본/딥 에이전트 선택 드롭다운: 항상 딥 에이전트로 고정 운영하여 숨김 -->
+                                <!-- <v-select
                                     v-if="selectableOrchestration"
                                     v-model="orchestration"
                                     :items="orchestrationOptions"
@@ -2926,7 +2927,7 @@
                                     hide-details
                                     class="ml-2 orchestration-select"
                                     style="max-width: 150px"
-                                />
+                                /> -->
                                 <!-- <v-btn v-if="orchestration === 'langchain-react'" icon variant="text" class="text-medium-emphasis" @click="openController()" v-bind="props"
                                     style="width:30px; height:30px;">
                                     <Icons :icon="'filter'" :size="20" />
@@ -3445,7 +3446,8 @@ export default {
             uploadedPdfInfos: [],
             isPdfUploading: false,
             // orchestration: which chat server/runtime to use
-            orchestration: 'langchain-react',
+            // 기본 에이전트(langchain-react) 미사용. 항상 딥 에이전트로 고정.
+            orchestration: 'deepagents',
             selectableOrchestration: false,
             isDragOverTextarea: false,
             showNewMessageNoti: false,
@@ -3603,14 +3605,9 @@ export default {
                     if (newId && oldId && newId === oldId) {
                         return;
                     }
-                    const ctx = newRoom?.context ?? newRoom?.room_context ?? newRoom?.roomContext ?? null;
-                    const v = (ctx?.orchestration || '').toString().trim();
-                    if (v == '' || v == null) {
-                        this.selectableOrchestration = true;
-                    } else {
-                        this.selectableOrchestration = false;
-                    }
-                    this.orchestration = v === 'deepagents' ? 'deepagents' : 'langchain-react';
+                    // 기본 에이전트 미사용: 방 컨텍스트와 무관하게 항상 딥 에이전트로 고정.
+                    this.selectableOrchestration = false;
+                    this.orchestration = 'deepagents';
                 } catch (e) {}
             }
         },
