@@ -1711,7 +1711,11 @@ export default {
             const ctx = r.context ?? r.room_context ?? r.roomContext;
             return ctx != null && typeof ctx === 'object' ? ctx : null;
         },
-        shouldClientWriteChatDb(_orchestration) {
+        shouldClientWriteChatDb(orchestration) {
+            // process-gpt-deepagents는 백엔드(Supabase)가 저장하지만,
+            // deep-agents-temp 등 백엔드 저장이 없는 서비스를 위해 클라이언트도 저장한다.
+            // Firebase와 Supabase는 별개 DB라 중복 충돌 없음.
+            void orchestration;
             return true;
         },
         /** DB/putObject용: context 단일 필드로 쓰고 구 키는 제거 */
@@ -2610,12 +2614,13 @@ export default {
         },
 
         getRoomOrchestration() {
+            // 기본 에이전트(langchain-react) 미사용: 방 컨텍스트에 값이 없으면 항상 딥 에이전트로 폴백
             try {
                 const ctx = this.readChatRoomContext(this.currentChatRoom);
                 const value = (ctx?.orchestration || '').toString().trim();
-                return value || 'langchain-react';
+                return value || 'deepagents';
             } catch (e) {
-                return 'langchain-react';
+                return 'deepagents';
             }
         },
         getAgentRouterForOrchestration(orchestration) {
@@ -4777,7 +4782,7 @@ export default {
          */
         pushArtifactPanel({ type, label, data }) {
             const existingIdx = this.artifactPanels.findIndex(
-                (p) => p.type === type && (type === 'slide' ? p.data?.messageId === data?.messageId : p.data?.htmlUrl === data?.htmlUrl)
+                (p) => p.type === type && ((type === 'slide' || type === 'markdown') ? p.data?.messageId === data?.messageId : p.data?.htmlUrl === data?.htmlUrl)
             );
             if (existingIdx !== -1) {
                 this.artifactPanels[existingIdx] = { ...this.artifactPanels[existingIdx], label, data };
@@ -4788,7 +4793,7 @@ export default {
                 this.activeArtifactId = id;
             }
             // 문서/슬라이드 같은 "실제 아티팩트"는 넓게 열기
-            if (type === 'hwpx' || type === 'docx' || type === 'slide') {
+            if (type === 'hwpx' || type === 'docx' || type === 'slide' || type === 'markdown') {
                 if ((this.artifactSidebarWidth || 0) < this.artifactSidebarWideWidth) {
                     this.artifactSidebarWidth = this.artifactSidebarWideWidth;
                 }
@@ -5122,6 +5127,36 @@ export default {
             });
         },
 
+        /** markdown 아티팩트 JSON 인지 판별 (review_nda 등) */
+        isMarkdownPayload(parsed) {
+            if (!parsed || typeof parsed !== 'object') return false;
+            const hasContent = !!(parsed.markdown || parsed.file_url || parsed.fileUrl);
+            if (!hasContent) return false;
+            if (parsed.artifact_type === 'markdown') return true;
+            const ct = (parsed.content_type || parsed.contentType || '').toString();
+            const fn = (parsed.file_name || parsed.fileName || '').toString();
+            return ct.includes('markdown') || fn.toLowerCase().endsWith('.md');
+        },
+
+        /** markdown 결과(NDA 검토 비교표 등)를 markdown 아티팩트 패널로 등록 */
+        pushMarkdownArtifact(parsed, msgIdx) {
+            const md = parsed?.markdown || '';
+            const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
+            if (!md && !fileUrl) return;
+            const msg = this.messages?.[msgIdx];
+            const title = (parsed?.file_name || parsed?.fileName || 'Markdown').toString();
+            if (msg) {
+                msg.markdownContent = md;
+                msg.markdownUrl = fileUrl;
+                msg.markdownName = title;
+            }
+            this.pushArtifactPanel({
+                type: 'markdown',
+                label: title,
+                data: { markdownContent: md, fileUrl, fileName: title, messageId: msg?.uuid || null }
+            });
+        },
+
         isDocxPayload(parsed) {
             if (!parsed || typeof parsed !== 'object') return false;
             const ct = (parsed.content_type || parsed.contentType || '').toString();
@@ -5165,6 +5200,11 @@ export default {
                     this.pushSlideArtifact(parsed, msgIdx);
                     return;
                 }
+                // markdown 아티팩트 감지 (NDA 검토 비교표 등)
+                if (this.isMarkdownPayload(parsed)) {
+                    this.pushMarkdownArtifact(parsed, msgIdx);
+                    return;
+                }
                 const url = this.extractHwpxHtmlUrl(parsed);
                 if (url) {
                     if (this.isDocxPayload(parsed)) {
@@ -5192,6 +5232,15 @@ export default {
                         type: 'slide',
                         label: '슬라이드',
                         data: { slideMarkdown: msg.slideMarkdown, imageUrls: msg.slideImageUrls || [], messageId: msg?.uuid || null }
+                    });
+                    return;
+                }
+                // markdown 아티팩트 복원 (NDA 검토 비교표 등)
+                if (msg?.markdownContent || msg?.markdownUrl) {
+                    this.pushArtifactPanel({
+                        type: 'markdown',
+                        label: msg.markdownName || 'Markdown',
+                        data: { markdownContent: msg.markdownContent || '', fileUrl: msg.markdownUrl || '', fileName: msg.markdownName || 'Markdown', messageId: msg?.uuid || null }
                     });
                     return;
                 }
@@ -5841,7 +5890,7 @@ export default {
             const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
             const requestFiles = this.normalizePayloadFiles(payload);
             const requestPrimaryFile = requestFiles[0] || null;
-            const orchestration = (payload?.orchestration || this.getRoomOrchestration() || '').toString().trim() || 'langchain-react';
+            const orchestration = (payload?.orchestration || this.getRoomOrchestration() || '').toString().trim() || 'deepagents';
             const canWrite = this.shouldClientWriteChatDb(orchestration);
             const router = this.getAgentRouterForOrchestration(orchestration);
             const mainAgentService = this.getMainAgentServiceForOrchestration(orchestration);
@@ -5975,7 +6024,9 @@ export default {
                                       source_type: d.sourceType || 'drive',
                                       file_name: d.file_name || d.name || '',
                                       mime_type: d.mimeType || '',
-                                      folder_path: d.folderPath || ''
+                                      folder_path: d.folderPath || '',
+                                      // 역할(양식/사업개요 등) — 백엔드 초안 템플릿/자료 구분에 필수
+                                      doc_role: d.docRole || d.doc_role || 'content'
                                   }))
                             : [],
                         input_data: {
@@ -6248,6 +6299,8 @@ export default {
                             // 슬라이드 아티팩트 감지
                             if (this.isSlidePayload(parsed)) {
                                 this.pushSlideArtifact(parsed, idx);
+                            } else if (this.isMarkdownPayload(parsed)) {
+                                this.pushMarkdownArtifact(parsed, idx);
                             } else if (this.isDocxPayload(parsed)) {
                                 this.pushDocxArtifact(parsed, idx);
                             } else {
@@ -6393,6 +6446,10 @@ export default {
                                 // 슬라이드 아티팩트 처리
                                 this.pushSlideArtifact(hwpxPayload, idx);
                                 safeFinal = '슬라이드를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
+                            } else if (hwpxPayload && this.isMarkdownPayload(hwpxPayload)) {
+                                // markdown 아티팩트 처리 (NDA 검토 비교표 등) — 파일첨부로 오인 방지
+                                this.pushMarkdownArtifact(hwpxPayload, idx);
+                                safeFinal = 'NDA 검토 비교표를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
                             } else if (hwpxPayload) {
                                 const pdfUrl = hwpxPayload.pdf_url || hwpxPayload.pdfUrl || '';
                                 const pdfName = (hwpxPayload.pdf_name || hwpxPayload.pdfName || '').toString();
@@ -6504,6 +6561,44 @@ export default {
                                 process_name: state?.process_name || generatedDefinition?.processDefinitionName || '',
                                 process_id: state?.process_id || generatedDefinition?.processDefinitionId || ''
                             });
+                        }
+
+                        // 최종 assistant 메시지를 chats 테이블에 영속화한다.
+                        // deepagents-lite 등 백엔드가 DB 저장을 하지 않는 서비스에서는
+                        // 클라이언트가 저장하지 않으면 새로고침/재진입 시 답변이 사라진다.
+                        // (user 메시지는 handleSendMessage 에서 저장되지만 assistant 본문은
+                        //  여기서만 저장 책임을 가진다.)
+                        const finalMsg = this.messages.find((m) => m?.uuid === assistantUuid) || null;
+                        const hasRenderableContent =
+                            !!finalMsg &&
+                            ((finalMsg.content || '').toString().trim().length > 0 ||
+                                (Array.isArray(finalMsg.toolCalls) && finalMsg.toolCalls.length > 0) ||
+                                !!finalMsg.pdfFile ||
+                                !!finalMsg.__humanFeedback ||
+                                !!finalMsg.processPreview ||
+                                !!finalMsg.pdf2bpmnResult ||
+                                (Array.isArray(finalMsg.agentLogs) && finalMsg.agentLogs.length > 0));
+                        if (canWrite && finalMsg && targetRoomId && hasRenderableContent) {
+                            // 스트리밍 임시 표식을 제거해, 이후 optimistic 정리 로직이
+                            // 이 메시지를 잘못 삭제하지 않도록 한다. 같은 uuid 로 저장하므로
+                            // 우리 저장이 유발하는 realtime INSERT 는 handleRealtimeMessage 의
+                            // uuid 매칭(merge) 분기를 타서 중복 row 가 생기지 않는다.
+                            finalMsg.isOptimistic = false;
+                            const messageToSave = { ...finalMsg };
+                            delete messageToSave.isOptimistic;
+                            delete messageToSave.isLoading;
+                            delete messageToSave.rowUuid;
+                            delete messageToSave.__feStateKey;
+                            delete messageToSave.__humanFeedbackPersisted;
+                            try {
+                                await backend.putObject(`db://chats/${assistantUuid}`, {
+                                    uuid: assistantUuid,
+                                    id: targetRoomId,
+                                    messages: messageToSave
+                                });
+                            } catch (e) {
+                                console.warn('[streamAgents] assistant 메시지 저장 실패:', e);
+                            }
                         }
 
                         if (canWrite && this.currentChatRoom) {

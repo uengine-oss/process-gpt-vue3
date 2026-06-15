@@ -3,12 +3,23 @@
         <!-- Tab bar -->
         <div class="artifact-panel__tab-bar">
             <div class="artifact-panel__tabs-scroll">
+                <!-- 컨텍스트(활동/지식 등) — 미리보기와 상호배타. 같이 보여도 되는 정보 묶음 -->
+                <button
+                    v-if="hasContext"
+                    class="artifact-panel__tab"
+                    :class="{ 'is-active': showContext }"
+                    @click="selectContext"
+                >
+                    <v-icon size="13" class="artifact-panel__tab-icon">mdi-pulse</v-icon>
+                    <span class="artifact-panel__tab-label">활동</span>
+                </button>
+                <!-- 미리보기 탭들 — 선택 시 *딱 그것만* 보임 -->
                 <button
                     v-for="panel in tabPanels"
                     :key="panel.id"
                     class="artifact-panel__tab"
-                    :class="{ 'is-active': panel.id === activeId }"
-                    @click="$emit('update:activeId', panel.id)"
+                    :class="{ 'is-active': !showContext && panel.id === activeId }"
+                    @click="selectPreview(panel.id)"
                 >
                     <v-icon size="13" class="artifact-panel__tab-icon">{{ typeIcon(panel.type) }}</v-icon>
                     <span class="artifact-panel__tab-label">{{ panel.label }}</span>
@@ -24,10 +35,11 @@
 
         <!-- Panel bodies: all mounted (v-show), only active is visible -->
         <div class="artifact-panel__body">
-            <AgentChatRoomContext :panels="panels" />
+            <!-- 컨텍스트는 미리보기 활성 시 숨김 → 미리보기 단독 표시 -->
+            <AgentChatRoomContext v-if="showContext" :panels="panels" />
 
             <template v-for="panel in tabPanels" :key="panel.id">
-                <div v-show="panel.id === activeId" class="artifact-panel__content">
+                <div v-show="!showContext && panel.id === activeId" class="artifact-panel__content">
                     <!-- HWPX 문서 미리보기 -->
                     <HwpxViewer
                         v-if="panel.type === 'hwpx'"
@@ -53,6 +65,15 @@
                         :slideMarkdown="panel.data.slideMarkdown"
                         :imageUrls="panel.data.imageUrls || []"
                     />
+                    <!-- Markdown 문서 미리보기 (NDA 검토 비교표 등) -->
+                    <MarkdownViewer
+                        v-else-if="panel.type === 'markdown'"
+                        :ref="(el) => setPanelRef(panel.id, el)"
+                        :markdownContent="panel.data.markdownContent"
+                        :fileUrl="panel.data.fileUrl"
+                        :fileName="panel.data.fileName || panel.label"
+                        @close="$emit('close-panel', panel.id)"
+                    />
                     <!-- 새 패널 타입은 여기에 v-else-if로 추가 -->
                 </div>
             </template>
@@ -63,6 +84,7 @@
 <script>
 import HwpxViewer from '@/components/HwpxViewer.vue';
 import SlideArtifactViewer from '@/components/SlideArtifactViewer.vue';
+import MarkdownViewer from '@/components/MarkdownViewer.vue';
 import AgentChatRoomContext, { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 
 // 패널 타입별 아이콘 레지스트리 — 새 타입 추가 시 여기만 수정
@@ -70,13 +92,14 @@ const PANEL_TYPE_ICONS = {
     hwpx: 'mdi-file-document-outline',
     docx: 'mdi-file-word-outline',
     slide: 'mdi-presentation',
+    markdown: 'mdi-language-markdown-outline',
     tools: 'mdi-tools',
     attachments: 'mdi-paperclip'
 };
 
 export default {
     name: 'ArtifactPanel',
-    components: { HwpxViewer, SlideArtifactViewer, AgentChatRoomContext },
+    components: { HwpxViewer, SlideArtifactViewer, MarkdownViewer, AgentChatRoomContext },
     props: {
         panels: { type: Array, default: () => [] },
         activeId: { type: String, default: null }
@@ -84,16 +107,46 @@ export default {
     emits: ['update:activeId', 'close', 'close-panel', 'panel-action'],
     data() {
         return {
-            panelRefs: {}
+            panelRefs: {},
+            // 미리보기를 보다 '활동' 탭을 누르면 true → 컨텍스트(활동/지식)만 표시
+            forceContext: false
         };
     },
     computed: {
         tabPanels() {
             const ps = Array.isArray(this.panels) ? this.panels : [];
             return ps.filter((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
+        },
+        // 활동/지식 등 컨텍스트 패널 존재 여부
+        hasContext() {
+            const ps = Array.isArray(this.panels) ? this.panels : [];
+            return ps.some((p) => p && AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
+        },
+        // 현재 활성 탭이 미리보기(docx/markdown/slide/hwpx)인가
+        isPreviewActive() {
+            return this.tabPanels.some((p) => p.id === this.activeId);
+        },
+        // 컨텍스트(활동/지식)를 보여줄지 — true 면 미리보기 숨김(상호배타)
+        showContext() {
+            return (this.hasContext && this.forceContext) || !this.isPreviewActive;
+        }
+    },
+    watch: {
+        // 새 미리보기가 열리거나 다른 미리보기로 바뀌면 자동으로 미리보기 화면으로 전환
+        activeId() {
+            this.forceContext = false;
         }
     },
     methods: {
+        // '활동' 탭 — 컨텍스트(활동/지식 등)만 표시
+        selectContext() {
+            this.forceContext = true;
+        },
+        // 미리보기 탭 — 그 미리보기만 단독 표시
+        selectPreview(id) {
+            this.forceContext = false;
+            this.$emit('update:activeId', id);
+        },
         typeIcon(type) {
             return PANEL_TYPE_ICONS[type] || 'mdi-file-outline';
         },
