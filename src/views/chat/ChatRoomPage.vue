@@ -6639,11 +6639,49 @@ export default {
                         delete this.agentAbortControllers[abortKey];
                         const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                         if (idx !== -1) {
-                            const current = (this.messages[idx].content || '').toString();
-                            this.messages[idx].content = current ? current : '(에이전트 응답 오류)';
+                            const current = (this.messages[idx].content || '').toString().trim();
+                            const isPlaceholder =
+                                !current ||
+                                current === '...' ||
+                                current === '생각 중' ||
+                                current === '생각 중...' ||
+                                current === '생각중...' ||
+                                current === '생각중';
+                            // 부분 응답이 있으면 보존 + 중단 안내, 없으면 친절한 에러 안내(원시 스택 노출 금지).
+                            this.messages[idx].content = isPlaceholder
+                                ? '⚠️ 처리 중 오류가 발생했어요. 질문을 더 좁히거나 잠시 후 다시 시도해 주세요.'
+                                : `${current}\n\n⚠️ (처리 중 오류로 응답이 중단되었습니다.)`;
                             this.messages[idx].isLoading = false;
                             this.messages[idx].openuiIsStreaming = false;
+
+                            // ★ running 상태인 도구 호출을 모두 마감 — 안 하면 "...중" 스피너가 영구로 남는다.
+                            //   recursion 한도·네트워크 끊김·서버 오류 등 *모든* mid-stream 에러 공통 처리.
+                            const tcs = Array.isArray(this.messages[idx].toolCalls) ? this.messages[idx].toolCalls : [];
+                            this.messages[idx].toolCalls = tcs.map((tc) =>
+                                tc?.status === 'running'
+                                    ? { ...tc, status: 'error', endedAt: new Date().toISOString() }
+                                    : tc
+                            );
                         }
+
+                        // 우측 활동 패널 — running 항목 전부 error 로 마감 (스피너 종료)
+                        try {
+                            Object.values(this.plannedActivityById || {})
+                                .filter((x) => x && x.status === 'running')
+                                .forEach((item) => this.recordActivity({ ...item, status: 'error' }));
+                        } catch (e) {}
+                        // 우측 Tools 패널 — running 항목 전부 error 로 마감
+                        try {
+                            let changed = false;
+                            Object.keys(this.plannedToolsById || {}).forEach((id) => {
+                                if (this.plannedToolsById[id]?.status === 'running') {
+                                    this.plannedToolsById[id] = { ...this.plannedToolsById[id], status: 'error' };
+                                    changed = true;
+                                }
+                            });
+                            if (changed && this.planSideInfoEnabled?.tools) this.upsertToolsPanel();
+                        } catch (e) {}
+
                         const roomId = this.currentChatRoom?.id || this.roomId || null;
                         const state = this.getOrCreateProcessGenerationState(roomId);
                         if (state?.isActive) {

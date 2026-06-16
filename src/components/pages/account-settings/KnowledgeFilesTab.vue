@@ -1172,7 +1172,10 @@ export default {
         },
         async uploadOne(id, file, tenantId, folderPath = '', fileHash = '', docRole = 'content') {
             const fd = new FormData();
-            fd.append('file', file);
+            // 폴더 업로드 시 file.name 이 전체 상대경로일 수 있어(webkitdirectory/Electron),
+            // multipart filename 을 basename 으로 명시한다. 폴더 구조는 folder_path 로 별도 전송.
+            const _baseName = (file.name || 'file').replace(/\\/g, '/').split('/').pop() || 'file';
+            fd.append('file', file, _baseName);
             fd.append('tenant_id', tenantId);
             if (folderPath) fd.append('folder_path', folderPath);
             if (fileHash) fd.append('file_hash', fileHash);
