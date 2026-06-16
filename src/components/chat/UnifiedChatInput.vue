@@ -8,23 +8,8 @@
             </div>
         </div>
 
-        <!-- 지식 베이스 선택 칩 (입력창 위) -->
-        <div v-if="enableKnowledgeBase && selectedKnowledgeDocs.length > 0" class="knowledge-chip-row">
-            <v-chip
-                v-for="doc in selectedKnowledgeDocs"
-                :key="doc.id"
-                color="primary"
-                variant="tonal"
-                size="small"
-                closable
-                @click:close="removeKnowledgeDoc(doc.id)"
-                @click="openKnowledgePicker"
-                class="knowledge-chip"
-            >
-                <v-icon size="14" start :color="mimeIcon(doc.mimeType).color">{{ mimeIcon(doc.mimeType).icon }}</v-icon>
-                {{ doc.name }}
-            </v-chip>
-        </div>
+        <!-- 지식 베이스 선택 표시는 입력 툴바의 "지식 베이스" 버튼 배지(개수) + 피커 재오픈으로 대체.
+             폴더 통째 선택 시 칩이 수십 개 쏟아지는 문제로 입력창 위 칩 줄은 제거함. -->
 
         <!-- 입력 필드 - Chat 컴포넌트 사용 -->
         <div
@@ -81,7 +66,6 @@
 <script>
 import Chat from '@/components/ui/Chat.vue';
 import KnowledgeSpacePicker from '@/components/knowledge/KnowledgeSpacePicker.vue';
-import { mimeIcon } from '@/utils/fileIcon';
 
 export default {
     name: 'UnifiedChatInput',
@@ -193,18 +177,12 @@ export default {
         };
     },
     methods: {
-        mimeIcon,
         openKnowledgePicker() {
             this.knowledgePickerOpen = true;
         },
         handleKnowledgeConfirm(docs) {
             this.internalKnowledgeDocs = docs;
             this.$emit('update:knowledgeDocs', docs);
-        },
-        removeKnowledgeDoc(id) {
-            const next = this.selectedKnowledgeDocs.filter((d) => d.id !== id);
-            this.internalKnowledgeDocs = next;
-            this.$emit('update:knowledgeDocs', next);
         },
         handleWrapperDrop(e) {
             this.isDragOver = false;
@@ -309,25 +287,6 @@ export default {
     background: #f1f5f9;
     border-color: #cbd5e1;
     color: #808080;
-}
-
-/* 지식 베이스 선택 칩 (textarea 위) */
-.knowledge-chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 4px 8px 6px;
-}
-
-.knowledge-chip {
-    max-width: 240px;
-}
-
-.knowledge-chip :deep(.v-chip__content) {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: inline-block;
 }
 
 /* 입력 툴바의 지식 베이스 버튼 (Chat custom-input-tools 슬롯) */

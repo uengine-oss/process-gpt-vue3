@@ -287,6 +287,9 @@
                                     <div class="text-caption text-medium-emphasis mt-1">
                                         파일을 끌어다 놓거나 클릭하세요 — 자동으로 RAG 인덱싱됩니다
                                     </div>
+                                    <v-chip size="x-small" variant="outlined" class="mt-1" :color="uploadTargetRoleMeta.color">
+                                        허용 형식: {{ uploadAcceptLabel }}
+                                    </v-chip>
                                 </div>
                                 <v-chip
                                     size="small"
@@ -298,6 +301,32 @@
                                     {{ uploadTargetRoleMeta.label }}로 분류
                                 </v-chip>
                                 <input ref="fileInput" type="file" multiple :accept="uploadAccept" class="d-none" @change="onFileInput" />
+                            </div>
+
+                            <!-- 폴더 업로드 (하위 트리 구조 보존) -->
+                            <div class="d-flex align-center mt-2" style="gap: 8px; flex-wrap: wrap;">
+                                <v-btn
+                                    size="small"
+                                    variant="tonal"
+                                    :color="uploadTargetRoleMeta.color"
+                                    prepend-icon="mdi-folder-upload-outline"
+                                    @click="$refs.folderInput.click()"
+                                >
+                                    폴더 업로드
+                                </v-btn>
+                                <span class="text-caption text-medium-emphasis">
+                                    폴더를 통째로 선택하면 하위 폴더 구조를 그대로 만들고 각 파일을 해당 폴더에 업로드합니다.
+                                </span>
+                                <!-- webkitdirectory: 디렉토리 선택 → 각 file.webkitRelativePath 로 folder_path 도출 -->
+                                <input
+                                    ref="folderInput"
+                                    type="file"
+                                    webkitdirectory
+                                    directory
+                                    multiple
+                                    class="d-none"
+                                    @change="onFolderInput"
+                                />
                             </div>
 
                             <!-- 업로드 진행 -->
@@ -735,13 +764,21 @@ export default {
             roleOptions: [
                 { value: 'content',     label: '일반 자료', icon: 'mdi-file-document-outline',   color: 'primary',         desc: '검색·요약 대상이 되는 본문 자료 (기본값)' },
                 { value: 'glossary',    label: '용어 사전', icon: 'mdi-book-alphabet',           color: 'deep-purple',     desc: '한↔영 등 용어 매핑. 답변 작성 시 자동 참조' },
-                { value: 'template',    label: '양식',      icon: 'mdi-file-table-outline',      color: 'orange-darken-2', desc: '보고서/계약서 양식. 문서 생성 시 활용' },
+                { value: 'template',    label: '양식',      icon: 'mdi-file-table-outline',      color: 'orange-darken-2', desc: '보고서/계약서 양식. 문서 생성 시 활용 · hwpx/docx만 가능' },
                 { value: 'reference',   label: '참조',      icon: 'mdi-bookmark-outline',        color: 'teal',            desc: '법령·규제·표준 등 인용용 참조' },
-                { value: 'dataset',     label: '데이터',    icon: 'mdi-table',                   color: 'cyan-darken-2',   desc: '엑셀/CSV 정량 데이터. 분석 질문 시 코드 실행으로 처리' },
+                { value: 'dataset',     label: '데이터',    icon: 'mdi-table',                   color: 'cyan-darken-2',   desc: '엑셀(xlsx) 정량 데이터. 분석 질문 시 코드 실행으로 처리 · xlsx만 가능' },
                 { value: 'legal_review', label: '검토 사례', icon: 'mdi-gavel',                  color: 'red-darken-2',    desc: '변호사 검토 메모가 달린 과거 계약서(NDA/MOU). 사업배경으로 검색돼 검토에 활용 · docx만 가능' }
             ],
-            // 조항 단위 구조화(메모 추출)가 docx XML 한정이라 검토 사례는 docx 전용
-            docxOnlyRoles: ['legal_review'],
+            // doc_role(분류)별 업로드 허용 확장자 — 백엔드 정책(knowledge_files.ROLE_ALLOWED_EXTENSIONS)과 동일.
+            //   양식: 편집형(hwpx/docx) · 데이터: xlsx · 검토 사례: docx(메모 추출 docx XML 한정)
+            roleAllowedExtensions: {
+                content: ['pdf', 'hwp', 'hwpx', 'doc', 'docx', 'pptx', 'txt'],
+                glossary: ['pdf', 'hwp', 'hwpx', 'doc', 'docx', 'pptx', 'txt'],
+                reference: ['pdf', 'hwp', 'hwpx', 'doc', 'docx', 'pptx', 'txt'],
+                template: ['hwpx', 'docx'],
+                dataset: ['xlsx'],
+                legal_review: ['docx']
+            },
             driveHeaders: [
                 { title: '파일명', key: 'file_name', sortable: true },
                 { title: '폴더', key: 'folder_path' },
@@ -831,9 +868,18 @@ export default {
         uploadTargetRoleMeta() {
             return this.roleOptions.find((r) => r.value === this.uploadTargetRole) || this.roleOptions[0];
         },
-        // docx 전용 role(검토 사례 등)이면 파일 피커를 .docx 로 제한
+        // 현재 role 의 허용 확장자 배열
+        allowedExtsForRole() {
+            return this.roleAllowedExtensions[this.uploadTargetRole] || this.roleAllowedExtensions.content;
+        },
+        // 파일 피커 accept 속성 — 현재 role 허용 확장자로 제한
         uploadAccept() {
-            return this.docxOnlyRoles.includes(this.uploadTargetRole) ? '.docx' : undefined;
+            const exts = this.allowedExtsForRole;
+            return exts && exts.length ? exts.map((e) => '.' + e).join(',') : undefined;
+        },
+        // 드롭존 안내 문구용 — "PDF, HWP, …"
+        uploadAcceptLabel() {
+            return (this.allowedExtsForRole || []).map((e) => e.toUpperCase()).join(', ');
         },
         // 폴더 노드 (트리, 들여쓰기 정보 포함). 현재 역할 scope 기준.
         folderNodes() {
@@ -1005,6 +1051,31 @@ export default {
             const files = Array.from(e.dataTransfer?.files || []);
             if (files.length) this.uploadFiles_(files);
         },
+        onFolderInput(e) {
+            const files = Array.from(e.target.files || []);
+            if (files.length) this.uploadFolderTree_(files);
+            e.target.value = '';
+        },
+        // 폴더(디렉토리) 업로드 — webkitRelativePath 로 하위 트리 구조를 보존한다.
+        // 각 파일의 folder_path = (현재 폴더 prefix) + (상대 디렉토리 경로). 정크/시스템 파일 제외.
+        async uploadFolderTree_(files) {
+            const SKIP = new Set(['.gitkeep', '.ds_store', 'thumbs.db', 'desktop.ini']);
+            const usable = files.filter(
+                (f) => f && f.name && !SKIP.has(f.name.toLowerCase()) && (f.size ?? 1) > 0
+            );
+            if (!usable.length) {
+                console.warn('[KnowledgeFilesTab] folder upload: no usable files');
+                return;
+            }
+            const base = this.currentFolder || '';
+            const resolver = (file) => {
+                // webkitRelativePath 예: "mock-corpus/A_사업/05.계약서/Credit Agreement.pdf"
+                const rel = (file.webkitRelativePath || file.name).replace(/\\/g, '/');
+                const dir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
+                return [base, dir].filter(Boolean).join('/').replace(/^\/+|\/+$/g, '');
+            };
+            await this.uploadFiles_(usable, resolver);
+        },
         async computeSha256(file) {
             const buf = await file.arrayBuffer();
             const digest = await crypto.subtle.digest('SHA-256', buf);
@@ -1026,24 +1097,29 @@ export default {
             this.duplicateInfo = null;
             if (r) r(proceed);
         },
-        async uploadFiles_(files) {
+        async uploadFiles_(files, folderResolver = null) {
             const tenantId = window.$tenantName || '';
             if (!tenantId) return;
-            const folder = this.currentFolder || '';
+            // 파일별 folder_path 해석기 — 폴더 업로드(트리 보존)면 webkitRelativePath 기반,
+            // 평범한 파일 업로드면 현재 폴더(currentFolder) 고정.
+            const folderOf = (f) => (folderResolver ? folderResolver(f) : (this.currentFolder || ''));
             const targetRole = this.uploadTargetRole;
 
-            // 검토 사례 등 docx 전용 role — 비 docx 파일 거부 (조항·메모 추출이 docx XML 한정).
-            // 백엔드도 400 으로 막지만 UX 상 미리 거른다.
-            if (this.docxOnlyRoles.includes(targetRole)) {
-                const bad = files.filter((f) => !/\.docx$/i.test(f.name || ''));
+            // doc_role(분류)별 허용 확장자 — 비허용 파일 거부. 백엔드도 400 으로 막지만 UX 상 미리 거른다.
+            const allowedExts = this.roleAllowedExtensions[targetRole] || this.roleAllowedExtensions.content;
+            const extOf = (name) => (name || '').split('.').pop()?.toLowerCase() || '';
+            const isAllowed = (f) => allowedExts.includes(extOf(f.name));
+            const bad = files.filter((f) => !isAllowed(f));
+            if (bad.length) {
+                const label = allowedExts.map((e) => e.toUpperCase()).join(', ');
                 for (const f of bad) {
                     this.uploadQueue.push({
                         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                        name: f.name, folder, role: targetRole, status: 'failed',
-                        error: '검토 사례는 .docx 파일만 업로드할 수 있습니다'
+                        name: f.name, folder: folderOf(f), role: targetRole, status: 'failed',
+                        error: `이 분류는 ${label} 형식만 업로드할 수 있습니다`
                     });
                 }
-                files = files.filter((f) => /\.docx$/i.test(f.name || ''));
+                files = files.filter(isAllowed);
                 if (!files.length) return;
             }
 
@@ -1074,19 +1150,22 @@ export default {
             if (!accepted.length) return;
 
             const docRole = this.uploadTargetRole;
+            const usedFolders = new Set();
             const tasks = accepted.map(({ file, hash }) => {
                 const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-                this.uploadQueue.push({ id, name: file.name, folder, role: docRole, status: 'uploading', error: null });
-                return this.uploadOne(id, file, tenantId, folder, hash, docRole);
+                const fileFolder = folderOf(file);
+                usedFolders.add(fileFolder);
+                this.uploadQueue.push({ id, name: file.name, folder: fileFolder, role: docRole, status: 'uploading', error: null });
+                return this.uploadOne(id, file, tenantId, fileFolder, hash, docRole);
             });
             await Promise.allSettled(tasks);
-            // 업로드 성공 시 emptyFolders 에서 (해당 role 의 동일 경로) 제거
-            if (folder) {
-                this.emptyFolders = this.emptyFolders.filter(
-                    (f) => !(f.folder_path === folder && (f.doc_role || 'content') === docRole)
-                );
-            }
+            // 업로드 성공 시 emptyFolders 에서 (사용한 경로 + 해당 role) 제거
+            this.emptyFolders = this.emptyFolders.filter(
+                (f) => !(usedFolders.has(f.folder_path) && (f.doc_role || 'content') === docRole)
+            );
             await this.fetchList();
+            // 업로드 배치 끝 → 영향받은 폴더 카드 1회 갱신 (단일·폴더 업로드 모두 이 경로).
+            this.refreshFolderCards([...usedFolders], docRole);
             setTimeout(() => {
                 this.uploadQueue = this.uploadQueue.filter((u) => u.status === 'uploading');
             }, 3000);
@@ -1119,6 +1198,24 @@ export default {
                     item.status = 'failed';
                     item.error = e?.response?.data?.detail || e?.message || '업로드 실패';
                 }
+            }
+        },
+        // 업로드/삭제 *배치 후* 영향받은 폴더 카드만 1회 갱신 (storm 없는 자동 경로).
+        // 백엔드가 signature-skip 으로 실제 바뀐 폴더만 LLM 호출. fire-and-forget.
+        async refreshFolderCards(folderPaths, docRole) {
+            const tenantId = window.$tenantName || '';
+            const folders = [...new Set((folderPaths || []).filter(Boolean))];
+            if (!tenantId || !folders.length) return;
+            try {
+                const fd = new FormData();
+                fd.append('tenant_id', tenantId);
+                folders.forEach((p) => fd.append('folder_paths', p));
+                if (docRole) fd.append('doc_role', docRole);
+                await axios.post('/memento/knowledge/folders/refresh-cards', fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+            } catch (e) {
+                console.warn('[KnowledgeFilesTab] refresh folder cards failed', e);
             }
         },
         openNewFolderDialog() {
@@ -1297,6 +1394,11 @@ export default {
                         failed.slice(0, 5).join(', ')
                     );
                 }
+                // 삭제 배치 끝 → 영향받은 폴더 카드 갱신 (upload 소스만; drive 는 폴더 트리 대상 아님)
+                if (kind !== 'drive') {
+                    const affected = [...new Set(targets.map((t) => t.folder_path).filter(Boolean))];
+                    this.refreshFolderCards(affected, this.currentRole);
+                }
             } finally {
                 this.bulkDeleting = false;
                 this.bulkDeleteDialog = false;
@@ -1322,6 +1424,10 @@ export default {
                 });
                 this.files = this.files.filter((f) => this.rowKey(f) !== key);
                 this.notify(item.source_type === 'drive' ? '인덱스에서 제거되었습니다' : '파일이 삭제되었습니다');
+                // 파일 삭제 → 그 폴더 카드 갱신 (upload 소스만)
+                if (item.source_type === 'upload') {
+                    this.refreshFolderCards([item.folder_path], item.doc_role || this.currentRole);
+                }
             } catch (e) {
                 this.notify('삭제 실패', 'error', e?.response?.data?.detail || e?.message);
             } finally {

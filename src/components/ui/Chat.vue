@@ -2751,7 +2751,7 @@
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage" />
             <input
                 type="file"
-                accept="image/*,.pdf,.doc,.docx,.hwp,.hwpx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+                accept="image/*,.pdf,.hwp,.hwpx,.doc,.docx,.pptx,.txt,.xlsx"
                 ref="unifiedFileInput"
                 class="d-none"
                 multiple
@@ -5616,8 +5616,25 @@ export default {
             const selectedFiles = Array.from(e?.target?.files || []);
             if (!selectedFiles.length) return;
 
-            const imageFiles = selectedFiles.filter((f) => (f?.type || '').startsWith('image/'));
-            const docFiles = selectedFiles.filter((f) => !(f?.type || '').startsWith('image/'));
+            // 채팅 첨부 허용 형식 — 지원 문서셋 + 이미지(비전). 그 외는 거부.
+            const CHAT_ALLOWED_DOC_EXTS = ['pdf', 'hwp', 'hwpx', 'doc', 'docx', 'pptx', 'txt', 'xlsx'];
+            const extOf = (n) => (n || '').split('.').pop()?.toLowerCase() || '';
+            const isImageFile = (f) =>
+                (f?.type || '').startsWith('image/') ||
+                ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff'].includes(extOf(f.name));
+            const isAllowedFile = (f) => isImageFile(f) || CHAT_ALLOWED_DOC_EXTS.includes(extOf(f.name));
+            const rejectedFiles = selectedFiles.filter((f) => !isAllowedFile(f));
+            if (rejectedFiles.length) {
+                alert(
+                    `지원하지 않는 파일 형식입니다: ${rejectedFiles.map((f) => f.name).join(', ')}\n` +
+                        '허용: PDF, HWP, HWPX, DOC, DOCX, PPTX, TXT, XLSX, 이미지'
+                );
+            }
+            const allowedFiles = selectedFiles.filter(isAllowedFile);
+            if (!allowedFiles.length) return;
+
+            const imageFiles = allowedFiles.filter((f) => isImageFile(f));
+            const docFiles = allowedFiles.filter((f) => !isImageFile(f));
 
             // 문서/오피스 파일은 기존 PDF 선택 경로로 일괄 처리
             if (docFiles.length > 0) {
