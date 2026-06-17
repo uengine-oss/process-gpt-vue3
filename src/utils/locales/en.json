@@ -3495,7 +3495,9 @@
         "graphEmpty": "No reference graph (no markdown files or links)",
         "usedByTitle": "Used by agents",
         "usedByLoading": "Loading agents...",
-        "usedByEmpty": "No agents are using this skill."
+        "usedByEmpty": "No agents are using this skill.",
+        "showEditor": "Show Editor",
+        "showGitHistory": "Git Change History"
     },
     "AgentChatInfo": {
         "expand": "Show more",
@@ -3776,7 +3778,33 @@
     },
     "AgentSkillEdit": {
         "deleteDialogTitle": "Delete Skill File",
-        "deleteDialogMessage": "Are you sure you want to delete this skill file? Deleted skill files cannot be recovered."
+        "deleteDialogMessage": "Are you sure you want to delete this skill file? Deleted skill files cannot be recovered.",
+        "commitMessageLabel": "Commit Message",
+        "deleteCommitMessagePlaceholder": "Enter a commit message for this deletion"
+    },
+    "SkillSaveDialog": {
+        "titleChecking": "Checking repository...",
+        "titleNoRepo": "No Git Repository",
+        "title": "Save Options",
+        "modePR": "Create PR",
+        "modeDirect": "Direct commit to main",
+        "modePRDesc": "Create a feature branch and open a PR for review before merging.",
+        "modeDirectDesc": "Commit directly to main and apply immediately to the agent.",
+        "noRepoMessage": "This skill does not have a linked Git repository. You need to create one before saving.",
+        "noRepoHint": "Creating a repository will push the current local skill files as an initial commit. You can then commit or create a PR for your edits.",
+        "createRepo": "Create Repository",
+        "branchNameLabel": "Branch Name",
+        "commitMessageLabel": "Commit Message",
+        "commitMessagePlaceholder": "Enter a commit message describing your changes",
+        "prTitleLabel": "PR Title",
+        "prDescriptionLabel": "PR Description (optional)",
+        "createPR": "Create PR",
+        "prSuccessTitle": "PR Created",
+        "prSuccessMessage": "Pull Request has been successfully created.",
+        "prSuccessHint": "Changes will be applied to the agent after review and merge.",
+        "prSuccessOpen": "Open PR",
+        "notOwnerNotice": "You are not the owner of this skill. Only PR creation is available.",
+        "generateCommitMsg": "Auto-generate commit message with AI"
     },
     "AgentSkills": {
         "skills": "Skills",
@@ -4139,8 +4167,8 @@
         "viewTableHint": "Show skills in a table",
         "viewCardHint": "Show skills as cards",
         "addSkill": "Add skill",
-        "addFromZip": "Upload ZIP",
-        "addFromZipHint": "Upload a .zip file containing skill files",
+        "addFromZip": "Upload File",
+        "addFromZipHint": "Upload a .zip or .skill file",
         "addFromRepo": "From Repository",
         "addFromRepoHint": "Add from a Git repository URL",
         "repositoryUrl": "Repository URL",

@@ -13,25 +13,21 @@
                 <span v-else class="ml-3">{{ fileName }}</span>
             </div>
             <div class="d-flex align-center gap-2 mr-2">
-                <v-btn v-if="isEditable" @click="deleteDialog = true" variant="text" icon color="error" size="small">
+                <v-btn v-if="isEditable" @click="openDeleteDialog" variant="text" icon color="error" size="small">
                     <v-icon>mdi-delete</v-icon>
                 </v-btn>
                 <v-btn v-if="isMarkdown" @click="toggleMarkdownPreview" variant="text" icon size="small">
                     <v-icon>{{ markdownPreview ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                 </v-btn>
-                <v-btn v-if="!readOnly" @click="saveSkillFile" variant="text" icon color="primary" :loading="isLoading" size="small">
+                <v-btn v-if="!readOnly" @click="saveDialog = true" variant="text" icon color="primary" :loading="isLoading" size="small">
                     <v-icon>mdi-content-save</v-icon>
                 </v-btn>
-                <v-btn v-if="!readOnly && isEditable" @click="deleteDialog = true" variant="text" icon color="error" size="small">
+                <v-btn v-if="!readOnly && isEditable" @click="openDeleteDialog" variant="text" icon color="error" size="small">
                     <v-icon>mdi-delete</v-icon>
                 </v-btn>
             </div>
         </v-card-title>
         <v-card-text class="h-100 px-0">
-            <!-- <v-textarea 
-                v-model="skillContent"
-                rows="19"
-            ></v-textarea> -->
             <div v-if="markdownPreview" class="h-100 markdown-preview markdown-content">
                 <div v-html="markdownHtml"></div>
             </div>
@@ -45,6 +41,15 @@
         </v-card-text>
     </v-card>
 
+    <SkillSaveDialog
+        v-model="saveDialog"
+        :skill-name="skillName"
+        :file-path="filePath"
+        :content="skillContent"
+        :file-name="fileName"
+        @saved="onSaved"
+    />
+
     <!-- delete dialog -->
     <v-dialog v-model="deleteDialog" max-width="500px" persistent>
         <v-card>
@@ -55,10 +60,21 @@
                 </v-btn>
             </v-card-title>
             <v-card-text class="pa-4 pb-0">
-                {{ $t('AgentSkillEdit.deleteDialogMessage') }}
+                <p class="mb-3">{{ $t('AgentSkillEdit.deleteDialogMessage') }}</p>
+                <v-text-field
+                    v-model="deleteCommitMessage"
+                    :label="$t('AgentSkillEdit.commitMessageLabel')"
+                    :placeholder="$t('AgentSkillEdit.deleteCommitMessagePlaceholder')"
+                    hide-details="auto"
+                    autofocus
+                    @keyup.enter="deleteCommitMessage.trim() && confirmDelete()"
+                ></v-text-field>
             </v-card-text>
             <v-card-actions class="d-flex justify-end align-center pa-4">
-                <v-btn color="error" rounded variant="flat" @click="deleteSkillFile">
+                <v-btn variant="text" @click="deleteDialog = false">
+                    {{ $t('common.cancel') }}
+                </v-btn>
+                <v-btn color="error" rounded variant="flat" :disabled="!deleteCommitMessage.trim()" @click="confirmDelete">
                     {{ $t('common.delete') }}
                 </v-btn>
             </v-card-actions>
@@ -71,26 +87,23 @@ import { marked } from 'marked';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
 import BackendFactory from '@/components/api/BackendFactory';
+import SkillSaveDialog from '@/components/SkillSaveDialog.vue';
 
-// marked + highlight.js 연동 (코드 블록 문법 하이라이팅)
 marked.setOptions({
     breaks: true,
     gfm: true,
     highlight(code, lang) {
         if (lang && hljs.getLanguage(lang)) {
-            try {
-                return hljs.highlight(code, { language: lang }).value;
-            } catch (_) {}
+            try { return hljs.highlight(code, { language: lang }).value; } catch (_) {}
         }
-        try {
-            return hljs.highlightAuto(code).value;
-        } catch (_) {}
+        try { return hljs.highlightAuto(code).value; } catch (_) {}
         return code;
     }
 });
 
 export default {
     name: 'AgentSkillEdit',
+    components: { SkillSaveDialog },
     props: {
         skillFile: {
             type: Object,
@@ -106,11 +119,16 @@ export default {
             backend: null,
             skillName: '',
             fileName: '',
+            filePath: '',
             skillContent: '',
-            deleteDialog: false,
-            isLoading: false,
+            currentBranch: 'main',
 
-            // markdown preview
+            saveDialog: false,
+
+            deleteDialog: false,
+            deleteCommitMessage: '',
+
+            isLoading: false,
             markdownPreview: false
         };
     },
@@ -134,42 +152,33 @@ export default {
             return this.fileName && this.fileName !== 'SKILL.md' && !this.isLoading;
         },
         editorLanguage() {
-            const filePath = this.fileName || '';
-            const extension = filePath.substring(filePath.lastIndexOf('.') + 1).toLowerCase();
-            const languageMap = {
-                json: 'json',
-                md: 'markdown',
-                markdown: 'markdown',
-                js: 'javascript',
-                jsx: 'javascript',
-                ts: 'typescript',
-                tsx: 'typescript',
-                vue: 'vue',
-                html: 'html',
-                css: 'css',
-                scss: 'scss',
-                py: 'python',
-                java: 'java',
-                yaml: 'yaml',
-                yml: 'yaml',
-                txt: 'plaintext'
+            const ext = (this.fileName || '').split('.').pop().toLowerCase();
+            const map = {
+                json: 'json', md: 'markdown', markdown: 'markdown',
+                js: 'javascript', jsx: 'javascript',
+                ts: 'typescript', tsx: 'typescript',
+                vue: 'vue', html: 'html', css: 'css', scss: 'scss',
+                py: 'python', java: 'java', yaml: 'yaml', yml: 'yaml', txt: 'plaintext'
             };
-            return languageMap[extension] || 'plaintext';
+            return map[ext] || 'plaintext';
         }
     },
     watch: {
         skillFile: {
             handler(newVal) {
                 this.markdownPreview = false;
-
                 if (newVal) {
                     this.skillName = newVal.skill_name;
                     this.skillContent = newVal.content;
+                    this.filePath = newVal.file_path;
                     this.fileName = newVal.file_path.split('/').pop();
+                    this.fetchCurrentBranch();
                 } else {
                     this.skillName = '';
                     this.fileName = '';
+                    this.filePath = '';
                     this.skillContent = '';
+                    this.currentBranch = 'main';
                 }
             },
             deep: true
@@ -182,37 +191,52 @@ export default {
         if (this.skillFile) {
             this.skillName = this.skillFile.skill_name;
             this.skillContent = this.skillFile.content;
+            this.filePath = this.skillFile.file_path;
             this.fileName = this.skillFile.file_path.split('/').pop();
+            this.fetchCurrentBranch();
         }
     },
     methods: {
-        saveSkillFile() {
-            this.isLoading = true;
-            this.backend
-                .putSkillFile(this.skillName, this.fileName, this.skillContent)
-                .then(() => {
-                    this.$try({
-                        context: this,
-                        action: () => {
-                            this.$emit('file-saved');
-                        },
-                        successMsg: '스킬 파일이 성공적으로 저장되었습니다.'
-                    });
-                })
-                .finally(() => {
-                    this.isLoading = false;
-                });
+        async fetchCurrentBranch() {
+            if (!this.skillName) return;
+            try {
+                const result = await this.backend.getSkillBranches(this.skillName);
+                if (result.branches.length > 0) {
+                    this.currentBranch = result.default_branch || result.branches[0].name;
+                }
+            } catch (_) {
+                // keep default
+            }
+        },
+        onSaved({ mode }) {
+            const msg = mode === 'direct'
+                ? '스킬 파일이 성공적으로 저장되었습니다.'
+                : 'PR이 성공적으로 생성되었습니다.';
+            this.$try({
+                context: this,
+                action: () => { this.$emit('file-saved'); },
+                successMsg: msg
+            });
+        },
+        openDeleteDialog() {
+            this.deleteCommitMessage = '';
+            this.deleteDialog = true;
+        },
+        confirmDelete() {
+            if (!this.deleteCommitMessage.trim()) return;
+            this.deleteDialog = false;
+            this.deleteSkillFile();
         },
         async deleteSkillFile() {
-            this.deleteDialog = false;
             this.isLoading = true;
             try {
-                await this.backend.deleteSkillFile(this.skillName, this.fileName);
+                await this.backend.deleteSkillFile(
+                    this.skillName, this.fileName,
+                    this.deleteCommitMessage, this.currentBranch
+                );
                 this.$try({
                     context: this,
-                    action: () => {
-                        this.$emit('file-deleted');
-                    },
+                    action: () => { this.$emit('file-deleted'); },
                     successMsg: '스킬 파일이 성공적으로 삭제되었습니다.'
                 });
             } finally {
@@ -220,7 +244,6 @@ export default {
             }
         },
         handleMount(editor) {
-            // Monaco Editor 마운트 후 높이 설정
             if (editor) {
                 editor.layout({ height: 320, width: editor.getLayoutInfo().width });
             }

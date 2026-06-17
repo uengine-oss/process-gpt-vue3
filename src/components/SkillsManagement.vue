@@ -442,8 +442,8 @@
             </template>
         </AppBaseCard>
 
-        <!-- ZIP 업로드 (숨김 input) -->
-        <input ref="zipInputRef" type="file" accept=".zip" style="display: none" @change="onZipSelected" />
+        <!-- ZIP / Skill 파일 업로드 (숨김 input) -->
+        <input ref="zipInputRef" type="file" accept=".zip,.skill" style="display: none" @change="onZipSelected" />
 
         <!-- 스킬 추가: Repository URL 다이얼로그 -->
         <v-dialog v-model="showRepoDialog" max-width="400" persistent>
