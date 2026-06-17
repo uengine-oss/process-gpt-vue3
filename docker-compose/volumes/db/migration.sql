@@ -2255,3 +2255,61 @@ ALTER TABLE public.knowledge_files
 -- =====================================================
 ALTER TABLE public.knowledge_files
     ADD COLUMN IF NOT EXISTS doc_summary jsonb;
+
+
+-- =====================================================
+-- 2026-06-17: tenant_skills 테이블 추가
+-- 스킬 정의/소유자(owner_id)를 tenant_skills로 분리하고,
+-- agent_skills는 에이전트-스킬 할당 관계만 담당
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS public.tenant_skills (
+  tenant_id   text not null,
+  skill_name  text not null,
+  owner_id    uuid not null,
+  created_at  timestamptz null default now(),
+  constraint  tenant_skills_pkey primary key (tenant_id, skill_name),
+  constraint  tenant_skills_owner_fkey foreign key (owner_id, tenant_id)
+              references public.users (id, tenant_id) on update cascade on delete cascade
+) tablespace pg_default;
+
+CREATE INDEX IF NOT EXISTS idx_tenant_skills_tenant
+  ON public.tenant_skills (tenant_id);
+
+ALTER TABLE public.tenant_skills ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_skills_insert_policy ON public.tenant_skills;
+DROP POLICY IF EXISTS tenant_skills_select_policy ON public.tenant_skills;
+DROP POLICY IF EXISTS tenant_skills_update_policy ON public.tenant_skills;
+DROP POLICY IF EXISTS tenant_skills_delete_policy ON public.tenant_skills;
+
+CREATE POLICY tenant_skills_insert_policy ON public.tenant_skills FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY tenant_skills_select_policy ON public.tenant_skills FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY tenant_skills_update_policy ON public.tenant_skills FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY tenant_skills_delete_policy ON public.tenant_skills FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+-- 기존 agent_skills 데이터 마이그레이션: 동일 (tenant_id, skill_name)이 여러 에이전트에 있을 경우 가장 오래된 행의 user_id를 owner로 사용
+INSERT INTO public.tenant_skills (tenant_id, skill_name, owner_id, created_at)
+SELECT DISTINCT ON (tenant_id, skill_name)
+  tenant_id,
+  skill_name,
+  user_id AS owner_id,
+  created_at
+FROM public.agent_skills
+ORDER BY tenant_id, skill_name, created_at ASC
+ON CONFLICT (tenant_id, skill_name) DO NOTHING;
+
+-- agent_skills → tenant_skills FK 추가
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'agent_skills_skill_fkey'
+      AND conrelid = 'public.agent_skills'::regclass
+  ) THEN
+    ALTER TABLE public.agent_skills
+      ADD CONSTRAINT agent_skills_skill_fkey
+      FOREIGN KEY (tenant_id, skill_name)
+      REFERENCES public.tenant_skills (tenant_id, skill_name)
+      ON UPDATE CASCADE ON DELETE CASCADE;
+  END IF;
+END $$;

@@ -3549,7 +3549,29 @@ END;
 $$;
 
 
--- Agent Skills 테이블 생성
+-- Tenant Skills 테이블 생성 (스킬 정의 + 소유자)
+create table if not exists public.tenant_skills (
+  tenant_id   text not null,
+  skill_name  text not null,
+  owner_id    uuid not null,
+  created_at  timestamptz null default now(),
+  constraint  tenant_skills_pkey primary key (tenant_id, skill_name),
+  constraint  tenant_skills_owner_fkey foreign key (owner_id, tenant_id)
+              references public.users (id, tenant_id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_tenant_skills_tenant
+  on public.tenant_skills (tenant_id);
+
+alter table public.tenant_skills enable row level security;
+
+create policy tenant_skills_insert_policy on public.tenant_skills for insert to authenticated with check (tenant_id = public.tenant_id());
+create policy tenant_skills_select_policy on public.tenant_skills for select to authenticated using (tenant_id = public.tenant_id());
+create policy tenant_skills_update_policy on public.tenant_skills for update to authenticated using (tenant_id = public.tenant_id());
+create policy tenant_skills_delete_policy on public.tenant_skills for delete to authenticated using (tenant_id = public.tenant_id());
+
+
+-- Agent Skills 테이블 생성 (에이전트-스킬 할당)
 create table if not exists public.agent_skills (
   user_id uuid not null,
   tenant_id text not null,
@@ -3557,7 +3579,9 @@ create table if not exists public.agent_skills (
   created_at timestamptz null default now(),
   constraint agent_skills_pkey primary key (user_id, tenant_id, skill_name),
   constraint agent_skills_user_fkey foreign key (user_id, tenant_id)
-    references public.users (id, tenant_id) on update cascade on delete cascade
+    references public.users (id, tenant_id) on update cascade on delete cascade,
+  constraint agent_skills_skill_fkey foreign key (tenant_id, skill_name)
+    references public.tenant_skills (tenant_id, skill_name) on update cascade on delete cascade
 ) tablespace pg_default;
 
 create index if not exists idx_agent_skills_tenant_skill

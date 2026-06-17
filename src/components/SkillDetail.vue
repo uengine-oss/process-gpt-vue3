@@ -7,7 +7,7 @@
                         <h6 class="text-h6 text-left">
                             {{ skillDisplayName || skillId }}
                         </h6>
-                        <v-tooltip location="bottom" :text="showGitHistory ? '편집기 보기' : 'GitHub 변경 이력'">
+                        <v-tooltip location="bottom" :text="showGitHistory ? $t('SkillDetail.showEditor') : $t('SkillDetail.showGitHistory')">
                             <template v-slot:activator="{ props }">
                                 <v-btn
                                     v-bind="props"
