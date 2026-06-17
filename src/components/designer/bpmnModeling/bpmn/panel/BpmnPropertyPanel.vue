@@ -921,7 +921,6 @@ export default {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 0.8125rem;
     padding: 8px 12px;
-    border-radius: 8px;
     margin-bottom: 4px !important;
 }
 

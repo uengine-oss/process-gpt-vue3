@@ -7,6 +7,7 @@
             <v-tab value="edit">{{ $t('BpmnPropertyPanel.edit') }}</v-tab>
             <v-tab value="preview">{{ $t('BpmnPropertyPanel.preview') }}</v-tab>
             <v-tab value="unitTest">{{ $t('ProcessUnitTest.unitTest') }}</v-tab>
+            <v-tab value="piFlag">{{ $t('piFlagPanel.tab') || 'PI Flag' }}</v-tab>
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
@@ -151,6 +152,16 @@
                     :availableForms="availableForms"
                 />
             </v-window-item>
+            <v-window-item value="piFlag" class="pa-4">
+                <PiFlagPanel
+                    v-if="element"
+                    :element="element"
+                    :uengineProperties="copyUengineProperties"
+                    :isViewMode="isViewMode"
+                    :groupTargetIds="piFlagGroupTargetIds"
+                    @update:uengineProperties="(v) => (copyUengineProperties = v)"
+                />
+            </v-window-item>
         </v-window>
     </div>
 </template>
@@ -163,6 +174,7 @@ import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import ManualLinkField from '@/components/ui/ManualLinkField.vue';
 import UserTaskUnitTest from './UserTaskUnitTest.vue';
+import PiFlagPanel from './PiFlagPanel.vue';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
@@ -181,7 +193,8 @@ export default {
         AgentSelectField,
         KeyValueField,
         ManualLinkField,
-        UserTaskUnitTest
+        UserTaskUnitTest,
+        PiFlagPanel
     },
     props: {
         uengineProperties: Object,
@@ -232,7 +245,9 @@ export default {
             selectedForms: [],
             availableForms: [],
             formFields: {},
-            mentionCandidates: []
+            mentionCandidates: [],
+            // 깃발 아이콘 다중선택 진입 시 묶음 대상 요소 id (없으면 단일)
+            piFlagGroupTargetIds: []
         };
     },
     created() {
@@ -291,6 +306,9 @@ export default {
             ];
             this.selectedForms = formIds;
         }
+
+        // 깃발 아이콘 진입 신호가 이 요소를 지목하면 PI Flag 탭으로 시작 + 묶음 대상 주입
+        this.applyPiFlagFocus();
     },
     async mounted() {
         let me = this;
@@ -309,9 +327,17 @@ export default {
                 return this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
             }
             return null;
+        },
+        // 깃발 아이콘 진입 신호
+        piFlagFocusSignal() {
+            return useBpmnStore().piFlagFocus;
         }
     },
     watch: {
+        // 이미 열린 패널(같은 요소)에서 깃발을 다시 누른 경우에도 반영
+        piFlagFocusSignal() {
+            this.applyPiFlagFocus();
+        },
         activeTab: {
             deep: true,
             async handler(newVal, oldVal) {
@@ -605,6 +631,15 @@ export default {
 
             me.copyDefinition = me.definition;
         },
+        // 깃발 아이콘 진입 신호를 읽어 PI Flag 탭으로 전환 + 묶음 대상 주입
+        applyPiFlagFocus() {
+            const sig = useBpmnStore().piFlagFocus;
+            if (!sig || !this.element) return;
+            if (sig.elementId !== this.element.id) return;
+            if (Date.now() - sig.ts > 5000) return;
+            this.piFlagGroupTargetIds = Array.isArray(sig.groupTargetIds) ? sig.groupTargetIds : [];
+            this.activeTab = 'piFlag';
+        },
         async beforeSave() {
             var me = this;
 
@@ -677,6 +712,9 @@ export default {
                 me.activity.checkpoints = [];
             }
 
+            // PI Flag 코멘트는 PiFlagPanel 이 모델러로 즉시 저장하므로, 재구성 시 보존만 한다.
+            const existingComments = Array.isArray(me.copyUengineProperties?.comments) ? me.copyUengineProperties.comments : [];
+
             // 편집 내용을 uengineProperties로 전달
             me.copyUengineProperties = {
                 role: me.activity.role,
@@ -694,7 +732,8 @@ export default {
                 systemName: me.activity.systemName,
                 menuName: me.activity.menuName,
                 tools: Array.isArray(me.activity.tools) ? [...me.activity.tools] : [],
-                skills: Array.isArray(me.activity.skills) ? [...me.activity.skills] : []
+                skills: Array.isArray(me.activity.skills) ? [...me.activity.skills] : [],
+                comments: existingComments
             };
 
             me.$emit('update:uengineProperties', me.copyUengineProperties);
