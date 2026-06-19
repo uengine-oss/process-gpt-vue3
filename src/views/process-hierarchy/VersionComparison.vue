@@ -1,5 +1,5 @@
 <template>
-    <div class="version-comparison-page">
+    <div class="version-comparison-page" :class="{ 'is-dialog-mode': dialogMode }">
         <!-- Header Bar -->
         <div class="comparison-header">
             <div class="header-left">
@@ -911,6 +911,9 @@ export default {
     height: calc(100vh - 125px);
     background: #fafafa;
     overflow: hidden;
+}
+.version-comparison-page.is-dialog-mode {
+    height: 100vh;
 }
 
 /* Header */

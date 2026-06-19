@@ -1142,6 +1142,18 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                     }
                 }
             };
+
+            // Task 타입에만 PI Flag 작성 버튼 추가 (코멘트와 독립)
+            actions['add-pi-flag'] = {
+                group: 'edit',
+                className: 'mdi mdi-flag-outline',
+                title: i18n.global.t('customContextPad.addPiFlag') || 'PI Flag 작성',
+                action: {
+                    click: function (event, element) {
+                        eventBus.fire('element.addPiFlag', { element: element });
+                    }
+                }
+            };
         }
     }
 
@@ -1150,7 +1162,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
 
 // 다중 선택 시 ContextPad 엔트리
 ContextPadProvider.prototype.getMultiElementContextPadEntries = function (elements) {
-    const { _modeling: modeling, _injector: injector } = this;
+    const { _modeling: modeling, _injector: injector, _eventBus: eventBus } = this;
 
     const actions = {};
 
@@ -1169,6 +1181,18 @@ ContextPadProvider.prototype.getMultiElementContextPadEntries = function (elemen
             action: {
                 click: function (event, elements) {
                     showMultiTaskReplaceMenuForElements(event, taskElements, bpmnReplace, selection);
+                }
+            }
+        };
+
+        // 묶음(다중 선택) PI Flag 작성 버튼 추가 (코멘트와 독립)
+        actions['multi-add-pi-flag'] = {
+            group: 'edit',
+            className: 'mdi mdi-flag-outline',
+            title: i18n.global.t('customContextPad.addPiFlag') || 'PI Flag 작성',
+            action: {
+                click: function (event, elements) {
+                    eventBus.fire('elements.addPiFlag', { elements: taskElements });
                 }
             }
         };
