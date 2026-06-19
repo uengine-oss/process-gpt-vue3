@@ -3780,7 +3780,11 @@
         "deleteDialogTitle": "Delete Skill File",
         "deleteDialogMessage": "Are you sure you want to delete this skill file? Deleted skill files cannot be recovered.",
         "commitMessageLabel": "Commit Message",
-        "deleteCommitMessagePlaceholder": "Enter a commit message for this deletion"
+        "deleteCommitMessagePlaceholder": "Enter a commit message for this deletion",
+        "deleteBranchModeCurrent": "Commit to current branch",
+        "deleteBranchModeNew": "Create new branch",
+        "deletePrBranchLabel": "New branch name",
+        "deletePrTitleLabel": "PR title"
     },
     "SkillSaveDialog": {
         "titleChecking": "Checking repository...",
@@ -3804,7 +3808,17 @@
         "prSuccessHint": "Changes will be applied to the agent after review and merge.",
         "prSuccessOpen": "Open PR",
         "notOwnerNotice": "You are not the owner of this skill. Only PR creation is available.",
-        "generateCommitMsg": "Auto-generate commit message with AI"
+        "notOwnerFeatureBranchNotice": "You are not the owner of this skill. You can commit directly to this branch or create a new branch with a PR.",
+        "featureBranchModeDirect": "Commit to current branch",
+        "featureBranchModeNew": "Create new branch",
+        "generateCommitMsg": "Auto-generate commit message with AI",
+        "addToExistingPR": "Add commit to existing PR",
+        "createNewPR": "Create new PR",
+        "selectExistingPR": "Select PR with changes requested",
+        "addCommitAndReview": "Commit & re-request review",
+        "addCommitSuccessTitle": "Commit Added",
+        "addCommitSuccessMessage": "Your changes have been committed to the existing PR branch.",
+        "addCommitSuccessHint": "The reviewer has been notified for re-review."
     },
     "AgentSkills": {
         "skills": "Skills",

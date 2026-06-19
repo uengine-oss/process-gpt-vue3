@@ -3,24 +3,38 @@
         <AppBaseCard :custom-menu-name="$t('SkillDetail.title')">
             <template v-slot:leftpart="{ closeDrawer }">
                 <div class="leftpart-inner">
-                    <div class="d-flex align-center justify-space-between px-4 py-3 flex-shrink-0">
-                        <h6 class="text-h6 text-left">
-                            {{ skillDisplayName || skillId }}
-                        </h6>
-                        <v-tooltip location="bottom" :text="showGitHistory ? $t('SkillDetail.showEditor') : $t('SkillDetail.showGitHistory')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn
-                                    v-bind="props"
-                                    :icon="true"
-                                    variant="text"
-                                    size="small"
-                                    :color="showGitHistory ? 'primary' : undefined"
-                                    @click="showGitHistory = !showGitHistory"
-                                >
-                                    <v-icon>{{ showGitHistory ? 'mdi-file-edit-outline' : 'mdi-source-branch' }}</v-icon>
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
+                    <div class="px-4 pt-3 pb-2 flex-shrink-0">
+                        <div class="d-flex align-center justify-space-between mb-2">
+                            <h6 class="text-h6 text-left">
+                                {{ skillDisplayName || skillId }}
+                            </h6>
+                            <v-tooltip location="bottom" :text="showGitHistory ? $t('SkillDetail.showEditor') : $t('SkillDetail.showGitHistory')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn
+                                        v-bind="props"
+                                        :icon="true"
+                                        variant="text"
+                                        size="small"
+                                        :color="showGitHistory ? 'primary' : undefined"
+                                        @click="showGitHistory = !showGitHistory"
+                                    >
+                                        <v-icon>{{ showGitHistory ? 'mdi-file-edit-outline' : 'mdi-source-branch' }}</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </div>
+                        <v-select
+                            v-if="branches.length > 1"
+                            v-model="selectedBranch"
+                            :items="branches"
+                            item-title="name"
+                            item-value="name"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            prepend-inner-icon="mdi-source-branch"
+                            @update:model-value="onBranchChange"
+                        />
                     </div>
                     <div class="skill-detail-left pa-2">
                         <div v-if="loadError" class="text-caption text-error py-4 text-center">
@@ -241,12 +255,16 @@
                     <SkillGitHistory
                         v-if="showGitHistory"
                         :skillName="skillDisplayName || skillId"
+                        :selected-branch="selectedBranch"
                     />
                     <template v-else>
                         <AgentSkillEdit
                             v-if="skillFile"
                             :skillFile="skillFile"
                             :read-only="isBuiltinSkill"
+                            :selected-branch="selectedBranch"
+                            :default-branch="defaultBranch"
+                            :is-owner="isSkillOwner"
                             @update:isLoading="isEditorLoading = $event"
                             @file-saved="onFileSaved"
                             @file-deleted="onFileDeleted"
@@ -393,6 +411,11 @@ export default {
             editingFolderName: '',
             originalFolderName: '',
 
+            branches: [],
+            selectedBranch: '',
+            defaultBranch: 'main',
+            isSkillOwner: false,
+
             showGitHistory: false,
             leftViewMode: 'files',
             /** API에서 받은 스킬 전체 파일 목록 (그래프는 이걸 기준으로 항상 전체 파일 노드 생성) */
@@ -435,8 +458,13 @@ export default {
                 }
                 const skillName = node.id.split('::')[0];
                 const filePath = node.data.path;
-                const file = await this.backend.getSkillFile(skillName, filePath);
-                this.skillFile = file || null;
+                if (this.selectedBranch && this.selectedBranch !== this.defaultBranch) {
+                    const result = await this.backend.getSkillBranchFile(skillName, this.selectedBranch, filePath);
+                    this.skillFile = { skill_name: skillName, content: result?.content ?? result ?? '', file_path: filePath };
+                } else {
+                    const file = await this.backend.getSkillFile(skillName, filePath);
+                    this.skillFile = file || null;
+                }
             },
             deep: true
         }
@@ -527,6 +555,123 @@ export default {
             this.$router.push(`/agent-chat/${agentId}`);
         },
 
+        async fetchBranches() {
+            const skillName = this.skillDisplayName || this.skillId;
+            if (!skillName) return;
+            try {
+                const result = await this.backend.getSkillBranches(skillName);
+                this.branches = result.branches || [];
+                this.defaultBranch = result.default_branch || 'main';
+                if (!this.selectedBranch) this.selectedBranch = this.defaultBranch;
+            } catch (_) {
+                this.branches = [];
+                this.defaultBranch = 'main';
+                this.selectedBranch = 'main';
+            }
+        },
+
+        buildFileTree(skillId, skillName, files) {
+            this.nodes = {};
+            this.config.roots = [skillId];
+            this.skillFilesFromApi = files
+                .map((f) => ({
+                    path: String(f.path || f.file_name || f.name || '').replace(/\\/g, '/'),
+                    size: f.size ?? null,
+                    modified: f.modified ?? null
+                }))
+                .filter((f) => f.path && f.path.trim());
+
+            this.nodes[skillId] = {
+                id: skillId,
+                text: skillName,
+                children: [],
+                state: { opened: true },
+                data: { type: 'skill', path: '', originalId: skillId },
+                exists: true
+            };
+
+            files.forEach((file, index) => {
+                const rawPath = (file.path || file.file_name || file.name || '').replace(/\\/g, '/');
+                const fallbackName = file.file_name || file.name || `file_${index + 1}`;
+                const segments = (rawPath ? rawPath.split('/') : [fallbackName]).filter((s) => s && s.trim().length > 0);
+                if (segments.length === 0) segments.push(fallbackName);
+
+                let parentId = skillId;
+                let accumulatedPath = '';
+
+                segments.forEach((segment, segmentIndex) => {
+                    accumulatedPath = accumulatedPath ? `${accumulatedPath}/${segment}` : segment;
+                    const nodeId = `${skillId}::${accumulatedPath}`;
+                    const isFile = segmentIndex === segments.length - 1;
+
+                    if (!this.nodes[nodeId]) {
+                        this.nodes[nodeId] = {
+                            id: nodeId,
+                            text: segment,
+                            children: [],
+                            ...(isFile ? {} : { state: { opened: true } }),
+                            data: {
+                                type: isFile ? 'file' : 'folder',
+                                originalId: segment,
+                                path: accumulatedPath,
+                                size: isFile ? file.size ?? null : null,
+                                modified: isFile ? file.modified ?? null : null
+                            },
+                            exists: true
+                        };
+                    } else if (isFile) {
+                        this.nodes[nodeId].data.size = file.size ?? null;
+                        this.nodes[nodeId].data.modified = file.modified ?? null;
+                        this.nodes[nodeId].text = segment;
+                    }
+
+                    const parentChildren = this.nodes[parentId].children;
+                    if (!parentChildren.includes(nodeId)) parentChildren.push(nodeId);
+                    parentId = nodeId;
+                });
+            });
+        },
+
+        async onBranchChange(branch) {
+            const skillName = this.skillDisplayName || this.skillId;
+            if (!skillName) return;
+
+            const prevFilePath = this.nodes[this.selectedNodeId]?.data?.type === 'file'
+                ? this.nodes[this.selectedNodeId].data.path
+                : null;
+
+            // 브랜치 파일 목록으로 트리 재구성
+            try {
+                const raw = await this.backend.getSkillBranchFiles(skillName, branch);
+                const files = Array.isArray(raw) ? raw : (raw?.files ?? []);
+                this.buildFileTree(skillName, skillName, files);
+            } catch (_) {}
+
+            // 이전에 선택한 파일이 새 브랜치에도 있으면 해당 파일, 없으면 SKILL.md로 폴백
+            const nodeId = (prevFilePath
+                ? Object.keys(this.nodes).find(id =>
+                    this.nodes[id]?.data?.type === 'file' && this.nodes[id].data.path === prevFilePath)
+                : null)
+                ?? Object.keys(this.nodes).find(id => {
+                    const n = this.nodes[id];
+                    return n?.data?.type === 'file' && (n.data.path === 'SKILL.md' || n.data.path.endsWith('/SKILL.md'));
+                });
+
+            if (nodeId) {
+                this.selectedNodeId = nodeId;
+                const filePath = this.nodes[nodeId].data.path;
+                try {
+                    const result = await this.backend.getSkillBranchFile(skillName, branch, filePath);
+                    this.skillFile = { skill_name: skillName, content: result?.content ?? result ?? '', file_path: filePath };
+                } catch (_) {
+                    this.skillFile = null;
+                }
+            } else {
+                this.selectedNodeId = null;
+                this.skillFile = null;
+            }
+        },
+
         async loadSkillStructure() {
             this.isLoading = true;
             this.loadError = false;
@@ -536,6 +681,9 @@ export default {
             this.nodes = {};
             this.config.roots = [];
             this.skillFilesFromApi = [];
+            this.branches = [];
+            this.selectedBranch = '';
+            this.defaultBranch = 'main';
             this.showGitHistory = false;
             this.leftViewMode = 'files';
             this.destroyGraph();
@@ -554,6 +702,15 @@ export default {
                 }
 
                 this.skillDisplayName = skill.skill_name;
+                this.fetchBranches();
+                // 소유자 여부 확인
+                try {
+                    const ownerId = await this.backend.getSkillOwner(skill.skill_name);
+                    const currentUid = localStorage.getItem('uid');
+                    this.isSkillOwner = !!ownerId && !!currentUid && ownerId === currentUid;
+                } catch (e) {
+                    this.isSkillOwner = false;
+                }
                 // 기본 내장 스킬 여부 확인 (내장 스킬은 조회 전용)
                 try {
                     const builtinResult = this.backend.getTenantBuiltinSkills ? await this.backend.getTenantBuiltinSkills() : [];
@@ -569,69 +726,7 @@ export default {
                 const skillId = skill.skill_name;
                 const files = Array.isArray(skill.files) ? skill.files : [];
 
-                // 그래프는 API 파일 목록 기준으로 항상 전체 파일 포함 (SKILL.md 루트 포함)
-                this.skillFilesFromApi = files
-                    .map((f) => ({
-                        path: String(f.path || f.file_name || f.name || '').replace(/\\/g, '/'),
-                        size: f.size ?? null,
-                        modified: f.modified ?? null
-                    }))
-                    .filter((f) => f.path && f.path.trim());
-
-                this.config.roots = [skillId];
-                this.nodes[skillId] = {
-                    id: skillId,
-                    text: skill.skill_name,
-                    children: [],
-                    state: { opened: true },
-                    data: {
-                        type: 'skill',
-                        path: '',
-                        originalId: skillId
-                    },
-                    exists: true
-                };
-
-                files.forEach((file, index) => {
-                    const rawPath = (file.path || file.file_name || file.name || '').replace(/\\/g, '/');
-                    const fallbackName = file.file_name || file.name || `file_${index + 1}`;
-                    const segments = (rawPath ? rawPath.split('/') : [fallbackName]).filter((s) => s && s.trim().length > 0);
-                    if (segments.length === 0) segments.push(fallbackName);
-
-                    let parentId = skillId;
-                    let accumulatedPath = '';
-
-                    segments.forEach((segment, segmentIndex) => {
-                        accumulatedPath = accumulatedPath ? `${accumulatedPath}/${segment}` : segment;
-                        const nodeId = `${skillId}::${accumulatedPath}`;
-                        const isFile = segmentIndex === segments.length - 1;
-
-                        if (!this.nodes[nodeId]) {
-                            this.nodes[nodeId] = {
-                                id: nodeId,
-                                text: segment,
-                                children: [],
-                                ...(isFile ? {} : { state: { opened: true } }),
-                                data: {
-                                    type: isFile ? 'file' : 'folder',
-                                    originalId: segment,
-                                    path: accumulatedPath,
-                                    size: isFile ? file.size ?? null : null,
-                                    modified: isFile ? file.modified ?? null : null
-                                },
-                                exists: true
-                            };
-                        } else if (isFile) {
-                            this.nodes[nodeId].data.size = file.size ?? null;
-                            this.nodes[nodeId].data.modified = file.modified ?? null;
-                            this.nodes[nodeId].text = segment;
-                        }
-
-                        const parentChildren = this.nodes[parentId].children;
-                        if (!parentChildren.includes(nodeId)) parentChildren.push(nodeId);
-                        parentId = nodeId;
-                    });
-                });
+                this.buildFileTree(skillId, skill.skill_name, files);
 
                 // query.file가 있으면 해당 파일 선택, 없으면 SKILL.md 기본 선택
                 const fileFromQuery = this.$route?.query?.file;

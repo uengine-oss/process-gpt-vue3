@@ -3588,6 +3588,99 @@ create index if not exists idx_agent_skills_tenant_skill
   on public.agent_skills (tenant_id, skill_name);
 
 
+-- ==========================================
+-- 범용 리소스 PR 워크플로우 (skill / proc_def / dmn)
+-- ==========================================
+
+-- PR 상태 ENUM
+DO $$ BEGIN
+  CREATE TYPE resource_pr_status AS ENUM (
+    'OPEN',               -- 요청됨, 검토 대기
+    'CHANGES_REQUESTED',  -- 관리자 변경 요청
+    'APPROVED',           -- 승인됨 (병합 가능)
+    'MERGED',             -- 기준 브랜치 병합 완료
+    'CLOSED'              -- 취소/거절
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+-- PR 요청 테이블 (리소스 종류에 무관한 범용 구조)
+create table if not exists public.resource_pull_requests (
+  id             uuid                not null default gen_random_uuid(),
+  tenant_id      text                not null,
+  resource_type  text                not null,
+  resource_id    text                not null,
+  branch_name    text                not null,
+  base_branch    text                not null default 'main',
+  title          text                not null,
+  description    text                null,
+  status         resource_pr_status  not null default 'OPEN',
+  requester_id   uuid                not null,
+  reviewer_id    uuid                null,
+  git_pr_number  integer             null,
+  git_pr_url     text                null,
+  git_repo_url   text                null,
+  created_at     timestamptz         not null default now(),
+  updated_at     timestamptz         not null default now(),
+  merged_at      timestamptz         null,
+  constraint resource_pull_requests_pkey primary key (id),
+  constraint resource_pull_requests_resource_type_check check (
+    resource_type in ('skill', 'proc_def', 'dmn')
+  ),
+  constraint resource_pull_requests_requester_fkey foreign key (requester_id, tenant_id)
+    references public.users (id, tenant_id) on update cascade on delete cascade,
+  constraint resource_pull_requests_reviewer_fkey foreign key (reviewer_id, tenant_id)
+    references public.users (id, tenant_id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_resource_pull_requests_tenant_resource
+  on public.resource_pull_requests (tenant_id, resource_type, resource_id);
+
+create index if not exists idx_resource_pull_requests_status
+  on public.resource_pull_requests (tenant_id, status);
+
+-- PR 리뷰 이력 테이블 (APPROVED / CHANGES_REQUESTED 이벤트 누적)
+create table if not exists public.resource_pr_reviews (
+  id           uuid        not null default gen_random_uuid(),
+  pr_id        uuid        not null,
+  tenant_id    text        not null,
+  reviewer_id  uuid        not null,
+  action       text        not null,
+  comment      text        null,
+  created_at   timestamptz not null default now(),
+  constraint resource_pr_reviews_pkey primary key (id),
+  constraint resource_pr_reviews_pr_fkey foreign key (pr_id)
+    references public.resource_pull_requests (id) on update cascade on delete cascade,
+  constraint resource_pr_reviews_reviewer_fkey foreign key (reviewer_id, tenant_id)
+    references public.users (id, tenant_id) on update cascade on delete cascade,
+  constraint resource_pr_reviews_action_check check (
+    action in ('APPROVED', 'CHANGES_REQUESTED')
+  )
+) tablespace pg_default;
+
+create index if not exists idx_resource_pr_reviews_pr_id
+  on public.resource_pr_reviews (pr_id);
+
+-- updated_at 자동 갱신
+create trigger resource_pull_requests_updated_at
+  before update on public.resource_pull_requests
+  for each row execute function update_updated_at_column();
+
+-- RLS
+alter table public.resource_pull_requests enable row level security;
+alter table public.resource_pr_reviews enable row level security;
+
+create policy resource_pull_requests_insert_policy on public.resource_pull_requests for insert to authenticated with check (tenant_id = public.tenant_id());
+create policy resource_pull_requests_select_policy on public.resource_pull_requests for select to authenticated using (tenant_id = public.tenant_id());
+create policy resource_pull_requests_update_policy on public.resource_pull_requests for update to authenticated using (tenant_id = public.tenant_id());
+create policy resource_pull_requests_delete_policy on public.resource_pull_requests for delete to authenticated using (tenant_id = public.tenant_id());
+
+create policy resource_pr_reviews_insert_policy on public.resource_pr_reviews for insert to authenticated with check (tenant_id = public.tenant_id());
+create policy resource_pr_reviews_select_policy on public.resource_pr_reviews for select to authenticated using (tenant_id = public.tenant_id());
+create policy resource_pr_reviews_update_policy on public.resource_pr_reviews for update to authenticated using (tenant_id = public.tenant_id());
+create policy resource_pr_reviews_delete_policy on public.resource_pr_reviews for delete to authenticated using (tenant_id = public.tenant_id());
+
 
 create table
   public.agent_knowledge_history (
