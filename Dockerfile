@@ -2,8 +2,10 @@ FROM node:22-bullseye AS build
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install --no-audit --no-fund --legacy-peer-deps
+# lockfile 기반 설치(npm ci) — 빌드 재현성 확보. npm install 은 lockfile 무시하고 매번
+# 최신 semver 로 재해석해 transitive dep(예: @bpmn-io/cm-theme) 드리프트로 빌드가 깨졌음.
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund --legacy-peer-deps
 
 COPY . .
 RUN NODE_OPTIONS=--max-old-space-size=4096 npm run build
