@@ -194,69 +194,117 @@
                         <div class="kft-folder-sidebar">
                             <div class="kft-folder-header">
                                 <span class="text-caption font-weight-medium">폴더</span>
-                                <v-btn
-                                    icon
-                                    variant="text"
-                                    size="x-small"
-                                    @click="openNewFolderDialog"
-                                    title="새 폴더 만들기"
-                                >
-                                    <v-icon size="16">mdi-folder-plus-outline</v-icon>
-                                </v-btn>
+                                <div class="d-flex align-center">
+                                    <v-btn
+                                        v-if="folderHasChildrenSet.size > 0"
+                                        icon
+                                        variant="text"
+                                        size="x-small"
+                                        :title="allFoldersExpanded ? '모두 접기' : '모두 펴기'"
+                                        @click="allFoldersExpanded ? collapseAll() : expandAll()"
+                                    >
+                                        <v-icon size="16">{{ allFoldersExpanded ? 'mdi-unfold-less-horizontal' : 'mdi-unfold-more-horizontal' }}</v-icon>
+                                    </v-btn>
+                                    <v-btn
+                                        icon
+                                        variant="text"
+                                        size="x-small"
+                                        @click="startInlineCreate('')"
+                                        title="새 폴더 만들기"
+                                    >
+                                        <v-icon size="16">mdi-folder-plus-outline</v-icon>
+                                    </v-btn>
+                                </div>
                             </div>
-                            <div class="kft-folder-list">
+                            <div class="kft-folder-list" @contextmenu.prevent="openRootContextMenu($event)">
                                 <button
                                     class="kft-folder-item"
                                     :class="{ 'is-active': currentFolder === '' }"
                                     @click="currentFolder = ''"
                                 >
+                                    <span class="kft-folder-caret is-spacer"></span>
                                     <v-icon size="14">mdi-folder-outline</v-icon>
                                     <span class="kft-folder-name">전체</span>
                                     <span class="kft-folder-count">{{ roleScopedUpload.length }}</span>
                                 </button>
+
+                                <!-- 루트 인라인 새 폴더 입력 -->
                                 <div
-                                    v-for="node in folderNodes"
-                                    :key="node.path"
-                                    class="kft-folder-item"
-                                    :class="{ 'is-active': currentFolder === node.path }"
-                                    :style="{ paddingLeft: `${8 + node.depth * 12}px` }"
-                                    @click="currentFolder = node.path"
+                                    v-if="inlineCreate.active && inlineCreate.parent === ''"
+                                    class="kft-folder-item kft-folder-input"
+                                    style="padding-left: 8px"
                                 >
-                                    <v-icon size="14" :color="node.isLocal ? '#9e9e9e' : '#ffa726'">
-                                        {{ node.isLocal ? 'mdi-folder-outline' : 'mdi-folder' }}
-                                    </v-icon>
-                                    <span class="kft-folder-name">{{ node.name }}</span>
-                                    <span class="kft-folder-count">{{ node.fileCount }}</span>
-                                    <span v-if="isAdmin" class="kft-folder-actions" @click.stop>
-                                        <v-tooltip text="이름 변경" location="top">
-                                            <template v-slot:activator="{ props }">
-                                                <v-btn
-                                                    v-bind="props"
-                                                    icon
-                                                    variant="text"
-                                                    size="x-small"
-                                                    @click.stop="openRenameFolderDialog(node)"
-                                                >
-                                                    <v-icon size="14">mdi-pencil-outline</v-icon>
-                                                </v-btn>
-                                            </template>
-                                        </v-tooltip>
-                                        <v-tooltip text="폴더 삭제" location="top">
-                                            <template v-slot:activator="{ props }">
-                                                <v-btn
-                                                    v-bind="props"
-                                                    icon
-                                                    variant="text"
-                                                    size="x-small"
-                                                    color="error"
-                                                    @click.stop="openDeleteFolderDialog(node)"
-                                                >
-                                                    <v-icon size="14">mdi-delete-outline</v-icon>
-                                                </v-btn>
-                                            </template>
-                                        </v-tooltip>
-                                    </span>
+                                    <span class="kft-folder-caret is-spacer"></span>
+                                    <v-icon size="14" color="#ffa726">mdi-folder-plus</v-icon>
+                                    <input
+                                        ref="inlineInputRoot"
+                                        v-model="inlineCreate.name"
+                                        class="kft-inline-input"
+                                        placeholder="새 폴더 이름 (Enter)"
+                                        @keyup.enter="commitInlineCreate"
+                                        @keyup.esc="cancelInlineCreate"
+                                        @blur="commitInlineCreate"
+                                    />
                                 </div>
+
+                                <template v-for="node in visibleFolderNodes" :key="node.path">
+                                    <div
+                                        class="kft-folder-item"
+                                        :class="{ 'is-active': currentFolder === node.path }"
+                                        :style="{ paddingLeft: `${8 + node.depth * 12}px` }"
+                                        @click="onFolderRowClick(node)"
+                                        @contextmenu.prevent.stop="openFolderContextMenu($event, node)"
+                                    >
+                                        <span
+                                            v-if="folderHasChildren(node.path)"
+                                            class="kft-folder-caret"
+                                            @click.stop="toggleFolderExpand(node.path)"
+                                        >
+                                            <v-icon size="16">{{ isFolderExpanded(node.path) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                        </span>
+                                        <span v-else class="kft-folder-caret is-spacer"></span>
+
+                                        <v-icon size="14" :color="node.isLocal ? '#9e9e9e' : '#ffa726'">
+                                            {{ folderHasChildren(node.path) && isFolderExpanded(node.path) ? 'mdi-folder-open' : (node.isLocal ? 'mdi-folder-outline' : 'mdi-folder') }}
+                                        </v-icon>
+                                        <span class="kft-folder-name" :title="node.path">{{ node.name }}</span>
+                                        <span v-if="node.directFileCount > 0" class="kft-folder-count">{{ node.directFileCount }}</span>
+                                        <span class="kft-folder-actions" @click.stop>
+                                            <v-tooltip text="폴더 작업" location="top">
+                                                <template v-slot:activator="{ props }">
+                                                    <v-btn
+                                                        v-bind="props"
+                                                        icon
+                                                        variant="text"
+                                                        size="x-small"
+                                                        @click.stop="openFolderContextMenu($event, node)"
+                                                    >
+                                                        <v-icon size="16">mdi-dots-horizontal</v-icon>
+                                                    </v-btn>
+                                                </template>
+                                            </v-tooltip>
+                                        </span>
+                                    </div>
+
+                                    <!-- 이 폴더의 인라인 새 하위폴더 입력 -->
+                                    <div
+                                        v-if="inlineCreate.active && inlineCreate.parent === node.path"
+                                        class="kft-folder-item kft-folder-input"
+                                        :style="{ paddingLeft: `${8 + (node.depth + 1) * 12}px` }"
+                                    >
+                                        <span class="kft-folder-caret is-spacer"></span>
+                                        <v-icon size="14" color="#ffa726">mdi-folder-plus</v-icon>
+                                        <input
+                                            ref="inlineInputNode"
+                                            v-model="inlineCreate.name"
+                                            class="kft-inline-input"
+                                            placeholder="새 폴더 이름 (Enter)"
+                                            @keyup.enter="commitInlineCreate"
+                                            @keyup.esc="cancelInlineCreate"
+                                            @blur="commitInlineCreate"
+                                        />
+                                    </div>
+                                </template>
                             </div>
                         </div>
 
@@ -386,6 +434,18 @@
                                 <span v-for="(c, k) in uploadCountsByStatus" :key="k" class="kft-stat-chip" :class="`is-${k}`">
                                     {{ statusLabel(k) }} {{ c }}
                                 </span>
+                                <v-btn
+                                    v-if="failedRetryable.length > 0"
+                                    color="primary"
+                                    variant="tonal"
+                                    size="small"
+                                    prepend-icon="mdi-refresh"
+                                    :loading="bulkReindexing"
+                                    class="ml-2"
+                                    @click="retryAllFailed"
+                                >
+                                    실패 {{ failedRetryable.length }}개 재시도
+                                </v-btn>
                                 <v-spacer />
                                 <div class="kft-bulk-inline" :class="{ 'is-active': uploadSelected.length > 0 }">
                                     <span class="kft-bulk-count">
@@ -415,7 +475,7 @@
 
                             <v-data-table
                                 v-model="uploadSelected"
-                                :headers="uploadHeaders"
+                                :headers="visibleUploadHeaders"
                                 :items="filteredUpload"
                                 :loading="loading"
                                 density="compact"
@@ -465,6 +525,21 @@
                                     </v-tooltip>
                                 </template>
                                 <template v-slot:[`item.actions`]="{ item }">
+                                    <v-tooltip v-if="item.index_status === 'failed' && canDelete(item)" text="재인덱싱 다시 시도" location="top">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                size="small"
+                                                color="primary"
+                                                :loading="reindexingKeys.has(rowKey(item))"
+                                                @click="reindexFile(item)"
+                                            >
+                                                <v-icon size="16">mdi-refresh</v-icon>
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
                                     <v-tooltip v-if="canDelete(item)" text="스토리지/인덱스에서 영구 삭제" location="top">
                                         <template v-slot:activator="{ props }">
                                             <v-btn
@@ -493,7 +568,7 @@
             </v-window>
         </v-card-text>
 
-        <!-- 폴더 이름 변경 다이얼로그 -->
+        <!-- 폴더 이름 변경 다이얼로그 (현재 버튼 숨김 — folderRenameEnabled) -->
         <v-dialog v-model="renameFolderDialog" max-width="420">
             <v-card>
                 <v-card-title class="text-h6">폴더 이름 변경</v-card-title>
@@ -553,35 +628,40 @@
             </v-card>
         </v-dialog>
 
-        <!-- 새 폴더 다이얼로그 -->
-        <v-dialog v-model="newFolderDialog" max-width="420">
-            <v-card>
-                <v-card-title class="text-h6">새 폴더 만들기</v-card-title>
-                <v-card-text>
-                    <v-text-field
-                        v-model="newFolderName"
-                        label="폴더 이름"
-                        variant="outlined"
-                        density="compact"
-                        autofocus
-                        hide-details="auto"
-                        :rules="folderNameRules"
-                        @keyup.enter="createFolder"
-                    />
-                    <div class="text-caption text-medium-emphasis mt-3">
-                        부모 폴더: <strong>{{ currentFolder || '(루트)' }}</strong>
-                    </div>
-                    <div class="text-caption text-medium-emphasis mt-1">
-                        ※ 폴더는 첫 파일 업로드 시점에 실제로 생성됩니다.
-                    </div>
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn variant="text" @click="newFolderDialog = false">취소</v-btn>
-                    <v-btn color="primary" variant="flat" @click="createFolder" :disabled="!newFolderName.trim()">만들기</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
+        <!-- 폴더 우클릭 컨텍스트 메뉴 (teleport + 고정위치 — 사이드바 overflow 클리핑 회피) -->
+        <teleport to="body">
+            <template v-if="folderMenu.show">
+                <div
+                    class="kft-ctx-backdrop"
+                    @click="closeFolderMenu"
+                    @contextmenu.prevent="closeFolderMenu"
+                    @wheel="closeFolderMenu"
+                ></div>
+                <v-list
+                    class="kft-ctx-menu"
+                    :style="{ left: folderMenu.x + 'px', top: folderMenu.y + 'px' }"
+                    density="compact"
+                    elevation="8"
+                    rounded="lg"
+                >
+                    <v-list-item @click="ctxNewSubfolder">
+                        <template v-slot:prepend><v-icon size="16">mdi-folder-plus-outline</v-icon></template>
+                        <v-list-item-title class="text-body-2">{{ folderMenu.node ? '새 하위폴더' : '새 폴더' }}</v-list-item-title>
+                    </v-list-item>
+                    <template v-if="folderMenu.node && isAdmin">
+                        <!-- 이름 변경: folderRenameEnabled 로 숨김(코드 보존). 켜면 바로 노출. -->
+                        <v-list-item v-if="folderRenameEnabled" @click="ctxRename">
+                            <template v-slot:prepend><v-icon size="16">mdi-pencil-outline</v-icon></template>
+                            <v-list-item-title class="text-body-2">이름 변경</v-list-item-title>
+                        </v-list-item>
+                        <v-list-item @click="ctxDelete">
+                            <template v-slot:prepend><v-icon size="16" color="error">mdi-delete-outline</v-icon></template>
+                            <v-list-item-title class="text-body-2 text-error">삭제</v-list-item-title>
+                        </v-list-item>
+                    </template>
+                </v-list>
+            </template>
+        </teleport>
 
         <!-- 일괄 삭제 확인 다이얼로그 -->
         <v-dialog v-model="bulkDeleteDialog" max-width="480">
@@ -740,6 +820,7 @@ export default {
             isDragOver: false,
             uploadQueue: [],
             deletingKeys: new Set(),
+            reindexingKeys: new Set(), // 재인덱싱 진행 중인 파일 rowKey
             deleteDialog: false,
             deleteTarget: null,
             duplicateDialog: false,
@@ -751,6 +832,7 @@ export default {
             bulkDeleteKind: 'upload', // 'drive' | 'upload'
             bulkDeleteTargets: [],
             bulkDeleting: false,
+            bulkReindexing: false, // 일괄 재인덱싱 진행 중
             statusOptions: [
                 { value: 'all', label: '모든 상태' },
                 { value: 'indexed', label: '인덱싱 완료' },
@@ -788,10 +870,11 @@ export default {
                 { title: '상태', key: 'index_status', width: 110 },
                 { title: '', key: 'actions', sortable: false, width: 50 }
             ],
+            // 역할(doc_role) 컬럼 제거: 항상 현재 role 탭 안이라 모든 행이 동일 → 의미 없음.
+            // 폴더(folder_path) 는 visibleUploadHeaders 에서 '전체'일 때만 노출(특정 폴더 선택 시 숨김).
             uploadHeaders: [
                 { title: '파일명', key: 'file_name', sortable: true },
                 { title: '폴더', key: 'folder_path' },
-                { title: '역할', key: 'doc_role', width: 110 },
                 { title: '업로더', key: 'uploaded_by_name', width: 130 },
                 { title: '크기', key: 'size_bytes', width: 90 },
                 { title: '업로드일', key: 'modified_time', width: 110 },
@@ -801,8 +884,12 @@ export default {
             // 폴더 네비게이션
             currentFolder: '',
             emptyFolders: [], // knowledge_folders 테이블에서 가져온 빈 폴더 (영속화)
-            newFolderDialog: false,
-            newFolderName: '',
+            expandedFolders: {}, // { [folderPath]: true } — 펼쳐진 폴더. localStorage 영속.
+            inlineCreate: { active: false, parent: '', name: '' }, // 인라인 새 폴더 입력 상태
+            folderMenu: { show: false, x: 0, y: 0, node: null }, // 폴더 우클릭 컨텍스트 메뉴
+            // 폴더 이름 변경: 코드는 보존하되 버튼만 숨김(폴더카드/경로 동기화 정리 전까지).
+            // 재노출하려면 folderRenameEnabled = true 로.
+            folderRenameEnabled: false,
             renameFolderDialog: false,
             renameFolderTarget: null, // { path, name, fileCount }
             renameFolderName: '',
@@ -847,6 +934,14 @@ export default {
             // currentFolder 적용 — 빈 문자열이면 전체, 아니면 그 폴더에 직접 속한 파일만 (하위 폴더 제외)
             if (!this.currentFolder) return list;
             return list.filter((f) => (f.folder_path || '') === this.currentFolder);
+        },
+        // 업로드 테이블 표시 컬럼 — 폴더(folder_path) 는 '전체'에서만 노출.
+        // 특정 폴더 선택 시엔 모든 행이 같은 폴더라 숨긴다(역할 컬럼은 uploadHeaders 에서 이미 제외됨).
+        visibleUploadHeaders() {
+            if (this.currentFolder) {
+                return this.uploadHeaders.filter((h) => h.key !== 'folder_path');
+            }
+            return this.uploadHeaders;
         },
         // 역할별 파일 개수 (sub-tab chip 표시용)
         roleCounts() {
@@ -909,6 +1004,9 @@ export default {
             const emptyFolderSet = new Set(scopedEmpty);
             return paths.map((path) => {
                 const segs = path.split('/');
+                // 직접 이 폴더에 든 파일 수 (배지 표시용 — 자식 폴더 파일은 제외)
+                const directFileCount = scopedFiles.filter((f) => (f.folder_path || '') === path).length;
+                // 하위 전체 포함 파일 수 (삭제 경고 / isLocal 판정용 — 폴더 삭제 시 같이 지워지는 총량)
                 const fileCount = scopedFiles.filter((f) => {
                     const p = f.folder_path || '';
                     return p === path || p.startsWith(path + '/');
@@ -917,27 +1015,77 @@ export default {
                     path,
                     name: segs[segs.length - 1],
                     depth: segs.length - 1,
+                    directFileCount,
                     fileCount,
                     isLocal: fileCount === 0 && emptyFolderSet.has(path)
                 };
             });
+        },
+        // 자식(하위폴더)을 가진 폴더 경로 집합 — chevron 표시 여부 판단용
+        folderHasChildrenSet() {
+            const set = new Set();
+            for (const node of this.folderNodes) {
+                const p = node.path;
+                const parent = p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '';
+                if (parent) set.add(parent);
+            }
+            return set;
+        },
+        // 접힌 조상의 자손은 숨긴 트리 — 조상 경로가 모두 expanded 일 때만 표시
+        visibleFolderNodes() {
+            const exp = this.expandedFolders;
+            return this.folderNodes.filter((node) => {
+                const segs = node.path.split('/');
+                let acc = '';
+                for (let i = 0; i < segs.length - 1; i++) {
+                    acc = acc ? `${acc}/${segs[i]}` : segs[i];
+                    if (!exp[acc]) return false;
+                }
+                return true;
+            });
+        },
+        // 자식 있는 폴더가 모두 펼쳐졌는지 (헤더 토글 아이콘용)
+        allFoldersExpanded() {
+            if (this.folderHasChildrenSet.size === 0) return false;
+            for (const p of this.folderHasChildrenSet) {
+                if (!this.expandedFolders[p]) return false;
+            }
+            return true;
         },
         driveCountsByStatus() {
             return this.countByStatus(this.driveFiles);
         },
         uploadCountsByStatus() {
             return this.countByStatus(this.uploadFiles);
+        },
+        // 현재 보이는 목록 중 재인덱싱 대상(failed + 권한 있음) — 일괄 재시도 버튼용
+        failedRetryable() {
+            return this.filteredUpload.filter(
+                (f) => f.index_status === 'failed' && this.canDelete(f)
+            );
         }
     },
     watch: {
         currentRole() {
+            // 복원 중(_restoringNav)엔 저장된 폴더를 비우지 않는다 (applyPendingFolder 가 채움)
+            if (this._restoringNav) return;
             // 역할 전환 시 폴더 컨텍스트 리셋 (역할별 폴더 트리가 다름)
             this.currentFolder = '';
             this.uploadSelected = [];
+            this.persistNavState();
+        },
+        currentFolder() {
+            // 폴더 선택 변경 시마다 저장 ('전체' 버튼 인라인 변경 포함) → 새로고침 유지
+            this.persistNavState();
         }
     },
     mounted() {
-        this.fetchList();
+        this.restoreNavState(); // currentRole 복원 + 저장된 폴더 stash
+        this.loadExpandedState();
+        this.fetchList().then(() => {
+            this.ensureInitialExpansion();
+            this.applyPendingFolder(); // 파일 로드 후 저장된 폴더 검증·복원
+        });
     },
     methods: {
         applyFilter(list, search, status) {
@@ -1221,22 +1369,190 @@ export default {
                 console.warn('[KnowledgeFilesTab] refresh folder cards failed', e);
             }
         },
-        openNewFolderDialog() {
-            this.newFolderName = '';
-            this.newFolderDialog = true;
+        // ─── 폴더 트리: 접기/펴기 ───
+        loadExpandedState() {
+            try {
+                const raw = localStorage.getItem('kft_expanded');
+                this.expandedFolders = raw ? JSON.parse(raw) || {} : {};
+            } catch {
+                this.expandedFolders = {};
+            }
         },
-        async createFolder() {
-            const name = (this.newFolderName || '').trim();
-            if (!name) return;
-            if (/[\\/:*?"<>|]/.test(name)) {
-                this.notify('사용할 수 없는 문자가 있습니다', 'error');
+        persistExpanded() {
+            try {
+                localStorage.setItem('kft_expanded', JSON.stringify(this.expandedFolders));
+            } catch {
+                /* localStorage 불가(시크릿 등) 시 무시 */
+            }
+        },
+        // ─── 네비 상태(역할/폴더) 영속 — 새로고침 유지 ───
+        persistNavState() {
+            try {
+                localStorage.setItem('kft_nav', JSON.stringify({ role: this.currentRole, folder: this.currentFolder }));
+            } catch {
+                /* 무시 */
+            }
+        },
+        // mounted 에서 호출: 저장된 role 복원 + folder 는 stash (파일 로드 후 검증해 적용)
+        restoreNavState() {
+            this._pendingFolder = null;
+            try {
+                const raw = localStorage.getItem('kft_nav');
+                if (!raw) return;
+                const saved = JSON.parse(raw) || {};
+                this._pendingFolder = typeof saved.folder === 'string' ? saved.folder : '';
+                if (saved.role && this.roleOptions.some((r) => r.value === saved.role)) {
+                    this._restoringNav = true; // currentRole watch 가 폴더 비우지 않게
+                    this.currentRole = saved.role;
+                }
+            } catch {
+                this._pendingFolder = null;
+            }
+        },
+        // fetchList 이후 호출: 저장된 폴더가 현재 role 트리에 실제 존재할 때만 복원
+        applyPendingFolder() {
+            const target = this._pendingFolder;
+            this._pendingFolder = null;
+            if (target && this.folderNodes.some((n) => n.path === target)) {
+                this.currentFolder = target;
+                this.expandToPath(target); // 조상 펼쳐 화면에 드러냄
+            } else {
+                this.currentFolder = '';
+            }
+            this._restoringNav = false;
+            this.persistNavState();
+        },
+        // 최초 진입 시 펼침 상태가 비어 있으면 최상위 폴더만 펼쳐 보여준다.
+        ensureInitialExpansion() {
+            if (this._expandInit) return;
+            this._expandInit = true;
+            if (Object.keys(this.expandedFolders).length > 0) return;
+            const next = {};
+            for (const n of this.folderNodes) {
+                if (n.depth === 0 && this.folderHasChildrenSet.has(n.path)) next[n.path] = true;
+            }
+            this.expandedFolders = next;
+            this.persistExpanded();
+        },
+        isFolderExpanded(path) {
+            return !!this.expandedFolders[path];
+        },
+        folderHasChildren(path) {
+            return this.folderHasChildrenSet.has(path);
+        },
+        toggleFolderExpand(path) {
+            const next = { ...this.expandedFolders };
+            if (next[path]) delete next[path];
+            else next[path] = true;
+            this.expandedFolders = next;
+            this.persistExpanded();
+        },
+        // path 의 *부모 사슬*(자기 자신 포함 옵션)을 펼친다 → 깊은 폴더를 화면에 드러냄
+        expandToPath(path, includeSelf = false) {
+            if (!path) return;
+            const next = { ...this.expandedFolders };
+            const segs = path.split('/');
+            const upto = includeSelf ? segs.length : segs.length - 1;
+            let acc = '';
+            for (let i = 0; i < upto; i++) {
+                acc = acc ? `${acc}/${segs[i]}` : segs[i];
+                next[acc] = true;
+            }
+            this.expandedFolders = next;
+            this.persistExpanded();
+        },
+        expandAll() {
+            const next = {};
+            for (const p of this.folderHasChildrenSet) next[p] = true;
+            this.expandedFolders = next;
+            this.persistExpanded();
+        },
+        collapseAll() {
+            this.expandedFolders = {};
+            this.persistExpanded();
+        },
+        // 행 클릭 동작:
+        //  - 새 폴더(아직 미선택) 클릭 → 선택 + 펼침(원클릭 드릴인)
+        //  - 이미 선택된 폴더 재클릭 → 펼침/접힘 토글
+        // (chevron 클릭은 선택과 무관하게 항상 토글)
+        onFolderRowClick(node) {
+            const alreadyCurrent = this.currentFolder === node.path;
+            this.currentFolder = node.path;
+            if (!this.folderHasChildren(node.path)) return;
+            if (alreadyCurrent || !this.isFolderExpanded(node.path)) {
+                this.toggleFolderExpand(node.path);
+            }
+        },
+        // ─── 폴더 우클릭 컨텍스트 메뉴 ───
+        openFolderMenuAt(clientX, clientY, node) {
+            const MENU_W = 190;
+            const MENU_H = node ? 200 : 60;
+            const x = Math.max(8, Math.min(clientX, window.innerWidth - MENU_W - 8));
+            const y = Math.max(8, Math.min(clientY, window.innerHeight - MENU_H - 8));
+            // 먼저 닫았다가 다음 틱에 열어 위치/대상 갱신을 확실히 반영
+            this.folderMenu = { show: false, x, y, node };
+            this.$nextTick(() => {
+                this.folderMenu = { show: true, x, y, node };
+            });
+        },
+        openFolderContextMenu(e, node) {
+            this.openFolderMenuAt(e.clientX, e.clientY, node);
+        },
+        openRootContextMenu(e) {
+            // 행에서는 .stop 으로 막히므로, 여기 오는 건 빈 영역 우클릭 → 루트 새 폴더
+            this.openFolderMenuAt(e.clientX, e.clientY, null);
+        },
+        closeFolderMenu() {
+            this.folderMenu = { ...this.folderMenu, show: false };
+        },
+        ctxNewSubfolder() {
+            const node = this.folderMenu.node;
+            this.closeFolderMenu();
+            this.startInlineCreate(node ? node.path : '');
+        },
+        ctxRename() {
+            const node = this.folderMenu.node;
+            this.closeFolderMenu();
+            if (node) this.openRenameFolderDialog(node);
+        },
+        ctxDelete() {
+            const node = this.folderMenu.node;
+            this.closeFolderMenu();
+            if (node) this.openDeleteFolderDialog(node);
+        },
+        // ─── 인라인 새 폴더 생성 (VS Code/Finder식) ───
+        startInlineCreate(parentPath) {
+            this.inlineCreate = { active: true, parent: parentPath || '', name: '' };
+            // 부모(및 조상)를 펼쳐 입력칸이 자식 위치에 보이도록
+            if (parentPath) this.expandToPath(parentPath, true);
+            this.$nextTick(() => {
+                const r = this.$refs.inlineInputNode;
+                const el = Array.isArray(r) ? r[0] : r;
+                (el || this.$refs.inlineInputRoot)?.focus();
+            });
+        },
+        cancelInlineCreate() {
+            this.inlineCreate = { active: false, parent: '', name: '' };
+        },
+        async commitInlineCreate() {
+            if (!this.inlineCreate.active) return; // blur/enter 중복 호출 가드
+            const name = (this.inlineCreate.name || '').trim();
+            const parent = this.inlineCreate.parent || '';
+            if (!name) {
+                this.cancelInlineCreate();
                 return;
             }
-            const fullPath = this.currentFolder ? `${this.currentFolder}/${name}` : name;
+            if (/[\\/:*?"<>|]/.test(name)) {
+                this.notify('사용할 수 없는 문자가 있습니다', 'error');
+                return; // 입력칸 유지 → 사용자가 수정
+            }
+            const fullPath = parent ? `${parent}/${name}` : name;
             if (this.folderNodes.some((n) => n.path === fullPath)) {
                 this.notify('이미 존재하는 폴더입니다', 'error');
                 return;
             }
+            // 성공 경로 진입 전에 비활성화 → blur 재호출이 중복 생성하지 않게
+            this.inlineCreate = { active: false, parent: '', name: '' };
             try {
                 const fd = new FormData();
                 fd.append('tenant_id', window.$tenantName);
@@ -1249,13 +1565,14 @@ export default {
                     (f) => f.folder_path === fullPath && (f.doc_role || 'content') === this.currentRole
                 );
                 if (!exists) this.emptyFolders.push({ folder_path: fullPath, doc_role: this.currentRole });
+                this.expandToPath(fullPath); // 조상 펼쳐 새 폴더 노출
                 this.currentFolder = fullPath;
-                this.newFolderDialog = false;
                 this.notify('폴더가 생성되었습니다');
             } catch (e) {
                 this.notify('폴더 생성 실패', 'error', e?.response?.data?.detail || e?.message);
             }
         },
+        // ─── 폴더 이름 변경 (현재 버튼 숨김 — folderRenameEnabled. 코드 보존) ───
         openRenameFolderDialog(node) {
             this.renameFolderTarget = node;
             this.renameFolderName = node.name;
@@ -1406,6 +1723,63 @@ export default {
                 this.bulkDeleting = false;
                 this.bulkDeleteDialog = false;
                 this.bulkDeleteTargets = [];
+            }
+        },
+        // 인덱싱 실패 파일 1건 재인덱싱 (스토리지 원본 재처리)
+        async reindexFile(item) {
+            if (!item) return;
+            const key = this.rowKey(item);
+            const next = new Set(this.reindexingKeys);
+            next.add(key);
+            this.reindexingKeys = next;
+            try {
+                const fd = new FormData();
+                fd.append('tenant_id', window.$tenantName);
+                fd.append('source_type', item.source_type);
+                fd.append('source_ref', item.source_ref);
+                if (this.myUid) fd.append('requester_uid', this.myUid);
+                const { data } = await axios.post('/memento/knowledge/files/reindex', fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (data?.indexed) this.notify('재인덱싱 완료');
+                else this.notify('재인덱싱 실패', 'error', data?.error || '인덱싱 실패');
+                await this.fetchList();
+            } catch (e) {
+                this.notify('재인덱싱 실패', 'error', e?.response?.data?.detail || e?.message);
+            } finally {
+                const after = new Set(this.reindexingKeys);
+                after.delete(key);
+                this.reindexingKeys = after;
+            }
+        },
+        // 현재 목록의 실패 파일들 일괄 재인덱싱
+        async retryAllFailed() {
+            const targets = [...this.failedRetryable];
+            if (!targets.length) return;
+            this.bulkReindexing = true;
+            let ok = 0;
+            try {
+                const results = await Promise.allSettled(
+                    targets.map((item) => {
+                        const fd = new FormData();
+                        fd.append('tenant_id', window.$tenantName);
+                        fd.append('source_type', item.source_type);
+                        fd.append('source_ref', item.source_ref);
+                        if (this.myUid) fd.append('requester_uid', this.myUid);
+                        return axios.post('/memento/knowledge/files/reindex', fd, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                    })
+                );
+                ok = results.filter((r) => r.status === 'fulfilled' && r.value?.data?.indexed).length;
+                const failed = targets.length - ok;
+                if (failed === 0) this.notify(`${ok}개 재인덱싱 완료`);
+                else this.notify(`${ok}개 완료, ${failed}개 실패`, failed === targets.length ? 'error' : 'warning');
+                await this.fetchList();
+            } catch (e) {
+                this.notify('일괄 재인덱싱 실패', 'error', e?.message);
+            } finally {
+                this.bulkReindexing = false;
             }
         },
         async performDelete() {
@@ -1560,7 +1934,7 @@ export default {
 }
 
 .kft-folder-sidebar {
-    flex: 0 0 220px;
+    flex: 0 0 240px;
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 8px;
     background: #fafafa;
@@ -1806,5 +2180,59 @@ export default {
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 6px;
     overflow-y: auto;
+}
+
+/* ── 폴더 트리: chevron / 인라인 입력 ── */
+.kft-folder-caret {
+    flex: 0 0 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.kft-folder-caret:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.kft-folder-caret.is-spacer,
+.kft-folder-caret.is-spacer:hover {
+    cursor: default;
+    background: transparent;
+}
+
+.kft-folder-input {
+    cursor: default;
+}
+
+.kft-inline-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid rgb(var(--v-theme-primary));
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    outline: none;
+    background: #fff;
+    color: rgba(0, 0, 0, 0.85);
+}
+
+/* ── 폴더 우클릭 컨텍스트 메뉴 (teleport to body) ── */
+.kft-ctx-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2400;
+}
+
+.kft-ctx-menu {
+    position: fixed;
+    z-index: 2401;
+    min-width: 180px;
+    padding: 4px;
+    background: #fff;
 }
 </style>

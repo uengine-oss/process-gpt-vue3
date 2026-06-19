@@ -2311,6 +2311,8 @@ export default {
                 await this.loadRoom(roomId);
                 this.restoreSideInfoFromRoomContext();
                 await this.loadMessages(roomId);
+                // 복원된 메시지의 toolCalls 로 우측 '활동' 패널 재구성 (과거 방에서도 활동 탭 노출)
+                this.rebuildActivityFromMessages();
                 this.EventBus.emit('chat-room-selected', roomId);
                 this.startChatAccessHeartbeat(roomId);
                 this.warmupAgentsForCurrentRoom();
@@ -2423,6 +2425,8 @@ export default {
                 if (Array.isArray(payload?.knowledgeDocs) && payload.knowledgeDocs.length > 0) {
                     this.selectedKnowledgeDocs = payload.knowledgeDocs;
                     this.upsertKnowledgePanel();
+                    // 방 컨텍스트에 저장 → 새로고침/재진입 시에도 선택 유지 (kickoff 경로 누락분)
+                    this.persistSelectedKnowledge();
                 }
 
                 // 메인 화면에서 전달된 raw File이 있으면 memento 경유 업로드 (임베딩 + 벡터 저장)
@@ -2607,6 +2611,14 @@ export default {
                     this.planSideInfoEnabled.todos = true;
                     this.plannedTodos = todos;
                     this.upsertTodosPanel();
+                }
+
+                // 선택했던 지식 베이스 자료(폴더/파일) 복원 — 입력창 칩 + 사이드 패널
+                const knowledgeDocs = Array.isArray(ctx.knowledgeDocs) ? ctx.knowledgeDocs : [];
+                if (knowledgeDocs.length) {
+                    this.selectedKnowledgeDocs = knowledgeDocs;
+                    this.planSideInfoEnabled.knowledge = true;
+                    this.upsertKnowledgePanel();
                 }
             } catch (e) {
                 // ignore
@@ -4834,6 +4846,41 @@ export default {
             if (!this.planSideInfoEnabled.activity) this.planSideInfoEnabled.activity = true;
             this.upsertActivityPanel();
         },
+        /** 과거 방 로드 후 우측 '활동' 패널 재구성.
+         *  활동 패널은 라이브 스트림(recordActivity)에서만 채워져 별도 저장이 없으므로,
+         *  메시지에 영속된 toolCalls 를 원천으로 삼아 다시 만든다. (bootstrapRoom → loadMessages 다음 호출)
+         *  '실행 중(running)' 잔재는 done 으로 정리해 과거 방에서 무한 스피너처럼 보이지 않게 한다. */
+        rebuildActivityFromMessages() {
+            try {
+                const msgs = Array.isArray(this.messages) ? this.messages : [];
+                for (const m of msgs) {
+                    const tcs = Array.isArray(m?.toolCalls) ? m.toolCalls : [];
+                    if (!tcs.length) continue;
+                    const msgKey = (m.uuid || m.rowUuid || '').toString();
+                    for (let i = 0; i < tcs.length; i++) {
+                        const tc = tcs[i] || {};
+                        const name = (tc.name || tc.tool || '').toString();
+                        if (!name) continue;
+                        const input = tc.input ?? null;
+                        const subagentType =
+                            name === 'task' ? (input?.subagent_type || input?.subagentType || '').toString() : '';
+                        const status = (tc.status === 'running' ? 'done' : tc.status || 'done').toString();
+                        this.recordActivity({
+                            id: `${msgKey}:${i}`,
+                            tool: name,
+                            name,
+                            displayName: this.formatToolName(name),
+                            kind: name === 'task' ? 'subagent' : 'tool',
+                            subagentType,
+                            status,
+                            input
+                        });
+                    }
+                }
+            } catch (e) {
+                // 활동 패널 재구성 실패는 화면 흐름을 막지 않음
+            }
+        },
 
         /** 우측 사이드바에 Tools 정보 패널(숨김 타입) 생성/갱신 */
         upsertToolsPanel() {
@@ -4924,6 +4971,24 @@ export default {
         onKnowledgeDocsUpdate(docs) {
             this.selectedKnowledgeDocs = Array.isArray(docs) ? docs : [];
             this.upsertKnowledgePanel();
+            this.persistSelectedKnowledge();
+        },
+        /** 선택한 지식 베이스 자료를 방 컨텍스트에 저장 → 방 재진입 시 칩/패널 복원.
+         *  (restoreSideInfoFromRoomContext 가 ctx.knowledgeDocs 를 읽어 되살린다.) */
+        persistSelectedKnowledge() {
+            try {
+                const room = this.currentChatRoom;
+                if (!room || !room.id) return;
+                const prev = this.normalizeRoomContext(this.readChatRoomContext(room));
+                const next = {
+                    ...prev,
+                    knowledgeDocs: Array.isArray(this.selectedKnowledgeDocs) ? this.selectedKnowledgeDocs : []
+                };
+                this.writeChatRoomContext(next, room);
+                this.putChatRoomMerged(room).catch(() => {});
+            } catch (e) {
+                // 저장 실패는 선택 동작을 막지 않음
+            }
         },
 
         /** 우측 사이드바에 지식 베이스 컨텍스트 패널 생성/갱신 */

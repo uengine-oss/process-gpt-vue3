@@ -40,9 +40,13 @@
                 <span class="side-info__title">지식 베이스</span>
                 <span class="side-info__count">{{ knowledgeList.length }}</span>
             </summary>
-            <ul class="side-info__list">
-                <li v-for="d in knowledgeList" :key="d.key" class="side-info__item">
-                    <span class="side-info__item-label">{{ d.label }}</span>
+            <ul class="side-info__list side-info__list--scroll">
+                <li v-for="d in knowledgeList" :key="d.key" class="side-info__item side-info__kb" :title="d.title">
+                    <v-icon size="14" :color="d.icon.color" class="side-info__kb-icon">{{ d.icon.icon }}</v-icon>
+                    <span class="side-info__kb-main">
+                        <span class="side-info__item-label">{{ d.label }}</span>
+                        <span v-if="d.folderPath" class="side-info__kb-path">{{ d.folderPath }}</span>
+                    </span>
                     <span v-if="d.source" class="side-info__chip" :class="`is-${d.source}`">
                         {{ d.source === 'drive' ? 'Drive' : 'Storage' }}
                     </span>
@@ -100,6 +104,26 @@
 </template>
 
 <script>
+import { mimeIcon } from '@/utils/fileIcon';
+
+function extToMime(name) {
+    const ext = (name || '').split('.').pop()?.toLowerCase() || '';
+    const map = {
+        pdf: 'application/pdf',
+        doc: 'application/msword',
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        xls: 'application/vnd.ms-excel',
+        xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ppt: 'application/vnd.ms-powerpoint',
+        pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        hwp: 'application/x-hwp',
+        hwpx: 'application/vnd.hancom.hwpx',
+        md: 'text/markdown',
+        txt: 'text/plain'
+    };
+    return map[ext] || '';
+}
+
 /** 에이전트 채팅방 컨텍스트(할일·스킬·도구 등) — 아티팩트 탭과 구분되는 패널 타입. ArtifactPanel 등에서 import */
 export const AGENT_CHAT_ROOM_CONTEXT_TYPES = new Set(['activity', 'attachments', 'tools', 'skills', 'todos', 'knowledge']);
 
@@ -160,11 +184,19 @@ export default {
             const p = this.sideInfoPanels.get('knowledge');
             const items = Array.isArray(p?.data?.items) ? p.data.items : [];
             return items
-                .map((d, idx) => ({
-                    key: (d?.id || d?.sourceRef || d?.source_ref || `knw-${idx}`).toString(),
-                    label: (d?.name || d?.file_name || d?.label || '').toString(),
-                    source: (d?.sourceType || d?.source_type || '').toString()
-                }))
+                .map((d, idx) => {
+                    const label = (d?.name || d?.file_name || d?.label || '').toString();
+                    const folderPath = (d?.folderPath || d?.folder_path || d?.drive_folder_name || '').toString();
+                    const mime = (d?.mimeType || d?.mime_type || '').toString() || extToMime(label);
+                    return {
+                        key: (d?.id || d?.sourceRef || d?.source_ref || `knw-${idx}`).toString(),
+                        label,
+                        folderPath,
+                        icon: mimeIcon(mime),
+                        title: folderPath ? `${folderPath}/${label}` : label,
+                        source: (d?.sourceType || d?.source_type || '').toString()
+                    };
+                })
                 .filter((x) => x.label);
         },
         toolsList() {
@@ -351,6 +383,39 @@ export default {
 .side-info__item-label {
     flex: 1;
     min-width: 0;
+}
+
+/* 지식 베이스 항목 — 타입 아이콘 + 파일명 + 폴더경로(2행) */
+.side-info__kb {
+    align-items: center;
+}
+
+.side-info__kb-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.side-info__kb-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.side-info__kb .side-info__item-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.side-info__kb-path {
+    font-size: 10px;
+    line-height: 1.3;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .side-info__chip {

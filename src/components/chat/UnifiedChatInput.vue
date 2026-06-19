@@ -1,11 +1,9 @@
 <template>
     <div class="main-chat-input-container" :class="containerVariantClass">
-        <!-- 예시 문구들 (메인/시스템 채팅에서만 사용) -->
-        <div v-if="showExamples" class="example-prompts">
-            <div v-for="(example, index) in examples" :key="index" class="example-chip" @click="selectExample(example)">
-                <v-icon size="16" class="mr-1">{{ example.icon }}</v-icon>
-                <span>{{ example.text }}</span>
-            </div>
+        <!-- 지식베이스 사용 흐름 안내 (처음 쓰는 사람용) — 메인 채팅에서만 -->
+        <div v-if="showExamples && enableKnowledgeBase" class="kb-guide">
+            <v-icon size="16" class="kb-guide__bulb" color="primary">mdi-lightbulb-on-outline</v-icon>
+            <span>{{ $t('mainChat.kbGuide') }}</span>
         </div>
 
         <!-- 지식 베이스 선택 표시는 입력 툴바의 "지식 베이스" 버튼 배지(개수) + 피커 재오픈으로 대체.
@@ -138,30 +136,6 @@ export default {
         containerVariantClass() {
             return this.variant === 'inline' ? 'main-chat-input-container--inline' : 'main-chat-input-container--panel';
         },
-        examples() {
-            return [
-                {
-                    icon: 'mdi-plus-circle-outline',
-                    text: this.$t('mainChat.examples.createProcess'),
-                    type: 'create'
-                },
-                {
-                    icon: 'mdi-play-circle-outline',
-                    text: this.$t('mainChat.examples.executeProcess'),
-                    type: 'execute'
-                },
-                {
-                    icon: 'mdi-magnify',
-                    text: this.$t('mainChat.examples.checkResult'),
-                    type: 'query'
-                },
-                {
-                    icon: 'mdi-help-circle-outline',
-                    text: this.$t('mainChat.examples.askQuestion'),
-                    type: 'question'
-                }
-            ];
-        },
         selectedKnowledgeDocs() {
             return this.knowledgeDocs && this.knowledgeDocs.length > 0 ? this.knowledgeDocs : this.internalKnowledgeDocs;
         },
@@ -200,22 +174,6 @@ export default {
             try {
                 this.$refs.inputChat?.cancelReply?.();
             } catch (e) {}
-        },
-        selectExample(example) {
-            if (!example) return;
-            // 기본 에이전트 미사용: 항상 딥 에이전트로 고정
-            let orchestration = 'deepagents';
-            try {
-                const o = this.$refs.inputChat?.orchestration;
-                if ((o || '').toString().trim() === 'langchain-react') orchestration = 'langchain-react';
-            } catch (e) {}
-            this.$emit('sendMessage', {
-                text: example.text,
-                timestamp: new Date().toISOString(),
-                file: null,
-                images: null,
-                orchestration
-            });
         },
         forwardSendMessage(message) {
             const messageFiles = Array.isArray(message?.files) ? message.files : Array.isArray(message?.file) ? message.file : [];
@@ -264,29 +222,23 @@ export default {
 }
 
 /* 예시 문구들 */
-.example-prompts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.example-chip {
+/* 지식베이스 사용 흐름 안내 (첫 사용자용) */
+.kb-guide {
     display: flex;
     align-items: center;
-    padding: 8px 14px;
-    background: white;
-    border-radius: 20px;
-    font-size: 13px;
-    color: #808080;
-    cursor: pointer;
-    white-space: nowrap;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background: rgba(var(--v-theme-primary), 0.06);
+    border: 1px solid rgba(var(--v-theme-primary), 0.18);
+    border-radius: 10px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: rgba(0, 0, 0, 0.72);
 }
 
-.example-chip:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-    color: #808080;
+.kb-guide__bulb {
+    flex: 0 0 auto;
 }
 
 /* 입력 툴바의 지식 베이스 버튼 (Chat custom-input-tools 슬롯) */
@@ -357,16 +309,6 @@ export default {
 @media (max-width: 768px) {
     .main-chat-input-container {
         padding: 0px;
-    }
-
-    .example-prompts {
-        gap: 6px;
-        margin-bottom: 8px;
-    }
-
-    .example-chip {
-        padding: 6px 10px;
-        font-size: 12px;
     }
 }
 </style>

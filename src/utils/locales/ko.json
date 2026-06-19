@@ -1367,7 +1367,7 @@
     },
     "chat": {
         "inputMessage": "메시지 입력",
-        "definitionMapInputMessage": "예: 휴가 신청 프로세스 만들어줘 / 휴가 신청 프로세스 실행해줘 / 실행중인 휴가 신청의 승인 여부 알려줘",
+        "definitionMapInputMessage": "예: 선택한 자료에서 핵심 내용 찾아줘 / 이 문서 요약해줘 / NDA 초안 작성해줘 / 계약서 검토해줘",
         "lock": "저장하려면 저장 아이콘을 누르세요.",
         "unlock": "편집하려면 연필 아이콘을 누르세요.",
         "processDefinitionSave": "저장",
@@ -4049,11 +4049,12 @@
     "mainChat": {
         "placeholder": "무엇을 도와드릴까요? 프로세스 생성, 실행, 조회 등을 요청해보세요.",
         "examples": {
-            "createProcess": "휴가 신청 프로세스를 만들어줘",
-            "executeProcess": "프로세스 실행",
-            "checkResult": "내 휴가 신청 현황 알려줘",
-            "askQuestion": "우리 회사 조직도 알려줘"
+            "createProcess": "선택한 자료에서 핵심 내용 찾아줘",
+            "executeProcess": "이 문서 요약해줘",
+            "checkResult": "NDA 초안 작성해줘",
+            "askQuestion": "계약서 검토해줘"
         },
+        "kbGuide": "먼저 아래 [📚 지식 베이스] 버튼으로 사용할 자료를 선택한 뒤 질문하세요. 자료 내용 검색·요약·NDA/계약 초안 작성·검토를 선택한 자료 기반으로 해드립니다.",
         "intentAnalysis": "요청을 분석하고 있습니다...",
         "createMode": "프로세스 생성",
         "description": "설명",

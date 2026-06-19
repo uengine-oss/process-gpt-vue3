@@ -1367,7 +1367,7 @@
     },
     "chat": {
         "inputMessage": "Type a Message",
-        "definitionMapInputMessage": "How can I help you?",
+        "definitionMapInputMessage": "e.g., Find key info in the selected documents / Summarize this document / Draft an NDA / Review this contract",
         "lock": "Click the save icon to save.",
         "unlock": "Click the pencil icon to edit.",
         "processDefinitionSave": "Save",
@@ -4049,11 +4049,12 @@
     "mainChat": {
         "placeholder": "How can I help you? Try asking to create, execute, or search processes.",
         "examples": {
-            "createProcess": "Create a vacation request process",
-            "executeProcess": "Execute Process",
-            "checkResult": "Show my vacation request status",
-            "askQuestion": "Show me our company's organization chart"
+            "createProcess": "Find key info in the selected documents",
+            "executeProcess": "Summarize this document",
+            "checkResult": "Draft an NDA",
+            "askQuestion": "Review this contract"
         },
+        "kbGuide": "First, pick the documents to use via the [📚 Knowledge Base] button below, then ask — search, summarize, draft (NDA/contract), and review, all grounded in the selected documents.",
         "intentAnalysis": "Analyzing your request...",
         "createMode": "Create Mode",
         "description": "Description",
