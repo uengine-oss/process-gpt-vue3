@@ -1469,6 +1469,32 @@
                                                                                 </v-expansion-panel>
                                                                             </v-expansion-panels>
                                                                         </div> -->
+                                                                            <!-- 도구 사용 내역 (Claude Desktop식 인라인 접기/펼치기) -->
+                                                                            <details
+                                                                                v-if="chatRoomMode && getToolCallList(message).length"
+                                                                                class="chat-tool-activity"
+                                                                            >
+                                                                                <summary class="chat-tool-activity__summary">
+                                                                                    <v-icon size="13" class="mr-1">mdi-tools</v-icon>
+                                                                                    도구 {{ getToolCallList(message).length }}개 사용
+                                                                                </summary>
+                                                                                <div class="chat-tool-activity__list">
+                                                                                    <div
+                                                                                        v-for="(tc, tcIdx) in getToolCallList(message)"
+                                                                                        :key="`tc-${index}-${tcIdx}`"
+                                                                                        class="chat-tool-activity__item"
+                                                                                    >
+                                                                                        <v-icon
+                                                                                            size="12"
+                                                                                            class="mr-1"
+                                                                                            :color="tc.status === 'error' ? 'error' : tc.status === 'done' ? 'success' : 'primary'"
+                                                                                            >{{ tc.kind === 'subagent' ? 'mdi-robot-outline' : 'mdi-wrench-outline' }}</v-icon
+                                                                                        >
+                                                                                        <span class="chat-tool-activity__name">{{ tc.label }}</span>
+                                                                                        <span class="chat-tool-activity__status" :class="`is-${tc.status}`">{{ tc.status }}</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </details>
                                                                             <!-- 첨부(이미지/파일): content가 비어도 메시지로 렌더링 + 답장 가능 -->
                                                                             <div
                                                                                 v-if="
@@ -1709,6 +1735,36 @@
                                                                                         <v-icon start size="14">mdi-graph-outline</v-icon>
                                                                                         전체 그래프
                                                                                     </v-btn>
+                                                                                    <!-- 저장: 시스템이 자동 저장하지 않고, 사용자가 확인 후 클릭하면 저장 -->
+                                                                                    <v-btn
+                                                                                        v-if="message.pdf2bpmnResult && message.pdf2bpmnResult.__contract && !message.pdf2bpmnResult.__saved"
+                                                                                        size="x-small"
+                                                                                        variant="flat"
+                                                                                        color="success"
+                                                                                        class="ml-1"
+                                                                                        :loading="!!message.pdf2bpmnResult.__saving"
+                                                                                        @click.stop="emitSaveGeneratedProcess(message)"
+                                                                                    >
+                                                                                        <v-icon start size="14">mdi-content-save</v-icon>
+                                                                                        저장
+                                                                                    </v-btn>
+                                                                                    <v-chip
+                                                                                        v-else-if="message.pdf2bpmnResult && message.pdf2bpmnResult.__saved"
+                                                                                        size="x-small"
+                                                                                        color="success"
+                                                                                        variant="tonal"
+                                                                                        class="ml-1"
+                                                                                    >
+                                                                                        <v-icon start size="14">mdi-check</v-icon>
+                                                                                        저장됨
+                                                                                    </v-chip>
+                                                                                </div>
+                                                                                <div
+                                                                                    v-if="message.pdf2bpmnResult && message.pdf2bpmnResult.__saveError"
+                                                                                    class="text-caption mb-2"
+                                                                                    style="color: rgb(var(--v-theme-error))"
+                                                                                >
+                                                                                    ⚠️ 저장 실패: {{ message.pdf2bpmnResult.__saveError }}
                                                                                 </div>
                                                                                 <div
                                                                                     v-if="
@@ -3404,6 +3460,7 @@ export default {
         'requestFile',
         // 미리보기/외부 링크 오픈 (ChatRoomPage에서 다이얼로그 처리)
         'preview-bpmn',
+        'save-generated-process',
         'preview-integrated-graph',
         'preview-image',
         'open-external-url',
@@ -3738,6 +3795,11 @@ export default {
                     if (item && item.__humanFeedback) {
                         data.__humanFeedback = item.__humanFeedback;
                     }
+                    // pdf2bpmnResult 도 원본 참조 유지: '저장' 버튼 상태(__saving/__saved/__saveError)와
+                    // 전체 계약(__contract)이 deep copy 로 끊기지 않고 원본에 반영되도록.
+                    if (item && item.pdf2bpmnResult) {
+                        data.pdf2bpmnResult = item.pdf2bpmnResult;
+                    }
 
                     // 프로세스 실행 메시지에 formValues 초기화
                     if (data.work === 'StartProcessInstance' && data.firstActivityForm && !data.formValues) {
@@ -3749,8 +3811,11 @@ export default {
                     const hasImages = Array.isArray(data.images) && data.images.length > 0;
                     const files = this.getMessageFiles(data);
                     const hasFile = files.length > 0;
+                    // HITL 패널(__humanFeedback)이나 BPMN 생성결과(pdf2bpmnResult)가 붙은 메시지는
+                    // 본문 텍스트가 비어 있어도(예: 후보 선택 패널) 반드시 렌더해야 한다.
+                    const hasPanel = !!item.__humanFeedback || !!item.pdf2bpmnResult;
 
-                    if (hasText || hasImage || hasImages || hasFile) {
+                    if (hasText || hasImage || hasImages || hasFile || hasPanel) {
                         list.push(data);
                     }
                 });
@@ -3975,6 +4040,20 @@ export default {
         getMultiQuestionGroups(message) {
             const qs = this.getMultiQuestions(message);
             if (!qs.length) return [];
+            // deepagent 멀티프로세스: 프로세스별로 페이지를 묶는다(a 카드 → 다음 → b 카드).
+            if (message?.__humanFeedback?.__groupBy === 'process') {
+                const procOrder = [];
+                const procBuckets = {};
+                qs.forEach((q, idx) => {
+                    const p = String(q?.process || this.getProcessLabelForQuestion(q) || '프로세스').trim();
+                    if (!procBuckets[p]) {
+                        procBuckets[p] = [];
+                        procOrder.push(p);
+                    }
+                    procBuckets[p].push({ q, idx });
+                });
+                return procOrder.map((p) => ({ stage: p, label: p, items: procBuckets[p] }));
+            }
             const order = ['skills', 'agents', 'dmn'];
             const labelOf = {
                 skills: '스킬 — 생성할 스킬 선택',
@@ -4290,6 +4369,25 @@ export default {
                 return null;
             }
         },
+        /** 채팅 메시지 하단 인라인 '도구 사용 내역'(Claude Desktop식) 용 정규화 목록 */
+        getToolCallList(message) {
+            try {
+                const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
+                return tools
+                    .map((t) => {
+                        const name = (t?.name || t?.tool || '').toString();
+                        const kind = (t?.kind || (name === 'task' ? 'subagent' : 'tool')).toString();
+                        return {
+                            label: this.formatToolName(name) || name,
+                            kind,
+                            status: (t?.status || 'done').toString()
+                        };
+                    })
+                    .filter((t) => t.label);
+            } catch (e) {
+                return [];
+            }
+        },
         hasAgentLogs(message) {
             return Array.isArray(message?.agentLogs) && message.agentLogs.length > 0;
         },
@@ -4322,6 +4420,10 @@ export default {
         emitPreviewBpmn(bpmn) {
             if (!bpmn) return;
             this.$emit('preview-bpmn', bpmn);
+        },
+        emitSaveGeneratedProcess(message) {
+            if (!message) return;
+            this.$emit('save-generated-process', message);
         },
         isInlineProcessPreviewTarget(message, index) {
             if (!this.chatRoomMode) return false;
@@ -4438,10 +4540,16 @@ export default {
             const saved = Array.isArray(result.savedProcesses) ? result.savedProcesses : [];
             if (saved.length === 0) return [];
 
+            // 저장 전(__saved=false)에는 계약 definition 으로 미리보기 XML 을 만들어야 하므로
+            // definition 과 __unsaved 플래그를 카드에 함께 실어 보낸다.
+            const contractDef = (result.__contract && result.__contract.processDefinition) || null;
+            const unsaved = !result.__saved;
             return saved.map((proc) => ({
                 process_id: proc?.process_id || proc?.id || '',
                 process_name: proc?.process_name || proc?.name || 'Unnamed Process',
-                bpmn_xml: proc?.bpmn_xml || ''
+                bpmn_xml: proc?.bpmn_xml || '',
+                definition: proc?.definition || contractDef,
+                __unsaved: unsaved
             }));
         },
         hasPdf2bpmnResultSections(message) {
@@ -6719,6 +6827,72 @@ pre {
 .chat-room-edit-wrap {
     max-width: min(720px, 80vw);
     width: fit-content;
+}
+
+/* 채팅 하단 인라인 '도구 사용 내역' (Claude Desktop식) */
+.chat-tool-activity {
+    margin: 2px 0 8px;
+    border-radius: 8px;
+}
+.chat-tool-activity__summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.55);
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.04);
+}
+.chat-tool-activity__summary::-webkit-details-marker {
+    display: none;
+}
+.chat-tool-activity__summary:hover {
+    color: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.06);
+}
+.chat-tool-activity__list {
+    margin-top: 6px;
+    padding: 4px 6px 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.chat-tool-activity__item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.7);
+}
+.chat-tool-activity__name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-tool-activity__status {
+    flex-shrink: 0;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.05);
+    text-transform: lowercase;
+}
+.chat-tool-activity__status.is-running {
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.1);
+}
+.chat-tool-activity__status.is-done {
+    color: rgb(var(--v-theme-success));
+    background: rgba(var(--v-theme-success), 0.1);
+}
+.chat-tool-activity__status.is-error {
+    color: rgb(var(--v-theme-error));
+    background: rgba(var(--v-theme-error), 0.1);
 }
 
 .chat-room-loading-indicator {
