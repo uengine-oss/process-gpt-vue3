@@ -103,8 +103,6 @@ export interface Backend {
     downloadFile(path: string): Promise<any>;
     getTenant(tenantId: string): Promise<any>;
     setTenant(tenantId: string): Promise<any>;
-    getGithubInfo(): Promise<any>;
-    saveGithubInfo(githubInfo: { github_username: string; github_token: string }): Promise<any>;
     updateUser(userInfo: any): Promise<any>;
     getAllWorkListByInstId(instId: number): Promise<any>;
     listMarketplaceDefinition(): Promise<any>;
@@ -213,6 +211,11 @@ export interface Backend {
     updateElementComment(commentId: string, content: string): Promise<any>;
     deleteElementComment(commentId: string): Promise<void>;
     resolveElementComment(commentId: string, resolved?: boolean, resolveActionText?: string): Promise<any>;
+
+    // Git 설정 API
+    getGitConfigs(): Promise<any[]>;
+    saveGitConfig(config: { id?: string; provider: string; base_url?: string; username: string; token: string; is_default: boolean }): Promise<void>;
+    deleteGitConfig(id: string): Promise<void>;
 }
 
 // export type { Backend }

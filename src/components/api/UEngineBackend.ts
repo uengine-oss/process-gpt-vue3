@@ -2226,6 +2226,20 @@ class UEngineBackend implements Backend {
         console.warn('setupAgentKnowledge is not implemented - only use Process-GPT Mode');
         return null;
     }
+
+    // Git 설정 API
+    async getGitConfigs(): Promise<any[]> {
+        console.warn('getGitConfigs is not implemented - only use Process-GPT Mode');
+        return [];
+    }
+
+    async saveGitConfig(config: { id?: string; provider: string; base_url?: string; username: string; token: string; is_default: boolean }): Promise<void> {
+        console.warn('saveGitConfig is not implemented - only use Process-GPT Mode');
+    }
+
+    async deleteGitConfig(id: string): Promise<void> {
+        console.warn('deleteGitConfig is not implemented - only use Process-GPT Mode');
+    }
 }
 
 export default UEngineBackend;

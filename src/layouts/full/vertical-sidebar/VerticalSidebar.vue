@@ -144,13 +144,14 @@
                             <Icons :icon="'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
                         </div>
                         <template v-if="isAdmin">
-                            <v-tooltip location="bottom" :text="$t('VerticalSidebar.createAgent')">
+                            <!-- 에이전트 생성 진입점은 조직도 페이지 좌측 '에이전트 생성' 탭으로 통합됨 (OrganizationManagePanel). 중복 진입점이라 주석 처리. -->
+                            <!-- <v-tooltip location="bottom" :text="$t('VerticalSidebar.createAgent')">
                                 <template v-slot:activator="{ props }">
                                     <div class="sidebar-title-icon" v-bind="props" @click="openAgentCreateDialog">
                                         <Icons :icon="'plus'" :size="14" :color="'#808080'" />
                                     </div>
                                 </template>
-                            </v-tooltip>
+                            </v-tooltip> -->
                             <div v-for="item in organizationItem" :key="item.title">
                                 <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
                                     <template v-slot:activator="{ props }">
@@ -650,7 +651,7 @@ export default {
                 this.organizationItem = [
                     {
                         title: 'organizationChartDefinition.title',
-                        icon: 'diagram',
+                        icon: 'side-group',
                         BgColor: 'primary',
                         to: '/organization',
                         disable: false

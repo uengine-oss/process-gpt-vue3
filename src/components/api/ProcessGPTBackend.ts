@@ -82,7 +82,7 @@ class ProcessGPTBackend implements Backend {
         await this.deleteTest(`${path}/record`, '', index);
     }
 
-    async releaseVersion(releaseName: string): Promise<any> {}
+    async releaseVersion(releaseName: string): Promise<any> { }
 
     async testList(_path: string): Promise<any> {
         const map = this.__loadTestRawMap();
@@ -1087,14 +1087,14 @@ class ProcessGPTBackend implements Backend {
     async getTaskReturnAvailability(taskId: string): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 반송 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/return/availability`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/return/availability`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
     async returnTask(taskId: string, payload: any): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 반송 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/return`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/return`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
@@ -1108,14 +1108,14 @@ class ProcessGPTBackend implements Backend {
     async getTaskSkipAvailability(taskId: string): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 SKIP 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/skip/availability`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/skip/availability`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
     async skipTask(taskId: string, payload: any): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 SKIP 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/skip`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/skip`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
@@ -3451,12 +3451,12 @@ class ProcessGPTBackend implements Backend {
                 const skillsArray =
                     typeof putObj.skills === 'string'
                         ? putObj.skills
-                              .split(',')
-                              .map((s: string) => s.trim())
-                              .filter((s: string) => s.length > 0)
+                            .split(',')
+                            .map((s: string) => s.trim())
+                            .filter((s: string) => s.length > 0)
                         : Array.isArray(putObj.skills)
-                        ? putObj.skills
-                        : [];
+                            ? putObj.skills
+                            : [];
 
                 try {
                     await this.replaceAgentSkills({
@@ -3717,7 +3717,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadDefinition(file: File, path: string) {}
+    async uploadDefinition(file: File, path: string) { }
 
     async getLock(id: string) {
         try {
@@ -4217,33 +4217,51 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getGithubInfo() {
+    async getGitConfigs() {
         try {
-            const response = await storage.getObject('tenant_oauth', {
-                match: {
-                    tenant_id: window.$tenantName
-                }
-            });
-            return response
-                ? { github_username: response.github_username || '', github_token: response.github_token || '' }
-                : { github_username: '', github_token: '' };
+            return await storage.list('tenant_git_config', {
+                match: { tenant_id: window.$tenantName }
+            }) || [];
         } catch (error) {
             throw new Error(error.message);
         }
     }
 
-    async saveGithubInfo(githubInfo: { github_username: string; github_token: string }) {
+    async saveGitConfig(config: { id?: string; provider: string; base_url?: string; username: string; token: string; is_default: boolean }) {
         try {
-            const existing = await storage.getObject('tenant_oauth', {
-                match: { tenant_id: window.$tenantName }
-            });
-            const payload = {
-                ...(existing || {}),
+            if (config.is_default) {
+                const existing = await storage.list('tenant_git_config', {
+                    match: { tenant_id: window.$tenantName }
+                });
+                for (const item of existing || []) {
+                    if (item.id !== config.id && item.is_default) {
+                        await storage.putObject('tenant_git_config', { ...item, is_default: false }, { onConflict: 'id' });
+                    }
+                }
+            }
+            const payload: any = {
                 tenant_id: window.$tenantName,
-                github_username: githubInfo.github_username,
-                github_token: githubInfo.github_token
+                provider: config.provider,
+                base_url: config.base_url || null,
+                username: config.username,
+                token: config.token,
+                is_default: config.is_default,
+                updated_at: new Date().toISOString()
             };
-            await storage.putObject('tenant_oauth', payload);
+            if (config.id) {
+                payload.id = config.id;
+                await storage.putObject('tenant_git_config', payload, { onConflict: 'id' });
+            } else {
+                await storage.putObject('tenant_git_config', payload, { onConflict: 'tenant_id,provider' });
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteGitConfig(id: string) {
+        try {
+            await storage.delete(`tenant_git_config/${id}`, { key: 'id' });
         } catch (error) {
             throw new Error(error.message);
         }
@@ -4346,7 +4364,7 @@ class ProcessGPTBackend implements Backend {
      * - 기존 `processFile()`과 분리된 신규 호출로, 기존 로직에 영향이 없습니다.
      * - 백엔드가 폴더 전체 처리를 지원하는 경우(file_path 없이 storage_type="drive") 이를 사용합니다.
      */
-    async processDriveFolder(options?: { drive_folder_id?: string; [key: string]: any }) {
+    async processDriveFolder(options?: { drive_folder_id?: string;[key: string]: any }) {
         try {
             const response = await axios.post(
                 '/memento/process',
@@ -7016,15 +7034,16 @@ class ProcessGPTBackend implements Backend {
                 form.append('file', options.file, options.file.name);
                 form.append('tenant_id', window.$tenantName);
 
-                response = await axios.post('/claude-skills/skills/upload', form, {
+                response = await axios.post('/process-gpt-deepagents/skills/upload', form, {
                     headers: header
                 });
             } else if (options.type == 'url') {
                 response = await axios.post(
-                    '/claude-skills/skills/upload-from-github',
+                    '/process-gpt-deepagents/skills/upload-from-git',
                     {
-                        url: options.url,
-                        tenant_id: window.$tenantName
+                        repo_url: options.url,
+                        tenant_id: window.$tenantName,
+                        owner_id: localStorage.getItem('uid')
                     },
                     {
                         headers: header
@@ -7032,10 +7051,10 @@ class ProcessGPTBackend implements Backend {
                 );
             }
 
-            if (response.status === 200) {
-                const skillsAdded = response.data.skills_added;
-                if (skillsAdded && skillsAdded.length > 0) {
-                    await this.saveSkills(skillsAdded);
+            if (response.status === 201) {
+                const skillName = response.data.skill_name;
+                if (skillName) {
+                    await this.saveSkills([skillName]);
                 }
                 return response.data;
             } else {
@@ -7069,7 +7088,9 @@ class ProcessGPTBackend implements Backend {
     async deleteSkills(options: any) {
         try {
             const skillName = options.skillName;
-            const response = await axios.delete(`/claude-skills/skills/${encodeURIComponent(skillName)}`);
+            const response = await axios.delete(`/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}`, {
+                data: { tenant_id: window.$tenantName, mode: 'local' }
+            });
             if (response.status === 200 && response.data && response.data.skill_name) {
                 const deletedSkill = response.data.skill_name;
                 const tenantId = window.$tenantName;
@@ -7091,7 +7112,7 @@ class ProcessGPTBackend implements Backend {
 
     async getTenantSkills(tenantId: string) {
         try {
-            const response = await axios.get(`/claude-skills/skills/list?tenant_id=${encodeURIComponent(tenantId)}`);
+            const response = await axios.get(`/process-gpt-deepagents/skills?tenant_id=${encodeURIComponent(tenantId)}`);
             if (response.status === 200) {
                 return response.data;
             } else {
@@ -7105,7 +7126,7 @@ class ProcessGPTBackend implements Backend {
 
     async getTenantBuiltinSkills() {
         try {
-            const response = await axios.get('/claude-skills/skills/list-builtin');
+            const response = await axios.get('/process-gpt-deepagents/skills-builtin');
             if (response.status === 200) {
                 return response.data;
             } else {
@@ -7119,9 +7140,13 @@ class ProcessGPTBackend implements Backend {
 
     async getSkillFile(skillName: string, fileName?: string) {
         try {
-            let url = `/claude-skills/skills/${encodeURIComponent(skillName)}/files`;
+            let url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/files`;
+            const tenantId = window.$tenantName;
             if (fileName) {
                 url += `/${encodeURIComponent(fileName)}`;
+            }
+            if (tenantId) {
+                url += `?tenant_id=${encodeURIComponent(tenantId)}`;
             }
             const response = await axios.get(url);
             if (response.status === 200) {
@@ -7134,21 +7159,32 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async putSkillFile(skillName: string, fileName: string, content: string) {
+    async putSkillFile(skillName: string, filePath: string, content: string, commitMessage: string = 'docs: update skill description', branch: string = 'main') {
         try {
-            const url = `/claude-skills/skills/${encodeURIComponent(skillName)}/files/${encodeURIComponent(fileName)}`;
-            const response = await axios.put(
+            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/commit`;
+            const tenantId = window.$tenantName;
+            const body: any = {
+                tenant_id: tenantId,
+                file_path: filePath,
+                content: content,
+                message: commitMessage,
+                branch: branch
+            };
+            if (localStorage.getItem('userName') && localStorage.getItem('email')) {
+                body.author_name = localStorage.getItem('userName');
+                body.author_email = localStorage.getItem('email');
+            }
+
+            const response = await axios.post(
                 url,
-                {
-                    content: content
-                },
+                body,
                 {
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 }
             );
-            if (response.status === 200) {
+            if (response.status === 200 || response.status === 201) {
                 return response.data;
             } else {
                 throw new Error(response.data.message);
@@ -7158,10 +7194,273 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async deleteSkillFile(skillName: string, fileName: string) {
+    async addCommitToSkillPrBranch(skillName: string, branchName: string, filePath: string, content: string, commitMessage: string): Promise<any> {
+        return this.putSkillFile(skillName, filePath, content, commitMessage, branchName);
+    }
+
+    async getSkillBranches(skillName: string): Promise<{ branches: { name: string; sha: string }[]; default_branch: string }> {
         try {
-            const url = `/claude-skills/skills/${encodeURIComponent(skillName)}/files/${encodeURIComponent(fileName)}`;
-            const response = await axios.delete(url);
+            const params = new URLSearchParams();
+            if (window.$tenantName) params.set('tenant_id', window.$tenantName);
+            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches?${params}`;
+            const response = await axios.get(url);
+            if (response.status === 200) {
+                return {
+                    branches: response.data.branches ?? [],
+                    default_branch: response.data.default_branch || 'main'
+                };
+            }
+            return { branches: [], default_branch: 'main' };
+        } catch (error) {
+            console.error('스킬 브랜치 목록 조회 실패:', error);
+            return { branches: [], default_branch: 'main' };
+        }
+    }
+
+    async getSkillCommits(skillName: string, branch?: string): Promise<any[]> {
+        try {
+            const params = new URLSearchParams();
+            if (window.$tenantName) params.set('tenant_id', window.$tenantName);
+            if (branch) params.set('branch', branch);
+            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/commits?${params}`;
+            const response = await axios.get(url);
+            if (response.status === 200) {
+                return response.data.commits ?? [];
+            }
+            return [];
+        } catch (error) {
+            console.error('스킬 커밋 이력 조회 실패:', error);
+            return [];
+        }
+    }
+
+    async createSkillRepo(skillName: string) {
+        const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/repo`;
+        const response = await axios.post(url, { tenant_id: window.$tenantName });
+        if (response.status === 200 || response.status === 201) {
+            return response.data;
+        }
+        throw new Error(response.data?.message || 'Repo creation failed');
+    }
+
+    async createSkillBranch(skillName: string, branch: string, from: string = 'main') {
+        const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches`;
+        const response = await axios.post(url, {
+            tenant_id: window.$tenantName,
+            branch,
+            from
+        });
+        if (response.status === 200 || response.status === 201) {
+            return response.data;
+        }
+        throw new Error(response.data?.message || 'Branch creation failed');
+    }
+
+    async createSkillPullRequest(skillName: string, title: string, description: string, head: string, base: string = 'main') {
+        const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests`;
+        const response = await axios.post(url, {
+            tenant_id: window.$tenantName,
+            title,
+            description,
+            head,
+            base
+        });
+        if (response.status === 200 || response.status === 201) {
+            return response.data;
+        }
+        throw new Error(response.data?.message || 'PR creation failed');
+    }
+
+    async getSkillPullRequests(skillName: string, state: string = 'open') {
+        const params = new URLSearchParams();
+        if (window.$tenantName) params.set('tenant_id', window.$tenantName);
+        params.set('state', state);
+        const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests?${params}`;
+        const response = await axios.get(url);
+        if (response.status === 200) return response.data;
+        throw new Error(response.data?.message || 'Failed to fetch pull requests');
+    }
+
+    async getSkillPrFiles(skillName: string, prNumber: number): Promise<{ filename: string; status: string; additions: number; deletions: number; patch?: string }[]> {
+        try {
+            const params = new URLSearchParams();
+            if (window.$tenantName) params.set('tenant_id', window.$tenantName);
+            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests/${prNumber}/files?${params}`;
+            const response = await axios.get(url);
+            if (response.status === 200) return response.data?.files ?? response.data ?? [];
+            return [];
+        } catch {
+            return [];
+        }
+    }
+
+    async mergeSkillPullRequest(skillName: string, prNumber: number, message?: string) {
+        const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests/${prNumber}/merge`;
+        const response = await axios.post(url, {
+            tenant_id: window.$tenantName,
+            message: message || `Merge pull request #${prNumber}`,
+            auto_sync: true
+        });
+        if (response.status === 200) return response.data;
+        throw new Error(response.data?.message || 'Merge failed');
+    }
+
+    async getSkillBranchFiles(skillName: string, branch: string): Promise<any> {
+        try {
+            const params = new URLSearchParams();
+            params.set('branch', branch);
+            if (window.$tenantName) params.set('tenant_id', window.$tenantName);
+            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches/files?${params}`;
+            const response = await axios.get(url);
+            if (response.status === 200) {
+                return response.data;
+            }
+            return null;
+        } catch (error) {
+            console.error('원격 브랜치 파일 목록 조회 실패:', error);
+            return null;
+        }
+    }
+
+    async getSkillBranchFile(skillName: string, branch: string, filePath: string): Promise<any> {
+        try {
+            const params = new URLSearchParams();
+            params.set('branch', branch);
+            if (window.$tenantName) params.set('tenant_id', window.$tenantName);
+            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches/files/${encodeURIComponent(filePath)}?${params}`;
+            const response = await axios.get(url);
+            if (response.status === 200) {
+                return response.data;
+            }
+            return null;
+        } catch (error) {
+            console.error('원격 브랜치 파일 조회 실패:', error);
+            return null;
+        }
+    }
+
+    async syncSkill(skillName: string) {
+        const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/sync`;
+        const response = await axios.post(url, { tenant_id: window.$tenantName });
+        if (response.status === 200) {
+            return response.data;
+        }
+        throw new Error(response.data?.message || 'Sync failed');
+    }
+
+    async getSkillOwner(skillName: string): Promise<string | null> {
+        try {
+            const tenantId = window.$tenantName;
+            const row: any = await storage.getObject('tenant_skills', {
+                match: { tenant_id: tenantId, skill_name: skillName }
+            });
+            return row?.owner_id ?? null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // ============================================================
+    // 범용 리소스 PR 워크플로우 (DB: resource_pull_requests / resource_pr_reviews)
+    // resourceType: 'skill' | 'proc_def' | 'dmn'
+    // ============================================================
+
+    async createResourcePrRecord(resourceType: 'skill' | 'proc_def' | 'dmn', data: {
+        resourceId: string;
+        branchName: string;
+        baseBranch: string;
+        title: string;
+        description?: string;
+        requesterId: string;
+        requesterName?: string;
+        gitPrNumber?: number;
+        gitPrUrl?: string;
+        gitRepoUrl?: string;
+    }): Promise<any> {
+        const tenantId = window.$tenantName;
+        const record = {
+            id: this.uuid(),
+            tenant_id: tenantId,
+            resource_type: resourceType,
+            resource_id: data.resourceId,
+            branch_name: data.branchName,
+            base_branch: data.baseBranch,
+            title: data.title,
+            description: data.description || null,
+            status: 'OPEN',
+            requester_id: data.requesterId,
+            requester_name: data.requesterName || null,
+            git_pr_number: data.gitPrNumber ?? null,
+            git_pr_url: data.gitPrUrl ?? null,
+            git_repo_url: data.gitRepoUrl ?? null
+        };
+        await storage.putObject('resource_pull_requests', record, { onConflict: 'id' });
+        return record;
+    }
+
+    async getResourcePrRecords(resourceType: 'skill' | 'proc_def' | 'dmn', resourceId: string, status?: string, gitUrlPrefix?: string): Promise<any[]> {
+        const tenantId = window.$tenantName;
+        const match: any = { tenant_id: tenantId, resource_type: resourceType, resource_id: resourceId };
+        if (status) match.status = status;
+        const result = await storage.list('resource_pull_requests', { match, orderBy: 'created_at' });
+        const records: any[] = Array.isArray(result) ? result : [];
+        if (!gitUrlPrefix) return records;
+        return records.filter(r => !r.git_pr_url || r.git_pr_url.startsWith(gitUrlPrefix));
+    }
+
+    async updateResourcePrStatus(pr: any, status: string, fields: { reviewerId?: string; mergedAt?: string } = {}): Promise<void> {
+        const update: any = {
+            id: pr.id,
+            tenant_id: window.$tenantName,
+            resource_type: pr.resource_type,
+            resource_id: pr.resource_id,
+            branch_name: pr.branch_name,
+            base_branch: pr.base_branch || 'main',
+            title: pr.title,
+            requester_id: pr.requester_id,
+            status
+        };
+        if (fields.reviewerId) update.reviewer_id = fields.reviewerId;
+        if (fields.mergedAt) update.merged_at = fields.mergedAt;
+        await storage.putObject('resource_pull_requests', update, { onConflict: 'id' });
+    }
+
+    async addResourcePrReview(prId: string, action: 'APPROVED' | 'CHANGES_REQUESTED', comment: string, reviewerId: string, reviewerName?: string): Promise<any> {
+        const tenantId = window.$tenantName;
+        const record = {
+            id: this.uuid(),
+            pr_id: prId,
+            tenant_id: tenantId,
+            reviewer_id: reviewerId,
+            reviewer_name: reviewerName || null,
+            action,
+            comment: comment || null
+        };
+        await storage.putObject('resource_pr_reviews', record, { onConflict: 'id' });
+        return record;
+    }
+
+    async getResourcePrReviews(prId: string): Promise<any[]> {
+        const result = await storage.list('resource_pr_reviews', {
+            match: { pr_id: prId },
+            orderBy: 'created_at'
+        });
+        return Array.isArray(result) ? result : [];
+    }
+
+    async deleteSkillFile(skillName: string, fileName: string, commitMessage: string = 'chore: delete skill file', branch: string = 'main') {
+        try {
+            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/files/${encodeURIComponent(fileName)}`;
+            const data: any = {
+                tenant_id: window.$tenantName,
+                message: commitMessage,
+                branch: branch
+            };
+            if (localStorage.getItem('userName') && localStorage.getItem('email')) {
+                data.author_name = localStorage.getItem('userName');
+                data.author_email = localStorage.getItem('email');
+            }
+            const response = await axios.delete(url, { data });
             if (response.status === 200) {
                 return response.data;
             } else {

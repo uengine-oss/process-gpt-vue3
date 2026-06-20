@@ -41,6 +41,7 @@
                                 :isPreviewPDFDialog="isPreviewPDFDialog"
                                 :isAIGenerated="isAIGenerated"
                                 :commentCounts="commentCounts"
+                                :showPiFlag="showPiFlag"
                                 @closePDFDialog="closePDFDialog"
                                 v-on:error="handleError"
                                 v-on:shown="handleBpmnShown"
@@ -48,6 +49,7 @@
                                 v-on:loading="handleLoading"
                                 v-on:openPanel="(id) => openPanel(id)"
                                 v-on:addComment="(id) => openCommentPanelForElement(id)"
+                                v-on:addPiFlag="(payload) => openPanelForPiFlag(payload)"
                                 v-on:update-xml="(val) => $emit('update-xml', val)"
                                 v-on:definition="(def) => (definitions = def)"
                                 v-on:add-shape="onAddShape"
@@ -76,6 +78,20 @@
                                             >
                                         </template>
                                         <span>{{ $t('processDefinition.processVariables') }}</span>
+                                    </v-tooltip>
+                                    <!-- PI Flag 표시 토글 버튼 -->
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-icon
+                                                v-bind="props"
+                                                @click="showPiFlag = !showPiFlag"
+                                                :style="{ color: showPiFlag ? '#1976d2' : '#444', cursor: 'pointer' }"
+                                                size="small"
+                                                class="cp-pi-flag-toggle"
+                                                >{{ showPiFlag ? 'mdi-flag' : 'mdi-flag-outline' }}</v-icon
+                                            >
+                                        </template>
+                                        <span>{{ showPiFlag ? ($t('piFlagPanel.hide') || 'PI Flag 숨기기') : ($t('piFlagPanel.show') || 'PI Flag 표시') }}</span>
                                     </v-tooltip>
                                     <!-- 채팅창 열기/닫기 토글 버튼 -->
                                     <v-tooltip v-if="!isMobile" location="bottom">
@@ -483,6 +499,9 @@ export default {
         showCommentPanel: false,
         selectedElementForComment: null,
         commentCounts: {},
+
+        // PI Flag 캔버스 표시 토글
+        showPiFlag: false,
 
         // 승인 상태 패널
         showApprovalPanel: false,
@@ -1309,6 +1328,16 @@ export default {
         updateElement(element) {
             this.$emit('update');
         },
+        // 깃발 아이콘 클릭(단일 id 또는 묶음 id 배열) → 패널 열고 PI Flag 탭으로 진입
+        async openPanelForPiFlag(payload) {
+            const ids = Array.isArray(payload) ? payload.filter(Boolean) : [payload].filter(Boolean);
+            if (ids.length === 0) return;
+            const firstId = ids[0];
+            // 패널이 만들어질 때(created) 읽을 진입 신호를 먼저 설정한 뒤 패널을 연다.
+            useBpmnStore().requestPiFlagFocus(firstId, ids.length > 1 ? ids : []);
+            await this.openPanel(firstId);
+        },
+
         async openPanel(id) {
             // 배경 요소 클릭 시 패널을 열지 않음
             if (id && (id.startsWith('Collaboration_') || id.startsWith('Process_'))) {

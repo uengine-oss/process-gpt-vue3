@@ -85,3 +85,9 @@ supabase/snippets/
 
 .tooling/
 volumes/
+
+.agent/
+.claude/
+.codex/
+
+openspec/

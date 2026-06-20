@@ -33,14 +33,15 @@
     <v-card elevation="10">
         <AppBaseCard>
             <template v-slot:leftpart>
-                <OrganizationAddDialog
+                <OrganizationManagePanel
                     :teamInfo="editNode"
                     :userList="userList"
                     :organizationChart="organizationChart"
                     @addUser="addUser"
                     @closeDialog="closeAddDialog"
                     @updateTeam="updateTeam"
-                ></OrganizationAddDialog>
+                    @assignToTeam="handleAssignAgentToTeam"
+                ></OrganizationManagePanel>
             </template>
 
             <template v-slot:rightpart>
@@ -56,14 +57,15 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <OrganizationAddDialog
+                <OrganizationManagePanel
                     :teamInfo="editNode"
                     :userList="userList"
                     :organizationChart="organizationChart"
                     @addUser="addUser"
                     @closeDialog="closeAddDialog"
                     @updateTeam="updateTeam"
-                ></OrganizationAddDialog>
+                    @assignToTeam="handleAssignAgentToTeam"
+                ></OrganizationManagePanel>
             </template>
         </AppBaseCard>
     </v-card>
@@ -82,6 +84,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from '@/components/ui/Chat.vue';
 import OrganizationChart from '@/components/ui/OrganizationChart.vue';
 import OrganizationAddDialog from '@/components/ui/OrganizationAddDialog.vue';
+import OrganizationManagePanel from '@/components/ui/OrganizationManagePanel.vue';
 
 export default {
     mixins: [ChatModule, AgentCrudMixin],
@@ -89,7 +92,8 @@ export default {
         AppBaseCard,
         Chat,
         OrganizationChart,
-        OrganizationAddDialog
+        OrganizationAddDialog,
+        OrganizationManagePanel
     },
     data: () => ({
         organizationChart: {},
@@ -404,6 +408,25 @@ export default {
                 }
             } catch (e) {
                 console.error('[OrganizationChartChat] updateUsersDepartment error:', e);
+            }
+        },
+        /** 에이전트 생성 탭에서 '팀원으로 생성' 시: 선택한 팀에 에이전트 노드 추가 + 영속화 */
+        async handleAssignAgentToTeam({ agent, teamId }) {
+            if (!agent || !agent.id || !teamId) return;
+            const team = (this.organizationChart.children || []).find((child) => child.id === teamId);
+            if (!team) return;
+            if (!team.children) team.children = [];
+            if (team.children.some((child) => child.id === agent.id)) return;
+            team.children.push({
+                id: agent.id,
+                name: agent.name,
+                data: { ...agent, pid: teamId }
+            });
+            await this.updateNode();
+            this.userList = await this.backend.getUserList();
+            if (this.$refs.organizationChart) {
+                await this.$refs.organizationChart.loadUserList();
+                this.$refs.organizationChart.drawTree();
             }
         },
         async handleAgentAddedToChart(newAgent) {

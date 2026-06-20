@@ -119,6 +119,7 @@ export default {
         'loading',
         'openPanel',
         'addComment',
+        'addPiFlag',
         'updateXml',
         'definition',
         'addShape',
@@ -168,6 +169,11 @@ export default {
         commentCounts: {
             type: Object,
             default: () => ({})
+        },
+        // PI Flag 캔버스 표시 토글 (켜면 개별 task 깃발 + 묶음 점선 박스)
+        showPiFlag: {
+            type: Boolean,
+            default: false
         },
         onLoadStart: {
             type: Function,
@@ -443,9 +449,140 @@ export default {
                 this.renderCommentBadges(val);
             },
             deep: true
+        },
+        showPiFlag() {
+            this.refreshPiFlagOverlays();
         }
     },
     methods: {
+        // ===== PI Flag 캔버스 오버레이 (개별 깃발 배지 + 묶음 점선 박스) =====
+        refreshPiFlagOverlays() {
+            if (!this.bpmnViewer) return;
+            try {
+                const overlays = this.bpmnViewer.get('overlays');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+
+                overlays.remove({ type: 'pi-flag' });
+                this.clearPiFlagGroupBoxes();
+
+                if (!this.showPiFlag) return;
+
+                const self = this;
+                const elementComments = new Map(); // elementId -> comments[]
+                const groupKeyToElements = new Map(); // groupKey(groupId||id) -> Set(elementId)
+
+                elementRegistry.getAll().forEach((el) => {
+                    const propsEl = el.businessObject?.extensionElements?.values?.find((v) => v.$type === 'uengine:Properties');
+                    if (!propsEl?.json) return;
+                    let comments = [];
+                    try {
+                        const j = JSON.parse(propsEl.json);
+                        comments = Array.isArray(j.comments) ? j.comments : [];
+                    } catch (e) {
+                        return;
+                    }
+                    if (!comments.length) return;
+                    elementComments.set(el.id, comments);
+                    comments.forEach((c) => {
+                        const key = c?.groupId || c?.id;
+                        if (!key) return;
+                        if (!groupKeyToElements.has(key)) groupKeyToElements.set(key, new Set());
+                        groupKeyToElements.get(key).add(el.id);
+                    });
+                });
+
+                // 1) 요소별 깃발 배지 (해당 요소의 코멘트 수)
+                elementComments.forEach((comments, elementId) => {
+                    if (!elementRegistry.get(elementId)) return;
+                    const count = comments.length;
+                    const badge = document.createElement('div');
+                    badge.title = 'PI Flag';
+                    badge.style.cssText = [
+                        'display: flex',
+                        'align-items: center',
+                        'gap: 2px',
+                        'height: 20px',
+                        'padding: 0 6px',
+                        'background: #1976d2',
+                        'border-radius: 10px',
+                        'border: 2px solid #fff',
+                        'box-shadow: 0 1px 4px rgba(0,0,0,0.25)',
+                        'color: #fff',
+                        'font-size: 11px',
+                        'font-weight: bold',
+                        'line-height: 1',
+                        'cursor: pointer',
+                        'pointer-events: auto',
+                        'white-space: nowrap'
+                    ].join(';');
+                    badge.innerHTML = `<i class="mdi mdi-flag" style="font-size:13px;line-height:1;"></i>${count > 1 ? `<span>${count}</span>` : ''}`;
+                    badge.addEventListener('click', function (ev) {
+                        ev.stopPropagation();
+                        self.$emit('addPiFlag', elementId);
+                    });
+                    overlays.add(elementId, 'pi-flag', { position: { top: -14, left: -10 }, html: badge });
+                });
+
+                // 2) 묶음 점선 박스 (같은 groupKey 가 2개 이상 요소에 존재)
+                groupKeyToElements.forEach((set, key) => {
+                    if (set.size < 2) return;
+                    this.drawPiFlagGroupBox(key, [...set]);
+                });
+            } catch (e) {
+                console.warn('[BpmnUengine] refreshPiFlagOverlays 오류:', e);
+            }
+        },
+        drawPiFlagGroupBox(key, elementIds) {
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const canvas = this.bpmnViewer.get('canvas');
+                const els = elementIds.map((id) => elementRegistry.get(id)).filter((e) => e && e.x != null);
+                if (els.length < 2) return;
+
+                const minX = Math.min(...els.map((e) => e.x));
+                const minY = Math.min(...els.map((e) => e.y));
+                const maxX = Math.max(...els.map((e) => e.x + e.width));
+                const maxY = Math.max(...els.map((e) => e.y + e.height));
+                const pad = 12;
+
+                const layer = canvas.getLayer('pi-flag-group', 1);
+                this._piFlagGroupLayer = layer;
+
+                const svgNS = 'http://www.w3.org/2000/svg';
+                const rect = document.createElementNS(svgNS, 'rect');
+                rect.setAttribute('x', minX - pad);
+                rect.setAttribute('y', minY - pad);
+                rect.setAttribute('width', maxX - minX + pad * 2);
+                rect.setAttribute('height', maxY - minY + pad * 2);
+                rect.setAttribute('rx', '10');
+                rect.setAttribute('fill', 'rgba(25,118,210,0.06)');
+                rect.setAttribute('stroke', '#1976d2');
+                rect.setAttribute('stroke-width', '1.5');
+                rect.setAttribute('stroke-dasharray', '6,4');
+                rect.setAttribute('pointer-events', 'none');
+                rect.setAttribute('data-pi-flag-group', key);
+                layer.appendChild(rect);
+            } catch (e) {
+                console.warn('[BpmnUengine] drawPiFlagGroupBox 오류:', e);
+            }
+        },
+        clearPiFlagGroupBoxes() {
+            try {
+                const canvas = this.bpmnViewer.get('canvas');
+                const layer = this._piFlagGroupLayer || canvas.getLayer('pi-flag-group', 1);
+                if (layer) {
+                    while (layer.firstChild) layer.removeChild(layer.firstChild);
+                }
+            } catch (e) {}
+        },
+        // commandStack 변경 등으로 PI Flag 표시가 켜진 상태에서 갱신 (디바운스)
+        schedulePiFlagRefresh() {
+            if (!this.showPiFlag) return;
+            if (this._piFlagRefreshTimer) clearTimeout(this._piFlagRefreshTimer);
+            this._piFlagRefreshTimer = setTimeout(() => {
+                this.refreshPiFlagOverlays();
+            }, 200);
+        },
         // 노드별 코멘트 배지 오버레이 렌더링
         renderCommentBadges(commentCounts) {
             if (!this.bpmnViewer) return;
@@ -1193,6 +1330,8 @@ export default {
                     self.$emit('error', error);
                 } else {
                     self.$emit('shown', warnings);
+                    // 다이어그램 로드 완료 후 PI Flag 표시가 켜져 있으면 오버레이 갱신
+                    self.schedulePiFlagRefresh();
                 }
 
                 var canvas = self.bpmnViewer.get('canvas');
@@ -1380,6 +1519,23 @@ export default {
                     self.$emit('addComment', e.element.id);
                 });
 
+                // ContextPad에서 PI Flag 작성 버튼 클릭 시
+                // 단일 진입이어도 현재 캔버스에 여러 task가 선택돼 있으면 묶음으로 처리
+                eventBus.on('element.addPiFlag', function (e) {
+                    const selected = self.bpmnViewer.get('selection').get() || [];
+                    const taskIds = selected.filter((el) => el.type && el.type.includes('Task')).map((el) => el.id);
+                    if (taskIds.length > 1 && taskIds.includes(e.element.id)) {
+                        self.$emit('addPiFlag', taskIds);
+                    } else {
+                        self.$emit('addPiFlag', e.element.id);
+                    }
+                });
+
+                // ContextPad에서 묶음(다중 선택) PI Flag 작성 버튼 클릭 시
+                eventBus.on('elements.addPiFlag', function (e) {
+                    self.$emit('addPiFlag', e.elements.map((el) => el.id));
+                });
+
                 // directEditing 시작/종료 시 커스텀 텍스트 처리 (인라인 편집 충돌 방지)
                 eventBus.on('directEditing.activate', function (e) {
                     // 인라인 편집 시작 시 해당 요소의 커스텀 텍스트 숨기기
@@ -1428,6 +1584,8 @@ export default {
 
                 eventBus.on('commandStack.changed', async function (evt) {
                     console.log('commandStack.changed');
+                    // PI Flag 표시가 켜져 있으면 깃발/묶음 박스 갱신 (추가·삭제·이동 반영)
+                    self.schedulePiFlagRefresh();
                     if (self.bpmn) {
                         let { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
                         if (isUengineMode()) {
