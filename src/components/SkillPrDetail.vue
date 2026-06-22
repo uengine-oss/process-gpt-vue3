@@ -18,8 +18,9 @@
                 <span :class="['st-badge', badgeClass]">{{ statusLabel }}</span>
             </div>
             <div class="pd-meta">
-                <span v-if="pr.requester_name" class="pd-ava" :style="{background: avatarColor(pr.requester_name)}">
-                    {{ initials(pr.requester_name) }}
+                <span v-if="pr.requester_name" class="pd-ava" :style="{background: (requesterProfile && !localProfileError) ? 'transparent' : avatarColor(pr.requester_name)}">
+                    <img v-if="requesterProfile && !localProfileError" :src="requesterProfile" class="pd-ava-img" @error="localProfileError = true" />
+                    <template v-else>{{ initials(pr.requester_name) }}</template>
                 </span>
                 <span><b>{{ pr.requester_name || '알 수 없음' }}</b>님이 <b>{{ pr.base_branch }}</b>으로 병합 요청</span>
                 <span class="pd-dot">·</span>
@@ -88,14 +89,15 @@
                 아직 리뷰가 없습니다.
             </div>
             <div v-for="r in reviews" :key="r.id" class="pd-rev-item">
-                <div :class="['pd-rev-ico', r.action === 'APPROVED' ? 'rvi-ok' : 'rvi-chg']">
+                <div :class="['pd-rev-ico', r.action === 'APPROVED' ? 'rvi-ok' : r.action === 'COMMENT' ? 'rvi-cmt' : 'rvi-chg']">
                     <svg v-if="r.action === 'APPROVED'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <svg v-else-if="r.action === 'COMMENT'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
                 </div>
                 <div class="pd-rev-body">
                     <div class="pd-rev-who">
                         <span class="pd-rev-name">{{ r.reviewer_name || '알 수 없음' }}</span>
-                        <span :class="['pd-rev-badge', r.action === 'APPROVED' ? 'rvb-ok' : 'rvb-chg']">
+                        <span v-if="r.action !== 'COMMENT'" :class="['pd-rev-badge', r.action === 'APPROVED' ? 'rvb-ok' : 'rvb-chg']">
                             {{ r.action === 'APPROVED' ? '승인' : '변경 요청' }}
                         </span>
                         <span class="pd-rev-time">{{ formatDate(r.created_at) }}</span>
@@ -133,6 +135,24 @@
             </div>
         </div>
 
+        <!-- ── 코멘트 폼 (비오너) ── -->
+        <div v-if="canComment" class="pd-submitbar flex-shrink-0">
+            <div class="pd-submit-label">리뷰 코멘트</div>
+            <textarea class="pd-textarea" v-model="localCommentText"
+                placeholder="코멘트를 작성해 주세요."
+                rows="3"
+            ></textarea>
+            <div v-if="commentError" class="pd-error">{{ commentError }}</div>
+            <div class="pd-footer">
+                <button class="pd-btn btn-cmt"
+                    :disabled="commentLoading || !localCommentText.trim()"
+                    @click="$emit('submit-comment', localCommentText)">
+                    <span v-if="commentLoading">처리 중…</span>
+                    <span v-else>코멘트 제출</span>
+                </button>
+            </div>
+        </div>
+
         <!-- ── 병합 폼 ── -->
         <div v-if="canMerge" class="pd-submitbar flex-shrink-0">
             <div class="pd-merge-banner">
@@ -166,15 +186,20 @@ export default {
         reviewLoading: Boolean,
         reviewError: { type: String, default: '' },
         mergeLoading: Boolean,
-        mergeError: { type: String, default: '' }
+        mergeError: { type: String, default: '' },
+        commentLoading: Boolean,
+        commentError: { type: String, default: '' },
+        requesterProfile: { type: String, default: null }
     },
-    emits: ['back', 'submit-review', 'submit-merge'],
+    emits: ['back', 'submit-review', 'submit-merge', 'submit-comment'],
     data() {
         return {
             activeTab: 'changes',
             activeFile: null,
             localAction: 'APPROVED',
-            localComment: ''
+            localComment: '',
+            localCommentText: '',
+            localProfileError: false
         };
     },
     watch: {
@@ -189,11 +214,16 @@ export default {
             this.activeFile = null;
             this.localAction = 'APPROVED';
             this.localComment = '';
+            this.localCommentText = '';
+            this.localProfileError = false;
         }
     },
     computed: {
         canReview() {
             return this.isOwner && (this.pr.status === 'OPEN' || this.pr.status === 'CHANGES_REQUESTED');
+        },
+        canComment() {
+            return !this.isOwner && (this.pr.status === 'OPEN' || this.pr.status === 'CHANGES_REQUESTED');
         },
         canMerge() {
             return this.isOwner && this.pr.status === 'APPROVED';
@@ -262,7 +292,8 @@ export default {
 .pd-title { font-size: 14px; font-weight: 600; color: rgba(var(--v-theme-on-surface), 0.87); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; line-height: 1.45; margin-bottom: 9px; }
 .pd-meta { display: flex; align-items: center; gap: 7px; font-size: 12px; color: rgba(var(--v-theme-on-surface), 0.6); flex-wrap: wrap; }
 .pd-meta b { color: rgba(var(--v-theme-on-surface), 0.87); }
-.pd-ava { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex: none; }
+.pd-ava { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex: none; overflow: hidden; }
+.pd-ava-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
 .pd-dot { color: rgba(var(--v-theme-on-surface), 0.3); }
 .pd-arrow { color: rgba(var(--v-theme-on-surface), 0.35); }
 .pd-rev-count { font-size: 11.5px; }
@@ -317,6 +348,7 @@ export default {
 .pd-rev-ico { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; margin-top: 1px; }
 .rvi-ok { background: #E7F4DF; color: #2E6B16; }
 .rvi-chg { background: #FBF0DA; color: #92610A; }
+.rvi-cmt { background: rgba(var(--v-theme-on-surface), 0.07); color: rgba(var(--v-theme-on-surface), 0.55); }
 .pd-rev-body { flex: 1; min-width: 0; }
 .pd-rev-who { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
 .pd-rev-name { font-weight: 600; font-size: 13px; color: rgba(var(--v-theme-on-surface), 0.87); }
@@ -346,6 +378,8 @@ export default {
 .btn-chg:hover:not(:disabled) { opacity: 0.88; }
 .btn-merge { background: rgb(var(--v-theme-primary)); color: #fff; }
 .btn-merge:hover:not(:disabled) { opacity: 0.88; }
+.btn-cmt { background: rgba(var(--v-theme-on-surface), 0.1); color: rgba(var(--v-theme-on-surface), 0.8); }
+.btn-cmt:hover:not(:disabled) { opacity: 0.8; }
 
 /* ── 병합 배너 ── */
 .pd-merge-banner { display: flex; align-items: center; gap: 9px; padding: 10px 13px; border-radius: 9px; background: #E7F4DF; color: #2E6B16; font-size: 13px; }

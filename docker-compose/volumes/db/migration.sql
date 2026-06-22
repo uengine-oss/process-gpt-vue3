@@ -2373,11 +2373,12 @@ CREATE TABLE IF NOT EXISTS public.resource_pr_reviews (
   created_at   timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT resource_pr_reviews_pkey PRIMARY KEY (id),
   CONSTRAINT resource_pr_reviews_pr_fkey FOREIGN KEY (pr_id)
-    REFERENCES public.resource_pull_requests (id) ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT resource_pr_reviews_action_check CHECK (
-    action IN ('APPROVED', 'CHANGES_REQUESTED')
-  )
+    REFERENCES public.resource_pull_requests (id) ON UPDATE CASCADE ON DELETE CASCADE
 );
+
+-- action 제약조건 제거 (COMMENT 등 추가 액션 허용)
+ALTER TABLE IF EXISTS public.resource_pr_reviews
+  DROP CONSTRAINT IF EXISTS resource_pr_reviews_action_check;
 
 CREATE INDEX IF NOT EXISTS idx_resource_pr_reviews_pr_id
   ON public.resource_pr_reviews (pr_id);

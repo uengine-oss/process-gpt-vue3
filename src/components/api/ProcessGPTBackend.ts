@@ -7423,7 +7423,7 @@ class ProcessGPTBackend implements Backend {
         await storage.putObject('resource_pull_requests', update, { onConflict: 'id' });
     }
 
-    async addResourcePrReview(prId: string, action: 'APPROVED' | 'CHANGES_REQUESTED', comment: string, reviewerId: string, reviewerName?: string): Promise<any> {
+    async addResourcePrReview(prId: string, action: 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENT', comment: string, reviewerId: string, reviewerName?: string): Promise<any> {
         const tenantId = window.$tenantName;
         const record = {
             id: this.uuid(),

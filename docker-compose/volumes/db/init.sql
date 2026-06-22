@@ -3653,10 +3653,7 @@ create table if not exists public.resource_pr_reviews (
   constraint resource_pr_reviews_pr_fkey foreign key (pr_id)
     references public.resource_pull_requests (id) on update cascade on delete cascade,
   constraint resource_pr_reviews_reviewer_fkey foreign key (reviewer_id, tenant_id)
-    references public.users (id, tenant_id) on update cascade on delete cascade,
-  constraint resource_pr_reviews_action_check check (
-    action in ('APPROVED', 'CHANGES_REQUESTED')
-  )
+    references public.users (id, tenant_id) on update cascade on delete cascade
 ) tablespace pg_default;
 
 create index if not exists idx_resource_pr_reviews_pr_id
