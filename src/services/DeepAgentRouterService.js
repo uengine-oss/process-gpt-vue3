@@ -35,7 +35,7 @@ class DeepAgentRouterService {
     }
 
     async sendMessageStream(agentId, params, callbacks = {}, options = {}) {
-        const { onToken, onToolStart, onToolEnd, onPlanTools, onPlanSkills, onPlanTodos, onDone, onError, onMetadata, onAbort, onOpenUi } = callbacks;
+        const { onToken, onToolStart, onToolEnd, onPlanTools, onPlanSkills, onPlanTodos, onDone, onError, onMetadata, onAbort, onOpenUi, onProcessResult, onFileArtifact } = callbacks;
 
         try {
             let meta = params.metadata;
@@ -131,11 +131,17 @@ class DeepAgentRouterService {
                                 case 'openui':
                                     if (onOpenUi) onOpenUi(parsed);
                                     break;
+                                case 'process_result':
+                                    if (onProcessResult) onProcessResult(parsed.data || {}, parsed);
+                                    break;
+                                case 'file_artifact':
+                                    if (onFileArtifact) onFileArtifact(parsed);
+                                    break;
                                 case 'done':
                                     if (onDone) onDone(parsed.content);
                                     break;
                                 case 'error':
-                                    if (onError) onError(new Error(parsed.error || parsed.message || 'Agent error'));
+                                    if (onError) onError(new Error(parsed.content || parsed.error || parsed.message || 'Agent error'));
                                     break;
                             }
                         } catch (e) {

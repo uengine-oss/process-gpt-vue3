@@ -91,3 +91,5 @@ volumes/
 .codex/
 
 openspec/
+
+playwright/

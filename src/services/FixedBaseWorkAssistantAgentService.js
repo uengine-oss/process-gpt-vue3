@@ -25,7 +25,9 @@ class FixedBaseWorkAssistantAgentService {
             onProcessStatus,
             onProcessPartial,
             onProcessPatch,
-            onOpenUi
+            onProcessResult,
+            onOpenUi,
+            onFileArtifact
         } = callbacks;
 
         try {
@@ -115,6 +117,12 @@ class FixedBaseWorkAssistantAgentService {
                                 break;
                             case 'process_patch':
                                 if (onProcessPatch) onProcessPatch(parsed);
+                                break;
+                            case 'process_result':
+                                if (onProcessResult) onProcessResult(parsed.data || {}, parsed);
+                                break;
+                            case 'file_artifact':
+                                if (onFileArtifact) onFileArtifact(parsed);
                                 break;
                             case 'openui':
                                 if (onOpenUi) onOpenUi(parsed);

@@ -3427,6 +3427,8 @@ class ProcessGPTBackend implements Backend {
             const putObj: any = {
                 id: newAgent.id,
                 username: newAgent.name,
+                // users.email 이 NOT NULL 인 스키마에서 신규 에이전트 insert 가 400 나는 것을 방지.
+                ...(newAgent.email ? { email: newAgent.email } : {}),
                 role: newAgent.role,
                 goal: newAgent.goal,
                 persona: newAgent.persona,

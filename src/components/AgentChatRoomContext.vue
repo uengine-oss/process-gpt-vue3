@@ -186,7 +186,8 @@ export default {
                 .filter((x) => x.label);
         },
         showActivityBlock() {
-            return this.activityEnabled && this.activityList.length > 0;
+            // Claude Desktop식: 활동(도구 사용)은 우측이 아니라 채팅 메시지 하단 인라인으로 표시한다.
+            return false;
         },
         showKnowledgeBlock() {
             return this.knowledgeEnabled && this.knowledgeList.length > 0;
@@ -198,7 +199,8 @@ export default {
             return this.todosEnabled && this.todosList.length > 0;
         },
         showSkillsBlock() {
-            return this.skillsEnabled && this.skillsList.length > 0;
+            // 스킬 정보는 우측 '작업 폴더'의 SKILL.md 파일로 확인한다(별도 우측 패널 제거).
+            return false;
         },
         hasSideInfo() {
             return (
