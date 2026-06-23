@@ -971,9 +971,8 @@ export default {
                 });
                 await Promise.all(fieldValuePromises);
             } else {
-                const sequenceFlow = definition.sequences.find((x) => x.target == me.workItem.activity.tracingTag);
-                if (sequenceFlow && sequenceFlow.source) {
-                    const prevActivityId = sequenceFlow.source;
+                const prevActivityId = me.findPreviousHumanActivity(me.workItem.activity.tracingTag, definition);
+                if (prevActivityId) {
                     const formInfo = await backend.getFormFields(null, prevActivityId, procDefId);
                     if (formInfo && formInfo.fields_json) {
                         const fieldValuePromises = formInfo.fields_json.map(async (field) => {
@@ -1001,6 +1000,25 @@ export default {
         },
         backToPrevStep() {
             this.$emit('backToPrevStep');
+        },
+        findPreviousHumanActivity(targetId, definition) {
+            if (!definition.sequences || !definition.activities) return null;
+            const visited = new Set();
+            const queue = [targetId];
+            while (queue.length > 0) {
+                const currentTarget = queue.shift();
+                if (visited.has(currentTarget)) continue;
+                visited.add(currentTarget);
+                const incomingFlows = definition.sequences.filter((seq) => seq.target === currentTarget);
+                for (const flow of incomingFlows) {
+                    const sourceId = flow.source;
+                    if (definition.activities.some((act) => act.id === sourceId)) {
+                        return sourceId;
+                    }
+                    queue.push(sourceId);
+                }
+            }
+            return null;
         },
 
         updateFormHtmlWithChipValues(data) {
