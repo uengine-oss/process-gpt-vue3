@@ -105,26 +105,10 @@
                                 class="mt-0 pt-0"
                             ></v-checkbox>
                         </div>
+                        <!-- 버전 태그 선택 -->
                         <v-select
                             v-model="information.version_tag"
-                            :items="[
-                                {
-                                    title:
-                                        $t('ProcessDefinitionVersionDialog.minor') +
-                                        ' (' +
-                                        $t('ProcessDefinitionVersionDialog.minorDesc') +
-                                        ')',
-                                    value: 'minor'
-                                },
-                                {
-                                    title:
-                                        $t('ProcessDefinitionVersionDialog.major') +
-                                        ' (' +
-                                        $t('ProcessDefinitionVersionDialog.majorDesc') +
-                                        ')',
-                                    value: 'major'
-                                }
-                            ]"
+                            :items="versionTagOptions"
                             :label="$t('ProcessDefinitionVersionDialog.versionTag')"
                             :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.versionTagRequired')]"
                             :messages="[versionFlowMessage]"
@@ -132,6 +116,41 @@
                             density="compact"
                             class="mb-2"
                         ></v-select>
+
+                        <!-- 비오너 안내 -->
+                        <v-alert
+                            v-if="!isOwnerUser && !isNew"
+                            type="info"
+                            variant="tonal"
+                            density="compact"
+                            class="mb-3"
+                            icon="mdi-information-outline"
+                        >
+                            <div>v{{ information.version || '0.0' }} → <b>v{{ newVersion }}</b> (마이너)으로 저장됩니다.</div>
+                            <div class="text-caption mt-1" style="opacity:.7">메이저 업데이트는 담당자의 승인을 통한 병합으로만 가능합니다.</div>
+                        </v-alert>
+
+                        <!-- 병합 요청 체크박스 + PR 제목 (마이너일 때만) -->
+                        <template v-if="!isNew && information.version_tag !== 'major'">
+                            <v-checkbox
+                                v-model="createPr"
+                                label="병합 요청 생성"
+                                hide-details
+                                density="compact"
+                                color="primary"
+                                class="mt-0 mb-1"
+                            />
+                            <v-text-field
+                                v-if="createPr"
+                                v-model="prTitle"
+                                label="병합 요청 제목"
+                                density="compact"
+                                variant="outlined"
+                                hide-details="auto"
+                                class="mb-2"
+                                :placeholder="information.name ? `[병합 요청] ${information.name} 변경` : ''"
+                            />
+                        </template>
                         <div class="position-relative">
                             <v-textarea
                                 class="process-definition-version-dialog-textarea"
@@ -180,12 +199,34 @@
                         ></v-checkbox>
                     </div>
                 </v-card-text>
+                <!-- PR 성공 표시 -->
+                <v-card-text v-if="prSuccess" class="pa-4 pt-2 text-center">
+                    <v-icon size="48" color="success" class="mb-2">mdi-check-circle</v-icon>
+                    <div class="text-body-1 mb-1">저장 및 병합 요청이 완료되었습니다.</div>
+                    <div class="text-caption text-medium-emphasis">담당자가 승인하면 메이저 버전으로 업데이트됩니다.</div>
+                </v-card-text>
+
                 <!-- [BLOCK:dialog.footer.actions.v1] [BLOCK:button.primary.v1] -->
                 <v-card-actions class="d-flex justify-space-between align-center pa-4">
                     <v-spacer />
-                    <v-btn color="primary" rounded variant="flat" :disabled="!validate()" @click="save()">
-                        {{ $t('ProcessDefinitionVersionDialog.save') }}
-                    </v-btn>
+                    <template v-if="prSuccess">
+                        <v-btn variant="text" @click="close()">닫기</v-btn>
+                    </template>
+                    <template v-else>
+                        <v-alert v-if="prError" type="error" density="compact" class="mr-auto" closable @click:close="prError = ''">
+                            {{ prError }}
+                        </v-alert>
+                        <v-btn
+                            color="primary"
+                            rounded
+                            variant="flat"
+                            :disabled="!validate() || prSubmitting || (createPr && !prTitle.trim())"
+                            :loading="prSubmitting"
+                            @click="handleSave()"
+                        >
+                            {{ $t('ProcessDefinitionVersionDialog.save') }}
+                        </v-btn>
+                    </template>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -255,7 +296,16 @@ export default {
             { title: 'ProcessDefinitionVersionDialog.helpOptimize' }
         ],
         // 버전 변경 설명(AI Diff) 생성 중 여부
-        isDiffGenerating: false
+        isDiffGenerating: false,
+        // 오너 여부 판단
+        currentUserInfo: null,
+        isOwnerUser: true,
+        // 병합 요청(PR) 관련
+        createPr: false,
+        prTitle: '',
+        prSubmitting: false,
+        prSuccess: false,
+        prError: ''
     }),
     computed: {
         idRules() {
@@ -290,6 +340,29 @@ export default {
                 'ProcessDefinitionVersionDialog.nextVersion'
             )} : v${this.newVersion}`;
         },
+        isPrMode() {
+            return !this.isNew && this.createPr;
+        },
+        versionTagOptions() {
+            const minor = {
+                title:
+                    this.$t('ProcessDefinitionVersionDialog.minor') +
+                    ' (' +
+                    this.$t('ProcessDefinitionVersionDialog.minorDesc') +
+                    ')',
+                value: 'minor'
+            };
+            const major = {
+                title:
+                    this.$t('ProcessDefinitionVersionDialog.major') +
+                    ' (' +
+                    this.$t('ProcessDefinitionVersionDialog.majorDesc') +
+                    ')',
+                value: 'major'
+            };
+            if (!this.isOwnerUser && !this.isNew) return [minor];
+            return [minor, major];
+        },
         useLock() {
             if (this.mode == 'ProcessGPT') {
                 return true;
@@ -312,6 +385,9 @@ export default {
         }
     },
     watch: {
+        'information.version_tag'(newVal) {
+            if (newVal === 'major') this.createPr = false;
+        },
         useOptimize: {
             handler(newVal) {
                 this.checkOptimize = newVal;
@@ -552,10 +628,79 @@ export default {
                 me.isGeneratingId = false;
             }
         },
+        async checkOwnership() {
+            try {
+                this.currentUserInfo = await backend.getUserInfo();
+                const ownerId = this.information.owner || '';
+                const currentUid = this.currentUserInfo?.uid || '';
+                this.isOwnerUser = !ownerId || !currentUid || ownerId === currentUid;
+                if (!this.isOwnerUser) {
+                    this.information.version_tag = 'minor';
+                }
+            } catch (e) {
+                this.isOwnerUser = true;
+            }
+        },
+        handleSave() {
+            if (this.isPrMode) {
+                this.saveWithPr();
+            } else {
+                this.save();
+            }
+        },
+        async saveWithPr() {
+            const me = this;
+            if (!me.prTitle.trim()) return;
+            me.prSubmitting = true;
+            me.prError = '';
+            try {
+                me.information.version_tag = 'minor';
+                me.$emit('save', {
+                    arcv_id: me.process
+                        ? `${me.process.processDefinitionId}_${me.newVersion}`
+                        : `${me.information.proc_def_id}_${me.newVersion}`,
+                    version: me.newVersion,
+                    version_tag: 'minor',
+                    name: me.information.name,
+                    proc_def_id: me.information.proc_def_id,
+                    prevSnapshot: me.information.snapshot,
+                    prevDiff: me.information.diff,
+                    type: 'bpmn',
+                    message: me.information.message,
+                    release: me.isRelease,
+                    releaseName: me.information.releaseName,
+                    owner: me.information.owner
+                });
+
+                const user = me.currentUserInfo || await backend.getUserInfo();
+                const currentVersion = me.information.version || '0.0';
+                const majorNum = (parseInt(String(currentVersion).split('.')[0]) || 0) + 1;
+                await backend.createResourcePrRecord('bpmn', {
+                    resourceId: me.information.proc_def_id,
+                    branchName: `v${me.newVersion}`,
+                    baseBranch: `v${majorNum}.0`,
+                    title: me.prTitle.trim(),
+                    description: me.information.message || null,
+                    requesterId: user.uid,
+                    requesterName: user.name || localStorage.getItem('userName') || ''
+                });
+
+                me.prSuccess = true;
+            } catch (e) {
+                me.prError = e?.message || String(e);
+            } finally {
+                me.prSubmitting = false;
+            }
+        },
         async load() {
             var me = this;
             // 다이얼로그를 띄울 때마다 버전 태그는 항상 minor에서 시작
             me.information.version_tag = 'minor';
+            me.createPr = false;
+            me.prTitle = '';
+            me.prSuccess = false;
+            me.prError = '';
+            me.isOwnerUser = true;
 
             if (me.process && me.process.processDefinitionId) {
                 me.isNew = false;
@@ -579,8 +724,9 @@ export default {
                         if (versionInfo.length > 0) {
                             me.information = versionInfo[0];
                             me.information.name = me.processName ? me.processName : definitionInfo.name;
-                            me.information.owner = definitionInfo.owner || ''; // 기존 담당자 로드
+                            me.information.owner = definitionInfo.owner || '';
                             me.information.message = '';
+                            await me.checkOwnership();
                         } else {
                             me.information = {
                                 arcv_id: definitionInfo.id,
@@ -592,8 +738,9 @@ export default {
                                 timeStamp: null,
                                 message: null,
                                 version_tag: 'minor',
-                                owner: definitionInfo.owner || '' // 기존 담당자 로드
+                                owner: definitionInfo.owner || ''
                             };
+                            await me.checkOwnership();
                         }
                         if (me.mode === 'ProcessGPT') {
                             try {

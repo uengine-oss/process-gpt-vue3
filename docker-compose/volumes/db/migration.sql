@@ -2353,7 +2353,7 @@ CREATE TABLE IF NOT EXISTS public.resource_pull_requests (
   merged_at      timestamptz         NULL,
   CONSTRAINT resource_pull_requests_pkey PRIMARY KEY (id),
   CONSTRAINT resource_pull_requests_resource_type_check CHECK (
-    resource_type IN ('skill', 'proc_def', 'dmn')
+    resource_type IN ('skill', 'bpmn', 'dmn')
   )
 );
 

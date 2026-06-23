@@ -249,6 +249,7 @@
 <script>
 import BackendFactory from './api/BackendFactory';
 import SkillPrDetail from './SkillPrDetail.vue';
+import { prStatusLabel as _prStatusLabel, prAccentClass as _prAccentClass, prBadgeClass as _prBadgeClass, getInitial, getAvatarColor, shortBranch as _shortBranch, formatRelativeTime } from '@/composables/usePrUtils';
 
 export default {
     name: 'SkillGitHistory',
@@ -587,35 +588,14 @@ export default {
             if (tab === 'commits' && this.commits.length === 0 && !this.commitsLoading) this.fetchCommits();
         },
 
-        // ── 유틸 ──
-        prStatusLabel(s) {
-            return { OPEN: '검토 대기', CHANGES_REQUESTED: '변경 요청됨', APPROVED: '승인됨', MERGED: '병합됨', CLOSED: '닫힘' }[s] || s;
-        },
-        prAccentClass(s) {
-            return { OPEN: 'ac-open', CHANGES_REQUESTED: 'ac-chg', APPROVED: 'ac-app', MERGED: 'ac-merged' }[s] || 'ac-open';
-        },
-        prBadgeClass(s) {
-            return { OPEN: 'st-open', CHANGES_REQUESTED: 'st-chg', APPROVED: 'st-app', MERGED: 'st-merged' }[s] || 'st-open';
-        },
-        shortBranch(b) {
-            if (!b || b.length <= 26) return b;
-            const parts = b.split('/');
-            if (parts.length > 1) return parts[0] + '/…' + parts[parts.length - 1].slice(-10);
-            return b.slice(0, 10) + '…' + b.slice(-8);
-        },
-        relativeTime(d) {
-            if (!d) return '';
-            const diff = Date.now() - new Date(d).getTime();
-            const m = Math.floor(diff / 60000);
-            if (m < 1) return '방금';
-            if (m < 60) return `${m}분 전`;
-            const h = Math.floor(m / 60);
-            if (h < 24) return `${h}시간 전`;
-            const day = Math.floor(h / 24);
-            if (day === 1) return '어제';
-            if (day < 7) return `${day}일 전`;
-            return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-        },
+        // ── 유틸 (공통 composable) ──
+        prStatusLabel: _prStatusLabel,
+        prAccentClass: _prAccentClass,
+        prBadgeClass: _prBadgeClass,
+        shortBranch: _shortBranch,
+        relativeTime: formatRelativeTime,
+        authorInitials: getInitial,
+        authorColor: getAvatarColor,
         prActionText(pr) {
             const reviews = this.prReviewsMap[pr.id] || [];
             if (pr.status === 'OPEN') return '검토 요청함';
@@ -633,19 +613,6 @@ export default {
             const reviews = this.prReviewsMap[pr.id] || [];
             const last = [...reviews].reverse().find(r => r.action === 'APPROVED');
             return last?.reviewer_name || null;
-        },
-        authorInitials(name) {
-            if (!name) return '?';
-            if (/[가-힣]/.test(name)) return name[0];
-            const p = name.trim().split(/\s+/);
-            return p.length >= 2 ? (p[0][0] + p[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
-        },
-        authorColor(name) {
-            if (!name) return 'rgba(var(--v-theme-on-surface), 0.3)';
-            const colors = ['#3B82F6', '#E0822B', '#3E9A3E', '#9B59B6', '#E0A12B', '#2196F3', '#00897B', '#E35D5D'];
-            let h = 0;
-            for (let i = 0; i < name.length; i++) h = ((h * 31) + name.charCodeAt(i)) >>> 0;
-            return colors[h % colors.length];
         },
         formatDateHeader(d) {
             if (!d) return '날짜 없음';

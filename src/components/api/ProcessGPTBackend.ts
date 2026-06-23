@@ -157,7 +157,11 @@ class ProcessGPTBackend implements Backend {
                 }
                 const procDefs = await storage.list('proc_def', options);
                 procDefs.map((item: any) => {
-                    item.path = `${item.id}.bpmn`;
+                    if (item.type && item.type === 'dmn') {
+                        item.path = `${item.id}.dmn`;
+                    } else {
+                        item.path = `${item.id}.bpmn`;
+                    }
                     item.name = item.name || item.id;
                 });
                 return procDefs;
@@ -7365,7 +7369,7 @@ class ProcessGPTBackend implements Backend {
     // resourceType: 'skill' | 'proc_def' | 'dmn'
     // ============================================================
 
-    async createResourcePrRecord(resourceType: 'skill' | 'proc_def' | 'dmn', data: {
+    async createResourcePrRecord(resourceType: 'skill' | 'bpmn' | 'dmn', data: {
         resourceId: string;
         branchName: string;
         baseBranch: string;
@@ -7398,7 +7402,7 @@ class ProcessGPTBackend implements Backend {
         return record;
     }
 
-    async getResourcePrRecords(resourceType: 'skill' | 'proc_def' | 'dmn', resourceId: string, status?: string, gitUrlPrefix?: string): Promise<any[]> {
+    async getResourcePrRecords(resourceType: 'skill' | 'bpmn' | 'dmn', resourceId: string, status?: string, gitUrlPrefix?: string): Promise<any[]> {
         const tenantId = window.$tenantName;
         const match: any = { tenant_id: tenantId, resource_type: resourceType, resource_id: resourceId };
         if (status) match.status = status;

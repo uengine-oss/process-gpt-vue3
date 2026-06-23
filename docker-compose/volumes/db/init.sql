@@ -3626,7 +3626,7 @@ create table if not exists public.resource_pull_requests (
   merged_at      timestamptz         null,
   constraint resource_pull_requests_pkey primary key (id),
   constraint resource_pull_requests_resource_type_check check (
-    resource_type in ('skill', 'proc_def', 'dmn')
+    resource_type in ('skill', 'bpmn', 'dmn')
   ),
   constraint resource_pull_requests_requester_fkey foreign key (requester_id, tenant_id)
     references public.users (id, tenant_id) on update cascade on delete cascade,
