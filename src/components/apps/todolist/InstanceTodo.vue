@@ -36,11 +36,23 @@ export default {
         offset: 10,
         currentPage: 0,
         dialog: false,
-        userList: []
+        userList: [],
+        workListWatchRef: null
     }),
     async mounted() {
         await this.loadToDo();
         await this.loadUserInfo();
+        this.workListWatchRef = await backend.watchWorkList(
+            () => {
+                this.reloadToDo();
+            },
+            { instId: this.id }
+        );
+    },
+    beforeUnmount() {
+        if (this.workListWatchRef) {
+            backend.watchOff(this.workListWatchRef);
+        }
     },
     computed: {
         id() {
@@ -68,6 +80,12 @@ export default {
         executeTask(item) {
             var me = this;
             me.$router.push(`/todolist/${item.taskId}`);
+        },
+        async reloadToDo() {
+            this.columns.forEach((column) => {
+                column.tasks = [];
+            });
+            await this.loadToDo();
         },
         async loadToDo() {
             var me = this;

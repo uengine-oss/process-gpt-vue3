@@ -1035,6 +1035,9 @@ export default {
 
                     this.events = data;
                     this.isCancelled = data.some((e) => e.event_type === 'crew_completed');
+                    if (this.isCancelled) {
+                        this.$nextTick(() => this.fetchOutputIfEmpty(taskId));
+                    }
                 }
             } catch (error) {
                 this.handleError(error, '이벤트 데이터를 불러오는 중 오류가 발생했습니다');
@@ -1110,9 +1113,11 @@ export default {
                                     }
                                 }
 
-                                // error 또는 crew_completed 수신 시: 로딩 해제
+                                // error 또는 crew_completed 수신 시: 로딩 해제 + 결과 fetch
                                 if (event_type === 'error' || event_type === 'crew_completed') {
                                     this.isLoading = false;
+                                    this.fetchTodoStatus();
+                                    this.fetchOutputIfEmpty(taskId);
                                 }
                             } else if (todoId !== taskId) {
                                 console.warn('[ID 불일치]', { eventTodoId: todoId, currentTaskId: taskId, event: row });
@@ -1400,6 +1405,35 @@ export default {
                 }
             } catch (error) {
                 this.handleError(error, 'todolist 상태 조회 실패');
+            }
+        },
+        async fetchOutputIfEmpty(taskId) {
+            if (!taskId) return;
+            const hasContent = this.tasks.some((t) => t.isCompleted && t.content);
+            if (hasContent) return;
+            try {
+                const { data, error } = await window.$supabase
+                    .from('todolist')
+                    .select('output, output_url')
+                    .eq('id', taskId)
+                    .single();
+                if (error || !data) return;
+                if (data.output || data.output_url) {
+                    const resultContent = data.output
+                        ? (typeof data.output === 'string' ? data.output : JSON.stringify(data.output, null, 2))
+                        : data.output_url;
+                    this.events = [...this.events, {
+                        id: `output-fallback-${taskId}`,
+                        event_type: 'task_completed',
+                        crew_type: 'result',
+                        job_id: `output-fallback-${taskId}`,
+                        data: { message: resultContent },
+                        timestamp: new Date().toISOString(),
+                        todo_id: taskId
+                    }];
+                }
+            } catch (e) {
+                console.error('fetchOutputIfEmpty 실패:', e);
             }
         },
         async stopTask() {

@@ -2618,7 +2618,17 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getAllWorkListByInstId(instId: number) {
-        return this.getWorkListByInstId(instId);
+        const byInstId = await this.getWorkListByInstId(instId);
+        const byRootInstId = await this.getWorkListByRootInstId(instId);
+        const seen = new Set(byInstId.map((item: any) => item.taskId));
+        const merged = [...byInstId];
+        for (const item of byRootInstId) {
+            if (!seen.has(item.taskId)) {
+                merged.push(item);
+                seen.add(item.taskId);
+            }
+        }
+        return merged;
     }
 
     async putWorkItemComplete(taskId: string, inputData: any) {
@@ -2781,7 +2791,7 @@ class ProcessGPTBackend implements Backend {
         try {
             if (!options) options = {};
             if (!options.status) return [];
-            if (options.status.includes('*')) options.status = ['NEW', 'RUNNING', 'DONE', 'PENDING', 'IN_PROGRESS'];
+            if (options.status.includes('*')) options.status = ['NEW', 'RUNNING', 'DONE', 'COMPLETED', 'PENDING', 'IN_PROGRESS'];
             const uid = window.localStorage.getItem('uid');
             const filter = `status=in.(${options.status.join(',')})`;
 
@@ -2801,6 +2811,25 @@ class ProcessGPTBackend implements Backend {
                             callback(payload);
                         }
                     }
+                }
+            );
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async watchWorkList(callback: (payload: any) => void, options?: any) {
+        try {
+            const filter = options?.instId ? `proc_inst_id=eq.${options.instId}` : undefined;
+            return await storage._watch(
+                {
+                    channel: 'workitem',
+                    table: 'todolist',
+                    ...(filter ? { filter } : {})
+                },
+                (payload) => {
+                    callback(payload);
                 }
             );
         } catch (error) {
