@@ -180,6 +180,7 @@ class WorkAssistantAgentService {
             onToolEnd,
             onPlanTools,
             onPlanSkills,
+            onPlanConnectors,
             onPlanTodos,
             onDone,
             onError,
@@ -211,6 +212,9 @@ class WorkAssistantAgentService {
                 break;
             case 'plan_todos':
                 if (onPlanTodos) onPlanTodos(Array.isArray(event.todos) ? event.todos : [], event);
+                break;
+            case 'plan_connectors':
+                if (onPlanConnectors) onPlanConnectors(Array.isArray(event.connectors) ? event.connectors : [], event);
                 break;
             case 'tool_start': {
                 const toolRef = event.tool ?? event.tool_name ?? event.name;

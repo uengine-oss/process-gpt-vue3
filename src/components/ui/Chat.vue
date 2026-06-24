@@ -1421,12 +1421,6 @@
                                                                                 v-html="renderStreamingMarkdown(message)"
                                                                             ></div>
                                                                         </template>
-                                                                        <div
-                                                                            v-if="getAgentPlanSummary(message)"
-                                                                            class="mt-1 text-caption text-medium-emphasis"
-                                                                        >
-                                                                            플랜: {{ getAgentPlanSummary(message) }}
-                                                                        </div>
                                                                     </div>
 
                                                                     <v-sheet
@@ -1482,16 +1476,24 @@
                                                                                     <div
                                                                                         v-for="(tc, tcIdx) in getToolCallList(message)"
                                                                                         :key="`tc-${index}-${tcIdx}`"
-                                                                                        class="chat-tool-activity__item"
+                                                                                        class="chat-tool-activity__item-wrap"
                                                                                     >
-                                                                                        <v-icon
-                                                                                            size="12"
-                                                                                            class="mr-1"
-                                                                                            :color="tc.status === 'error' ? 'error' : tc.status === 'done' ? 'success' : 'primary'"
-                                                                                            >{{ tc.kind === 'subagent' ? 'mdi-robot-outline' : 'mdi-wrench-outline' }}</v-icon
-                                                                                        >
-                                                                                        <span class="chat-tool-activity__name">{{ tc.label }}</span>
-                                                                                        <span class="chat-tool-activity__status" :class="`is-${tc.status}`">{{ tc.status }}</span>
+                                                                                        <div class="chat-tool-activity__item">
+                                                                                            <v-icon
+                                                                                                size="12"
+                                                                                                class="mr-1"
+                                                                                                :color="tc.status === 'error' ? 'error' : tc.status === 'done' ? 'success' : 'primary'"
+                                                                                                >{{ tc.kind === 'subagent' ? 'mdi-robot-outline' : 'mdi-wrench-outline' }}</v-icon
+                                                                                            >
+                                                                                            <span class="chat-tool-activity__name">{{ tc.label }}</span>
+                                                                                            <span class="chat-tool-activity__status" :class="`is-${tc.status}`">{{ tc.status }}</span>
+                                                                                            <span
+                                                                                                v-if="tc.output"
+                                                                                                class="chat-tool-activity__result-toggle"
+                                                                                                @click="toolOutputOpenMap[`${index}-${tcIdx}`] = !toolOutputOpenMap[`${index}-${tcIdx}`]"
+                                                                                            >결과</span>
+                                                                                        </div>
+                                                                                        <pre v-if="toolOutputOpenMap[`${index}-${tcIdx}`] && tc.output" class="chat-tool-activity__output">{{ tc.output }}</pre>
                                                                                     </div>
                                                                                 </div>
                                                                             </details>
@@ -3504,6 +3506,7 @@ export default {
             replyUser: null,
             isViewJSON: [],
             isviewJSONStatus: false,
+            toolOutputOpenMap: {},
             attachedImages: [],
             delImgBtn: false,
             // PDF 업로드(정의체계도/패널 공통)
@@ -4377,10 +4380,16 @@ export default {
                     .map((t) => {
                         const name = (t?.name || t?.tool || '').toString();
                         const kind = (t?.kind || (name === 'task' ? 'subagent' : 'tool')).toString();
+                        const rawOutput = t?.output ?? null;
+                        let output = '';
+                        if (rawOutput != null) {
+                            output = this.formatToolOutput(rawOutput);
+                        }
                         return {
                             label: this.formatToolName(name) || name,
                             kind,
-                            status: (t?.status || 'done').toString()
+                            status: (t?.status || 'done').toString(),
+                            output
                         };
                     })
                     .filter((t) => t.label);
@@ -4388,15 +4397,21 @@ export default {
                 return [];
             }
         },
+        formatToolOutput(raw) {
+            try {
+                let str = typeof raw === 'string' ? raw : JSON.stringify(raw);
+                const contentMatch = str.match(/^content='([\s\S]*?)'\s+name='.*?'\s+tool_call_id='.*?'$/);
+                if (contentMatch) str = contentMatch[1];
+                str = str.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+                let data;
+                try { data = JSON.parse(str); } catch { return str; }
+                return JSON.stringify(data, null, 2);
+            } catch {
+                return String(raw);
+            }
+        },
         hasAgentLogs(message) {
             return Array.isArray(message?.agentLogs) && message.agentLogs.length > 0;
-        },
-        getAgentPlanSummary(message) {
-            const summary = (message?.agentPlan?.summary || '').toString().trim();
-            if (summary) return summary;
-            const logs = this.getRecentAgentLogs(message);
-            const planLike = logs.find((l) => (l?.category || '').toString().toLowerCase() === 'plan');
-            return (planLike?.message || '').toString().trim();
         },
         getAgentPlanSteps(message) {
             const steps = Array.isArray(message?.agentPlan?.steps) ? message.agentPlan.steps : [];
@@ -5402,7 +5417,8 @@ export default {
                 get_organization: '조직도 조회',
                 start_process_consulting: '프로세스 컨설팅 시작',
                 generate_process: '프로세스 생성',
-                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청'
+                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청',
+                get_current_user: '사용자 정보 조회'
             };
             return toolNameMap[key] || key;
         },
@@ -6893,6 +6909,37 @@ pre {
 .chat-tool-activity__status.is-error {
     color: rgb(var(--v-theme-error));
     background: rgba(var(--v-theme-error), 0.1);
+}
+.chat-tool-activity__item-wrap {
+    border-radius: 6px;
+}
+.chat-tool-activity__result-toggle {
+    flex-shrink: 0;
+    font-size: 10px;
+    padding: 1px 8px;
+    margin-left: 4px;
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.08);
+}
+.chat-tool-activity__result-toggle:hover {
+    background: rgba(var(--v-theme-primary), 0.16);
+}
+.chat-tool-activity__output {
+    margin: 4px 0 6px 20px;
+    padding: 10px 12px;
+    font-size: 11px;
+    line-height: 1.5;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 8px;
+    max-height: 300px;
+    overflow: auto;
+    color: rgba(0, 0, 0, 0.7);
+    font-family: 'Menlo', 'Consolas', monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
 .chat-room-loading-indicator {

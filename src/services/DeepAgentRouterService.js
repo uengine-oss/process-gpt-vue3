@@ -35,7 +35,7 @@ class DeepAgentRouterService {
     }
 
     async sendMessageStream(agentId, params, callbacks = {}, options = {}) {
-        const { onToken, onToolStart, onToolEnd, onPlanTools, onPlanSkills, onPlanTodos, onDone, onError, onMetadata, onAbort, onOpenUi, onProcessResult, onFileArtifact } = callbacks;
+        const { onToken, onToolStart, onToolEnd, onPlanTools, onPlanSkills, onPlanConnectors, onPlanTodos, onDone, onError, onMetadata, onAbort, onOpenUi, onProcessResult, onFileArtifact } = callbacks;
 
         try {
             let meta = params.metadata;
@@ -119,6 +119,9 @@ class DeepAgentRouterService {
                                     break;
                                 case 'plan_todos':
                                     if (onPlanTodos) onPlanTodos(Array.isArray(parsed.todos) ? parsed.todos : [], parsed);
+                                    break;
+                                case 'plan_connectors':
+                                    if (onPlanConnectors) onPlanConnectors(Array.isArray(parsed.connectors) ? parsed.connectors : [], parsed);
                                     break;
                                 case 'tool_start': {
                                     const toolRef = parsed.tool ?? parsed.tool_name ?? parsed.name;

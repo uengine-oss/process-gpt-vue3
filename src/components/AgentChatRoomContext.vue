@@ -64,7 +64,7 @@
 
         <details v-if="showTodosBlock" class="side-info__box" :open="!showAttachmentsBlock">
             <summary class="side-info__summary">
-                <span class="side-info__title">To-dos</span>
+                <span class="side-info__title">{{ $t('AgentChatRoomContext.progress') }}</span>
                 <span class="side-info__count">{{ todosList.length }}</span>
             </summary>
             <ul class="side-info__list">
@@ -75,14 +75,28 @@
             </ul>
         </details>
 
-        <details v-if="showSkillsBlock" class="side-info__box" :open="!showAttachmentsBlock && !showTodosBlock">
+        <details v-if="showContextBlock" class="side-info__box" :open="!showAttachmentsBlock && !showTodosBlock">
             <summary class="side-info__summary">
-                <span class="side-info__title">스킬</span>
-                <span class="side-info__count">{{ skillsList.length }}</span>
+                <span class="side-info__title">{{ $t('AgentChatRoomContext.context') }}</span>
             </summary>
-            <ul class="side-info__list">
-                <li v-for="s in skillsList" :key="s.key" class="side-info__item">{{ s.label }}</li>
-            </ul>
+            <div class="side-info__nested">
+                <details v-if="showSkillsBlock" class="side-info__sub-box" open>
+                    <summary class="side-info__sub-summary">
+                        <span class="side-info__sub-title">{{ $t('AgentChatRoomContext.skills') }}</span>
+                    </summary>
+                    <ul class="side-info__list">
+                        <li v-for="s in skillsList" :key="s.key" class="side-info__item">{{ s.label }}</li>
+                    </ul>
+                </details>
+                <details v-if="showConnectorsBlock" class="side-info__sub-box" open>
+                    <summary class="side-info__sub-summary">
+                        <span class="side-info__sub-title">{{ $t('AgentChatRoomContext.connectors') }}</span>
+                    </summary>
+                    <ul class="side-info__list">
+                        <li v-for="c in connectorsList" :key="c.key" class="side-info__item">{{ c.label }}</li>
+                    </ul>
+                </details>
+            </div>
         </details>
 
     </div>
@@ -90,7 +104,7 @@
 
 <script>
 /** 에이전트 채팅방 컨텍스트(할일·스킬·도구 등) — 아티팩트 탭과 구분되는 패널 타입. ArtifactPanel 등에서 import */
-export const AGENT_CHAT_ROOM_CONTEXT_TYPES = new Set(['activity', 'attachments', 'tools', 'skills', 'todos', 'knowledge']);
+export const AGENT_CHAT_ROOM_CONTEXT_TYPES = new Set(['activity', 'attachments', 'tools', 'skills', 'todos', 'knowledge', 'connectors']);
 
 export default {
     name: 'AgentChatRoomContext',
@@ -174,6 +188,24 @@ export default {
                 return true;
             });
         },
+        connectorsList() {
+            const p = this.sideInfoPanels.get('connectors');
+            const items = Array.isArray(p?.data?.items) ? p.data.items : [];
+            const list = items
+                .map((c, idx) => ({
+                    key: (c?.id || c?.name || `conn-${idx}`).toString(),
+                    label: (c?.name || c?.label || c?.connector || '').toString()
+                }))
+                .filter((x) => x.label);
+            const seen = new Set();
+            return list.filter((x) => {
+                const k = x.label.trim();
+                if (!k) return false;
+                if (seen.has(k)) return false;
+                seen.add(k);
+                return true;
+            });
+        },
         todosList() {
             const p = this.sideInfoPanels.get('todos');
             const items = Array.isArray(p?.data?.items) ? p.data.items : [];
@@ -199,8 +231,13 @@ export default {
             return this.todosEnabled && this.todosList.length > 0;
         },
         showSkillsBlock() {
-            // 스킬 정보는 우측 '작업 폴더'의 SKILL.md 파일로 확인한다(별도 우측 패널 제거).
-            return false;
+            return this.skillsEnabled && this.skillsList.length > 0;
+        },
+        showConnectorsBlock() {
+            return this.connectorsEnabled && this.connectorsList.length > 0;
+        },
+        showContextBlock() {
+            return this.showSkillsBlock || this.showConnectorsBlock;
         },
         hasSideInfo() {
             return (
@@ -208,7 +245,7 @@ export default {
                 this.showKnowledgeBlock ||
                 this.showAttachmentsBlock ||
                 this.showTodosBlock ||
-                this.showSkillsBlock
+                this.showContextBlock
             );
         },
         activityEnabled() {
@@ -225,6 +262,9 @@ export default {
         },
         todosEnabled() {
             return !!this.sideInfoPanels.get('todos')?.data?.enabled;
+        },
+        connectorsEnabled() {
+            return !!this.sideInfoPanels.get('connectors')?.data?.enabled;
         }
     }
 };
@@ -357,6 +397,44 @@ export default {
     border-color: rgba(var(--v-theme-error), 0.4);
     color: rgb(var(--v-theme-error));
     background: rgba(var(--v-theme-error), 0.08);
+}
+
+.side-info__nested {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.side-info__sub-box {
+    padding: 6px 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+}
+
+.side-info__sub-box .side-info__list {
+    padding-left: 0px;
+}
+
+.side-info__sub-summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.side-info__sub-summary::-webkit-details-marker {
+    display: none;
+}
+
+.side-info__sub-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.75);
 }
 
 .activity-row {
