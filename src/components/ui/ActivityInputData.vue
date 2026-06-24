@@ -21,6 +21,10 @@
                         <div class="text-subtitle-1 font-weight-medium mb-2">
                             <v-icon class="mr-2" size="small">mdi-form-select</v-icon>
                             {{ getActivityName(field.formId) }}
+                            <v-chip v-if="getAssigneeName(field.formId)" size="x-small" variant="outlined" class="ml-2">
+                                <v-icon start size="x-small">mdi-account</v-icon>
+                                {{ getAssigneeName(field.formId) }}
+                            </v-chip>
                         </div>
                     </div>
                     <v-spacer></v-spacer>
@@ -87,6 +91,7 @@ export default {
             fieldMetadata: {}, // 폼별 필드 메타데이터 저장 (레이지 로딩)
             activityMetadata: null, // proc_def의 activities 정보 (레이지 로딩)
             formHtmlData: {}, // 폼별 HTML 데이터 저장
+            assigneeMap: {},
             isSummaryExpanded: {},
             previousInputDetails: [
                 {
@@ -112,6 +117,7 @@ export default {
         // proc_def의 activities 정보도 백그라운드에서 로딩
         if (this.workItem && this.workItem.worklist && this.workItem.worklist.defId) {
             this.fetchActivityMetadata();
+            this.fetchAssignees();
         }
     },
     watch: {
@@ -278,6 +284,29 @@ export default {
         //     }
         //     return String(value);
         // },
+        async fetchAssignees() {
+            try {
+                const instId = this.workItem.worklist.instId;
+                const workList = await this.backend.getWorkListByInstId(instId);
+                if (!workList || !Array.isArray(workList)) return;
+
+                const map = {};
+                workList.forEach((item) => {
+                    if (item.tool && item.tool.includes('formHandler:') && (item.status === 'DONE' || item.status === 'COMPLETED')) {
+                        const formId = item.tool.split('formHandler:')[1];
+                        if (formId && !map[formId]) {
+                            map[formId] = item.username || item.endpoint || null;
+                        }
+                    }
+                });
+                this.assigneeMap = map;
+            } catch (e) {
+                console.warn('담당자 정보를 가져오는 중 오류:', e);
+            }
+        },
+        getAssigneeName(formId) {
+            return this.assigneeMap[formId] || null;
+        },
         handleSummaryExpanded(formId, expanded) {
             this.isSummaryExpanded = {
                 ...this.isSummaryExpanded,

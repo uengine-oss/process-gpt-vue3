@@ -367,6 +367,7 @@ class ProcessGPTBackend implements Backend {
                 // name이 유효한 경우에만 업데이트 (null로 덮어쓰기 방지)
                 if (options.name) procDef.name = options.name;
                 if (options.owner) procDef.owner = options.owner;
+                if (Object.prototype.hasOwnProperty.call(options, 'agent_id')) procDef.agent_id = options.agent_id;
                 if (options.type) procDef.type = options.type;
                 // 기존 정의도 함께 갱신되어야 activity.tool 변경이 proc_def.definition에 반영됨
                 if (Object.prototype.hasOwnProperty.call(options, 'definition')) {
@@ -374,12 +375,14 @@ class ProcessGPTBackend implements Backend {
                 }
             } else {
                 // 신규 프로세스: 초기 bpmn/definition 포함하여 생성
+                const currentOwner = options.owner || localStorage.getItem('uid') || null;
                 procDef = {
                     id: defId,
                     name: options.name,
                     bpmn: xml,
                     definition: options.definition || null,
-                    owner: options.owner || null,
+                    owner: currentOwner,
+                    agent_id: options.agent_id || null,
                     type: options.type || 'bpmn'
                 };
             }
@@ -2790,24 +2793,32 @@ class ProcessGPTBackend implements Backend {
     async watchInstanceList(callback: (payload: any) => void, options?: any) {
         try {
             if (!options) options = {};
-            if (!options.status) return [];
-            if (options.status.includes('*')) options.status = ['NEW', 'RUNNING', 'DONE', 'COMPLETED', 'PENDING', 'IN_PROGRESS'];
+            const statusFilter = options.status || [];
+            if (statusFilter.includes('*')) {
+                options.status = ['NEW', 'RUNNING', 'DONE', 'COMPLETED', 'PENDING', 'IN_PROGRESS'];
+            }
             const uid = window.localStorage.getItem('uid');
-            const filter = `status=in.(${options.status.join(',')})`;
 
             return await storage._watch(
                 {
-                    channel: 'instance',
-                    table: 'bpm_proc_inst',
-                    filter: filter
+                    channel: `instance-${uid}-${Date.now()}`,
+                    table: 'bpm_proc_inst'
                 },
                 (payload) => {
+                    if (statusFilter.length > 0) {
+                        const newStatus = payload.new?.status;
+                        const oldStatus = payload.old?.status;
+                        if (!statusFilter.includes(newStatus) && !statusFilter.includes(oldStatus)) {
+                            return;
+                        }
+                    }
+
                     if (payload.eventType === 'DELETE') {
                         callback(payload);
                     } else {
-                        if (payload.new.participants.includes(uid)) {
+                        if (payload.new?.participants?.includes(uid)) {
                             callback(payload);
-                        } else if (payload.old.participants && payload.old.participants.includes(uid)) {
+                        } else if (payload.old?.participants?.includes(uid)) {
                             callback(payload);
                         }
                     }
@@ -5219,7 +5230,7 @@ class ProcessGPTBackend implements Backend {
                 name: newName,
                 bpmn: bpmn,
                 definition: definition || null,
-                owner: null,
+                owner: localStorage.getItem('uid') || null,
                 type: 'bpmn',
                 isdeleted: false
             };

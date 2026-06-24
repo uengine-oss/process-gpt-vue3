@@ -356,47 +356,34 @@
                                         <v-icon>mdi-delete-outline</v-icon>
                                         <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
                                     </v-btn>
-                                    <v-menu
+                                    <v-btn
                                         v-if="!isMobile && !gs"
-                                        v-model="researchMethodMenu"
-                                        :close-on-content-click="false"
-                                        location="bottom"
-                                        eager
+                                        class="mr-1"
+                                        color="gray"
+                                        variant="flat"
+                                        density="comfortable"
+                                        rounded
+                                        :disabled="isGeneratingExample"
+                                        style="background-color: #808080; color: white; min-width: 36px; padding: 0 6px;"
+                                        @click="selectedTab = 'agent-monitor'"
                                     >
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn
-                                                class="mr-1"
-                                                density="comfortable"
-                                                rounded
-                                                color="gray"
-                                                variant="flat"
-                                                :loading="isGeneratingExample"
-                                                :disabled="isGeneratingExample"
-                                                @click="triggerBasicLlmAgentFromResearchMethod"
-                                            >
-                                                <Icons :icon="'sparkles'" :size="20" />
-                                                <span class="ms-2">{{ $t('WorkItem.researchMethod') }}</span>
-                                                <v-icon
-                                                    v-bind="props"
-                                                    :icon="researchMethodMenu ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-                                                    size="16"
-                                                    class="ms-1"
-                                                    @click.stop
-                                                />
-                                            </v-btn>
-                                        </template>
-
-                                        <v-card min-width="400" class="px-4 pt-1 pb-4">
-                                            <AgentSelectField
-                                                ref="researchMethodAgentSelectField"
-                                                :model-value="selectedAgent"
-                                                :backend="backend"
-                                                :is-execute="true"
-                                                :show-quick-create="true"
-                                                @update:model-value="updateWorkItem"
-                                            />
-                                        </v-card>
-                                    </v-menu>
+                                        <v-icon>mdi-auto-fix</v-icon>
+                                        <span class="ms-2">{{ $t('WorkItem.researchMethod') }}</span>
+                                    </v-btn>
+                                    <v-btn
+                                        v-if="!isMobile && !gs"
+                                        class="mr-1"
+                                        color="gray"
+                                        variant="flat"
+                                        density="comfortable"
+                                        rounded
+                                        :loading="isGeneratingExample"
+                                        :disabled="isGeneratingExample"
+                                        style="background-color: #808080; color: white;"
+                                        @click="triggerBasicLlmAgentFromResearchMethod"
+                                    >
+                                        <Icons :icon="'sparkles'" :size="20" />
+                                    </v-btn>
                                     <!-- 피드백 버튼만 유지 -->
                                     <v-btn
                                         v-if="isSimulate == 'true' && !isMobile"
@@ -545,6 +532,7 @@ import exampleGenerator from '@/components/ai/WorkItemAgentGenerator.js';
 import ReworkDialog from './ReworkDialog.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
+import { useDefaultSetting } from '@/stores/defaultSetting';
 import FormRealtimeAssistant from './FormRealtimeAssistant.vue';
 
 import JSON5 from 'json5';
@@ -2335,9 +2323,17 @@ export default {
         },
 
         triggerBasicLlmAgentFromResearchMethod() {
-            const agentSelectFieldRef = this.$refs.researchMethodAgentSelectField;
-            if (agentSelectFieldRef && typeof agentSelectFieldRef.selectBasicLlmAgent === 'function') {
-                agentSelectFieldRef.selectBasicLlmAgent();
+            const defaultSetting = useDefaultSetting();
+            const basicLlmAgent = defaultSetting.getAgentList.find(
+                (agent) => agent.alias === 'default' && agent.agent_type === 'pgagent'
+            );
+            if (basicLlmAgent) {
+                this.updateWorkItem({
+                    ...this.selectedAgent,
+                    agent: basicLlmAgent.id,
+                    agentMode: 'draft',
+                    orchestration: basicLlmAgent.alias
+                });
             }
         },
 

@@ -959,6 +959,10 @@ export default {
             if (!activity) {
                 return;
             }
+            const isFirstActivity = !this.findPreviousHumanActivity(me.workItem.activity.tracingTag, definition);
+            if (isFirstActivity) {
+                return;
+            }
             let inputFields = {};
             if (activity.inputData && activity.inputData.length > 0) {
                 const fieldValuePromises = activity.inputData.map(async (fieldInfo) => {

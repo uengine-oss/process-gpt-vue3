@@ -2491,3 +2491,20 @@ ALTER TABLE IF EXISTS public.resource_pull_requests
 
 ALTER TABLE IF EXISTS public.resource_pr_reviews
   ADD COLUMN IF NOT EXISTS reviewer_name text NULL;
+
+-- proc_def에 agent_id 컬럼 추가 (2026-06-23)
+-- 기존에 DMN의 owner에 에이전트 ID를 저장하던 것을 분리: owner는 사용자, agent_id는 에이전트
+ALTER TABLE IF EXISTS public.proc_def
+  ADD COLUMN IF NOT EXISTS agent_id text NULL;
+
+-- 기존 DMN 데이터 마이그레이션: owner가 에이전트인 경우 agent_id로 이동하고 owner를 null로 변경
+UPDATE public.proc_def pd
+SET agent_id = pd.owner,
+    owner = NULL
+WHERE pd.type = 'dmn'
+  AND pd.owner IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM public.users u
+    WHERE u.id::text = pd.owner
+      AND u.is_agent = true
+  );

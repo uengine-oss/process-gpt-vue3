@@ -57,12 +57,8 @@ export default {
     async mounted() {
         this.EventBus.on('instances-updated', this.init);
 
-        // this.intervalId = setInterval(() => {
-        //     this.init();
-        // }, 10000);
-
         this.watchRef = await backend.watchInstanceList(
-            (callback) => {
+            () => {
                 this.loadInstances();
             },
             { status: ['NEW', 'RUNNING', 'COMPLETED'] }
