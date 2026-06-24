@@ -74,6 +74,14 @@
                         :fileName="panel.data.fileName || panel.label"
                         @close="$emit('close-panel', panel.id)"
                     />
+                    <!-- PDF 문서 미리보기 (NDA/MOU 검토 의견서 등) -->
+                    <PdfViewer
+                        v-else-if="panel.type === 'pdf'"
+                        :ref="(el) => setPanelRef(panel.id, el)"
+                        :fileUrl="panel.data.fileUrl"
+                        :fileName="panel.data.fileName || panel.label"
+                        @close="$emit('close-panel', panel.id)"
+                    />
                     <!-- 새 패널 타입은 여기에 v-else-if로 추가 -->
                 </div>
             </template>
@@ -85,6 +93,7 @@
 import HwpxViewer from '@/components/HwpxViewer.vue';
 import SlideArtifactViewer from '@/components/SlideArtifactViewer.vue';
 import MarkdownViewer from '@/components/MarkdownViewer.vue';
+import PdfViewer from '@/components/PdfViewer.vue';
 import AgentChatRoomContext, { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 
 // 패널 타입별 아이콘 레지스트리 — 새 타입 추가 시 여기만 수정
@@ -93,13 +102,14 @@ const PANEL_TYPE_ICONS = {
     docx: 'mdi-file-word-outline',
     slide: 'mdi-presentation',
     markdown: 'mdi-language-markdown-outline',
+    pdf: 'mdi-file-pdf-box',
     tools: 'mdi-tools',
     attachments: 'mdi-paperclip'
 };
 
 export default {
     name: 'ArtifactPanel',
-    components: { HwpxViewer, SlideArtifactViewer, MarkdownViewer, AgentChatRoomContext },
+    components: { HwpxViewer, SlideArtifactViewer, MarkdownViewer, PdfViewer, AgentChatRoomContext },
     props: {
         panels: { type: Array, default: () => [] },
         activeId: { type: String, default: null }

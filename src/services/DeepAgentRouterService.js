@@ -62,6 +62,9 @@ class DeepAgentRouterService {
                     message: params.message,
                     // 클라이언트가 생성한 안정적인 메시지 UUID(서버 중복 저장/재시도 dedupe용)
                     message_uuid: params.message_uuid || null,
+                    // 클라가 생성한 assistant 응답 uuid — 백엔드가 백그라운드 완료 시 이 uuid 로
+                    // chats 저장 → 새로고침/이탈해도 reload/realtime 로 답변 복원.
+                    response_uuid: params.response_uuid || null,
                     tenant_id: params.tenant_id,
                     user_uid: params.user_uid,
                     user_email: params.user_email,

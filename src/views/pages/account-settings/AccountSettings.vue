@@ -14,56 +14,57 @@
                                     <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }}
                                 </v-tab>
                                 <template v-if="!gs">
-                                    <!-- 구글 드라이브 -->
-                                    <v-tab v-if="superAdmin && !isUEngineMode" value="Drive">
+                                    <!-- 구글 드라이브 (숨김 — 주석처리) -->
+                                    <!-- <v-tab v-if="superAdmin && !isUEngineMode" value="Drive">
                                         <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }}
-                                    </v-tab>
+                                    </v-tab> -->
                                     <!-- 지식 베이스 파일 관리 -->
                                     <v-tab v-if="!isUEngineMode" value="KnowledgeFiles">
                                         <v-icon class="mr-2" size="20">mdi-folder-text-outline</v-icon>
                                         지식 베이스
                                     </v-tab>
-                                    <!-- MCP 서버 -->
-                                    <v-tab v-if="!isUEngineMode" value="MCP-Servers">
+                                    <!-- MCP 서버 (숨김 — 주석처리) -->
+                                    <!-- <v-tab v-if="!isUEngineMode" value="MCP-Servers">
                                         <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }}
-                                    </v-tab>
-                                    <!-- MCP 환경변수 -->
-                                    <v-tab v-if="!isUEngineMode" value="MCP-Environments">
+                                    </v-tab> -->
+                                    <!-- MCP 환경변수 (숨김 — 주석처리) -->
+                                    <!-- <v-tab v-if="!isUEngineMode" value="MCP-Environments">
                                         <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon>
                                         {{ $t('accountTab.environments') }}
-                                    </v-tab>
+                                    </v-tab> -->
                                     <!-- <v-tab v-if="!isUEngineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab> -->
-                                    <!-- 데이터 소스 연결 정보 -->
-                                    <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
+                                    <!-- 데이터 소스 연결 정보 (숨김 — 주석처리) -->
+                                    <!-- <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                         <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
-                                    </v-tab>
-                                    <!-- 용어집 관리 -->
-                                    <v-tab v-if="!isUEngineMode" value="GlossaryManage">
+                                    </v-tab> -->
+                                    <!-- 용어집 관리 (숨김 — 주석처리) -->
+                                    <!-- <v-tab v-if="!isUEngineMode" value="GlossaryManage">
                                         <v-icon class="mr-2" size="20">mdi-book-open-page-variant</v-icon>
                                         {{ $t('accountTab.glossaryManage') }}
-                                    </v-tab>
-                                    <!-- 업무 카탈로그 -->
-                                    <v-tab v-if="!isUEngineMode" value="TaskCatalog">
+                                    </v-tab> -->
+                                    <!-- 업무 카탈로그 (숨김 — 주석처리) -->
+                                    <!-- <v-tab v-if="!isUEngineMode" value="TaskCatalog">
                                         <v-icon class="mr-2" size="20">mdi-view-grid</v-icon> {{ $t('taskCatalog.catalog') }}
-                                    </v-tab>
-                                    <!-- 조직도 그룹 -->
-                                    <v-tab value="OrgChartGroup">
+                                    </v-tab> -->
+                                    <!-- 조직도 그룹 (숨김 — 주석처리) -->
+                                    <!-- <v-tab value="OrgChartGroup">
                                         <v-icon class="mr-2" size="20">mdi-account-group</v-icon> {{ $t('accountTab.orgChartGroup') }}
-                                    </v-tab>
+                                    </v-tab> -->
                                 </template>
                             </template>
                             <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                             <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
                             <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
                         </v-tabs>
-                        <div
+                        <!-- 테넌트 관리 (숨김 — 주석처리) -->
+                        <!-- <div
                             v-if="!gs"
                             @click="goToTenantManage"
                             class="settings-tenant-manage-btn v-tab-style text-none"
                             style="letter-spacing: 0"
                         >
                             <Icons :icon="'office'" :size="20" class="mr-2" />{{ $t('accountTab.tenantManage') }}
-                        </div>
+                        </div> -->
                         <v-spacer></v-spacer>
 
                         <!-- 언어 선택 -->
@@ -112,7 +113,8 @@
                             </v-btn>
 
                             <template v-if="!gs">
-                                <v-btn
+                                <!-- 모바일 메뉴 숨김 (주석처리): 구글드라이브·MCP서버·환경변수·데이터소스·용어집·카탈로그·조직그룹 -->
+                                <!-- <v-btn
                                     v-if="superAdmin && !isUEngineMode"
                                     variant="text"
                                     color="default"
@@ -181,13 +183,14 @@
                                     :class="{ 'selected-tab': tab === 'OrgChartGroup' }"
                                 >
                                     <v-icon class="mr-2" size="16">mdi-account-group</v-icon>{{ $t('accountTab.orgChartGroup') }}
-                                </v-btn>
+                                </v-btn> -->
                             </template>
                         </template>
 
-                        <v-btn v-if="!gs" variant="text" color="default" size="small" @click="goToTenantManage">
+                        <!-- 테넌트 관리 (숨김 — 주석처리) -->
+                        <!-- <v-btn v-if="!gs" variant="text" color="default" size="small" @click="goToTenantManage">
                             <Icons :icon="'office'" :size="16" class="mr-2" />{{ $t('accountTab.tenantManage') }}
-                        </v-btn>
+                        </v-btn> -->
                     </div>
                     <!-- 모바일 언어 선택 -->
                     <div class="d-flex justify-end mb-2">

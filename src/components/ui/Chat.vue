@@ -4561,7 +4561,7 @@ export default {
                 gfm: true
             });
 
-            return marked(text);
+            return marked(this.stripInternalFileLinks(text));
         },
         handleResize() {
             // 화면 크기 변경 시 즉시 높이 업데이트
@@ -4638,7 +4638,30 @@ export default {
         toggleProcessGPTActive() {
             this.$emit('toggleProcessGPTActive');
         },
+        /**
+         * 모델이 답변 텍스트에 써넣은 *내부 스토리지 파일 링크* 를 무력화한다.
+         *
+         * 파일 다운로드는 tool_end 구조화 데이터(file_url)로 메시지 첨부/아티팩트 패널이
+         * 렌더한다. 모델이 베껴 쓴 URL 은 긴 uuid 를 망가뜨려 404 를 유발하므로(약한 모델일수록
+         * 빈번), 본문의 그런 링크는 *클릭 불가한 라벨 텍스트* 로 강등한다.
+         *
+         * 판별 기준: Supabase Storage object API 경로 ``/storage/v1/object/`` (정해진 API 계약,
+         * host 변형에도 견고) — 특정 도메인 패턴 하드코딩이 아니다. 외부(웹 출처) 링크는 보존.
+         */
+        stripInternalFileLinks(inputText) {
+            if (!inputText || typeof inputText !== 'string') return inputText || '';
+            const STORE = '\\/storage\\/v1\\/object\\/';
+            let t = inputText;
+            // 1) 중첩 마크다운 링크 [a]([b](.../storage/v1/object/...)) → a
+            t = t.replace(new RegExp('\\[([^\\]]*)\\]\\(\\s*\\[[^\\]]*\\]\\([^)]*' + STORE + '[^)]*\\)\\s*\\)', 'gi'), '$1');
+            // 2) 일반 마크다운 링크 [a](.../storage/v1/object/...) → a
+            t = t.replace(new RegExp('\\[([^\\]]*)\\]\\(\\s*[^)]*' + STORE + '[^)]*\\)', 'gi'), '$1');
+            // 3) 맨몸 URL .../storage/v1/object/... → 제거
+            t = t.replace(new RegExp('https?:\\/\\/[^\\s)]*' + STORE + '[^\\s)]*', 'gi'), '');
+            return t;
+        },
         linkify(inputText) {
+            inputText = this.stripInternalFileLinks(inputText);
             var replacedText, replacePattern1, replacePattern2, replacePattern3;
 
             //URLs starting with http://, https://, or ftp://

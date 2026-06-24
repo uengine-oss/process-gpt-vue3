@@ -6,7 +6,7 @@
                 <div>
                     <div class="kft-title">지식 베이스</div>
                     <div class="text-caption text-medium-emphasis mt-1">
-                        Google Drive 동기화 파일과 Storage 업로드 파일을 관리합니다.
+                        업로드한 파일을 관리하고 다운로드합니다.
                     </div>
                 </div>
                 <v-btn variant="text" size="small" prepend-icon="mdi-refresh" :loading="loading" @click="fetchList">
@@ -525,6 +525,20 @@
                                     </v-tooltip>
                                 </template>
                                 <template v-slot:[`item.actions`]="{ item }">
+                                    <v-tooltip text="다운로드" location="top">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                size="small"
+                                                :loading="downloadingKeys.has(rowKey(item))"
+                                                @click="downloadFile(item)"
+                                            >
+                                                <v-icon size="16">mdi-download-outline</v-icon>
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
                                     <v-tooltip v-if="item.index_status === 'failed' && canDelete(item)" text="재인덱싱 다시 시도" location="top">
                                         <template v-slot:activator="{ props }">
                                             <v-btn
@@ -821,6 +835,7 @@ export default {
             uploadQueue: [],
             deletingKeys: new Set(),
             reindexingKeys: new Set(), // 재인덱싱 진행 중인 파일 rowKey
+            downloadingKeys: new Set(), // 다운로드 URL 조회 중인 파일 rowKey
             deleteDialog: false,
             deleteTarget: null,
             duplicateDialog: false,
@@ -879,7 +894,7 @@ export default {
                 { title: '크기', key: 'size_bytes', width: 90 },
                 { title: '업로드일', key: 'modified_time', width: 110 },
                 { title: '상태', key: 'index_status', width: 110 },
-                { title: '', key: 'actions', sortable: false, width: 50 }
+                { title: '', key: 'actions', sortable: false, width: 100 }
             ],
             // 폴더 네비게이션
             currentFolder: '',
@@ -1726,6 +1741,34 @@ export default {
             }
         },
         // 인덱싱 실패 파일 1건 재인덱싱 (스토리지 원본 재처리)
+        // 파일 다운로드 — memento 가 원본 파일명 Content-Disposition 이 박힌 storage URL 을 돌려준다.
+        // (내부망 배포에선 kong:8000 → 외부 host 로 치환된 URL — 백엔드 get_knowledge_file_url 참고)
+        async downloadFile(item) {
+            const tenantId = window.$tenantName || '';
+            if (!tenantId || !item?.source_ref) return;
+            const key = this.rowKey(item);
+            const next = new Set(this.downloadingKeys);
+            next.add(key);
+            this.downloadingKeys = next;
+            try {
+                const { data } = await axios.get('/memento/knowledge/files/url', {
+                    params: {
+                        tenant_id: tenantId,
+                        source_type: item.source_type,
+                        source_ref: item.source_ref,
+                        file_name: item.file_name || ''
+                    }
+                });
+                if (data?.url) window.open(data.url, '_blank', 'noopener');
+                else this.notify('다운로드 URL을 가져오지 못했습니다', 'error');
+            } catch (e) {
+                this.notify('다운로드 실패', 'error', e?.response?.data?.detail || e?.message);
+            } finally {
+                const after = new Set(this.downloadingKeys);
+                after.delete(key);
+                this.downloadingKeys = after;
+            }
+        },
         async reindexFile(item) {
             if (!item) return;
             const key = this.rowKey(item);

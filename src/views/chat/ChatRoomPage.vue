@@ -967,6 +967,9 @@ export default {
 
             // 스트리밍 중지(Abort) 컨트롤러: roomId:agentId 단위
             agentAbortControllers: {},
+            // 스트리밍 중 부분 답변을 DB 에 저장하는 함수(스트림별). 페이지 이동/언마운트 시
+            // 끊기 전에 호출해 답변 소실을 막는다. (abortKey → persistPartial fn)
+            agentPartialPersisters: {},
 
             // 데스크탑 음성 에이전트 모드
             isDesktopVoiceActive: false,
@@ -2941,10 +2944,22 @@ export default {
                 if (exists !== -1) {
                     // 기존 optimistic 메시지를 실시간 데이터로 최신화(필드 merge)
                     const prevSnapshot = this.messages[exists] || {};
-                    this.messages[exists] =
-                        typeof incoming === 'object'
-                            ? this.normalizeAssistantMessageForDisplay({ ...prevSnapshot, ...incoming })
-                            : incoming;
+                    if (typeof incoming === 'object') {
+                        const merged = { ...prevSnapshot, ...incoming };
+                        // 로컬에서 아직 스트리밍 중(isLoading)인 메시지는, 우리가 진행 중 저장한
+                        // *부분* DB row 의 echo 가 더 최신인 로컬 content/toolCalls 를 되돌리지 않도록 보호한다.
+                        if (prevSnapshot.isLoading) {
+                            merged.content = prevSnapshot.content;
+                            merged.toolCalls = prevSnapshot.toolCalls;
+                            merged.agentPlan = prevSnapshot.agentPlan;
+                            merged.isLoading = true;
+                            if (prevSnapshot.pdfFile) merged.pdfFile = prevSnapshot.pdfFile;
+                            if (Array.isArray(prevSnapshot.pdfFiles)) merged.pdfFiles = prevSnapshot.pdfFiles;
+                        }
+                        this.messages[exists] = this.normalizeAssistantMessageForDisplay(merged);
+                    } else {
+                        this.messages[exists] = incoming;
+                    }
                     // optimistic 에만 있던 프런트엔드 전용 상태(__humanFeedback / toolCalls /
                     // pdf2bpmnResult 등) 가 merge 로 살아남았다면, 같은 row 를 UPDATE 해
                     // 새로고침 후에도 HITL 패널·진행상황·미리보기가 유지되게 한다.
@@ -4794,7 +4809,7 @@ export default {
          */
         pushArtifactPanel({ type, label, data }) {
             const existingIdx = this.artifactPanels.findIndex(
-                (p) => p.type === type && ((type === 'slide' || type === 'markdown') ? p.data?.messageId === data?.messageId : p.data?.htmlUrl === data?.htmlUrl)
+                (p) => p.type === type && ((type === 'slide' || type === 'markdown' || type === 'pdf') ? p.data?.messageId === data?.messageId : p.data?.htmlUrl === data?.htmlUrl)
             );
             if (existingIdx !== -1) {
                 this.artifactPanels[existingIdx] = { ...this.artifactPanels[existingIdx], label, data };
@@ -4805,7 +4820,7 @@ export default {
                 this.activeArtifactId = id;
             }
             // 문서/슬라이드 같은 "실제 아티팩트"는 넓게 열기
-            if (type === 'hwpx' || type === 'docx' || type === 'slide' || type === 'markdown') {
+            if (type === 'hwpx' || type === 'docx' || type === 'slide' || type === 'markdown' || type === 'pdf') {
                 if ((this.artifactSidebarWidth || 0) < this.artifactSidebarWideWidth) {
                     this.artifactSidebarWidth = this.artifactSidebarWideWidth;
                 }
@@ -5154,6 +5169,28 @@ export default {
                 label: name || 'document.hwpx',
                 data: { htmlUrl: url, fileUrl, messageId: msg?.uuid || null }
             });
+            this.attachMessageDownload(msgIdx, fileUrl, name || 'document.hwpx', 'application/vnd.hancom.hwpx');
+        },
+
+        /**
+         * tool_end 아티팩트의 *구조화 file_url* 을 메시지에 다운로드 첨부(pdfFiles)로 단다.
+         *
+         * 설계 원칙: 파일 URL 은 도구가 만든 구조화 데이터(tool_end)로만 흐르고, 다운로드는
+         * UI 가 그 데이터에 바인딩해 렌더한다. 모델이 답변 텍스트에 베껴 쓴 URL(긴 uuid 를
+         * 망가뜨리기 쉬움)에 절대 의존하지 않는다. 모든 서브에이전트·아티팩트 공통 경로
+         * (pushDocx/Pdf/Hwpx)에서 호출되므로 특정 흐름에 종속되지 않는다.
+         */
+        attachMessageDownload(msgIdx, fileUrl, fileName, contentType) {
+            const url = (fileUrl || '').toString();
+            if (!url) return;
+            const msg = this.messages?.[msgIdx];
+            if (!msg) return;
+            const list = Array.isArray(msg.pdfFiles) ? msg.pdfFiles : [];
+            if (list.some((f) => (f?.url || f?.fileUrl) === url)) return; // 중복 방지
+            msg.pdfFiles = [
+                ...list,
+                { url, fileUrl: url, name: fileName || '', fileName: fileName || '', contentType: contentType || '' }
+            ];
         },
 
         pushDocxArtifact(parsed, msgIdx) {
@@ -5167,6 +5204,26 @@ export default {
                 label: name || 'document.docx',
                 data: { htmlUrl: url, fileUrl, messageId: msg?.uuid || null }
             });
+            // 다운로드는 tool_end 의 file_url 로 메시지에 직접 첨부 (모델 텍스트 URL 무시)
+            this.attachMessageDownload(
+                msgIdx, fileUrl, name || 'document.docx',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            );
+            // 계약 초안/검토 시 동반되는 검토 의견서 PDF 를 별도 패널 + 다운로드로 추가 (있을 때만)
+            const reviewPdfUrl = parsed?.review_report_pdf_url || parsed?.reviewReportPdfUrl || '';
+            if (reviewPdfUrl) {
+                const reviewName = (parsed?.review_report_pdf_name || parsed?.reviewReportPdfName || '검토 의견서.pdf').toString();
+                if (msg) {
+                    msg.pdfArtifactUrl = reviewPdfUrl;
+                    msg.pdfArtifactName = reviewName;
+                }
+                this.pushArtifactPanel({
+                    type: 'pdf',
+                    label: reviewName,
+                    data: { fileUrl: reviewPdfUrl, fileName: reviewName, messageId: msg?.uuid || null }
+                });
+                this.attachMessageDownload(msgIdx, reviewPdfUrl, reviewName, 'application/pdf');
+            }
         },
 
         /** slide_markdown이 있는 JSON인지 판별 */
@@ -5229,6 +5286,35 @@ export default {
             return ct.includes('wordprocessingml') || fn.toLowerCase().endsWith('.docx');
         },
 
+        /** PDF 아티팩트 JSON 인지 판별 (NDA/MOU 검토 의견서 등) */
+        isPdfPayload(parsed) {
+            if (!parsed || typeof parsed !== 'object') return false;
+            const fileUrl = parsed.file_url || parsed.fileUrl || '';
+            if (!fileUrl) return false;
+            if (parsed.artifact_type === 'pdf') return true;
+            const ct = (parsed.content_type || parsed.contentType || '').toString();
+            const fn = (parsed.file_name || parsed.fileName || '').toString();
+            return ct.includes('application/pdf') || fn.toLowerCase().endsWith('.pdf');
+        },
+
+        /** PDF 결과(검토 의견서 등)를 PDF 아티팩트 패널로 등록 */
+        pushPdfArtifact(parsed, msgIdx) {
+            const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
+            if (!fileUrl) return;
+            const msg = this.messages?.[msgIdx];
+            const title = (parsed?.file_name || parsed?.fileName || 'PDF').toString();
+            if (msg) {
+                msg.pdfArtifactUrl = fileUrl;
+                msg.pdfArtifactName = title;
+            }
+            this.pushArtifactPanel({
+                type: 'pdf',
+                label: title,
+                data: { fileUrl, fileName: title, messageId: msg?.uuid || null }
+            });
+            this.attachMessageDownload(msgIdx, fileUrl, title, 'application/pdf');
+        },
+
         startArtifactSidebarResize(event) {
             if (this.artifactSidebarResizing) return;
             this.artifactSidebarResizing = true;
@@ -5263,6 +5349,11 @@ export default {
                 // 슬라이드 아티팩트 감지
                 if (this.isSlidePayload(parsed)) {
                     this.pushSlideArtifact(parsed, msgIdx);
+                    return;
+                }
+                // PDF 아티팩트 감지 (NDA/MOU 검토 의견서 등)
+                if (this.isPdfPayload(parsed)) {
+                    this.pushPdfArtifact(parsed, msgIdx);
                     return;
                 }
                 // markdown 아티팩트 감지 (NDA 검토 비교표 등)
@@ -5306,6 +5397,15 @@ export default {
                         type: 'markdown',
                         label: msg.markdownName || 'Markdown',
                         data: { markdownContent: msg.markdownContent || '', fileUrl: msg.markdownUrl || '', fileName: msg.markdownName || 'Markdown', messageId: msg?.uuid || null }
+                    });
+                    return;
+                }
+                // PDF 아티팩트 복원 (NDA/MOU 검토 의견서 등)
+                if (msg?.pdfArtifactUrl) {
+                    this.pushArtifactPanel({
+                        type: 'pdf',
+                        label: msg.pdfArtifactName || 'PDF',
+                        data: { fileUrl: msg.pdfArtifactUrl, fileName: msg.pdfArtifactName || 'PDF', messageId: msg?.uuid || null }
                     });
                     return;
                 }
@@ -6059,6 +6159,9 @@ export default {
                         (payload?.message_uuid || payload?.messageUuid || '').toString().trim() ||
                         (payload?.metadata?.message_uuid || payload?.metadata?.messageUuid || '').toString().trim() ||
                         null,
+                    // assistant 응답 메시지 uuid — 백엔드가 백그라운드 완료 시 이 uuid 로 chats 저장
+                    // → 생성 중 새로고침/이탈해도 reload/realtime 로 답변 복원 (optimistic 과 동일 uuid).
+                    response_uuid: assistantUuid,
                     tenant_id: tenantId,
                     user_uid: this.userInfo?.uid || this.userInfo?.id,
                     user_email: this.userInfo?.email,
@@ -6109,6 +6212,56 @@ export default {
                 const abortKey = `${targetRoomId}:${agentId}:${assistantUuid}`;
                 this.agentAbortControllers[abortKey] = abortController;
 
+                // ── 스트리밍 중 부분 답변 영속화 ────────────────────────────────────────
+                // onDone 에서만 저장하면 생성 도중 *새로고침/페이지 이동* 시 답변이 통째로
+                // 사라진다(DB 에 한 번도 안 써졌으므로). 그래서 스트리밍 중 주기적으로(throttle)
+                // 부분 본문을 같은 uuid 로 저장해 두고, 중단 시에도 마지막 partial 을 남긴다.
+                // - refresh: beforeunload 에서 async 저장이 불가하므로 *미리 저장된* throttle 분이 살아남음
+                // - 중지버튼/페이지이동: onAbort / abortAllAgentStreams 에서 force 저장
+                // 같은 uuid 저장이라 realtime echo 는 handleRealtimeMessage 의 uuid 머지로 흡수된다
+                // (스트리밍 중 메시지는 echo 가 content 를 못 덮게 isLoading 가드로 보호).
+                let lastPartialPersistAt = 0;
+                const persistPartialAssistant = (force = false) => {
+                    if (!canWrite || !targetRoomId) return;
+                    const now = Date.now();
+                    if (!force && now - lastPartialPersistAt < 2000) return;
+                    const m = this.messages.find((x) => x?.uuid === assistantUuid);
+                    if (!m) return;
+                    const content = (m.content || '').toString().trim();
+                    const isPlaceholder =
+                        !content || content === '...' || content === '생각 중' || content === '생각 중...' || content === '생각중...';
+                    // 실제 *텍스트/아티팩트/HITL* 가 있을 때만 부분 저장한다.
+                    // (tool 만 running 이고 본문 없는 상태 — 예: MOU 생성 중 — 는 저장하지 않는다:
+                    //  백엔드 백그라운드 task 가 완료 시 최종본을 같은 uuid 로 저장하므로, 여기서
+                    //  "생각 중..." placeholder 를 박아 두면 reload 시 잠깐 잔재로 보일 뿐이다.)
+                    const hasRenderable =
+                        (!isPlaceholder && content.length > 0) ||
+                        !!m.pdfFile ||
+                        (Array.isArray(m.pdfFiles) && m.pdfFiles.length > 0) ||
+                        !!m.__humanFeedback;
+                    if (!hasRenderable) return; // 빈 placeholder / tool-only 는 저장하지 않음
+                    lastPartialPersistAt = now;
+                    const snapshot = { ...m };
+                    delete snapshot.isOptimistic;
+                    delete snapshot.isLoading; // 저장본은 로딩표식 없이 (reload 시 정상 버블)
+                    delete snapshot.rowUuid;
+                    delete snapshot.__feStateKey;
+                    delete snapshot.__humanFeedbackPersisted;
+                    // 저장본 관점에선 라이브 스트림이 끊긴 상태다. 'running' tool 을 그대로 저장하면
+                    // reload 시 끝나지 않는 "실행중..." 스피너가 박제된다 → terminal(error)로 마감.
+                    if (Array.isArray(snapshot.toolCalls)) {
+                        snapshot.toolCalls = snapshot.toolCalls.map((tc) =>
+                            tc?.status === 'running'
+                                ? { ...tc, status: 'error', endedAt: new Date().toISOString() }
+                                : tc
+                        );
+                    }
+                    backend
+                        .putObject(`db://chats/${assistantUuid}`, { uuid: assistantUuid, id: targetRoomId, messages: snapshot })
+                        .catch(() => {}); // 영속화 실패는 스트리밍을 막지 않는다
+                };
+                this.agentPartialPersisters[abortKey] = persistPartialAssistant;
+
                 let hasHumanFeedback = false;
 
                 const callbacks = {
@@ -6124,6 +6277,7 @@ export default {
                             }
                             this.messages[idx].isLoading = true;
                         }
+                        persistPartialAssistant(); // throttle 저장 (생성 중 이탈 대비)
                         this.setAgentStatus(agentId, { state: 'streaming', message: '' });
                         maybeScroll();
                     },
@@ -6364,6 +6518,8 @@ export default {
                             // 슬라이드 아티팩트 감지
                             if (this.isSlidePayload(parsed)) {
                                 this.pushSlideArtifact(parsed, idx);
+                            } else if (this.isPdfPayload(parsed)) {
+                                this.pushPdfArtifact(parsed, idx);
                             } else if (this.isMarkdownPayload(parsed)) {
                                 this.pushMarkdownArtifact(parsed, idx);
                             } else if (this.isDocxPayload(parsed)) {
@@ -6377,6 +6533,7 @@ export default {
                                     }
                                 }
                             }
+                            persistPartialAssistant(); // 툴 산출물(아티팩트 첨부 등) 포함 throttle 저장
                             maybeScroll();
                         } catch (e) {}
                     },
@@ -6511,6 +6668,10 @@ export default {
                                 // 슬라이드 아티팩트 처리
                                 this.pushSlideArtifact(hwpxPayload, idx);
                                 safeFinal = '슬라이드를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
+                            } else if (hwpxPayload && this.isPdfPayload(hwpxPayload)) {
+                                // PDF 아티팩트 처리 (NDA/MOU 검토 의견서 등) — 파일첨부로 오인 방지
+                                this.pushPdfArtifact(hwpxPayload, idx);
+                                safeFinal = '검토 의견서를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
                             } else if (hwpxPayload && this.isMarkdownPayload(hwpxPayload)) {
                                 // markdown 아티팩트 처리 (NDA 검토 비교표 등) — 파일첨부로 오인 방지
                                 this.pushMarkdownArtifact(hwpxPayload, idx);
@@ -6678,8 +6839,9 @@ export default {
                         this.EventBus.emit('chat-rooms-updated');
                         this.$nextTick(() => this.scrollToBottomSafe());
 
-                        // AbortController 정리
+                        // AbortController / 부분저장 persister 정리
                         delete this.agentAbortControllers[abortKey];
+                        delete this.agentPartialPersisters[abortKey];
 
                         // WorkAssistantChatPanel의 "툴 호출 기반 동작"까지 동일하게 수행
                         try {
@@ -6702,6 +6864,7 @@ export default {
                     },
                     onError: async () => {
                         delete this.agentAbortControllers[abortKey];
+                        delete this.agentPartialPersisters[abortKey];
                         const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                         if (idx !== -1) {
                             const current = (this.messages[idx].content || '').toString().trim();
@@ -6764,6 +6927,10 @@ export default {
                 // 응답이 일부라도 생성된 경우 그대로 유지하고 로딩만 해제.
                 const onAbortHandler = () => {
                     delete this.agentAbortControllers[abortKey];
+                    // 중단(중지버튼/페이지이동) 시점의 부분 답변을 즉시 저장 — 안 하면 reload 시 사라진다.
+                    // (placeholder 만 있으면 persistPartial 이 알아서 저장 안 함)
+                    try { persistPartialAssistant(true); } catch (e) {}
+                    delete this.agentPartialPersisters[abortKey];
                     const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                     if (idx !== -1) {
                         const msg = this.messages[idx];
@@ -8294,6 +8461,13 @@ export default {
         // ===== Abort/Stop =====
 
         abortAllAgentStreams() {
+            // 스트림을 끊기 전에, 진행 중 답변의 부분 본문을 먼저 DB 에 저장한다(페이지 이동/언마운트 대비).
+            try {
+                const persisters = this.agentPartialPersisters || {};
+                Object.keys(persisters).forEach((k) => {
+                    try { persisters[k]?.(true); } catch (e) {}
+                });
+            } catch (e) {}
             try {
                 const map = this.agentAbortControllers || {};
                 Object.keys(map).forEach((k) => {
@@ -8303,6 +8477,7 @@ export default {
                 });
             } catch (e) {}
             this.agentAbortControllers = {};
+            this.agentPartialPersisters = {};
         },
 
         stopAgentsInRoom(roomId) {
