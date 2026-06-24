@@ -47,6 +47,12 @@ export const router = createRouter({
             component: () => retryDynamicImport(() => import('@/views/markdown/MarkdownEditor.vue'))
         },
         {
+            // 에이전트 실행 트레이스 디버그 — 레이아웃 없는 전체화면 (관리자/개발자 직접 진입)
+            name: 'Agent Trace Debug',
+            path: '/agent-trace',
+            component: () => retryDynamicImport(() => import('@/views/debug/AgentTracePage.vue'))
+        },
+        {
             name: 'Slide',
             path: '/slide-editor',
             component: () => retryDynamicImport(() => import('@/views/markdown/SlideEditor.vue'))

@@ -85,3 +85,10 @@ supabase/snippets/
 
 .tooling/
 volumes/
+
+# volumes/ 로 가려진 DB 스키마 스크립트(.sql)는 추적 — 런타임 데이터/로그/storage 는 계속 제외
+!docker-compose/volumes/
+docker-compose/volumes/*
+!docker-compose/volumes/db/
+docker-compose/volumes/db/*
+!docker-compose/volumes/db/*.sql
