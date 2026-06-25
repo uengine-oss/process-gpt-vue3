@@ -2294,6 +2294,12 @@
                                                                             v-if="chatRoomMode"
                                                                             class="chat-room-actions-overlay chat-room-actions-overlay--other"
                                                                         >
+                                                                            <!-- AI 답변 피드백 (👍/👎 + 코멘트) → agent-trace 디버깅 진입점 -->
+                                                                            <ChatFeedback
+                                                                                v-if="isAiAnswerMessage(message)"
+                                                                                :message="message"
+                                                                                :roomId="chatRoomId"
+                                                                            />
                                                                             <v-btn
                                                                                 v-if="!disableChat"
                                                                                 @click="beforeReply(message)"
@@ -3234,6 +3240,7 @@ import ProgressAnimated from '@/components/ui/ProgressAnimated.vue';
 import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
 import HumanFeedbackPanel from './HumanFeedbackPanel.vue';
+import ChatFeedback from '@/components/ui/ChatFeedback.vue';
 import axios from 'axios';
 import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
@@ -3256,6 +3263,7 @@ export default {
         RetrievalBox,
         AgentsChat,
         HumanFeedbackPanel,
+        ChatFeedback,
         Record,
         DynamicForm,
         SummaryButton,
@@ -3850,6 +3858,12 @@ export default {
         }
     },
     methods: {
+        // AI 답변(어시스턴트/에이전트)에만 피드백 버튼 노출 — 사람(user)·시스템 알림·진행중 메시지 제외.
+        isAiAnswerMessage(message) {
+            if (!message || !message.uuid || message.isLoading) return false;
+            const role = (message.role || '').toLowerCase();
+            return role === 'assistant' || role === 'agent';
+        },
         openController() {
             this.openToolsSettings();
         },

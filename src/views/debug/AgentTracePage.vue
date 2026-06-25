@@ -4,28 +4,16 @@
         <!-- ── 상단바 ── -->
         <div class="atp-topbar">
             <span class="atp-logo">🐛 에이전트 디버그</span>
-            <v-autocomplete
-                v-model="selectedRoomId"
-                :items="roomItems"
-                item-title="title"
-                item-value="value"
-                density="compact"
-                variant="outlined"
-                hide-details
-                placeholder="채팅방 선택"
-                prepend-inner-icon="mdi-forum-outline"
-                class="atp-room-sel"
-                :loading="loadingRooms"
-                @update:model-value="onRoomChange"
-            />
             <div class="atp-breadcrumb">
                 <template v-if="selectedRoomId">
+                    <v-icon size="15" class="mr-1">mdi-forum-outline</v-icon>
                     <span class="atp-bc-room">{{ currentRoomName }}</span>
                     <template v-if="turnDetail.runId">
                         <v-icon size="14" class="mx-1">mdi-chevron-right</v-icon>
-                        <span class="atp-bc-turn">{{ statusIcon2(turnDetail.status) }} {{ (turnDetail.userMessage || '').slice(0, 50) }}</span>
+                        <span class="atp-bc-turn">{{ statusIcon2(turnDetail.status) }} {{ (turnDetail.userMessage || '').slice(0, 60) }}</span>
                     </template>
                 </template>
+                <span v-else class="text-medium-emphasis">채팅방을 선택하세요</span>
             </div>
             <v-spacer />
             <v-tooltip text="선택 턴 자동 새로고침(4s)" location="bottom">
@@ -43,26 +31,73 @@
         <div class="atp-main">
             <!-- 좌: 턴 레일 -->
             <div class="atp-rail" :style="{ width: railWidth + 'px' }">
-                <div class="atp-rail-head">턴 ({{ turns.length }})</div>
-                <div v-if="!selectedRoomId" class="atp-empty">상단에서 채팅방 선택</div>
-                <div v-else-if="!turns.length" class="atp-empty">기록된 턴 없음</div>
-                <div
-                    v-for="t in turns"
-                    :key="t.runId"
-                    class="atp-turn"
-                    :class="{ 'is-active': selectedRunId === t.runId }"
-                    @click="onTurnChange(t.runId)"
-                >
-                    <div class="atp-turn-top">
-                        <v-icon size="15" :color="statusColor(t.status)">{{ statusIcon(t.status) }}</v-icon>
-                        <span class="atp-turn-msg">{{ t.userMessage || '(빈 메시지)' }}</span>
+                <!-- ① 채팅방 목록 (방 미선택) -->
+                <template v-if="!selectedRoomId">
+                    <div class="atp-rail-head">
+                        <span>채팅방 ({{ filteredRooms.length }})</span>
+                        <v-spacer />
+                        <v-btn size="x-small" variant="text" icon :loading="loadingRooms" @click="refreshAll"><v-icon size="16">mdi-refresh</v-icon></v-btn>
                     </div>
-                    <div class="atp-turn-sub">
-                        {{ formatRel(t.startTs) }}
-                        <span v-if="t.totalTokens"> · {{ shortNum(t.totalTokens) }} tok</span>
-                        <span v-if="t.durationMs"> · {{ formatDur(t.durationMs) }}</span>
+                    <input v-model="roomSearch" class="atp-roomsearch" placeholder="채팅방 검색" />
+                    <div v-if="!filteredRooms.length" class="atp-empty">{{ loadingRooms ? '불러오는 중…' : '트레이스 있는 방 없음' }}</div>
+                    <div
+                        v-for="room in filteredRooms"
+                        :key="room.conversation_id"
+                        class="atp-room"
+                        @click="onSelectRoom(room.conversation_id)"
+                    >
+                        <div class="atp-room-top">
+                            <v-icon size="16" :color="room.fbDown ? 'error' : room.errorCount ? 'warning' : 'primary'">
+                                {{ room.fbDown ? 'mdi-comment-alert-outline' : 'mdi-forum-outline' }}
+                            </v-icon>
+                            <span class="atp-room-name">{{ room.name }}</span>
+                            <span v-if="room.fbDown" class="atp-fb-badge">👎{{ room.fbDown }}</span>
+                            <span v-if="room.fbUp" class="atp-fb-badge">👍{{ room.fbUp }}</span>
+                        </div>
+                        <div class="atp-room-sub">
+                            턴 {{ room.turnCount }}
+                            <span v-if="room.errorCount" class="text-error"> · 에러 {{ room.errorCount }}</span>
+                            · {{ formatRel(room.lastTs) }}
+                        </div>
                     </div>
-                </div>
+                </template>
+
+                <!-- ② 선택한 방의 턴 목록 -->
+                <template v-else>
+                    <div class="atp-rail-head">
+                        <button class="atp-back" title="채팅방 목록" @click="backToRooms"><v-icon size="16">mdi-arrow-left</v-icon></button>
+                        <span class="atp-rail-room" :title="currentRoomName">{{ currentRoomName }}</span>
+                        <v-spacer />
+                        <button
+                            v-if="feedbackCount"
+                            class="atp-fbtoggle"
+                            :class="{ 'is-on': onlyFeedback }"
+                            title="피드백 있는 턴만 보기"
+                            @click="onlyFeedback = !onlyFeedback"
+                        >
+                            💬 {{ feedbackCount }}
+                        </button>
+                    </div>
+                    <div v-if="!railTurns.length" class="atp-empty">{{ onlyFeedback ? '피드백 있는 턴 없음' : '기록된 턴 없음' }}</div>
+                    <div
+                        v-for="t in railTurns"
+                        :key="t.runId"
+                        class="atp-turn"
+                        :class="{ 'is-active': selectedRunId === t.runId }"
+                        @click="onTurnChange(t.runId)"
+                    >
+                        <div class="atp-turn-top">
+                            <v-icon size="15" :color="statusColor(t.status)">{{ statusIcon(t.status) }}</v-icon>
+                            <span class="atp-turn-msg">{{ t.userMessage || '(빈 메시지)' }}</span>
+                            <span v-if="t.feedback" class="atp-fb-badge">{{ t.feedback.rating === -1 ? '👎' : '👍' }}</span>
+                        </div>
+                        <div class="atp-turn-sub">
+                            {{ formatRel(t.startTs) }}
+                            <span v-if="t.totalTokens"> · {{ shortNum(t.totalTokens) }} tok</span>
+                            <span v-if="t.durationMs"> · {{ formatDur(t.durationMs) }}</span>
+                        </div>
+                    </div>
+                </template>
             </div>
             <div class="atp-split" @mousedown.prevent="startRailResize"></div>
 
@@ -80,6 +115,13 @@
                         <v-chip v-if="turnDetail.totalTokens" size="small" variant="text">{{ turnDetail.totalTokens.toLocaleString() }} tok</v-chip>
                         <v-chip v-if="turnDetail.model" size="small" variant="text">{{ turnDetail.model }}</v-chip>
                         <v-chip v-for="a in agentTokens" :key="a.agent" size="x-small" variant="tonal" :color="a.heavy ? 'deep-orange' : 'grey'">{{ a.agent }} {{ shortNum(a.tokens) }}</v-chip>
+                    </div>
+                    <!-- 사용자 피드백 배너 (이 답변에 달린 👍/👎 + 코멘트) -->
+                    <div v-if="turnDetail.feedback" class="atp-fb-banner" :class="turnDetail.feedback.rating === -1 ? 'is-down' : 'is-up'">
+                        <span class="atp-fb-ic">{{ turnDetail.feedback.rating === -1 ? '👎' : '👍' }}</span>
+                        <span v-if="turnDetail.feedback.category" class="atp-fb-cat">[{{ fbCategoryLabel(turnDetail.feedback.category) }}]</span>
+                        <span class="atp-fb-cmt">{{ turnDetail.feedback.comment || '(코멘트 없음)' }}</span>
+                        <span v-if="turnDetail.feedback.user_name" class="atp-fb-user">— {{ turnDetail.feedback.user_name }}</span>
                     </div>
                     <!-- 필터바 -->
                     <div class="atp-filter">
@@ -208,6 +250,7 @@ export default {
         return {
             tenantId: window.$tenantName || localStorage.getItem('tenantId') || 'process-gpt',
             rooms: [],
+            roomSearch: '',
             loadingRooms: false,
             selectedRoomId: '',
             turns: [],
@@ -223,6 +266,8 @@ export default {
             autoRefresh: false,
             _autoTimer: null,
             _runMarkers: [],
+            feedbackByTarget: {}, // chat_feedback: target_uuid(=답변 response_uuid) → {rating,category,comment,user_name}
+            onlyFeedback: false,
             // 리사이즈
             railWidth: Number(localStorage.getItem('att_railW')) || 260,
             detailWidth: Number(localStorage.getItem('att_detailW')) || 560,
@@ -234,11 +279,16 @@ export default {
         sb() {
             return window.$supabase;
         },
-        roomItems() {
-            return this.rooms.map((r) => ({
-                value: r.conversation_id,
-                title: `${r.name}  ·  턴 ${r.turnCount}${r.errorCount ? ' · 에러 ' + r.errorCount : ''}`
-            }));
+        filteredRooms() {
+            const q = (this.roomSearch || '').toLowerCase().trim();
+            if (!q) return this.rooms;
+            return this.rooms.filter((r) => (r.name || '').toLowerCase().includes(q) || (r.conversation_id || '').toLowerCase().includes(q));
+        },
+        railTurns() {
+            return this.onlyFeedback ? this.turns.filter((t) => t.feedback) : this.turns;
+        },
+        feedbackCount() {
+            return this.turns.filter((t) => t.feedback).length;
         },
         currentRoomName() {
             const r = this.rooms.find((x) => x.conversation_id === this.selectedRoomId);
@@ -364,6 +414,23 @@ export default {
                     .limit(3000);
                 if (mErr) throw mErr;
                 this._runMarkers = markers || [];
+
+                // 사용자 피드백 로드 (답변 response_uuid ↔ chat_feedback.target_uuid)
+                this.feedbackByTarget = {};
+                try {
+                    const { data: fb } = await this.sb
+                        .from('chat_feedback')
+                        .select('target_uuid,rating,category,comment,user_name,created_at')
+                        .eq('tenant_id', this.tenantId)
+                        .order('created_at', { ascending: false })
+                        .limit(3000);
+                    (fb || []).forEach((f) => {
+                        if (!this.feedbackByTarget[f.target_uuid]) this.feedbackByTarget[f.target_uuid] = f;
+                    });
+                } catch (e) {
+                    /* 피드백 조회 실패해도 트레이스는 보여줌 — 무해 */
+                }
+
                 const convIds = [...new Set(this._runMarkers.map((m) => m.conversation_id).filter(Boolean))];
                 const roomMeta = {};
                 if (convIds.length) {
@@ -374,10 +441,14 @@ export default {
                 for (const m of this._runMarkers) {
                     const cid = m.conversation_id;
                     if (!cid) continue;
-                    if (!byRoom[cid]) byRoom[cid] = { conversation_id: cid, turnCount: 0, errorCount: 0, lastTs: m.ts };
+                    if (!byRoom[cid]) byRoom[cid] = { conversation_id: cid, turnCount: 0, errorCount: 0, fbDown: 0, fbUp: 0, lastTs: m.ts };
                     const b = byRoom[cid];
                     if (m.ts > b.lastTs) b.lastTs = m.ts;
-                    if (m.kind === 'run_start') b.turnCount += 1;
+                    if (m.kind === 'run_start') {
+                        b.turnCount += 1;
+                        const fb = this.feedbackByTarget[(m.payload || {}).response_uuid];
+                        if (fb) fb.rating === -1 ? (b.fbDown += 1) : (b.fbUp += 1);
+                    }
                     if (m.kind === 'run_end' && (m.payload || {}).status === 'error') b.errorCount += 1;
                 }
                 const rooms = Object.values(byRoom).map((b) => {
@@ -397,13 +468,23 @@ export default {
             if (this.selectedRunId) this.loadEvents(this.selectedRunId);
             this.fetchRooms();
         },
-        onRoomChange(cid) {
+        onSelectRoom(cid) {
             this.selectedRoomId = cid;
             this.selectedRunId = '';
             this.events = [];
             this.selectedSpanKey = '';
+            this.onlyFeedback = false;
             if (cid) this.buildTurns(cid);
             else this.turns = [];
+            this.syncUrl();
+        },
+        backToRooms() {
+            this.selectedRoomId = '';
+            this.selectedRunId = '';
+            this.events = [];
+            this.selectedSpanKey = '';
+            this.turns = [];
+            this.onlyFeedback = false;
             this.syncUrl();
         },
         buildTurns(convId) {
@@ -421,6 +502,8 @@ export default {
                     model: sp.model || '',
                     profile: sp.profile || '',
                     meta: sp.meta || {},
+                    responseUuid: sp.response_uuid || '',
+                    feedback: this.feedbackByTarget[sp.response_uuid] || null,
                     status: ep.status || 'running',
                     finalAnswer: ep.final_answer || '',
                     error: ep.error || '',
@@ -646,6 +729,9 @@ export default {
             n = Number(n || 0);
             return n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n);
         },
+        fbCategoryLabel(c) {
+            return { wrong: '틀린 정보', insufficient: '정보 부족', irrelevant: '엉뚱함', other: '기타' }[c] || c;
+        },
         formatRel(ts) {
             if (!ts) return '';
             const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
@@ -687,10 +773,6 @@ export default {
     font-weight: 700;
     white-space: nowrap;
 }
-.atp-room-sel {
-    max-width: 320px;
-    flex: 0 1 320px;
-}
 .atp-breadcrumb {
     display: flex;
     align-items: center;
@@ -720,6 +802,59 @@ export default {
     position: sticky;
     top: 0;
     background: rgb(var(--v-theme-surface));
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 1;
+}
+.atp-fbtoggle {
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    border: 1px solid rgba(var(--v-border-color), 0.3);
+    cursor: pointer;
+}
+.atp-fbtoggle.is-on {
+    background: #f9a825;
+    color: #3e2723;
+    border-color: #f9a825;
+}
+.atp-fb-badge {
+    margin-left: 4px;
+    font-size: 12px;
+    flex: 0 0 auto;
+}
+.atp-fb-banner {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 0 12px 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12.5px;
+}
+.atp-fb-banner.is-down {
+    background: rgba(var(--v-theme-error), 0.1);
+    border: 1px solid rgba(var(--v-theme-error), 0.35);
+}
+.atp-fb-banner.is-up {
+    background: rgba(var(--v-theme-success, 76 175 80), 0.1);
+    border: 1px solid rgba(var(--v-theme-on-surface), 0.15);
+}
+.atp-fb-ic {
+    font-size: 14px;
+}
+.atp-fb-cat {
+    font-weight: 700;
+    color: rgb(var(--v-theme-error));
+}
+.atp-fb-cmt {
+    font-weight: 500;
+}
+.atp-fb-user {
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    font-size: 11px;
 }
 .atp-turn {
     padding: 7px 12px;
@@ -739,6 +874,39 @@ export default {
     text-overflow: ellipsis;
 }
 .atp-turn-sub { font-size: 11px; color: rgba(var(--v-theme-on-surface), 0.5); margin-top: 2px; padding-left: 20px; }
+
+/* 채팅방 목록 (master) */
+.atp-roomsearch {
+    width: calc(100% - 16px);
+    margin: 2px 8px 6px;
+    padding: 5px 9px;
+    font-size: 12px;
+    border: 1px solid rgba(var(--v-border-color), 0.25);
+    border-radius: 6px;
+    background: rgba(var(--v-theme-on-surface), 0.03);
+    color: rgb(var(--v-theme-on-surface));
+    outline: none;
+}
+.atp-roomsearch:focus { border-color: rgb(var(--v-theme-primary)); }
+.atp-room {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+}
+.atp-room:hover { background: rgba(var(--v-theme-on-surface), 0.05); }
+.atp-room-top { display: flex; align-items: center; gap: 6px; }
+.atp-room-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.atp-room-sub { font-size: 11px; color: rgba(var(--v-theme-on-surface), 0.5); margin-top: 2px; padding-left: 22px; }
+.atp-back {
+    display: inline-flex;
+    align-items: center;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: rgb(var(--v-theme-primary));
+    padding: 0 2px;
+}
+.atp-rail-room { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
 
 .atp-split {
     flex: 0 0 5px;
