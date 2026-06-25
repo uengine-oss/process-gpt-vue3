@@ -75,7 +75,7 @@
             </ul>
         </details>
 
-        <details v-if="showContextBlock" class="side-info__box" :open="!showAttachmentsBlock && !showTodosBlock">
+        <details v-if="showContextBlock" class="side-info__box" open>
             <summary class="side-info__summary">
                 <span class="side-info__title">{{ $t('AgentChatRoomContext.context') }}</span>
             </summary>

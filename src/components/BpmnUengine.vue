@@ -1222,8 +1222,8 @@ export default {
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             participant.forEach((element) => {
-                const horizontal = element.di.isHorizontal;
-                if (horizontal) {
+                const isCurrentlyHorizontal = element.di.isHorizontal !== false && element.width > element.height;
+                if (isCurrentlyHorizontal) {
                     palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
                     element.di.isHorizontal = false;
                 } else {

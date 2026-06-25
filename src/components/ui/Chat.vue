@@ -2330,6 +2330,26 @@
                                                                                 </div>
                                                                             </v-card>
                                                                         </div>
+                                                                        <!-- get_form_fields 도구 결과 폼 렌더링 -->
+                                                                        <div
+                                                                            v-if="chatRoomMode && getFormFieldsFromToolCalls(message)"
+                                                                            class="mt-2 mb-2"
+                                                                        >
+                                                                            <DynamicForm
+                                                                                :formHTML="getFormFieldsFromToolCalls(message).html"
+                                                                                v-model="formFieldsFormValues[message.uuid]"
+                                                                                :readonly="false"
+                                                                            />
+                                                                            <div class="d-flex justify-end mt-2">
+                                                                                <v-btn
+                                                                                    color="primary"
+                                                                                    size="small"
+                                                                                    @click.stop="submitFormFields(message)"
+                                                                                >
+                                                                                    제출
+                                                                                </v-btn>
+                                                                            </div>
+                                                                        </div>
                                                                         <!--   -->
                                                                         <v-progress-linear
                                                                             v-if="userFilteredMessages.length - 1 == index && isLoading"
@@ -3507,6 +3527,7 @@ export default {
             isViewJSON: [],
             isviewJSONStatus: false,
             toolOutputOpenMap: {},
+            formFieldsFormValues: {},
             attachedImages: [],
             delImgBtn: false,
             // PDF 업로드(정의체계도/패널 공통)
@@ -4386,10 +4407,12 @@ export default {
                             output = this.formatToolOutput(rawOutput);
                         }
                         return {
+                            name,
                             label: this.formatToolName(name) || name,
                             kind,
                             status: (t?.status || 'done').toString(),
-                            output
+                            output,
+                            rawOutput: rawOutput
                         };
                     })
                     .filter((t) => t.label);
@@ -4408,6 +4431,77 @@ export default {
                 return JSON.stringify(data, null, 2);
             } catch {
                 return String(raw);
+            }
+        },
+        getFormFieldsFromToolCalls(message) {
+            try {
+                const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
+                for (const t of tools) {
+                    const name = (t?.name || t?.tool || '').toString().split('__').pop();
+                    if (name !== 'get_form_fields' || !t?.output) continue;
+                    let raw = t.output;
+                    if (typeof raw === 'string') {
+                        const contentMatch = raw.match(/^content='([\s\S]*?)'\s+name='.*?'\s+tool_call_id='.*?'$/);
+                        if (contentMatch) {
+                            raw = contentMatch[1].replace(/\\([\\'"ntr])/g, (_, c) => {
+                                if (c === '\\') return '\\';
+                                if (c === "'") return "'";
+                                if (c === '"') return '"';
+                                if (c === 'n') return '\n';
+                                if (c === 't') return '\t';
+                                if (c === 'r') return '\r';
+                                return '\\' + c;
+                            });
+                        }
+                        try { raw = JSON.parse(raw); } catch { continue; }
+                    }
+                    if (raw && typeof raw === 'object' && raw.html) {
+                        const msgKey = message.uuid || '';
+                        if (msgKey && !this.formFieldsFormValues[msgKey]) {
+                            const init = {};
+                            if (Array.isArray(raw.fields_json)) {
+                                raw.fields_json.forEach(f => { if (f.key) init[f.key] = ''; });
+                            }
+                            this.formFieldsFormValues[msgKey] = init;
+                        }
+                        return {
+                            html: raw.html,
+                            formId: raw.id || raw.form_id || '',
+                            activityName: raw.activity_id || '',
+                            fieldsJson: raw.fields_json || []
+                        };
+                    }
+                }
+                return null;
+            } catch { return null; }
+        },
+        submitFormFields(message) {
+            const formData = this.getFormFieldsFromToolCalls(message);
+            const values = this.formFieldsFormValues[message.uuid] || {};
+            const lines = [];
+            if (formData && Array.isArray(formData.fieldsJson)) {
+                formData.fieldsJson.forEach(f => {
+                    const label = f.label || f.key || '';
+                    const val = values[f.key] ?? '';
+                    lines.push(`${label}: ${val}`);
+                });
+            } else {
+                Object.entries(values).forEach(([key, val]) => {
+                    lines.push(`${key}: ${val}`);
+                });
+            }
+            const text = lines.join('\n');
+            if (text.trim()) {
+                this.$emit('sendMessage', {
+                    text,
+                    images: [],
+                    mentionedUsers: [],
+                    orchestration: (this.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
+                    file: null,
+                    files: [],
+                    rawFiles: [],
+                    reply: null
+                });
             }
         },
         hasAgentLogs(message) {
@@ -6940,6 +7034,11 @@ pre {
     font-family: 'Menlo', 'Consolas', monospace;
     white-space: pre-wrap;
     word-break: break-all;
+}
+
+.form-fields-preview-card {
+    border-color: rgba(var(--v-theme-primary), 0.25) !important;
+    max-width: 480px;
 }
 
 .chat-room-loading-indicator {

@@ -169,6 +169,7 @@
                                 @getMoreChat="loadMoreMessages"
                                 @human-feedback-submit="handleHumanFeedbackSubmit"
                                 @human-feedback-skip="handleHumanFeedbackSkip"
+                                @sendMessage="handleSendMessage"
                             />
                         </div>
 
@@ -334,6 +335,7 @@
                             @getMoreChat="loadMoreMessages"
                             @human-feedback-submit="handleHumanFeedbackSubmit"
                             @human-feedback-skip="handleHumanFeedbackSkip"
+                            @sendMessage="handleSendMessage"
                         />
                     </div>
 
@@ -6983,7 +6985,8 @@ export default {
                 get_organization: '조직도 조회',
                 ask_user: '사용자 확인 요청',
                 create_consulting_process_workitem: '컨설팅 기반 프로세스 생성',
-                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청'
+                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청',
+                get_current_user: '사용자 정보 조회'
             };
             return toolNameMap[key] || key;
         },
