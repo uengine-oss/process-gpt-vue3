@@ -3153,6 +3153,25 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async watchTenantSkills(callback: (payload: any) => void, options: any = {}) {
+        try {
+            const channel = options?.channel || `tenant-skills-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            return await storage._watch(
+                {
+                    channel,
+                    table: 'tenant_skills',
+                    filter: options?.filter || null
+                },
+                (payload) => {
+                    callback(payload);
+                }
+            );
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async watchNotifications(callback: (payload: any) => void) {
         try {
             return await storage._watch(
