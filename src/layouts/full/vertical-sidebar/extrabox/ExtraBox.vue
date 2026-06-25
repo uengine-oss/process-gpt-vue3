@@ -39,7 +39,7 @@
                 <v-tooltip :text="$t('ExtraBox.logOut')">
                     <template v-slot:activator="{ props }">
                         <v-btn icon class="bg-lightprimary" flat size="small" @click="logout()" v-bind="props">
-                            <Icon icon="mdi-logout-variant" class="text-primary" width="20" height="20" />
+                            <v-icon class="text-primary" size="20">mdi-logout-variant</v-icon>
                         </v-btn>
                     </template>
                 </v-tooltip>
@@ -51,15 +51,11 @@
 <script>
 import { defineComponent } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { Icon } from '@iconify/vue';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default defineComponent({
     name: 'ExtraBox',
-    components: {
-        Icon
-    },
     data() {
         return {
             name: '',

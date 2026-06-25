@@ -70,7 +70,7 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'overview',
         to: '/todolist',
         disable: false,
-        isVisible: true
+        isVisible: false // '나의 업무' 버튼 숨김
     },
     // {
     //     title: 'headerMenu.schedule',

@@ -1,7 +1,10 @@
 <template>
     <div class="logo">
-        <RouterLink to="/definition-map">
-            <img v-if="mode == 'ProcessGPT'" :src="logo" alt="home" style="width: 160px" />
+        <RouterLink to="/definition-map" class="brand">
+            <template v-if="mode == 'ProcessGPT'">
+                <img src="/images/chat-icon.png" alt="" class="brand-icon" />
+                <span class="brand-text">{{ brandName }}</span>
+            </template>
             <img v-else :src="uEngine6Logo" alt="home" style="width: 160px" />
         </RouterLink>
     </div>
@@ -9,8 +12,7 @@
 
 <script>
 import { RouterLink } from 'vue-router';
-import logo from '@/assets/images/logos/logo-dark.svg'; // import를 사용하여 이미지 경로를 가져옵니다.
-import uEngine6Logo from '@/assets/images/logos/uEngine6-logo.png'; // import를 사용하여 이미지 경로를 가져옵니다.
+import uEngine6Logo from '@/assets/images/logos/uEngine6-logo.png';
 
 export default {
     components: {
@@ -18,10 +20,33 @@ export default {
     },
     data() {
         return {
-            logo, // import한 이미지를 데이터 속성으로 사용합니다.
             uEngine6Logo,
-            mode: window.$mode
+            mode: window.$mode,
+            brandName: window._env_?.VITE_BRAND_NAME || import.meta.env.VITE_BRAND_NAME || 'Process GPT'
         };
     }
 };
 </script>
+
+<style scoped>
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+.brand-icon {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+.brand-text {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #233044;
+    white-space: nowrap;
+    line-height: 1.6;
+}
+</style>

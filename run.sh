@@ -26,6 +26,7 @@ if [ -f /opt/www/index.html ]; then
     VITE_KEYCLOAK_CLIENT_ID: "'$VITE_KEYCLOAK_CLIENT_ID'",\
     VITE_UPSTAGE_API_KEY: "'$VITE_UPSTAGE_API_KEY'",\
     VITE_GS_MODE: "'$VITE_GS_MODE'",\
+    VITE_BRAND_NAME: "'"$VITE_BRAND_NAME"'",\
   };\
   </script>' /opt/www/index.html
 else
