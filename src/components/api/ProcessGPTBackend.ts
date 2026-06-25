@@ -5978,6 +5978,70 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getAgentEvents(taskId: string) {
+        return await storage.list('events', {
+            match: { todo_id: taskId },
+            inArray: {
+                column: 'event_type',
+                values: [
+                    'task_started', 'task_completed', 'crew_completed',
+                    'tool_usage_started', 'tool_usage_finished',
+                    'human_asked', 'human_response', 'error',
+                    'human_checked', 'task_working'
+                ]
+            },
+            orderBy: 'timestamp'
+        }) || [];
+    }
+
+    async getAgentEventById(eventId: string) {
+        return await storage.getObject(`events/${eventId}`, { key: 'id' });
+    }
+
+    async getTodoStatus(taskId: string) {
+        return await storage.list('todolist', {
+            key: 'status, agent_mode, draft_status, feedback, agent_orch, consumer, draft, query',
+            match: { id: taskId },
+            maybeSingle: true
+        });
+    }
+
+    async getTodoOutput(taskId: string) {
+        return await storage.list('todolist', {
+            key: 'output, output_url',
+            match: { id: taskId },
+            maybeSingle: true
+        });
+    }
+
+    async watchAgentEvents(taskId: string, callback: (row: any) => void) {
+        return await storage._watch({
+            channel: `events-${taskId}`,
+            event: 'INSERT',
+            table: 'events',
+            filter: `todo_id=eq.${taskId}`
+        }, (payload: any) => {
+            callback(payload.new);
+        });
+    }
+
+    async watchTodoStatus(taskId: string, callback: (newRow: any, oldRow: any) => void) {
+        return await storage._watch({
+            channel: `todolist-${taskId}`,
+            event: 'UPDATE',
+            table: 'todolist',
+            filter: `id=eq.${taskId}`
+        }, (payload: any) => {
+            callback(payload.new, payload.old);
+        });
+    }
+
+    unwatchChannel(ref: any) {
+        if (ref) {
+            storage._watch_off(ref);
+        }
+    }
+
     // 상태 업데이트는 더 이상 사용하지 않음 (status 비사용 정책)
 
     async getData(path: string, options: any) {

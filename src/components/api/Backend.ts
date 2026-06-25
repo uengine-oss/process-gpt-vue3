@@ -216,6 +216,16 @@ export interface Backend {
     getGitConfigs(): Promise<any[]>;
     saveGitConfig(config: { id?: string; provider: string; base_url?: string; username: string; token: string; is_default: boolean }): Promise<void>;
     deleteGitConfig(id: string): Promise<void>;
+
+    // Agent Monitor API
+    putEvent(event: any): Promise<any>;
+    getAgentEvents(taskId: string): Promise<any[]>;
+    getAgentEventById(eventId: string): Promise<any>;
+    getTodoStatus(taskId: string): Promise<any>;
+    getTodoOutput(taskId: string): Promise<any>;
+    watchAgentEvents(taskId: string, callback: (row: any) => void): Promise<any>;
+    watchTodoStatus(taskId: string, callback: (newRow: any, oldRow: any) => void): Promise<any>;
+    unwatchChannel(ref: any): void;
 }
 
 // export type { Backend }
