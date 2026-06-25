@@ -9504,6 +9504,35 @@ class ProcessGPTBackend implements Backend {
         });
         return response?.data || null;
     }
+
+    async getDelegationHistory(taskId: string) {
+        if (!taskId) return [];
+        const { data, error } = await window.$supabase
+            .from('delegation_history')
+            .select('*')
+            .eq('task_id', taskId)
+            .order('created_at', { ascending: false });
+        if (error) throw new Error(error.message);
+        return data || [];
+    }
+
+    async addDelegationHistory(record: {
+        task_id: string;
+        from_user_id: string;
+        from_username: string;
+        to_user_id: string;
+        to_username: string;
+        reason?: string;
+        status?: string;
+    }) {
+        const { data, error } = await window.$supabase
+            .from('delegation_history')
+            .insert(record)
+            .select()
+            .single();
+        if (error) throw new Error(error.message);
+        return data;
+    }
 }
 
 export default ProcessGPTBackend;

@@ -888,11 +888,14 @@ export default {
                 errorMsg: `${me.workItem.activity.name} 실행 중 오류가 발생했습니다: ${error}`
             });
         },
-        delegateTask(delegateUser, assigneeUserInfo) {
+        delegateTask(delegateUser, assigneeUserInfo, reason) {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
+                    const previousUserId = me.workItem.worklist.endpoint;
+                    const previousUsername = assigneeUserInfo?.[0]?.username || localStorage.getItem('userName');
+
                     let notificationMessage = me.$t('FormWorkItem.delegateMessage', {
                         taskName: me.workItem.activity.name,
                         email: delegateUser.email,
@@ -925,6 +928,21 @@ export default {
 
                     // 위임 성공 후 workItem 정보 업데이트
                     me.workItem.worklist.endpoint = delegateUser.email;
+
+                    // 위임 이력 저장
+                    try {
+                        await backend.addDelegationHistory({
+                            task_id: me.workItem.worklist.taskId,
+                            from_user_id: previousUserId || localStorage.getItem('uid'),
+                            from_username: previousUsername || localStorage.getItem('userName'),
+                            to_user_id: delegateUser.uid || delegateUser.id,
+                            to_username: delegateUser.username,
+                            reason: reason || null,
+                            status: 'COMPLETED'
+                        });
+                    } catch (historyError) {
+                        console.error('위임 이력 저장 실패:', historyError);
+                    }
 
                     me.closeDelegateTask();
                 },

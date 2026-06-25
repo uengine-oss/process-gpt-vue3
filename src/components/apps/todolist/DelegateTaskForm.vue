@@ -119,6 +119,56 @@
                         </div>
                     </v-card-text>
                 </v-card>
+
+                <!-- 위임 사유 입력 -->
+                <v-card elevation="10" class="mt-3">
+                    <v-card-text class="pa-4">
+                        <div class="text-subtitle-2 font-weight-bold mb-2">{{ $t('DelegateTask.reason') }}</div>
+                        <v-textarea
+                            v-model="reason"
+                            :placeholder="$t('DelegateTask.reasonPlaceholder')"
+                            variant="outlined"
+                            density="compact"
+                            rows="2"
+                            auto-grow
+                            hide-details
+                        ></v-textarea>
+                    </v-card-text>
+                </v-card>
+
+                <!-- 위임 이력 -->
+                <v-card elevation="10" class="mt-3" v-if="delegationHistory.length > 0">
+                    <v-card-text class="pa-4">
+                        <div class="text-subtitle-2 font-weight-bold mb-2">{{ $t('DelegateTask.history') }}</div>
+                        <v-timeline density="compact" side="end" truncate-line="both">
+                            <v-timeline-item
+                                v-for="record in delegationHistory"
+                                :key="record.id"
+                                :dot-color="getStatusColor(record.status)"
+                                size="small"
+                            >
+                                <div class="text-body-2">
+                                    <span class="font-weight-bold">{{ record.from_username || record.from_user_id }}</span>
+                                    <v-icon size="16" class="mx-1">mdi-arrow-right</v-icon>
+                                    <span class="font-weight-bold">{{ record.to_username || record.to_user_id }}</span>
+                                    <v-chip
+                                        :color="getStatusColor(record.status)"
+                                        size="x-small"
+                                        variant="tonal"
+                                        class="ml-1"
+                                    >{{ $t('DelegateTask.status_' + record.status) }}</v-chip>
+                                </div>
+                                <div v-if="record.reason" class="text-caption text-medium-emphasis mt-1">
+                                    {{ $t('DelegateTask.reason') }}: {{ record.reason }}
+                                </div>
+                                <div class="text-caption text-medium-emphasis">
+                                    {{ formatDateTime(record.created_at) }}
+                                </div>
+                            </v-timeline-item>
+                        </v-timeline>
+                    </v-card-text>
+                </v-card>
+
                 <v-card-text class="pa-0">
                     <!-- 위임하기 관련 데스크탑 버전: v-data-table -->
                     <div class="mb-1">
@@ -195,11 +245,6 @@
                             </template>
                         </v-data-table>
                     </div>
-
-                    <!-- 모바일 버전: 기존 UserListPage -->
-                    <!-- <div v-else>
-                        <UserListPage :config="{itemsPerPage: 1, height: 200}" @selected-user="selectedUser"></UserListPage>
-                    </div> -->
                 </v-card-text>
             </v-card-text>
             <v-row class="ma-0 pa-4 pr-2 align-center">
@@ -241,7 +286,10 @@ export default {
             searchText: '',
             userList: [],
             isUserLoading: false,
-            currentEndpoint: null, // 현재 실제 담당자 이메일
+            currentEndpoint: null,
+            reason: '',
+            delegationHistory: [],
+            isHistoryLoading: false,
             tableHeaders: [
                 { title: this.$t('DelegateTask.profile'), key: 'profile', align: 'center', sortable: false, minWidth: '80px' },
                 { title: this.$t('DelegateTask.userInfo'), key: 'userInfo', align: 'start' },
@@ -313,7 +361,6 @@ export default {
             if (currentUserUid) {
                 const currentUserIndex = filteredList.findIndex((user) => user.id === currentUserUid);
                 if (currentUserIndex > 0) {
-                    // 현재 사용자를 찾아서 맨 앞으로 이동
                     const currentUser = filteredList.splice(currentUserIndex, 1)[0];
                     filteredList.unshift(currentUser);
                 }
@@ -330,11 +377,13 @@ export default {
     },
     created() {
         this.loadAssigneeInfo();
+        this.loadDelegationHistory();
     },
     watch: {
         task: {
             handler() {
                 this.loadAssigneeInfo();
+                this.loadDelegationHistory();
             },
             deep: true
         }
@@ -350,6 +399,27 @@ export default {
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
             return `${year}-${month}-${day} / ${hours}:${minutes}`;
+        },
+        getStatusColor(status) {
+            const colors = {
+                COMPLETED: 'success',
+                REQUESTED: 'warning',
+                ACCEPTED: 'info',
+                REJECTED: 'error'
+            };
+            return colors[status] || 'grey';
+        },
+        async loadDelegationHistory() {
+            if (!this.task || !this.task.worklist || !this.task.worklist.taskId) return;
+            this.isHistoryLoading = true;
+            try {
+                this.delegationHistory = await backend.getDelegationHistory(this.task.worklist.taskId);
+            } catch (error) {
+                console.error('위임 이력 로딩 실패:', error);
+                this.delegationHistory = [];
+            } finally {
+                this.isHistoryLoading = false;
+            }
         },
         async loadAssigneeInfo() {
             var me = this;
@@ -455,7 +525,7 @@ export default {
             this.delegateUser = user;
         },
         delegate() {
-            this.$emit('delegate', this.delegateUser, this.assigneeUserInfo);
+            this.$emit('delegate', this.delegateUser, this.assigneeUserInfo, this.reason);
         },
         close() {
             this.$emit('close');

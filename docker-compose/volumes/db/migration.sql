@@ -2508,3 +2508,62 @@ WHERE pd.type = 'dmn'
     WHERE u.id::text = pd.owner
       AND u.is_agent = true
   );
+
+-- ===============================================
+-- delegation_history: 위임 이력 테이블
+-- ===============================================
+DO $$ BEGIN
+  CREATE TYPE delegation_status AS ENUM ('REQUESTED', 'ACCEPTED', 'REJECTED', 'COMPLETED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 컬럼 보강 (이미 테이블이 있고 일부 컬럼만 빠진 경우 대비)
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS task_id uuid;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS from_user_id text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS from_username text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS to_user_id text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS to_username text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS reason text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS status delegation_status NOT NULL DEFAULT 'COMPLETED';
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS responded_at timestamptz;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
+
+-- 제약 (이미 있으면 무시)
+DO $$ BEGIN
+    ALTER TABLE public.delegation_history
+        ADD CONSTRAINT delegation_history_task_id_fkey FOREIGN KEY (task_id)
+            REFERENCES public.todolist(id) ON UPDATE CASCADE ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE public.delegation_history
+        ADD CONSTRAINT delegation_history_tenant_id_fkey FOREIGN KEY (tenant_id)
+            REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_delegation_history_task_id ON public.delegation_history (task_id);
+CREATE INDEX IF NOT EXISTS idx_delegation_history_tenant_id ON public.delegation_history (tenant_id);
+
+-- RLS
+ALTER TABLE public.delegation_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS delegation_history_select_policy ON public.delegation_history;
+CREATE POLICY delegation_history_select_policy ON public.delegation_history
+    FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS delegation_history_insert_policy ON public.delegation_history;
+CREATE POLICY delegation_history_insert_policy ON public.delegation_history
+    FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS delegation_history_update_policy ON public.delegation_history;
+CREATE POLICY delegation_history_update_policy ON public.delegation_history
+    FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS delegation_history_delete_policy ON public.delegation_history;
+CREATE POLICY delegation_history_delete_policy ON public.delegation_history
+    FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());

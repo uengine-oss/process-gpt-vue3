@@ -3212,7 +3212,14 @@
         "searchUser": "이름, 이메일 검색",
         "profile": "프로필",
         "userInfo": "대상 정보",
-        "delegateToMyself": "나에게 위임"
+        "delegateToMyself": "나에게 위임",
+        "reason": "위임 사유",
+        "reasonPlaceholder": "위임 사유를 입력하세요 (선택)",
+        "history": "위임 이력",
+        "status_COMPLETED": "완료",
+        "status_REQUESTED": "요청",
+        "status_ACCEPTED": "수락",
+        "status_REJECTED": "거절"
     },
     "UserInputGenerator": {
         "inputLabel": "생성하고싶은 에이전트를 입력하세요",

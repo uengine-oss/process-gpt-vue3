@@ -2117,12 +2117,15 @@ export default {
         closeDelegateTask() {
             this.delegateTaskDialog = false;
         },
-        delegateTask(delegateUser, assigneeUserInfo) {
+        delegateTask(delegateUser, assigneeUserInfo, reason) {
             var me = this;
 
             me.$try({
                 context: me,
                 action: async () => {
+                    const previousUserId = me.workItem.worklist.endpoint;
+                    const previousUsername = me.assigneeUserInfo?.[0]?.username || previousUserId;
+
                     if (me.mode == 'uEngine') {
                         await this.backend.delegateWorkItem(me.workItem.worklist.taskId, {
                             endpoint: delegateUser.email
@@ -2146,7 +2149,6 @@ export default {
 
                         // uid 값을 백엔드로 전송
                         const userIdForBackend = delegateUser.uid;
-                        const previousUserId = me.workItem.worklist.endpoint;
 
                         // role_bindings 업데이트
                         const instance = await this.backend.getInstance(me.workItem.worklist.instId);
@@ -2222,6 +2224,21 @@ export default {
                         ]);
 
                         me.workItem.worklist.endpoint = userIdForBackend;
+                    }
+
+                    // 위임 이력 저장
+                    try {
+                        await this.backend.addDelegationHistory({
+                            task_id: me.workItem.worklist.taskId,
+                            from_user_id: previousUserId || localStorage.getItem('uid'),
+                            from_username: previousUsername || localStorage.getItem('userName'),
+                            to_user_id: delegateUser.uid || delegateUser.id,
+                            to_username: delegateUser.username,
+                            reason: reason || null,
+                            status: 'COMPLETED'
+                        });
+                    } catch (historyError) {
+                        console.error('위임 이력 저장 실패:', historyError);
                     }
 
                     me.updatedKey++;

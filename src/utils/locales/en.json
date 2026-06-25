@@ -3212,7 +3212,14 @@
         "searchUser": "Search",
         "profile": "Profile",
         "userInfo": "User info",
-        "delegateToMyself": "Delegate to myself"
+        "delegateToMyself": "Delegate to myself",
+        "reason": "Reason",
+        "reasonPlaceholder": "Enter reason for delegation (optional)",
+        "history": "Delegation History",
+        "status_COMPLETED": "Completed",
+        "status_REQUESTED": "Requested",
+        "status_ACCEPTED": "Accepted",
+        "status_REJECTED": "Rejected"
     },
     "UserInputGenerator": {
         "inputLabel": "Enter the agent you want to generate",
