@@ -323,7 +323,7 @@
                             <!-- 업로드 드롭존 -->
                             <div
                                 class="kft-dropzone"
-                                :class="{ 'is-drag-over': isDragOver, 'is-uploading': uploadQueue.length > 0, [`is-role-${uploadTargetRole}`]: true }"
+                                :class="{ 'is-drag-over': isDragOver, 'is-uploading': uploading, [`is-role-${uploadTargetRole}`]: true }"
                                 @dragover.prevent="isDragOver = true"
                                 @dragleave.prevent="isDragOver = false"
                                 @drop.prevent="onDrop"
@@ -377,32 +377,59 @@
                                 />
                             </div>
 
-                            <!-- 업로드 진행 -->
-                            <div v-if="uploadQueue.length > 0" class="kft-upload-list">
-                                <div v-for="u in uploadQueue" :key="u.id" class="kft-upload-row">
-                                    <v-icon size="16" :color="u.status === 'failed' ? 'error' : u.status === 'done' ? 'success' : 'primary'">
-                                        {{ u.status === 'failed' ? 'mdi-alert-circle' : u.status === 'done' ? 'mdi-check-circle' : 'mdi-progress-upload' }}
-                                    </v-icon>
-                                    <span class="kft-upload-name">{{ u.name }}</span>
-                                    <v-chip
-                                        v-if="u.role"
-                                        size="x-small"
-                                        :color="roleMeta(u.role).color"
-                                        variant="tonal"
-                                    >
-                                        <v-icon start size="11">{{ roleMeta(u.role).icon }}</v-icon>
-                                        {{ roleMeta(u.role).label }}
-                                    </v-chip>
-                                    <span v-if="u.folder" class="text-caption text-medium-emphasis">→ {{ u.folder || '루트' }}</span>
-                                    <v-progress-linear
-                                        v-if="u.status === 'uploading'"
-                                        indeterminate
-                                        color="primary"
-                                        height="2"
-                                        class="kft-upload-progress"
-                                    />
-                                    <span v-else-if="u.status === 'failed'" class="text-caption text-error">{{ u.error }}</span>
-                                    <span v-else-if="u.status === 'done'" class="text-caption text-success">완료</span>
+                            <!-- 업로드 진행 패널 — 전체 행을 렌더하지 않고 진행바 + 처리 중(소량) + 실패만 표시.
+                                 전체 목록 열람/검색은 아래 페이지네이션 테이블이 담당. -->
+                            <div v-if="uploading || uploadStats.total > 0 || uploadSkipped > 0" class="kft-upload-progress-panel">
+                                <!-- 미지원 형식 제외 요약 (한 줄) -->
+                                <div v-if="uploadSkipped > 0" class="kft-upload-skipped">
+                                    <v-icon size="14" color="warning">mdi-information-outline</v-icon>
+                                    <span>지원하지 않는 형식 {{ uploadSkipped }}개 제외됨</span>
+                                </div>
+
+                                <!-- 해시/중복 검사 단계 (아직 total 미확정) -->
+                                <div v-if="uploading && uploadStats.total === 0" class="text-caption text-medium-emphasis">
+                                    파일 확인 중…
+                                </div>
+
+                                <!-- 진행바 + 카운트 -->
+                                <template v-if="uploadStats.total > 0">
+                                    <div class="kft-upload-progress-head">
+                                        <span class="text-caption font-weight-medium">
+                                            {{ uploadStats.done + uploadStats.failed }} / {{ uploadStats.total }} 처리
+                                            <span v-if="uploadStats.failed" class="text-error">· 실패 {{ uploadStats.failed }}</span>
+                                        </span>
+                                        <span class="text-caption text-medium-emphasis">{{ uploadProgressPct }}%</span>
+                                    </div>
+                                    <v-progress-linear :model-value="uploadProgressPct" color="primary" height="6" rounded />
+                                </template>
+
+                                <!-- 지금 처리 중 (≤ 동시성 N) -->
+                                <div v-if="uploadActive.length" class="kft-upload-active">
+                                    <div class="kft-upload-active-label">지금 처리 중</div>
+                                    <div v-for="u in uploadActive" :key="u.id" class="kft-upload-row">
+                                        <v-progress-circular indeterminate size="14" width="2" color="primary" />
+                                        <span class="kft-upload-name">{{ u.name }}</span>
+                                        <span v-if="u.folder" class="text-caption text-medium-emphasis">→ {{ u.folder }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- 실패 (접이식 + 스크롤) -->
+                                <div v-if="uploadFailed.length" class="kft-upload-failed">
+                                    <button type="button" class="kft-upload-failed-toggle" @click="showUploadFailed = !showUploadFailed">
+                                        <v-icon size="14" color="error">mdi-alert-circle</v-icon>
+                                        <span>실패 {{ uploadFailed.length }}건</span>
+                                        <v-icon size="14">{{ showUploadFailed ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                                    </button>
+                                    <div v-if="showUploadFailed" class="kft-upload-failed-list">
+                                        <div v-for="u in uploadFailedVisible" :key="u.id" class="kft-upload-row">
+                                            <v-icon size="14" color="error">mdi-alert-circle</v-icon>
+                                            <span class="kft-upload-name">{{ u.name }}</span>
+                                            <span class="text-caption text-error">{{ u.error }}</span>
+                                        </div>
+                                        <div v-if="uploadFailedOverflow > 0" class="text-caption text-medium-emphasis pa-2">
+                                            외 {{ uploadFailedOverflow }}건 — 아래 목록에서 '실패' 필터로 확인하세요
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -832,7 +859,14 @@ export default {
             uploadSearch: '',
             uploadStatusFilter: 'all',
             isDragOver: false,
-            uploadQueue: [],
+            // ── 업로드 진행 상태 (대량 폴더 업로드 대비: 전체 행을 들지 않고 카운터 + 소량 배열만) ──
+            uploading: false,                 // 진행 중 플래그 (dropzone is-uploading / 진행패널 표시)
+            uploadConcurrency: 4,             // 동시 처리 파일 수 (워커 풀). 임베딩 서버 부하 고려해 4. 튜닝 가능.
+            uploadStats: { total: 0, done: 0, failed: 0 },
+            uploadActive: [],                 // 지금 처리 중인 파일만 (≤ uploadConcurrency)
+            uploadFailed: [],                 // 실패분 (상한 UPLOAD_FAILED_CAP)
+            uploadSkipped: 0,                 // 이번 배치에서 미지원 확장자로 제외한 수
+            showUploadFailed: false,          // 실패 목록 펼침 토글
             deletingKeys: new Set(),
             reindexingKeys: new Set(), // 재인덱싱 진행 중인 파일 rowKey
             downloadingKeys: new Set(), // 다운로드 URL 조회 중인 파일 rowKey
@@ -949,6 +983,19 @@ export default {
             // currentFolder 적용 — 빈 문자열이면 전체, 아니면 그 폴더에 직접 속한 파일만 (하위 폴더 제외)
             if (!this.currentFolder) return list;
             return list.filter((f) => (f.folder_path || '') === this.currentFolder);
+        },
+        // 업로드 진행률(%) — (완료+실패)/전체.
+        uploadProgressPct() {
+            const t = this.uploadStats.total || 0;
+            if (!t) return 0;
+            return Math.round(((this.uploadStats.done + this.uploadStats.failed) / t) * 100);
+        },
+        // 실패 목록은 상한까지만 렌더(나머지는 카운트). 대량 업로드 시 DOM 폭발 방지.
+        uploadFailedVisible() {
+            return this.uploadFailed.slice(0, 50);
+        },
+        uploadFailedOverflow() {
+            return Math.max(0, this.uploadFailed.length - 50);
         },
         // 업로드 테이블 표시 컬럼 — 폴더(folder_path) 는 '전체'에서만 노출.
         // 특정 폴더 선택 시엔 모든 행이 같은 폴더라 숨긴다(역할 컬럼은 uploadHeaders 에서 이미 제외됨).
@@ -1263,6 +1310,13 @@ export default {
         async uploadFiles_(files, folderResolver = null) {
             const tenantId = window.$tenantName || '';
             if (!tenantId) return;
+            // 새 배치 시작 — 진행/요약 상태 초기화 후 진행 표시 on.
+            this.uploadSkipped = 0;
+            this.uploadStats = { total: 0, done: 0, failed: 0 };
+            this.uploadActive = [];
+            this.uploadFailed = [];
+            this.showUploadFailed = false;
+            this.uploading = true;
             // 파일별 folder_path 해석기 — 폴더 업로드(트리 보존)면 webkitRelativePath 기반,
             // 평범한 파일 업로드면 현재 폴더(currentFolder) 고정.
             const folderOf = (f) => (folderResolver ? folderResolver(f) : (this.currentFolder || ''));
@@ -1272,18 +1326,19 @@ export default {
             const allowedExts = this.roleAllowedExtensions[targetRole] || this.roleAllowedExtensions.content;
             const extOf = (name) => (name || '').split('.').pop()?.toLowerCase() || '';
             const isAllowed = (f) => allowedExts.includes(extOf(f.name));
+            // 미지원 확장자는 *리스트에 노출하지 않고* 카운트만 — 한 줄 요약(인라인 + 스낵바)으로 안내.
             const bad = files.filter((f) => !isAllowed(f));
             if (bad.length) {
-                const label = allowedExts.map((e) => e.toUpperCase()).join(', ');
-                for (const f of bad) {
-                    this.uploadQueue.push({
-                        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                        name: f.name, folder: folderOf(f), role: targetRole, status: 'failed',
-                        error: `이 분류는 ${label} 형식만 업로드할 수 있습니다`
-                    });
-                }
+                this.uploadSkipped += bad.length;
                 files = files.filter(isAllowed);
-                if (!files.length) return;
+            }
+            if (!files.length) {
+                if (this.uploadSkipped) {
+                    const label = allowedExts.map((e) => e.toUpperCase()).join(', ');
+                    this.notify(`지원하지 않는 형식 ${this.uploadSkipped}개를 제외했습니다 (허용: ${label})`, 'warning');
+                }
+                this.uploading = false;
+                return;
             }
 
             // 1) 해시 계산 + 중복 체크 (다이얼로그는 한 파일씩 순차로)
@@ -1310,18 +1365,42 @@ export default {
                 }
                 accepted.push({ file, hash });
             }
-            if (!accepted.length) return;
+            if (!accepted.length) { this.uploading = false; return; }
 
             const docRole = this.uploadTargetRole;
             const usedFolders = new Set();
-            const tasks = accepted.map(({ file, hash }) => {
-                const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-                const fileFolder = folderOf(file);
-                usedFolders.add(fileFolder);
-                this.uploadQueue.push({ id, name: file.name, folder: fileFolder, role: docRole, status: 'uploading', error: null });
-                return this.uploadOne(id, file, tenantId, fileFolder, hash, docRole);
-            });
-            await Promise.allSettled(tasks);
+            this.uploadStats = { total: accepted.length, done: 0, failed: 0 };
+
+            // 동시성 풀 — accepted 를 N개 워커로 나눠 처리. 브라우저 연결수에 의존하지 않고
+            // 앱이 직접 동시 개수를 통제(임베딩 서버 보호)하며 '지금 처리 중' 집합을 정확히 추적.
+            // 수천~만 개여도 화면엔 active(≤N) + 실패 일부만 → DOM 가벼움.
+            const FAILED_CAP = 200;
+            const queue = accepted.slice();
+            const runWorker = async () => {
+                while (queue.length) {
+                    const { file, hash } = queue.shift();
+                    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                    const fileFolder = folderOf(file);
+                    usedFolders.add(fileFolder);
+                    const baseName = (file.name || 'file').replace(/\\/g, '/').split('/').pop() || 'file';
+                    const active = { id, name: baseName, folder: fileFolder };
+                    this.uploadActive.push(active);
+                    const err = await this.uploadOne(file, tenantId, fileFolder, hash, docRole);
+                    this.uploadActive = this.uploadActive.filter((a) => a.id !== id);
+                    if (err) {
+                        this.uploadStats.failed += 1;
+                        if (this.uploadFailed.length < FAILED_CAP) {
+                            this.uploadFailed.push({ id, name: baseName, error: err });
+                        }
+                    } else {
+                        this.uploadStats.done += 1;
+                    }
+                }
+            };
+            const workerCount = Math.min(this.uploadConcurrency, accepted.length);
+            await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
+
+            this.uploading = false;
             // 업로드 성공 시 emptyFolders 에서 (사용한 경로 + 해당 role) 제거
             this.emptyFolders = this.emptyFolders.filter(
                 (f) => !(usedFolders.has(f.folder_path) && (f.doc_role || 'content') === docRole)
@@ -1329,11 +1408,9 @@ export default {
             await this.fetchList();
             // 업로드 배치 끝 → 영향받은 폴더 카드 1회 갱신 (단일·폴더 업로드 모두 이 경로).
             this.refreshFolderCards([...usedFolders], docRole);
-            setTimeout(() => {
-                this.uploadQueue = this.uploadQueue.filter((u) => u.status === 'uploading');
-            }, 3000);
         },
-        async uploadOne(id, file, tenantId, folderPath = '', fileHash = '', docRole = 'content') {
+        // 단일 파일 업로드 → 성공 시 null, 실패 시 에러 문자열 반환 (호출자=워커가 집계).
+        async uploadOne(file, tenantId, folderPath = '', fileHash = '', docRole = 'content') {
             const fd = new FormData();
             // 폴더 업로드 시 file.name 이 전체 상대경로일 수 있어(webkitdirectory/Electron),
             // multipart filename 을 basename 으로 명시한다. 폴더 구조는 folder_path 로 별도 전송.
@@ -1349,21 +1426,9 @@ export default {
                 const { data } = await axios.post('/memento/knowledge/files/upload', fd, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                const item = this.uploadQueue.find((u) => u.id === id);
-                if (item) {
-                    if (data?.indexed) {
-                        item.status = 'done';
-                    } else {
-                        item.status = 'failed';
-                        item.error = data?.error || '인덱싱 실패';
-                    }
-                }
+                return data?.indexed ? null : (data?.error || '인덱싱 실패');
             } catch (e) {
-                const item = this.uploadQueue.find((u) => u.id === id);
-                if (item) {
-                    item.status = 'failed';
-                    item.error = e?.response?.data?.detail || e?.message || '업로드 실패';
-                }
+                return e?.response?.data?.detail || e?.message || '업로드 실패';
             }
         },
         // 업로드/삭제 *배치 후* 영향받은 폴더 카드만 1회 갱신 (storm 없는 자동 경로).
@@ -2147,6 +2212,59 @@ export default {
 
 .kft-upload-progress {
     flex: 0 0 80px;
+}
+
+/* ── 업로드 진행 패널 (대량 폴더 업로드 대응: 전체 행 미렌더, 진행바 + active + 실패만) ── */
+.kft-upload-progress-panel {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+.kft-upload-skipped {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: rgb(var(--v-theme-warning));
+}
+.kft-upload-progress-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.kft-upload-active {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.kft-upload-active-label {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.45);
+    margin-top: 2px;
+}
+.kft-upload-failed-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    cursor: pointer;
+    font-size: 12px;
+    color: rgb(var(--v-theme-error));
+}
+.kft-upload-failed-list {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 4px;
 }
 
 .kft-toolbar {
