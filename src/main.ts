@@ -13,7 +13,10 @@ import VueTablerIcons from 'vue-tabler-icons';
 import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar';
-import 'perfect-scrollbar/css/perfect-scrollbar.css';
+// 래퍼(vue3-perfect-scrollbar)가 제공하는 CSS를 써야 함. 베이스 perfect-scrollbar CSS에는
+// `.ps { position: relative }` 가 빠져 있어 절대배치 레일(ps__rail-x/y)이 엉뚱한 조상 기준으로
+// top/bottom = scrollTop 만큼 튕겨나가 스크롤이 깨진다.
+import 'vue3-perfect-scrollbar/dist/vue3-perfect-scrollbar.css';
 import App from './App.vue';
 import vuetify from './plugins/vuetify';
 import hammerDirective from '@/components/directive/hammerDirective';
