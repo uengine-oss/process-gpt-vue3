@@ -6643,7 +6643,7 @@ export default {
                             this.setAgentStatus(agentId, { state: 'ready', message: '' });
                         }
                     },
-                    onDone: async (content) => {
+                    onDone: async (content, doneEvent = {}) => {
                         const finalContent = (content || full || '').toString().trim();
                         // 침묵 정책 제거: NO_RESPONSE도 그대로 텍스트로 표시하지 않도록 빈 값 처리
                         let safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
@@ -6736,6 +6736,11 @@ export default {
                             displayContent = this.extractDisplayAssistantContent(this.messages[idx].content);
                             this.messages[idx].isLoading = false;
                             this.messages[idx].contentType = 'text';
+
+                            // 출처(sources) — deepagents-lite done 이벤트가 navigator 도구에서
+                            // 결정론적으로 수집한 구조화 출처를 싣는다. 답변 하단에 칩 + 스니펫 모달로 렌더.
+                            const _sources = Array.isArray(doneEvent?.sources) ? doneEvent.sources : [];
+                            if (_sources.length) this.messages[idx].sources = _sources;
 
                             // NOTE: 이전에는 0.5초 후 optimistic 메시지를 강제 splice 했지만,
                             // 그 사이에 __humanFeedback 같은 프런트엔드 전용 상태가 사라져

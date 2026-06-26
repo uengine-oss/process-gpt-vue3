@@ -320,6 +320,42 @@
                                 </span>
                             </div>
 
+                            <!-- 폴더 요약 카드 (선택한 폴더의 LLM 요약 — 파일 요약들을 모아 생성) -->
+                            <div v-if="currentFolder" class="kft-folder-card">
+                                <div class="kft-folder-card-head">
+                                    <v-icon size="15" color="primary">mdi-text-box-multiple-outline</v-icon>
+                                    <span class="kft-folder-card-title">폴더 요약</span>
+                                    <v-chip
+                                        v-if="folderCardState === 'pending' || folderCardState === 'loading'"
+                                        size="x-small"
+                                        color="grey"
+                                        variant="tonal"
+                                        class="ml-1"
+                                    >
+                                        <v-progress-circular indeterminate size="11" width="2" class="mr-1" />
+                                        요약 생성 중
+                                    </v-chip>
+                                </div>
+                                <template v-if="folderCard">
+                                    <div class="kft-folder-card-summary">{{ folderCard.summary || '요약 내용이 없습니다.' }}</div>
+                                    <div v-if="(folderCard.topics || []).length" class="kft-folder-card-topics">
+                                        <v-chip v-for="t in folderCard.topics" :key="t" size="x-small" variant="tonal" color="primary">{{ t }}</v-chip>
+                                    </div>
+                                    <div class="kft-folder-card-meta text-caption text-medium-emphasis">
+                                        문서 {{ folderCard.n_docs_total ?? folderCard.n_docs_direct ?? 0 }}개
+                                        <span v-if="(folderCard.key_entities || []).length"> · {{ folderCard.key_entities.slice(0, 5).join(', ') }}</span>
+                                    </div>
+                                </template>
+                                <div v-else-if="folderCardState === 'pending' || folderCardState === 'loading'" class="text-caption text-medium-emphasis">
+                                    이 폴더 파일들의 요약을 모아 폴더 요약을 생성하는 중입니다… (자동 갱신)
+                                </div>
+                                <div v-else-if="folderCardState === 'stalled'" class="kft-folder-card-empty">
+                                    <span class="text-caption text-medium-emphasis">아직 폴더 요약이 없습니다.</span>
+                                    <v-btn size="x-small" variant="tonal" color="primary" prepend-icon="mdi-refresh" @click="generateFolderCard">지금 생성</v-btn>
+                                </div>
+                                <div v-else class="text-caption text-medium-emphasis">폴더 요약이 없습니다.</div>
+                            </div>
+
                             <!-- 업로드 드롭존 -->
                             <div
                                 class="kft-dropzone"
@@ -550,6 +586,17 @@
                                             <v-icon v-bind="props" size="14" color="error" class="ml-1">mdi-information-outline</v-icon>
                                         </template>
                                     </v-tooltip>
+                                    <!-- 요약 상태 (요약=최종 완료의 일부) -->
+                                    <v-chip
+                                        v-if="summaryMeta(item).show"
+                                        size="x-small"
+                                        :color="summaryMeta(item).color"
+                                        variant="tonal"
+                                        class="ml-1"
+                                    >
+                                        <v-icon start size="11">{{ summaryMeta(item).icon }}</v-icon>
+                                        {{ summaryMeta(item).label }}
+                                    </v-chip>
                                 </template>
                                 <template v-slot:[`item.actions`]="{ item }">
                                     <v-tooltip text="다운로드" location="top">
@@ -578,6 +625,21 @@
                                                 @click="reindexFile(item)"
                                             >
                                                 <v-icon size="16">mdi-refresh</v-icon>
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                    <v-tooltip v-if="item.summary_status === 'failed' && canDelete(item)" text="요약 다시 생성 (재임베딩 없음)" location="top">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                size="small"
+                                                color="warning"
+                                                :loading="resummarizingKeys.has(rowKey(item))"
+                                                @click="resummarizeFile(item)"
+                                            >
+                                                <v-icon size="16">mdi-text-box-search-outline</v-icon>
                                             </v-btn>
                                         </template>
                                     </v-tooltip>
@@ -861,7 +923,8 @@ export default {
             isDragOver: false,
             // ── 업로드 진행 상태 (대량 폴더 업로드 대비: 전체 행을 들지 않고 카운터 + 소량 배열만) ──
             uploading: false,                 // 진행 중 플래그 (dropzone is-uploading / 진행패널 표시)
-            uploadConcurrency: 4,             // 동시 처리 파일 수 (워커 풀). 임베딩 서버 부하 고려해 4. 튜닝 가능.
+            uploadConcurrency: 8,             // 동시 처리 파일 수 상한(워커 풀). 과부하 시 적응형 백오프로 자동 축소.
+                                              // 폐쇄망 HTTP/1.1 환경은 브라우저가 origin당 6으로 캡 → 실효 6~8.
             uploadStats: { total: 0, done: 0, failed: 0 },
             uploadActive: [],                 // 지금 처리 중인 파일만 (≤ uploadConcurrency)
             uploadFailed: [],                 // 실패분 (상한 UPLOAD_FAILED_CAP)
@@ -869,6 +932,7 @@ export default {
             showUploadFailed: false,          // 실패 목록 펼침 토글
             deletingKeys: new Set(),
             reindexingKeys: new Set(), // 재인덱싱 진행 중인 파일 rowKey
+            resummarizingKeys: new Set(), // 재요약 진행 중인 파일 rowKey
             downloadingKeys: new Set(), // 다운로드 URL 조회 중인 파일 rowKey
             deleteDialog: false,
             deleteTarget: null,
@@ -884,7 +948,7 @@ export default {
             bulkReindexing: false, // 일괄 재인덱싱 진행 중
             statusOptions: [
                 { value: 'all', label: '모든 상태' },
-                { value: 'indexed', label: '인덱싱 완료' },
+                { value: 'indexed', label: '완료' },
                 { value: 'processing', label: '처리중' },
                 { value: 'pending', label: '대기' },
                 { value: 'failed', label: '실패' },
@@ -932,6 +996,9 @@ export default {
             ],
             // 폴더 네비게이션
             currentFolder: '',
+            folderCard: null,                 // 선택 폴더의 요약 카드 (knowledge_folder_cards)
+            // none(파일없음/없음) | loading(조회중) | pending(백그라운드 생성중) | done | stalled(폴링후에도없음)
+            folderCardState: 'none',
             emptyFolders: [], // knowledge_folders 테이블에서 가져온 빈 폴더 (영속화)
             expandedFolders: {}, // { [folderPath]: true } — 펼쳐진 폴더. localStorage 영속.
             inlineCreate: { active: false, parent: '', name: '' }, // 인라인 새 폴더 입력 상태
@@ -1139,6 +1206,7 @@ export default {
         currentFolder() {
             // 폴더 선택 변경 시마다 저장 ('전체' 버튼 인라인 변경 포함) → 새로고침 유지
             this.persistNavState();
+            this.fetchFolderCard();   // 선택 폴더의 요약 카드 갱신
         }
     },
     mounted() {
@@ -1202,7 +1270,7 @@ export default {
         },
         statusLabel(s) {
             return {
-                indexed: '인덱싱 완료',
+                indexed: '완료',
                 processing: '처리중',
                 pending: '대기',
                 failed: '실패',
@@ -1371,29 +1439,49 @@ export default {
             const usedFolders = new Set();
             this.uploadStats = { total: accepted.length, done: 0, failed: 0 };
 
-            // 동시성 풀 — accepted 를 N개 워커로 나눠 처리. 브라우저 연결수에 의존하지 않고
-            // 앱이 직접 동시 개수를 통제(임베딩 서버 보호)하며 '지금 처리 중' 집합을 정확히 추적.
-            // 수천~만 개여도 화면엔 active(≤N) + 실패 일부만 → DOM 가벼움.
+            // 동시성 풀 + 적응형 백오프(AIMD) — 과부하(429/5xx/timeout/인덱싱실패) 시 동시 한도를
+            // 곱셈 감소 + 짧은 쿨다운, 성공이 쌓이면 가산 회복. 워커는 N개지만 동적 한도(limit)
+            // 이하로만 in-flight 유지 → 서버 과부하를 앱이 자가 제어. (active 집합 정확 추적)
             const FAILED_CAP = 200;
+            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
             const queue = accepted.slice();
+            const ctrl = { limit: this.uploadConcurrency, okStreak: 0, cooldownUntil: 0 };
+            const onTransient = () => {
+                ctrl.limit = Math.max(1, Math.floor(ctrl.limit / 2));
+                ctrl.okStreak = 0;
+                ctrl.cooldownUntil = Date.now() + 2000;   // 전 워커 공유 쿨다운
+            };
+            const onSuccess = () => {
+                ctrl.okStreak += 1;
+                if (ctrl.okStreak >= 3 && ctrl.limit < this.uploadConcurrency) {
+                    ctrl.limit += 1;          // 가산 회복
+                    ctrl.okStreak = 0;
+                }
+            };
             const runWorker = async () => {
                 while (queue.length) {
+                    // 동적 한도 / 쿨다운 게이트 — 초과면 잠깐 대기 후 재확인
+                    while (this.uploadActive.length >= ctrl.limit || Date.now() < ctrl.cooldownUntil) {
+                        await sleep(150);
+                    }
+                    if (!queue.length) break;
                     const { file, hash } = queue.shift();
                     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
                     const fileFolder = folderOf(file);
                     usedFolders.add(fileFolder);
                     const baseName = (file.name || 'file').replace(/\\/g, '/').split('/').pop() || 'file';
-                    const active = { id, name: baseName, folder: fileFolder };
-                    this.uploadActive.push(active);
-                    const err = await this.uploadOne(file, tenantId, fileFolder, hash, docRole);
+                    this.uploadActive.push({ id, name: baseName, folder: fileFolder });
+                    const res = await this.uploadOne(file, tenantId, fileFolder, hash, docRole);
                     this.uploadActive = this.uploadActive.filter((a) => a.id !== id);
-                    if (err) {
+                    if (res) {
                         this.uploadStats.failed += 1;
                         if (this.uploadFailed.length < FAILED_CAP) {
-                            this.uploadFailed.push({ id, name: baseName, error: err });
+                            this.uploadFailed.push({ id, name: baseName, error: res.error });
                         }
+                        if (res.transient) onTransient();
                     } else {
                         this.uploadStats.done += 1;
+                        onSuccess();
                     }
                 }
             };
@@ -1409,7 +1497,8 @@ export default {
             // 업로드 배치 끝 → 영향받은 폴더 카드 1회 갱신 (단일·폴더 업로드 모두 이 경로).
             this.refreshFolderCards([...usedFolders], docRole);
         },
-        // 단일 파일 업로드 → 성공 시 null, 실패 시 에러 문자열 반환 (호출자=워커가 집계).
+        // 단일 파일 업로드 → 성공 시 null, 실패 시 { error, transient } 반환.
+        // transient=true(429/5xx/timeout/네트워크/인덱싱실패)면 워커 풀이 동시 한도를 줄임(백오프).
         async uploadOne(file, tenantId, folderPath = '', fileHash = '', docRole = 'content') {
             const fd = new FormData();
             // 폴더 업로드 시 file.name 이 전체 상대경로일 수 있어(webkitdirectory/Electron),
@@ -1426,9 +1515,14 @@ export default {
                 const { data } = await axios.post('/memento/knowledge/files/upload', fd, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                return data?.indexed ? null : (data?.error || '인덱싱 실패');
+                // 200이지만 indexed=false(파싱/임베딩 실패)는 과부하 가능성 → transient 로 간주(백오프).
+                return data?.indexed ? null : { error: data?.error || '인덱싱 실패', transient: true };
             } catch (e) {
-                return e?.response?.data?.detail || e?.message || '업로드 실패';
+                const status = e?.response?.status;
+                const transient =
+                    !status || status === 429 || status >= 500 ||
+                    e?.code === 'ECONNABORTED' || /timeout/i.test(e?.message || '');
+                return { error: e?.response?.data?.detail || e?.message || '업로드 실패', transient };
             }
         },
         // 업로드/삭제 *배치 후* 영향받은 폴더 카드만 1회 갱신 (storm 없는 자동 경로).
@@ -1448,6 +1542,53 @@ export default {
             } catch (e) {
                 console.warn('[KnowledgeFilesTab] refresh folder cards failed', e);
             }
+        },
+        // 선택된 폴더의 요약 카드 조회 + '생성 중' 폴링.
+        // 카드가 아직 없고 그 폴더에 파일이 있으면(=백그라운드 생성 예정) 5초 간격으로 자동 폴링.
+        async fetchFolderCard() {
+            const tenantId = window.$tenantName || '';
+            const fp = this.currentFolder;
+            const token = (this._folderCardToken = (this._folderCardToken || 0) + 1);
+            this.folderCard = null;
+            if (!tenantId || !fp) { this.folderCardState = 'none'; return; }
+            // 이 폴더(또는 하위)에 파일이 있으면 카드가 곧 생성될 것으로 기대 → 폴링 대상
+            const expectsCard = this.uploadFiles.some((f) => {
+                const p = f.folder_path || '';
+                return p === fp || p.startsWith(fp + '/');
+            });
+            const stale = () => this.currentFolder !== fp || token !== this._folderCardToken;
+            const tryFetch = async () => {
+                const { data } = await axios.get('/memento/folders/card', {
+                    params: { tenant_id: tenantId, folder_path: fp, doc_role: this.currentRole }
+                });
+                return data?.card || null;
+            };
+            this.folderCardState = 'loading';
+            try {
+                let card = await tryFetch();
+                if (stale()) return;
+                let attempts = 0;
+                while (!card && expectsCard && attempts < 6) {
+                    this.folderCardState = 'pending';     // '요약 생성 중'
+                    await new Promise((r) => setTimeout(r, 5000));
+                    if (stale()) return;
+                    card = await tryFetch();
+                    if (stale()) return;
+                    attempts += 1;
+                }
+                this.folderCard = card;
+                this.folderCardState = card ? 'done' : (expectsCard ? 'stalled' : 'none');
+            } catch (e) {
+                if (!stale()) { this.folderCard = null; this.folderCardState = 'none'; }
+            }
+        },
+        // 폴더 요약 수동 생성 ('지금 생성' 버튼) — refresh-cards 로 그 폴더 카드 재생성 후 폴링.
+        async generateFolderCard() {
+            const fp = this.currentFolder;
+            if (!fp) return;
+            this.folderCardState = 'pending';
+            await this.refreshFolderCards([fp], this.currentRole);
+            this.fetchFolderCard();   // 생성은 백그라운드 → 폴링으로 가져옴
         },
         // ─── 폴더 트리: 접기/펴기 ───
         loadExpandedState() {
@@ -1860,6 +2001,41 @@ export default {
                 this.reindexingKeys = after;
             }
         },
+        // 파일별 요약 상태 → 칩 메타 (요약=최종 완료의 일부). skipped/없음이면 show=false.
+        summaryMeta(item) {
+            const s = item?.summary_status;
+            if (s === 'done') return { show: true, label: '요약', color: 'success', icon: 'mdi-text-box-check-outline' };
+            if (s === 'failed') return { show: true, label: '요약 실패', color: 'error', icon: 'mdi-text-box-remove-outline' };
+            if (s === 'pending') return { show: true, label: '요약 중', color: 'grey', icon: 'mdi-text-box-search-outline' };
+            return { show: false };   // skipped(해당없음) 또는 미상
+        },
+        // 요약만 재생성 (재임베딩 없음) — '요약 실패' 파일의 '다시 요약' 버튼.
+        async resummarizeFile(item) {
+            if (!item) return;
+            const key = this.rowKey(item);
+            const next = new Set(this.resummarizingKeys);
+            next.add(key);
+            this.resummarizingKeys = next;
+            try {
+                const fd = new FormData();
+                fd.append('tenant_id', window.$tenantName);
+                fd.append('source_type', item.source_type);
+                fd.append('source_ref', item.source_ref);
+                if (this.myUid) fd.append('requester_uid', this.myUid);
+                const { data } = await axios.post('/memento/knowledge/files/resummarize', fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (data?.summarized) this.notify('요약 재생성 완료');
+                else this.notify('요약 재생성 실패', 'error', '잠시 후 다시 시도하세요');
+                await this.fetchList();
+            } catch (e) {
+                this.notify('요약 재생성 실패', 'error', e?.response?.data?.detail || e?.message);
+            } finally {
+                const after = new Set(this.resummarizingKeys);
+                after.delete(key);
+                this.resummarizingKeys = after;
+            }
+        },
         // 현재 목록의 실패 파일들 일괄 재인덱싱
         async retryAllFailed() {
             const targets = [...this.failedRetryable];
@@ -2265,6 +2441,43 @@ export default {
     flex-direction: column;
     gap: 4px;
     padding-top: 4px;
+}
+
+/* ── 폴더 요약 카드 ── */
+.kft-folder-card {
+    margin: 10px 0;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: rgba(var(--v-theme-primary), 0.04);
+    border: 1px solid rgba(var(--v-theme-primary), 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.kft-folder-card-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.kft-folder-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(var(--v-theme-primary));
+}
+.kft-folder-card-summary {
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+.kft-folder-card-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.kft-folder-card-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .kft-toolbar {

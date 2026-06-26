@@ -135,7 +135,7 @@ class DeepAgentRouterService {
                                     if (onOpenUi) onOpenUi(parsed);
                                     break;
                                 case 'done':
-                                    if (onDone) onDone(parsed.content);
+                                    if (onDone) onDone(parsed.content, parsed);
                                     break;
                                 case 'error':
                                     if (onError) onError(new Error(parsed.error || parsed.message || 'Agent error'));

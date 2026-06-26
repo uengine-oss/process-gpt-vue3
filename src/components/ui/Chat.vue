@@ -2128,6 +2128,32 @@
                                                                                     </v-card>
                                                                                 </v-col>
                                                                             </v-row>
+
+                                                                            <!-- navigator 출처 — 답변에서 참고한 자료. 클릭 시 스니펫 모달 -->
+                                                                            <div
+                                                                                v-if="Array.isArray(message.sources) && message.sources.length > 0"
+                                                                                class="nav-sources"
+                                                                            >
+                                                                                <div class="nav-sources__label">
+                                                                                    <v-icon icon="mdi-file-document-outline" size="x-small" start></v-icon>
+                                                                                    참고한 자료 {{ message.sources.length }}건
+                                                                                </div>
+                                                                                <div class="chips-container">
+                                                                                    <v-chip
+                                                                                        v-for="(source, sidx) in message.sources"
+                                                                                        :key="sidx"
+                                                                                        variant="outlined"
+                                                                                        size="small"
+                                                                                        color="primary"
+                                                                                        class="ma-1"
+                                                                                        @click="openSourceModal(source)"
+                                                                                    >
+                                                                                        <v-icon start icon="mdi-text-box-search-outline" size="x-small"></v-icon>
+                                                                                        {{ sourceChipLabel(source) }}
+                                                                                    </v-chip>
+                                                                                </div>
+                                                                            </div>
+
                                                                             <pre v-if="isViewJSON.includes(index)" class="text-body-1"
                                                                                 >{{ message.jsonContent }}
                                                                         </pre
@@ -3230,6 +3256,43 @@
             </v-card-actions>
         </v-card>
     </v-dialog>
+
+    <!-- navigator 출처 스니펫 모달 — AI가 참고한 문서의 해당 본문을 그대로 보여준다 -->
+    <v-dialog v-model="sourceModal.open" max-width="720" scrollable>
+        <v-card v-if="sourceModal.source">
+            <v-card-title class="d-flex align-center" style="gap: 6px">
+                <v-icon icon="mdi-text-box-search-outline" start></v-icon>
+                <span class="text-truncate">{{ sourceModal.source.file_name || '출처' }}</span>
+            </v-card-title>
+            <v-card-subtitle v-if="sourceModal.source.cite || sourceChipLabel(sourceModal.source)">
+                {{ sourceModal.source.cite || sourceChipLabel(sourceModal.source) }}
+            </v-card-subtitle>
+            <v-divider></v-divider>
+            <v-card-text>
+                <div
+                    v-if="sourceModal.source.path"
+                    class="text-caption text-medium-emphasis mb-2"
+                    style="word-break: break-all"
+                >
+                    경로: {{ sourceModal.source.path }}
+                </div>
+                <div class="source-snippet">{{ sourceModal.source.snippet || '(본문 미리보기가 제공되지 않았습니다.)' }}</div>
+            </v-card-text>
+            <v-card-actions>
+                <v-btn
+                    v-if="sourceModal.source.source_ref"
+                    variant="text"
+                    color="primary"
+                    prepend-icon="mdi-download"
+                    @click="downloadSourceFile(sourceModal.source)"
+                >
+                    원본 다운로드
+                </v-btn>
+                <v-spacer></v-spacer>
+                <v-btn variant="text" @click="sourceModal.open = false">닫기</v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -3445,6 +3508,8 @@ export default {
             replyUser: null,
             isViewJSON: [],
             isviewJSONStatus: false,
+            // navigator 출처 스니펫 모달
+            sourceModal: { open: false, source: null },
             attachedImages: [],
             delImgBtn: false,
             // PDF 업로드(정의체계도/패널 공통)
@@ -4828,6 +4893,64 @@ export default {
                 alert('파일을 찾을 수 없습니다.');
             }
         },
+        // navigator 출처 칩 라벨 — 파일명 + (있으면) 페이지
+        sourceChipLabel(source) {
+            if (!source) return '';
+            const name = source.file_name || source.path || '출처';
+            const pageLabel = source.page_label || (source.page != null ? String(source.page) : '');
+            return pageLabel ? `${name} · p.${pageLabel}` : name;
+        },
+        // 출처 칩 클릭 → AI가 참고한 본문 스니펫 모달
+        openSourceModal(source) {
+            this.sourceModal = { open: true, source: source || null };
+        },
+        // 출처 모달 → 원본 파일 다운로드 (drive: google file_id / upload: storage_path)
+        async downloadSourceFile(source) {
+            if (!source) return;
+            const ref = source.source_ref || source.file_id || '';
+            if (!ref) {
+                alert('원본 파일 정보를 찾을 수 없습니다.');
+                return;
+            }
+            let url = null;
+            try {
+                if (source.storage_type === 'drive') {
+                    url = await backend.getFileUrl(ref, { storageType: 'drive' });
+                } else {
+                    url = await backend.getFileUrl(ref);
+                }
+            } catch (e) {
+                url = null;
+            }
+            if (!url) {
+                alert('원본 파일을 찾을 수 없습니다.');
+                return;
+            }
+            // drive 는 google 다운로드 링크가 파일명을 관리 → 그대로 열기
+            if (source.storage_type === 'drive') {
+                window.open(url, '_blank');
+                return;
+            }
+            // upload(supabase storage): URL 이 storage_path(uuid) 기반이라 그냥 열면 파일명이 uuid 가 됨.
+            // → blob 으로 받아 실제 file_name 으로 저장 (cross-origin 은 a[download] 가 무시되므로 blob 필수).
+            const fileName = source.file_name || ref.split('/').pop() || 'download';
+            try {
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error('fetch failed');
+                const blob = await resp.blob();
+                const objUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = objUrl;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(objUrl);
+            } catch (e) {
+                // CORS 등으로 blob 실패 시 새 탭 폴백 (파일명은 서버 기준)
+                window.open(url, '_blank');
+            }
+        },
         openVerMangerDialog() {
             this.$emit('openVerMangerDialog', true);
         },
@@ -6074,6 +6197,34 @@ export default {
 </script>
 
 <style lang="scss">
+/* navigator 출처 칩 + 스니펫 */
+.nav-sources {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(var(--v-theme-on-surface), 0.12);
+
+    &__label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.72rem;
+        color: rgba(var(--v-theme-on-surface), 0.6);
+        margin-bottom: 4px;
+    }
+}
+.source-snippet {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    background: rgba(var(--v-theme-on-surface), 0.04);
+    border-left: 3px solid rgba(var(--v-theme-primary), 0.5);
+    border-radius: 4px;
+    padding: 12px 14px;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
 @keyframes breathe {
     0%,
     100% {
