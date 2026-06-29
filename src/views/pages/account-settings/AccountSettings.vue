@@ -52,6 +52,11 @@
                                     </v-tab> -->
                                 </template>
                             </template>
+                            <!-- 폴더 권한 관리 (PocAdmin 전용) -->
+                            <v-tab v-if="pocAdmin" value="FolderPermissions">
+                                <v-icon class="mr-2" size="20">mdi-shield-account-outline</v-icon>
+                                폴더 권한 관리
+                            </v-tab>
                             <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                             <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
                             <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
@@ -245,6 +250,13 @@
                             </div>
                         </v-window-item>
 
+                        <!-- FolderPermissions: 폴더 권한 관리 (PocAdmin 전용) -->
+                        <v-window-item v-if="pocAdmin" value="FolderPermissions">
+                            <div style="overflow: hidden" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: 70vh;'">
+                                <FolderPermissionsTab />
+                            </div>
+                        </v-window-item>
+
                         <!-- ConnectionInfo: 데이터소스 탭 (accountTab.dataSource) -->
                         <v-window-item v-if="!isUEngineMode" value="ConnectionInfo">
                             <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
@@ -317,6 +329,7 @@ import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
 import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
 import KnowledgeFilesTab from '@/components/pages/account-settings/KnowledgeFilesTab.vue';
+import FolderPermissionsTab from '@/components/pages/account-settings/FolderPermissionsTab.vue';
 import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
@@ -340,6 +353,7 @@ export default {
         ManageAccessTab,
         DriveTab,
         KnowledgeFilesTab,
+        FolderPermissionsTab,
         MCPServerTab,
         MCPEnvSecretTab,
         ConnectionInfoTab,
@@ -353,6 +367,7 @@ export default {
         return {
             tab: '',
             superAdmin: localStorage.getItem('role') === 'superAdmin',
+            pocAdmin: localStorage.getItem('role') === 'PocAdmin',
             tabItems: [
                 { value: 'Account', label: 'Account' },
                 { value: 'ManageAccess', label: 'Manage Access' },

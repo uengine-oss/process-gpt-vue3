@@ -888,6 +888,7 @@
 <script>
 import axios from 'axios';
 import { mimeIcon } from '@/utils/fileIcon';
+import { fetchAllowedFolders, isFolderAllowed } from '@/utils/folderPermissions';
 
 function extToMime(name) {
     const ext = (name || '').split('.').pop()?.toLowerCase() || '';
@@ -1295,14 +1296,22 @@ export default {
                     axios.get('/memento/documents/list', { params: { tenant_id: tenantId } }),
                     axios.get('/memento/knowledge/folders', { params: { tenant_id: tenantId } })
                 ]);
-                this.files = Array.isArray(filesRes.data?.file_details) ? filesRes.data.file_details : [];
+                let files = Array.isArray(filesRes.data?.file_details) ? filesRes.data.file_details : [];
                 // 백엔드는 [{folder_path, doc_role}, ...] 반환. 문자열 배열도 backward-compat 으로 수용.
                 const rawFolders = Array.isArray(foldersRes.data?.folders) ? foldersRes.data.folders : [];
-                this.emptyFolders = rawFolders.map((f) =>
+                let emptyFolders = rawFolders.map((f) =>
                     typeof f === 'string'
                         ? { folder_path: f, doc_role: 'content' }
                         : { folder_path: f?.folder_path || '', doc_role: f?.doc_role || 'content' }
                 ).filter((f) => f.folder_path);
+                // 약식 폴더 권한 — 일반 사용자는 허용된 폴더(+하위)만 보인다 (관리자는 전체).
+                const allow = await fetchAllowedFolders();
+                if (allow != null) {
+                    files = files.filter((f) => isFolderAllowed(f.folder_path || f.drive_folder_name || '', allow));
+                    emptyFolders = emptyFolders.filter((f) => isFolderAllowed(f.folder_path, allow));
+                }
+                this.files = files;
+                this.emptyFolders = emptyFolders;
             } catch (e) {
                 console.error('[KnowledgeFilesTab] fetch failed', e);
                 this.notify('파일 목록 조회 실패', 'error', e?.message);

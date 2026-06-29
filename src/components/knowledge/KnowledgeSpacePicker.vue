@@ -234,6 +234,7 @@
 import axios from 'axios';
 import KnowledgeTreeNode from './KnowledgeTreeNode.vue';
 import { mimeIcon } from '@/utils/fileIcon';
+import { fetchAllowedFolders, isFolderAllowed } from '@/utils/folderPermissions';
 
 function extToMime(name) {
     const ext = (name || '').split('.').pop()?.toLowerCase() || '';
@@ -507,7 +508,7 @@ export default {
                     params: { tenant_id: tenantId }
                 });
                 const details = Array.isArray(data?.file_details) ? data.file_details : [];
-                this.allFiles = details.map((d) => ({
+                const mapped = details.map((d) => ({
                     // 같은 파일명이 여러 폴더에 있을 수 있어 source_ref 우선, 없으면 폴더+파일명 조합
                     key: d.source_ref ? `${d.source_type || 'drive'}:${d.source_ref}` : `${d.folder_path || d.drive_folder_name || ''}::${d.file_name}`,
                     name: d.file_name,
@@ -523,6 +524,8 @@ export default {
                     indexedAt: d.indexed_at,
                     docRole: d.doc_role || 'content'
                 }));
+                // 약식 폴더 권한 — 일반 사용자는 허용된 폴더의 자료만 보이게 필터
+                this.allFiles = await this.applyFolderPermissions(mapped);
                 this.expandToSelected();
             } catch (e) {
                 console.error('[KnowledgeSpacePicker] fetch failed', e);
@@ -534,6 +537,13 @@ export default {
         },
         reload() {
             this.fetchDocs();
+        },
+        // ── 약식 폴더 권한 필터 (PoC) — 공용 유틸 사용 ──
+        // PocAdmin/superAdmin/admin 은 전체. 일반 사용자는 허용된 폴더(+하위)만 보인다.
+        async applyFolderPermissions(files) {
+            const allow = await fetchAllowedFolders();
+            if (allow == null) return files; // 관리자 = 전체
+            return files.filter((f) => isFolderAllowed(f.folderPath, allow));
         },
         expandToSelected() {
             // 선택된 파일들의 부모 폴더는 자동으로 펼쳐서 보이게
