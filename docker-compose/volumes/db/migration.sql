@@ -2492,7 +2492,6 @@ ALTER TABLE IF EXISTS public.resource_pull_requests
 ALTER TABLE IF EXISTS public.resource_pr_reviews
   ADD COLUMN IF NOT EXISTS reviewer_name text NULL;
 
-<<<<<<< HEAD
 -- 임시저장(draft) 플래그 컬럼 추가 (2026-06-26)
 -- deepagent 프로세스 생성 시 검증/자동개선 전 단계의 임시 산출물을 목록·맵에서 숨기고
 -- 최종 저장 시 is_draft=false 로 승격한다(프로세스: proc_def, 에이전트: users).
@@ -2507,7 +2506,6 @@ ALTER TABLE IF EXISTS public.users
 
 -- PostgREST 스키마 캐시 리로드(신규 컬럼 즉시 반영)
 NOTIFY pgrst, 'reload schema';
-=======
 -- proc_def에 agent_id 컬럼 추가 (2026-06-23)
 -- 기존에 DMN의 owner에 에이전트 ID를 저장하던 것을 분리: owner는 사용자, agent_id는 에이전트
 ALTER TABLE IF EXISTS public.proc_def
@@ -2583,4 +2581,3 @@ CREATE POLICY delegation_history_update_policy ON public.delegation_history
 DROP POLICY IF EXISTS delegation_history_delete_policy ON public.delegation_history;
 CREATE POLICY delegation_history_delete_policy ON public.delegation_history
     FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
->>>>>>> 3319f010a505c97ac454fad07859fd183a7ef65f
