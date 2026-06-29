@@ -673,6 +673,9 @@ export default {
         },
 
         async loadSkillStructure() {
+            // '$route.params.id' watcher 가 immediate:true 라 created() 보다 먼저 실행될 수 있어
+            // this.backend 가 아직 null 일 수 있다 → 여기서 안전하게 보장(초기 진입 시 로드 실패 방지).
+            if (!this.backend) this.backend = BackendFactory.createBackend();
             this.isLoading = true;
             this.loadError = false;
             this.isBuiltinSkill = false;

@@ -156,15 +156,50 @@ class ProcessGPTBackend implements Backend {
                     }
                 }
                 const procDefs = await storage.list('proc_def', options);
-                procDefs.map((item: any) => {
+                // 임시저장(draft, is_draft=true) 프로세스는 목록에서 제외 (기존 null/false 는 유지).
+                const visibleDefs = (procDefs || []).filter((item: any) => item && item.is_draft !== true);
+                visibleDefs.map((item: any) => {
                     item.path = `${item.id}.bpmn`;
                     item.name = item.name || item.id;
                 });
-                return procDefs;
+                return visibleDefs;
             }
         } catch (e) {
             //@ts-ignore
             throw new Error(e.message);
+        }
+    }
+
+    /**
+     * 임시저장(draft) 프로세스를 completion 의 실행 엔진으로 검증 + LLM 자동개선한다.
+     * completion 이 draft proc_def 를 id 로 로드 → 정적/실행 검증 → 매 개선마다 proc_def.definition UPDATE.
+     * 반환: { passed, iterations, repaired, remaining_defects, final_definition }
+     */
+    async validateAndImproveDraft(
+        defId: string,
+        opts: { processName?: string; forms?: any; maxIters?: number; email?: string; userUid?: string } = {}
+    ) {
+        const input: any = { process_definition_id: String(defId || '').replace(/\.bpmn$/i, '') };
+        if (opts.processName) input.process_name = opts.processName;
+        if (opts.forms) input.forms = opts.forms;
+        if (opts.maxIters) input.max_iters = opts.maxIters;
+        if (opts.email) input.email = opts.email;
+        if (opts.userUid) input.user_uid = opts.userUid;
+        const response = await axios.post('/validate-and-improve', { input }, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 0
+        });
+        return response.data;
+    }
+
+    /** draft(임시저장) proc_def 행을 삭제한다(방 단위 재생성 시 이전 draft 정리). */
+    async deleteDraftProcDef(defId: string) {
+        const id = String(defId || '').toLowerCase().replace(/\.bpmn$/i, '');
+        if (!id) return;
+        try {
+            await storage.delete('proc_def', { match: { id, tenant_id: window.$tenantName } });
+        } catch (e) {
+            /* best-effort cleanup */
         }
     }
 
@@ -368,6 +403,10 @@ class ProcessGPTBackend implements Backend {
                 if (Object.prototype.hasOwnProperty.call(options, 'definition')) {
                     procDef.definition = options.definition;
                 }
+                // 임시저장(draft) 플래그 — true 면 프로세스 목록/맵에서 숨기고, 최종 저장 시 false 로 승격.
+                if (Object.prototype.hasOwnProperty.call(options, 'is_draft')) {
+                    procDef.is_draft = !!options.is_draft;
+                }
             } else {
                 // 신규 프로세스: 초기 bpmn/definition 포함하여 생성
                 procDef = {
@@ -378,6 +417,9 @@ class ProcessGPTBackend implements Backend {
                     owner: options.owner || null,
                     type: options.type || 'bpmn'
                 };
+                if (Object.prototype.hasOwnProperty.call(options, 'is_draft')) {
+                    procDef.is_draft = !!options.is_draft;
+                }
             }
             await storage.putObject('proc_def', procDef, { onConflict: 'id,tenant_id' });
 
@@ -3396,9 +3438,11 @@ class ProcessGPTBackend implements Backend {
     async getAgentList() {
         try {
             const list = await storage.list('users', { match: { is_agent: true, tenant_id: window.$tenantName } });
+            // 임시저장(draft, is_draft=true) 에이전트는 목록에서 제외(기존 null/false 는 유지).
+            const visible = (list || []).filter((a: any) => a && a.is_draft !== true);
             const defaultSetting = useDefaultSetting();
             const defaultAgents = defaultSetting.getAgentList;
-            return [...defaultAgents, ...list];
+            return [...defaultAgents, ...visible];
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3419,6 +3463,13 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+
+    /** 임시저장(draft) 에이전트를 정식 등록으로 승격(is_draft=false) — 목록에 노출. */
+    async promoteDraftAgent(agentId: string) {
+        const id = String(agentId || '').trim();
+        if (!id) return;
+        await storage.putObject('users', { id, tenant_id: window.$tenantName, is_draft: false }, { onConflict: 'id,tenant_id' });
     }
 
     async putAgent(newAgent: any) {
@@ -3442,6 +3493,8 @@ class ProcessGPTBackend implements Backend {
                 is_agent: newAgent.isAgent,
                 agent_type: newAgent.type,
                 alias: newAgent.alias,
+                // 임시저장(draft) 플래그 — true 면 에이전트 목록에서 숨기고, 저장 시 false 로 승격.
+                ...(Object.prototype.hasOwnProperty.call(newAgent, 'is_draft') ? { is_draft: !!newAgent.is_draft } : {}),
                 ...(isGs ? {} : { tool_priority: newAgent.tool_priority ?? null })
             };
 
@@ -7053,7 +7106,9 @@ class ProcessGPTBackend implements Backend {
 
             if (response.status === 201) {
                 const skillName = response.data.skill_name;
-                if (skillName) {
+                // skipRegister(draft): 파일만 업로드(편집기 로드용)하고 tenants.skills 목록 등록은 건너뛴다.
+                // 최종 저장 시 호출부가 saveSkills 로 승격(목록 노출)한다.
+                if (skillName && !options.skipRegister) {
                     await this.saveSkills([skillName]);
                 }
                 return response.data;

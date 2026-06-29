@@ -2490,3 +2490,18 @@ ALTER TABLE IF EXISTS public.resource_pull_requests
 
 ALTER TABLE IF EXISTS public.resource_pr_reviews
   ADD COLUMN IF NOT EXISTS reviewer_name text NULL;
+
+-- 임시저장(draft) 플래그 컬럼 추가 (2026-06-26)
+-- deepagent 프로세스 생성 시 검증/자동개선 전 단계의 임시 산출물을 목록·맵에서 숨기고
+-- 최종 저장 시 is_draft=false 로 승격한다(프로세스: proc_def, 에이전트: users).
+ALTER TABLE IF EXISTS public.proc_def
+  ADD COLUMN IF NOT EXISTS is_draft boolean NOT NULL DEFAULT false;
+
+ALTER TABLE IF EXISTS public.proc_def_version
+  ADD COLUMN IF NOT EXISTS is_draft boolean NOT NULL DEFAULT false;
+
+ALTER TABLE IF EXISTS public.users
+  ADD COLUMN IF NOT EXISTS is_draft boolean NOT NULL DEFAULT false;
+
+-- PostgREST 스키마 캐시 리로드(신규 컬럼 즉시 반영)
+NOTIFY pgrst, 'reload schema';

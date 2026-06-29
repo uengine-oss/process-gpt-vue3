@@ -804,6 +804,7 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { agentStableId, isUuid as isUuidStable } from '@/utils/agentId.js';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import Chat from '@/components/ui/Chat.vue';
 import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
@@ -3029,6 +3030,34 @@ export default {
                 if (incoming && typeof incoming === 'object' && !incoming.timeStamp) {
                     incoming.timeStamp = new Date().toISOString();
                     incoming.__synthTimeStamp = true;
+                }
+                // deepagent interrupt 패널 보존:
+                // interrupt turn 은 (1) 프론트가 _applyDeepagentHitlStop 으로 본문 비운 패널 메시지를 push 하고,
+                // (2) SDK(persist_chat_to_db)가 같은 assistant turn 의 '초안 평문'을 별도 uuid 로 INSERT 한다.
+                // uuid 가 달라 이 초안 INSERT 가 여기(push-new)로 빠지면, 패널 메시지가 밀려나고 초안 텍스트만 남는다.
+                // → 미제출 패널 메시지가 있으면 새 메시지를 추가하지 말고, 패널 메시지에 DB row 식별자만 입혀
+                //   (이후 동기화가 패널 메시지로 매칭되게) 본문은 빈 채 유지한다(승인/체크박스 패널만 표시).
+                if (typeof incoming === 'object' && (incoming.role || '').toString() === 'assistant') {
+                    const inAgentId = (incoming.agentId || '').toString();
+                    let panelIdx = -1;
+                    for (let i = this.messages.length - 1; i >= 0; i--) {
+                        const m = this.messages[i];
+                        if (!m || !m.__humanFeedback || m.__humanFeedback.__submitted) continue;
+                        if ((m.role || '').toString() !== 'assistant') continue;
+                        if (inAgentId && (m.agentId || '').toString() && (m.agentId || '').toString() !== inAgentId) continue;
+                        panelIdx = i;
+                        break;
+                    }
+                    if (panelIdx !== -1) {
+                        const panelMsg = this.messages[panelIdx];
+                        panelMsg.rowUuid = incoming.rowUuid || incoming.uuid || panelMsg.rowUuid || null;
+                        if (incoming.uuid) panelMsg.uuid = incoming.uuid;
+                        if (incoming.clientUuid) panelMsg.clientUuid = incoming.clientUuid;
+                        if (!panelMsg.timeStamp && incoming.timeStamp) panelMsg.timeStamp = incoming.timeStamp;
+                        // 본문은 비운 채 유지(초안은 패널 context 로만 표시) — DB 의 초안 평문을 덮어쓰지 않는다.
+                        this.persistMessageFrontendState(panelMsg, roomId);
+                        return;
+                    }
                 }
                 this.messages.push(incoming);
                 this._stableSortMessages(this.messages);
@@ -5465,6 +5494,81 @@ export default {
             });
         },
 
+        /**
+         * 산출물 파일 목록에서 skills/<name>/<file> 들을 모아 zip 으로 스킬 서비스에 업로드한다.
+         * - draft=true: 파일만 업로드(=/skills/{name} 편집기에서 로드 가능)하고 tenants.skills 목록 등록은 생략.
+         * - draft=false(최종 저장): 업로드 + saveSkills 로 목록 승격.
+         * SKILL.md frontmatter(name/description)가 없으면 항상 유효본으로 보정(스킬 서버 "No valid skills" 방지).
+         * 반환: 등록(또는 업로드)된 스킬명 배열.
+         */
+        async _uploadSkillsFromFiles(list, { draft = false } = {}) {
+            const savedSkillNames = [];
+            const skillFilesByName = {};
+            for (const f of list || []) {
+                const p = (f.path || '').replace(/\\/g, '/');
+                const m = p.match(/\/skills\/([^/]+)\/(.+)$/);
+                if (!m) continue;
+                (skillFilesByName[m[1]] = skillFilesByName[m[1]] || []).push({ relPath: m[2], content: (f.content || '').toString() });
+            }
+            const skillEntries = Object.entries(skillFilesByName);
+            if (!skillEntries.length || !backend.uploadSkills) return savedSkillNames;
+            const hasValidSkillFrontmatter = (txt) => {
+                const s = (txt || '').toString();
+                const mm = s.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
+                if (!mm) return false;
+                const fm = mm[1];
+                return /(^|\n)\s*name\s*:\s*\S/.test(fm) && /(^|\n)\s*description\s*:\s*\S/.test(fm);
+            };
+            const buildSkillMd = (skillName, existing) => {
+                const s = (existing || '').toString();
+                let body = s.replace(/^---\s*\n[\s\S]*?\n---\s*\n/, '').trim();
+                if (!body) {
+                    body =
+                        `# ${skillName}\n\n## 개요\n\n'${skillName}' 작업을 표준 절차에 따라 수행하는 스킬입니다.\n\n` +
+                        `## 사용 시점\n\n- 해당 업무를 일관된 기준으로 처리해야 할 때\n\n` +
+                        `## 절차\n\n1. 입력을 확인한다.\n2. 표준 기준에 따라 처리한다.\n3. 결과를 검토하고 산출물을 남긴다.\n`;
+                }
+                const desc = `${skillName} 작업을 표준 절차에 따라 수행합니다.`;
+                return `---\nname: ${skillName}\ndescription: "${desc}"\n---\n\n${body}\n`;
+            };
+            try {
+                const JSZip = (await import('jszip')).default;
+                const zip = new JSZip();
+                for (const [skillName, sfiles] of skillEntries) {
+                    const skillMdFile = sfiles.find((sf) => sf.relPath === 'SKILL.md' || /(^|\/)SKILL\.md$/i.test(sf.relPath));
+                    const skillMdValid = skillMdFile && hasValidSkillFrontmatter(skillMdFile.content);
+                    for (const sf of sfiles) {
+                        if (sf === skillMdFile) continue;
+                        zip.file(`${skillName}/${sf.relPath}`, sf.content);
+                    }
+                    const skillMdContent = skillMdValid ? skillMdFile.content : buildSkillMd(skillName, skillMdFile && skillMdFile.content);
+                    zip.file(`${skillName}/SKILL.md`, skillMdContent);
+                }
+                const blob = await zip.generateAsync({ type: 'blob' });
+                const file = new File([blob], 'skills.zip', { type: 'application/zip' });
+                let res = null;
+                try {
+                    // draft 든 최종이든 파일은 업로드(편집기 로드용). 등록(saveSkills)은 draft 면 생략.
+                    res = await backend.uploadSkills({ type: 'file', file, skipRegister: true });
+                } catch (upErr) {
+                    // draft 후 최종 저장 시 이미 업로드돼 있을 수 있음 → 무시하고 등록 단계로.
+                    console.warn('[Skills] 업로드 실패(이미 존재 가능, 무시):', upErr);
+                }
+                const added = Array.isArray(res?.skills_added) && res.skills_added.length ? res.skills_added : skillEntries.map(([n]) => n);
+                savedSkillNames.push(...added);
+                if (!draft && backend.saveSkills) {
+                    try {
+                        await backend.saveSkills(savedSkillNames);
+                    } catch (e) {
+                        console.warn('[Skills] saveSkills 등록 실패(무시):', e);
+                    }
+                }
+            } catch (skErr) {
+                console.warn('[Skills] zip 업로드 실패:', skErr);
+            }
+            return savedSkillNames;
+        },
+
         /** process-definition.json 항목 → createBpmnXml 로 변환한 .bpmn 파일 항목 생성(없으면 null). */
         _deriveBpmnEntry(pdEntry) {
             try {
@@ -5676,6 +5780,16 @@ export default {
                     this.handleWorkspaceFileEdit(panelId, payload);
                 } else if (action === 'ai-edit-file') {
                     this.aiEditWorkspaceFile(panelId, payload);
+                } else if (action === 'navigate-process') {
+                    // 산출물 '편집' → 내부 편집기로 이동(임시저장 draft 를 수정). kind 별 라우팅.
+                    const kind = (payload && payload.kind ? payload.kind : 'process').toString();
+                    const id = (payload && (payload.id || payload.name) ? (payload.id || payload.name) : '').toString().trim();
+                    if (!id) return;
+                    let path = '';
+                    if (kind === 'skill') path = `/skills/${encodeURIComponent(id)}`;
+                    else if (kind === 'agent') path = `/agent-chat/${id}`;
+                    else path = `/definitions/${id}`;
+                    this.$router.push({ path }).catch(() => {});
                 }
             }
         },
@@ -5815,6 +5929,211 @@ export default {
         },
 
         /**
+         * 생성 완료 후(사용자에게 제시되기 전) 산출물 프로세스를 **임시저장(draft)** 하고
+         * completion 실행엔진으로 검증 + LLM 자동개선한 뒤, 개선된 정의를 우측 패널에 반영한다.
+         * - deepagent 는 DB write 하지 않는다. draft 저장/검증호출은 프론트(사용자 권한)가 한다.
+         * - is_draft=true 라 프로세스 목록/맵에는 안 보이며, 최종 저장 버튼 클릭 시에만 승격된다.
+         * - 방 단위(roomId) 재생성 시 이전 draft 는 삭제(option A). best-effort — 실패해도 흐름 유지.
+         */
+        async runDraftValidationForRoom() {
+            const groups = Object.keys(this.roomWorkspaceFilesByGroup || {});
+            if (!groups.length) return;
+            let elementsToFlattenedDefinition;
+            try {
+                ({ elementsToFlattenedDefinition } = await import('@/utils/elementsToFlattened.js'));
+            } catch (e) {
+                return;
+            }
+            const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+            // 이전 방 draft 정리(option A): 이번에 만들 draft id 집합을 모은 뒤, 추적된 옛 id 중 빠진 것 삭제.
+            const prevDraftIds = Array.isArray(this._roomDraftIds) ? this._roomDraftIds.slice() : [];
+            const newDraftIds = [];
+
+            for (const group of groups) {
+                const files = this.roomWorkspaceFilesByGroup[group] || [];
+                const pdFile = files.find(
+                    (f) => (f.name || '').toLowerCase() === 'process-definition.json' || (f.path || '').endsWith('process-definition.json')
+                );
+                if (!pdFile || !pdFile.content) continue;
+                const st = this.workspaceSaveStateByGroup[group] || (this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' });
+                if (st.__validated || st.validating) continue;
+
+                let pd;
+                try {
+                    pd = JSON.parse(pdFile.content);
+                } catch (e) {
+                    continue;
+                }
+                if (pd && pd.processDefinition) pd = pd.processDefinition;
+                const definition = Array.isArray(pd.elements) ? elementsToFlattenedDefinition(pd) : pd;
+                const procId = (definition.processDefinitionId || pd.processDefinitionId || '').toString().trim();
+                if (!procId) continue;
+                const procName = (definition.processDefinitionName || pd.processDefinitionName || procId).toString();
+                const bpmnFile = files.find((f) => (f.ext || '').toLowerCase() === '.bpmn');
+                const bpmnXml = (bpmnFile && bpmnFile.content) || this._buildBpmnXmlFromDefinition(definition) || null;
+
+                // 검증용 폼 정보(activity_id → {form_id, html}) — 실행 테스트 입력값 생성에 사용.
+                const forms = {};
+                for (const f of files) {
+                    const p = (f.path || '').replace(/\\/g, '/');
+                    const m = p.match(/\/forms\/([^/]+)\.(?:html|form)$/i);
+                    if (!m) continue;
+                    const aid = m[1];
+                    forms[aid] = { form_id: `${procId}_${aid.toLowerCase()}_form`, html: (f.content || '').toString() };
+                }
+
+                st.validating = true;
+                st.validateMsg = '실행 엔진으로 검증 중...';
+                this.$forceUpdate && this.$forceUpdate();
+                try {
+                    // 1) draft proc_def 저장 (is_draft=true) + draft form_def
+                    await backend.putRawDefinition(bpmnXml, procId, {
+                        name: procName,
+                        definition,
+                        type: 'bpmn',
+                        is_draft: true
+                    });
+                    newDraftIds.push(procId);
+                    for (const aid of Object.keys(forms)) {
+                        try {
+                            await backend.putRawDefinition(forms[aid].html, forms[aid].form_id, {
+                                type: 'form',
+                                proc_def_id: procId,
+                                activity_id: aid
+                            });
+                        } catch (fe) {
+                            /* 폼 저장 실패는 검증을 막지 않는다 */
+                        }
+                    }
+
+                    // 1-b) draft 에이전트 저장 (users is_draft=true). id 를 uuid 로 확정하고 해당 파일을 갱신해
+                    //      산출물 '편집' 이동·최종 저장 승격이 같은 id 를 쓰게 한다.
+                    //      에이전트별 개별 파일 agents/<id>.json(단일 객체) + 레거시 agents.json(배열) 모두 처리.
+                    try {
+                        if (backend.putAgent) {
+                            const saveDraftAgent = async (a) => {
+                                try {
+                                    await backend.putAgent({
+                                        id: a.id,
+                                        name: a.name || a.username || '에이전트',
+                                        email: a.email || `agent+${a.id}@uengine.org`,
+                                        role: a.role || '',
+                                        goal: a.goal || a.description || '',
+                                        persona: a.persona || '',
+                                        description: a.description || '',
+                                        model: a.model || '',
+                                        isAgent: true,
+                                        type: a.type || 'TaskAgent',
+                                        is_draft: true
+                                    });
+                                } catch (ae) {
+                                    /* draft 에이전트 저장 실패는 흐름을 막지 않는다 */
+                                }
+                            };
+                            // (1) 개별 파일 agents/<id>.json — 파일 1개 = 에이전트 1명.
+                            //     id 는 agentStableId(슬러그→결정적 uuid)로 확정 — 편집기(editTarget)와 동일하므로
+                            //     파일을 변형/영속화하지 않아도 reload 후 /agent-chat/{id} 가 같은 에이전트를 로드한다.
+                            const perAgentFiles = files.filter((f) => /\/agents\/[^/]+\.json$/i.test((f.path || '').replace(/\\/g, '/')));
+                            for (const af of perAgentFiles) {
+                                let obj;
+                                try {
+                                    obj = JSON.parse(af.content);
+                                } catch (e) {
+                                    obj = null;
+                                }
+                                if (!obj || typeof obj !== 'object' || Array.isArray(obj)) continue;
+                                await saveDraftAgent({ ...obj, id: agentStableId(obj, af.path) });
+                            }
+                            // (2) 레거시 agents.json(배열/딕셔너리).
+                            const agFile = files.find((f) => (f.name || '').toLowerCase() === 'agents.json' || (f.path || '').endsWith('agents.json'));
+                            if (agFile) {
+                                let parsed;
+                                try {
+                                    parsed = JSON.parse(agFile.content);
+                                } catch (e) {
+                                    parsed = null;
+                                }
+                                const arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.agents) ? parsed.agents : [];
+                                for (const a of arr) {
+                                    if (!a || typeof a !== 'object') continue;
+                                    await saveDraftAgent({ ...a, id: isUuidStable(a.id) ? a.id : agentStableId(a, agFile.path) });
+                                }
+                            }
+                        }
+                    } catch (age) {
+                        console.warn('[DraftValidate] draft 에이전트 저장 실패(무시):', age);
+                    }
+
+                    // 1-c) draft 스킬 저장 — 파일을 스킬 서비스에 업로드(=/skills/{name} 편집기에서 내용 로드).
+                    //      목록 등록(tenants.skills)은 생략(draft) → 최종 저장 시 승격.
+                    try {
+                        await this._uploadSkillsFromFiles(files, { draft: true });
+                    } catch (ske) {
+                        console.warn('[DraftValidate] draft 스킬 업로드 실패(무시):', ske);
+                    }
+
+                    // 2) 실엔진 검증 + LLM 자동개선 (completion 이 draft.definition 을 갱신)
+                    let report = null;
+                    try {
+                        report = await backend.validateAndImproveDraft(procId, {
+                            processName: procName,
+                            forms,
+                            // 검증 인스턴스를 현재 사용자에게 귀속 → 완료 인스턴스 목록에서 확인 가능.
+                            email: this.userInfo?.email,
+                            userUid: this.userInfo?.uid || this.userInfo?.id
+                        });
+                    } catch (ve) {
+                        console.warn('[DraftValidate] /validate-and-improve 실패(검증 생략):', ve);
+                    }
+
+                    // 3) 개선된 정의를 우측 패널(process-definition.json + .bpmn)에 반영
+                    const improved = report && report.final_definition && typeof report.final_definition === 'object' ? report.final_definition : null;
+                    if (improved && (Array.isArray(improved.activities) || Array.isArray(improved.elements))) {
+                        const newContent = JSON.stringify(improved, null, 2);
+                        pdFile.content = newContent;
+                        // upsert 가 process-definition.json → .bpmn 재파생까지 처리.
+                        this.upsertWorkspaceFilesPanel({ ...pdFile, content: newContent });
+                    }
+                    if (report) {
+                        st.validatePassed = report.passed === true;
+                        st.validateReport = {
+                            passed: report.passed,
+                            iterations: report.iterations,
+                            repaired: report.repaired,
+                            remaining: Array.isArray(report.remaining_defects) ? report.remaining_defects.length : 0
+                        };
+                    }
+                    st.__validated = true;
+                    // draft id 추적(방 단위) — 새로고침/재진입에도 정리 가능하게 룸에 저장.
+                    this._roomDraftIds = newDraftIds.slice();
+                    try {
+                        if (this.currentChatRoom) {
+                            this.currentChatRoom.draftProcDefIds = newDraftIds.slice();
+                        }
+                    } catch (re) {
+                        /* ignore */
+                    }
+                } catch (e) {
+                    console.warn('[DraftValidate] 실패(무시):', e);
+                } finally {
+                    st.validating = false;
+                    st.validateMsg = '';
+                    this.$forceUpdate && this.$forceUpdate();
+                }
+            }
+
+            // 이전 방 draft 중 이번에 재사용되지 않은 것 삭제 (option A)
+            const stale = prevDraftIds.filter((id) => id && !newDraftIds.includes(id));
+            for (const id of stale) {
+                try {
+                    await backend.deleteDraftProcDef(id);
+                } catch (de) {
+                    /* ignore */
+                }
+            }
+        },
+
+        /**
          * deepagent 산출물 파일(우측 파일 UI)을 DB 에 저장한다.
          * - process-definition.json → proc_def (이미 flattened 면 그대로, elements[] 면 변환)
          * - forms/<activity_id>.html → form_def (activity.tool=formHandler:<procId>_<id>_form 와 동일 form_id)
@@ -5857,10 +6176,10 @@ export default {
                 const bpmnFile = list.find((f) => (f.ext || '').toLowerCase() === '.bpmn' || (f.name || '').toLowerCase().endsWith('.bpmn'));
                 const bpmnXml = bpmnFile && bpmnFile.content ? bpmnFile.content : this._buildBpmnXmlFromDefinition(definition) || null;
 
-                // 1) proc_def 저장
+                // 1) proc_def 저장 — 최종 저장(사용자 클릭)이므로 draft 를 승격(is_draft=false)해 목록에 노출.
                 await backend.putObject(
                     'proc_def',
-                    { id: procId, name: procName, definition, bpmn: bpmnXml, type: 'bpmn', isdeleted: false, tenant_id: tenantId },
+                    { id: procId, name: procName, definition, bpmn: bpmnXml, type: 'bpmn', isdeleted: false, is_draft: false, tenant_id: tenantId },
                     { onConflict: 'id,tenant_id' }
                 );
 
@@ -5877,9 +6196,10 @@ export default {
                 let formsSaved = 0;
                 for (const f of list) {
                     const p = (f.path || '').replace(/\\/g, '/');
-                    const isForm = /\/forms\//.test(p) && (f.ext === '.html' || (f.name || '').toLowerCase().endsWith('.html'));
+                    const lname = (f.name || '').toLowerCase();
+                    const isForm = /\/forms\//.test(p) && (f.ext === '.html' || f.ext === '.form' || lname.endsWith('.html') || lname.endsWith('.form'));
                     if (!isForm) continue;
-                    const activityId = toSnake((f.name || '').replace(/\.html$/i, ''));
+                    const activityId = toSnake((f.name || '').replace(/\.(?:html|form)$/i, ''));
                     const html = (f.content || '').toString();
                     if (!activityId || !html) continue;
                     const formId = `${procId}_${activityId}_form`;
@@ -5891,101 +6211,22 @@ export default {
                     }
                 }
 
-                // 3) 스킬 저장 (skills/<name>/<file> → process-gpt-claude-skill 서비스 + tenants.skills 등록)
-                const skillFilesByName = {};
-                for (const f of list) {
-                    const p = (f.path || '').replace(/\\/g, '/');
-                    const m = p.match(/\/skills\/([^/]+)\/(.+)$/);
-                    if (!m) continue;
-                    (skillFilesByName[m[1]] = skillFilesByName[m[1]] || []).push({ relPath: m[2], content: (f.content || '').toString() });
-                }
-                // 신규 스킬은 putSkillFile(기존 스킬 편집용 → 404)이 아니라 zip 업로드(생성 API)로 저장한다.
-                // ('스킬관리 > 스킬 추가' 와 동일한 /claude-skills/skills/upload 경로. uploadSkills 가 tenants.skills 등록까지 수행.)
-                const savedSkillNames = [];
-                const skillEntries = Object.entries(skillFilesByName);
-                if (skillEntries.length && backend.uploadSkills) {
-                    try {
-                        const JSZip = (await import('jszip')).default;
-                        const zip = new JSZip();
-                        // 스킬 서버는 SKILL.md 의 `---\nname:..\ndescription:..\n---` frontmatter 가 있어야
-                        // 스킬로 인식한다. deepagent file_artifact 가 잘리거나(truncated) 비어 오면
-                        // frontmatter 가 깨져 "No valid skills" 400 이 난다 → 여기서 항상 유효하게 보정한다.
-                        const hasValidSkillFrontmatter = (txt) => {
-                            const s = (txt || '').toString();
-                            const m = s.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
-                            if (!m) return false;
-                            const fm = m[1];
-                            return /(^|\n)\s*name\s*:\s*\S/.test(fm) && /(^|\n)\s*description\s*:\s*\S/.test(fm);
-                        };
-                        const buildSkillMd = (skillName, existing) => {
-                            const s = (existing || '').toString();
-                            // 기존 본문(frontmatter 제외)이 있으면 보존
-                            let body = s.replace(/^---\s*\n[\s\S]*?\n---\s*\n/, '').trim();
-                            if (!body) {
-                                body =
-                                    `# ${skillName}\n\n## 개요\n\n'${skillName}' 작업을 표준 절차에 따라 수행하는 스킬입니다.\n\n` +
-                                    `## 사용 시점\n\n- 해당 업무를 일관된 기준으로 처리해야 할 때\n\n` +
-                                    `## 절차\n\n1. 입력을 확인한다.\n2. 표준 기준에 따라 처리한다.\n3. 결과를 검토하고 산출물을 남긴다.\n`;
-                            }
-                            const desc = `${skillName} 작업을 표준 절차에 따라 수행합니다.`;
-                            return `---\nname: ${skillName}\ndescription: "${desc}"\n---\n\n${body}\n`;
-                        };
-                        for (const [skillName, sfiles] of skillEntries) {
-                            const skillMdFile = sfiles.find(
-                                (sf) => sf.relPath === 'SKILL.md' || /(^|\/)SKILL\.md$/i.test(sf.relPath)
-                            );
-                            const skillMdValid = skillMdFile && hasValidSkillFrontmatter(skillMdFile.content);
-                            // 그 외 부속 파일은 그대로 담되, SKILL.md 는 항상 유효본으로 교체/생성
-                            for (const sf of sfiles) {
-                                if (sf === skillMdFile) continue;
-                                zip.file(`${skillName}/${sf.relPath}`, sf.content);
-                            }
-                            const skillMdContent = skillMdValid
-                                ? skillMdFile.content
-                                : buildSkillMd(skillName, skillMdFile && skillMdFile.content);
-                            zip.file(`${skillName}/SKILL.md`, skillMdContent);
-                        }
-                        const blob = await zip.generateAsync({ type: 'blob' });
-                        const file = new File([blob], 'skills.zip', { type: 'application/zip' });
-                        const res = await backend.uploadSkills({ type: 'file', file });
-                        const added = Array.isArray(res?.skills_added) && res.skills_added.length ? res.skills_added : skillEntries.map(([n]) => n);
-                        savedSkillNames.push(...added);
-                        // uploadSkills 가 saveSkills 를 호출하지만, 응답에 skills_added 가 없을 때를 대비해 한 번 더 등록.
-                        if (backend.saveSkills) {
-                            try {
-                                await backend.saveSkills(savedSkillNames);
-                            } catch (e) {
-                                console.warn('[SaveWS] saveSkills 보강 실패(무시):', e);
-                            }
-                        }
-                    } catch (skErr) {
-                        console.warn('[SaveWS] 스킬 zip 업로드 실패:', skErr);
-                    }
-                }
+                // 3) 스킬 저장(최종) — 파일 업로드 + tenants.skills 목록 승격(draft 해제). 공용 헬퍼 사용.
+                const savedSkillNames = await this._uploadSkillsFromFiles(list, { draft: false });
 
-                // 4) 에이전트 저장 (agents.json → users 테이블, is_agent=true)
+                // 4) 에이전트 저장 (users 테이블, is_agent=true, is_draft=false 승격)
+                //    개별 파일 agents/<id>.json(단일 객체) + 레거시 agents.json(배열) 모두 처리.
                 const savedAgents = [];
-                const agFile = list.find((f) => (f.name || '').toLowerCase() === 'agents.json');
-                if (agFile && backend.putAgent) {
-                    let arr = [];
-                    try {
-                        const parsed = JSON.parse(agFile.content);
-                        arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.agents) ? parsed.agents : [];
-                    } catch (e) {
-                        arr = [];
-                    }
-                    const isUuid = (v) =>
-                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test((v || '').toString());
-                    for (const a of arr) {
-                        if (!a || typeof a !== 'object') continue;
-                        // users.id 는 uuid 타입 → agents.json 의 id 가 한글 이름/슬러그면 insert 400.
-                        // uuid 가 아니면 새로 발급한다.
-                        const agentId = isUuid(a.id) ? a.id.toString() : this.uuid();
+                if (backend.putAgent) {
+                    const saveFinalAgent = async (a, filePath) => {
+                        if (!a || typeof a !== 'object') return;
+                        // draft 저장·편집기(editTarget)와 동일한 결정적 id(슬러그→uuid)로 승격해야
+                        // 같은 에이전트가 정식 등록된다(랜덤 uuid 금지).
+                        const agentId = isUuidStable(a.id) ? a.id.toString() : agentStableId(a, filePath);
                         try {
                             await backend.putAgent({
                                 id: agentId,
                                 name: a.name || a.username || '에이전트',
-                                // users.email 누락 시에도 insert 실패 가능 → 합성 이메일 보강
                                 email: a.email || `agent+${agentId}@uengine.org`,
                                 role: a.role || '',
                                 goal: a.goal || a.description || '',
@@ -5993,12 +6234,36 @@ export default {
                                 description: a.description || '',
                                 model: a.model || '',
                                 isAgent: true,
-                                type: a.type || 'TaskAgent'
+                                type: a.type || 'TaskAgent',
+                                is_draft: false // 최종 저장 — draft 였으면 정식 등록으로 승격(목록 노출).
                             });
                             savedAgents.push({ id: agentId, name: a.name || '에이전트', role: a.role || '' });
                         } catch (agErr) {
                             console.warn('[SaveWS] 에이전트 저장 실패:', a.name, agErr);
                         }
+                    };
+                    // (1) 개별 파일
+                    const perAgentFiles = list.filter((f) => /\/agents\/[^/]+\.json$/i.test((f.path || '').replace(/\\/g, '/')));
+                    for (const af of perAgentFiles) {
+                        let obj;
+                        try {
+                            obj = JSON.parse(af.content);
+                        } catch (e) {
+                            obj = null;
+                        }
+                        if (obj && typeof obj === 'object' && !Array.isArray(obj)) await saveFinalAgent(obj, af.path);
+                    }
+                    // (2) 레거시 agents.json
+                    const agFile = list.find((f) => (f.name || '').toLowerCase() === 'agents.json');
+                    if (agFile) {
+                        let arr = [];
+                        try {
+                            const parsed = JSON.parse(agFile.content);
+                            arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.agents) ? parsed.agents : [];
+                        } catch (e) {
+                            arr = [];
+                        }
+                        for (const a of arr) await saveFinalAgent(a, agFile.path);
                     }
                 }
 
@@ -7151,10 +7416,15 @@ export default {
                         full += token;
                         const msg = this.activeStreams[agentId];
                         if (msg) {
-                            msg.content = hasHumanFeedback
-                                ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
-                                : (full.length === 0 ? '생각 중...' : full);
-                            msg.isLoading = true;
+                            // HITL 패널(__humanFeedback)이 이미 붙은 메시지는 본문을 비워 둔다.
+                            // (request_human_input 후보/승인 질문이 plan_tools 로 패널화된 뒤에도
+                            //  스트리밍 토큰이 계속 와 본문에 질문 텍스트가 남던 문제 방지 — 체크박스 패널만 표시.)
+                            msg.content = msg.__humanFeedback
+                                ? ''
+                                : hasHumanFeedback
+                                  ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
+                                  : (full.length === 0 ? '생각 중...' : full);
+                            msg.isLoading = !msg.__humanFeedback;
                         }
                         this.setAgentStatus(agentId, { state: 'streaming', message: '' });
                         maybeScroll();
@@ -7600,7 +7870,10 @@ export default {
                                 }
                             }
 
-                            msg.content = safeFinal || full || '';
+                            // HITL 패널(__humanFeedback)이 붙은 메시지는 본문을 비워 둔다.
+                            // (interrupt 후 빈 final done 의 onDone 이 본문을 초안 텍스트로 덮어써 패널 대신
+                            //  텍스트가 보이던 문제 방지 — 체크박스/승인 패널만 표시.)
+                            msg.content = msg.__humanFeedback ? '' : (safeFinal || full || '');
                             displayContent = this.extractDisplayAssistantContent(msg.content);
                             msg.isLoading = false;
                             msg.contentType = 'text';
@@ -7666,6 +7939,12 @@ export default {
                                 createdAt: new Date().toISOString()
                             };
                             await this.putChatRoomMerged(this.currentChatRoom);
+                        }
+
+                        // 생성 완료 → 사용자에게 제시하기 전에 임시저장(draft) + 실엔진 검증/자동개선.
+                        // (그룹별 __validated 가드로 idempotent. HITL 중단은 위에서 이미 return 처리됨.)
+                        if (shouldKeepProcessState || Object.keys(this.roomWorkspaceFilesByGroup || {}).length) {
+                            this.runDraftValidationForRoom().catch((e) => console.warn('[DraftValidate] 오케스트레이션 실패:', e));
                         }
 
                         this.EventBus.emit('chat-rooms-updated');

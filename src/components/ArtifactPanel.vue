@@ -70,6 +70,7 @@
                         @save="emitPanelAction(panel, 'save', panel.data.files || [])"
                         @edit-file="emitPanelAction(panel, 'edit-file', $event)"
                         @ai-edit-file="emitPanelAction(panel, 'ai-edit-file', $event)"
+                        @navigate-process="emitPanelAction(panel, 'navigate-process', $event)"
                     />
                     <!-- 새 패널 타입은 여기에 v-else-if로 추가 -->
                 </div>

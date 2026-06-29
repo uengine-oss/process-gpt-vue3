@@ -3779,11 +3779,32 @@ export default {
         filteredMessages() {
             var list = [];
             const myEmail = localStorage.getItem('email');
+            // interrupt(HITL) 패널이 붙은 메시지의 context(=컨설팅 초안)와 동일 본문을 가진 별도 assistant
+            // 메시지(=deepagent SDK 가 persist 한 초안 echo)는 패널과 중복 표시되므로 숨긴다.
+            // (강제 HITL 2차 패스 지연으로 echo 가 패널보다 먼저 도착하는 race 에서 초안이 평문으로 남던 문제 방지 — 순서 무관.)
+            const panelContexts = [];
+            if (this.messages && this.messages.length > 0) {
+                for (const m of this.messages) {
+                    const ctx = m && m.__humanFeedback ? (m.__humanFeedback.context || '').toString().trim() : '';
+                    if (ctx.length > 40) panelContexts.push(ctx);
+                }
+            }
+            const isDraftEchoDup = (m) => {
+                if (!m || m.__humanFeedback) return false;
+                if ((m.role || '').toString() !== 'assistant') return false;
+                const c = (m.content || '').toString().trim();
+                if (c.length < 40 || !panelContexts.length) return false;
+                return panelContexts.some((ctx) => ctx.includes(c) || c.includes(ctx));
+            };
             if (this.messages && this.messages.length > 0) {
                 this.messages.forEach((item) => {
                     // __hidden 플래그: HITL 도구 옵션 응답("standard" 같은 id) 등 화면 표시가 불필요한 메시지.
                     // upsertMessageByKeys 는 hideUserMessage 일 때 호출되지 않지만, 다른 경로로 들어온 경우의 안전망.
                     if (item && item.__hidden) {
+                        return;
+                    }
+                    // 패널 context 와 중복되는 초안 echo 는 숨김(패널만 표시).
+                    if (isDraftEchoDup(item)) {
                         return;
                     }
                     let data = JSON.parse(JSON.stringify(item));

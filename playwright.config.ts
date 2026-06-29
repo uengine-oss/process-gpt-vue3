@@ -31,10 +31,10 @@ export default defineConfig({
     use: {
         baseURL, // CI/로컬에서 BASE_URL 주입 가능
 
-        trace: 'on',
-
-        video: 'on',
-        screenshot: 'on'
+        // 디스크 절약: 대용량 영상/트레이스 기록 비활성(장시간 LIVE 테스트가 디스크를 채워 ENOSPC 유발).
+        trace: 'off',
+        video: 'off',
+        screenshot: 'only-on-failure'
     },
 
     projects: [
