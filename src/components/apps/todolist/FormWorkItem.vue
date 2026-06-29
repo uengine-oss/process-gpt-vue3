@@ -888,11 +888,14 @@ export default {
                 errorMsg: `${me.workItem.activity.name} 실행 중 오류가 발생했습니다: ${error}`
             });
         },
-        delegateTask(delegateUser, assigneeUserInfo) {
+        delegateTask(delegateUser, assigneeUserInfo, reason) {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
+                    const previousUserId = me.workItem.worklist.endpoint;
+                    const previousUsername = assigneeUserInfo?.[0]?.username || localStorage.getItem('userName');
+
                     let notificationMessage = me.$t('FormWorkItem.delegateMessage', {
                         taskName: me.workItem.activity.name,
                         email: delegateUser.email,
@@ -925,6 +928,21 @@ export default {
 
                     // 위임 성공 후 workItem 정보 업데이트
                     me.workItem.worklist.endpoint = delegateUser.email;
+
+                    // 위임 이력 저장
+                    try {
+                        await backend.addDelegationHistory({
+                            task_id: me.workItem.worklist.taskId,
+                            from_user_id: previousUserId || localStorage.getItem('uid'),
+                            from_username: previousUsername || localStorage.getItem('userName'),
+                            to_user_id: delegateUser.uid || delegateUser.id,
+                            to_username: delegateUser.username,
+                            reason: reason || null,
+                            status: 'COMPLETED'
+                        });
+                    } catch (historyError) {
+                        console.error('위임 이력 저장 실패:', historyError);
+                    }
 
                     me.closeDelegateTask();
                 },
@@ -959,6 +977,10 @@ export default {
             if (!activity) {
                 return;
             }
+            const isFirstActivity = !this.findPreviousHumanActivity(me.workItem.activity.tracingTag, definition);
+            if (isFirstActivity) {
+                return;
+            }
             let inputFields = {};
             if (activity.inputData && activity.inputData.length > 0) {
                 const fieldValuePromises = activity.inputData.map(async (fieldInfo) => {
@@ -971,9 +993,8 @@ export default {
                 });
                 await Promise.all(fieldValuePromises);
             } else {
-                const sequenceFlow = definition.sequences.find((x) => x.target == me.workItem.activity.tracingTag);
-                if (sequenceFlow && sequenceFlow.source) {
-                    const prevActivityId = sequenceFlow.source;
+                const prevActivityId = me.findPreviousHumanActivity(me.workItem.activity.tracingTag, definition);
+                if (prevActivityId) {
                     const formInfo = await backend.getFormFields(null, prevActivityId, procDefId);
                     if (formInfo && formInfo.fields_json) {
                         const fieldValuePromises = formInfo.fields_json.map(async (field) => {
@@ -1001,6 +1022,25 @@ export default {
         },
         backToPrevStep() {
             this.$emit('backToPrevStep');
+        },
+        findPreviousHumanActivity(targetId, definition) {
+            if (!definition.sequences || !definition.activities) return null;
+            const visited = new Set();
+            const queue = [targetId];
+            while (queue.length > 0) {
+                const currentTarget = queue.shift();
+                if (visited.has(currentTarget)) continue;
+                visited.add(currentTarget);
+                const incomingFlows = definition.sequences.filter((seq) => seq.target === currentTarget);
+                for (const flow of incomingFlows) {
+                    const sourceId = flow.source;
+                    if (definition.activities.some((act) => act.id === sourceId)) {
+                        return sourceId;
+                    }
+                    queue.push(sourceId);
+                }
+            }
+            return null;
         },
 
         updateFormHtmlWithChipValues(data) {

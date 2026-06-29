@@ -43,10 +43,26 @@ export default {
     },
     data: () => ({
         workListByInstId: null,
-        updatedKey: 0
+        updatedKey: 0,
+        workListWatchRef: null
     }),
     created() {
         this.init();
+    },
+    async mounted() {
+        this.EventBus.on('instances-updated', this.init);
+        if (this.instance) {
+            this.workListWatchRef = await backend.watchWorkList(
+                () => { this.init(); },
+                { instId: this.instance.instId }
+            );
+        }
+    },
+    beforeUnmount() {
+        this.EventBus.off('instances-updated', this.init);
+        if (this.workListWatchRef) {
+            backend.watchOff(this.workListWatchRef);
+        }
     },
     computed: {
         mode() {
@@ -91,7 +107,8 @@ export default {
                 context: me,
                 action: async () => {
                     if (me.instance) {
-                        me.workListByInstId = await backend.getWorkListByInstId(me.instance.instId);
+                        me.workListByInstId = await backend.getAllWorkListByInstId(me.instance.instId);
+                        me.workListByInstId.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
                         me.updatedKey++;
                     }
                 }

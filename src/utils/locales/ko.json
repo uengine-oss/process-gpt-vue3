@@ -3212,7 +3212,14 @@
         "searchUser": "이름, 이메일 검색",
         "profile": "프로필",
         "userInfo": "대상 정보",
-        "delegateToMyself": "나에게 위임"
+        "delegateToMyself": "나에게 위임",
+        "reason": "위임 사유",
+        "reasonPlaceholder": "위임 사유를 입력하세요 (선택)",
+        "history": "위임 이력",
+        "status_COMPLETED": "완료",
+        "status_REQUESTED": "요청",
+        "status_ACCEPTED": "수락",
+        "status_REJECTED": "거절"
     },
     "UserInputGenerator": {
         "inputLabel": "생성하고싶은 에이전트를 입력하세요",
@@ -3720,6 +3727,12 @@
         "compareAsIs": "As-Is 비교",
         "compareDraft": "Draft 보기",
         "snapshotAt": "스냅샷 시점"
+    },
+    "AgentChatRoomContext": {
+        "progress": "진행 상황",
+        "context": "컨텍스트",
+        "skills": "스킬",
+        "connectors": "커넥터"
     },
     "agentChat": {
         "learningModeInfo": "학습 모드: 에이전트가 사용자의 지침을 학습하여 이후 작업에 반영합니다. \n 예를 들어, \n ‘제안서 작성 시 각 회사의 CI에 맞는 컬러를 사용해.’ \n ‘정부·공공기관 대상 제안서는 반드시 한글(HWP) 형식으로 작성해.’ \n ‘B2C 제안서는 고객 이해를 돕기 위해 시각 자료를 우선 활용해.’ \n 와 같은 가이드를 학습시킬 수 있습니다.",

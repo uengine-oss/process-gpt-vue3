@@ -312,6 +312,7 @@ create table if not exists public.proc_def (
     tenant_id text null default public.tenant_id(),
     isdeleted boolean not null default false,
     owner text null,
+    agent_id text null,
     type text null,
     is_draft boolean not null default false,
     constraint proc_def_pkey primary key (uuid),
@@ -459,6 +460,33 @@ create table if not exists public.todolist (
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
+
+
+DO $$ BEGIN
+  CREATE TYPE delegation_status AS ENUM ('REQUESTED', 'ACCEPTED', 'REJECTED', 'COMPLETED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+create table if not exists public.delegation_history (
+    id uuid not null default uuid_generate_v4(),
+    task_id uuid not null,
+    from_user_id text not null,
+    from_username text null,
+    to_user_id text not null,
+    to_username text null,
+    reason text null,
+    status delegation_status not null default 'COMPLETED',
+    created_at timestamp with time zone not null default now(),
+    responded_at timestamp with time zone null,
+    tenant_id text null default public.tenant_id(),
+    constraint delegation_history_pkey primary key (id),
+    constraint delegation_history_task_id_fkey foreign key (task_id) references todolist (id) on update cascade on delete cascade,
+    constraint delegation_history_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_delegation_history_task_id on public.delegation_history (task_id);
+create index if not exists idx_delegation_history_tenant_id on public.delegation_history (tenant_id);
 
 create table if not exists public.chat_rooms (
     id text not null,
@@ -1408,6 +1436,7 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lock ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bpm_proc_inst ENABLE ROW LEVEL SECURITY;
 ALTER TABLE todolist ENABLE ROW LEVEL SECURITY;
+ALTER TABLE delegation_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE calendar ENABLE ROW LEVEL SECURITY;
@@ -1489,6 +1518,12 @@ CREATE POLICY todolist_insert_policy ON todolist FOR INSERT TO authenticated WIT
 CREATE POLICY todolist_select_policy ON todolist FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY todolist_update_policy ON todolist FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY todolist_delete_policy ON todolist FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+-- Delegation history policies
+CREATE POLICY delegation_history_insert_policy ON delegation_history FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY delegation_history_select_policy ON delegation_history FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY delegation_history_update_policy ON delegation_history FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY delegation_history_delete_policy ON delegation_history FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
 
 -- Chat rooms policies
 CREATE POLICY chat_rooms_insert_policy ON chat_rooms FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
@@ -3629,7 +3664,7 @@ create table if not exists public.resource_pull_requests (
   merged_at      timestamptz         null,
   constraint resource_pull_requests_pkey primary key (id),
   constraint resource_pull_requests_resource_type_check check (
-    resource_type in ('skill', 'proc_def', 'dmn')
+    resource_type in ('skill', 'bpmn', 'dmn')
   ),
   constraint resource_pull_requests_requester_fkey foreign key (requester_id, tenant_id)
     references public.users (id, tenant_id) on update cascade on delete cascade,
@@ -3656,10 +3691,7 @@ create table if not exists public.resource_pr_reviews (
   constraint resource_pr_reviews_pr_fkey foreign key (pr_id)
     references public.resource_pull_requests (id) on update cascade on delete cascade,
   constraint resource_pr_reviews_reviewer_fkey foreign key (reviewer_id, tenant_id)
-    references public.users (id, tenant_id) on update cascade on delete cascade,
-  constraint resource_pr_reviews_action_check check (
-    action in ('APPROVED', 'CHANGES_REQUESTED')
-  )
+    references public.users (id, tenant_id) on update cascade on delete cascade
 ) tablespace pg_default;
 
 create index if not exists idx_resource_pr_reviews_pr_id

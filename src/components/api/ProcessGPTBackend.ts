@@ -159,7 +159,11 @@ class ProcessGPTBackend implements Backend {
                 // 임시저장(draft, is_draft=true) 프로세스는 목록에서 제외 (기존 null/false 는 유지).
                 const visibleDefs = (procDefs || []).filter((item: any) => item && item.is_draft !== true);
                 visibleDefs.map((item: any) => {
-                    item.path = `${item.id}.bpmn`;
+                    if (item.type && item.type === 'dmn') {
+                        item.path = `${item.id}.dmn`;
+                    } else {
+                        item.path = `${item.id}.bpmn`;
+                    }
                     item.name = item.name || item.id;
                 });
                 return visibleDefs;
@@ -398,6 +402,7 @@ class ProcessGPTBackend implements Backend {
                 // name이 유효한 경우에만 업데이트 (null로 덮어쓰기 방지)
                 if (options.name) procDef.name = options.name;
                 if (options.owner) procDef.owner = options.owner;
+                if (Object.prototype.hasOwnProperty.call(options, 'agent_id')) procDef.agent_id = options.agent_id;
                 if (options.type) procDef.type = options.type;
                 // 기존 정의도 함께 갱신되어야 activity.tool 변경이 proc_def.definition에 반영됨
                 if (Object.prototype.hasOwnProperty.call(options, 'definition')) {
@@ -409,12 +414,14 @@ class ProcessGPTBackend implements Backend {
                 }
             } else {
                 // 신규 프로세스: 초기 bpmn/definition 포함하여 생성
+                const currentOwner = options.owner || localStorage.getItem('uid') || null;
                 procDef = {
                     id: defId,
                     name: options.name,
                     bpmn: xml,
                     definition: options.definition || null,
-                    owner: options.owner || null,
+                    owner: currentOwner,
+                    agent_id: options.agent_id || null,
                     type: options.type || 'bpmn'
                 };
                 if (Object.prototype.hasOwnProperty.call(options, 'is_draft')) {
@@ -2656,7 +2663,17 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getAllWorkListByInstId(instId: number) {
-        return this.getWorkListByInstId(instId);
+        const byInstId = await this.getWorkListByInstId(instId);
+        const byRootInstId = await this.getWorkListByRootInstId(instId);
+        const seen = new Set(byInstId.map((item: any) => item.taskId));
+        const merged = [...byInstId];
+        for (const item of byRootInstId) {
+            if (!seen.has(item.taskId)) {
+                merged.push(item);
+                seen.add(item.taskId);
+            }
+        }
+        return merged;
     }
 
     async putWorkItemComplete(taskId: string, inputData: any) {
@@ -2818,27 +2835,54 @@ class ProcessGPTBackend implements Backend {
     async watchInstanceList(callback: (payload: any) => void, options?: any) {
         try {
             if (!options) options = {};
-            if (!options.status) return [];
-            if (options.status.includes('*')) options.status = ['NEW', 'RUNNING', 'DONE', 'PENDING', 'IN_PROGRESS'];
+            const statusFilter = options.status || [];
+            if (statusFilter.includes('*')) {
+                options.status = ['NEW', 'RUNNING', 'DONE', 'COMPLETED', 'PENDING', 'IN_PROGRESS'];
+            }
             const uid = window.localStorage.getItem('uid');
-            const filter = `status=in.(${options.status.join(',')})`;
 
             return await storage._watch(
                 {
-                    channel: 'instance',
-                    table: 'bpm_proc_inst',
-                    filter: filter
+                    channel: `instance-${uid}-${Date.now()}`,
+                    table: 'bpm_proc_inst'
                 },
                 (payload) => {
+                    if (statusFilter.length > 0) {
+                        const newStatus = payload.new?.status;
+                        const oldStatus = payload.old?.status;
+                        if (!statusFilter.includes(newStatus) && !statusFilter.includes(oldStatus)) {
+                            return;
+                        }
+                    }
+
                     if (payload.eventType === 'DELETE') {
                         callback(payload);
                     } else {
-                        if (payload.new.participants.includes(uid)) {
+                        if (payload.new?.participants?.includes(uid)) {
                             callback(payload);
-                        } else if (payload.old.participants && payload.old.participants.includes(uid)) {
+                        } else if (payload.old?.participants?.includes(uid)) {
                             callback(payload);
                         }
                     }
+                }
+            );
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async watchWorkList(callback: (payload: any) => void, options?: any) {
+        try {
+            const filter = options?.instId ? `proc_inst_id=eq.${options.instId}` : undefined;
+            return await storage._watch(
+                {
+                    channel: 'workitem',
+                    table: 'todolist',
+                    ...(filter ? { filter } : {})
+                },
+                (payload) => {
+                    callback(payload);
                 }
             );
         } catch (error) {
@@ -3139,6 +3183,25 @@ class ProcessGPTBackend implements Backend {
                 {
                     channel,
                     table: 'chats',
+                    filter: options?.filter || null
+                },
+                (payload) => {
+                    callback(payload);
+                }
+            );
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async watchTenantSkills(callback: (payload: any) => void, options: any = {}) {
+        try {
+            const channel = options?.channel || `tenant-skills-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            return await storage._watch(
+                {
+                    channel,
+                    table: 'tenant_skills',
                     filter: options?.filter || null
                 },
                 (payload) => {
@@ -5239,7 +5302,7 @@ class ProcessGPTBackend implements Backend {
                 name: newName,
                 bpmn: bpmn,
                 definition: definition || null,
-                owner: null,
+                owner: localStorage.getItem('uid') || null,
                 type: 'bpmn',
                 isdeleted: false
             };
@@ -5965,6 +6028,70 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    async getAgentEvents(taskId: string) {
+        return await storage.list('events', {
+            match: { todo_id: taskId },
+            inArray: {
+                column: 'event_type',
+                values: [
+                    'task_started', 'task_completed', 'crew_completed',
+                    'tool_usage_started', 'tool_usage_finished',
+                    'human_asked', 'human_response', 'error',
+                    'human_checked', 'task_working'
+                ]
+            },
+            orderBy: 'timestamp'
+        }) || [];
+    }
+
+    async getAgentEventById(eventId: string) {
+        return await storage.getObject(`events/${eventId}`, { key: 'id' });
+    }
+
+    async getTodoStatus(taskId: string) {
+        return await storage.list('todolist', {
+            key: 'status, agent_mode, draft_status, feedback, agent_orch, consumer, draft, query',
+            match: { id: taskId },
+            maybeSingle: true
+        });
+    }
+
+    async getTodoOutput(taskId: string) {
+        return await storage.list('todolist', {
+            key: 'output, output_url',
+            match: { id: taskId },
+            maybeSingle: true
+        });
+    }
+
+    async watchAgentEvents(taskId: string, callback: (row: any) => void) {
+        return await storage._watch({
+            channel: `events-${taskId}`,
+            event: 'INSERT',
+            table: 'events',
+            filter: `todo_id=eq.${taskId}`
+        }, (payload: any) => {
+            callback(payload.new);
+        });
+    }
+
+    async watchTodoStatus(taskId: string, callback: (newRow: any, oldRow: any) => void) {
+        return await storage._watch({
+            channel: `todolist-${taskId}`,
+            event: 'UPDATE',
+            table: 'todolist',
+            filter: `id=eq.${taskId}`
+        }, (payload: any) => {
+            callback(payload.new, payload.old);
+        });
+    }
+
+    unwatchChannel(ref: any) {
+        if (ref) {
+            storage._watch_off(ref);
         }
     }
 
@@ -7420,7 +7547,7 @@ class ProcessGPTBackend implements Backend {
     // resourceType: 'skill' | 'proc_def' | 'dmn'
     // ============================================================
 
-    async createResourcePrRecord(resourceType: 'skill' | 'proc_def' | 'dmn', data: {
+    async createResourcePrRecord(resourceType: 'skill' | 'bpmn' | 'dmn', data: {
         resourceId: string;
         branchName: string;
         baseBranch: string;
@@ -7453,7 +7580,7 @@ class ProcessGPTBackend implements Backend {
         return record;
     }
 
-    async getResourcePrRecords(resourceType: 'skill' | 'proc_def' | 'dmn', resourceId: string, status?: string, gitUrlPrefix?: string): Promise<any[]> {
+    async getResourcePrRecords(resourceType: 'skill' | 'bpmn' | 'dmn', resourceId: string, status?: string, gitUrlPrefix?: string): Promise<any[]> {
         const tenantId = window.$tenantName;
         const match: any = { tenant_id: tenantId, resource_type: resourceType, resource_id: resourceId };
         if (status) match.status = status;
@@ -7480,7 +7607,7 @@ class ProcessGPTBackend implements Backend {
         await storage.putObject('resource_pull_requests', update, { onConflict: 'id' });
     }
 
-    async addResourcePrReview(prId: string, action: 'APPROVED' | 'CHANGES_REQUESTED', comment: string, reviewerId: string, reviewerName?: string): Promise<any> {
+    async addResourcePrReview(prId: string, action: 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENT', comment: string, reviewerId: string, reviewerName?: string): Promise<any> {
         const tenantId = window.$tenantName;
         const record = {
             id: this.uuid(),
@@ -9514,6 +9641,35 @@ class ProcessGPTBackend implements Backend {
             headers: { 'Content-Type': 'application/json' }
         });
         return response?.data || null;
+    }
+
+    async getDelegationHistory(taskId: string) {
+        if (!taskId) return [];
+        const { data, error } = await window.$supabase
+            .from('delegation_history')
+            .select('*')
+            .eq('task_id', taskId)
+            .order('created_at', { ascending: false });
+        if (error) throw new Error(error.message);
+        return data || [];
+    }
+
+    async addDelegationHistory(record: {
+        task_id: string;
+        from_user_id: string;
+        from_username: string;
+        to_user_id: string;
+        to_username: string;
+        reason?: string;
+        status?: string;
+    }) {
+        const { data, error } = await window.$supabase
+            .from('delegation_history')
+            .insert(record)
+            .select()
+            .single();
+        if (error) throw new Error(error.message);
+        return data;
     }
 }
 

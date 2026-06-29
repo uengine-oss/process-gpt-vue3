@@ -169,6 +169,7 @@
                                 @getMoreChat="loadMoreMessages"
                                 @human-feedback-submit="handleHumanFeedbackSubmit"
                                 @human-feedback-skip="handleHumanFeedbackSkip"
+                                @sendMessage="handleSendMessage"
                             />
                         </div>
 
@@ -334,6 +335,7 @@
                             @getMoreChat="loadMoreMessages"
                             @human-feedback-submit="handleHumanFeedbackSubmit"
                             @human-feedback-skip="handleHumanFeedbackSkip"
+                            @sendMessage="handleSendMessage"
                         />
                     </div>
 
@@ -962,6 +964,7 @@ export default {
             // 예정/사용 도구 목록(우측 패널)
             plannedToolsById: {}, // { [id]: { id, tool, name, displayName, args, status, input, output } }
             plannedSkills: [], // ["skill-name", ...] (or normalized objects)
+            plannedConnectors: [], // ["server-name", ...]
             plannedTodos: [], // [{ content, status, ... }]
             /** chat_attachments 테이블에서 읽은 첨부 목록 */
             plannedAttachments: [],
@@ -973,6 +976,7 @@ export default {
                 activity: false,
                 tools: false,
                 skills: false,
+                connectors: false,
                 todos: false,
                 attachments: false,
                 knowledge: true
@@ -2320,9 +2324,10 @@ export default {
             // 방 전환 시 plan_* 사이드 정보 초기화
             this.plannedToolsById = {};
             this.plannedSkills = [];
+            this.plannedConnectors = [];
             this.plannedTodos = [];
             this.plannedAttachments = [];
-            this.planSideInfoEnabled = { activity: false, tools: false, skills: false, todos: false, attachments: false, knowledge: true };
+            this.planSideInfoEnabled = { activity: false, tools: false, skills: false, connectors: false, todos: false, attachments: false, knowledge: true };
             this.plannedActivityById = {};
             this._activityOrder = 0;
             // 방 전환 시 지식 베이스 선택 상태도 초기화 (kickoff에서 새로 세팅 가능)
@@ -2634,6 +2639,14 @@ export default {
                     this.planSideInfoEnabled.skills = true;
                     this.plannedSkills = skills;
                     this.upsertSkillsPanel();
+                }
+
+                const mcpTools = Array.isArray(ctx.mcpTools) ? ctx.mcpTools : [];
+                const connectorServers = [...new Set(mcpTools.flatMap((m) => Array.isArray(m?.servers) ? m.servers : []).filter(Boolean))];
+                if (connectorServers.length > 0) {
+                    this.planSideInfoEnabled.connectors = true;
+                    this.plannedConnectors = connectorServers;
+                    this.upsertConnectorsPanel();
                 }
 
                 if (enabledTodos) {
@@ -5701,6 +5714,28 @@ export default {
             this.artifactSidebarVisible = true;
         },
 
+        /** 우측 사이드바에 Connectors(MCP 서버) 패널 생성/갱신 */
+        upsertConnectorsPanel() {
+            if (!this.planSideInfoEnabled?.connectors) return;
+            const raw = Array.isArray(this.plannedConnectors) ? this.plannedConnectors : [];
+            const items = raw
+                .map((s) => (typeof s === 'string' ? { name: s } : s))
+                .filter((s) => s && (s.name || s.label));
+            const data = { enabled: true, items };
+
+            const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'connectors');
+            if (existingIdx !== -1) {
+                const existing = this.artifactPanels[existingIdx];
+                this.artifactPanels[existingIdx] = { ...existing, label: 'Connectors', data };
+            } else {
+                const id = `connectors-${this.uuid()}`;
+                this.artifactPanels.push({ id, type: 'connectors', label: 'Connectors', data });
+            }
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
+            if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
+            this.artifactSidebarVisible = true;
+        },
+
         /** 우측 사이드바에 첨부(chat_attachments) 패널 생성/갱신 */
         upsertAttachmentsPanel() {
             if (!this.planSideInfoEnabled?.attachments) return;
@@ -7215,7 +7250,8 @@ export default {
                 get_organization: '조직도 조회',
                 ask_user: '사용자 확인 요청',
                 create_consulting_process_workitem: '컨설팅 기반 프로세스 생성',
-                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청'
+                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청',
+                get_current_user: '사용자 정보 조회'
             };
             return toolNameMap[key] || key;
         },
@@ -7473,6 +7509,14 @@ export default {
                             this.planSideInfoEnabled.skills = true;
                             this.plannedSkills = skills;
                             this.upsertSkillsPanel();
+                        } catch (e) {}
+                    },
+                    onPlanConnectors: (connectors) => {
+                        try {
+                            if (!Array.isArray(connectors)) return;
+                            this.planSideInfoEnabled.connectors = true;
+                            this.plannedConnectors = connectors;
+                            this.upsertConnectorsPanel();
                         } catch (e) {}
                     },
                     onPlanTodos: (todos) => {

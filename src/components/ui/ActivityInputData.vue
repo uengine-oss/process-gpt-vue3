@@ -18,9 +18,16 @@
                             </div>
                             <!-- <v-icon :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"></v-icon> -->
                         </v-card-title>
-                        <div class="text-subtitle-1 font-weight-medium mb-2">
+                        <div class="text-subtitle-1 font-weight-medium mb-2 d-flex align-center">
                             <v-icon class="mr-2" size="small">mdi-form-select</v-icon>
                             {{ getActivityName(field.formId) }}
+                            <v-avatar v-if="getAssignee(field.formId)" size="20" class="ml-2">
+                                <v-img
+                                    :src="getAssignee(field.formId).profile || '/images/defaultUser.png'"
+                                    :alt="getAssignee(field.formId).name"
+                                />
+                            </v-avatar>
+                            <span v-if="getAssignee(field.formId)" class="text-caption ml-1">{{ getAssignee(field.formId).name }}</span>
                         </div>
                     </div>
                     <v-spacer></v-spacer>
@@ -87,6 +94,7 @@ export default {
             fieldMetadata: {}, // 폼별 필드 메타데이터 저장 (레이지 로딩)
             activityMetadata: null, // proc_def의 activities 정보 (레이지 로딩)
             formHtmlData: {}, // 폼별 HTML 데이터 저장
+            assigneeMap: {},
             isSummaryExpanded: {},
             previousInputDetails: [
                 {
@@ -112,6 +120,7 @@ export default {
         // proc_def의 activities 정보도 백그라운드에서 로딩
         if (this.workItem && this.workItem.worklist && this.workItem.worklist.defId) {
             this.fetchActivityMetadata();
+            this.fetchAssignees();
         }
     },
     watch: {
@@ -278,6 +287,54 @@ export default {
         //     }
         //     return String(value);
         // },
+        async fetchAssignees() {
+            try {
+                const instId = this.workItem.worklist.instId;
+                const workList = await this.backend.getWorkListByInstId(instId);
+                if (!workList || !Array.isArray(workList)) return;
+
+                const nameMap = {};
+                workList.forEach((item) => {
+                    if (item.tool && item.tool.includes('formHandler:') && (item.status === 'DONE' || item.status === 'COMPLETED')) {
+                        const formId = item.tool.split('formHandler:')[1];
+                        if (formId && !nameMap[formId]) {
+                            nameMap[formId] = item.username || item.endpoint || null;
+                        }
+                    }
+                });
+
+                const usernames = [...new Set(Object.values(nameMap).filter(Boolean))];
+                let userProfileMap = {};
+                if (usernames.length > 0) {
+                    try {
+                        const users = await this.backend.getUserList({});
+                        if (users && Array.isArray(users)) {
+                            users.forEach((u) => {
+                                if (u.username) userProfileMap[u.username] = u.profile || null;
+                                if (u.email) userProfileMap[u.email] = u.profile || null;
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('사용자 프로필을 가져오는 중 오류:', e);
+                    }
+                }
+
+                const map = {};
+                Object.keys(nameMap).forEach((formId) => {
+                    const name = nameMap[formId];
+                    map[formId] = {
+                        name,
+                        profile: userProfileMap[name] || null
+                    };
+                });
+                this.assigneeMap = map;
+            } catch (e) {
+                console.warn('담당자 정보를 가져오는 중 오류:', e);
+            }
+        },
+        getAssignee(formId) {
+            return this.assigneeMap[formId] || null;
+        },
         handleSummaryExpanded(formId, expanded) {
             this.isSummaryExpanded = {
                 ...this.isSummaryExpanded,

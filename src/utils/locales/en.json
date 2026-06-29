@@ -3212,7 +3212,14 @@
         "searchUser": "Search",
         "profile": "Profile",
         "userInfo": "User info",
-        "delegateToMyself": "Delegate to myself"
+        "delegateToMyself": "Delegate to myself",
+        "reason": "Reason",
+        "reasonPlaceholder": "Enter reason for delegation (optional)",
+        "history": "Delegation History",
+        "status_COMPLETED": "Completed",
+        "status_REQUESTED": "Requested",
+        "status_ACCEPTED": "Accepted",
+        "status_REJECTED": "Rejected"
     },
     "UserInputGenerator": {
         "inputLabel": "Enter the agent you want to generate",
@@ -3720,6 +3727,12 @@
         "compareAsIs": "Compare As-Is",
         "compareDraft": "Draft View",
         "snapshotAt": "Snapshot at"
+    },
+    "AgentChatRoomContext": {
+        "progress": "Progress",
+        "context": "Context",
+        "skills": "Skills",
+        "connectors": "Connectors"
     },
     "agentChat": {
         "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n 'Use the color that matches each company's CI when writing a proposal.' \n 'Proposals for government and public institutions must be written in Korean (HWP) format.' \n 'For B2C proposals, prioritize visual materials to help customers understand.' \n You can train such guides.",

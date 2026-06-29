@@ -51,12 +51,19 @@ export default {
         return {
             skillList: [],
             isLoading: false,
-            selectedSkillName: null
+            selectedSkillName: null,
+            skillsWatchRef: null
         };
     },
     async mounted() {
         await this.loadSkillList();
         this.updateSelectedSkill();
+        this.subscribeSkills();
+    },
+    beforeUnmount() {
+        if (this.skillsWatchRef && typeof this.skillsWatchRef.unsubscribe === 'function') {
+            this.skillsWatchRef.unsubscribe();
+        }
     },
     watch: {
         $route() {
@@ -64,6 +71,21 @@ export default {
         }
     },
     methods: {
+        async subscribeSkills() {
+            try {
+                const tenantId = window.$tenantName;
+                this.skillsWatchRef = await backend.watchTenantSkills(
+                    () => {
+                        this.loadSkillList();
+                    },
+                    {
+                        filter: tenantId ? `tenant_id=eq.${tenantId}` : null
+                    }
+                );
+            } catch (e) {
+                console.error('Failed to subscribe tenant_skills realtime:', e);
+            }
+        },
         async loadSkillList() {
             this.isLoading = true;
             try {

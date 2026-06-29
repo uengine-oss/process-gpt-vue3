@@ -1421,12 +1421,6 @@
                                                                                 v-html="renderStreamingMarkdown(message)"
                                                                             ></div>
                                                                         </template>
-                                                                        <div
-                                                                            v-if="getAgentPlanSummary(message)"
-                                                                            class="mt-1 text-caption text-medium-emphasis"
-                                                                        >
-                                                                            플랜: {{ getAgentPlanSummary(message) }}
-                                                                        </div>
                                                                     </div>
 
                                                                     <v-sheet
@@ -1482,16 +1476,24 @@
                                                                                     <div
                                                                                         v-for="(tc, tcIdx) in getToolCallList(message)"
                                                                                         :key="`tc-${index}-${tcIdx}`"
-                                                                                        class="chat-tool-activity__item"
+                                                                                        class="chat-tool-activity__item-wrap"
                                                                                     >
-                                                                                        <v-icon
-                                                                                            size="12"
-                                                                                            class="mr-1"
-                                                                                            :color="tc.status === 'error' ? 'error' : tc.status === 'done' ? 'success' : 'primary'"
-                                                                                            >{{ tc.kind === 'subagent' ? 'mdi-robot-outline' : 'mdi-wrench-outline' }}</v-icon
-                                                                                        >
-                                                                                        <span class="chat-tool-activity__name">{{ tc.label }}</span>
-                                                                                        <span class="chat-tool-activity__status" :class="`is-${tc.status}`">{{ tc.status }}</span>
+                                                                                        <div class="chat-tool-activity__item">
+                                                                                            <v-icon
+                                                                                                size="12"
+                                                                                                class="mr-1"
+                                                                                                :color="tc.status === 'error' ? 'error' : tc.status === 'done' ? 'success' : 'primary'"
+                                                                                                >{{ tc.kind === 'subagent' ? 'mdi-robot-outline' : 'mdi-wrench-outline' }}</v-icon
+                                                                                            >
+                                                                                            <span class="chat-tool-activity__name">{{ tc.label }}</span>
+                                                                                            <span class="chat-tool-activity__status" :class="`is-${tc.status}`">{{ tc.status }}</span>
+                                                                                            <span
+                                                                                                v-if="tc.output"
+                                                                                                class="chat-tool-activity__result-toggle"
+                                                                                                @click="toolOutputOpenMap[`${index}-${tcIdx}`] = !toolOutputOpenMap[`${index}-${tcIdx}`]"
+                                                                                            >결과</span>
+                                                                                        </div>
+                                                                                        <pre v-if="toolOutputOpenMap[`${index}-${tcIdx}`] && tc.output" class="chat-tool-activity__output">{{ tc.output }}</pre>
                                                                                     </div>
                                                                                 </div>
                                                                             </details>
@@ -2327,6 +2329,26 @@
                                                                                     </div>
                                                                                 </div>
                                                                             </v-card>
+                                                                        </div>
+                                                                        <!-- get_form_fields 도구 결과 폼 렌더링 -->
+                                                                        <div
+                                                                            v-if="chatRoomMode && getFormFieldsFromToolCalls(message)"
+                                                                            class="mt-2 mb-2"
+                                                                        >
+                                                                            <DynamicForm
+                                                                                :formHTML="getFormFieldsFromToolCalls(message).html"
+                                                                                v-model="formFieldsFormValues[message.uuid]"
+                                                                                :readonly="false"
+                                                                            />
+                                                                            <div class="d-flex justify-end mt-2">
+                                                                                <v-btn
+                                                                                    color="primary"
+                                                                                    size="small"
+                                                                                    @click.stop="submitFormFields(message)"
+                                                                                >
+                                                                                    제출
+                                                                                </v-btn>
+                                                                            </div>
                                                                         </div>
                                                                         <!--   -->
                                                                         <v-progress-linear
@@ -3504,6 +3526,8 @@ export default {
             replyUser: null,
             isViewJSON: [],
             isviewJSONStatus: false,
+            toolOutputOpenMap: {},
+            formFieldsFormValues: {},
             attachedImages: [],
             delImgBtn: false,
             // PDF 업로드(정의체계도/패널 공통)
@@ -4398,10 +4422,18 @@ export default {
                     .map((t) => {
                         const name = (t?.name || t?.tool || '').toString();
                         const kind = (t?.kind || (name === 'task' ? 'subagent' : 'tool')).toString();
+                        const rawOutput = t?.output ?? null;
+                        let output = '';
+                        if (rawOutput != null) {
+                            output = this.formatToolOutput(rawOutput);
+                        }
                         return {
+                            name,
                             label: this.formatToolName(name) || name,
                             kind,
-                            status: (t?.status || 'done').toString()
+                            status: (t?.status || 'done').toString(),
+                            output,
+                            rawOutput: rawOutput
                         };
                     })
                     .filter((t) => t.label);
@@ -4409,15 +4441,92 @@ export default {
                 return [];
             }
         },
+        formatToolOutput(raw) {
+            try {
+                let str = typeof raw === 'string' ? raw : JSON.stringify(raw);
+                const contentMatch = str.match(/^content='([\s\S]*?)'\s+name='.*?'\s+tool_call_id='.*?'$/);
+                if (contentMatch) str = contentMatch[1];
+                str = str.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+                let data;
+                try { data = JSON.parse(str); } catch { return str; }
+                return JSON.stringify(data, null, 2);
+            } catch {
+                return String(raw);
+            }
+        },
+        getFormFieldsFromToolCalls(message) {
+            try {
+                const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
+                for (const t of tools) {
+                    const name = (t?.name || t?.tool || '').toString().split('__').pop();
+                    if (name !== 'get_form_fields' || !t?.output) continue;
+                    let raw = t.output;
+                    if (typeof raw === 'string') {
+                        const contentMatch = raw.match(/^content='([\s\S]*?)'\s+name='.*?'\s+tool_call_id='.*?'$/);
+                        if (contentMatch) {
+                            raw = contentMatch[1].replace(/\\([\\'"ntr])/g, (_, c) => {
+                                if (c === '\\') return '\\';
+                                if (c === "'") return "'";
+                                if (c === '"') return '"';
+                                if (c === 'n') return '\n';
+                                if (c === 't') return '\t';
+                                if (c === 'r') return '\r';
+                                return '\\' + c;
+                            });
+                        }
+                        try { raw = JSON.parse(raw); } catch { continue; }
+                    }
+                    if (raw && typeof raw === 'object' && raw.html) {
+                        const msgKey = message.uuid || '';
+                        if (msgKey && !this.formFieldsFormValues[msgKey]) {
+                            const init = {};
+                            if (Array.isArray(raw.fields_json)) {
+                                raw.fields_json.forEach(f => { if (f.key) init[f.key] = ''; });
+                            }
+                            this.formFieldsFormValues[msgKey] = init;
+                        }
+                        return {
+                            html: raw.html,
+                            formId: raw.id || raw.form_id || '',
+                            activityName: raw.activity_id || '',
+                            fieldsJson: raw.fields_json || []
+                        };
+                    }
+                }
+                return null;
+            } catch { return null; }
+        },
+        submitFormFields(message) {
+            const formData = this.getFormFieldsFromToolCalls(message);
+            const values = this.formFieldsFormValues[message.uuid] || {};
+            const lines = [];
+            if (formData && Array.isArray(formData.fieldsJson)) {
+                formData.fieldsJson.forEach(f => {
+                    const label = f.label || f.key || '';
+                    const val = values[f.key] ?? '';
+                    lines.push(`${label}: ${val}`);
+                });
+            } else {
+                Object.entries(values).forEach(([key, val]) => {
+                    lines.push(`${key}: ${val}`);
+                });
+            }
+            const text = lines.join('\n');
+            if (text.trim()) {
+                this.$emit('sendMessage', {
+                    text,
+                    images: [],
+                    mentionedUsers: [],
+                    orchestration: (this.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
+                    file: null,
+                    files: [],
+                    rawFiles: [],
+                    reply: null
+                });
+            }
+        },
         hasAgentLogs(message) {
             return Array.isArray(message?.agentLogs) && message.agentLogs.length > 0;
-        },
-        getAgentPlanSummary(message) {
-            const summary = (message?.agentPlan?.summary || '').toString().trim();
-            if (summary) return summary;
-            const logs = this.getRecentAgentLogs(message);
-            const planLike = logs.find((l) => (l?.category || '').toString().toLowerCase() === 'plan');
-            return (planLike?.message || '').toString().trim();
         },
         getAgentPlanSteps(message) {
             const steps = Array.isArray(message?.agentPlan?.steps) ? message.agentPlan.steps : [];
@@ -5423,7 +5532,8 @@ export default {
                 get_organization: '조직도 조회',
                 start_process_consulting: '프로세스 컨설팅 시작',
                 generate_process: '프로세스 생성',
-                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청'
+                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청',
+                get_current_user: '사용자 정보 조회'
             };
             return toolNameMap[key] || key;
         },
@@ -6914,6 +7024,42 @@ pre {
 .chat-tool-activity__status.is-error {
     color: rgb(var(--v-theme-error));
     background: rgba(var(--v-theme-error), 0.1);
+}
+.chat-tool-activity__item-wrap {
+    border-radius: 6px;
+}
+.chat-tool-activity__result-toggle {
+    flex-shrink: 0;
+    font-size: 10px;
+    padding: 1px 8px;
+    margin-left: 4px;
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.08);
+}
+.chat-tool-activity__result-toggle:hover {
+    background: rgba(var(--v-theme-primary), 0.16);
+}
+.chat-tool-activity__output {
+    margin: 4px 0 6px 20px;
+    padding: 10px 12px;
+    font-size: 11px;
+    line-height: 1.5;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 8px;
+    max-height: 300px;
+    overflow: auto;
+    color: rgba(0, 0, 0, 0.7);
+    font-family: 'Menlo', 'Consolas', monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.form-fields-preview-card {
+    border-color: rgba(var(--v-theme-primary), 0.25) !important;
+    max-width: 480px;
 }
 
 .chat-room-loading-indicator {

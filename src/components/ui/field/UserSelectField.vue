@@ -173,6 +173,10 @@ export default {
             },
             deep: true,
             immediate: true
+        },
+
+        disabled(newVal) {
+            this.localDisabled = newVal === 'true';
         }
     },
     created() {

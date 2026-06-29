@@ -15,6 +15,7 @@ class FixedBaseWorkAssistantAgentService {
             onToolEnd,
             onPlanTools,
             onPlanSkills,
+            onPlanConnectors,
             onPlanTodos,
             onDone,
             onError,
@@ -94,6 +95,9 @@ class FixedBaseWorkAssistantAgentService {
                                 break;
                             case 'plan_todos':
                                 if (onPlanTodos) onPlanTodos(Array.isArray(parsed.todos) ? parsed.todos : [], parsed);
+                                break;
+                            case 'plan_connectors':
+                                if (onPlanConnectors) onPlanConnectors(Array.isArray(parsed.connectors) ? parsed.connectors : [], parsed);
                                 break;
                             case 'tool_start': {
                                 const toolRef = parsed.tool ?? parsed.tool_name ?? parsed.name;

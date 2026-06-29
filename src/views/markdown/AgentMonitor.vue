@@ -982,25 +982,7 @@ export default {
                 this.errorMessage = null;
                 this.events = [];
 
-                const { data, error } = await window.$supabase
-                    .from('events')
-                    .select('*')
-                    .eq('todo_id', taskId)
-                    .in('event_type', [
-                        'task_started',
-                        'task_completed',
-                        'crew_completed',
-                        'tool_usage_started',
-                        'tool_usage_finished',
-                        'human_asked',
-                        'human_response',
-                        'error',
-                        'human_checked',
-                        'task_working'
-                    ])
-                    .order('timestamp', { ascending: true });
-
-                if (error) throw error;
+                const data = await this.backend.getAgentEvents(taskId);
 
                 if (data) {
                     // timestamp가 같을 때 task_started가 task_completed보다 먼저 오도록 정렬
@@ -1035,6 +1017,9 @@ export default {
 
                     this.events = data;
                     this.isCancelled = data.some((e) => e.event_type === 'crew_completed');
+                    if (this.isCancelled) {
+                        this.$nextTick(() => this.fetchOutputIfEmpty(taskId));
+                    }
                 }
             } catch (error) {
                 this.handleError(error, '이벤트 데이터를 불러오는 중 오류가 발생했습니다');
@@ -1045,7 +1030,7 @@ export default {
         // ========================================
         // 📡 실시간 구독 및 이벤트 처리
         // ========================================
-        setupRealtimeSubscription(taskId) {
+        async setupRealtimeSubscription(taskId) {
             if (window.$mode === 'uEngine') return;
             try {
                 const validEventTypes = [
@@ -1060,106 +1045,65 @@ export default {
                     'error'
                 ];
 
-                this.channel = window.$supabase
-                    .channel('events')
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: 'INSERT',
-                            schema: 'public',
-                            table: 'events'
-                        },
-                        ({ new: row }) => {
-                            const { todo_id: todoId, event_type, job_id, id } = row;
+                this.channel = await this.backend.watchAgentEvents(taskId, (row) => {
+                    const { todo_id: todoId, event_type, job_id, id } = row;
 
-                            if (job_id && job_id.includes('final_report_merge')) {
-                                console.log('[Realtime] final_report_merge 이벤트 수신:', row);
-                            }
+                    if (job_id && job_id.includes('final_report_merge')) {
+                        console.log('[Realtime] final_report_merge 이벤트 수신:', row);
+                    }
 
-                            const isValidEvent =
-                                !this.events.some((e) => e.id === id) && validEventTypes.includes(event_type) && todoId === taskId;
+                    const isValidEvent =
+                        !this.events.some((e) => e.id === id) && validEventTypes.includes(event_type) && todoId === taskId;
 
-                            if (isValidEvent) {
-                                // === task_completed인 경우 data 없을 때 fallback 재조회 ===
-                                if (event_type === 'task_completed' && (!row.data || Object.keys(row.data).length === 0)) {
-                                    window.$supabase
-                                        .from('events')
-                                        .select('*')
-                                        .eq('id', id)
-                                        .single()
-                                        .then(({ data: full, error }) => {
-                                            console.log('[RealTime Failed] fallback DB');
-                                            this.pushEventAndMaybeSubmit(!error && full ? full : row);
-                                        });
-                                } else {
-                                    this.pushEventAndMaybeSubmit(row);
-                                }
+                    if (isValidEvent) {
+                        if (event_type === 'task_completed' && (!row.data || Object.keys(row.data).length === 0)) {
+                            this.backend.getAgentEventById(id).then((full) => {
+                                console.log('[RealTime Failed] fallback DB');
+                                this.pushEventAndMaybeSubmit(full || row);
+                            }).catch(() => {
+                                this.pushEventAndMaybeSubmit(row);
+                            });
+                        } else {
+                            this.pushEventAndMaybeSubmit(row);
+                        }
 
-                                // 첫 이벤트 수신시 상태 동기화
-                                if (!this.hasReceivedEvent) {
-                                    this.hasReceivedEvent = true;
-                                    if (!this.hasSyncedTodoStatusOnce) {
-                                        this.hasSyncedTodoStatusOnce = true;
-                                        setTimeout(async () => {
-                                            await this.fetchTodoStatus();
-                                            if (!this.isCancelled) {
-                                                const draft = this.todoStatus?.draft_status;
-                                                this.isLoading = ['STARTED', 'FB_REQUESTED'].includes(draft);
-                                            }
-                                        }, 300);
+                        if (!this.hasReceivedEvent) {
+                            this.hasReceivedEvent = true;
+                            if (!this.hasSyncedTodoStatusOnce) {
+                                this.hasSyncedTodoStatusOnce = true;
+                                setTimeout(async () => {
+                                    await this.fetchTodoStatus();
+                                    if (!this.isCancelled) {
+                                        const draft = this.todoStatus?.draft_status;
+                                        this.isLoading = ['STARTED', 'FB_REQUESTED'].includes(draft);
                                     }
-                                }
-
-                                // error 또는 crew_completed 수신 시: 로딩 해제
-                                if (event_type === 'error' || event_type === 'crew_completed') {
-                                    this.isLoading = false;
-                                }
-                            } else if (todoId !== taskId) {
-                                console.warn('[ID 불일치]', { eventTodoId: todoId, currentTaskId: taskId, event: row });
+                                }, 300);
                             }
                         }
-                    )
-                    .subscribe((status) => {
-                        if (status === 'SUBSCRIPTION_ERROR') {
-                            this.handleError(null, '실시간 이벤트 구독에 실패했습니다');
+
+                        if (event_type === 'error' || event_type === 'crew_completed') {
+                            this.isLoading = false;
+                            this.fetchTodoStatus();
+                            this.fetchOutputIfEmpty(taskId);
                         }
-                    });
+                    } else if (todoId !== taskId) {
+                        console.warn('[ID 불일치]', { eventTodoId: todoId, currentTaskId: taskId, event: row });
+                    }
+                });
 
-                // Todolist 테이블 구독 (특정 todo ID만)
-                const taskId = this.getTaskIdFromWorkItem();
-                if (taskId) {
-                    this.todolistChannel = window.$supabase
-                        .channel(`todolist-${taskId}`)
-                        .on(
-                            'postgres_changes',
-                            {
-                                event: 'UPDATE',
-                                schema: 'public',
-                                table: 'todolist',
-                                filter: `id=eq.${taskId}`
-                            },
-                            ({ new: row, old: oldRow }) => {
-                                // consumer 값이 변경된 경우에만 처리
-                                if (row.consumer !== oldRow.consumer) {
-                                    this.todoStatus = { ...this.todoStatus, ...row };
+                this.todolistChannel = await this.backend.watchTodoStatus(taskId, (row, oldRow) => {
+                    if (row.consumer !== oldRow.consumer) {
+                        this.todoStatus = { ...this.todoStatus, ...row };
 
-                                    // 브라우저 자동화 에이전트 iframe 처리
-                                    if (row.agent_orch === 'browser-automation-agent' && row.consumer) {
-                                        this.browserIframeUrl = `https://${window.$tenantName}.process-gpt.io/vnc/${row.consumer}/vnc.html`;
-                                        this.showBrowserIframe = true;
-                                    } else if (row.agent_orch === 'browser-automation-agent' && !row.consumer) {
-                                        this.showBrowserIframe = false;
-                                        this.browserIframeUrl = '';
-                                    }
-                                }
-                            }
-                        )
-                        .subscribe((status) => {
-                            if (status === 'SUBSCRIPTION_ERROR') {
-                                this.handleError(null, '실시간 todolist 구독에 실패했습니다');
-                            }
-                        });
-                }
+                        if (row.agent_orch === 'browser-automation-agent' && row.consumer) {
+                            this.browserIframeUrl = `https://${window.$tenantName}.process-gpt.io/vnc/${row.consumer}/vnc.html`;
+                            this.showBrowserIframe = true;
+                        } else if (row.agent_orch === 'browser-automation-agent' && !row.consumer) {
+                            this.showBrowserIframe = false;
+                            this.browserIframeUrl = '';
+                        }
+                    }
+                });
             } catch (error) {
                 this.handleError(error, '실시간 구독 중 오류가 발생했습니다');
             }
@@ -1260,12 +1204,8 @@ export default {
             return String(row.status || '').toUpperCase() === 'ASKED';
         },
         cleanup() {
-            if (this.channel) {
-                window.$supabase.removeChannel(this.channel);
-            }
-            if (this.todolistChannel) {
-                window.$supabase.removeChannel(this.todolistChannel);
-            }
+            this.backend.unwatchChannel(this.channel);
+            this.backend.unwatchChannel(this.todolistChannel);
             this.stopEventsPolling();
         },
 
@@ -1314,13 +1254,7 @@ export default {
             if (!taskId) return;
 
             try {
-                const { data, error } = await window.$supabase
-                    .from('todolist')
-                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer, draft, query')
-                    .eq('id', taskId)
-                    .single();
-
-                if (error) throw error;
+                const data = await this.backend.getTodoStatus(taskId);
 
                 this.todoStatus = data;
                 if (this.isDraftBrowserUseMode) {
@@ -1400,6 +1334,31 @@ export default {
                 }
             } catch (error) {
                 this.handleError(error, 'todolist 상태 조회 실패');
+            }
+        },
+        async fetchOutputIfEmpty(taskId) {
+            if (!taskId) return;
+            const hasContent = this.tasks.some((t) => t.isCompleted && t.content);
+            if (hasContent) return;
+            try {
+                const data = await this.backend.getTodoOutput(taskId);
+                if (!data) return;
+                if (data.output || data.output_url) {
+                    const resultContent = data.output
+                        ? (typeof data.output === 'string' ? data.output : JSON.stringify(data.output, null, 2))
+                        : data.output_url;
+                    this.events = [...this.events, {
+                        id: `output-fallback-${taskId}`,
+                        event_type: 'task_completed',
+                        crew_type: 'result',
+                        job_id: `output-fallback-${taskId}`,
+                        data: { message: resultContent },
+                        timestamp: new Date().toISOString(),
+                        todo_id: taskId
+                    }];
+                }
+            } catch (e) {
+                console.error('fetchOutputIfEmpty 실패:', e);
             }
         },
         async stopTask() {
@@ -1580,12 +1539,6 @@ export default {
         }
     },
     async created() {
-        try {
-            this.supabase = await window.$supabase.auth.getSession();
-        } catch (error) {
-            console.error('Supabase 세션 오류:', error);
-        }
-
         this.EventBus.on('formData-updated', (formData) => {
             this.latestFormData = formData;
         });

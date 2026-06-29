@@ -55,20 +55,20 @@ export default {
         await this.init();
     },
     async mounted() {
-        this.EventBus.on('instances-updated', async () => {
-            await this.init();
-        });
-
-        // this.intervalId = setInterval(() => {
-        //     this.init();
-        // }, 10000);
+        this.EventBus.on('instances-updated', this.init);
 
         this.watchRef = await backend.watchInstanceList(
-            (callback) => {
+            () => {
                 this.loadInstances();
             },
-            { status: ['NEW', 'RUNNING'] }
+            { status: ['NEW', 'RUNNING', 'COMPLETED'] }
         );
+    },
+    beforeUnmount() {
+        this.EventBus.off('instances-updated', this.init);
+        if (this.watchRef) {
+            backend.watchOff(this.watchRef);
+        }
     },
     computed: {
         JMS() {

@@ -2353,7 +2353,7 @@ CREATE TABLE IF NOT EXISTS public.resource_pull_requests (
   merged_at      timestamptz         NULL,
   CONSTRAINT resource_pull_requests_pkey PRIMARY KEY (id),
   CONSTRAINT resource_pull_requests_resource_type_check CHECK (
-    resource_type IN ('skill', 'proc_def', 'dmn')
+    resource_type IN ('skill', 'bpmn', 'dmn')
   )
 );
 
@@ -2373,11 +2373,12 @@ CREATE TABLE IF NOT EXISTS public.resource_pr_reviews (
   created_at   timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT resource_pr_reviews_pkey PRIMARY KEY (id),
   CONSTRAINT resource_pr_reviews_pr_fkey FOREIGN KEY (pr_id)
-    REFERENCES public.resource_pull_requests (id) ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT resource_pr_reviews_action_check CHECK (
-    action IN ('APPROVED', 'CHANGES_REQUESTED')
-  )
+    REFERENCES public.resource_pull_requests (id) ON UPDATE CASCADE ON DELETE CASCADE
 );
+
+-- action 제약조건 제거 (COMMENT 등 추가 액션 허용)
+ALTER TABLE IF EXISTS public.resource_pr_reviews
+  DROP CONSTRAINT IF EXISTS resource_pr_reviews_action_check;
 
 CREATE INDEX IF NOT EXISTS idx_resource_pr_reviews_pr_id
   ON public.resource_pr_reviews (pr_id);
@@ -2491,6 +2492,7 @@ ALTER TABLE IF EXISTS public.resource_pull_requests
 ALTER TABLE IF EXISTS public.resource_pr_reviews
   ADD COLUMN IF NOT EXISTS reviewer_name text NULL;
 
+<<<<<<< HEAD
 -- 임시저장(draft) 플래그 컬럼 추가 (2026-06-26)
 -- deepagent 프로세스 생성 시 검증/자동개선 전 단계의 임시 산출물을 목록·맵에서 숨기고
 -- 최종 저장 시 is_draft=false 로 승격한다(프로세스: proc_def, 에이전트: users).
@@ -2505,3 +2507,80 @@ ALTER TABLE IF EXISTS public.users
 
 -- PostgREST 스키마 캐시 리로드(신규 컬럼 즉시 반영)
 NOTIFY pgrst, 'reload schema';
+=======
+-- proc_def에 agent_id 컬럼 추가 (2026-06-23)
+-- 기존에 DMN의 owner에 에이전트 ID를 저장하던 것을 분리: owner는 사용자, agent_id는 에이전트
+ALTER TABLE IF EXISTS public.proc_def
+  ADD COLUMN IF NOT EXISTS agent_id text NULL;
+
+-- 기존 DMN 데이터 마이그레이션: owner가 에이전트인 경우 agent_id로 이동하고 owner를 null로 변경
+UPDATE public.proc_def pd
+SET agent_id = pd.owner,
+    owner = NULL
+WHERE pd.type = 'dmn'
+  AND pd.owner IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM public.users u
+    WHERE u.id::text = pd.owner
+      AND u.is_agent = true
+  );
+
+-- ===============================================
+-- delegation_history: 위임 이력 테이블
+-- ===============================================
+DO $$ BEGIN
+  CREATE TYPE delegation_status AS ENUM ('REQUESTED', 'ACCEPTED', 'REJECTED', 'COMPLETED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 컬럼 보강 (이미 테이블이 있고 일부 컬럼만 빠진 경우 대비)
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS task_id uuid;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS from_user_id text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS from_username text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS to_user_id text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS to_username text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS reason text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS status delegation_status NOT NULL DEFAULT 'COMPLETED';
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS responded_at timestamptz;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
+
+-- 제약 (이미 있으면 무시)
+DO $$ BEGIN
+    ALTER TABLE public.delegation_history
+        ADD CONSTRAINT delegation_history_task_id_fkey FOREIGN KEY (task_id)
+            REFERENCES public.todolist(id) ON UPDATE CASCADE ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE public.delegation_history
+        ADD CONSTRAINT delegation_history_tenant_id_fkey FOREIGN KEY (tenant_id)
+            REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_delegation_history_task_id ON public.delegation_history (task_id);
+CREATE INDEX IF NOT EXISTS idx_delegation_history_tenant_id ON public.delegation_history (tenant_id);
+
+-- RLS
+ALTER TABLE public.delegation_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS delegation_history_select_policy ON public.delegation_history;
+CREATE POLICY delegation_history_select_policy ON public.delegation_history
+    FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS delegation_history_insert_policy ON public.delegation_history;
+CREATE POLICY delegation_history_insert_policy ON public.delegation_history
+    FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS delegation_history_update_policy ON public.delegation_history;
+CREATE POLICY delegation_history_update_policy ON public.delegation_history
+    FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS delegation_history_delete_policy ON public.delegation_history;
+CREATE POLICY delegation_history_delete_policy ON public.delegation_history
+    FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+>>>>>>> 3319f010a505c97ac454fad07859fd183a7ef65f
