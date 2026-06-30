@@ -86,6 +86,13 @@ export default defineConfig({
                 target: 'http://127.0.0.1:8000',
                 changeOrigin: true
             },
+            // 임시저장(draft) 프로세스 실엔진 검증 + LLM 자동개선 (completion)
+            '/validate-and-improve': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                timeout: 0,
+                proxyTimeout: 0
+            },
             '/vision-complete': {
                 target: 'http://127.0.0.1:8000',
                 changeOrigin: true

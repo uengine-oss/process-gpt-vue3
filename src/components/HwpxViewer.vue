@@ -27,8 +27,9 @@
                     <button :class="{ 'is-on': viewMode === 'preview' }" @click="viewMode = 'preview'">미리보기</button>
                     <button :class="{ 'is-on': viewMode === 'code' }" @click="viewMode = 'code'">코드</button>
                 </div>
+                <!-- AI 편집은 HWP(htmlUrl) 문서에만 제공. 작업폴더 폼(html)·스킬·에이전트 등은 코드탭 직접수정만. -->
                 <v-btn
-                    v-if="mode === 'html' && viewMode === 'preview' && !isLoading && !hasError && !readOnly"
+                    v-if="mode === 'html' && htmlUrl && viewMode === 'preview' && !isLoading && !hasError && !readOnly"
                     variant="text"
                     density="comfortable"
                     size="small"
@@ -54,28 +55,16 @@
                     <v-icon size="16" class="mr-1">{{ isEditing ? 'mdi-check' : 'mdi-pencil-outline' }}</v-icon>
                     {{ isEditing ? '편집완료' : '편집' }}
                 </v-btn>
-                <!-- md/json/bpmn: html 과 동일하게 AI 편집 + 수동 편집(원본) 제공 -->
+                <!-- 편집: 산출물(bpmn/skill/agent)은 내부 편집기로 이동(editTarget), 그 외(작업폴더 html 등)는 코드탭 직접수정. AI편집 없음. -->
                 <v-btn
-                    v-if="mode !== 'html' && !readOnly"
+                    v-if="(editTarget || (mode !== 'html' && (canToggleCode || mode === 'bpmn')) || (mode === 'html' && !htmlUrl)) && !readOnly"
                     variant="text"
                     density="comfortable"
                     size="small"
-                    :loading="aiEditing"
-                    @click="openAiEdit"
-                >
-                    <v-icon size="16" class="mr-1">mdi-robot-outline</v-icon>
-                    AI 편집
-                </v-btn>
-                <!-- 일반 편집(코드탭): bpmn/md/json + 작업폴더 html(=htmlUrl 없음) -->
-                <v-btn
-                    v-if="((mode !== 'html' && (canToggleCode || mode === 'bpmn')) || (mode === 'html' && !htmlUrl)) && !readOnly"
-                    variant="text"
-                    density="comfortable"
-                    size="small"
-                    :color="(mode === 'bpmn' ? viewMode === 'json' : viewMode === 'code') ? 'primary' : undefined"
+                    :color="(!editTarget && mode !== 'bpmn' && viewMode === 'code') ? 'primary' : undefined"
                     @click="onManualEdit"
                 >
-                    <v-icon size="16" class="mr-1">mdi-pencil-outline</v-icon>
+                    <v-icon size="16" class="mr-1">{{ editTarget || mode === 'bpmn' ? 'mdi-open-in-new' : 'mdi-pencil-outline' }}</v-icon>
                     편집
                 </v-btn>
                 <v-btn v-if="!isLoading && !hasError" variant="text" density="comfortable" size="small" @click="emitDownload">
@@ -418,7 +407,9 @@ export default {
         content: { type: String, default: '' },
         ext: { type: String, default: '' },
         // BPMN 전용: 연결된 process-definition.json 내용(JSON 탭/편집/AI편집 대상). 편집 시 XML/다이어그램은 부모가 재파생.
-        defJson: { type: String, default: '' }
+        defJson: { type: String, default: '' },
+        // 산출물 '편집' 시 이동할 내부 편집기 타깃 {kind:'process'|'skill'|'agent', id?/name?}. 있으면 편집=이동.
+        editTarget: { type: Object, default: null }
     },
     data() {
         return {
@@ -653,10 +644,32 @@ export default {
         },
         /** 수동 편집 버튼: bpmn 은 JSON 탭으로, 그 외는 코드 탭으로 이동. */
         onManualEdit() {
+            // 산출물 편집 = 내부 편집기로 이동(부모가 준 editTarget): process→/definitions, skill→/skills, agent→/agent-chat.
+            if (this.editTarget && this.editTarget.kind) {
+                this.$emit('navigate-process', this.editTarget);
+                return;
+            }
             if (this.mode === 'bpmn') {
+                const id = this._bpmnProcessId();
+                if (id) {
+                    this.$emit('navigate-process', { kind: 'process', id });
+                    return;
+                }
+                // id 를 못 찾으면 폴백으로 JSON 탭(보기) 토글
                 this.viewMode = this.viewMode === 'json' ? 'preview' : 'json';
             } else {
                 this.viewMode = this.viewMode === 'code' ? 'preview' : 'code';
+            }
+        },
+        /** bpmn 산출물이 들고 있는 process-definition 에서 프로세스 id(=draft proc_def id) 추출. */
+        _bpmnProcessId() {
+            try {
+                let j = this.localJson || this.effectiveJson || this.defJson || '';
+                if (typeof j === 'string') j = JSON.parse(j);
+                if (j && j.processDefinition) j = j.processDefinition;
+                return ((j && (j.processDefinitionId || j.id)) || '').toString().trim();
+            } catch (e) {
+                return '';
             }
         },
         onJsonEdit() {

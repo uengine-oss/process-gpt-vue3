@@ -173,6 +173,7 @@ create table if not exists public.users (
     alias text null,
     last_used_at timestamp with time zone null default now(),
     tool_priority jsonb null,
+    is_draft boolean not null default false,
     constraint users_pkey primary key (id, tenant_id),
     constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -313,6 +314,7 @@ create table if not exists public.proc_def (
     owner text null,
     agent_id text null,
     type text null,
+    is_draft boolean not null default false,
     constraint proc_def_pkey primary key (uuid),
     constraint proc_def_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -345,6 +347,7 @@ create table if not exists public.proc_def_version (
     tenant_id text null default public.tenant_id(),
     parent_version text null,
     source_todolist_id uuid null,
+    is_draft boolean not null default false,
     constraint proc_def_version_pkey primary key (uuid),
     constraint proc_def_version_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

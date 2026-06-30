@@ -6,13 +6,28 @@
             <span class="ws-files__title">작업 폴더</span>
             <span class="ws-files__count">{{ files.length }}</span>
             <v-spacer />
+            <!-- 실엔진 검증/자동개선 진행 표시 (제시 전 자동 수행) -->
+            <v-chip v-if="saveState.validating" size="x-small" color="primary" variant="tonal" class="mr-2">
+                <v-progress-circular indeterminate size="11" width="2" class="mr-1" />
+                {{ saveState.validateMsg || '검증 중...' }}
+            </v-chip>
+            <v-chip
+                v-else-if="saveState.validateReport"
+                size="x-small"
+                :color="saveState.validatePassed ? 'success' : 'warning'"
+                variant="tonal"
+                class="mr-2"
+            >
+                <v-icon size="12" class="mr-1">{{ saveState.validatePassed ? 'mdi-check-circle-outline' : 'mdi-alert-outline' }}</v-icon>
+                {{ saveState.validatePassed ? '검증 통과' : `검증 보정 ${saveState.validateReport.iterations || 0}회` }}
+            </v-chip>
             <v-btn
                 v-if="files.length"
                 size="x-small"
                 color="primary"
                 variant="flat"
                 :loading="saveState.saving"
-                :disabled="saveState.saved"
+                :disabled="saveState.saved || saveState.validating"
                 prepend-icon="mdi-content-save-outline"
                 @click="$emit('save')"
                 >{{ saveState.saved ? '저장됨' : '저장' }}</v-btn
@@ -50,10 +65,12 @@
                     :content="selected.content"
                     :ext="selected.ext"
                     :def-json="selected.json || ''"
+                    :edit-target="editTarget"
                     :read-only="false"
                     @update:content="onContentEdit"
                     @update:def-json="onDefJsonEdit"
                     @ai-edit-request="onAiEditRequest"
+                    @navigate-process="$emit('navigate-process', $event)"
                 />
 
                 <div v-if="selected.truncated" class="ws-files__truncated">
@@ -69,6 +86,7 @@
 
 <script>
 import HwpxViewer from '@/components/HwpxViewer.vue';
+import { agentStableId } from '@/utils/agentId.js';
 
 const FILE_ICONS = {
     '.json': 'mdi-code-json',
@@ -93,22 +111,88 @@ export default {
         // { saving, saved, error } — 부모(ChatRoomPage)가 DB 저장 상태를 전달
         saveState: { type: Object, default: () => ({ saving: false, saved: false, error: '' }) }
     },
-    emits: ['save', 'edit-file', 'ai-edit-file'],
+    emits: ['save', 'edit-file', 'ai-edit-file', 'navigate-process'],
     data() {
         return {
             selectedPath: null
         };
     },
     computed: {
-        /** 목록에 표시할 파일 — process-definition.json·manifest.json 은 숨긴다(BPMN 파일 내부 JSON 탭에서 다룸). */
+        /**
+         * 목록에 표시할 파일 — 산출물에는 **bpmn / skill(SKILL.md) / agent(agents.json)** 만 표시한다.
+         * - "." 로 시작하는 파일(리눅스식 숨김)·폼(.form/.html)·process-definition.json·manifest.json 등은 숨김.
+         * - 폼은 프로세스 내부 편집기에서 다루고, 내부 파일은 표시하지 않는다.
+         */
         displayFiles() {
             return (this.files || []).filter((f) => {
-                const p = (f.path || '').replace(/\\/g, '/').toLowerCase();
-                return !/\/process-definition\.json$/.test(p) && !/\/manifest\.json$/.test(p);
+                const p = (f.path || '').replace(/\\/g, '/');
+                const lp = p.toLowerCase();
+                const base = (f.name || p.split('/').pop() || '').toString();
+                if (base.startsWith('.')) return false; // 숨김 파일
+                const ext = (f.ext || '').toLowerCase();
+                const isBpmn = ext === '.bpmn' || lp.endsWith('.bpmn');
+                const isSkill = lp.endsWith('/skill.md') || base.toLowerCase() === 'skill.md';
+                // 에이전트: 개별 파일 `agents/<id>.json` 또는 레거시 단일 `agents.json`.
+                const isAgent =
+                    lp.endsWith('/agents.json') ||
+                    base.toLowerCase() === 'agents.json' ||
+                    /\/agents\/[^/]+\.json$/.test(lp);
+                return isBpmn || isSkill || isAgent;
             });
         },
         selected() {
             return this.displayFiles.find((f) => f.path === this.selectedPath) || null;
+        },
+        /**
+         * 선택 산출물의 '편집' 시 이동할 내부 편집기 타깃.
+         * - bpmn → process(/definitions/{id}), SKILL.md → skill(/skills/{name}), agents.json → agent(/agent-chat/{id})
+         * 없으면 null(=코드탭 직접수정).
+         */
+        editTarget() {
+            const f = this.selected;
+            if (!f) return null;
+            const p = (f.path || '').replace(/\\/g, '/');
+            const lp = p.toLowerCase();
+            const ext = (f.ext || '').toLowerCase();
+            // 1) bpmn → process
+            if (ext === '.bpmn' || lp.endsWith('.bpmn')) {
+                let id = '';
+                try {
+                    let j = JSON.parse((f.json || f.content || '').toString());
+                    if (j && j.processDefinition) j = j.processDefinition;
+                    id = ((j && (j.processDefinitionId || j.id)) || '').toString().trim();
+                } catch (e) {
+                    /* ignore */
+                }
+                return id ? { kind: 'process', id } : null;
+            }
+            // 2) SKILL.md → skill (폴더명 = 스킬명)
+            if (lp.endsWith('/skill.md') || (f.name || '').toLowerCase() === 'skill.md') {
+                const m = p.match(/\/skills\/([^/]+)\/SKILL\.md$/i) || p.match(/([^/]+)\/SKILL\.md$/i);
+                const name = m ? m[1] : '';
+                return name ? { kind: 'skill', name } : null;
+            }
+            // 3) 에이전트 → agent (/agent-chat/{id})
+            //    개별 파일 agents/<id>.json: 단일 객체. 레거시 agents.json: 배열 첫 항목.
+            //    id 는 draft 저장과 동일하게 agentStableId 로 결정(슬러그 → 결정적 uuid; reload 에도 일치).
+            if (lp.endsWith('/agents.json') || (f.name || '').toLowerCase() === 'agents.json' || /\/agents\/[^/]+\.json$/.test(lp)) {
+                let obj = null;
+                try {
+                    const parsed = JSON.parse((f.content || '').toString());
+                    if (Array.isArray(parsed)) {
+                        obj = parsed.find((a) => a && (a.id || a.name)) || null;
+                    } else if (parsed && Array.isArray(parsed.agents)) {
+                        obj = parsed.agents.find((a) => a && (a.id || a.name)) || null;
+                    } else if (parsed && typeof parsed === 'object') {
+                        obj = parsed;
+                    }
+                } catch (e) {
+                    /* ignore */
+                }
+                const id = agentStableId(obj || {}, p);
+                return id ? { kind: 'agent', id } : null;
+            }
+            return null;
         }
     },
     watch: {
@@ -148,11 +232,23 @@ export default {
             if (!this.selected) return;
             this.$emit('ai-edit-file', { path: this.selected.path, ...payload });
         },
-        /** 목록 표시명: 스킬 → '스킬명/SKILL.md', 폼 → 'form/<파일>.html', 그 외 → 파일명. */
+        /** 목록 표시명: 스킬 → '스킬명/SKILL.md', 에이전트 → 'agent/<이름>', 폼 → 'form/<파일>', 그 외 → 파일명. */
         displayName(f) {
             const p = (f.path || '').replace(/\\/g, '/');
             const sk = p.match(/\/skills\/([^/]+)\/(.+)$/);
             if (sk) return `${sk[1]}/${sk[2].split('/').pop()}`;
+            // 에이전트 개별 파일 agents/<id>.json → 'agent/<이름>'(없으면 파일 stem).
+            const ag = p.match(/\/agents\/([^/]+)\.json$/i);
+            if (ag) {
+                let nm = '';
+                try {
+                    const o = JSON.parse((f.content || '').toString());
+                    if (o && typeof o === 'object' && !Array.isArray(o)) nm = (o.name || '').toString().trim();
+                } catch (e) {
+                    /* ignore */
+                }
+                return `agent/${nm || ag[1]}`;
+            }
             const fm = p.match(/\/forms\/(.+)$/);
             if (fm) return `form/${fm[1].split('/').pop()}`;
             return f.name || p.split('/').pop() || '';
