@@ -742,6 +742,13 @@ export default {
                     BgColor: 'primary',
                     to: '/analytics/kpi',
                     disable: false
+                },
+                {
+                    title: 'analytics.piFlag',
+                    icon: 'flag',
+                    BgColor: 'primary',
+                    to: '/analytics/pi-flags',
+                    disable: false
                 }
                 // {
                 //     title: 'analytics.pivot',

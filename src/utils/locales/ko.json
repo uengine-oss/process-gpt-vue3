@@ -1180,9 +1180,9 @@
         "readOnly": "Business ID (읽기전용)"
     },
     "manualLink": {
-        "title": "접근 권한 설정",
+        "title": "관련자료 링크",
         "addUrl": "URL 입력",
-        "urlPlaceholder": "분석할 URL을 입력하세요",
+        "urlPlaceholder": "링크 URL을 입력하세요",
         "noLinks": "등록된 링크가 없습니다.",
         "openInNewTab": "새 탭에서 열기",
         "remove": "삭제"
@@ -2193,6 +2193,20 @@
         "statusResolved": "즉시 개선",
         "changeStatus": "상태 변경",
         "registered": "등록된 PI Flag"
+    },
+    "piFlagBoard": {
+        "title": "PI Flag 모아보기",
+        "total": "전체",
+        "refresh": "새로고침",
+        "search": "사유·요소·프로세스·작성자 검색",
+        "process": "프로세스",
+        "element": "요소",
+        "author": "작성자",
+        "createdAt": "작성일",
+        "all": "전체",
+        "resultCount": "검색 결과 {count}건",
+        "empty": "등록된 PI Flag가 없습니다",
+        "loadFailed": "PI Flag 데이터를 불러오지 못했습니다."
     },
     "reviewMode": {
         "governancePanel": "거버넌스 검토",
@@ -4021,6 +4035,7 @@
         "dashboard": "대시보드",
         "queryResult": "쿼리 결과",
         "kpi": "KPI & 진도 관리",
+        "piFlag": "PI Flag",
         "kpiAchievement": "KPI 달성률",
         "processPipeline": "프로세스 파이프라인",
         "domainProgress": "도메인별 진행 현황",
