@@ -251,6 +251,7 @@ export default {
         dialogType: '',
         instanceList: [],
         eventSubscription: null,
+        taskLogSubscription: null,
         currentDraftStatus: null
     }),
     watch: {
@@ -494,15 +495,22 @@ export default {
         if (this.eventSubscription) {
             this.eventSubscription.unsubscribe();
         }
+        if (this.taskLogSubscription) {
+            window.$supabase.removeChannel(this.taskLogSubscription);
+        }
     },
     methods: {
         async subscribeToTaskLog() {
             if (!this.task.taskId || this.task.status == 'DONE') return;
-            const originalStatus = this.task.status;
-            const subscription = await backend.getTaskLog(this.task.taskId, async (task) => {
-                if (task.status == 'DONE' || task.status !== originalStatus) {
-                    window.$supabase.removeChannel(subscription);
+            let lastStatus = this.task.status;
+            this.taskLogSubscription = await backend.getTaskLog(this.task.taskId, async (task) => {
+                if (task.status !== lastStatus) {
+                    lastStatus = task.status;
                     this.EventBus.emit('todolist-updated');
+                    if (task.status === 'DONE') {
+                        window.$supabase.removeChannel(this.taskLogSubscription);
+                        this.taskLogSubscription = null;
+                    }
                 }
             });
         },
