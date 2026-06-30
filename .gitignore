@@ -92,3 +92,5 @@ docker-compose/volumes/*
 !docker-compose/volumes/db/
 docker-compose/volumes/db/*
 !docker-compose/volumes/db/*.sql
+# Claude Code local settings (personal, not shared)
+.claude/settings.local.json
