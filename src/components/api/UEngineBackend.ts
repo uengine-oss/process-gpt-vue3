@@ -2240,6 +2240,16 @@ class UEngineBackend implements Backend {
     async deleteGitConfig(id: string): Promise<void> {
         console.warn('deleteGitConfig is not implemented - only use Process-GPT Mode');
     }
+
+    // Agent Monitor API - ProcessGPT 전용
+    async putEvent(_event: any) { return null; }
+    async getAgentEvents(_taskId: string) { return []; }
+    async getAgentEventById(_eventId: string) { return null; }
+    async getTodoStatus(_taskId: string) { return null; }
+    async getTodoOutput(_taskId: string) { return null; }
+    async watchAgentEvents(_taskId: string, _callback: (row: any) => void) { return null; }
+    async watchTodoStatus(_taskId: string, _callback: (newRow: any, oldRow: any) => void) { return null; }
+    unwatchChannel(_ref: any) {}
 }
 
 export default UEngineBackend;

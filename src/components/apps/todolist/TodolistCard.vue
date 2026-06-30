@@ -142,11 +142,15 @@ export default {
             this.loadWorkListByStatus('DONE')
         ]);
 
-        this.EventBus.on('todolist-updated', async () => {
-            await this.reloadAllTodoList();
-        });
+        this.EventBus.on('todolist-updated', this.handleTodolistUpdated);
+    },
+    unmounted() {
+        this.EventBus.off('todolist-updated', this.handleTodolistUpdated);
     },
     methods: {
+        async handleTodolistUpdated() {
+            await this.reloadAllTodoList();
+        },
         async reloadAllTodoList() {
             const userId = localStorage.getItem('uid');
             const mode = window.$mode;

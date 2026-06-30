@@ -15,6 +15,7 @@ class FixedBaseWorkAssistantAgentService {
             onToolEnd,
             onPlanTools,
             onPlanSkills,
+            onPlanConnectors,
             onPlanTodos,
             onDone,
             onError,
@@ -25,7 +26,9 @@ class FixedBaseWorkAssistantAgentService {
             onProcessStatus,
             onProcessPartial,
             onProcessPatch,
-            onOpenUi
+            onProcessResult,
+            onOpenUi,
+            onFileArtifact
         } = callbacks;
 
         try {
@@ -93,6 +96,9 @@ class FixedBaseWorkAssistantAgentService {
                             case 'plan_todos':
                                 if (onPlanTodos) onPlanTodos(Array.isArray(parsed.todos) ? parsed.todos : [], parsed);
                                 break;
+                            case 'plan_connectors':
+                                if (onPlanConnectors) onPlanConnectors(Array.isArray(parsed.connectors) ? parsed.connectors : [], parsed);
+                                break;
                             case 'tool_start': {
                                 const toolRef = parsed.tool ?? parsed.tool_name ?? parsed.name;
                                 if (onToolStart) onToolStart(toolRef, parsed.input ?? parsed.arguments ?? null, parsed);
@@ -115,6 +121,12 @@ class FixedBaseWorkAssistantAgentService {
                                 break;
                             case 'process_patch':
                                 if (onProcessPatch) onProcessPatch(parsed);
+                                break;
+                            case 'process_result':
+                                if (onProcessResult) onProcessResult(parsed.data || {}, parsed);
+                                break;
+                            case 'file_artifact':
+                                if (onFileArtifact) onFileArtifact(parsed);
                                 break;
                             case 'openui':
                                 if (onOpenUi) onOpenUi(parsed);

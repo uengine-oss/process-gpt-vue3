@@ -29,6 +29,7 @@
     "dependencies": {
         "@babel/parser": "^7.24.8",
         "@balkangraph/orgchart.js": "^8.13.20",
+        "@bpmn-io/cm-theme": "0.2.0",
         "@bpmn-io/properties-panel": "^3.16.0",
         "@casl/ability": "^6.2.0",
         "@casl/vue": "^2.2.0",

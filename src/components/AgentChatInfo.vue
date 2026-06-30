@@ -31,16 +31,19 @@
                         </h6>
                     </div>
 
-                    <!-- 수정 버튼 -->
+                    <!-- 수정/저장 버튼 — draft(임시저장) 에이전트면 '저장'(저장 아이콘)으로 표시, 클릭 시 정식 등록으로 승격. -->
                     <v-btn
                         v-if="!agentInfo?.is_default"
-                        @click="openEditDialog"
+                        @click="handleEditOrSave"
                         variant="text"
                         :size="24"
                         icon
                         class="rounded-pill flex-shrink-0 mr-1"
+                        :title="agentInfo?.is_draft ? '저장' : '수정'"
+                        :loading="promotingDraft"
                     >
-                        <Icons :icon="'pencil'" :size="14" />
+                        <v-icon v-if="agentInfo?.is_draft" :size="16">mdi-content-save-outline</v-icon>
+                        <Icons v-else :icon="'pencil'" :size="14" />
                     </v-btn>
                     <v-tooltip location="bottom">
                         <template v-slot:activator="{ props }">
@@ -382,6 +385,7 @@ export default {
     data() {
         return {
             imageLoaded: false,
+            promotingDraft: false,
             currentProfileUrl: '',
             editDialog: false,
             editNode: {
@@ -647,6 +651,26 @@ export default {
             const type = this.getCurrentAgentType();
             const sections = config[type] || config.agent;
             return sections.includes(section);
+        },
+
+        /** 수정/저장 버튼 클릭 — draft 면 정식 등록으로 승격(저장), 아니면 수정 다이얼로그. */
+        async handleEditOrSave() {
+            if (!this.agentInfo?.is_draft) {
+                this.openEditDialog();
+                return;
+            }
+            this.promotingDraft = true;
+            try {
+                await this.backend.promoteDraftAgent(this.agentInfo.id);
+                if (this.agentInfo) this.agentInfo.is_draft = false;
+                this.$emit('agentUpdated');
+                if (this.$toast?.success) this.$toast.success('에이전트를 저장했습니다.');
+            } catch (e) {
+                if (this.$toast?.error) this.$toast.error('에이전트 저장에 실패했습니다.');
+                console.error('[AgentChatInfo] draft 승격 실패:', e);
+            } finally {
+                this.promotingDraft = false;
+            }
         },
 
         openEditDialog() {

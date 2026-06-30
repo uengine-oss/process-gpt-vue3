@@ -3226,7 +3226,14 @@
         "searchUser": "이름, 이메일 검색",
         "profile": "프로필",
         "userInfo": "대상 정보",
-        "delegateToMyself": "나에게 위임"
+        "delegateToMyself": "나에게 위임",
+        "reason": "위임 사유",
+        "reasonPlaceholder": "위임 사유를 입력하세요 (선택)",
+        "history": "위임 이력",
+        "status_COMPLETED": "완료",
+        "status_REQUESTED": "요청",
+        "status_ACCEPTED": "수락",
+        "status_REJECTED": "거절"
     },
     "UserInputGenerator": {
         "inputLabel": "생성하고싶은 에이전트를 입력하세요",
@@ -3735,6 +3742,12 @@
         "compareDraft": "Draft 보기",
         "snapshotAt": "스냅샷 시점"
     },
+    "AgentChatRoomContext": {
+        "progress": "진행 상황",
+        "context": "컨텍스트",
+        "skills": "스킬",
+        "connectors": "커넥터"
+    },
     "agentChat": {
         "learningModeInfo": "학습 모드: 에이전트가 사용자의 지침을 학습하여 이후 작업에 반영합니다. \n 예를 들어, \n ‘제안서 작성 시 각 회사의 CI에 맞는 컬러를 사용해.’ \n ‘정부·공공기관 대상 제안서는 반드시 한글(HWP) 형식으로 작성해.’ \n ‘B2C 제안서는 고객 이해를 돕기 위해 시각 자료를 우선 활용해.’ \n 와 같은 가이드를 학습시킬 수 있습니다.",
         "questionModeInfo": "질의 모드: 에이전트가 학습한 내용을 기반으로 질의응답을 수행하고, 필요한 정보를 선별해 제공합니다. \n 예를 들어, \n ‘지난주 학습한 보험 심사 기준 중 지역 평가 항목만 알려줘.’ \n ‘제안서 작성 지침에서 CI 컬러 관련 규칙만 요약해.’ \n ‘학습된 매뉴얼 중 품질검사 절차 부분만 설명해.’ \n 와 같은 질문을 통해 학습 내용을 검증하거나 필요한 부분만 확인할 수 있습니다.",
@@ -3821,7 +3834,11 @@
         "deleteDialogTitle": "스킬 파일 삭제",
         "deleteDialogMessage": "스킬 파일을 삭제하시겠습니까? 삭제된 스킬 파일은 복구할 수 없습니다.",
         "commitMessageLabel": "커밋 메시지",
-        "deleteCommitMessagePlaceholder": "삭제에 대한 커밋 메시지를 입력하세요"
+        "deleteCommitMessagePlaceholder": "삭제에 대한 커밋 메시지를 입력하세요",
+        "deleteBranchModeCurrent": "현재 브랜치에 커밋",
+        "deleteBranchModeNew": "새 브랜치 생성",
+        "deletePrBranchLabel": "새 브랜치 이름",
+        "deletePrTitleLabel": "PR 제목"
     },
     "SkillSaveDialog": {
         "titleChecking": "레포 확인 중...",
@@ -3845,7 +3862,17 @@
         "prSuccessHint": "검토 및 merge 후 에이전트에 변경 사항이 반영됩니다.",
         "prSuccessOpen": "PR 바로가기",
         "notOwnerNotice": "이 스킬의 소유자가 아닙니다. PR 생성만 가능합니다.",
-        "generateCommitMsg": "AI로 커밋 메시지 자동 생성"
+        "notOwnerFeatureBranchNotice": "이 스킬의 소유자가 아닙니다. 현재 브랜치에 직접 커밋하거나 새 브랜치로 PR을 생성할 수 있습니다.",
+        "featureBranchModeDirect": "현재 브랜치에 커밋",
+        "featureBranchModeNew": "새 브랜치 생성",
+        "generateCommitMsg": "AI로 커밋 메시지 자동 생성",
+        "addToExistingPR": "기존 PR에 추가 커밋",
+        "createNewPR": "새 PR 생성",
+        "selectExistingPR": "변경 요청된 PR 선택",
+        "addCommitAndReview": "커밋 후 재검토 요청",
+        "addCommitSuccessTitle": "추가 커밋 완료",
+        "addCommitSuccessMessage": "수정 사항이 기존 PR 브랜치에 커밋되었습니다.",
+        "addCommitSuccessHint": "관리자에게 재검토가 요청되었습니다."
     },
     "AgentSkills": {
         "skills": "스킬",

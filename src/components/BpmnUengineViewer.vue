@@ -146,6 +146,7 @@ import ZoomScroll from './customZoomScroll';
 import MoveCanvas from './customMoveCanvas';
 // import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
 import customBpmnModule from './customBpmn';
+import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequence-flow-final-module';
 import paletteProvider from './customPalette/PaletteProvider';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 
@@ -938,6 +939,7 @@ export default {
                 },
                 additionalModules: [
                     customBpmnModule,
+                    customSequenceFlowFinalModule,
                     {
                         __init__: ['paletteProvider'],
                         paletteProvider: ['type', paletteProvider],
@@ -1163,8 +1165,8 @@ export default {
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             participant.forEach((element) => {
-                const horizontal = element.di.isHorizontal;
-                if (horizontal) {
+                const isCurrentlyHorizontal = element.di.isHorizontal !== false && element.width > element.height;
+                if (isCurrentlyHorizontal) {
                     palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
                     element.di.isHorizontal = false;
                 } else {
@@ -1172,6 +1174,18 @@ export default {
                     element.di.isHorizontal = true;
                 }
             });
+            const refreshLabels = () => {
+                window.BpmnAutoLayout?.adjustLabelsAfterLayout?.(self.bpmnViewer);
+            };
+            setTimeout(() => {
+                refreshLabels();
+                requestAnimationFrame(() => requestAnimationFrame(refreshLabels));
+                setTimeout(refreshLabels, 120);
+                setTimeout(() => {
+                    refreshLabels();
+                    self.resetZoom();
+                }, 300);
+            }, 0);
         },
         initDefaultOrientation(orientation = null) {
             let self = this;
@@ -1228,11 +1242,9 @@ export default {
             this.resizeObserver.observe(container);
         },
         onContainerResizeFinished() {
-            return;
             const container = this.$refs.container;
             if (!container || this.isAIGenerated || !container.getBoundingClientRect) return;
 
-            // 리사이즈 시 diagram-js에 알려 viewbox/zoom 재계산 (bpmn_util 포커싱.md 4.2)
             const canvas = this.bpmnViewer?.get('canvas');
             if (canvas) canvas.resized();
 

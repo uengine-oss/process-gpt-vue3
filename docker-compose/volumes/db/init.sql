@@ -173,6 +173,7 @@ create table if not exists public.users (
     alias text null,
     last_used_at timestamp with time zone null default now(),
     tool_priority jsonb null,
+    is_draft boolean not null default false,
     constraint users_pkey primary key (id, tenant_id),
     constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -311,7 +312,9 @@ create table if not exists public.proc_def (
     tenant_id text null default public.tenant_id(),
     isdeleted boolean not null default false,
     owner text null,
+    agent_id text null,
     type text null,
+    is_draft boolean not null default false,
     constraint proc_def_pkey primary key (uuid),
     constraint proc_def_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -344,6 +347,7 @@ create table if not exists public.proc_def_version (
     tenant_id text null default public.tenant_id(),
     parent_version text null,
     source_todolist_id uuid null,
+    is_draft boolean not null default false,
     constraint proc_def_version_pkey primary key (uuid),
     constraint proc_def_version_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -456,6 +460,33 @@ create table if not exists public.todolist (
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
+
+
+DO $$ BEGIN
+  CREATE TYPE delegation_status AS ENUM ('REQUESTED', 'ACCEPTED', 'REJECTED', 'COMPLETED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+create table if not exists public.delegation_history (
+    id uuid not null default uuid_generate_v4(),
+    task_id uuid not null,
+    from_user_id text not null,
+    from_username text null,
+    to_user_id text not null,
+    to_username text null,
+    reason text null,
+    status delegation_status not null default 'COMPLETED',
+    created_at timestamp with time zone not null default now(),
+    responded_at timestamp with time zone null,
+    tenant_id text null default public.tenant_id(),
+    constraint delegation_history_pkey primary key (id),
+    constraint delegation_history_task_id_fkey foreign key (task_id) references todolist (id) on update cascade on delete cascade,
+    constraint delegation_history_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_delegation_history_task_id on public.delegation_history (task_id);
+create index if not exists idx_delegation_history_tenant_id on public.delegation_history (tenant_id);
 
 create table if not exists public.chat_rooms (
     id text not null,
@@ -1405,6 +1436,7 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lock ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bpm_proc_inst ENABLE ROW LEVEL SECURITY;
 ALTER TABLE todolist ENABLE ROW LEVEL SECURITY;
+ALTER TABLE delegation_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE calendar ENABLE ROW LEVEL SECURITY;
@@ -1486,6 +1518,12 @@ CREATE POLICY todolist_insert_policy ON todolist FOR INSERT TO authenticated WIT
 CREATE POLICY todolist_select_policy ON todolist FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY todolist_update_policy ON todolist FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY todolist_delete_policy ON todolist FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+-- Delegation history policies
+CREATE POLICY delegation_history_insert_policy ON delegation_history FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY delegation_history_select_policy ON delegation_history FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY delegation_history_update_policy ON delegation_history FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY delegation_history_delete_policy ON delegation_history FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
 
 -- Chat rooms policies
 CREATE POLICY chat_rooms_insert_policy ON chat_rooms FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
@@ -3587,6 +3625,96 @@ create table if not exists public.agent_skills (
 create index if not exists idx_agent_skills_tenant_skill
   on public.agent_skills (tenant_id, skill_name);
 
+
+-- ==========================================
+-- 범용 리소스 PR 워크플로우 (skill / proc_def / dmn)
+-- ==========================================
+
+-- PR 상태 ENUM
+DO $$ BEGIN
+  CREATE TYPE resource_pr_status AS ENUM (
+    'OPEN',               -- 요청됨, 검토 대기
+    'CHANGES_REQUESTED',  -- 관리자 변경 요청
+    'APPROVED',           -- 승인됨 (병합 가능)
+    'MERGED',             -- 기준 브랜치 병합 완료
+    'CLOSED'              -- 취소/거절
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+-- PR 요청 테이블 (리소스 종류에 무관한 범용 구조)
+create table if not exists public.resource_pull_requests (
+  id             uuid                not null default gen_random_uuid(),
+  tenant_id      text                not null,
+  resource_type  text                not null,
+  resource_id    text                not null,
+  branch_name    text                not null,
+  base_branch    text                not null default 'main',
+  title          text                not null,
+  description    text                null,
+  status         resource_pr_status  not null default 'OPEN',
+  requester_id   uuid                not null,
+  reviewer_id    uuid                null,
+  git_pr_number  integer             null,
+  git_pr_url     text                null,
+  git_repo_url   text                null,
+  created_at     timestamptz         not null default now(),
+  updated_at     timestamptz         not null default now(),
+  merged_at      timestamptz         null,
+  constraint resource_pull_requests_pkey primary key (id),
+  constraint resource_pull_requests_resource_type_check check (
+    resource_type in ('skill', 'bpmn', 'dmn')
+  ),
+  constraint resource_pull_requests_requester_fkey foreign key (requester_id, tenant_id)
+    references public.users (id, tenant_id) on update cascade on delete cascade,
+  constraint resource_pull_requests_reviewer_fkey foreign key (reviewer_id, tenant_id)
+    references public.users (id, tenant_id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_resource_pull_requests_tenant_resource
+  on public.resource_pull_requests (tenant_id, resource_type, resource_id);
+
+create index if not exists idx_resource_pull_requests_status
+  on public.resource_pull_requests (tenant_id, status);
+
+-- PR 리뷰 이력 테이블 (APPROVED / CHANGES_REQUESTED 이벤트 누적)
+create table if not exists public.resource_pr_reviews (
+  id           uuid        not null default gen_random_uuid(),
+  pr_id        uuid        not null,
+  tenant_id    text        not null,
+  reviewer_id  uuid        not null,
+  action       text        not null,
+  comment      text        null,
+  created_at   timestamptz not null default now(),
+  constraint resource_pr_reviews_pkey primary key (id),
+  constraint resource_pr_reviews_pr_fkey foreign key (pr_id)
+    references public.resource_pull_requests (id) on update cascade on delete cascade,
+  constraint resource_pr_reviews_reviewer_fkey foreign key (reviewer_id, tenant_id)
+    references public.users (id, tenant_id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_resource_pr_reviews_pr_id
+  on public.resource_pr_reviews (pr_id);
+
+-- updated_at 자동 갱신
+create trigger resource_pull_requests_updated_at
+  before update on public.resource_pull_requests
+  for each row execute function update_updated_at_column();
+
+-- RLS
+alter table public.resource_pull_requests enable row level security;
+alter table public.resource_pr_reviews enable row level security;
+
+create policy resource_pull_requests_insert_policy on public.resource_pull_requests for insert to authenticated with check (tenant_id = public.tenant_id());
+create policy resource_pull_requests_select_policy on public.resource_pull_requests for select to authenticated using (tenant_id = public.tenant_id());
+create policy resource_pull_requests_update_policy on public.resource_pull_requests for update to authenticated using (tenant_id = public.tenant_id());
+create policy resource_pull_requests_delete_policy on public.resource_pull_requests for delete to authenticated using (tenant_id = public.tenant_id());
+
+create policy resource_pr_reviews_insert_policy on public.resource_pr_reviews for insert to authenticated with check (tenant_id = public.tenant_id());
+create policy resource_pr_reviews_select_policy on public.resource_pr_reviews for select to authenticated using (tenant_id = public.tenant_id());
+create policy resource_pr_reviews_update_policy on public.resource_pr_reviews for update to authenticated using (tenant_id = public.tenant_id());
+create policy resource_pr_reviews_delete_policy on public.resource_pr_reviews for delete to authenticated using (tenant_id = public.tenant_id());
 
 
 create table

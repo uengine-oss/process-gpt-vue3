@@ -2313,3 +2313,271 @@ DO $$ BEGIN
       ON UPDATE CASCADE ON DELETE CASCADE;
   END IF;
 END $$;
+
+-- ==========================================
+-- 범용 리소스 PR 워크플로우 마이그레이션 (2026-06-18)
+-- skill_pull_requests → resource_pull_requests 범용화
+-- skill_pr_reviews    → resource_pr_reviews 범용화
+-- ==========================================
+
+-- 1. resource_pr_status ENUM 생성 (이미 존재하면 SKIP)
+DO $$ BEGIN
+  CREATE TYPE resource_pr_status AS ENUM (
+    'OPEN',
+    'CHANGES_REQUESTED',
+    'APPROVED',
+    'MERGED',
+    'CLOSED'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 2. resource_pull_requests 테이블 생성 (없을 경우)
+CREATE TABLE IF NOT EXISTS public.resource_pull_requests (
+  id             uuid                NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id      text                NOT NULL,
+  resource_type  text                NOT NULL,
+  resource_id    text                NOT NULL,
+  branch_name    text                NOT NULL,
+  base_branch    text                NOT NULL DEFAULT 'main',
+  title          text                NOT NULL,
+  description    text                NULL,
+  status         resource_pr_status  NOT NULL DEFAULT 'OPEN',
+  requester_id   uuid                NOT NULL,
+  reviewer_id    uuid                NULL,
+  git_pr_number  integer             NULL,
+  git_pr_url     text                NULL,
+  created_at     timestamptz         NOT NULL DEFAULT now(),
+  updated_at     timestamptz         NOT NULL DEFAULT now(),
+  merged_at      timestamptz         NULL,
+  CONSTRAINT resource_pull_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT resource_pull_requests_resource_type_check CHECK (
+    resource_type IN ('skill', 'bpmn', 'dmn')
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_resource_pull_requests_tenant_resource
+  ON public.resource_pull_requests (tenant_id, resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_resource_pull_requests_status
+  ON public.resource_pull_requests (tenant_id, status);
+
+-- 3. resource_pr_reviews 테이블 생성 (없을 경우)
+CREATE TABLE IF NOT EXISTS public.resource_pr_reviews (
+  id           uuid        NOT NULL DEFAULT gen_random_uuid(),
+  pr_id        uuid        NOT NULL,
+  tenant_id    text        NOT NULL,
+  reviewer_id  uuid        NOT NULL,
+  action       text        NOT NULL,
+  comment      text        NULL,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT resource_pr_reviews_pkey PRIMARY KEY (id),
+  CONSTRAINT resource_pr_reviews_pr_fkey FOREIGN KEY (pr_id)
+    REFERENCES public.resource_pull_requests (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- action 제약조건 제거 (COMMENT 등 추가 액션 허용)
+ALTER TABLE IF EXISTS public.resource_pr_reviews
+  DROP CONSTRAINT IF EXISTS resource_pr_reviews_action_check;
+
+CREATE INDEX IF NOT EXISTS idx_resource_pr_reviews_pr_id
+  ON public.resource_pr_reviews (pr_id);
+
+-- 트리거
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'resource_pull_requests_updated_at'
+  ) THEN
+    CREATE TRIGGER resource_pull_requests_updated_at
+      BEFORE UPDATE ON public.resource_pull_requests
+      FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+  END IF;
+END $$;
+
+-- RLS
+ALTER TABLE IF EXISTS public.resource_pull_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.resource_pr_reviews ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'resource_pull_requests_insert_policy' AND tablename = 'resource_pull_requests') THEN
+    CREATE POLICY resource_pull_requests_insert_policy ON public.resource_pull_requests FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+    CREATE POLICY resource_pull_requests_select_policy ON public.resource_pull_requests FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+    CREATE POLICY resource_pull_requests_update_policy ON public.resource_pull_requests FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+    CREATE POLICY resource_pull_requests_delete_policy ON public.resource_pull_requests FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'resource_pr_reviews_insert_policy' AND tablename = 'resource_pr_reviews') THEN
+    CREATE POLICY resource_pr_reviews_insert_policy ON public.resource_pr_reviews FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+    CREATE POLICY resource_pr_reviews_select_policy ON public.resource_pr_reviews FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+    CREATE POLICY resource_pr_reviews_update_policy ON public.resource_pr_reviews FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+    CREATE POLICY resource_pr_reviews_delete_policy ON public.resource_pr_reviews FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+  END IF;
+END $$;
+
+-- 4. 기존 skill_pull_requests → resource_pull_requests 데이터 마이그레이션
+DO $$
+DECLARE
+  migrated_pr_count  integer := 0;
+  migrated_rev_count integer := 0;
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'skill_pull_requests'
+  ) THEN
+    INSERT INTO public.resource_pull_requests (
+      id, tenant_id, resource_type, resource_id,
+      branch_name, base_branch, title, description,
+      status, requester_id, reviewer_id,
+      git_pr_number, git_pr_url,
+      created_at, updated_at, merged_at
+    )
+    SELECT
+      id, tenant_id, 'skill', skill_name,
+      branch_name, base_branch, title, description,
+      status::text::resource_pr_status, requester_id, reviewer_id,
+      git_pr_number, git_pr_url,
+      created_at, updated_at, merged_at
+    FROM public.skill_pull_requests
+    ON CONFLICT (id) DO NOTHING;
+
+    GET DIAGNOSTICS migrated_pr_count = ROW_COUNT;
+    RAISE NOTICE 'Migrated % rows from skill_pull_requests to resource_pull_requests', migrated_pr_count;
+
+    -- 5. skill_pr_reviews → resource_pr_reviews 데이터 마이그레이션
+    IF EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'skill_pr_reviews'
+    ) THEN
+      INSERT INTO public.resource_pr_reviews (
+        id, pr_id, tenant_id, reviewer_id, action, comment, created_at
+      )
+      SELECT id, pr_id, tenant_id, reviewer_id, action, comment, created_at
+      FROM public.skill_pr_reviews
+      ON CONFLICT (id) DO NOTHING;
+
+      GET DIAGNOSTICS migrated_rev_count = ROW_COUNT;
+      RAISE NOTICE 'Migrated % rows from skill_pr_reviews to resource_pr_reviews', migrated_rev_count;
+
+      -- 6. 구 테이블 삭제 (리뷰 → PR 순서)
+      DROP TABLE IF EXISTS public.skill_pr_reviews;
+      RAISE NOTICE 'Dropped table skill_pr_reviews';
+    END IF;
+
+    DROP TABLE IF EXISTS public.skill_pull_requests;
+    RAISE NOTICE 'Dropped table skill_pull_requests';
+  ELSE
+    RAISE NOTICE 'skill_pull_requests table does not exist, skipping migration';
+  END IF;
+END $$;
+
+-- git_repo_url 컬럼 추가 (2026-06-19)
+ALTER TABLE IF EXISTS public.resource_pull_requests
+  ADD COLUMN IF NOT EXISTS git_repo_url text NULL;
+
+-- skill_pr_status ENUM 삭제 (테이블 삭제 후 안전하게 제거)
+DO $$ BEGIN
+  DROP TYPE IF EXISTS skill_pr_status;
+  RAISE NOTICE 'Dropped type skill_pr_status (if existed)';
+EXCEPTION
+  WHEN others THEN
+    RAISE NOTICE 'Could not drop skill_pr_status: %', SQLERRM;
+END $$;
+
+-- PR 작성자·리뷰어 이름 컬럼 추가 (2026-06-19)
+ALTER TABLE IF EXISTS public.resource_pull_requests
+  ADD COLUMN IF NOT EXISTS requester_name text NULL;
+
+ALTER TABLE IF EXISTS public.resource_pr_reviews
+  ADD COLUMN IF NOT EXISTS reviewer_name text NULL;
+
+-- 임시저장(draft) 플래그 컬럼 추가 (2026-06-26)
+-- deepagent 프로세스 생성 시 검증/자동개선 전 단계의 임시 산출물을 목록·맵에서 숨기고
+-- 최종 저장 시 is_draft=false 로 승격한다(프로세스: proc_def, 에이전트: users).
+ALTER TABLE IF EXISTS public.proc_def
+  ADD COLUMN IF NOT EXISTS is_draft boolean NOT NULL DEFAULT false;
+
+ALTER TABLE IF EXISTS public.proc_def_version
+  ADD COLUMN IF NOT EXISTS is_draft boolean NOT NULL DEFAULT false;
+
+ALTER TABLE IF EXISTS public.users
+  ADD COLUMN IF NOT EXISTS is_draft boolean NOT NULL DEFAULT false;
+
+-- PostgREST 스키마 캐시 리로드(신규 컬럼 즉시 반영)
+NOTIFY pgrst, 'reload schema';
+-- proc_def에 agent_id 컬럼 추가 (2026-06-23)
+-- 기존에 DMN의 owner에 에이전트 ID를 저장하던 것을 분리: owner는 사용자, agent_id는 에이전트
+ALTER TABLE IF EXISTS public.proc_def
+  ADD COLUMN IF NOT EXISTS agent_id text NULL;
+
+-- 기존 DMN 데이터 마이그레이션: owner가 에이전트인 경우 agent_id로 이동하고 owner를 null로 변경
+UPDATE public.proc_def pd
+SET agent_id = pd.owner,
+    owner = NULL
+WHERE pd.type = 'dmn'
+  AND pd.owner IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM public.users u
+    WHERE u.id::text = pd.owner
+      AND u.is_agent = true
+  );
+
+-- ===============================================
+-- delegation_history: 위임 이력 테이블
+-- ===============================================
+DO $$ BEGIN
+  CREATE TYPE delegation_status AS ENUM ('REQUESTED', 'ACCEPTED', 'REJECTED', 'COMPLETED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 컬럼 보강 (이미 테이블이 있고 일부 컬럼만 빠진 경우 대비)
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS task_id uuid;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS from_user_id text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS from_username text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS to_user_id text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS to_username text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS reason text;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS status delegation_status NOT NULL DEFAULT 'COMPLETED';
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS responded_at timestamptz;
+ALTER TABLE public.delegation_history ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
+
+-- 제약 (이미 있으면 무시)
+DO $$ BEGIN
+    ALTER TABLE public.delegation_history
+        ADD CONSTRAINT delegation_history_task_id_fkey FOREIGN KEY (task_id)
+            REFERENCES public.todolist(id) ON UPDATE CASCADE ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE public.delegation_history
+        ADD CONSTRAINT delegation_history_tenant_id_fkey FOREIGN KEY (tenant_id)
+            REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_delegation_history_task_id ON public.delegation_history (task_id);
+CREATE INDEX IF NOT EXISTS idx_delegation_history_tenant_id ON public.delegation_history (tenant_id);
+
+-- RLS
+ALTER TABLE public.delegation_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS delegation_history_select_policy ON public.delegation_history;
+CREATE POLICY delegation_history_select_policy ON public.delegation_history
+    FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS delegation_history_insert_policy ON public.delegation_history;
+CREATE POLICY delegation_history_insert_policy ON public.delegation_history
+    FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS delegation_history_update_policy ON public.delegation_history;
+CREATE POLICY delegation_history_update_policy ON public.delegation_history
+    FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+
+DROP POLICY IF EXISTS delegation_history_delete_policy ON public.delegation_history;
+CREATE POLICY delegation_history_delete_policy ON public.delegation_history
+    FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());

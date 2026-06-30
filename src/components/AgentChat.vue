@@ -222,14 +222,14 @@ export default {
 
         this.EventBus.on('dmn-saved', (data) => {
             // 현재 에이전트 소유의 DMN 저장일 때만 탭 전환 (클릭 없이 다른 에이전트 화면이 바뀌지 않도록)
-            if (data?.owner != null && data.owner !== this.agentInfo?.id) return;
+            if (data?.agent_id != null && data.agent_id !== this.agentInfo?.id) return;
             this.selectedDmnId = data.id;
             this.activeTab = 'dmn-modeling';
         });
 
         this.EventBus.on('dmn-deleted', (data) => {
             // 현재 에이전트 소유의 DMN 삭제일 때만 탭/목록 갱신
-            if (data?.owner != null && data.owner !== this.agentInfo?.id) return;
+            if (data?.agent_id != null && data.agent_id !== this.agentInfo?.id) return;
             this.selectedDmnId = null;
             this.activeTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
             this.getDMNList();
@@ -492,7 +492,7 @@ export default {
 
             const options = {
                 match: {
-                    owner: this.agentInfo.id,
+                    agent_id: this.agentInfo.id,
                     type: 'dmn'
                 }
             };
@@ -518,7 +518,7 @@ export default {
                         this.getDMNList();
                     }
                 };
-                this.dmnRealtimeChannel = await this.backend.watchData('proc_def', channel, callback, { filter: `owner=eq.${agentId}` });
+                this.dmnRealtimeChannel = await this.backend.watchData('proc_def', channel, callback, { filter: `agent_id=eq.${agentId}` });
             } catch (e) {
                 console.warn('[AgentChat] watchData(proc_def) 실패:', e);
             }

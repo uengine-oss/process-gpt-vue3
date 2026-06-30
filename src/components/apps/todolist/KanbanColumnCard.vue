@@ -251,6 +251,7 @@ export default {
         dialogType: '',
         instanceList: [],
         eventSubscription: null,
+        taskLogSubscription: null,
         currentDraftStatus: null
     }),
     watch: {
@@ -342,7 +343,16 @@ export default {
             }, []);
         },
         userInfoForTask() {
-            if (!this.userList || !this.task || !this.task.endpoint) return null;
+            if (!this.userList || !this.task) return null;
+            if (!this.task.endpoint) {
+                if (this.task.assignees && this.task.assignees.length > 0) {
+                    return this.task.assignees.map((a) => ({ username: a.username || a.email, name: a.username || a.email, id: a.uid || a.email }));
+                }
+                if (this.task.username) {
+                    return { username: this.task.username, name: this.task.username };
+                }
+                return null;
+            }
 
             if (this.task.endpoint.includes(',')) {
                 const endpoints = this.task.endpoint.split(',').map((e) => e.trim());
@@ -396,12 +406,19 @@ export default {
             }
         },
         isMultiUser() {
-            return this.task.endpoint && this.task.endpoint.includes(',');
+            if (this.task.endpoint && this.task.endpoint.includes(',')) return true;
+            if (!this.task.endpoint && this.task.assignees && this.task.assignees.length > 1) return true;
+            return false;
         },
         isMyTask() {
-            // localStorage의 uid와 task의 endpoint가 일치하는지 확인 (uid 또는 이메일 비교)
             const myUid = localStorage.getItem('uid');
-            if (!myUid || !this.task || !this.task.endpoint) return false;
+            if (!myUid || !this.task) return false;
+            if (!this.task.endpoint) {
+                if (this.task.assignees && this.task.assignees.length > 0) {
+                    return this.task.assignees.some((a) => a.uid === myUid || a.email === localStorage.getItem('email'));
+                }
+                return false;
+            }
 
             // 현재 사용자의 이메일 정보 가져오기 (userList에서)
             const myUserInfo = this.userList.find((user) => user.id === myUid);
@@ -478,15 +495,22 @@ export default {
         if (this.eventSubscription) {
             this.eventSubscription.unsubscribe();
         }
+        if (this.taskLogSubscription) {
+            window.$supabase.removeChannel(this.taskLogSubscription);
+        }
     },
     methods: {
         async subscribeToTaskLog() {
             if (!this.task.taskId || this.task.status == 'DONE') return;
-            const originalStatus = this.task.status;
-            const subscription = await backend.getTaskLog(this.task.taskId, async (task) => {
-                if (task.status == 'DONE' || task.status !== originalStatus) {
-                    window.$supabase.removeChannel(subscription);
+            let lastStatus = this.task.status;
+            this.taskLogSubscription = await backend.getTaskLog(this.task.taskId, async (task) => {
+                if (task.status !== lastStatus) {
+                    lastStatus = task.status;
                     this.EventBus.emit('todolist-updated');
+                    if (task.status === 'DONE') {
+                        window.$supabase.removeChannel(this.taskLogSubscription);
+                        this.taskLogSubscription = null;
+                    }
                 }
             });
         },

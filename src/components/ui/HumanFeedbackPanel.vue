@@ -339,7 +339,12 @@ export default {
                 return this.selectedSuggestion !== null || hasCustom;
             }
             if (this.feedbackType === 'approve_reject_with_edit') {
-                return this.decision === 'approve' || this.decision === 'reject';
+                // 승인/반려를 고르거나, 고르지 않아도 수정 의견을 적었으면 제출 가능.
+                return (
+                    this.decision === 'approve' ||
+                    this.decision === 'reject' ||
+                    (this.freeText || '').trim().length > 0
+                );
             }
             return true; // confirm 모드
         }
@@ -428,7 +433,12 @@ export default {
                 this.$emit('submit', {
                     type: 'approve_reject_with_edit',
                     decision: this.decision,
-                    answer: this.decision === 'approve' ? '승인' : '반려',
+                    answer:
+                        this.decision === 'approve'
+                            ? '승인'
+                            : this.decision === 'reject'
+                              ? '반려'
+                              : (this.freeText || '').trim(),
                     reason: (this.freeText || '').trim(),
                     selectedSuggestion: this.selectedSuggestion || null
                 });
@@ -466,7 +476,12 @@ export default {
                 return {
                     type: 'approve_reject_with_edit',
                     decision: this.decision,
-                    answer: this.decision === 'approve' ? '승인' : '반려',
+                    answer:
+                        this.decision === 'approve'
+                            ? '승인'
+                            : this.decision === 'reject'
+                              ? '반려'
+                              : (this.freeText || '').trim(),
                     reason: (this.freeText || '').trim(),
                     selectedSuggestion: this.selectedSuggestion || null
                 };
@@ -520,6 +535,10 @@ export default {
     color: rgba(var(--v-theme-on-surface), 0.6);
     margin-bottom: 10px;
     line-height: 1.5;
+    /* 컨설팅 초안 등 여러 줄 텍스트의 줄바꿈을 보존 */
+    white-space: pre-wrap;
+    max-height: 320px;
+    overflow-y: auto;
 }
 
 .human-feedback-panel__meta {

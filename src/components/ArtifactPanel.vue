@@ -53,6 +53,25 @@
                         :slideMarkdown="panel.data.slideMarkdown"
                         :imageUrls="panel.data.imageUrls || []"
                     />
+                    <!-- BPMN 프로세스 생성 산출물 -->
+                    <ProcessArtifactViewer
+                        v-else-if="panel.type === 'process'"
+                        :ref="(el) => setPanelRef(panel.id, el)"
+                        :result="panel.data.result"
+                        @preview-bpmn="emitPanelAction(panel, 'preview-bpmn', $event)"
+                        @save-generated-process="emitPanelAction(panel, 'save-generated-process', $event)"
+                    />
+                    <!-- deepagent 샌드박스 산출물 파일 (Claude Desktop식 파일 목록 + 미리보기) -->
+                    <WorkspaceFilesViewer
+                        v-else-if="panel.type === 'files'"
+                        :ref="(el) => setPanelRef(panel.id, el)"
+                        :files="panel.data.files || []"
+                        :save-state="panel.data.saveState || { saving: false, saved: false, error: '' }"
+                        @save="emitPanelAction(panel, 'save', panel.data.files || [])"
+                        @edit-file="emitPanelAction(panel, 'edit-file', $event)"
+                        @ai-edit-file="emitPanelAction(panel, 'ai-edit-file', $event)"
+                        @navigate-process="emitPanelAction(panel, 'navigate-process', $event)"
+                    />
                     <!-- 새 패널 타입은 여기에 v-else-if로 추가 -->
                 </div>
             </template>
@@ -63,6 +82,8 @@
 <script>
 import HwpxViewer from '@/components/HwpxViewer.vue';
 import SlideArtifactViewer from '@/components/SlideArtifactViewer.vue';
+import ProcessArtifactViewer from '@/components/ProcessArtifactViewer.vue';
+import WorkspaceFilesViewer from '@/components/WorkspaceFilesViewer.vue';
 import AgentChatRoomContext, { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 
 // 패널 타입별 아이콘 레지스트리 — 새 타입 추가 시 여기만 수정
@@ -70,13 +91,15 @@ const PANEL_TYPE_ICONS = {
     hwpx: 'mdi-file-document-outline',
     docx: 'mdi-file-word-outline',
     slide: 'mdi-presentation',
+    process: 'mdi-sitemap-outline',
+    files: 'mdi-folder-outline',
     tools: 'mdi-tools',
     attachments: 'mdi-paperclip'
 };
 
 export default {
     name: 'ArtifactPanel',
-    components: { HwpxViewer, SlideArtifactViewer, AgentChatRoomContext },
+    components: { HwpxViewer, SlideArtifactViewer, ProcessArtifactViewer, WorkspaceFilesViewer, AgentChatRoomContext },
     props: {
         panels: { type: Array, default: () => [] },
         activeId: { type: String, default: null }
@@ -122,7 +145,7 @@ export default {
                 panelId: panel.id,
                 payload
             });
-        },
+        }
     }
 };
 </script>

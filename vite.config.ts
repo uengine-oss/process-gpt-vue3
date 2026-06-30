@@ -86,6 +86,13 @@ export default defineConfig({
                 target: 'http://127.0.0.1:8000',
                 changeOrigin: true
             },
+            // 임시저장(draft) 프로세스 실엔진 검증 + LLM 자동개선 (completion)
+            '/validate-and-improve': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                timeout: 0,
+                proxyTimeout: 0
+            },
             '/vision-complete': {
                 target: 'http://127.0.0.1:8000',
                 changeOrigin: true
@@ -142,7 +149,16 @@ export default defineConfig({
             },
             '/definition': {
                 target: uengineGatewayTarget,
-                changeOrigin: true
+                changeOrigin: true,
+                // '/definition' prefix 가 SPA 라우트 '/definitions/:id', '/definition-map' 까지 잡아
+                // 브라우저 직접 진입 시 Spring 게이트웨이로 가 Whitelabel 500 이 나던 문제 수정:
+                // HTML 네비게이션(text/html)은 프록시하지 않고 SPA(index.html)가 처리하게 우회한다.
+                // (XHR/API 호출은 Accept 가 application/json·*/* 이라 그대로 게이트웨이로 간다.)
+                bypass: (req) => {
+                    const accept = req.headers && req.headers.accept ? String(req.headers.accept) : '';
+                    if (req.method === 'GET' && accept.includes('text/html')) return '/index.html';
+                    return undefined;
+                }
             },
             '/version': {
                 target: uengineGatewayTarget,

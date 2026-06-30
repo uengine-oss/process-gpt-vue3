@@ -16,23 +16,37 @@
                 >
                     {{ editNotice.text }}
                 </v-chip>
+                <!-- BPMN: 미리보기 / XML / JSON(편집) 3-탭 -->
+                <div v-if="mode === 'bpmn'" class="hwpx-viewer__toggle mr-2">
+                    <button :class="{ 'is-on': viewMode === 'preview' }" @click="viewMode = 'preview'">미리보기</button>
+                    <button :class="{ 'is-on': viewMode === 'xml' }" @click="viewMode = 'xml'">XML</button>
+                    <button :class="{ 'is-on': viewMode === 'json' }" @click="viewMode = 'json'">JSON</button>
+                </div>
+                <!-- md/html: 미리보기 / 코드(원본) 토글 -->
+                <div v-else-if="canToggleCode" class="hwpx-viewer__toggle mr-2">
+                    <button :class="{ 'is-on': viewMode === 'preview' }" @click="viewMode = 'preview'">미리보기</button>
+                    <button :class="{ 'is-on': viewMode === 'code' }" @click="viewMode = 'code'">코드</button>
+                </div>
+                <!-- AI 편집은 HWP(htmlUrl) 문서에만 제공. 작업폴더 폼(html)·스킬·에이전트 등은 코드탭 직접수정만. -->
                 <v-btn
-                    v-if="!isLoading && !hasError && !readOnly"
+                    v-if="mode === 'html' && htmlUrl && viewMode === 'preview' && !isLoading && !hasError && !readOnly"
                     variant="text"
                     density="comfortable"
                     size="small"
                     :color="sectionEditMode ? 'primary' : undefined"
-                    @click="toggleSectionEditMode"
+                    :loading="aiEditing"
+                    @click="onHtmlAiEdit"
                 >
                     <v-icon size="16" class="mr-1">mdi-robot-outline</v-icon>
                     AI 편집
                 </v-btn>
-                <v-btn v-if="isEditing && !readOnly" variant="text" density="comfortable" size="small" @click="cancelEdit">
+                <!-- HWP(htmlUrl) 전용 WYSIWYG 편집 — 작업폴더 html 은 아래 '편집'(코드탭)으로 처리 -->
+                <v-btn v-if="mode === 'html' && htmlUrl && viewMode === 'preview' && isEditing && !readOnly" variant="text" density="comfortable" size="small" @click="cancelEdit">
                     <v-icon size="16" class="mr-1">mdi-close</v-icon>
                     편집취소
                 </v-btn>
                 <v-btn
-                    v-if="!isLoading && !hasError && !readOnly"
+                    v-if="mode === 'html' && htmlUrl && viewMode === 'preview' && !isLoading && !hasError && !readOnly"
                     variant="text"
                     density="comfortable"
                     size="small"
@@ -40,6 +54,18 @@
                 >
                     <v-icon size="16" class="mr-1">{{ isEditing ? 'mdi-check' : 'mdi-pencil-outline' }}</v-icon>
                     {{ isEditing ? '편집완료' : '편집' }}
+                </v-btn>
+                <!-- 편집: 산출물(bpmn/skill/agent)은 내부 편집기로 이동(editTarget), 그 외(작업폴더 html 등)는 코드탭 직접수정. AI편집 없음. -->
+                <v-btn
+                    v-if="(editTarget || (mode !== 'html' && (canToggleCode || mode === 'bpmn')) || (mode === 'html' && !htmlUrl)) && !readOnly"
+                    variant="text"
+                    density="comfortable"
+                    size="small"
+                    :color="(!editTarget && mode !== 'bpmn' && viewMode === 'code') ? 'primary' : undefined"
+                    @click="onManualEdit"
+                >
+                    <v-icon size="16" class="mr-1">{{ editTarget || mode === 'bpmn' ? 'mdi-open-in-new' : 'mdi-pencil-outline' }}</v-icon>
+                    편집
                 </v-btn>
                 <v-btn v-if="!isLoading && !hasError" variant="text" density="comfortable" size="small" @click="emitDownload">
                     <v-icon size="16" class="mr-1">mdi-download</v-icon>
@@ -51,28 +77,92 @@
             </div>
         </div>
         <div class="hwpx-viewer__body">
-            <div v-if="isLoading" class="hwpx-viewer__state">
-                <v-progress-circular indeterminate color="primary" :size="22" />
-                <span class="text-caption ml-2">문서를 불러오는 중...</span>
+            <!-- 코드(원본) 보기 — 토글로 켜면 md/html/bpmn 의 원본 텍스트 표시. 편집 가능하면 textarea. -->
+            <textarea
+                v-if="viewMode === 'code' && canToggleCode && codeEditable"
+                class="hwpx-viewer__code-edit"
+                v-model="localContent"
+                spellcheck="false"
+                @input="onCodeEdit"
+            ></textarea>
+            <pre v-else-if="viewMode === 'code' && canToggleCode" class="hwpx-viewer__code"><code>{{ prettySource }}</code></pre>
+            <!-- 확장자별 동적 뷰어 (공통). html/hwpx/docx 는 기존 HTML 렌더, 그 외는 ext 별 분기. -->
+            <!-- Markdown -->
+            <div v-else-if="mode === 'markdown'" class="hwpx-viewer__content">
+                <div class="hwpx-viewer__md" v-html="renderedMarkdown"></div>
             </div>
-            <div v-else-if="hasError" class="hwpx-viewer__state hwpx-viewer__state--error">
-                <v-icon size="18" color="error">mdi-alert-circle-outline</v-icon>
-                <span class="text-caption ml-2">문서를 불러올 수 없습니다.</span>
+            <!-- JSON / 코드 -->
+            <textarea
+                v-else-if="mode === 'code' && codeEditable"
+                class="hwpx-viewer__code-edit"
+                v-model="localContent"
+                spellcheck="false"
+                @input="onCodeEdit"
+            ></textarea>
+            <pre v-else-if="mode === 'code'" class="hwpx-viewer__code"><code>{{ prettySource }}</code></pre>
+            <!-- BPMN: JSON(편집) — 이 JSON 을 고치면 XML/다이어그램이 자동 갱신된다 -->
+            <textarea
+                v-else-if="mode === 'bpmn' && viewMode === 'json' && !readOnly"
+                class="hwpx-viewer__code-edit"
+                v-model="localJson"
+                spellcheck="false"
+                @input="onJsonEdit"
+            ></textarea>
+            <pre v-else-if="mode === 'bpmn' && viewMode === 'json'" class="hwpx-viewer__code"><code>{{ effectiveJson }}</code></pre>
+            <!-- BPMN: XML(읽기) -->
+            <pre v-else-if="mode === 'bpmn' && viewMode === 'xml'" class="hwpx-viewer__code"><code>{{ effectiveContent }}</code></pre>
+            <!-- BPMN 다이어그램(미리보기) -->
+            <div v-else-if="mode === 'bpmn'" class="hwpx-viewer__bpmn">
+                <!-- 저장 결과 다이얼로그와 동일 컴포넌트/옵션 → 동일한 autolayout 레이아웃 -->
+                <ProcessDefinition
+                    v-if="effectiveContent"
+                    :key="bpmnRenderKey"
+                    :bpmn="effectiveContent"
+                    isViewMode="true"
+                    isAIGenerated="true"
+                />
+                <div v-else class="hwpx-viewer__state"><span class="text-caption">BPMN 내용이 없습니다.</span></div>
             </div>
-            <div v-else class="hwpx-viewer__content" ref="content" @scroll="onContentScroll">
-                <div
-                    ref="editor"
-                    class="hwpx-viewer__html"
-                    :class="{ 'is-editing': isEditing, 'section-edit-mode': sectionEditMode }"
-                    :contenteditable="isEditing"
-                    v-html="bodyHtml"
-                    @click="handleSectionClick"
-                    @mousedown="startSectionSelection"
-                    @mouseover="onEditorImgOver"
-                    @mouseleave="onEditorImgLeave"
-                ></div>
-                <div v-if="selectionRect.visible" class="hwpx-selection-rect" :style="selectionRectStyle"></div>
+            <!-- html 코드(원본) 편집 — viewMode==='code' 면 raw HTML textarea -->
+            <textarea
+                v-else-if="mode === 'html' && viewMode === 'code' && !readOnly"
+                class="hwpx-viewer__code-edit"
+                v-model="localContent"
+                spellcheck="false"
+                @input="onCodeEdit"
+            ></textarea>
+            <!-- ProcessGPT 폼 미리보기 — 커스텀 컴포넌트(<text-field> 등)는 DynamicForm 으로 렌더 -->
+            <div
+                v-else-if="mode === 'html' && isProcessGptForm"
+                class="hwpx-viewer__content hwpx-viewer__form"
+            >
+                <DynamicForm :formHTML="effectiveContent" :readonly="true" />
             </div>
+            <!-- HTML(기존 HWP/DOCX 흐름): url fetch 또는 content -->
+            <template v-else>
+                <div v-if="isLoading" class="hwpx-viewer__state">
+                    <v-progress-circular indeterminate color="primary" :size="22" />
+                    <span class="text-caption ml-2">문서를 불러오는 중...</span>
+                </div>
+                <div v-else-if="hasError" class="hwpx-viewer__state hwpx-viewer__state--error">
+                    <v-icon size="18" color="error">mdi-alert-circle-outline</v-icon>
+                    <span class="text-caption ml-2">문서를 불러올 수 없습니다.</span>
+                </div>
+                <div v-else class="hwpx-viewer__content" ref="content" @scroll="onContentScroll">
+                    <div
+                        ref="editor"
+                        class="hwpx-viewer__html"
+                        :class="{ 'is-editing': isEditing, 'section-edit-mode': sectionEditMode }"
+                        :contenteditable="isEditing"
+                        v-html="bodyHtml"
+                        @click="handleSectionClick"
+                        @mousedown="startSectionSelection"
+                        @mouseover="onEditorImgOver"
+                        @mouseleave="onEditorImgLeave"
+                    ></div>
+                    <div v-if="selectionRect.visible" class="hwpx-selection-rect" :style="selectionRectStyle"></div>
+                </div>
+            </template>
         </div>
 
         <!-- 이미지 AI 개선 플로팅 버튼 -->
@@ -192,6 +282,35 @@
             </v-card>
         </v-dialog>
 
+        <!-- md/json/bpmn AI 편집 — 지시문 입력(HWP AI편집과 동일 UX) -->
+        <v-dialog v-model="aiEditDialog" max-width="520" persistent>
+            <v-card class="pa-2" style="border-radius: 16px">
+                <v-card-title class="d-flex align-center pa-3 pb-1">
+                    <v-icon class="mr-2" color="primary" size="20">mdi-robot-outline</v-icon>
+                    <div class="text-subtitle-1 font-weight-bold">AI 편집</div>
+                    <v-spacer />
+                    <v-btn icon variant="text" @click="aiEditDialog = false"><v-icon>mdi-close</v-icon></v-btn>
+                </v-card-title>
+                <v-card-text class="pa-3 pt-2">
+                    <div class="text-caption text-medium-emphasis mb-2">이 파일 내용을 어떻게 수정할지 지시해 주세요.</div>
+                    <v-textarea
+                        v-model="aiEditInstruction"
+                        label="수정 지시사항"
+                        rows="3"
+                        density="compact"
+                        variant="outlined"
+                        hide-details="auto"
+                        autofocus
+                    />
+                </v-card-text>
+                <v-card-actions class="pa-3 pt-0">
+                    <v-spacer />
+                    <v-btn variant="text" @click="aiEditDialog = false">취소</v-btn>
+                    <v-btn color="primary" variant="flat" rounded :disabled="!aiEditInstruction.trim()" @click="confirmAiEdit">요청</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
         <!-- 출처(참고자료) 호버 툴팁 -->
         <div
             v-if="sourceTooltip.visible"
@@ -270,14 +389,36 @@
 </template>
 
 <script>
+import { marked } from 'marked';
+import { defineAsyncComponent } from 'vue';
+
 export default {
     name: 'HwpxViewer',
+    components: {
+        // 저장 결과 다이얼로그와 '동일한' BPMN 미리보기를 쓰기 위해 ProcessDefinition(isViewMode+isAIGenerated)을 사용.
+        ProcessDefinition: defineAsyncComponent(() => import('@/components/ProcessDefinition.vue')),
+        // ProcessGPT 폼(<text-field> 등 커스텀 컴포넌트)은 v-html 로 안 되므로 DynamicForm 으로 렌더.
+        DynamicForm: defineAsyncComponent(() => import('@/components/designer/DynamicForm.vue'))
+    },
     props: {
         htmlUrl: { type: String, default: '' },
-        readOnly: { type: Boolean, default: false }
+        readOnly: { type: Boolean, default: false },
+        // 공통 뷰어 확장: URL 없이 내용을 직접 렌더할 때 사용(확장자별 분기).
+        content: { type: String, default: '' },
+        ext: { type: String, default: '' },
+        // BPMN 전용: 연결된 process-definition.json 내용(JSON 탭/편집/AI편집 대상). 편집 시 XML/다이어그램은 부모가 재파생.
+        defJson: { type: String, default: '' },
+        // 산출물 '편집' 시 이동할 내부 편집기 타깃 {kind:'process'|'skill'|'agent', id?/name?}. 있으면 편집=이동.
+        editTarget: { type: Object, default: null }
     },
     data() {
         return {
+            viewMode: 'preview', // 'preview' | 'code'(md/html) | 'xml' | 'json'(bpmn)
+            localContent: '', // 편집 가능한 로컬 본문(코드/원본 편집 시 사용)
+            localJson: '', // BPMN JSON 편집본(process-definition)
+            aiEditDialog: false,
+            aiEditInstruction: '',
+            aiEditing: false,
             isLoading: true,
             hasError: false,
             loadTimer: null,
@@ -349,13 +490,103 @@ export default {
                 width: `${this.selectionRect.width}px`,
                 height: `${this.selectionRect.height}px`
             };
+        },
+        /** 확장자 → 뷰어 모드. html/hwpx/docx=HTML, md=markdown, json/기타텍스트=code, bpmn/xml=BPMN. */
+        mode() {
+            const e = (this.ext || '').toString().toLowerCase().replace(/^\./, '');
+            if (e === 'md' || e === 'markdown') return 'markdown';
+            if (e === 'json') return 'code';
+            if (e === 'bpmn') return 'bpmn';
+            if (e === 'html' || e === 'htm' || e === 'hwpx' || e === 'docx' || e === '') return 'html';
+            // yaml/yml/txt/xml/csv/dmn 등 → 코드로
+            return 'code';
+        },
+        /** 미리보기↔원본 토글을 보여줄 모드(md/html/bpmn). json/코드는 이미 원본이라 토글 불필요. */
+        canToggleCode() {
+            return this.mode === 'markdown' || this.mode === 'html' || this.mode === 'bpmn';
+        },
+        /** 미리보기·렌더에 쓰는 본문 — 편집 중이면 편집본(localContent), 아니면 원본 content. */
+        effectiveContent() {
+            return this.localContent != null && this.localContent !== '' ? this.localContent : (this.content || '').toString();
+        },
+        /** BPMN JSON(process-definition) — 편집본 우선. */
+        effectiveJson() {
+            return this.localJson != null && this.localJson !== '' ? this.localJson : (this.defJson || '').toString();
+        },
+        /** ProcessGPT 폼(<*-field> + row 레이아웃)인지 — 맞으면 DynamicForm 으로 렌더해야 함. */
+        isProcessGptForm() {
+            const h = (this.effectiveContent || '').toLowerCase();
+            return h.indexOf('-field') >= 0 && (h.indexOf("class='row'") >= 0 || h.indexOf('class="row"') >= 0 || h.indexOf('<section') >= 0);
+        },
+        /** 코드 영역을 편집 가능한 textarea 로 보여줄지(읽기전용 아니고 토글 가능 모드일 때). */
+        codeEditable() {
+            return !this.readOnly && (this.canToggleCode || this.mode === 'code');
+        },
+        /** BPMN 다이어그램 re-render 키(내용 변경 시 갱신). */
+        bpmnRenderKey() {
+            const s = (this.effectiveContent || '').toString();
+            return `bpmn-${s.length}`;
+        },
+        renderedMarkdown() {
+            const src = (this.effectiveContent || '').toString();
+            try {
+                return marked.parse(src, { breaks: true });
+            } catch (e) {
+                return `<pre>${src.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</pre>`;
+            }
+        },
+        prettySource() {
+            const src = (this.effectiveContent || '').toString();
+            if ((this.ext || '').toLowerCase().replace(/^\./, '') === 'json') {
+                try {
+                    return JSON.stringify(JSON.parse(src), null, 2);
+                } catch (e) {
+                    return src;
+                }
+            }
+            return src;
         }
     },
     watch: {
+        // content 로 HTML 을 직접 받을 때(URL 없이) 파싱해 렌더.
+        content: {
+            immediate: true,
+            handler() {
+                const c = (this.content || '').toString();
+                this.aiEditing = false; // 새 content 도착(AI 편집 결과 포함) → 로딩 해제
+                // 우리가 emit 한 편집본이 되돌아온 경우(content===localContent)엔 리셋하지 않음(커서 튐 방지).
+                if (c !== this.localContent) {
+                    this.viewMode = 'preview'; // 새 파일 로드 시 미리보기부터
+                    this.localContent = c; // 편집본 초기화
+                }
+                if (this.mode === 'html' && c && !this.htmlUrl) {
+                    this.renderHtmlPreview(this.effectiveContent);
+                }
+            }
+        },
+        // 코드 편집 중 html 본문이 바뀌면 미리보기도 갱신.
+        localContent() {
+            if (this.mode === 'html' && !this.htmlUrl) {
+                this.renderHtmlPreview(this.effectiveContent);
+            }
+        },
+        defJson: {
+            immediate: true,
+            handler() {
+                const j = (this.defJson || '').toString();
+                this.aiEditing = false;
+                if (j !== this.localJson) this.localJson = j; // 외부 변경(AI/재파생)만 반영
+            }
+        },
         htmlUrl: {
             immediate: true,
             handler() {
                 if (!this.htmlUrl) {
+                    // content 로 직접 렌더하는 경우엔 content 워처가 처리하므로 비우지 않는다.
+                    if (this.content) {
+                        this.isLoading = false;
+                        return;
+                    }
                     this.isLoading = false;
                     this.hasError = false;
                     this.bodyHtml = '';
@@ -384,6 +615,90 @@ export default {
         }
     },
     methods: {
+        renderHtmlPreview(src) {
+            // content/localContent 의 HTML 을 파싱해 미리보기 본문에 반영.
+            try {
+                const parsed = this.parseHtml((src || '').toString());
+                this.bodyHtml = parsed.bodyHtml;
+                this.originalHtml = parsed.bodyHtml;
+                this.styleText = parsed.styleText;
+                this.injectStyleTag(parsed.styleText);
+            } catch (e) {
+                this.bodyHtml = (src || '').toString();
+            }
+            this.isLoading = false;
+            this.hasError = false;
+        },
+        onCodeEdit() {
+            // 코드/원본 편집 → 부모에 변경 내용 전달(저장 시 사용) + 미리보기 반영(effectiveContent).
+            this.$emit('update:content', this.localContent);
+        },
+        openAiEdit() {
+            this.aiEditInstruction = '';
+            this.aiEditDialog = true;
+        },
+        /** html AI편집: HWP(htmlUrl)면 기존 섹션 편집, 작업폴더 파일이면 지시 다이얼로그. */
+        onHtmlAiEdit() {
+            if (this.htmlUrl) this.toggleSectionEditMode();
+            else this.openAiEdit();
+        },
+        /** 수동 편집 버튼: bpmn 은 JSON 탭으로, 그 외는 코드 탭으로 이동. */
+        onManualEdit() {
+            // 산출물 편집 = 내부 편집기로 이동(부모가 준 editTarget): process→/definitions, skill→/skills, agent→/agent-chat.
+            if (this.editTarget && this.editTarget.kind) {
+                this.$emit('navigate-process', this.editTarget);
+                return;
+            }
+            if (this.mode === 'bpmn') {
+                const id = this._bpmnProcessId();
+                if (id) {
+                    this.$emit('navigate-process', { kind: 'process', id });
+                    return;
+                }
+                // id 를 못 찾으면 폴백으로 JSON 탭(보기) 토글
+                this.viewMode = this.viewMode === 'json' ? 'preview' : 'json';
+            } else {
+                this.viewMode = this.viewMode === 'code' ? 'preview' : 'code';
+            }
+        },
+        /** bpmn 산출물이 들고 있는 process-definition 에서 프로세스 id(=draft proc_def id) 추출. */
+        _bpmnProcessId() {
+            try {
+                let j = this.localJson || this.effectiveJson || this.defJson || '';
+                if (typeof j === 'string') j = JSON.parse(j);
+                if (j && j.processDefinition) j = j.processDefinition;
+                return ((j && (j.processDefinitionId || j.id)) || '').toString().trim();
+            } catch (e) {
+                return '';
+            }
+        },
+        onJsonEdit() {
+            // BPMN JSON 편집 → 부모가 XML/다이어그램 재파생 + 저장 반영.
+            this.$emit('update:def-json', this.localJson);
+        },
+        confirmAiEdit() {
+            const instruction = (this.aiEditInstruction || '').trim();
+            if (!instruction) return;
+            this.aiEditDialog = false;
+            this.aiEditing = true;
+            // bpmn 은 JSON(process-definition)을 수정 대상으로 보낸다(편집 시 XML 자동 갱신).
+            const isBpmn = this.mode === 'bpmn';
+            this.$emit('ai-edit-request', {
+                instruction,
+                content: (isBpmn ? this.effectiveJson : this.effectiveContent || '').toString(),
+                ext: isBpmn ? 'json' : (this.ext || '').toString(),
+                target: isBpmn ? 'def-json' : 'content'
+            });
+            // 실패/무응답 시 로딩이 멈추지 않도록 안전 해제(성공 시엔 content 워처가 먼저 해제).
+            if (this._aiEditTimer) clearTimeout(this._aiEditTimer);
+            this._aiEditTimer = setTimeout(() => {
+                this.aiEditing = false;
+            }, 65_000);
+        },
+        /** 부모가 AI 편집 완료 후 호출(또는 content prop 변경)되면 로딩 해제. */
+        aiEditDone() {
+            this.aiEditing = false;
+        },
         async fetchHtml(url) {
             try {
                 const response = await fetch(url);
@@ -629,6 +944,18 @@ export default {
             try {
                 const html = this.$refs.editor?.innerHTML || '';
                 if (html) this.bodyHtml = html;
+                // WYSIWYG(편집) 내용도 부모로 전달해 저장에 반영(.hwpx-doc 래퍼 안쪽만 추출).
+                let inner = html;
+                try {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    const doc = tmp.querySelector('.hwpx-doc');
+                    if (doc) inner = doc.innerHTML;
+                } catch (e) {}
+                if (inner) {
+                    this.localContent = inner;
+                    this.$emit('update:content', inner);
+                }
             } catch (e) {}
         },
 
@@ -1082,6 +1409,137 @@ export default {
 .hwpx-viewer__html {
     min-height: 100%;
     padding: 0;
+}
+
+/* BPMN 다이어그램 — 부모 높이 전부 사용(하단까지). 컨테이너가 height:100% 라 부모에 높이 필요 */
+.hwpx-viewer__bpmn {
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+    position: relative;
+    background: #f8fafc;
+}
+/* 미리보기에서는 미니맵 숨김(요청) */
+.hwpx-viewer__bpmn :deep(.djs-minimap) {
+    display: none !important;
+}
+.hwpx-viewer__code {
+    margin: 0;
+    height: 100%;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: 'D2Coding', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    background: rgba(var(--v-theme-on-surface), 0.04);
+    padding: 12px;
+}
+/* 편집 가능한 코드/원본 textarea */
+.hwpx-viewer__code-edit {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+    box-sizing: border-box;
+    margin: 0;
+    resize: none;
+    border: none;
+    border-top: 1px solid rgba(var(--v-theme-borderColor), 0.6);
+    padding: 12px;
+    font-family: 'D2Coding', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgb(var(--v-theme-on-surface));
+    background: rgba(var(--v-theme-on-surface), 0.02);
+    white-space: pre;
+    overflow: auto;
+    outline: none;
+}
+.hwpx-viewer__code-edit:focus {
+    background: rgba(var(--v-theme-primary), 0.03);
+}
+
+/* 폼/단순 HTML 미리보기 가독성 — 카드형 흰 배경 + 폼 컨트롤 스타일(생성된 폼이 밋밋하게 보이지 않도록) */
+:deep(.hwpx-viewer__html .hwpx-doc) {
+    padding: 20px 22px;
+}
+:deep(.hwpx-viewer__html .hwpx-doc form) {
+    display: inline-block;
+    min-width: min(560px, 100%);
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 10px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+:deep(.hwpx-viewer__html .hwpx-doc h1) {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 16px;
+    color: #0f172a;
+}
+:deep(.hwpx-viewer__html .hwpx-doc label) {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    margin: 14px 0 5px;
+}
+:deep(.hwpx-viewer__html .hwpx-doc input),
+:deep(.hwpx-viewer__html .hwpx-doc select),
+:deep(.hwpx-viewer__html .hwpx-doc textarea) {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 1px solid rgba(15, 23, 42, 0.18);
+    border-radius: 6px;
+    background: #fff;
+    color: #0f172a;
+    outline: none;
+}
+:deep(.hwpx-viewer__html .hwpx-doc input[type='checkbox']),
+:deep(.hwpx-viewer__html .hwpx-doc input[type='radio']) {
+    width: auto;
+}
+:deep(.hwpx-viewer__html .hwpx-doc input:focus),
+:deep(.hwpx-viewer__html .hwpx-doc select:focus),
+:deep(.hwpx-viewer__html .hwpx-doc textarea:focus) {
+    border-color: rgb(var(--v-theme-primary));
+}
+:deep(.hwpx-viewer__html .hwpx-doc input[type='submit']),
+:deep(.hwpx-viewer__html .hwpx-doc button) {
+    width: auto;
+    margin-top: 18px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: rgb(var(--v-theme-primary));
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* 미리보기/코드 토글 */
+.hwpx-viewer__toggle {
+    display: inline-flex;
+    border: 1px solid rgba(var(--v-theme-on-surface), 0.18);
+    border-radius: 7px;
+    overflow: hidden;
+}
+.hwpx-viewer__toggle button {
+    font-size: 11px;
+    padding: 3px 10px;
+    background: transparent;
+    color: rgba(var(--v-theme-on-surface), 0.6);
+    border: none;
+    cursor: pointer;
+}
+.hwpx-viewer__toggle button.is-on {
+    background: rgb(var(--v-theme-primary));
+    color: #fff;
 }
 
 .hwpx-viewer__html.is-editing {

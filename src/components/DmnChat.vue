@@ -41,7 +41,10 @@
                                         <v-icon size="small">mdi-content-save</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.save') }}</v-tooltip>
                                     </v-btn>
-
+                                    <v-btn v-if="isLoadedDmn" icon size="small" variant="text" @click="openHistoryDialog">
+                                        <v-icon size="small">mdi-history</v-icon>
+                                        <v-tooltip activator="parent">버전 이력</v-tooltip>
+                                    </v-btn>
                                     <v-btn v-if="isLoadedDmn" icon size="small" variant="text" color="error" @click="openDeleteDialog">
                                         <v-icon size="small">mdi-delete</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.deleteDmn') }}</v-tooltip>
@@ -90,7 +93,10 @@
                                         <v-icon size="small">mdi-content-save</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.save') }}</v-tooltip>
                                     </v-btn>
-
+                                    <v-btn v-if="isLoadedDmn" icon size="small" variant="text" @click="openHistoryDialog">
+                                        <v-icon size="small">mdi-history</v-icon>
+                                        <v-tooltip activator="parent">버전 이력</v-tooltip>
+                                    </v-btn>
                                     <v-btn v-if="isLoadedDmn" icon size="small" variant="text" color="error" @click="openDeleteDialog">
                                         <v-icon size="small">mdi-delete</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.deleteDmn') }}</v-tooltip>
@@ -144,7 +150,10 @@
                                         <v-icon size="small">mdi-content-save</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.save') }}</v-tooltip>
                                     </v-btn>
-
+                                    <v-btn v-if="isLoadedDmn" icon size="small" variant="text" @click="openHistoryDialog">
+                                        <v-icon size="small">mdi-history</v-icon>
+                                        <v-tooltip activator="parent">버전 이력</v-tooltip>
+                                    </v-btn>
                                     <v-btn v-if="isLoadedDmn" icon size="small" variant="text" color="error" @click="openDeleteDialog">
                                         <v-icon size="small">mdi-delete</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.deleteDmn') }}</v-tooltip>
@@ -192,28 +201,107 @@
             </Chat>
         </div>
 
-        <v-dialog v-model="isOpenSaveDialog" max-width="500">
+        <v-dialog v-model="isOpenSaveDialog" max-width="400" persistent>
             <v-card>
-                <v-card-title class="d-flex justify-space-between align-center">
-                    <div>{{ $t('dmn.save') }}</div>
-                    <v-btn icon variant="text" @click="isOpenSaveDialog = false">
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    <div>{{ isNewDmn ? $t('dmn.save') : $t('ProcessDefinitionVersionDialog.title2') }}</div>
+                    <v-btn variant="text" density="compact" icon @click="closeSaveDialog">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-card-title>
-                <v-card-text>
-                    <v-form v-model="isSaveFormValid">
+
+                <v-card-text class="pa-4 pb-0">
+                    <div v-if="isNewDmn">
                         <v-text-field
                             v-model="dmnNameToSave"
-                            label="DMN Name"
-                            :placeholder="dmnName || '새 DMN 이름을 입력하세요'"
-                            variant="outlined"
-                            density="comfortable"
+                            :label="$t('ProcessDefinitionVersionDialog.name')"
                             :rules="[(v) => !!v || 'DMN 이름을 입력하세요']"
+                            required
+                            class="pb-2"
                         ></v-text-field>
-                    </v-form>
+                    </div>
+
+                    <!-- 버전 태그 선택 -->
+                    <v-select
+                        v-model="saveVersionTag"
+                        :items="versionTagOptions"
+                        :label="$t('ProcessDefinitionVersionDialog.versionTag')"
+                        :messages="[versionFlowMessage]"
+                        variant="outlined"
+                        density="compact"
+                        class="mb-2"
+                    ></v-select>
+
+                    <!-- 비오너 안내 -->
+                    <v-alert
+                        v-if="!isOwnerUser && !isNewDmn"
+                        type="info"
+                        variant="tonal"
+                        density="compact"
+                        class="mb-3"
+                        icon="mdi-information-outline"
+                    >
+                        <div>v{{ saveCurrentVersion }} → <b>v{{ saveNewVersion }}</b> (마이너)으로 저장됩니다.</div>
+                        <div class="text-caption mt-1" style="opacity:.7">메이저 업데이트는 담당자의 승인을 통한 병합으로만 가능합니다.</div>
+                    </v-alert>
+
+                    <!-- 병합 요청 체크박스 + PR 제목 (마이너일 때만) -->
+                    <template v-if="!isNewDmn && saveVersionTag !== 'major'">
+                        <v-checkbox
+                            v-model="saveCreatePr"
+                            label="병합 요청 생성"
+                            hide-details
+                            density="compact"
+                            color="primary"
+                            class="mt-0 mb-1"
+                        />
+                        <v-text-field
+                            v-if="saveCreatePr"
+                            v-model="savePrTitle"
+                            label="병합 요청 제목"
+                            density="compact"
+                            variant="outlined"
+                            hide-details="auto"
+                            class="mb-2"
+                            :placeholder="dmnNameToSave ? `[병합 요청] ${dmnNameToSave} 변경` : ''"
+                        />
+                    </template>
+
+                    <v-textarea
+                        v-model="saveMessage"
+                        :label="$t('ProcessDefinitionVersionDialog.message')"
+                        hide-details
+                        auto-grows
+                    ></v-textarea>
                 </v-card-text>
-                <v-card-actions class="d-flex justify-end">
-                    <v-btn color="primary" variant="flat" rounded @click="beforeSaveDmn" :disabled="!isSaveFormValid">저장</v-btn>
+
+                <!-- PR 성공 표시 -->
+                <v-card-text v-if="savePrSuccess" class="pa-4 pt-2 text-center">
+                    <v-icon size="48" color="success" class="mb-2">mdi-check-circle</v-icon>
+                    <div class="text-body-1 mb-1">저장 및 병합 요청이 완료되었습니다.</div>
+                    <div class="text-caption text-medium-emphasis">담당자가 승인하면 메이저 버전으로 업데이트됩니다.</div>
+                </v-card-text>
+
+                <v-card-actions class="d-flex justify-space-between align-center pa-4">
+                    <v-spacer />
+                    <template v-if="savePrSuccess">
+                        <v-btn variant="text" @click="closeSaveDialog">닫기</v-btn>
+                    </template>
+                    <template v-else>
+                        <v-alert v-if="savePrError" type="error" density="compact" class="mr-auto" closable @click:close="savePrError = ''">
+                            {{ savePrError }}
+                        </v-alert>
+                        <v-btn
+                            color="primary"
+                            rounded
+                            variant="flat"
+                            :disabled="!isSaveFormValid || savePrSubmitting || (saveCreatePr && !savePrTitle.trim())"
+                            :loading="savePrSubmitting"
+                            @click="handleSaveDmn"
+                        >
+                            {{ $t('ProcessDefinitionVersionDialog.save') }}
+                        </v-btn>
+                    </template>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -237,6 +325,15 @@
                 </v-row>
             </v-card>
         </v-dialog>
+
+        <!-- 버전 비교 (전체화면) -->
+        <DmnVersionHistoryDialog
+            v-model="isOpenHistoryDialog"
+            :dmnName="dmnName"
+            :dmnId="loadDmnId"
+            :backend="backend"
+            :userInfo="userInfo"
+        />
     </div>
 </template>
 
@@ -248,6 +345,7 @@ import ChatModule from './ChatModule.vue';
 import DmnModeler from './DmnModeler.vue';
 import ChatGenerator from './ai/DmnGenerator.js';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
+import DmnVersionHistoryDialog from '@/components/dmn/DmnVersionHistoryDialog.vue';
 
 export default {
     mixins: [ChatModule],
@@ -255,7 +353,8 @@ export default {
     components: {
         Chat,
         DmnModeler,
-        AppBaseCard
+        AppBaseCard,
+        DmnVersionHistoryDialog
     },
     props: {
         ownerInfo: Object,
@@ -279,7 +378,7 @@ export default {
             isLoadedDmn: false,
             isChanged: false,
             isAIUpdated: false,
-            isInferenceMode: false, // 추론 모드 플래그
+            isInferenceMode: false,
 
             viewMode: 'edit',
             loadDmnId: '',
@@ -289,8 +388,22 @@ export default {
             dmnDefinition: null,
             isRoutedWithUnsaved: false,
 
-            owner: '',
-            isSaveFormValid: false
+            agentId: '',
+
+            // 버전 저장 다이얼로그
+            isNewDmn: true,
+            saveVersionTag: 'minor',
+            saveCurrentVersion: '0.0',
+            saveMessage: '',
+            isOwnerUser: true,
+            saveCreatePr: false,
+            savePrTitle: '',
+            savePrSubmitting: false,
+            savePrSuccess: false,
+            savePrError: '',
+
+            // 버전 이력 다이얼로그
+            isOpenHistoryDialog: false
         };
     },
     async created() {
@@ -314,6 +427,9 @@ export default {
         }
     },
     watch: {
+        saveVersionTag(newVal) {
+            if (newVal === 'major') this.saveCreatePr = false;
+        },
         dmnId: {
             handler(newVal, oldVal) {
                 // 초기 로딩 시 (oldVal === undefined)는 created에서 처리하므로 스킵
@@ -376,27 +492,112 @@ export default {
         }
     },
     computed: {
+        isSaveFormValid() {
+            if (this.isNewDmn && !this.dmnNameToSave?.trim()) return false;
+            return true;
+        },
         isStandaloneMode() {
-            // URL이 /dmn/으로 시작하면 좌우 분할 레이아웃 사용
             return this.$route.path.startsWith('/dmn/');
         },
         inferenceModeSelectStyle() {
-            // 현재 언어에 따라 max-width 조정
             const currentLocale = this.$i18n?.locale || 'ko';
             return {
                 maxWidth: currentLocale === 'ko' ? '100px' : '150px'
             };
-        }
+        },
+        saveNewVersion() {
+            const base = this.saveCurrentVersion || '0.0';
+            let major = Math.floor(parseFloat(base)) || 0;
+            let minor = base.toString().includes('.') ? Number(base.toString().split('.')[1]) || 0 : 0;
+            if (this.saveVersionTag === 'major') {
+                return `${major + 1}.0`;
+            }
+            return `${major}.${minor + 1}`;
+        },
+        versionFlowMessage() {
+            const cur = this.saveCurrentVersion || '0.0';
+            return `${this.$t('ProcessDefinitionVersionDialog.currentVersion')} : v${cur} -> ${this.$t('ProcessDefinitionVersionDialog.nextVersion')} : v${this.saveNewVersion}`;
+        },
+        versionTagOptions() {
+            const minor = {
+                title: this.$t('ProcessDefinitionVersionDialog.minor') + ' (' + this.$t('ProcessDefinitionVersionDialog.minorDesc') + ')',
+                value: 'minor'
+            };
+            const major = {
+                title: this.$t('ProcessDefinitionVersionDialog.major') + ' (' + this.$t('ProcessDefinitionVersionDialog.majorDesc') + ')',
+                value: 'major'
+            };
+            if (!this.isOwnerUser && !this.isNewDmn) return [minor];
+            return [minor, major];
+        },
     },
     methods: {
-        openSaveDialog() {
+        async openSaveDialog() {
             this.dmnIdToSave = this.loadDmnId || '';
             this.dmnNameToSave = this.dmnName || '';
+            this.saveVersionTag = 'minor';
+            this.saveMessage = '';
+            this.saveCreatePr = false;
+            this.savePrTitle = '';
+            this.savePrSuccess = false;
+            this.savePrError = '';
+            this.savePrSubmitting = false;
+            this.isOwnerUser = true;
+            this.saveCurrentVersion = '0.0';
+
+            this.isNewDmn = !this.isLoadedDmn;
+
+            if (this.isLoadedDmn && this.dmnIdToSave) {
+                try {
+                    const [definitionInfo, versionInfo] = await Promise.all([
+                        this.backend.getRawDefinition(this.dmnIdToSave),
+                        this.backend.getDefinitionVersions(this.dmnIdToSave, {
+                            sort: 'desc',
+                            orderBy: 'timeStamp',
+                            size: 1
+                        })
+                    ]);
+                    const defOwner = definitionInfo?.owner || '';
+                    if (versionInfo && versionInfo.length > 0) {
+                        this.saveCurrentVersion = versionInfo[0].version || '0.0';
+                    }
+                    // 오너 여부 판별
+                    try {
+                        const currentUser = this.userInfo || await this.backend.getUserInfo();
+                        const currentUid = currentUser?.uid || '';
+                        this.isOwnerUser = !defOwner || !currentUid || defOwner === currentUid;
+                        if (!this.isOwnerUser) {
+                            this.saveVersionTag = 'minor';
+                        }
+                    } catch (_) {
+                        this.isOwnerUser = true;
+                    }
+                } catch (_) {
+                    // 버전 정보 조회 실패 시 기본값 유지
+                }
+            }
+
             this.isOpenSaveDialog = true;
+        },
+
+        closeSaveDialog() {
+            this.isOpenSaveDialog = false;
+        },
+
+        openHistoryDialog() {
+            this.isOpenHistoryDialog = true;
         },
 
         openDeleteDialog() {
             this.isOpenDeleteDialog = true;
+        },
+
+        handleSaveDmn() {
+            if (!this.isNewDmn && this.saveCreatePr) {
+                this.saveWithPr();
+            } else {
+                this.beforeSaveDmn();
+            }
         },
 
         async beforeSaveDmn() {
@@ -409,7 +610,10 @@ export default {
                     await me.saveDmn({
                         id: me.dmnIdToSave,
                         name: me.dmnNameToSave,
-                        xml: xml
+                        xml: xml,
+                        version: me.saveNewVersion,
+                        version_tag: me.saveVersionTag,
+                        message: me.saveMessage
                     });
 
                     me.isAIUpdated = false;
@@ -424,19 +628,68 @@ export default {
             });
         },
 
-        async saveDmn({ id, name, xml }) {
+        async saveWithPr() {
+            const me = this;
+            if (!me.savePrTitle.trim()) return;
+            me.savePrSubmitting = true;
+            me.savePrError = '';
+            try {
+                const xml = await me.$refs.dmnModeler.saveDMN();
+                await me.saveDmn({
+                    id: me.dmnIdToSave,
+                    name: me.dmnNameToSave,
+                    xml: xml,
+                    version: me.saveNewVersion,
+                    version_tag: 'minor',
+                    message: me.saveMessage
+                });
+
+                me.isAIUpdated = false;
+                me.isChanged = false;
+
+                const user = me.userInfo || await me.backend.getUserInfo();
+                const majorNum = (parseInt(String(me.saveCurrentVersion).split('.')[0]) || 0) + 1;
+                await me.backend.createResourcePrRecord('dmn', {
+                    resourceId: me.dmnIdToSave,
+                    branchName: `v${me.saveNewVersion}`,
+                    baseBranch: `v${majorNum}.0`,
+                    title: me.savePrTitle.trim(),
+                    description: me.saveMessage || null,
+                    requesterId: user.uid,
+                    requesterName: user.name || localStorage.getItem('userName') || ''
+                });
+
+                me.savePrSuccess = true;
+
+                if (me.$route.path === '/dmn/chat') {
+                    await me.$router.push(`/dmn/${me.dmnIdToSave}`);
+                }
+            } catch (e) {
+                me.savePrError = e?.message || String(e);
+            } finally {
+                me.savePrSubmitting = false;
+            }
+        },
+
+        async saveDmn({ id, name, xml, version, version_tag, message }) {
             const putObj = {
                 type: 'dmn',
                 name: name
             };
-            if (this.owner !== '') putObj.owner = this.owner;
+            if (this.agentId !== '') putObj.agent_id = this.agentId;
+            if (version) {
+                putObj.version = version;
+                putObj.version_tag = version_tag || 'minor';
+                putObj.arcv_id = `${id}_${version}`;
+                putObj.message = message || '';
+            }
             await this.backend.putRawDefinition(xml, id, putObj);
 
             this.dmnName = name;
             this.loadDmnId = id;
             this.isLoadedDmn = true;
 
-            this.EventBus.emit('dmn-saved', { id: id, name: name, owner: this.owner || null });
+            this.EventBus.emit('dmn-saved', { id: id, name: name, agent_id: this.agentId || null });
         },
 
         async loadData() {
@@ -490,7 +743,7 @@ export default {
             }
 
             if (this.ownerInfo && this.ownerInfo.id) {
-                this.owner = this.ownerInfo.id;
+                this.agentId = this.ownerInfo.id;
             }
         },
 
@@ -674,7 +927,7 @@ export default {
                     if (me.$route.path.startsWith('/dmn/')) {
                         await me.$router.push('/dmn/chat');
                     } else {
-                        me.EventBus.emit('dmn-deleted', { owner: me.owner || null });
+                        me.EventBus.emit('dmn-deleted', { agent_id: me.agentId || null });
                         me.loadDmnId = null;
                         me.loadData();
                     }
@@ -757,4 +1010,5 @@ export default {
         height: calc(100vh - 40px);
     }
 }
+
 </style>
