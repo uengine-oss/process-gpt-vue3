@@ -806,7 +806,7 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-import { agentStableId, isUuid as isUuidStable } from '@/utils/agentId.js';
+import { agentStableId, isUuid as isUuidStable, slugToUuid } from '@/utils/agentId.js';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import Chat from '@/components/ui/Chat.vue';
 import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
@@ -5428,6 +5428,28 @@ export default {
          * 새 URL이면 새 탭 추가.
          */
         pushArtifactPanel({ type, label, data }) {
+            // 산출물 파일 탭은 **프로세스 이름(label)** 기준으로 합친다 — deepagent 가 한 프로세스를
+            // 여러 process-<id> 폴더로 쪼개 보내도(중복) 같은 이름이면 하나의 탭으로 병합(파일은 path 로 union).
+            // (단, '산출물 파일'(default/미분류)·서로 다른 프로세스명은 별도 탭 유지.)
+            if (type === 'files' && label && label !== '산출물 파일') {
+                const sameLabelIdx = this.artifactPanels.findIndex(
+                    (p) => p.type === 'files' && p.label === label && p.data?.messageId !== data?.messageId
+                );
+                if (sameLabelIdx !== -1) {
+                    const existing = this.artifactPanels[sameLabelIdx];
+                    const byPath = new Map();
+                    for (const f of existing.data?.files || []) byPath.set(f.path, f);
+                    for (const f of data?.files || []) byPath.set(f.path, f); // 새 파일이 우선(최신 내용)
+                    this.artifactPanels[sameLabelIdx] = {
+                        ...existing,
+                        label,
+                        data: { ...existing.data, ...data, files: Array.from(byPath.values()) }
+                    };
+                    this.activeArtifactId = existing.id;
+                    this.artifactSidebarVisible = true;
+                    return;
+                }
+            }
             const existingIdx = this.artifactPanels.findIndex(
                 (p) =>
                     p.type === type &&
@@ -6001,9 +6023,14 @@ export default {
                 }
                 if (pd && pd.processDefinition) pd = pd.processDefinition;
                 const definition = Array.isArray(pd.elements) ? elementsToFlattenedDefinition(pd) : pd;
-                const procId = (definition.processDefinitionId || pd.processDefinitionId || '').toString().trim();
-                if (!procId) continue;
-                const procName = (definition.processDefinitionName || pd.processDefinitionName || procId).toString();
+                const procName = (definition.processDefinitionName || pd.processDefinitionName || '새 프로세스').toString();
+                // processDefinitionId 가 비어도 draft 저장/검증을 건너뛰지 않도록 이름에서 결정적 uuid 를 파생한다
+                // (편집기 이동·검증이 동일 id 를 쓰게 됨). 빈 id 로 skip → 편집기 빈화면/검증 미수행의 주요 원인 제거.
+                let procId = (definition.processDefinitionId || pd.processDefinitionId || '').toString().trim();
+                if (!procId) {
+                    procId = slugToUuid(`${(this.currentChatRoom?.id || this.roomId || 'room')}:${group}:${procName}`);
+                    definition.processDefinitionId = procId;
+                }
                 const bpmnFile = files.find((f) => (f.ext || '').toLowerCase() === '.bpmn');
                 const bpmnXml = (bpmnFile && bpmnFile.content) || this._buildBpmnXmlFromDefinition(definition) || null;
 
@@ -6149,7 +6176,9 @@ export default {
                         /* ignore */
                     }
                 } catch (e) {
-                    console.warn('[DraftValidate] 실패(무시):', e);
+                    // 실패를 침묵시키지 않고 패널에 노출(테스트 시 원인 확인 가능).
+                    console.warn('[DraftValidate] 실패:', e);
+                    st.error = `임시저장/검증 실패: ${(e && (e.message || e.detail)) || e}`;
                 } finally {
                     st.validating = false;
                     st.validateMsg = '';
