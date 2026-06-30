@@ -473,6 +473,11 @@ const allRoutes = [
         component: () => import('@/views/analytics/KPIDashboard.vue')
     },
     {
+        name: 'PI Flag Board',
+        path: '/analytics/pi-flags',
+        component: () => import('@/views/analytics/PiFlagBoard.vue')
+    },
+    {
         name: 'Review Board',
         path: '/review-board',
         component: () => import('@/views/review-board/ProcessReviewBoard.vue')

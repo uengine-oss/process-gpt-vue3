@@ -10,6 +10,18 @@
                 }}
             </div>
 
+            <!-- 상태 선택: 향후 과제 / 즉시 개선 -->
+            <v-btn-toggle v-model="form.status" mandatory density="compact" variant="outlined" divided class="pi-flag-status-toggle mb-2">
+                <v-btn value="open" size="small" :color="form.status === 'open' ? 'success' : undefined">
+                    <v-icon start size="14">mdi-flag</v-icon>
+                    {{ $t('piFlagPanel.statusOpen') || '향후 과제' }}
+                </v-btn>
+                <v-btn value="resolved" size="small" :color="form.status === 'resolved' ? 'error' : undefined">
+                    <v-icon start size="14">mdi-flag</v-icon>
+                    {{ $t('piFlagPanel.statusResolved') || '즉시 개선' }}
+                </v-btn>
+            </v-btn-toggle>
+
             <v-text-field
                 v-model="form.type"
                 :label="$t('piFlagPanel.type') || '유형 (선택사항)'"
@@ -184,6 +196,7 @@ export default {
             currentUser: null,
             listCollapsed: false,
             form: {
+                status: 'open',
                 type: '',
                 description: ''
             }
@@ -280,7 +293,7 @@ export default {
 
             const comment = {
                 id: this.generateId(),
-                status: 'open',
+                status: this.form.status === 'resolved' ? 'resolved' : 'open',
                 type: this.form.type.trim(),
                 description: desc,
                 authorId: this.currentUser?.id || this.currentUser?.uid || '',
@@ -300,6 +313,7 @@ export default {
                 this.writeCommentsToElement(id, [...existing, comment]);
             });
 
+            this.form.status = 'open';
             this.form.type = '';
             this.form.description = '';
             this.loadComments();

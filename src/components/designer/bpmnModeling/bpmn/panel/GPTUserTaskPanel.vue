@@ -44,6 +44,14 @@
                 <!-- Instruction -->
                 <Instruction v-model="activity.instruction" :mention-candidates="mentionCandidates" :isViewMode="isViewMode" class="mb-4"></Instruction>
 
+                <!-- Manual Links -->
+                <div class="mb-4">
+                    <div class="d-flex align-center mb-2">
+                        <h6 class="text-body-1">{{ $t('manualLink.title') || '관련자료 링크' }}</h6>
+                    </div>
+                    <ManualLinkField v-model="activity.manualLinks" :disabled="isViewMode" />
+                </div>
+
                 <v-divider class="mb-2"></v-divider>
 
                 <!-- Checkpoints -->
@@ -232,6 +240,7 @@ export default {
                 costType: 'FTE',
                 contractCost: null,
                 unitPrice: null,
+                manualLinks: [],
                 hitlEnabled: false,
                 hitlCapabilities: [],
                 tools: [],
@@ -697,6 +706,7 @@ export default {
                     targetActivity.attachments = Array.isArray(me.activity.attachments) ? [...me.activity.attachments] : [];
                     targetActivity.inputData = Array.isArray(me.activity.inputData) ? [...me.activity.inputData] : [];
                     targetActivity.customProperties = Array.isArray(me.activity.customProperties) ? [...me.activity.customProperties] : [];
+                    targetActivity.manualLinks = Array.isArray(me.activity.manualLinks) ? [...me.activity.manualLinks] : [];
 
                     targetActivity.systemName = me.activity.systemName || '';
                     targetActivity.menuName = me.activity.menuName || '';
@@ -729,6 +739,7 @@ export default {
                 inputData: me.activity.inputData,
                 tool: me.activity.tool,
                 customProperties: me.activity.customProperties,
+                manualLinks: Array.isArray(me.activity.manualLinks) ? [...me.activity.manualLinks] : [],
                 systemName: me.activity.systemName,
                 menuName: me.activity.menuName,
                 tools: Array.isArray(me.activity.tools) ? [...me.activity.tools] : [],

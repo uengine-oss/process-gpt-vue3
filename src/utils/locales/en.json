@@ -1180,9 +1180,9 @@
         "readOnly": "Business ID (Read-only)"
     },
     "manualLink": {
-        "title": "Access Permission Settings",
+        "title": "Related Links",
         "addUrl": "Add URL",
-        "urlPlaceholder": "Enter URL to analyze",
+        "urlPlaceholder": "Enter link URL",
         "noLinks": "No links registered.",
         "openInNewTab": "Open in new tab",
         "remove": "Remove"
@@ -2193,6 +2193,20 @@
         "statusResolved": "Immediate fix",
         "changeStatus": "Change status",
         "registered": "Registered PI Flags"
+    },
+    "piFlagBoard": {
+        "title": "PI Flag Board",
+        "total": "Total",
+        "refresh": "Refresh",
+        "search": "Search reason, element, process, author",
+        "process": "Process",
+        "element": "Element",
+        "author": "Author",
+        "createdAt": "Created",
+        "all": "All",
+        "resultCount": "{count} results",
+        "empty": "No PI Flags registered",
+        "loadFailed": "Failed to load PI Flag data."
     },
     "reviewMode": {
         "governancePanel": "Governance Review",
@@ -4048,6 +4062,7 @@
         "dashboard": "Dashboard",
         "queryResult": "Query Result",
         "kpi": "KPI & Progress",
+        "piFlag": "PI Flag",
         "kpiAchievement": "KPI Achievement",
         "processPipeline": "Process Pipeline",
         "domainProgress": "Domain Progress",
