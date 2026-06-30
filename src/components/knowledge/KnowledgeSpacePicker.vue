@@ -204,6 +204,7 @@
                         :depth="0"
                         :expanded="expandedPaths"
                         :selectedKeysSet="selectedKeysSet"
+                        :selCountMap="folderSelCounts"
                         @toggle-folder="toggleFolder"
                         @toggle-file="toggleFile"
                         @toggle-folder-select="toggleFolderSelect"
@@ -407,6 +408,28 @@ export default {
         // 현재 탭 기준 트리
         tree() {
             return buildTree(this.tabFiles);
+        },
+        // 폴더경로 → 그 하위에서 선택된 파일 수 (조상 폴더까지 누적).
+        // 선택이 바뀔 때 *한 번만* O(파일수 × 깊이) 로 집계해 트리 노드에 내려준다.
+        // (예전엔 노드마다 서브트리를 재귀 순회해 전체선택 시 O(파일수 × 폴더수) 로 멈췄음.)
+        // buildTree 와 동일한 경로 정규화(trim/filter)·루트(__root__) 규칙을 따른다.
+        folderSelCounts() {
+            const m = Object.create(null);
+            const sel = this.selectedKeysSet;
+            for (const f of this.tabFiles) {
+                if (!sel.has(f.key)) continue;
+                const segs = (f.folderPath || '').split('/').map((s) => s.trim()).filter(Boolean);
+                if (segs.length === 0) {
+                    m.__root__ = (m.__root__ || 0) + 1;
+                    continue;
+                }
+                let acc = '';
+                for (const s of segs) {
+                    acc = acc ? `${acc}/${s}` : s;
+                    m[acc] = (m[acc] || 0) + 1;
+                }
+            }
+            return m;
         },
         folderCount() {
             return collectAllFolderPaths(this.tree).length;

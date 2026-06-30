@@ -31,6 +31,7 @@
                 :depth="depth + 1"
                 :expanded="expanded"
                 :selectedKeysSet="selectedKeysSet"
+                :selCountMap="selCountMap"
                 @toggle-folder="(p) => $emit('toggle-folder', p)"
                 @toggle-file="(f) => $emit('toggle-file', f)"
                 @toggle-folder-select="(p) => $emit('toggle-folder-select', p)"
@@ -107,19 +108,17 @@ function extToMime(name) {
     return map[ext] || '';
 }
 
-function collectFilesUnder(node) {
-    const out = [...node.files];
-    for (const c of node.children) out.push(...collectFilesUnder(c));
-    return out;
-}
-
 export default {
     name: 'KnowledgeTreeNode',
     props: {
         node: { type: Object, required: true },
         depth: { type: Number, default: 0 },
         expanded: { type: Set, required: true },
-        selectedKeysSet: { type: Set, required: true }
+        selectedKeysSet: { type: Set, required: true },
+        // 폴더경로 → 그 하위에서 선택된 파일 수. 부모(picker)가 한 번에 집계해 내려준다.
+        // 이게 없던 시절엔 노드마다 collectFilesUnder 로 서브트리를 재귀 순회해
+        // 전체선택 시 O(파일수 × 폴더수) 로 폭발했다. 이제 O(1) 조회.
+        selCountMap: { type: Object, required: true }
     },
     emits: ['toggle-folder', 'toggle-file', 'toggle-folder-select', 'open-file'],
     computed: {
@@ -127,12 +126,12 @@ export default {
             return this.expanded.has(this.node.path);
         },
         folderState() {
-            const all = collectFilesUnder(this.node);
-            if (all.length === 0) return { checked: false, indeterminate: false };
-            const sel = all.filter((f) => this.selectedKeysSet.has(f.key)).length;
+            const total = this.node.descendantCount || 0;
+            if (total === 0) return { checked: false, indeterminate: false };
+            const sel = this.selCountMap[this.node.path] || 0;
             return {
-                checked: sel === all.length,
-                indeterminate: sel > 0 && sel < all.length
+                checked: sel === total,
+                indeterminate: sel > 0 && sel < total
             };
         }
     },

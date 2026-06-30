@@ -62,9 +62,25 @@
                     <div class="text-body-2 text-medium-emphasis mt-2">왼쪽에서 사용자를 선택하세요</div>
                 </div>
                 <template v-else>
+                    <!-- 자료 분류(doc_role) 탭 — 다른 화면처럼 카테고리별로 폴더를 나눠 본다 -->
+                    <div class="fp-role-tabs">
+                        <button
+                            v-for="r in roleOptions"
+                            :key="r.value"
+                            class="fp-role-tab"
+                            :class="{ 'is-active': currentRole === r.value }"
+                            @click="currentRole = r.value"
+                        >
+                            <v-icon size="15" class="mr-1">{{ r.icon }}</v-icon>
+                            <span>{{ r.label }}</span>
+                            <span class="fp-role-tab-count">{{ roleCounts[r.value] || 0 }}</span>
+                        </button>
+                    </div>
+
                     <div class="fp-folders-head">
                         <div>
                             <strong>{{ selectedUser.username || selectedUser.email }}</strong> 님이 조회할 수 있는 폴더
+                            <span class="fp-role-scope">· {{ currentRoleMeta.label }}</span>
                         </div>
                         <div class="fp-folders-head-actions">
                             <v-btn
@@ -93,7 +109,7 @@
                             <v-progress-circular indeterminate color="primary" size="24" />
                         </div>
                         <div v-else-if="folderNodes.length === 0" class="fp-state text-caption text-medium-emphasis">
-                            지식베이스에 폴더가 없습니다
+                            '{{ currentRoleMeta.label }}' 분류에 폴더가 없습니다
                         </div>
                         <div
                             v-for="node in visibleFolderNodes"
@@ -152,11 +168,22 @@ export default {
             selectedUser: null,
             userSearch: '',
             files: [], // /memento/documents/list 의 file_details
+            emptyFolders: [], // /memento/knowledge/folders — 파일 없는 폴더 포함 ([{folder_path, doc_role}])
             allowedPaths: [], // 선택 사용자의 허용 folder_path 목록
             expandedPaths: new Set(), // 펼쳐진 폴더 경로
             loadingUsers: false,
             loadingFolders: false,
-            saving: false
+            saving: false,
+            // ─── 자료 분류(doc_role) — KnowledgeFilesTab 과 동일 정의. 폴더를 분류별로 나눠 본다. ───
+            currentRole: 'content',
+            roleOptions: [
+                { value: 'content', label: '일반 자료', icon: 'mdi-file-document-outline' },
+                { value: 'glossary', label: '용어 사전', icon: 'mdi-book-alphabet' },
+                { value: 'template', label: '양식', icon: 'mdi-file-table-outline' },
+                { value: 'reference', label: '참조', icon: 'mdi-bookmark-outline' },
+                { value: 'dataset', label: '데이터', icon: 'mdi-table' },
+                { value: 'legal_review', label: '검토 사례', icon: 'mdi-gavel' }
+            ]
         };
     },
     computed: {
@@ -173,12 +200,34 @@ export default {
                     (u.email || '').toLowerCase().includes(q)
             );
         },
-        // 파일들의 folder_path 에서 모든 조상 폴더를 포함한 고유 폴더 트리(평탄 + depth)
+        currentRoleMeta() {
+            return this.roleOptions.find((r) => r.value === this.currentRole) || this.roleOptions[0];
+        },
+        // 분류(doc_role)별 파일 수 — 탭 카운트
+        roleCounts() {
+            const c = {};
+            for (const f of this.files) {
+                const r = f.doc_role || 'content';
+                c[r] = (c[r] || 0) + 1;
+            }
+            return c;
+        },
+        // 현재 선택된 분류에 속한 파일만 (폴더 트리도 이 분류 기준으로 짜인다)
+        roleScopedFiles() {
+            return this.files.filter((f) => (f.doc_role || 'content') === this.currentRole);
+        },
+        // 현재 분류의 (파일 없는 것 포함) 등록된 폴더 경로
+        roleScopedEmptyFolders() {
+            return this.emptyFolders
+                .filter((f) => (f.doc_role || 'content') === this.currentRole)
+                .map((f) => f.folder_path);
+        },
+        // 파일들의 folder_path + 등록된 빈 폴더에서 모든 조상 폴더를 포함한 고유 폴더 트리 — 현재 분류 scope.
         folderNodes() {
             const direct = {}; // path -> 직속 파일 수
             const total = {}; // path -> 하위 전체 파일 수
             const all = new Set();
-            for (const f of this.files) {
+            for (const f of this.roleScopedFiles) {
                 const fp = (f.folder_path || f.drive_folder_name || '').trim().replace(/^\/+|\/+$/g, '');
                 if (!fp) continue;
                 direct[fp] = (direct[fp] || 0) + 1;
@@ -188,6 +237,16 @@ export default {
                     acc = acc ? `${acc}/${s}` : s;
                     all.add(acc);
                     total[acc] = (total[acc] || 0) + 1;
+                }
+            }
+            // 파일이 하나도 없는 폴더도 트리에 포함 — 그래야 admin 이 빈 폴더에도 권한을 줄 수 있다.
+            for (const fp0 of this.roleScopedEmptyFolders) {
+                const fp = (fp0 || '').trim().replace(/^\/+|\/+$/g, '');
+                if (!fp) continue;
+                let acc = '';
+                for (const s of fp.split('/').filter(Boolean)) {
+                    acc = acc ? `${acc}/${s}` : s;
+                    all.add(acc); // total 은 그대로(파일 0) — fileCount 0 으로 표시됨
                 }
             }
             const sorted = [...all].sort();
@@ -214,6 +273,12 @@ export default {
         allExpanded() {
             const withKids = this.folderNodes.filter((n) => n.hasChildren);
             return withKids.length > 0 && withKids.every((n) => this.expandedPaths.has(n.path));
+        }
+    },
+    watch: {
+        // 분류 전환 시 그 분류의 폴더를 펼친 상태로 초기화 (loadFolders 기본 동작과 동일)
+        currentRole() {
+            this.expandedPaths = new Set(this.folderNodes.map((n) => n.path));
         }
     },
     mounted() {
@@ -245,16 +310,28 @@ export default {
         },
         async loadFolders() {
             this.loadingFolders = true;
+            const tenantId = window.$tenantName || '';
             try {
-                const { data } = await axios.get('/memento/documents/list', {
-                    params: { tenant_id: window.$tenantName || '' }
-                });
-                this.files = Array.isArray(data?.file_details) ? data.file_details : [];
+                // 파일 목록 + 등록된 폴더(빈 폴더 포함)를 함께 로드해야 파일 없는 폴더도 권한 부여 가능.
+                const [filesRes, foldersRes] = await Promise.all([
+                    axios.get('/memento/documents/list', { params: { tenant_id: tenantId } }),
+                    axios.get('/memento/knowledge/folders', { params: { tenant_id: tenantId } })
+                ]);
+                this.files = Array.isArray(filesRes.data?.file_details) ? filesRes.data.file_details : [];
+                const rawFolders = Array.isArray(foldersRes.data?.folders) ? foldersRes.data.folders : [];
+                this.emptyFolders = rawFolders
+                    .map((f) =>
+                        typeof f === 'string'
+                            ? { folder_path: f, doc_role: 'content' }
+                            : { folder_path: f?.folder_path || '', doc_role: f?.doc_role || 'content' }
+                    )
+                    .filter((f) => f.folder_path);
                 // 기본: 전체 펼친 상태로 시작 (접기 가능)
                 this.expandedPaths = new Set(this.folderNodes.map((n) => n.path));
             } catch (e) {
                 console.error('[FolderPermissionsTab] loadFolders failed', e);
                 this.files = [];
+                this.emptyFolders = [];
             } finally {
                 this.loadingFolders = false;
             }
@@ -422,6 +499,52 @@ export default {
     flex-direction: column;
     padding: 12px 16px;
 }
+/* 분류(doc_role) 탭 */
+.fp-role-tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding: 2px 2px 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    margin-bottom: 8px;
+}
+.fp-role-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.6);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+}
+.fp-role-tab:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+.fp-role-tab.is-active {
+    background: rgba(var(--v-theme-primary), 0.1);
+    border-color: rgba(var(--v-theme-primary), 0.3);
+    color: rgb(var(--v-theme-primary));
+}
+.fp-role-tab-count {
+    margin-left: 6px;
+    font-size: 10px;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.55);
+}
+.fp-role-tab.is-active .fp-role-tab-count {
+    background: rgba(var(--v-theme-primary), 0.18);
+    color: rgb(var(--v-theme-primary));
+}
+.fp-role-scope {
+    color: rgba(var(--v-theme-primary), 0.85);
+    font-weight: 600;
+}
+
 .fp-folders-head {
     display: flex;
     align-items: center;

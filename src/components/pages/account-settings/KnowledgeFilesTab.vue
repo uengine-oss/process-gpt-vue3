@@ -196,6 +196,17 @@
                                 <span class="text-caption font-weight-medium">폴더</span>
                                 <div class="d-flex align-center">
                                     <v-btn
+                                        size="x-small"
+                                        variant="text"
+                                        :color="currentFolder === '' ? 'primary' : undefined"
+                                        prepend-icon="mdi-folder-multiple-outline"
+                                        :class="{ 'kft-viewall-active': currentFolder === '' }"
+                                        title="모든 폴더의 파일을 한 번에 봅니다"
+                                        @click="currentFolder = ''"
+                                    >
+                                        전체 조회
+                                    </v-btn>
+                                    <v-btn
                                         v-if="folderHasChildrenSet.size > 0"
                                         icon
                                         variant="text"
@@ -217,16 +228,8 @@
                                 </div>
                             </div>
                             <div class="kft-folder-list" @contextmenu.prevent="openRootContextMenu($event)">
-                                <button
-                                    class="kft-folder-item"
-                                    :class="{ 'is-active': currentFolder === '' }"
-                                    @click="currentFolder = ''"
-                                >
-                                    <span class="kft-folder-caret is-spacer"></span>
-                                    <v-icon size="14">mdi-folder-outline</v-icon>
-                                    <span class="kft-folder-name">전체</span>
-                                    <span class="kft-folder-count">{{ roleScopedUpload.length }}</span>
-                                </button>
+                                <!-- '전체' 항목은 제거(폴더와 혼동) — 상단 '전체 조회' 버튼으로 대체.
+                                     파일은 반드시 특정 폴더에만 업로드(루트 업로드 금지). -->
 
                                 <!-- 루트 인라인 새 폴더 입력 -->
                                 <div
@@ -356,24 +359,34 @@
                                 <div v-else class="text-caption text-medium-emphasis">폴더 요약이 없습니다.</div>
                             </div>
 
-                            <!-- 업로드 드롭존 -->
+                            <!-- 업로드 드롭존 — 루트(폴더 미선택)에는 업로드 불가. 폴더 선택 시에만 활성. -->
                             <div
                                 class="kft-dropzone"
-                                :class="{ 'is-drag-over': isDragOver, 'is-uploading': uploading, [`is-role-${uploadTargetRole}`]: true }"
-                                @dragover.prevent="isDragOver = true"
+                                :class="{ 'is-drag-over': isDragOver && currentFolder, 'is-uploading': uploading, 'is-disabled': !currentFolder, [`is-role-${uploadTargetRole}`]: true }"
+                                @dragover.prevent="isDragOver = !!currentFolder"
                                 @dragleave.prevent="isDragOver = false"
                                 @drop.prevent="onDrop"
-                                @click="$refs.fileInput.click()"
+                                @click="currentFolder ? $refs.fileInput.click() : null"
                             >
-                                <v-icon size="32" :color="uploadTargetRoleMeta.color">mdi-cloud-upload-outline</v-icon>
+                                <v-icon size="32" :color="currentFolder ? uploadTargetRoleMeta.color : 'grey'">
+                                    {{ currentFolder ? 'mdi-cloud-upload-outline' : 'mdi-folder-alert-outline' }}
+                                </v-icon>
                                 <div class="kft-dropzone-text">
-                                    <strong>{{ currentFolder ? `"${currentFolder}" 폴더에 업로드` : '루트에 업로드' }}</strong>
-                                    <div class="text-caption text-medium-emphasis mt-1">
-                                        파일을 끌어다 놓거나 클릭하세요 — 자동으로 RAG 인덱싱됩니다
-                                    </div>
-                                    <v-chip size="x-small" variant="outlined" class="mt-1" :color="uploadTargetRoleMeta.color">
-                                        허용 형식: {{ uploadAcceptLabel }}
-                                    </v-chip>
+                                    <template v-if="currentFolder">
+                                        <strong>{{ `"${currentFolder}" 폴더에 업로드` }}</strong>
+                                        <div class="text-caption text-medium-emphasis mt-1">
+                                            파일을 끌어다 놓거나 클릭하세요 — 자동으로 RAG 인덱싱됩니다
+                                        </div>
+                                        <v-chip size="x-small" variant="outlined" class="mt-1" :color="uploadTargetRoleMeta.color">
+                                            허용 형식: {{ uploadAcceptLabel }}
+                                        </v-chip>
+                                    </template>
+                                    <template v-else>
+                                        <strong>업로드할 폴더를 선택하세요</strong>
+                                        <div class="text-caption text-medium-emphasis mt-1">
+                                            루트(전체)에는 파일을 올릴 수 없습니다. 왼쪽에서 폴더를 선택하거나 새로 만든 뒤 업로드하세요.
+                                        </div>
+                                    </template>
                                 </div>
                                 <v-chip
                                     size="small"
@@ -1107,10 +1120,15 @@ export default {
             return (this.allowedExtsForRole || []).map((e) => e.toUpperCase()).join(', ');
         },
         // 폴더 노드 (트리, 들여쓰기 정보 포함). 현재 역할 scope 기준.
+        // 성능: 폴더마다 전체 파일을 filter 하면 O(폴더수 × 파일수) 라 폴더가 많으면 느리다.
+        // 파일을 한 번만 순회하며 경로 수집 + 직속/하위 카운트를 동시 집계해 O(파일수 × 깊이) 로 처리.
         folderNodes() {
             const scopedFiles = this.roleScopedUpload; // 역할 필터 적용된 파일
             const scopedEmpty = this.roleScopedEmptyFolders; // 같은 role 의 빈 폴더만
-            const set = new Set();
+            const pathSet = new Set();
+            const directCount = Object.create(null); // 직속 파일 수 (그 폴더에 정확히 속한 파일)
+            const subtreeCount = Object.create(null); // 하위 전체 포함 파일 수
+
             for (const f of scopedFiles) {
                 const p = (f.folder_path || '').trim();
                 if (!p) continue;
@@ -1118,8 +1136,12 @@ export default {
                 let acc = '';
                 for (const s of segs) {
                     acc = acc ? `${acc}/${s}` : s;
-                    set.add(acc);
+                    pathSet.add(acc);
+                    // 자기 자신 + 모든 조상 폴더의 subtree 카운트 +1
+                    subtreeCount[acc] = (subtreeCount[acc] || 0) + 1;
                 }
+                // 직속 카운트는 가장 깊은(= 파일이 직접 든) 폴더에만 +1
+                directCount[acc] = (directCount[acc] || 0) + 1;
             }
             for (const p of scopedEmpty) {
                 if (!p) continue;
@@ -1127,25 +1149,19 @@ export default {
                 let acc = '';
                 for (const s of segs) {
                     acc = acc ? `${acc}/${s}` : s;
-                    set.add(acc);
+                    pathSet.add(acc);
                 }
             }
-            const paths = [...set].sort();
+            const paths = [...pathSet].sort();
             const emptyFolderSet = new Set(scopedEmpty);
             return paths.map((path) => {
                 const segs = path.split('/');
-                // 직접 이 폴더에 든 파일 수 (배지 표시용 — 자식 폴더 파일은 제외)
-                const directFileCount = scopedFiles.filter((f) => (f.folder_path || '') === path).length;
-                // 하위 전체 포함 파일 수 (삭제 경고 / isLocal 판정용 — 폴더 삭제 시 같이 지워지는 총량)
-                const fileCount = scopedFiles.filter((f) => {
-                    const p = f.folder_path || '';
-                    return p === path || p.startsWith(path + '/');
-                }).length;
+                const fileCount = subtreeCount[path] || 0; // 하위 전체 포함 (삭제 경고 / isLocal 판정용)
                 return {
                     path,
                     name: segs[segs.length - 1],
                     depth: segs.length - 1,
-                    directFileCount,
+                    directFileCount: directCount[path] || 0, // 직접 이 폴더에 든 파일 수 (배지용)
                     fileCount,
                     isLocal: fileCount === 0 && emptyFolderSet.has(path)
                 };
@@ -1387,6 +1403,12 @@ export default {
         async uploadFiles_(files, folderResolver = null) {
             const tenantId = window.$tenantName || '';
             if (!tenantId) return;
+            // 루트 업로드 금지 — 일반 파일 업로드(resolver 없음)는 반드시 특정 폴더가 선택돼 있어야 한다.
+            // ('전체' 상태에서 드롭/선택 시 root 로 들어가던 동작 차단. 폴더 업로드는 resolver 가 경로를 만들므로 허용.)
+            if (!folderResolver && !this.currentFolder) {
+                this.notify('업로드할 폴더를 먼저 선택하세요 (루트에는 올릴 수 없습니다)', 'warning');
+                return;
+            }
             // 새 배치 시작 — 진행/요약 상태 초기화 후 진행 표시 on.
             this.uploadSkipped = 0;
             this.uploadStats = { total: 0, done: 0, failed: 0 };
@@ -1788,6 +1810,8 @@ export default {
                 fd.append('tenant_id', window.$tenantName);
                 fd.append('folder_path', fullPath);
                 fd.append('doc_role', this.currentRole);
+                // 생성자 본인 권한 자동 부여용 — 백엔드가 folder_permissions 에 1행 upsert
+                if (this.myUid) fd.append('requester_uid', this.myUid);
                 await axios.post('/memento/knowledge/folders', fd, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
@@ -2364,6 +2388,14 @@ export default {
 .kft-dropzone.is-drag-over {
     background: rgba(var(--v-theme-primary), 0.12);
     border-color: rgb(var(--v-theme-primary));
+}
+
+/* 루트(폴더 미선택) — 업로드 비활성 상태: 클릭 불가 + 흐리게 + 경고 테두리 */
+.kft-dropzone.is-disabled,
+.kft-dropzone.is-disabled:hover {
+    cursor: not-allowed;
+    border-color: rgba(0, 0, 0, 0.18);
+    background: rgba(0, 0, 0, 0.03);
 }
 
 .kft-dropzone-text {
