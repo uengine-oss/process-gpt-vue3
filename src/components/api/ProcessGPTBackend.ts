@@ -6749,13 +6749,27 @@ class ProcessGPTBackend implements Backend {
             };
             await storage.putObject('proc_def_version', newProcess);
 
+            // 병합 요청 생성
+            const majorNum = (parseInt(String(parentVersion).split('.')[0]) || 0) + 1;
+            const user = await this.getUserInfo();
+            await this.createResourcePrRecord('bpmn', {
+                resourceId: defId,
+                branchName: `v${newVersion}`,
+                baseBranch: `v${majorNum}.0`,
+                title: `[피드백] ${activity.name || activityId} 정의 변경`,
+                description: `피드백 기반 자동 생성 (task: ${workItem.id})`,
+                requesterId: user.uid,
+                requesterName: user.name || localStorage.getItem('userName') || ''
+            });
+
             // 임시 minor 버전으로 해당 워크아이템만 재실행
             workItem.version = newVersion;
             workItem.version_tag = 'minor';
             workItem.status = 'SUBMITTED';
             await storage.putObject('todolist', workItem);
 
-            await storage.putObject('proc_def', process, { onConflict: 'id,tenant_id' });
+            const { arcv_id, parent_version, source_todolist_id, ...procDefData } = process;
+            await storage.putObject('proc_def', procDefData, { onConflict: 'id,tenant_id' });
         } catch (error) {
             throw new Error(error.message);
         }
