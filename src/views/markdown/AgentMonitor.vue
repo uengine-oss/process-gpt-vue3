@@ -658,6 +658,14 @@ export default {
             return null;
         },
 
+        getFormDefId() {
+            const tool = this.workItem?.activity?.tool || this.workItem?.worklist?.tool;
+            if (!tool) return null;
+            if (tool.includes('formHandler:')) return tool.split('formHandler:')[1];
+            if (tool.includes(':')) return tool.split(':')[1];
+            return null;
+        },
+
         getLoadingMessage() {
             const draftStatus = this.todoStatus?.draft_status;
             if (draftStatus === 'STARTED') {
@@ -899,6 +907,13 @@ export default {
                 const result = payloadForSubmit.result;
                 if (result && typeof result === 'object' && !Array.isArray(result)) {
                     payloadForSubmit = { ...payloadForSubmit, ...result };
+                }
+                const formKey = this.getFormDefId();
+                if (formKey) {
+                    const wrapped = payloadForSubmit[formKey];
+                    if (wrapped && typeof wrapped === 'object' && !Array.isArray(wrapped)) {
+                        payloadForSubmit = { ...payloadForSubmit, ...wrapped };
+                    }
                 }
             }
             let normalized = this.normalizeFormValues(payloadForSubmit);
@@ -1412,7 +1427,7 @@ export default {
                 const now = new Date().toISOString();
                 const text = this.extractContent(content);
 
-                const updatedFeedback = [...existingFeedback, { time: now, content: text }];
+                const updatedFeedback = [...existingFeedback, { time: now, content: text, user_id: localStorage.getItem('uid') }];
                 const agentOrch = this.selectedOrchestrationMethod || this.todoStatus.agent_orch;
 
                 let putItem = {
