@@ -303,98 +303,49 @@ jobs:
   wait_gitops_autosync:
     runs-on: ubuntu-latest
     needs: [build-and-deploy, build-and-deploy-gateway]
-    if: false
-    permissions:
-      id-token: write
-      contents: read
+    if: github.ref_name == 'main'
+
     steps:
-      - name: Checkout GitOps repository
-        uses: actions/checkout@v4
-        with:
-          repository: uengine-oss/process-gpt-k8s
-          token: ${{ secrets.GITOPS_PAT }}
-          path: gitops-repo
-
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Get GKE credentials
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          cluster_name: ${{ secrets.GCP_CLUSTER_NAME }}
-          location: ${{ secrets.GCP_REGION }}
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-
-      - name: Install yq
+      - name: Install ArgoCD CLI
         run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
+          curl -sSL \
+            -o argocd \
+            https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
 
-      - name: Wait for frontend/gateway rollout and image update
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/
+
+      - name: Login to ArgoCD
         run: |
-          set -e
+          argocd login "${{ secrets.ARGOCD_SERVER }}" \
+            --username "${{ secrets.ARGOCD_USERNAME }}" \
+            --password "${{ secrets.ARGOCD_PASSWORD }}" \
+            --grpc-web \
+            --insecure
 
-          SHA_TAG=$(echo "$GITHUB_SHA" | cut -c1-7)
-          EXPECTED_FRONTEND_IMAGE="ghcr.io/uengine-oss/process-gpt:$SHA_TAG"
-          EXPECTED_GATEWAY_IMAGE="ghcr.io/uengine-oss/process-gpt-gateway:$SHA_TAG"
+      - name: Wait for frontend and gateway
+        run: |
+          echo "Waiting for frontend deployment..."
 
-          FRONTEND_MANIFEST="gitops-repo/deployments/frontend-deployment.yaml"
-          FRONTEND_DEPLOY=$(yq eval '.metadata.name' "$FRONTEND_MANIFEST")
-          FRONTEND_NS="dev"
+          argocd app wait process-gpt \
+            --resource apps:Deployment:default/frontend-deployment \
+            --sync \
+            --health \
+            --timeout 600
 
-          if [ -f "gitops-repo/.deploy/last-good-gateway-manifest-path.txt" ]; then
-            GATEWAY_MANIFEST_REL=$(cat "gitops-repo/.deploy/last-good-gateway-manifest-path.txt")
-          elif [ -f "gitops-repo/deployments/gateway.yaml" ]; then
-            GATEWAY_MANIFEST_REL="deployments/gateway.yaml"
-          else
-            echo "Gateway manifest path not found in GitOps repository."
-            exit 1
-          fi
+          echo "Waiting for gateway deployment..."
 
-          GATEWAY_MANIFEST="gitops-repo/$GATEWAY_MANIFEST_REL"
-          if [ ! -f "$GATEWAY_MANIFEST" ]; then
-            echo "Gateway manifest file does not exist: $GATEWAY_MANIFEST"
-            exit 1
-          fi
+          argocd app wait process-gpt \
+            --resource apps:Deployment:default/gateway \
+            --sync \
+            --health \
+            --timeout 600
 
-          GATEWAY_DEPLOY=$(yq eval '.metadata.name' "$GATEWAY_MANIFEST")
-          GATEWAY_NS="dev"
-
-          echo "Resolved frontend deployment: $FRONTEND_NS/$FRONTEND_DEPLOY"
-          echo "Resolved gateway deployment:  $GATEWAY_NS/$GATEWAY_DEPLOY"
-
-          MAX_ATTEMPTS=45
-          SLEEP_SEC=20
-
-          for i in $(seq 1 $MAX_ATTEMPTS); do
-            ACTUAL_FRONTEND_IMAGE=$(kubectl get deployment "$FRONTEND_DEPLOY" -n "$FRONTEND_NS" -o jsonpath='{.spec.template.spec.containers[0].image}')
-            ACTUAL_GATEWAY_IMAGE=$(kubectl get deployment "$GATEWAY_DEPLOY" -n "$GATEWAY_NS" -o jsonpath='{.spec.template.spec.containers[0].image}')
-
-            echo "[Attempt $i/$MAX_ATTEMPTS]"
-            echo "Expected frontend image: $EXPECTED_FRONTEND_IMAGE"
-            echo "Actual frontend image:   $ACTUAL_FRONTEND_IMAGE"
-            echo "Expected gateway image:  $EXPECTED_GATEWAY_IMAGE"
-            echo "Actual gateway image:    $ACTUAL_GATEWAY_IMAGE"
-
-            if [ "$ACTUAL_FRONTEND_IMAGE" = "$EXPECTED_FRONTEND_IMAGE" ] && [ "$ACTUAL_GATEWAY_IMAGE" = "$EXPECTED_GATEWAY_IMAGE" ]; then
-              echo "Expected images detected. Verifying rollout health..."
-              kubectl rollout status deployment/"$FRONTEND_DEPLOY" -n "$FRONTEND_NS" --timeout=300s
-              kubectl rollout status deployment/"$GATEWAY_DEPLOY" -n "$GATEWAY_NS" --timeout=300s
-              echo "Frontend/Gateway image and rollout checks passed."
-              exit 0
-            fi
-
-            sleep $SLEEP_SEC
-          done
-
-          echo "Timed out waiting for expected frontend/gateway images to be applied."
-          exit 1
+          echo "Frontend and Gateway are Synced and Healthy."
 
   playwright_smoke_test:
     runs-on: ubuntu-latest
-    needs: [build-and-deploy, build-and-deploy-gateway]
+    needs: wait_gitops_autosync
     if: github.ref_name == 'main'
     steps:
       - uses: actions/checkout@v4
@@ -423,7 +374,7 @@ jobs:
   record_last_good_on_success:
     runs-on: ubuntu-latest
     needs: [wait_gitops_autosync, playwright_smoke_test]
-    if: false
+    if: github.ref_name == 'main' && success()
     steps:
       - name: Checkout GitOps repo
         uses: actions/checkout@v4
@@ -472,7 +423,7 @@ jobs:
   rollback_on_failure:
     runs-on: ubuntu-latest
     needs: [wait_gitops_autosync, playwright_smoke_test]
-    if: false
+    if: github.ref_name == 'main' && failure()
     steps:
       - name: Checkout GitOps repo
         uses: actions/checkout@v4

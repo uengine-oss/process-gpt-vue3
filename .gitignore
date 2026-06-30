@@ -77,6 +77,7 @@ playwright/.auth/
 playwright/playwright-report/
 playwright/test-results/
 playwright/.cache/
+playwright/live-shots/
 
 docker-compose-gs/
 
@@ -92,5 +93,4 @@ volumes/
 
 openspec/
 
-playwright/
 qa_report/
