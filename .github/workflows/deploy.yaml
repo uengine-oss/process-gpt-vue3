@@ -323,17 +323,25 @@ jobs:
             --grpc-web \
             --insecure
 
-      - name: Wait for GitOps Auto Sync
+      - name: Wait for frontend and gateway
         run: |
-          echo "Waiting for ArgoCD application..."
+          echo "Waiting for frontend deployment..."
 
           argocd app wait process-gpt \
+            --resource apps:Deployment:default/frontend-deployment \
             --sync \
             --health \
-            --operation \
             --timeout 600
 
-          echo "Application Synced and Healthy."
+          echo "Waiting for gateway deployment..."
+
+          argocd app wait process-gpt \
+            --resource apps:Deployment:default/gateway \
+            --sync \
+            --health \
+            --timeout 600
+
+          echo "Frontend and Gateway are Synced and Healthy."
 
   playwright_smoke_test:
     runs-on: ubuntu-latest
