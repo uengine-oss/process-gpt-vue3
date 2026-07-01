@@ -39,7 +39,7 @@
                 @start-task="startTask"
                 @download-browser-agent="downloadBrowserAgent"
             /> -->
-            <div v-if="!isInitialLoading && timeline.length === 0 && !isActionsMode && !isQueued">
+            <div v-if="timeline.length === 0 && !isQueued && (hasNoSelectedAgent || !isInitialLoading)">
                 <AgentSelectField :model-value="selectedAgent" :backend="backend" :is-execute="true" @update:model-value="updateWorkItem" />
             </div>
 
@@ -55,10 +55,10 @@
                     </div>
                     <p>{{ $t('agentMonitor.workStarted') }}</p>
                 </div>
-                <div v-else>
+                <!-- <div v-else>
                     <h3>{{ $t('agentMonitor.noWorkInProgress') }}</h3>
                     <p>{{ $t('agentMonitor.workStarted') }}</p>
-                </div>
+                </div> -->
             </div>
 
             <!-- 로딩 상태 -->
@@ -497,6 +497,11 @@ export default {
                 this.todoStatus.agent_mode === 'DRAFT' &&
                 this.todoStatus.draft_status === 'COMPLETED'
             );
+        },
+        // 워크아이템에 선택된 에이전트/연구 방식이 없는 상태
+        hasNoSelectedAgent() {
+            const worklist = this.workItem?.worklist || {};
+            return !worklist.endpoint && !worklist.orchestration;
         }
     },
     watch: {

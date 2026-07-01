@@ -377,9 +377,10 @@ export default {
         this.tab = this.resolveInitialTab('workhistory');
         this.init();
 
-        this.EventBus.on('todolist-updated', async () => {
-            await this.loadTasks();
-        });
+        this.EventBus.on('todolist-updated', this.handleTodolistUpdated);
+    },
+    unmounted() {
+        this.EventBus.off('todolist-updated', this.handleTodolistUpdated);
     },
     computed: {
         id() {
@@ -449,6 +450,9 @@ export default {
 
             const lastTab = localStorage.getItem('instanceCard-lastTab');
             return lastTab || defaultTab;
+        },
+        async handleTodolistUpdated() {
+            await this.loadTasks();
         },
         async handleInstanceUpdated(payload) {
             // DONE 신호를 받은 즉시 UI부터 완료 상태로 전환한다 (낙관적 업데이트)
