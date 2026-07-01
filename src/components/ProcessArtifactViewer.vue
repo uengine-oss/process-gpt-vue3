@@ -89,7 +89,8 @@ export default {
         },
         processName() {
             const sp = this.result && this.result.savedProcesses && this.result.savedProcesses[0];
-            if (sp && sp.process_name) return sp.process_name;
+            // 영속 스키마(name) / 라이브 스키마(process_name) 모두 지원.
+            if (sp && (sp.process_name || sp.name)) return sp.process_name || sp.name;
             const pd = this.processDefinition;
             return (pd && (pd.processDefinitionName || pd.name)) || '생성된 프로세스';
         },
@@ -116,9 +117,16 @@ export default {
             return !!(this.processDefinition);
         },
         previewPayload() {
+            const sp = (this.result && this.result.savedProcesses && this.result.savedProcesses[0]) || null;
+            // 저장된 프로세스(참조 기반 복원)는 process_id 로 정의를 조회해 미리보기 XML 을 그때 생성한다.
+            const processId = (sp && (sp.process_id || sp.id)) || '';
+            // 인메모리 정의(__contract)가 없고 저장 참조(process_id)만 있으면 저장본으로 취급 →
+            // showBpmnPreview 가 process_id 조회 경로로 정의를 가져와 렌더한다.
+            const unsaved = this.processDefinition ? !this.result.__saved : false;
             return {
                 definition: this.processDefinition,
-                __unsaved: !this.result.__saved,
+                process_id: processId,
+                __unsaved: unsaved,
                 process_name: this.processName
             };
         }

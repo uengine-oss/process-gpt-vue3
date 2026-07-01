@@ -8685,7 +8685,9 @@ export default {
                             savedAgents: resultData.saved_agents || resultData.savedAgents || [],
                             integratedGraph,
                             processGraphs,
-                            graphName
+                            graphName,
+                            // 완료 경로 = 이미 proc_def 에 저장됨 → 참조 기반 복원 시 '저장됨' 표시.
+                            __saved: true
                         };
                         me._cachePdf2bpmnGraphPayload({ taskId, integratedGraph, processGraphs, graphName });
                         if (me.currentChatRoom?.id === targetRoomId) {
@@ -9052,7 +9054,9 @@ export default {
                 savedAgents: resultData.saved_agents || resultData.savedAgents || [],
                 integratedGraph,
                 processGraphs,
-                graphName
+                graphName,
+                // 완료 경로 = 이미 proc_def 에 저장됨 → 참조 기반 복원 시 '저장됨' 표시.
+                __saved: true
             };
 
             // 동일 todo/프로세스 캐시(이 페이지 내) — 다른 메시지에서도 즉시 재사용
