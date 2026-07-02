@@ -24,15 +24,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
 
       - name: Install frontend dependencies
-        run: npm ci
+        id: install_frontend
+        continue-on-error: true
+        run: npm install
 
       - name: Install Playwright browser
+        id: install_playwright
+        continue-on-error: true
         run: npx playwright install --with-deps chromium
 
       - name: Run gateway deterministic regression as warning
@@ -47,6 +50,24 @@ jobs:
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "- Result: WARNING" >> "$GITHUB_STEP_SUMMARY"
             echo "- Reason: execution repo checkout failed" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ "${{ steps.install_frontend.outcome }}" != "success" ]; then
+            echo "::warning title=Gateway deterministic regression skipped::Frontend dependency install failed. Push is not blocked."
+            echo "## Gateway deterministic regression" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Result: WARNING" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Reason: frontend dependency install failed" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ "${{ steps.install_playwright.outcome }}" != "success" ]; then
+            echo "::warning title=Gateway deterministic regression skipped::Playwright browser install failed. Push is not blocked."
+            echo "## Gateway deterministic regression" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Result: WARNING" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Reason: Playwright browser install failed" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
