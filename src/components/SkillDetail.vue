@@ -8,21 +8,64 @@
                             <h6 class="text-h6 text-left">
                                 {{ skillDisplayName || skillId }}
                             </h6>
-                            <v-tooltip location="bottom" :text="showGitHistory ? $t('SkillDetail.showEditor') : $t('SkillDetail.showGitHistory')">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn
-                                        v-bind="props"
-                                        :icon="true"
-                                        variant="text"
-                                        size="small"
-                                        :color="showGitHistory ? 'primary' : undefined"
-                                        @click="showGitHistory = !showGitHistory"
-                                    >
-                                        <v-icon>{{ showGitHistory ? 'mdi-file-edit-outline' : 'mdi-source-branch' }}</v-icon>
-                                    </v-btn>
-                                </template>
-                            </v-tooltip>
+                            <div class="d-flex align-center gap-1">
+                                <v-tooltip location="bottom" text="상속 스킬 만들기">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            v-bind="props"
+                                            :icon="true"
+                                            variant="text"
+                                            size="small"
+                                            @click="createChildSkill()"
+                                        >
+                                            <v-icon>mdi-source-fork</v-icon>
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-tooltip location="bottom" :text="showGitHistory ? $t('SkillDetail.showEditor') : $t('SkillDetail.showGitHistory')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            v-bind="props"
+                                            :icon="true"
+                                            variant="text"
+                                            size="small"
+                                            :color="showGitHistory ? 'primary' : undefined"
+                                            @click="showGitHistory = !showGitHistory"
+                                        >
+                                            <v-icon>{{ showGitHistory ? 'mdi-file-edit-outline' : 'mdi-source-branch' }}</v-icon>
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                            </div>
                         </div>
+
+                        <!-- 상속 체인 breadcrumb -->
+                        <div v-if="inheritanceChain.length > 1" class="d-flex align-center flex-wrap gap-1 mb-1">
+                            <template v-for="(item, idx) in inheritanceChain" :key="item.name">
+                                <v-chip
+                                    size="x-small"
+                                    :color="idx === inheritanceChain.length - 1 ? 'primary' : undefined"
+                                    :variant="idx === inheritanceChain.length - 1 ? 'flat' : 'tonal'"
+                                    :clickable="idx < inheritanceChain.length - 1"
+                                    @click="idx < inheritanceChain.length - 1 && $router.push('/skill-detail/' + encodeURIComponent(item.name))"
+                                >
+                                    {{ item.name }}
+                                </v-chip>
+                                <v-icon v-if="idx < inheritanceChain.length - 1" size="x-small" class="text-medium-emphasis">mdi-chevron-right</v-icon>
+                            </template>
+                        </div>
+
+                        <!-- 상속 경고 배너 -->
+                        <v-alert
+                            v-if="inheritanceWarnings.length > 0"
+                            type="warning"
+                            density="compact"
+                            variant="tonal"
+                            class="mb-2 text-caption"
+                        >
+                            <div v-for="w in inheritanceWarnings" :key="w">{{ w }}</div>
+                        </v-alert>
+
                         <v-select
                             v-if="branches.length > 1"
                             v-model="selectedBranch"
@@ -371,16 +414,18 @@
             </template>
         </AppBaseCard>
     </v-card>
+
 </template>
 
 <script>
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import AgentSkillEdit from '@/components/AgentSkillEdit.vue';
 import SkillGitHistory from '@/components/SkillGitHistory.vue';
+import { generateInheritanceTemplate } from '@/utils/skillMdParser';
 import VTreeview from 'vue3-treeview';
 import BackendFactory from '@/components/api/BackendFactory';
 import cytoscape from 'cytoscape';
-import { buildSkillReferenceGraph, updateGraphCurrentSkill } from '@/utils/skillReferencesGraph';
+import { buildSkillReferenceGraph, updateGraphCurrentSkill, addInheritanceToElements } from '@/utils/skillReferencesGraph';
 
 const tenantGraphCacheStore = {};
 
@@ -424,7 +469,11 @@ export default {
             isGraphLoading: false,
             graphLoadError: false,
             graphElements: [],
-            isGraphExpanded: false
+            rawGraphElements: [],
+            isGraphExpanded: false,
+
+            inheritanceChain: [],
+            inheritanceWarnings: []
         };
     },
     computed: {
@@ -465,6 +514,13 @@ export default {
                     const file = await this.backend.getSkillFile(skillName, filePath);
                     this.skillFile = file || null;
                 }
+
+                if (filePath === 'SKILL.md' || filePath.endsWith('/SKILL.md')) {
+                    this.loadInheritanceChain(skillName);
+                } else {
+                    this.inheritanceChain = [];
+                    this.inheritanceWarnings = [];
+                }
             },
             deep: true
         }
@@ -498,6 +554,33 @@ export default {
         }
     },
     methods: {
+        async loadInheritanceChain(skillName) {
+            try {
+                const result = await this.backend.getSkillInheritance(skillName);
+                if (!result) {
+                    this.inheritanceChain = [];
+                    this.inheritanceWarnings = [];
+                    return;
+                }
+                this.inheritanceChain = Array.isArray(result.chain) ? result.chain : [];
+                this.inheritanceWarnings = Array.isArray(result.warnings) ? result.warnings : [];
+            } catch {
+                this.inheritanceChain = [];
+                this.inheritanceWarnings = [];
+            }
+            if (this.leftViewMode === 'graph' && this.rawGraphElements.length > 0) {
+                this.graphElements = addInheritanceToElements(this.rawGraphElements, this.inheritanceChain, skillName);
+                this.$nextTick(() => this.$nextTick(() => this.initOrUpdateGraph()));
+            }
+        },
+
+        createChildSkill() {
+            const parentName = this.skillDisplayName || this.skillId;
+            const random = Math.random().toString(36).substring(2, 6);
+            const childName = `${parentName}-${random}`;
+            this.$router.push(`/skills/${encodeURIComponent(childName)}?inheritFrom=${encodeURIComponent(parentName)}`);
+        },
+
         async loadUsedByAgents() {
             const targetSkill = (this.skillDisplayName || this.skillId || '').trim();
             if (!targetSkill) {
@@ -700,6 +783,17 @@ export default {
                 }
                 const skill = await this.backend.getSkillFile(this.skillId);
                 if (!skill || !skill.skill_name) {
+                    const inheritFrom = this.$route?.query?.inheritFrom;
+                    if (inheritFrom) {
+                        this.skillDisplayName = this.skillId;
+                        this.isSkillOwner = true;
+                        this.skillFile = {
+                            skill_name: this.skillId,
+                            content: generateInheritanceTemplate([String(inheritFrom)], this.skillId),
+                            file_path: 'SKILL.md'
+                        };
+                        return;
+                    }
                     this.loadError = true;
                     return;
                 }
@@ -753,8 +847,19 @@ export default {
                     });
                 }
             } catch (error) {
-                console.error('Skill structure load failed:', error);
-                this.loadError = true;
+                const inheritFrom = this.$route?.query?.inheritFrom;
+                if (inheritFrom) {
+                    this.skillDisplayName = this.skillId;
+                    this.isSkillOwner = true;
+                    this.skillFile = {
+                        skill_name: this.skillId,
+                        content: generateInheritanceTemplate([String(inheritFrom)], this.skillId),
+                        file_path: 'SKILL.md'
+                    };
+                } else {
+                    console.error('Skill structure load failed:', error);
+                    this.loadError = true;
+                }
             } finally {
                 this.isLoading = false;
                 // 기본 선택(SKILL.md) 상태에서도 그래프 탭이면 전체 파일 기준 그래프 생성
@@ -919,7 +1024,8 @@ export default {
             const tenantId = window.$tenantName;
             const cached = tenantId && this.graphCacheByTenantId?.[tenantId];
             if (cached && Array.isArray(cached.elements)) {
-                this.graphElements = updateGraphCurrentSkill(cached.elements, skillName);
+                const updated = updateGraphCurrentSkill(cached.elements, skillName);
+                this.graphElements = addInheritanceToElements(updated, this.inheritanceChain, skillName);
                 this.$nextTick(() => {
                     this.$nextTick(() => this.initOrUpdateGraph());
                 });
@@ -1043,10 +1149,12 @@ export default {
                     });
                 }
 
-                this.graphElements = graph.elements || [];
+                const rawElements = graph.elements || [];
                 if (tenantId) {
-                    tenantGraphCacheStore[tenantId] = { elements: this.graphElements };
+                    tenantGraphCacheStore[tenantId] = { elements: rawElements };
                 }
+                this.rawGraphElements = rawElements;
+                this.graphElements = addInheritanceToElements(rawElements, this.inheritanceChain, skillName);
 
                 this.$nextTick(() => {
                     this.$nextTick(() => this.initOrUpdateGraph());
@@ -1149,6 +1257,14 @@ export default {
                     }
                 },
                 {
+                    selector: 'node[type="skill"]',
+                    style: {
+                        'background-color': '#7c3aed',
+                        color: '#ffffff',
+                        shape: 'pentagon'
+                    }
+                },
+                {
                     selector: 'edge',
                     style: {
                         width: 1.5,
@@ -1166,6 +1282,15 @@ export default {
                         'text-background-padding': '2px',
                         'transition-property': 'line-color, target-arrow-color, width',
                         'transition-duration': '0.2s'
+                    }
+                },
+                {
+                    selector: 'edge[type="extends"]',
+                    style: {
+                        'line-style': 'dashed',
+                        'line-color': '#6366f1',
+                        'target-arrow-color': '#6366f1',
+                        label: ''
                     }
                 },
                 {
@@ -1237,6 +1362,11 @@ export default {
 
             const fitToCurrentSkill = () => {
                 if (!this.cy) return;
+                const inheritanceNodes = this.cy.$('node[type="skill"]');
+                if (inheritanceNodes.length > 0) {
+                    this.cy.fit(undefined, 30);
+                    return;
+                }
                 const currentNodes = this.cy.$('node[isCurrentSkill=1]');
                 if (currentNodes.length > 0) {
                     this.cy.fit(currentNodes, 20);
@@ -1268,6 +1398,10 @@ export default {
                     if (!data) return;
                     if (data.type === 'external' && data.url) {
                         window.open(data.url, '_blank', 'noopener,noreferrer');
+                        return;
+                    }
+                    if (data.type === 'skill' && data.skillName) {
+                        this.$router.push(`/skills/${encodeURIComponent(data.skillName)}`);
                         return;
                     }
                     if (data.type === 'file' && data.path) {

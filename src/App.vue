@@ -281,6 +281,9 @@ export default {
                 if (notification.type === 'workitem_bpm') {
                     notiHeader = 'New Todo';
                     notiBody = notification.title || '새 할 일 목록 추가';
+                } else if (notification.type === 'merge_request') {
+                    notiHeader = notification.from_user_id || 'PR 알림';
+                    notiBody = notification.title || 'PR 상태가 변경되었습니다';
                 } else if (notification.type === 'chat') {
                     const notiChatRoomId = this.getChatRoomIdFromUrl(notification.url);
                     if (

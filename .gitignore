@@ -94,3 +94,6 @@ volumes/
 openspec/
 
 qa_report/
+
+.playwright-mcp
+CLAUDE.md

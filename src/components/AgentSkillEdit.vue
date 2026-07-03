@@ -25,6 +25,16 @@
             </div>
         </v-card-title>
         <v-card-text class="h-100 px-0">
+            <v-alert
+                v-if="directiveRemoved"
+                type="warning"
+                density="compact"
+                variant="tonal"
+                class="mx-2 mb-1 text-caption"
+                icon="mdi-alert-circle-outline"
+            >
+                extends 또는 상속 지시문을 삭제하면 에이전트가 스킬 로드에 실패할 수 있습니다
+            </v-alert>
             <div v-if="markdownPreview" class="h-100 markdown-preview markdown-content">
                 <div v-html="markdownHtml"></div>
             </div>
@@ -137,6 +147,7 @@ import 'highlight.js/styles/atom-one-dark.css';
 import BackendFactory from '@/components/api/BackendFactory';
 import SkillSaveDialog from '@/components/SkillSaveDialog.vue';
 import CommitMessageGenerator from '@/components/ai/CommitMessageGenerator';
+import { hasInheritanceDirective } from '@/utils/skillMdParser';
 
 marked.setOptions({
     breaks: true,
@@ -193,7 +204,8 @@ export default {
             generatingDeleteCommitMsg: false,
 
             isLoading: false,
-            markdownPreview: false
+            markdownPreview: false,
+            wasChildSkill: false
         };
     },
     computed: {
@@ -225,6 +237,9 @@ export default {
             }
             return true;
         },
+        directiveRemoved() {
+            return this.wasChildSkill && this.fileName === 'SKILL.md' && !hasInheritanceDirective(this.skillContent);
+        },
         editorLanguage() {
             const ext = (this.fileName || '').split('.').pop().toLowerCase();
             const map = {
@@ -246,11 +261,13 @@ export default {
                     this.skillContent = newVal.content;
                     this.filePath = newVal.file_path;
                     this.fileName = newVal.file_path.split('/').pop();
+                    this.wasChildSkill = this.fileName === 'SKILL.md' && hasInheritanceDirective(newVal.content);
                 } else {
                     this.skillName = '';
                     this.fileName = '';
                     this.filePath = '';
                     this.skillContent = '';
+                    this.wasChildSkill = false;
                 }
             },
             deep: true

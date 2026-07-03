@@ -27,7 +27,7 @@
                         <template v-slot:prepend>
                             <div class="mr-2">
                                 <v-chip color="primary" variant="tonal" size="x-small" label>
-                                    {{ item.type.includes('workitem') ? 'To-Do' : 'Chat' }}
+                                    {{ item.type.includes('workitem') ? 'To-Do' : item.type === 'merge_request' ? 'PR' : 'Chat' }}
                                 </v-chip>
                             </div>
                         </template>
@@ -82,7 +82,9 @@ export default {
         await backend.watchNotifications((noti) => {
             if (noti && noti.new && noti.new.is_checked === false) {
                 this.fetchNotifications();
-                if (localStorage.getItem('email') && noti.new.user_id === localStorage.getItem('email')) {
+                const _email = localStorage.getItem('email');
+                const _uuid = (() => { try { return JSON.parse(localStorage.getItem('sb-127-auth-token') || '{}')?.user?.id; } catch { return null; } })();
+                if (_email && (noti.new.user_id === _email || noti.new.user_id === _uuid)) {
                     this.$emit('newNotification', noti.new.type);
                 }
                 if (noti.eventType === 'INSERT') {

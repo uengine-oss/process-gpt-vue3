@@ -8,28 +8,58 @@
             {{ $t('SkillList.empty') || '등록된 스킬이 없습니다' }}
         </div>
 
-        <ExpandableList v-else :items="skillList" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">
+        <ExpandableList v-else :items="rootSkills" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">
             <template #items="{ displayedItems }">
                 <div class="skill-items">
-                    <v-tooltip v-for="skill in displayedItems" bottom :key="skill.name" :text="skill.name || 'Unnamed Skill'">
-                        <template v-slot:activator="{ props }">
-                            <div
-                                v-bind="props"
-                                :class="[
-                                    'skill-item',
-                                    'sidebar-list-hover-bg',
-                                    { 'sidebar-list-hover-bg--active': isSkillSelected(skill.name) }
-                                ]"
-                                @click="goToSkillDetail(skill.name)"
-                            >
-                                <v-icon size="20">mdi-lightning-bolt-outline</v-icon>
-                                <div class="skill-info">
-                                    <span class="skill-name">{{ skill.name || 'Unnamed Skill' }}</span>
-                                    <span v-if="skill.description" class="skill-description">{{ skill.description }}</span>
+                    <template v-for="skill in displayedItems" :key="skill.name">
+                        <v-tooltip bottom :text="skill.name || 'Unnamed Skill'">
+                            <template v-slot:activator="{ props }">
+                                <div
+                                    v-bind="props"
+                                    :class="[
+                                        'skill-item',
+                                        'sidebar-list-hover-bg',
+                                        { 'sidebar-list-hover-bg--active': isSkillSelected(skill.name) }
+                                    ]"
+                                    @click="goToSkillDetail(skill.name)"
+                                >
+                                    <v-icon size="20">mdi-lightning-bolt-outline</v-icon>
+                                    <div class="skill-info">
+                                        <span class="skill-name">{{ skill.name || 'Unnamed Skill' }}</span>
+                                        <span v-if="skill.description" class="skill-description">{{ skill.description }}</span>
+                                    </div>
                                 </div>
-                            </div>
+                            </template>
+                        </v-tooltip>
+                        <!-- 자식 스킬 들여쓰기 렌더링 -->
+                        <template v-if="skill.children && skill.children.length">
+                            <v-tooltip
+                                v-for="childName in skill.children"
+                                :key="childName"
+                                bottom
+                                :text="childName"
+                            >
+                                <template v-slot:activator="{ props }">
+                                    <div
+                                        v-bind="props"
+                                        :class="[
+                                            'skill-item',
+                                            'skill-item-child',
+                                            'sidebar-list-hover-bg',
+                                            { 'sidebar-list-hover-bg--active': isSkillSelected(childName) }
+                                        ]"
+                                        @click="goToSkillDetail(childName)"
+                                    >
+                                        <v-icon size="14" class="child-indent-icon">mdi-subdirectory-arrow-right</v-icon>
+                                        <v-icon size="18">mdi-lightning-bolt-outline</v-icon>
+                                        <div class="skill-info">
+                                            <span class="skill-name">{{ childName }}</span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </v-tooltip>
                         </template>
-                    </v-tooltip>
+                    </template>
                 </div>
             </template>
         </ExpandableList>
@@ -54,6 +84,14 @@ export default {
             selectedSkillName: null,
             skillsWatchRef: null
         };
+    },
+    computed: {
+        rootSkills() {
+            const childSet = new Set(
+                this.skillList.flatMap((s) => s.children || [])
+            );
+            return this.skillList.filter((s) => !childSet.has(s.name));
+        }
     },
     async mounted() {
         await this.loadSkillList();
@@ -96,7 +134,8 @@ export default {
                 this.skillList = list
                     .map((skill) => ({
                         name: skill.name || skill.skill_name,
-                        description: skill.description || ''
+                        description: skill.description || '',
+                        children: Array.isArray(skill.children) ? skill.children : []
                     }))
                     .filter((s) => s.name);
             } catch (error) {
@@ -145,10 +184,6 @@ export default {
     color: #666;
 }
 
-.empty-state {
-    color: #666;
-}
-
 .skill-items {
     display: flex;
     flex-direction: column;
@@ -163,6 +198,15 @@ export default {
     cursor: pointer;
     transition: all 0.2s ease;
     gap: 12px;
+}
+
+.skill-item-child {
+    padding-left: 8px;
+}
+
+.child-indent-icon {
+    opacity: 0.4;
+    flex-shrink: 0;
 }
 
 .skill-info {
@@ -193,11 +237,6 @@ export default {
 @media (max-width: 768px) {
     .skill-item {
         padding: 10px 12px;
-    }
-
-    .skill-icon-wrap {
-        width: 36px;
-        height: 36px;
     }
 
     .skill-name {

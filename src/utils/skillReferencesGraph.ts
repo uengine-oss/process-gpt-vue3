@@ -7,7 +7,7 @@ export type SkillFileMeta = {
 
 export type SkillReferenceGraphNodeData = {
     id: string;
-    type: 'file' | 'external';
+    type: 'file' | 'external' | 'skill';
     path?: string;
     label: string;
     isMarkdown?: boolean;
@@ -25,7 +25,7 @@ export type SkillSkillData = {
 
 export type SkillReferenceGraphEdgeData = {
     id: string;
-    type: 'ref';
+    type: 'ref' | 'extends';
     source: string;
     target: string;
     count: number;
@@ -203,6 +203,78 @@ function parseQualPath(qualifiedPath: string): { skillName: string; path: string
     const idx = q.indexOf('/');
     if (idx <= 0) return null;
     return { skillName: q.slice(0, idx), path: q.slice(idx + 1) };
+}
+
+export function addInheritanceToElements(
+    elements: CytoscapeElement[],
+    inheritanceChain: Array<{ name: string; extends?: string[] }>,
+    currentSkillName: string
+): CytoscapeElement[] {
+    if (!inheritanceChain.length) return elements;
+
+    const skillMdNode = elements.find(
+        (el) =>
+            el.data.type === 'file' &&
+            (el.data as SkillReferenceGraphNodeData).isCurrentSkill === 1 &&
+            ((el.data as SkillReferenceGraphNodeData).path || '').endsWith('SKILL.md')
+    );
+    if (!skillMdNode) return elements;
+
+    // Build lookup map: skillName → extends list
+    const chainByName = new Map<string, string[]>();
+    for (const item of inheritanceChain) {
+        chainByName.set(item.name, item.extends || []);
+    }
+
+    const result = [...elements];
+    const existingIds = new Set(elements.map((el) => el.data.id));
+
+    // Traverse: current → parent → grandparent, following extends fields
+    let sourceId = skillMdNode.data.id;
+    let currentName = currentSkillName;
+    const visited = new Set<string>([currentName]);
+
+    while (true) {
+        const parents = chainByName.get(currentName) || [];
+        if (!parents.length) break;
+        const parentName = parents[0];
+        if (visited.has(parentName)) break;
+        visited.add(parentName);
+
+        const nodeId = `skill:${parentName}`;
+        if (!existingIds.has(nodeId)) {
+            result.push({
+                data: {
+                    id: nodeId,
+                    type: 'skill',
+                    label: parentName,
+                    skillName: parentName,
+                    isCurrentSkill: 0
+                }
+            });
+            existingIds.add(nodeId);
+        }
+        const edgeId = `extends:${sourceId}->${nodeId}`;
+        if (!existingIds.has(edgeId)) {
+            result.push({
+                data: {
+                    id: edgeId,
+                    type: 'extends',
+                    source: sourceId,
+                    target: nodeId,
+                    count: 1
+                }
+            });
+            existingIds.add(edgeId);
+        }
+
+        sourceId = nodeId;
+        currentName = parentName;
+        // Stop if parent is not in chain (no further resolution available)
+        if (!chainByName.has(parentName)) break;
+    }
+
+    return result;
 }
 
 export function buildSkillReferenceGraph(input: BuildSkillReferenceGraphInput): BuildSkillReferenceGraphOutput {
