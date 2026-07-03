@@ -173,6 +173,12 @@ export default {
             this.$nextTick(() => {
                 const bpmnVue = this.$refs.bpmnVue;
                 if (!bpmnVue) return;
+                if (!bpmnVue.isViewMode) {
+                    setTimeout(() => {
+                        if (bpmnVue.resetZoom) bpmnVue.resetZoom();
+                    }, 500);
+                    return;
+                }
 
                 // ResizeObserver의 자동 orientation 변경을 항상 horizontal로 고정
                 bpmnVue.onContainerResizeFinished = () => {

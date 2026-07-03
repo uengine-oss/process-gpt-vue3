@@ -718,6 +718,7 @@ export default {
                 var canvas = self.bpmnViewer.get('canvas');
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
                 var allPools = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+                self.bpmnViewer.get('paletteProvider')?.normalizeDiagramBoundsForView?.();
 
                 self.resetZoom();
 
@@ -1166,14 +1167,18 @@ export default {
             const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             participant.forEach((element) => {
                 const isCurrentlyHorizontal = element.di.isHorizontal !== false && element.width > element.height;
+                const rotateOptions = { skipAutoLayout: true };
                 if (isCurrentlyHorizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
                     element.di.isHorizontal = false;
                 } else {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
                     element.di.isHorizontal = true;
                 }
             });
+            const nextHorizontal = participant[0]?.di?.isHorizontal !== false;
+            palleteProvider.syncAllLaneOrientationForView?.(nextHorizontal);
+            self.syncOrientationFlagsLater(nextHorizontal);
             const refreshLabels = () => {
                 window.BpmnAutoLayout?.adjustLabelsAfterLayout?.(self.bpmnViewer);
             };
@@ -1210,21 +1215,53 @@ export default {
             participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
                 if (isHorizontal && !horizontal) {
-                    if (element.width < element.height) {
-                        palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
-                        self.isHorizontal = true;
-                        element.di.isHorizontal = true;
-                    }
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd, {
+                        skipAutoLayout: true
+                    });
+                    self.isHorizontal = true;
+                    element.di.isHorizontal = true;
                 } else if (!isHorizontal && horizontal) {
-                    if (element.width > element.height) {
-                        palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
-                        self.isHorizontal = false;
-                        element.di.isHorizontal = false;
-                    }
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd, {
+                        skipAutoLayout: true
+                    });
+                    self.isHorizontal = false;
+                    element.di.isHorizontal = false;
                 }
             });
 
+            palleteProvider.normalizeDiagramBoundsForView?.();
+            palleteProvider.syncAllLaneOrientationForView?.(isHorizontal);
+            self.syncOrientationFlagsLater(isHorizontal);
             self.resetZoom();
+        },
+        syncOrientationFlags(isHorizontal) {
+            const elementRegistry = this.bpmnViewer?.get('elementRegistry');
+            const modeling = this.bpmnViewer?.get('modeling');
+            if (!elementRegistry) return;
+
+            elementRegistry.filter((element) =>
+                element.type === 'bpmn:Participant' ||
+                element.type === 'bpmn:Lane'
+            ).forEach((element) => {
+                try {
+                    modeling?.updateProperties(element, {
+                        di: { isHorizontal }
+                    });
+                } catch (e) {
+                    // Keep direct DI sync even if the element cannot be updated through modeling.
+                }
+                if (element.di) {
+                    element.di.isHorizontal = isHorizontal;
+                }
+                if (element.businessObject) {
+                    element.businessObject.isHorizontal = isHorizontal;
+                }
+            });
+        },
+        syncOrientationFlagsLater(isHorizontal) {
+            this.syncOrientationFlags(isHorizontal);
+            requestAnimationFrame(() => requestAnimationFrame(() => this.syncOrientationFlags(isHorizontal)));
+            setTimeout(() => this.syncOrientationFlags(isHorizontal), 300);
         },
         initResizeObserver() {
             const container = this.$refs.container;

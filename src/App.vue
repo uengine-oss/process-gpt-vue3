@@ -93,6 +93,11 @@ export default {
     },
     async mounted() {
         if (window.$mode == 'ProcessGPT') {
+            if (window.location.pathname.startsWith('/bpmn-auto-layout-e2e')) {
+                this.loadScreen = true;
+                return;
+            }
+
             if (window.location.pathname.includes('external-forms') || window.location.pathname.includes('privacy')) {
                 this.loadScreen = true;
                 return;
@@ -150,6 +155,7 @@ export default {
                         const skipLoginCheck =
                             window.location.pathname === '/' ||
                             window.location.pathname.startsWith('/auth/') ||
+                            window.location.pathname.startsWith('/bpmn-auto-layout-e2e') ||
                             window.location.port === '8088';
                         const userInfo = await this.backend.getUserInfo();
                         if (!skipLoginCheck) {
