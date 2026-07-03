@@ -11,55 +11,14 @@
         <ExpandableList v-else :items="rootSkills" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">
             <template #items="{ displayedItems }">
                 <div class="skill-items">
-                    <template v-for="skill in displayedItems" :key="skill.name">
-                        <v-tooltip bottom :text="skill.name || 'Unnamed Skill'">
-                            <template v-slot:activator="{ props }">
-                                <div
-                                    v-bind="props"
-                                    :class="[
-                                        'skill-item',
-                                        'sidebar-list-hover-bg',
-                                        { 'sidebar-list-hover-bg--active': isSkillSelected(skill.name) }
-                                    ]"
-                                    @click="goToSkillDetail(skill.name)"
-                                >
-                                    <v-icon size="20">mdi-lightning-bolt-outline</v-icon>
-                                    <div class="skill-info">
-                                        <span class="skill-name">{{ skill.name || 'Unnamed Skill' }}</span>
-                                        <span v-if="skill.description" class="skill-description">{{ skill.description }}</span>
-                                    </div>
-                                </div>
-                            </template>
-                        </v-tooltip>
-                        <!-- 자식 스킬 들여쓰기 렌더링 -->
-                        <template v-if="skill.children && skill.children.length">
-                            <v-tooltip
-                                v-for="childName in skill.children"
-                                :key="childName"
-                                bottom
-                                :text="childName"
-                            >
-                                <template v-slot:activator="{ props }">
-                                    <div
-                                        v-bind="props"
-                                        :class="[
-                                            'skill-item',
-                                            'skill-item-child',
-                                            'sidebar-list-hover-bg',
-                                            { 'sidebar-list-hover-bg--active': isSkillSelected(childName) }
-                                        ]"
-                                        @click="goToSkillDetail(childName)"
-                                    >
-                                        <v-icon size="14" class="child-indent-icon">mdi-subdirectory-arrow-right</v-icon>
-                                        <v-icon size="18">mdi-lightning-bolt-outline</v-icon>
-                                        <div class="skill-info">
-                                            <span class="skill-name">{{ childName }}</span>
-                                        </div>
-                                    </div>
-                                </template>
-                            </v-tooltip>
-                        </template>
-                    </template>
+                    <SkillTreeNode
+                        v-for="skill in displayedItems"
+                        :key="skill.name"
+                        :skill="skill"
+                        :skills-by-name="skillsByName"
+                        :selected-skill-name="selectedSkillName"
+                        @select="goToSkillDetail"
+                    />
                 </div>
             </template>
         </ExpandableList>
@@ -69,13 +28,15 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
+import SkillTreeNode from '@/components/ui/SkillTreeNode.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'SkillList',
     components: {
-        ExpandableList
+        ExpandableList,
+        SkillTreeNode
     },
     data() {
         return {
@@ -91,6 +52,13 @@ export default {
                 this.skillList.flatMap((s) => s.children || [])
             );
             return this.skillList.filter((s) => !childSet.has(s.name));
+        },
+        skillsByName() {
+            const map = {};
+            for (const s of this.skillList) {
+                map[s.name] = s;
+            }
+            return map;
         }
     },
     async mounted() {
@@ -160,10 +128,6 @@ export default {
             }
         },
 
-        isSkillSelected(skillName) {
-            return this.selectedSkillName === skillName;
-        },
-
         onExpanded() {},
         onCollapsed() {}
     }
@@ -188,63 +152,5 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 4px;
-}
-
-.skill-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    gap: 12px;
-}
-
-.skill-item-child {
-    padding-left: 8px;
-}
-
-.child-indent-icon {
-    opacity: 0.4;
-    flex-shrink: 0;
-}
-
-.skill-info {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    flex: 1;
-}
-
-.skill-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: #2d3436;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.skill-description {
-    font-size: 10px;
-    color: #636e72;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 2px;
-}
-
-@media (max-width: 768px) {
-    .skill-item {
-        padding: 10px 12px;
-    }
-
-    .skill-name {
-        font-size: 13px;
-    }
-
-    .skill-description {
-        font-size: 11px;
-    }
 }
 </style>

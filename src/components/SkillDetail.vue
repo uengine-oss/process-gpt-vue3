@@ -692,7 +692,7 @@ export default {
                             id: nodeId,
                             text: segment,
                             children: [],
-                            ...(isFile ? {} : { state: { opened: true } }),
+                            state: { opened: !isFile },
                             data: {
                                 type: isFile ? 'file' : 'folder',
                                 originalId: segment,

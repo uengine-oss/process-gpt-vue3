@@ -492,7 +492,7 @@ export default {
                 this.$emit('saved', { mode: 'direct' });
                 this.close();
             } catch (err) {
-                this.errorMsg = err?.message || String(err);
+                this.errorMsg = (err && err.response && err.response.data && err.response.data.error) || err?.message || String(err);
             } finally {
                 this.loading = false;
             }
