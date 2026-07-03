@@ -8,28 +8,17 @@
             {{ $t('SkillList.empty') || '등록된 스킬이 없습니다' }}
         </div>
 
-        <ExpandableList v-else :items="skillList" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">
+        <ExpandableList v-else :items="rootSkills" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">
             <template #items="{ displayedItems }">
                 <div class="skill-items">
-                    <v-tooltip v-for="skill in displayedItems" bottom :key="skill.name" :text="skill.name || 'Unnamed Skill'">
-                        <template v-slot:activator="{ props }">
-                            <div
-                                v-bind="props"
-                                :class="[
-                                    'skill-item',
-                                    'sidebar-list-hover-bg',
-                                    { 'sidebar-list-hover-bg--active': isSkillSelected(skill.name) }
-                                ]"
-                                @click="goToSkillDetail(skill.name)"
-                            >
-                                <v-icon size="20">mdi-lightning-bolt-outline</v-icon>
-                                <div class="skill-info">
-                                    <span class="skill-name">{{ skill.name || 'Unnamed Skill' }}</span>
-                                    <span v-if="skill.description" class="skill-description">{{ skill.description }}</span>
-                                </div>
-                            </div>
-                        </template>
-                    </v-tooltip>
+                    <SkillTreeNode
+                        v-for="skill in displayedItems"
+                        :key="skill.name"
+                        :skill="skill"
+                        :skills-by-name="skillsByName"
+                        :selected-skill-name="selectedSkillName"
+                        @select="goToSkillDetail"
+                    />
                 </div>
             </template>
         </ExpandableList>
@@ -39,13 +28,15 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
+import SkillTreeNode from '@/components/ui/SkillTreeNode.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'SkillList',
     components: {
-        ExpandableList
+        ExpandableList,
+        SkillTreeNode
     },
     data() {
         return {
@@ -54,6 +45,21 @@ export default {
             selectedSkillName: null,
             skillsWatchRef: null
         };
+    },
+    computed: {
+        rootSkills() {
+            const childSet = new Set(
+                this.skillList.flatMap((s) => s.children || [])
+            );
+            return this.skillList.filter((s) => !childSet.has(s.name));
+        },
+        skillsByName() {
+            const map = {};
+            for (const s of this.skillList) {
+                map[s.name] = s;
+            }
+            return map;
+        }
     },
     async mounted() {
         await this.loadSkillList();
@@ -96,7 +102,8 @@ export default {
                 this.skillList = list
                     .map((skill) => ({
                         name: skill.name || skill.skill_name,
-                        description: skill.description || ''
+                        description: skill.description || '',
+                        children: Array.isArray(skill.children) ? skill.children : []
                     }))
                     .filter((s) => s.name);
             } catch (error) {
@@ -121,10 +128,6 @@ export default {
             }
         },
 
-        isSkillSelected(skillName) {
-            return this.selectedSkillName === skillName;
-        },
-
         onExpanded() {},
         onCollapsed() {}
     }
@@ -145,67 +148,9 @@ export default {
     color: #666;
 }
 
-.empty-state {
-    color: #666;
-}
-
 .skill-items {
     display: flex;
     flex-direction: column;
     gap: 4px;
-}
-
-.skill-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    gap: 12px;
-}
-
-.skill-info {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    flex: 1;
-}
-
-.skill-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: #2d3436;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.skill-description {
-    font-size: 10px;
-    color: #636e72;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 2px;
-}
-
-@media (max-width: 768px) {
-    .skill-item {
-        padding: 10px 12px;
-    }
-
-    .skill-icon-wrap {
-        width: 36px;
-        height: 36px;
-    }
-
-    .skill-name {
-        font-size: 13px;
-    }
-
-    .skill-description {
-        font-size: 11px;
-    }
 }
 </style>

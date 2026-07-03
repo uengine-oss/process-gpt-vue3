@@ -14,7 +14,8 @@
         "test:e2e:smoke:ci": "playwright test playwright/e2e/smoke --reporter=list",
         "test:e2e:smoke:simple": "playwright test playwright/e2e/smoke/beta-login-smoke-simple.spec.ts",
         "test:e2e:smoke:simple:ci": "playwright test playwright/e2e/smoke/beta-login-smoke-simple.spec.ts --reporter=list",
-        "test:e2e:bpmn-auto-layout": "playwright test --config=playwright.bpmn-auto-layout.config.mjs"
+        "test:e2e:bpmn-auto-layout": "playwright test --config=playwright.bpmn-auto-layout.config.mjs",
+        "test:e2e:gateway:deterministic:ci": "node playwright/e2e/gateway/run-gateway-deterministic-ci.cjs"
     },
     "bin": "server.js",
     "pkg": {

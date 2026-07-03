@@ -42,7 +42,7 @@
       <BpmnUengine
         ref="bpmn"
         :bpmn="diagramXML"
-        :is-view-mode="false"
+        :is-view-mode="isViewMode"
         :register-to-store="false"
         @done="onDiagramLoaded"
       >
@@ -113,6 +113,7 @@ export default {
       diagramXML: defaultBpmn,
       showCaseDialog: false,
       caseLoadError: '',
+      isViewMode: new URLSearchParams(window.location.search).get('viewMode') === 'true',
       caseItems: [
         { path: '/case/uengine6-definitions/01-purchase-request.bpmn', title: 'Purchase Request', subtitle: 'uEngine6 definitions #1' },
         { path: '/case/uengine6-definitions/02-srms.bpmn', title: 'SRMS', subtitle: 'uEngine6 definitions #2' },
@@ -127,6 +128,9 @@ export default {
         { path: '/case/uengine6-definitions/11-attached-contract-review.bpmn', title: 'Attached Contract Review', subtitle: 'uEngine6 definitions #11' }
       ]
     };
+  },
+  mounted() {
+    window.$bpmnAutoLayoutE2E = this;
   },
   methods: {
     onDiagramLoaded() {},

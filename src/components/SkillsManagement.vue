@@ -162,7 +162,9 @@
                                                         v-else
                                                         class="name-cell"
                                                         :class="{ 'table-row-deleting': deletingSkillName === item.name }"
+                                                        :style="item.depth ? { paddingLeft: (item.depth * 20) + 'px' } : {}"
                                                     >
+                                                        <v-icon v-if="item.depth" size="14" class="mr-1 child-indent-icon">mdi-subdirectory-arrow-right</v-icon>
                                                         <v-icon size="20" class="mr-2 skill-icon">mdi-lightning-bolt-outline</v-icon>
                                                         <span class="skill-name-text">{{ item.name }}</span>
                                                         <v-icon v-if="deletingSkillName !== item.name" size="16" class="open-hint"
@@ -199,6 +201,19 @@
                                                         <v-progress-circular indeterminate size="24" width="2" color="primary" />
                                                     </template>
                                                     <template v-else>
+                                                        <v-tooltip location="left" text="상속 스킬 만들기">
+                                                            <template v-slot:activator="{ props }">
+                                                                <v-btn
+                                                                    v-bind="props"
+                                                                    icon
+                                                                    variant="text"
+                                                                    size="small"
+                                                                    @click.stop="createChildSkill(item.name)"
+                                                                >
+                                                                    <v-icon>mdi-source-fork</v-icon>
+                                                                </v-btn>
+                                                            </template>
+                                                        </v-tooltip>
                                                         <v-tooltip location="left" :text="$t('common.delete')">
                                                             <template v-slot:activator="{ props }">
                                                                 <v-btn
@@ -283,6 +298,29 @@
                                                                 <span v-else>{{ skill.usedCount }}</span>
                                                                 <span class="ml-1">{{ $t('SkillsManagement.usedByAgentsSuffix') }}</span>
                                                             </v-chip>
+                                                            <!-- 자식 스킬: 부모 이름 칩 -->
+                                                            <v-chip
+                                                                v-if="skill.parentName"
+                                                                size="x-small"
+                                                                variant="tonal"
+                                                                color="secondary"
+                                                                class="flex-shrink-0 card-inherit-chip"
+                                                                @click.stop="$router.push(`/skills/${encodeURIComponent(skill.parentName)}`)"
+                                                            >
+                                                                <v-icon start size="10">mdi-arrow-up</v-icon>
+                                                                {{ skill.parentName }}
+                                                            </v-chip>
+                                                            <!-- 부모 스킬: 자식 수 칩 -->
+                                                            <v-chip
+                                                                v-else-if="skill.children && skill.children.length > 0"
+                                                                size="x-small"
+                                                                variant="tonal"
+                                                                color="secondary"
+                                                                class="flex-shrink-0"
+                                                            >
+                                                                <v-icon start size="10">mdi-arrow-down</v-icon>
+                                                                자식 {{ skill.children.length }}개
+                                                            </v-chip>
                                                             <template v-if="deletingSkillName === skill.name">
                                                                 <v-progress-circular
                                                                     indeterminate
@@ -292,17 +330,27 @@
                                                                     class="card-delete-btn"
                                                                 />
                                                             </template>
-                                                            <v-btn
-                                                                v-else
-                                                                icon
-                                                                variant="text"
-                                                                size="x-small"
-                                                                color="error"
-                                                                class="card-delete-btn"
-                                                                @click.stop="confirmDelete(skill)"
-                                                            >
-                                                                <v-icon>mdi-delete-outline</v-icon>
-                                                            </v-btn>
+                                                            <template v-else>
+                                                                <v-btn
+                                                                    icon
+                                                                    variant="text"
+                                                                    size="x-small"
+                                                                    @click.stop="createChildSkill(skill.name)"
+                                                                >
+                                                                    <v-icon>mdi-source-fork</v-icon>
+                                                                    <v-tooltip activator="parent" location="top">상속 스킬 만들기</v-tooltip>
+                                                                </v-btn>
+                                                                <v-btn
+                                                                    icon
+                                                                    variant="text"
+                                                                    size="x-small"
+                                                                    color="error"
+                                                                    class="card-delete-btn"
+                                                                    @click.stop="confirmDelete(skill)"
+                                                                >
+                                                                    <v-icon>mdi-delete-outline</v-icon>
+                                                                </v-btn>
+                                                            </template>
                                                         </div>
                                                         <h3 class="card-title">{{ skill.name }}</h3>
                                                         <p class="card-desc">
@@ -499,6 +547,7 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
     </v-card>
 </template>
 
@@ -528,7 +577,7 @@ export default {
             searchUploaded: '',
             searchBuiltin: '',
             cardPageUploaded: 1,
-            cardPageBuiltin: 1
+            cardPageBuiltin: 1,
         };
     },
     watch: {
@@ -538,8 +587,8 @@ export default {
         searchBuiltin() {
             this.cardPageBuiltin = 1;
         },
-        uploadedTableRows() {
-            const total = Math.max(1, Math.ceil(this.uploadedTableRows.length / 12));
+        uploadedCardRows() {
+            const total = Math.max(1, Math.ceil(this.uploadedCardRows.length / 12));
             if (this.cardPageUploaded > total) this.cardPageUploaded = total;
         },
         builtinTableRows() {
@@ -550,6 +599,15 @@ export default {
     computed: {
         searchByTab() {
             return this.skillTab === 'uploaded' ? this.searchUploaded : this.searchBuiltin;
+        },
+        parentMap() {
+            const map = {};
+            for (const s of this.skillList) {
+                for (const child of s.children || []) {
+                    map[child] = s.name;
+                }
+            }
+            return map;
         },
         tableHeadersUploaded() {
             return [
@@ -567,13 +625,45 @@ export default {
             ];
         },
         uploadedTableRows() {
-            const base = this.skillList.map((s) => {
+            const q = (this.searchUploaded || '').trim();
+            // 검색 중이면 flat 필터 결과 (트리 순서 해제)
+            if (q) {
+                const flat = this.skillList.map((s) => {
+                    const count = this.getUsageCount(s.name);
+                    return { ...s, usedCount: count, used: count, depth: 0, parentName: this.parentMap[s.name] || null };
+                });
+                const withPlaceholder = this.isUploading
+                    ? [{ name: '__uploading__', description: '', children: [], usedCount: 0, used: 0, depth: 0, parentName: null, isPlaceholder: true }, ...flat]
+                    : flat;
+                return this.filterTableRows(withPlaceholder, q);
+            }
+            // 검색 없으면 DFS 트리 순서
+            const childSet = new Set(Object.keys(this.parentMap));
+            const rows = [];
+            const addSkill = (s, depth) => {
                 const count = this.getUsageCount(s.name);
-                return { ...s, usedCount: count, used: count };
+                rows.push({ ...s, usedCount: count, used: count, depth, parentName: this.parentMap[s.name] || null });
+                for (const childName of s.children || []) {
+                    const child = this.skillList.find((x) => x.name === childName);
+                    if (child) addSkill(child, depth + 1);
+                }
+            };
+            for (const s of this.skillList) {
+                if (!childSet.has(s.name)) addSkill(s, 0);
+            }
+            if (this.isUploading) {
+                rows.unshift({ name: '__uploading__', description: '', children: [], usedCount: 0, used: 0, depth: 0, parentName: null, isPlaceholder: true });
+            }
+            return rows;
+        },
+        uploadedCardRows() {
+            const rows = this.skillList.map((s) => {
+                const count = this.getUsageCount(s.name);
+                return { ...s, usedCount: count, used: count, parentName: this.parentMap[s.name] || null };
             });
             const withPlaceholder = this.isUploading
-                ? [{ name: '__uploading__', description: '', usedCount: 0, used: 0, isPlaceholder: true }, ...base]
-                : base;
+                ? [{ name: '__uploading__', description: '', children: [], usedCount: 0, used: 0, parentName: null, isPlaceholder: true }, ...rows]
+                : rows;
             return this.filterTableRows(withPlaceholder, this.searchUploaded);
         },
         builtinTableRows() {
@@ -584,7 +674,7 @@ export default {
             return this.filterTableRows(rows, this.searchBuiltin);
         },
         uploadedCardTotalPages() {
-            const n = this.uploadedTableRows.length;
+            const n = this.uploadedCardRows.length;
             return Math.max(1, Math.ceil(n / 12));
         },
         builtinCardTotalPages() {
@@ -593,7 +683,7 @@ export default {
         },
         uploadedCardRowsPaginated() {
             const start = (this.cardPageUploaded - 1) * 12;
-            return this.uploadedTableRows.slice(start, start + 12);
+            return this.uploadedCardRows.slice(start, start + 12);
         },
         builtinCardRowsPaginated() {
             const start = (this.cardPageBuiltin - 1) * 12;
@@ -628,7 +718,8 @@ export default {
                     return list
                         .map((s) => ({
                             name: typeof s === 'string' ? s : s.name || s.skill_name || '',
-                            description: typeof s === 'string' ? '' : s.description || ''
+                            description: typeof s === 'string' ? '' : s.description || '',
+                            children: typeof s === 'string' ? [] : Array.isArray(s.children) ? s.children : []
                         }))
                         .filter((s) => s.name);
                 };
@@ -798,6 +889,12 @@ export default {
             } finally {
                 this.deletingSkillName = null;
             }
+        },
+
+        createChildSkill(parentName) {
+            const random = Math.random().toString(36).substring(2, 6);
+            const childName = `${parentName}-${random}`;
+            this.$router.push(`/skills/${encodeURIComponent(childName)}?inheritFrom=${encodeURIComponent(parentName)}`);
         }
     }
 };
@@ -1085,6 +1182,11 @@ export default {
     align-items: center;
 }
 
+.child-indent-icon {
+    opacity: 0.4;
+    flex-shrink: 0;
+}
+
 .skill-icon {
     color: rgb(var(--v-theme-primary));
     flex-shrink: 0;
@@ -1169,6 +1271,13 @@ export default {
 
 .card-delete-btn {
     flex-shrink: 0;
+}
+
+.card-inherit-chip {
+    cursor: pointer;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .card-title {

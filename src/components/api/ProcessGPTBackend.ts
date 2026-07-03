@@ -1295,6 +1295,22 @@ class ProcessGPTBackend implements Backend {
                 };
                 await storage.putObject('todolist', putObj);
 
+                const _currentEmail = localStorage.getItem('email');
+                const _currentUuid = (() => { try { return JSON.parse(localStorage.getItem('sb-127-auth-token') || '{}')?.user?.id; } catch { return null; } })();
+                if (
+                    (workItem.status === 'IN_PROGRESS' || workItem.status === 'PENDING') &&
+                    putObj.user_id && putObj.user_id !== _currentEmail && putObj.user_id !== _currentUuid
+                ) {
+                    await this.sendNotification({
+                        userId: putObj.user_id,
+                        type: 'workitem_bpm',
+                        title: putObj.activity_name || '새 할 일',
+                        description: putObj.proc_def_id || null,
+                        url: '/todolist',
+                        fromUserId: localStorage.getItem('email') || undefined
+                    });
+                }
+
                 if (workItem.status == 'IN_PROGRESS' || workItem.status == 'PENDING') {
                     const putInst = {
                         proc_inst_id: workItem.instId,
@@ -3235,11 +3251,14 @@ class ProcessGPTBackend implements Backend {
         try {
             let notifications: any[] = [];
             const userId = localStorage.getItem('email');
-            const options = {
-                limit: 10,
+            const userUuid = (() => { try { return JSON.parse(localStorage.getItem('sb-127-auth-token') || '{}')?.user?.id; } catch { return null; } })();
+            const userIds = [userId, ...(userUuid && userUuid !== userId ? [userUuid] : [])].filter(Boolean);
+            const options: any = {
+                size: 50,
                 orderBy: 'time_stamp',
                 sort: 'desc',
-                match: { user_id: userId, is_checked: false }
+                match: { is_checked: false },
+                inArray: { column: 'user_id', values: userIds }
             };
             const list = await storage.list('notifications', options);
             if (list.length > 0) {
@@ -3289,6 +3308,52 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+
+    private async sendNotification(params: {
+        userId: string;
+        type: string;
+        title: string;
+        description?: string;
+        url?: string;
+        fromUserId?: string;
+    }): Promise<void> {
+        try {
+            await storage.putObject('notifications', {
+                id: this.uuid(),
+                user_id: params.userId,
+                type: params.type,
+                title: params.title,
+                description: params.description || null,
+                url: params.url || null,
+                is_checked: false,
+                time_stamp: new Date().toISOString(),
+                from_user_id: params.fromUserId || null
+            });
+        } catch (e) {
+            console.warn('[sendNotification] 알림 발송 실패:', e);
+        }
+    }
+
+    private async getResourceOwner(
+        resourceType: 'skill' | 'bpmn' | 'dmn',
+        resourceId: string
+    ): Promise<string | null> {
+        try {
+            if (resourceType === 'skill') return await this.getSkillOwner(resourceId);
+            const row: any = await storage.getObject('proc_def', {
+                match: { id: resourceId, tenant_id: window.$tenantName }
+            });
+            return row?.owner ?? null;
+        } catch {
+            return null;
+        }
+    }
+
+    private getResourcePrUrl(resourceType: string, resourceId: string): string {
+        if (resourceType === 'skill') return `/skills/${resourceId}`;
+        if (resourceType === 'dmn') return `/dmn/${resourceId}`;
+        return `/process/${resourceId}`;
     }
 
     async search(keyword: string, callback?: (results: any[]) => void) {
@@ -7430,9 +7495,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async createSkillRepo(skillName: string) {
+    async createSkillRepo(skillName: string, options?: { initialContent?: string; filePath?: string }) {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/repo`;
-        const response = await axios.post(url, { tenant_id: window.$tenantName });
+        const body: Record<string, string> = { tenant_id: window.$tenantName };
+        const uid = localStorage.getItem('uid');
+        if (uid) body.owner_id = uid;
+        if (options?.initialContent !== undefined) body.initial_content = options.initialContent;
+        if (options?.filePath !== undefined) body.file_path = options.filePath;
+        const response = await axios.post(url, body);
         if (response.status === 200 || response.status === 201) {
             return response.data;
         }
@@ -7535,6 +7605,19 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getSkillInheritance(skillName: string): Promise<{ skill: string; extends: string[]; chain: { name: string }[]; warnings?: string[] } | null> {
+        try {
+            const params = new URLSearchParams();
+            if (window.$tenantName) params.set('tenant_id', window.$tenantName);
+            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/inheritance?${params}`;
+            const response = await axios.get(url);
+            if (response.status === 200) return response.data;
+            return null;
+        } catch {
+            return null;
+        }
+    }
+
     async syncSkill(skillName: string) {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/sync`;
         const response = await axios.post(url, { tenant_id: window.$tenantName });
@@ -7591,6 +7674,19 @@ class ProcessGPTBackend implements Backend {
             git_repo_url: data.gitRepoUrl ?? null
         };
         await storage.putObject('resource_pull_requests', record, { onConflict: 'id' });
+
+        const ownerId = await this.getResourceOwner(resourceType, data.resourceId);
+        if (ownerId && ownerId !== data.requesterId) {
+            await this.sendNotification({
+                userId: ownerId,
+                type: 'merge_request',
+                title: `[PR 요청] ${data.title}`,
+                description: `${resourceType} 병합 요청`,
+                url: this.getResourcePrUrl(resourceType, data.resourceId),
+                fromUserId: data.requesterId
+            });
+        }
+
         return record;
     }
 
@@ -7619,6 +7715,22 @@ class ProcessGPTBackend implements Backend {
         if (fields.reviewerId) update.reviewer_id = fields.reviewerId;
         if (fields.mergedAt) update.merged_at = fields.mergedAt;
         await storage.putObject('resource_pull_requests', update, { onConflict: 'id' });
+
+        const statusLabel: Record<string, string> = {
+            APPROVED: '[PR 승인]',
+            MERGED: '[PR 병합]',
+            CHANGES_REQUESTED: '[수정 요청]'
+        };
+        if (statusLabel[status] && pr.requester_id) {
+            await this.sendNotification({
+                userId: pr.requester_id,
+                type: 'merge_request',
+                title: `${statusLabel[status]} ${pr.title}`,
+                description: `${pr.resource_type} PR`,
+                url: this.getResourcePrUrl(pr.resource_type, pr.resource_id),
+                fromUserId: localStorage.getItem('email') || undefined
+            });
+        }
     }
 
     async addResourcePrReview(prId: string, action: 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENT', comment: string, reviewerId: string, reviewerName?: string): Promise<any> {

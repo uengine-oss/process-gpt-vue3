@@ -485,11 +485,14 @@ export default {
             this.loading = true;
             this.errorMsg = '';
             try {
-                await this.backend.createSkillRepo(this.skillName);
-                this.prBranchName = this.buildDefaultBranchName();
-                this.step = 'form';
+                await this.backend.createSkillRepo(this.skillName, {
+                    initialContent: this.content,
+                    filePath: this.filePath
+                });
+                this.$emit('saved', { mode: 'direct' });
+                this.close();
             } catch (err) {
-                this.errorMsg = err?.message || String(err);
+                this.errorMsg = (err && err.response && err.response.data && err.response.data.error) || err?.message || String(err);
             } finally {
                 this.loading = false;
             }
