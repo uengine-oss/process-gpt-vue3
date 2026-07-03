@@ -370,7 +370,10 @@ export default {
         },
         // 현재 탭에 속하는 파일들 (Drive 탭은 role 필터 적용 안 함)
         tabFiles() {
-            const bySource = this.allFiles.filter((f) => f.sourceType === this.activeSource);
+            // 인덱싱 완료(indexed)된 문서만 노출 — 아직 처리중/실패/대기인 문서를 선택하면
+            // RAG 에 청크가 없어 빈 컨텍스트가 되므로 모달에서 아예 숨긴다.
+            const ready = this.allFiles.filter((f) => f.indexStatus === 'indexed');
+            const bySource = ready.filter((f) => f.sourceType === this.activeSource);
             if (this.activeSource !== 'upload') return bySource;
             return bySource.filter((f) => (f.docRole || 'content') === this.currentRole);
         },

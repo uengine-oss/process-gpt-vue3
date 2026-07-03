@@ -828,38 +828,31 @@
         </v-dialog>
 
         <!-- 중복 업로드 확인 다이얼로그 -->
-        <v-dialog v-model="duplicateDialog" max-width="520">
+        <v-dialog v-model="duplicateDialog" max-width="540" persistent>
             <v-card>
                 <v-card-title class="text-h6">
                     <v-icon start color="warning">mdi-content-duplicate</v-icon>
-                    이미 업로드된 파일입니다
+                    이미 있는 파일 {{ duplicateInfo?.dupCount }}개
                 </v-card-title>
                 <v-card-text>
-                    <div class="mb-2">
-                        <strong>{{ duplicateInfo?.newName }}</strong> 와 동일한 내용의 파일이 이미 지식 베이스에 있습니다.
+                    <div class="mb-1">
+                        선택한 파일 중 <strong>{{ duplicateInfo?.dupCount }}개</strong>가 이미 지식 베이스에 있습니다.
+                        <span v-if="duplicateInfo?.newCount"> (새 파일 <strong>{{ duplicateInfo?.newCount }}</strong>개)</span>
                     </div>
-                    <v-card variant="tonal" color="primary" class="pa-3 mt-3">
-                        <div class="text-caption text-medium-emphasis">기존 파일</div>
-                        <div class="mt-1">
-                            <v-icon size="16" class="mr-1">mdi-file-outline</v-icon>
-                            <strong>{{ duplicateInfo?.existing?.file_name }}</strong>
-                        </div>
-                        <div class="text-caption mt-1">
-                            <v-icon size="14" class="mr-1">mdi-folder-outline</v-icon>
-                            {{ duplicateInfo?.existing?.folder_path || '(루트)' }}
-                            <span class="ml-2" v-if="duplicateInfo?.existing?.source_type === 'drive'">
-                                · Google Drive
-                            </span>
-                        </div>
-                    </v-card>
-                    <div class="text-caption text-medium-emphasis mt-3">
-                        그래도 업로드하시겠습니까? (같은 내용이 두 번 인덱싱될 수 있습니다)
+                    <div class="text-caption text-medium-emphasis mt-2">
+                        어떻게 할까요? "모두 업로드"를 고르면 같은 내용이 중복 인덱싱됩니다.
                     </div>
                 </v-card-text>
                 <v-card-actions>
+                    <v-btn variant="text" @click="resolveDuplicate('cancel')">취소</v-btn>
                     <v-spacer />
-                    <v-btn variant="text" @click="resolveDuplicate(false)">취소</v-btn>
-                    <v-btn color="warning" variant="flat" @click="resolveDuplicate(true)">그래도 업로드</v-btn>
+                    <v-btn variant="text" color="warning" @click="resolveDuplicate('overwrite')">
+                        중복 포함 모두 업로드
+                    </v-btn>
+                    <v-btn color="primary" variant="flat" @click="resolveDuplicate('skip')">
+                        <span v-if="duplicateInfo?.newCount">새 파일 {{ duplicateInfo?.newCount }}개만 업로드</span>
+                        <span v-else>중복 건너뛰기</span>
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -937,6 +930,10 @@ export default {
             isDragOver: false,
             // ── 업로드 진행 상태 (대량 폴더 업로드 대비: 전체 행을 들지 않고 카운터 + 소량 배열만) ──
             uploading: false,                 // 진행 중 플래그 (dropzone is-uploading / 진행패널 표시)
+            // 백그라운드 인제스트 상태 폴링 (pending/processing 동안 index_status 자동 갱신)
+            statusPollTimer: null,
+            pollInFlight: false,
+            lastTerminalCount: -1,           // 직전 폴링의 (indexed+failed) 수 — 변했을 때만 전체 재조회
             uploadConcurrency: 8,             // 동시 처리 파일 수 상한(워커 풀). 과부하 시 적응형 백오프로 자동 축소.
                                               // 폐쇄망 HTTP/1.1 환경은 브라우저가 origin당 6으로 캡 → 실효 6~8.
             uploadStats: { total: 0, done: 0, failed: 0 },
@@ -951,7 +948,7 @@ export default {
             deleteDialog: false,
             deleteTarget: null,
             duplicateDialog: false,
-            duplicateInfo: null, // { newName, existing }
+            duplicateInfo: null, // { dupCount, newCount } — 배치 중복 안내용
             duplicateResolver: null,
             driveSelected: [],
             uploadSelected: [],
@@ -1232,7 +1229,12 @@ export default {
         this.fetchList().then(() => {
             this.ensureInitialExpansion();
             this.applyPendingFolder(); // 파일 로드 후 저장된 폴더 검증·복원
+            // 진입 시 아직 인덱싱 중인 파일이 있으면(이전 업로드/타 사용자) 상태 폴링 시작
+            this.startStatusPolling();
         });
+    },
+    beforeUnmount() {
+        this.stopStatusPolling();
     },
     methods: {
         applyFilter(list, search, status) {
@@ -1386,19 +1388,20 @@ export default {
                 .map((b) => b.toString(16).padStart(2, '0'))
                 .join('');
         },
-        askDuplicate(newName, existing) {
-            this.duplicateInfo = { newName, existing };
+        // 배치 중복 안내 — 'skip'(중복 제외) | 'overwrite'(중복 포함 모두) | 'cancel'
+        askDuplicateBatch(dupCount, newCount) {
+            this.duplicateInfo = { dupCount, newCount };
             this.duplicateDialog = true;
             return new Promise((resolve) => {
                 this.duplicateResolver = resolve;
             });
         },
-        resolveDuplicate(proceed) {
+        resolveDuplicate(choice) {
             this.duplicateDialog = false;
             const r = this.duplicateResolver;
             this.duplicateResolver = null;
             this.duplicateInfo = null;
-            if (r) r(proceed);
+            if (r) r(choice);
         },
         async uploadFiles_(files, folderResolver = null) {
             const tenantId = window.$tenantName || '';
@@ -1440,31 +1443,60 @@ export default {
                 return;
             }
 
-            // 1) 해시 계산 + 중복 체크 (다이얼로그는 한 파일씩 순차로)
-            const accepted = [];
-            for (const file of files) {
+            // 1) 해시 계산 + 중복 분류 — *다이얼로그는 파일마다가 아니라 배치로 1회만*.
+            //    (폴더 재업로드처럼 중복이 수십~수백 개일 때 다이얼로그 폭탄 방지)
+            //    분류는 제한 동시성으로 병렬 처리해 대기 시간 단축.
+            const newItems = [];
+            const dupItems = [];
+            const classifyOne = async (file) => {
                 let hash = '';
                 try {
                     hash = await this.computeSha256(file);
                 } catch (e) {
                     console.warn('[KnowledgeFilesTab] hash failed', e);
                 }
+                let exists = false;
                 if (hash) {
                     try {
                         const { data } = await axios.get('/memento/knowledge/files/check-hash', {
                             params: { tenant_id: tenantId, file_hash: hash }
                         });
-                        if (data?.exists && data.existing) {
-                            const proceed = await this.askDuplicate(file.name, data.existing);
-                            if (!proceed) continue;
-                        }
+                        exists = !!(data?.exists && data.existing);
                     } catch (e) {
-                        console.warn('[KnowledgeFilesTab] hash check failed, proceeding', e);
+                        // 체크 실패 시 새 파일로 간주(업로드 진행)
+                        console.warn('[KnowledgeFilesTab] hash check failed, treat as new', e);
                     }
                 }
-                accepted.push({ file, hash });
+                (exists ? dupItems : newItems).push({ file, hash });
+            };
+            const CLASSIFY_CONC = 8;
+            let _ci = 0;
+            await Promise.all(
+                Array.from({ length: Math.min(CLASSIFY_CONC, files.length) }, async () => {
+                    while (_ci < files.length) {
+                        const f = files[_ci++];
+                        await classifyOne(f);
+                    }
+                })
+            );
+
+            // 2) 중복이 있으면 *한 번만* 묻는다: 건너뛰기(권장) / 모두 업로드 / 취소
+            let accepted = newItems;
+            if (dupItems.length > 0) {
+                const choice = await this.askDuplicateBatch(dupItems.length, newItems.length);
+                if (choice === 'cancel') { this.uploading = false; return; }
+                if (choice === 'overwrite') {
+                    accepted = newItems.concat(dupItems);
+                } else { // 'skip'
+                    accepted = newItems;
+                    this.notify(`이미 있는 ${dupItems.length}개는 건너뛰고 ${newItems.length}개를 업로드합니다`, 'success');
+                }
             }
-            if (!accepted.length) { this.uploading = false; return; }
+            if (!accepted.length) {
+                this.uploading = false;
+                if (dupItems.length) this.notify('업로드할 새 파일이 없습니다 (모두 중복)', 'warning');
+                return;
+            }
 
             const docRole = this.uploadTargetRole;
             const usedFolders = new Set();
@@ -1525,8 +1557,10 @@ export default {
                 (f) => !(usedFolders.has(f.folder_path) && (f.doc_role || 'content') === docRole)
             );
             await this.fetchList();
-            // 업로드 배치 끝 → 영향받은 폴더 카드 1회 갱신 (단일·폴더 업로드 모두 이 경로).
-            this.refreshFolderCards([...usedFolders], docRole);
+            // 인덱싱은 백그라운드에서 진행 → 프론트는 상태 폴링으로 배지만 갱신한다.
+            // 폴더 요약 카드 재생성은 *서버(memento 인제스트 sweeper)*가 인덱싱 정착 후 자동 수행하므로
+            // 프론트에서 트리거하지 않는다(페이지를 안 봐도 서버가 처리 → 방문 의존 제거).
+            this.startStatusPolling();
         },
         // 단일 파일 업로드 → 성공 시 null, 실패 시 { error, transient } 반환.
         // transient=true(429/5xx/timeout/네트워크/인덱싱실패)면 워커 풀이 동시 한도를 줄임(백오프).
@@ -1543,11 +1577,13 @@ export default {
             if (this.myUid) fd.append('uploaded_by_uid', this.myUid);
             if (this.myName) fd.append('uploaded_by_name', this.myName);
             try {
-                const { data } = await axios.post('/memento/knowledge/files/upload', fd, {
+                await axios.post('/memento/knowledge/files/upload', fd, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                // 200이지만 indexed=false(파싱/임베딩 실패)는 과부하 가능성 → transient 로 간주(백오프).
-                return data?.indexed ? null : { error: data?.error || '인덱싱 실패', transient: true };
+                // 백그라운드 인제스트: 2xx = "접수 성공"(스토리지 저장 + pending 등록). 인덱싱은 서버가
+                // 백그라운드로 처리하므로 여기선 성공 처리하고, 진행/완료는 상태 폴링(index_status)으로 본다.
+                // (예전엔 indexed=false 를 실패로 간주했지만, 이젠 정상 흐름이라 그 로직 제거)
+                return null;
             } catch (e) {
                 const status = e?.response?.status;
                 const transient =
@@ -1572,6 +1608,52 @@ export default {
                 });
             } catch (e) {
                 console.warn('[KnowledgeFilesTab] refresh folder cards failed', e);
+            }
+        },
+        // ── 백그라운드 인제스트 상태 폴링 ──
+        // 업로드는 즉시 접수(pending)되고 서버가 백그라운드로 인덱싱한다. pending/processing 파일이
+        // 남아있는 동안 주기적으로 목록을 다시 받아 상태 배지를 자동 갱신한다(수동 새로고침 불필요).
+        hasProcessingFiles() {
+            return this.files.some(
+                (f) => f.index_status === 'pending' || f.index_status === 'processing'
+            );
+        },
+        startStatusPolling() {
+            if (this.statusPollTimer) return;
+            if (!this.hasProcessingFiles()) return; // 처리중 파일 없으면 폴링 불필요
+            this.lastTerminalCount = -1;
+            this.statusPollTimer = setInterval(() => this.pollIngestStatus(), 4000);
+        },
+        // 경량 상태 폴링 — 전체 목록(수천 행)을 매번 받지 않고 상태 카운트만 조회한다.
+        // 완료(indexed+failed) 수가 변했을 때만 목록을 1회 재조회해 배지를 갱신 → 백엔드/프론트 부하 최소화.
+        async pollIngestStatus() {
+            if (this.pollInFlight) return; // 중첩 방지
+            this.pollInFlight = true;
+            try {
+                const tenantId = window.$tenantName || '';
+                if (!tenantId) return;
+                const { data } = await axios.get('/memento/knowledge/ingest/status', {
+                    params: { tenant_id: tenantId }
+                });
+                const c = (data && data.counts) || {};
+                const processing = (c.pending || 0) + (c.processing || 0);
+                const terminal = (c.indexed || 0) + (c.failed || 0);
+                // 완료 항목이 늘었을 때만 전체 목록 재조회(배지 갱신)
+                if (terminal !== this.lastTerminalCount) {
+                    this.lastTerminalCount = terminal;
+                    await this.fetchList();
+                }
+                if (processing === 0) this.stopStatusPolling(); // 모두 완료 → 폴링 종료
+            } catch (e) {
+                // 상태 조회 실패는 조용히(다음 tick 재시도)
+            } finally {
+                this.pollInFlight = false;
+            }
+        },
+        stopStatusPolling() {
+            if (this.statusPollTimer) {
+                clearInterval(this.statusPollTimer);
+                this.statusPollTimer = null;
             }
         },
         // 선택된 폴더의 요약 카드 조회 + '생성 중' 폴링.
