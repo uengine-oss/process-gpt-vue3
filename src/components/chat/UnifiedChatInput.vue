@@ -65,6 +65,16 @@
                             {{ selectedKnowledgeDocs.length }}
                         </span>
                     </v-btn>
+                    <!-- 폴더 통째 업로드(webkitdirectory) — 허용 확장자 파일만 첨부됨. -->
+                    <v-btn
+                        @click="uploadFolder"
+                        class="ml-2 text-medium-emphasis knowledge-tool-btn"
+                        variant="outlined"
+                        rounded="pill"
+                        prepend-icon="mdi-folder-upload-outline"
+                    >
+                        <span class="knowledge-tool-btn__label">폴더 업로드</span>
+                    </v-btn>
                 </template>
             </Chat>
         </div>
@@ -211,6 +221,12 @@ export default {
             const files = e.dataTransfer?.files;
             if (!files || files.length === 0) return;
             this.$refs.inputChat?.changeImage({ target: { files } });
+        },
+        // 폴더 통째 업로드 — Chat 의 webkitdirectory input 을 연다(허용 확장자만 changeImage 에서 필터).
+        uploadFolder() {
+            try {
+                this.$refs.inputChat?.uploadFolder?.();
+            } catch (e) {}
         },
         // ChatRoomPage(메시지 리스트)에서 reply 클릭 시, 입력창(Chat)의 reply UI를 사용하기 위한 브릿지
         setReply(message) {

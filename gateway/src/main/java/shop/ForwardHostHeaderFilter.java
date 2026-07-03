@@ -104,7 +104,8 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
 
     private TokenValidationResult validateToken(String token, String expectedSubdomain, String requestPath) {
         final boolean allowPayloadFallback = requestPath != null
-                && (requestPath.startsWith("/agent/") || requestPath.startsWith("/memento/") || requestPath.startsWith("/robo/"));
+                && (requestPath.startsWith("/agent/") || requestPath.startsWith("/memento/") || requestPath.startsWith("/robo/")
+                    || requestPath.startsWith("/completion/"));
         final boolean skipTenantCheck = isLocalHost(expectedSubdomain);
         try {
             Claims claims = Jwts.parser()

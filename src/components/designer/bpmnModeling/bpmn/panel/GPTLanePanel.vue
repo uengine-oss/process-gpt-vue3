@@ -134,7 +134,9 @@ export default {
             role: null,
             roleOptions: [
                 { value: 'None', label: 'LanePanel.none' },
-                { value: 'Organization', label: 'LanePanel.organization' }
+                { value: 'Organization', label: 'LanePanel.organization' },
+                { value: 'org.uengine.five.overriding.IAMRoleResolutionContext', label: 'LanePanel.IAMScope' },
+                { value: 'org.uengine.kernel.DirectRoleResolutionContext', label: 'LanePanel.DirecUser' }
             ],
             radioDescription: [
                 {
@@ -333,6 +335,23 @@ export default {
 
             // 변경사항 emit
             this.$emit('update:uengineProperties', this.copyUengineProperties);
+        },
+        extractTeamsFromOrgChart(node) {
+            const teams = [];
+            const traverse = (n) => {
+                if (!n) return;
+                if (n.data?.isTeam) {
+                    teams.push({
+                        id: n.id,
+                        name: n.data.name || n.id
+                    });
+                }
+                if (n.children) {
+                    n.children.forEach((child) => traverse(child));
+                }
+            };
+            traverse(node);
+            return teams;
         },
 
         addCheckpoint() {

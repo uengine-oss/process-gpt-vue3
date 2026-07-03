@@ -514,7 +514,12 @@ export default {
                     item.storage_path;
                 const name = item.file_name || item.fileName || item.name || item.originalFileName || guessNameFromPath(path);
                 if (!path && !name) return null;
-                return { path: path || name, name: name || guessNameFromPath(path) };
+                const meta = { path: path || name, name: name || guessNameFromPath(path) };
+                // hwpx 미리보기/편집(HwpxViewer)용 메타는 보존한다(정규화에서 유실 방지).
+                const htmlUrl = item.html_url || item.htmlUrl || '';
+                if (htmlUrl) meta.html_url = htmlUrl;
+                if (item.ext) meta.ext = item.ext;
+                return meta;
             };
 
             if (Array.isArray(value)) {

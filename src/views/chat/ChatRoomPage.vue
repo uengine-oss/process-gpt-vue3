@@ -6011,7 +6011,18 @@ export default {
                 const pdFile = files.find(
                     (f) => (f.name || '').toLowerCase() === 'process-definition.json' || (f.path || '').endsWith('process-definition.json')
                 );
-                if (!pdFile || !pdFile.content) continue;
+                if (!pdFile || !pdFile.content) {
+                    // 단독 스킬 그룹(프로세스 없음): 스킬만 draft 업로드해 /skills/{name} 편집기에서 로드되게 한다.
+                    const hasSkill = files.some((f) => /\/skills\/[^/]+\/SKILL\.md$/i.test((f.path || '').replace(/\\/g, '/')));
+                    if (hasSkill) {
+                        try {
+                            await this._uploadSkillsFromFiles(files, { draft: true });
+                        } catch (e) {
+                            console.warn('[DraftValidate] 단독 스킬 draft 업로드 실패(무시):', e);
+                        }
+                    }
+                    continue;
+                }
                 const st = this.workspaceSaveStateByGroup[group] || (this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' });
                 if (st.__validated || st.validating) continue;
 
@@ -6215,6 +6226,23 @@ export default {
                 (f) => (f.name || '').toLowerCase() === 'process-definition.json' || (f.path || '').endsWith('process-definition.json')
             );
             if (!pdFile) {
+                // 단독 스킬 산출물(프로세스 없음): SKILL.md 만 있으면 스킬만 저장(정식 등록/승격).
+                const hasSkill = list.some((f) => /\/skills\/[^/]+\/SKILL\.md$/i.test((f.path || '').replace(/\\/g, '/')) || (f.name || '').toLowerCase() === 'skill.md');
+                if (hasSkill) {
+                    st.saving = true;
+                    st.error = '';
+                    try {
+                        const saved = await this._uploadSkillsFromFiles(list, { draft: false });
+                        st.saved = true;
+                        st.saving = false;
+                        this.$forceUpdate && this.$forceUpdate();
+                        return;
+                    } catch (e) {
+                        st.saving = false;
+                        st.error = `스킬 저장 실패: ${(e && (e.message || e.detail)) || e}`;
+                        return;
+                    }
+                }
                 st.error = 'process-definition.json 이 없습니다.';
                 return;
             }
