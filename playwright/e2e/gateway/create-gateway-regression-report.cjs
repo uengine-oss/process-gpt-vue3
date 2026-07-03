@@ -122,6 +122,16 @@ const items = [
             ['coverage AI', 'PASS', 'branch_2', 'branch_2_end', 'branch_2_end']
         ],
         note: 'Selected branches can proceed independently to their own end events without merging, for single and multi selections.'
+    },
+    {
+        id: 'exclusive-direct-merge-with-mid-task',
+        title: 'Exclusive direct merge with mid task',
+        status: 'PASS',
+        results: [
+            ['deterministic', 'PASS', 'branch_3; branch_3_mid_task; branch_3_alert_task', 'merge_task', 'merge_task'],
+            ['AI', 'PASS', 'branch_3; branch_3_mid_task; branch_3_alert_task', 'merge_task', 'merge_task']
+        ],
+        note: 'An exclusive branch can contain intermediate tasks before direct-merging into merge_task.'
     }
 ];
 

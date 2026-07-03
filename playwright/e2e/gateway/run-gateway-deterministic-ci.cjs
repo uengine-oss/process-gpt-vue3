@@ -12,7 +12,7 @@ const playwrightCli = path.join(
 const result = spawnSync(process.execPath, [
     playwrightCli,
     'test',
-    'playwright/e2e/gateway/gateway-regression-branches.spec.ts',
+    '--config=playwright.gateway-regression.config.mjs',
     '--reporter=list'
 ], {
     stdio: 'inherit',

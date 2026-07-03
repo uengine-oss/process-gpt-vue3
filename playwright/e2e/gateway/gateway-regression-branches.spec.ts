@@ -280,6 +280,46 @@ async def main():
             }
         result["afterBranch"] = after
 
+    if scenario_kind == "exclusive-direct-merge-with-mid-task":
+        mid_payloads = wiproc.resolve_next_activity_payloads(
+            proc_def,
+            selected_ids[0],
+            {**workitem, "activity_id": selected_ids[0]},
+            sequence_condition_data,
+        )
+        mid_ids = [p.get("nextActivityId") for p in mid_payloads]
+        alert_payloads = wiproc.resolve_next_activity_payloads(
+            proc_def,
+            mid_ids[0],
+            {**workitem, "activity_id": mid_ids[0]},
+            sequence_condition_data,
+        )
+        alert_ids = [p.get("nextActivityId") for p in alert_payloads]
+        branch_merged_workitems = [
+            {"activity_id": "branch_1", "status": "TODO"},
+            {"activity_id": "branch_2", "status": "TODO"},
+            {"activity_id": "branch_3", "status": "DONE"},
+            {"activity_id": "branch_4", "status": "TODO"},
+        ]
+        merge_payloads = wiproc.resolve_next_activity_payloads(
+            proc_def,
+            alert_ids[0],
+            {**workitem, "activity_id": alert_ids[0]},
+            sequence_condition_data,
+        )
+        filtered = await wiproc.check_task_status(merge_payloads, {
+            "activity_id": alert_ids[0],
+            "sequences": proc_def.sequences,
+            "gateways": proc_def.gateways,
+            "branch_merged_workitems": branch_merged_workitems,
+        })
+        result["midTaskIds"] = mid_ids
+        result["alertTaskIds"] = alert_ids
+        result["afterAlertTask"] = {
+            "resolved": [p.get("nextActivityId") for p in merge_payloads],
+            "filtered": [p.get("nextActivityId") for p in filtered],
+        }
+
     print(json.dumps(result, ensure_ascii=False))
 
 asyncio.run(main())
@@ -407,5 +447,11 @@ function assertCustomPayload(payload: any, scenario: any) {
             expect(payload.afterBranch[branchId].resolved).toContain(`${branchId}_end`);
             expect(payload.afterBranch[branchId].filtered).toContain(`${branchId}_end`);
         }
+    }
+    if (scenarioKind === 'exclusive-direct-merge-with-mid-task') {
+        expect(payload.midTaskIds).toEqual(['branch_3_mid_task']);
+        expect(payload.alertTaskIds).toEqual(['branch_3_alert_task']);
+        expect(payload.afterAlertTask.resolved).toContain('merge_task');
+        expect(payload.afterAlertTask.filtered).toContain('merge_task');
     }
 }

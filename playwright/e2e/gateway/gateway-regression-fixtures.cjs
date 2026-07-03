@@ -372,6 +372,15 @@ const customScenarios = [
         selectedBranches: ['branch_2', 'branch_3'],
         aiExpectedBranches: ['branch_2', 'branch_3'],
         aiRequestDetail: 'The customer asks about an invoice and also asks us to prepare a proposal for a new CRM workflow automation project.'
+    },
+    {
+        id: 'exclusive-direct-merge-with-mid-task',
+        name: 'Exclusive direct merge with mid task',
+        branchCount: 4,
+        splitType: 'exclusive',
+        selectedBranches: ['branch_3'],
+        aiExpectedBranches: ['branch_3'],
+        aiRequestDetail: 'The customer asks us to prepare a proposal for a new CRM workflow automation project.'
     }
 ];
 
@@ -435,6 +444,9 @@ function createCustomGatewayBpmnXml(scenario) {
     }
     if (scenario.id === 'inclusive-split-without-merge') {
         return createInclusiveSplitWithoutMergeXml(scenario);
+    }
+    if (scenario.id === 'exclusive-direct-merge-with-mid-task') {
+        return createExclusiveDirectMergeWithMidTaskXml(scenario);
     }
     throw new Error(`Unknown custom gateway scenario: ${scenario.id}`);
 }
@@ -530,6 +542,62 @@ function createInclusiveSplitWithoutMergeXml(scenario) {
         const endY = 114 + i * 90 + 18;
         return `<bpmndi:BPMNEdge id="flow_split_branch_${i}_di" bpmnElement="flow_split_branch_${i}"><di:waypoint x="410" y="270" /><di:waypoint x="460" y="270" /><di:waypoint x="460" y="${taskY}" /><di:waypoint x="510" y="${taskY}" /></bpmndi:BPMNEdge><bpmndi:BPMNEdge id="flow_branch_${i}_end_di" bpmnElement="flow_branch_${i}_end"><di:waypoint x="620" y="${taskY}" /><di:waypoint x="685" y="${taskY}" /><di:waypoint x="685" y="${endY}" /><di:waypoint x="750" y="${endY}" /></bpmndi:BPMNEdge>`;
     }).join('\n    ')}
+  </bpmndi:BPMNPlane></bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
+}
+
+function createExclusiveDirectMergeWithMidTaskXml(scenario) {
+    const processId = scenario.id.replace(/-/g, '_');
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_${processId}" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js" exporterVersion="17.9.1">
+  <bpmn:collaboration id="Collaboration_${processId}"><bpmn:participant id="Participant_tester" name="tester" processRef="${processId}">${extensionJson({ role: { name: 'tester' } })}</bpmn:participant></bpmn:collaboration>
+  <bpmn:process id="${processId}" name="${escapeXml(scenario.name)}" isExecutable="true">
+    <bpmn:extensionElements><uengine:properties><uengine:json>${uengineJson({ definitionName: scenario.name, version: '0.1' })}</uengine:json></uengine:properties></bpmn:extensionElements>
+    <bpmn:startEvent id="start" name="start">${extensionJson({ role: { name: 'tester' } })}<bpmn:outgoing>flow_start_initial</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:userTask id="initial" name="initial">${extensionJson({ role: { name: 'tester' }, tool: 'formHandler:initial' })}<bpmn:incoming>flow_start_initial</bpmn:incoming><bpmn:outgoing>flow_initial_split</bpmn:outgoing></bpmn:userTask>
+    <bpmn:exclusiveGateway id="split_gateway" name="exclusive split">${extensionJson({ role: { name: 'tester' } })}<bpmn:incoming>flow_initial_split</bpmn:incoming><bpmn:outgoing>flow_split_branch_1</bpmn:outgoing><bpmn:outgoing>flow_split_branch_2</bpmn:outgoing><bpmn:outgoing>flow_split_branch_3</bpmn:outgoing><bpmn:outgoing>flow_split_branch_4</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:userTask id="branch_1" name="branch_1">${extensionJson({ role: { name: 'tester' }, tool: 'formHandler:branch_1' })}<bpmn:incoming>flow_split_branch_1</bpmn:incoming><bpmn:outgoing>flow_branch_1_merge</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="branch_2" name="branch_2">${extensionJson({ role: { name: 'tester' }, tool: 'formHandler:branch_2' })}<bpmn:incoming>flow_split_branch_2</bpmn:incoming><bpmn:outgoing>flow_branch_2_merge</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="branch_3" name="branch_3">${extensionJson({ role: { name: 'tester' }, tool: 'formHandler:branch_3' })}<bpmn:incoming>flow_split_branch_3</bpmn:incoming><bpmn:outgoing>flow_branch_3_mid</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="branch_3_mid_task" name="branch_3 mid task">${extensionJson({ role: { name: 'tester' }, tool: 'formHandler:branch_3_mid' })}<bpmn:incoming>flow_branch_3_mid</bpmn:incoming><bpmn:outgoing>flow_branch_3_mid_alert</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="branch_3_alert_task" name="branch_3 alert task">${extensionJson({ role: { name: 'tester' }, tool: 'formHandler:branch_3_alert' })}<bpmn:incoming>flow_branch_3_mid_alert</bpmn:incoming><bpmn:outgoing>flow_branch_3_alert_merge</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="branch_4" name="branch_4">${extensionJson({ role: { name: 'tester' }, tool: 'formHandler:branch_4' })}<bpmn:incoming>flow_split_branch_4</bpmn:incoming><bpmn:outgoing>flow_branch_4_merge</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="merge_task" name="merge task">${extensionJson({ role: { name: 'tester' }, tool: 'formHandler:merge' })}<bpmn:incoming>flow_branch_1_merge</bpmn:incoming><bpmn:incoming>flow_branch_2_merge</bpmn:incoming><bpmn:incoming>flow_branch_3_alert_merge</bpmn:incoming><bpmn:incoming>flow_branch_4_merge</bpmn:incoming><bpmn:outgoing>flow_merge_end</bpmn:outgoing></bpmn:userTask>
+    <bpmn:endEvent id="end" name="end">${extensionJson({ role: { name: 'tester' } })}<bpmn:incoming>flow_merge_end</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_initial" sourceRef="start" targetRef="initial">${extensionJson({})}</bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_initial_split" sourceRef="initial" targetRef="split_gateway">${extensionJson({})}</bpmn:sequenceFlow>
+    ${[1, 2, 3, 4].map((i) => `<bpmn:sequenceFlow id="flow_split_branch_${i}" sourceRef="split_gateway" targetRef="branch_${i}">${extensionJson({ condition: branchConditions[i], conditionMode: 'text', priority: i })}</bpmn:sequenceFlow>`).join('\n    ')}
+    <bpmn:sequenceFlow id="flow_branch_1_merge" sourceRef="branch_1" targetRef="merge_task">${extensionJson({})}</bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_branch_2_merge" sourceRef="branch_2" targetRef="merge_task">${extensionJson({})}</bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_branch_3_mid" sourceRef="branch_3" targetRef="branch_3_mid_task">${extensionJson({})}</bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_branch_3_mid_alert" sourceRef="branch_3_mid_task" targetRef="branch_3_alert_task">${extensionJson({})}</bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_branch_3_alert_merge" sourceRef="branch_3_alert_task" targetRef="merge_task">${extensionJson({})}</bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_branch_4_merge" sourceRef="branch_4" targetRef="merge_task">${extensionJson({})}</bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_merge_end" sourceRef="merge_task" targetRef="end">${extensionJson({})}</bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_${processId}">
+    <bpmndi:BPMNShape id="Participant_tester_di" bpmnElement="Participant_tester" isHorizontal="true"><dc:Bounds x="40" y="40" width="1260" height="620" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="start_di" bpmnElement="start"><dc:Bounds x="110" y="302" width="36" height="36" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="initial_di" bpmnElement="initial"><dc:Bounds x="190" y="280" width="110" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="split_gateway_di" bpmnElement="split_gateway" isMarkerVisible="true"><dc:Bounds x="340" y="295" width="50" height="50" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="branch_1_di" bpmnElement="branch_1"><dc:Bounds x="470" y="120" width="110" height="64" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="branch_2_di" bpmnElement="branch_2"><dc:Bounds x="470" y="220" width="110" height="64" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="branch_3_di" bpmnElement="branch_3"><dc:Bounds x="470" y="320" width="110" height="64" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="branch_3_mid_task_di" bpmnElement="branch_3_mid_task"><dc:Bounds x="650" y="320" width="130" height="64" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="branch_3_alert_task_di" bpmnElement="branch_3_alert_task"><dc:Bounds x="850" y="320" width="130" height="64" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="branch_4_di" bpmnElement="branch_4"><dc:Bounds x="470" y="460" width="110" height="64" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="merge_task_di" bpmnElement="merge_task"><dc:Bounds x="1080" y="280" width="120" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="end_di" bpmnElement="end"><dc:Bounds x="1240" y="302" width="36" height="36" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNEdge id="flow_start_initial_di" bpmnElement="flow_start_initial"><di:waypoint x="146" y="320" /><di:waypoint x="190" y="320" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="flow_initial_split_di" bpmnElement="flow_initial_split"><di:waypoint x="300" y="320" /><di:waypoint x="340" y="320" /></bpmndi:BPMNEdge>
+    ${[[1, 152], [2, 252], [3, 352], [4, 492]].map(([i, y]) => `<bpmndi:BPMNEdge id="flow_split_branch_${i}_di" bpmnElement="flow_split_branch_${i}"><di:waypoint x="390" y="320" /><di:waypoint x="430" y="320" /><di:waypoint x="430" y="${y}" /><di:waypoint x="470" y="${y}" /></bpmndi:BPMNEdge>`).join('\n    ')}
+    <bpmndi:BPMNEdge id="flow_branch_1_merge_di" bpmnElement="flow_branch_1_merge"><di:waypoint x="580" y="152" /><di:waypoint x="1040" y="152" /><di:waypoint x="1040" y="320" /><di:waypoint x="1080" y="320" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="flow_branch_2_merge_di" bpmnElement="flow_branch_2_merge"><di:waypoint x="580" y="252" /><di:waypoint x="1040" y="252" /><di:waypoint x="1040" y="320" /><di:waypoint x="1080" y="320" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="flow_branch_3_mid_di" bpmnElement="flow_branch_3_mid"><di:waypoint x="580" y="352" /><di:waypoint x="650" y="352" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="flow_branch_3_mid_alert_di" bpmnElement="flow_branch_3_mid_alert"><di:waypoint x="780" y="352" /><di:waypoint x="850" y="352" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="flow_branch_3_alert_merge_di" bpmnElement="flow_branch_3_alert_merge"><di:waypoint x="980" y="352" /><di:waypoint x="1080" y="320" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="flow_branch_4_merge_di" bpmnElement="flow_branch_4_merge"><di:waypoint x="580" y="492" /><di:waypoint x="1040" y="492" /><di:waypoint x="1040" y="320" /><di:waypoint x="1080" y="320" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="flow_merge_end_di" bpmnElement="flow_merge_end"><di:waypoint x="1200" y="320" /><di:waypoint x="1240" y="320" /></bpmndi:BPMNEdge>
   </bpmndi:BPMNPlane></bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
 }
