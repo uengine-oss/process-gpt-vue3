@@ -305,13 +305,15 @@ export default {
 
         updatedKey: 0,
         deleteDialog: false,
-        participantUsers: []
+        participantUsers: [],
+        parentRedirectTimer: null
     }),
     watch: {
         $route: {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
+                    this.clearParentRedirectTimer();
                     this.tab = this.resolveInitialTab('progress');
                     await this.init();
                 }
@@ -380,6 +382,7 @@ export default {
         this.EventBus.on('todolist-updated', this.handleTodolistUpdated);
     },
     unmounted() {
+        this.clearParentRedirectTimer();
         this.EventBus.off('todolist-updated', this.handleTodolistUpdated);
     },
     computed: {
@@ -451,6 +454,46 @@ export default {
             const lastTab = localStorage.getItem('instanceCard-lastTab');
             return lastTab || defaultTab;
         },
+        clearParentRedirectTimer() {
+            if (this.parentRedirectTimer) {
+                clearTimeout(this.parentRedirectTimer);
+                this.parentRedirectTimer = null;
+            }
+        },
+        async redirectToParentIfCompleted(instance) {
+            if (
+                window.$mode !== 'ProcessGPT' ||
+                !instance?.parent_proc_inst_id ||
+                String(instance.status || '').toUpperCase() !== 'COMPLETED'
+            ) {
+                return false;
+            }
+
+            this.clearParentRedirectTimer();
+            const parentRouteId = instance.parent_proc_inst_id.replace(/\./g, '_DOT_');
+            await this.$router.replace({
+                path: `/instancelist/${parentRouteId}`,
+                query: this.$route.query
+            });
+            return true;
+        },
+        scheduleParentRedirectCheck(instance) {
+            if (window.$mode !== 'ProcessGPT' || !instance?.parent_proc_inst_id) return;
+            if (String(instance.status || '').toUpperCase() === 'COMPLETED') return;
+            if (this.parentRedirectTimer) return;
+
+            const childInstId = instance.instId;
+            this.parentRedirectTimer = setTimeout(async () => {
+                this.parentRedirectTimer = null;
+
+                if (this.id !== childInstId) return;
+
+                const latest = await backend.getInstance(childInstId);
+                if (await this.redirectToParentIfCompleted(latest)) return;
+
+                this.scheduleParentRedirectCheck(latest || instance);
+            }, 2000);
+        },
         async handleTodolistUpdated() {
             await this.loadTasks();
         },
@@ -497,6 +540,9 @@ export default {
                     }
 
                     if (me.instance) {
+                        if (await me.redirectToParentIfCompleted(me.instance)) return;
+                        me.scheduleParentRedirectCheck(me.instance);
+
                         me.eventList = await backend.getEventList(me.instance.instId);
 
                         // 시작자와 시작일시 정보를 위해 첫 번째 workItem 가져오기

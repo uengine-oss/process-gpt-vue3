@@ -623,6 +623,7 @@ async function createExecutionDefinitionFromBpmnXml(xml) {
         ['events', 'bpmn:startEvent', 'startEvent'],
         ['events', 'bpmn:endEvent', 'endEvent'],
         ['activities', 'bpmn:userTask', 'userTask'],
+        ['activities', 'bpmn:callActivity', 'CallActivity'],
         ['gateways', 'bpmn:exclusiveGateway', 'exclusiveGateway'],
         ['gateways', 'bpmn:inclusiveGateway', 'inclusiveGateway'],
         ['gateways', 'bpmn:parallelGateway', 'parallelGateway']

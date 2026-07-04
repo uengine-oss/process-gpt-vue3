@@ -260,6 +260,20 @@ export default {
             this.taskReturnDialog = false;
             this.$router.push(`/instancelist/${route}`);
         },
+        async resolvePostCompleteInstanceId(instId) {
+            if (this.mode !== 'ProcessGPT' || !instId) return instId;
+
+            const instance = await backend.getInstance(instId);
+            if (
+                instance &&
+                String(instance.status || '').toUpperCase() === 'COMPLETED' &&
+                instance.parent_proc_inst_id
+            ) {
+                return instance.parent_proc_inst_id;
+            }
+
+            return instId;
+        },
         init() {
             var me = this;
             let workitem = me.workItem;
@@ -326,7 +340,8 @@ export default {
                     try {
                         await backend.skipTask(taskId, { reason: String(me.skipReason || '').trim() });
                         me.skipDialog = false;
-                        const route = window.$mode == 'ProcessGPT' ? btoa(me.workItem.worklist.instId) : me.workItem.worklist.instId;
+                        const routeInstId = await me.resolvePostCompleteInstanceId(me.workItem.worklist.instId);
+                        const route = window.$mode == 'ProcessGPT' ? btoa(routeInstId) : routeInstId;
                         me.$router.push(`/instancelist/${route}`);
                     } finally {
                         me.isSkipping = false;

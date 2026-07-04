@@ -15,6 +15,7 @@
         "test:e2e:smoke:simple": "playwright test playwright/e2e/smoke/beta-login-smoke-simple.spec.ts",
         "test:e2e:smoke:simple:ci": "playwright test playwright/e2e/smoke/beta-login-smoke-simple.spec.ts --reporter=list",
         "test:e2e:bpmn-auto-layout": "playwright test --config=playwright.bpmn-auto-layout.config.mjs",
+        "test:e2e:call-activity": "playwright test --config=playwright.call-activity.config.mjs playwright/e2e/gateway/call-activity-processgpt.spec.ts",
         "test:e2e:gateway:deterministic:ci": "node playwright/e2e/gateway/run-gateway-deterministic-ci.cjs"
     },
     "bin": "server.js",

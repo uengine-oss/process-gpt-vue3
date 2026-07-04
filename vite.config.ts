@@ -18,7 +18,7 @@ function spaFallbackPlugin() {
         configureServer(server: any) {
             const handler = (req: any, res: any, next: any) => {
                 const url = req.url?.split('?')[0] || '';
-                const spaRoutes = ['/definition-map', '/bpmn-auto-layout-e2e'];
+                const spaRoutes = ['/definition-map', '/bpmn-auto-layout-e2e', '/instancelist'];
                 if (req.method === 'GET' && spaRoutes.some((route) => url.startsWith(route))) {
                     req.url = '/index.html';
                 }

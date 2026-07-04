@@ -1525,7 +1525,7 @@ export default {
                 } else {
                     eventBus.on('element.dblclick', function (e) {
                         if (e.element.type.includes('CallActivity')) {
-                            self.$emit('openDefinition', e.element.businessObject);
+                            self.$emit('openPanel', e.element.id);
                         } else if (e.element.type.includes('Collaboration')) {
                             const businessObject = e.element.businessObject;
                             if (

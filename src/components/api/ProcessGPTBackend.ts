@@ -5799,7 +5799,7 @@ class ProcessGPTBackend implements Backend {
         return {
             defId: item.proc_def_id,
             instId: item.proc_inst_id,
-            rootInstId: item.proc_inst_id,
+            rootInstId: item.root_proc_inst_id || item.proc_inst_id,
             taskId: item.id,
             startDate: item.start_date,
             endDate: item.end_date,
