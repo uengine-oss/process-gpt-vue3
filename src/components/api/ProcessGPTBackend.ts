@@ -4249,7 +4249,8 @@ class ProcessGPTBackend implements Backend {
                             proc_inst_id: options.proc_inst_id,
                             file_name: fileName,
                             file_path: response.public_url,
-                            is_process: true
+                            is_process: true,
+                            file_id: response.file_path
                         });
                         result = { success: true, message: 'File uploaded successfully' };
                     } else {

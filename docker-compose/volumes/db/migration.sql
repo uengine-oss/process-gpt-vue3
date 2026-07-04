@@ -1910,6 +1910,10 @@ ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS file_name TEXT;
 ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS is_process BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS file_path TEXT;
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS file_id TEXT;
+
+CREATE INDEX idx_proc_inst_source_file_id ON public.proc_inst_source(file_id);
+
 
 
 -- users 테이블 agent_type 컬럼 마이그레이션

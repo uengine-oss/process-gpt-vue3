@@ -13,6 +13,9 @@
                 <span v-else class="ml-3">{{ fileName }}</span>
             </div>
             <div class="d-flex align-center gap-2 mr-2">
+                <v-btn v-if="!readOnly" @click="openAgentChat" :loading="isOpeningAgentChat" variant="text" icon size="small">
+                    <v-icon>mdi-chat-processing-outline</v-icon>
+                </v-btn>
                 <v-btn v-if="isMarkdown" @click="toggleMarkdownPreview" variant="text" icon size="small">
                     <v-icon>{{ markdownPreview ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                 </v-btn>
@@ -148,6 +151,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import SkillSaveDialog from '@/components/SkillSaveDialog.vue';
 import CommitMessageGenerator from '@/components/ai/CommitMessageGenerator';
 import { hasInheritanceDirective } from '@/utils/skillMdParser';
+import { processGptAgent } from '@/constants/processGptAgent';
 
 marked.setOptions({
     breaks: true,
@@ -205,7 +209,8 @@ export default {
 
             isLoading: false,
             markdownPreview: false,
-            wasChildSkill: false
+            wasChildSkill: false,
+            isOpeningAgentChat: false
         };
     },
     computed: {
@@ -285,6 +290,79 @@ export default {
         }
     },
     methods: {
+        async openAgentChat() {
+            if (this.isOpeningAgentChat) return;
+            this.isOpeningAgentChat = true;
+            try {
+                const userInfo = await this.backend.getUserInfo();
+                const me = {
+                    id: userInfo?.uid || userInfo?.id || null,
+                    email: userInfo?.email || null,
+                    username: userInfo?.username || userInfo?.name || userInfo?.email || '',
+                    profile: userInfo?.profile || null,
+                    agent_type: userInfo?.agent_type || null,
+                    is_agent: userInfo?.is_agent ?? null
+                };
+
+                const roomId = crypto.randomUUID();
+                const nowIso = new Date().toISOString();
+                const editingSkillFile = {
+                    skill_name: this.skillName,
+                    file_path: this.filePath,
+                    branch: this.selectedBranch || this.defaultBranch
+                };
+
+                const room = {
+                    id: roomId,
+                    name: `${this.fileName} 편집`,
+                    participants: [me, processGptAgent],
+                    message: { msg: 'NEW', type: 'text', createdAt: nowIso },
+                    context: {
+                        orchestration: 'deepagents',
+                        editingSkillFile,
+                        updatedAt: nowIso
+                    }
+                };
+                await this.backend.putObject('db://chat_rooms', room);
+
+                const msgUuid = crypto.randomUUID();
+                const text = `${this.filePath} 파일을 편집하려고 합니다.`;
+                const msg = {
+                    uuid: msgUuid,
+                    role: 'user',
+                    content: text,
+                    timeStamp: nowIso,
+                    email: me.email,
+                    name: me.username,
+                    userName: me.username
+                };
+                await this.backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+
+                room.message = { msg: text.substring(0, 50), type: 'text', createdAt: nowIso };
+                await this.backend.putObject('db://chat_rooms', room);
+
+                try {
+                    sessionStorage.setItem(
+                        `chatKickoff:${roomId}`,
+                        JSON.stringify({
+                            roomId,
+                            msgUuid,
+                            message_uuid: msgUuid,
+                            text,
+                            orchestration: 'deepagents',
+                            editingSkillFile,
+                            createdAt: nowIso
+                        })
+                    );
+                } catch (e) {
+                    // ignore
+                }
+
+                this.$router.push({ path: '/chat', query: { roomId } });
+            } finally {
+                this.isOpeningAgentChat = false;
+            }
+        },
         onSaved({ mode }) {
             const msg = mode === 'direct'
                 ? '스킬 파일이 성공적으로 저장되었습니다.'

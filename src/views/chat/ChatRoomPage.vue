@@ -953,6 +953,7 @@ export default {
             roomWorkspaceFilesByGroup: {}, // 프로세스 폴더(process-<uuid>)별 산출물 파일 누적 — 프로세스마다 탭
             workspaceSaveStateByGroup: {}, // 프로세스별 DB 저장 상태 { [group]: {saving,saved,error} }
             selectedKnowledgeDocs: [], // 지식 베이스(Google Drive) RAG 컨텍스트로 선택된 문서
+            editingSkillFile: null, // 스킬 편집 화면에서 채팅으로 넘어온 경우, 편집 중이던 파일 정보 { skill_name, file_path, branch }
             activeArtifactId: null, // 현재 활성 탭 ID
             artifactSidebarVisible: false,
             artifactSidebarWidth: 820,
@@ -2456,6 +2457,12 @@ export default {
                     this.upsertKnowledgePanel();
                 }
 
+                // 스킬 편집 화면에서 넘어온 경우, 편집 중이던 파일 정보를 패널로 표시
+                if (payload?.editingSkillFile && typeof payload.editingSkillFile === 'object') {
+                    this.editingSkillFile = payload.editingSkillFile;
+                    this.upsertEditingSkillFilePanel();
+                }
+
                 // 메인 화면에서 전달된 raw File이 있으면 memento 경유 업로드 (임베딩 + 벡터 저장)
                 const pendingFiles = window.__pendingMementoFiles;
                 if (pendingFiles && pendingFiles.roomId === roomId && Array.isArray(pendingFiles.files) && pendingFiles.files.length > 0) {
@@ -2633,6 +2640,12 @@ export default {
                 if (knowledgeDocs.length > 0) {
                     this.selectedKnowledgeDocs = knowledgeDocs;
                     this.upsertKnowledgePanel();
+                }
+
+                // ctx.editingSkillFile → 스킬 편집 화면에서 시작된 방이면 편집 파일 패널 복원
+                if (ctx.editingSkillFile && typeof ctx.editingSkillFile === 'object') {
+                    this.editingSkillFile = ctx.editingSkillFile;
+                    this.upsertEditingSkillFilePanel();
                 }
 
                 if (enabledSkills) {
@@ -5804,6 +5817,25 @@ export default {
             } else {
                 const id = `knowledge-${this.uuid()}`;
                 this.artifactPanels.push({ id, type: 'knowledge', label: '지식 베이스', data });
+            }
+            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
+            if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
+            this.artifactSidebarVisible = true;
+        },
+
+        /** 우측 사이드바에 "편집 중인 스킬 파일" 컨텍스트 패널 생성/갱신 (스킬 편집 화면 → 채팅 진입 시) */
+        upsertEditingSkillFilePanel() {
+            const file = this.editingSkillFile;
+            if (!file) return;
+            const data = { enabled: true, items: [file] };
+
+            const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'editingFile');
+            if (existingIdx !== -1) {
+                const existing = this.artifactPanels[existingIdx];
+                this.artifactPanels[existingIdx] = { ...existing, label: '편집 중인 파일', data };
+            } else {
+                const id = `editing-file-${this.uuid()}`;
+                this.artifactPanels.push({ id, type: 'editingFile', label: '편집 중인 파일', data });
             }
             const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
             if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;

@@ -2303,6 +2303,7 @@ create table if not exists public.proc_inst_source (
     created_at timestamp with time zone not null default now(),
     is_process boolean not null default false,
     file_path text null,
+    file_id text null,
     constraint proc_inst_source_pkey primary key (id)
 ) tablespace pg_default;
 

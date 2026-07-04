@@ -35,6 +35,18 @@
             </ul>
         </details>
 
+        <details v-if="showEditingFileBlock" class="side-info__box" open>
+            <summary class="side-info__summary">
+                <span class="side-info__title">편집 중인 파일</span>
+            </summary>
+            <ul class="side-info__list">
+                <li v-for="f in editingFileList" :key="f.key" class="side-info__item">
+                    <span class="side-info__item-label">{{ f.label }}</span>
+                    <span v-if="f.branch" class="side-info__chip">{{ f.branch }}</span>
+                </li>
+            </ul>
+        </details>
+
         <details v-if="showKnowledgeBlock" class="side-info__box" open>
             <summary class="side-info__summary">
                 <span class="side-info__title">지식 베이스</span>
@@ -104,7 +116,16 @@
 
 <script>
 /** 에이전트 채팅방 컨텍스트(할일·스킬·도구 등) — 아티팩트 탭과 구분되는 패널 타입. ArtifactPanel 등에서 import */
-export const AGENT_CHAT_ROOM_CONTEXT_TYPES = new Set(['activity', 'attachments', 'tools', 'skills', 'todos', 'knowledge', 'connectors']);
+export const AGENT_CHAT_ROOM_CONTEXT_TYPES = new Set([
+    'activity',
+    'attachments',
+    'tools',
+    'skills',
+    'todos',
+    'knowledge',
+    'connectors',
+    'editingFile'
+]);
 
 export default {
     name: 'AgentChatRoomContext',
@@ -170,6 +191,17 @@ export default {
                 }))
                 .filter((x) => x.label);
         },
+        editingFileList() {
+            const p = this.sideInfoPanels.get('editingFile');
+            const items = Array.isArray(p?.data?.items) ? p.data.items : [];
+            return items
+                .map((f, idx) => ({
+                    key: (f?.file_path || `edit-${idx}`).toString(),
+                    label: (f?.file_path || f?.skill_name || '').toString(),
+                    branch: (f?.branch || '').toString()
+                }))
+                .filter((x) => x.label);
+        },
         skillsList() {
             const p = this.sideInfoPanels.get('skills');
             const items = Array.isArray(p?.data?.items) ? p.data.items : [];
@@ -221,6 +253,9 @@ export default {
             // Claude Desktop식: 활동(도구 사용)은 우측이 아니라 채팅 메시지 하단 인라인으로 표시한다.
             return false;
         },
+        showEditingFileBlock() {
+            return this.editingFileList.length > 0;
+        },
         showKnowledgeBlock() {
             return this.knowledgeEnabled && this.knowledgeList.length > 0;
         },
@@ -242,6 +277,7 @@ export default {
         hasSideInfo() {
             return (
                 this.showActivityBlock ||
+                this.showEditingFileBlock ||
                 this.showKnowledgeBlock ||
                 this.showAttachmentsBlock ||
                 this.showTodosBlock ||
