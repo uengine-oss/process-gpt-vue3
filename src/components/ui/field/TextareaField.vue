@@ -1,6 +1,13 @@
 <template>
     <div class="form-text-area">
+        <!-- 읽기 전용 + 내용이 markdown/json 이면 원본 대신 보기 좋게 렌더한다. -->
+        <div v-if="isReadonlyView && formattedKind !== 'text'" class="form-text-area__readonly">
+            <div class="form-text-area__label">{{ displayLabel }}</div>
+            <pre v-if="formattedKind === 'json'" class="form-text-area__json">{{ prettyJson }}</pre>
+            <div v-else class="form-text-area__md" v-html="renderedMarkdown"></div>
+        </div>
         <v-textarea
+            v-else
             v-model="localModelValue"
             :disabled="localDisabled"
             :readonly="localReadonly"
@@ -11,7 +18,7 @@
         >
             <template v-slot:label>
                 <span style="color: black">
-                    {{ localAlias && localAlias.length > 0 ? localAlias : localName }}
+                    {{ displayLabel }}
                 </span>
             </template>
         </v-textarea>
@@ -20,6 +27,7 @@
 
 <script>
 import { commonSettingInfos } from './CommonSettingInfos.vue';
+import { marked } from 'marked';
 
 export default {
     name: 'TextareaField',
@@ -73,6 +81,56 @@ export default {
                 commonSettingInfos['localReadonly']
             ]
         };
+    },
+
+    computed: {
+        displayLabel() {
+            return this.localAlias && this.localAlias.length > 0 ? this.localAlias : this.localName;
+        },
+        isReadonlyView() {
+            return this.localReadonly || this.localDisabled;
+        },
+        formattedKind() {
+            // 읽기 전용일 때만 md/json 을 렌더 대상으로 판단(편집 중엔 원본 유지).
+            const raw = (this.localModelValue || '').toString().trim();
+            if (!raw) return 'text';
+            if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
+                try {
+                    JSON.parse(raw);
+                    return 'json';
+                } catch (e) {
+                    // JSON 아님 → 마크다운 판정으로 진행
+                }
+            }
+            // 마크다운 마커가 있을 때만 마크다운으로 취급(평문 오탐 방지).
+            const mdSignals = [
+                /(^|\n)#{1,6}\s/, // 헤딩
+                /(^|\n)\s*[-*+]\s+\S/, // 불릿
+                /(^|\n)\s*\d+\.\s+\S/, // 번호목록
+                /```/, // 코드펜스
+                /(^|\n)\s*>\s+\S/, // 인용
+                /\|.+\|/, // 표
+                /\[[^\]]+\]\([^)]+\)/, // 링크
+                /\*\*[^*]+\*\*/ // 강조
+            ];
+            if (mdSignals.some((re) => re.test(raw))) return 'markdown';
+            return 'text';
+        },
+        prettyJson() {
+            const raw = (this.localModelValue || '').toString().trim();
+            try {
+                return JSON.stringify(JSON.parse(raw), null, 2);
+            } catch (e) {
+                return raw;
+            }
+        },
+        renderedMarkdown() {
+            try {
+                return marked.parse((this.localModelValue || '').toString());
+            } catch (e) {
+                return (this.localModelValue || '').toString();
+            }
+        }
     },
 
     watch: {
@@ -154,5 +212,60 @@ export default {
 <style lang="scss">
 .form-text-area {
     margin-bottom: 16px;
+}
+.form-text-area__readonly {
+    border: 1px solid #e4e6ea;
+    border-radius: 8px;
+    background: #f7f8fa;
+    padding: 10px 12px;
+}
+.form-text-area__label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+.form-text-area__json {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: 'Consolas', 'Menlo', monospace;
+    font-size: 12.5px;
+    color: #1f2937;
+}
+.form-text-area__md {
+    font-size: 13.5px;
+    color: #1f2937;
+    line-height: 1.6;
+}
+.form-text-area__md :deep(h1),
+.form-text-area__md :deep(h2),
+.form-text-area__md :deep(h3) {
+    margin: 8px 0 4px;
+    font-weight: 700;
+}
+.form-text-area__md :deep(ul),
+.form-text-area__md :deep(ol) {
+    padding-left: 20px;
+    margin: 4px 0;
+}
+.form-text-area__md :deep(table) {
+    border-collapse: collapse;
+    margin: 6px 0;
+}
+.form-text-area__md :deep(th),
+.form-text-area__md :deep(td) {
+    border: 1px solid #d1d5db;
+    padding: 4px 8px;
+}
+.form-text-area__md :deep(code) {
+    background: #eceef1;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+.form-text-area__md :deep(pre) {
+    background: #eceef1;
+    padding: 8px;
+    border-radius: 6px;
+    overflow-x: auto;
 }
 </style>

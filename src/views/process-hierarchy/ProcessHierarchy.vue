@@ -582,6 +582,94 @@ export default {
             }
         },
 
+        readUengineProperties(element) {
+            const props = Array.from(element.getElementsByTagName('*')).find(
+                (child) => child.localName === 'properties' && child.namespaceURI === 'http://uengine'
+            );
+            if (!props) return {};
+
+            const raw = props.getAttribute('json') || Array.from(props.children || []).find((child) => child.localName === 'json')?.textContent || '';
+            if (!raw || !raw.trim()) return {};
+
+            try {
+                return JSON.parse(raw);
+            } catch (e) {
+                console.warn('Failed to parse CallActivity uengine properties:', e);
+                return {};
+            }
+        },
+
+        getLaneRoleByActivityId(doc) {
+            const roleByActivityId = {};
+            Array.from(doc.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'lane')).forEach((lane) => {
+                const roleName = lane.getAttribute('name') || '';
+                if (!roleName.trim()) return;
+
+                Array.from(lane.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'flowNodeRef')).forEach((ref) => {
+                    const activityId = ref.textContent?.trim();
+                    if (activityId) roleByActivityId[activityId] = roleName.trim();
+                });
+            });
+            return roleByActivityId;
+        },
+
+        syncBpmnCallActivitiesIntoDefinition(xml, sourceDefinition) {
+            const definition = JSON.parse(JSON.stringify(sourceDefinition || {}));
+            if (!Array.isArray(definition.activities)) {
+                definition.activities = [];
+            }
+
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(xml, 'application/xml');
+                if (doc.getElementsByTagName('parsererror')[0]) return definition;
+
+                const roleByActivityId = this.getLaneRoleByActivityId(doc);
+                const callActivities = Array.from(
+                    doc.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'callActivity')
+                );
+                const callActivityIds = new Set(callActivities.map((callActivity) => callActivity.getAttribute('id')).filter(Boolean));
+
+                definition.activities = definition.activities.filter((activity) => {
+                    const type = String(activity?.type || '').toLowerCase();
+                    return type !== 'callactivity' || callActivityIds.has(activity?.id);
+                });
+
+                callActivities.forEach((callActivity) => {
+                    const id = callActivity.getAttribute('id');
+                    if (!id) return;
+
+                    const properties = this.readUengineProperties(callActivity);
+                    const existingIndex = definition.activities.findIndex((activity) => activity?.id === id);
+                    const previous = existingIndex >= 0 ? definition.activities[existingIndex] : {};
+                    const next = {
+                        ...previous,
+                        id,
+                        name: callActivity.getAttribute('name') || previous.name || id,
+                        type: 'CallActivity',
+                        description: previous.description || '',
+                        properties: JSON.stringify(properties)
+                    };
+
+                    const roleName =
+                        (typeof properties?.role === 'string' ? properties.role : properties?.role?.name) || roleByActivityId[id];
+                    if (roleName) {
+                        next.role = roleName;
+                    }
+
+                    if (existingIndex >= 0) {
+                        definition.activities.splice(existingIndex, 1, next);
+                    } else {
+                        definition.activities.push(next);
+                    }
+                });
+            } catch (e) {
+                console.warn('syncBpmnCallActivitiesIntoDefinition failed:', e);
+            }
+
+            return definition;
+        },
+
         proceedAfterApprovalWarning() {
             this.approvalWarningDialog = false;
             this.activeApprovalState = null;
@@ -599,11 +687,15 @@ export default {
                 // BPMN XML 내부 uengine:properties의 version 필드 업데이트
                 const xml = this.updateXmlVersion(this.pendingSaveXml, version);
                 this.bpmnXml = xml;
+                const definition = this.syncBpmnCallActivitiesIntoDefinition(xml, this.processDefinition?.definition || null);
+                if (this.processDefinition) {
+                    this.processDefinition.definition = definition;
+                }
 
                 // 새 minor 버전으로 저장 (거버넌스: 저장 시마다 마이너 버전 자동 기록)
                 await backend.putRawDefinition(xml, this.selectedProcessId, {
                     name: this.selectedProcessName,
-                    definition: this.processDefinition?.definition || null,
+                    definition,
                     version: version,
                     version_tag: null,
                     arcv_id: `${this.selectedProcessId}_${version}`,

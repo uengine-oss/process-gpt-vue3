@@ -157,6 +157,11 @@ PaletteProvider.prototype.adjustParticipantBoundsByLanes = function (participant
 };
 
 PaletteProvider.prototype.applyAutoLayout = function (onLoadStart = () => { }, onLoadEnd = () => { }) {
+    if (this._isViewMode) {
+        onLoadEnd();
+        return;
+    }
+
     var injector = this._injector;
     var elementFactory = this._elementFactory;
     var eventBus = this._eventBus;
@@ -427,6 +432,199 @@ function compactLanesAfterRotation(modeling, elementRegistry, participant, lanes
   });
 }
 
+function isElementDescendantOf(element, ancestor) {
+  let current = element && element.parent;
+  while (current) {
+    if (current.id === ancestor.id) return true;
+    current = current.parent;
+  }
+  return false;
+}
+
+function isRealDiagramShape(element) {
+  return element &&
+    !element.labelTarget &&
+    element.type !== 'bpmn:SequenceFlow' &&
+    element.type !== 'bpmn:MessageFlow' &&
+    element.type !== 'bpmn:Collaboration' &&
+    element.type !== 'bpmn:Process' &&
+    element.type !== 'bpmn:Participant' &&
+    element.type !== 'bpmn:Lane' &&
+    element.type !== 'bpmn:LaneSet';
+}
+
+function collectBounds(elements) {
+  const valid = elements
+    .map(getElementBounds)
+    .filter(bounds =>
+      bounds &&
+      Number.isFinite(bounds.x) &&
+      Number.isFinite(bounds.y) &&
+      Number.isFinite(bounds.width) &&
+      Number.isFinite(bounds.height)
+    );
+
+  if (!valid.length) return null;
+
+  const minX = Math.min(...valid.map(bounds => bounds.x));
+  const minY = Math.min(...valid.map(bounds => bounds.y));
+  const maxX = Math.max(...valid.map(bounds => bounds.x + bounds.width));
+  const maxY = Math.max(...valid.map(bounds => bounds.y + bounds.height));
+
+  return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+}
+
+function isBoundsOverlapping(bounds, containerBounds) {
+  if (!bounds || !containerBounds) return false;
+
+  return bounds.x < containerBounds.x + containerBounds.width &&
+    bounds.x + bounds.width > containerBounds.x &&
+    bounds.y < containerBounds.y + containerBounds.height &&
+    bounds.y + bounds.height > containerBounds.y;
+}
+
+function setDiagramHorizontal(element, isHorizontal) {
+  if (!element) return;
+
+  if (element.di) {
+    element.di.isHorizontal = isHorizontal;
+  }
+
+  if (element.businessObject) {
+    element.businessObject.isHorizontal = isHorizontal;
+  }
+}
+
+function collectLaneIdsFromLaneSets(laneSets, laneIds = new Set()) {
+  (laneSets || []).forEach(laneSet => {
+    (laneSet.lanes || []).forEach(lane => {
+      if (lane.id) laneIds.add(lane.id);
+      collectLaneIdsFromLaneSets(lane.childLaneSet ? [lane.childLaneSet] : [], laneIds);
+    });
+  });
+
+  return laneIds;
+}
+
+function syncParticipantLaneOrientation(elementRegistry, participant, isHorizontal) {
+  setDiagramHorizontal(participant, isHorizontal);
+
+  if (!elementRegistry || !participant) return;
+
+  const participantBounds = getElementBounds(participant);
+  const processLaneIds = collectLaneIdsFromLaneSets(participant.businessObject?.processRef?.laneSets);
+  const participants = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+  const shouldSyncAllLanes = participants.length === 1;
+  const lanes = elementRegistry.filter(element =>
+    element.type === 'bpmn:Lane' &&
+    (
+      shouldSyncAllLanes ||
+      processLaneIds.has(element.id) ||
+      isElementDescendantOf(element, participant) ||
+      isBoundsOverlapping(getElementBounds(element), participantBounds)
+    )
+  );
+
+  lanes.forEach(lane => setDiagramHorizontal(lane, isHorizontal));
+}
+
+PaletteProvider.prototype.syncAllLaneOrientationForView = function (isHorizontal) {
+  const elementRegistry = this._injector && this._injector.get('elementRegistry');
+  if (!elementRegistry) return;
+
+  elementRegistry.filter(element =>
+    element.type === 'bpmn:Participant' ||
+    element.type === 'bpmn:Lane'
+  ).forEach(element => setDiagramHorizontal(element, isHorizontal));
+};
+
+PaletteProvider.prototype.normalizeDiagramBoundsForView = function () {
+  if (!this._isViewMode) return;
+
+  const modeling = this._modeling;
+  const elementRegistry = this._injector && this._injector.get('elementRegistry');
+  if (!modeling || !elementRegistry) return;
+
+  const participants = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+  participants.forEach(participant => {
+    const participantBounds = getElementBounds(participant);
+    if (!participantBounds) return;
+
+    const isHorizontal = participant.di?.isHorizontal !== false;
+    const lanes = elementRegistry.filter(element =>
+      element.type === 'bpmn:Lane' &&
+      (
+        isElementDescendantOf(element, participant) ||
+        isBoundsInLane(getElementBounds(element), participantBounds, isHorizontal)
+      )
+    );
+    const content = elementRegistry.filter(element =>
+      isRealDiagramShape(element) &&
+      (
+        isElementDescendantOf(element, participant) ||
+        isBoundsInLane(getElementBounds(element), participantBounds, isHorizontal)
+      )
+    );
+
+    const contentBounds = collectBounds(content);
+    if (!contentBounds) return;
+
+    const laneBounds = collectBounds(lanes);
+    const axisPadding = 80;
+    const outerPadding = 30;
+    const minAxisSize = 240;
+
+    if (isHorizontal) {
+      const nextX = Math.min(contentBounds.minX - axisPadding, laneBounds?.minX ?? participantBounds.x);
+      const nextWidth = Math.max(minAxisSize, contentBounds.width + axisPadding * 2);
+
+      lanes.forEach(lane => {
+        const bounds = getElementBounds(lane);
+        if (!bounds) return;
+        if (Math.abs(bounds.x - nextX) > 0.5 || Math.abs(bounds.width - nextWidth) > 0.5) {
+          modeling.resizeShape(lane, { ...bounds, x: nextX, width: nextWidth });
+        }
+      });
+
+      const updatedLaneBounds = collectBounds(lanes);
+      const minY = updatedLaneBounds?.minY ?? Math.min(contentBounds.minY - outerPadding, participantBounds.y);
+      const maxY = updatedLaneBounds?.maxY ?? Math.max(contentBounds.maxY + outerPadding, participantBounds.y + participantBounds.height);
+      modeling.resizeShape(participant, {
+        x: nextX - outerPadding,
+        y: minY,
+        width: nextWidth + outerPadding,
+        height: maxY - minY
+      });
+    } else {
+      const nextY = Math.min(contentBounds.minY - axisPadding, laneBounds?.minY ?? participantBounds.y);
+      const nextHeight = Math.max(minAxisSize, contentBounds.height + axisPadding * 2);
+
+      lanes.forEach(lane => {
+        const bounds = getElementBounds(lane);
+        if (!bounds) return;
+        if (Math.abs(bounds.y - nextY) > 0.5 || Math.abs(bounds.height - nextHeight) > 0.5) {
+          modeling.resizeShape(lane, { ...bounds, y: nextY, height: nextHeight });
+        }
+      });
+
+      const updatedLaneBounds = collectBounds(lanes);
+      const minX = updatedLaneBounds?.minX ?? Math.min(contentBounds.minX - outerPadding, participantBounds.x);
+      const maxX = updatedLaneBounds?.maxX ?? Math.max(contentBounds.maxX + outerPadding, participantBounds.x + participantBounds.width);
+      modeling.resizeShape(participant, {
+        x: minX,
+        y: nextY - outerPadding,
+        width: maxX - minX,
+        height: nextHeight + outerPadding
+      });
+    }
+  });
+
+  participants.forEach(participant => {
+    const isHorizontal = participant.di?.isHorizontal !== false;
+    syncParticipantLaneOrientation(elementRegistry, participant, isHorizontal);
+  });
+};
+
 PaletteProvider.prototype._rotateRelativePosition = function (relativeX, relativeY, scaleX, scaleY) {
     return {
         x: relativeY * scaleY,
@@ -435,7 +633,7 @@ PaletteProvider.prototype._rotateRelativePosition = function (relativeX, relativ
 };
 
 // 함수 정의를 getPaletteEntries 바깥으로 옮긴다
-PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (event, element, onLoadStart = () => { }, onLoadEnd = () => { }) {
+PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (event, element, onLoadStart = () => { }, onLoadEnd = () => { }, options = {}) {
     onLoadStart();
     const modeling = this._modeling;
     const logPrefix = '[changeParticipantOrientation]';
@@ -501,6 +699,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
             currentX += laneHeight;
 
             modeling.resizeShape(lane, newLaneBounds);
+            setDiagramHorizontal(lane, false);
             modeling.updateProperties(lane, {
                 di: { isHorizontal: false }
             });
@@ -524,6 +723,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
         };
 
         modeling.resizeShape(element, newParticipantBounds);
+        setDiagramHorizontal(element, false);
         modeling.updateProperties(element, {
             di: { isHorizontal: false }
         });
@@ -628,7 +828,9 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
         });
 
         this.adjustParticipantBoundsByLanes(element, lanes, false);
-        compactLanesAfterRotation(modeling, this._injector && this._injector.get('elementRegistry'), element, lanes, false);
+        const elementRegistry = this._injector && this._injector.get('elementRegistry');
+        compactLanesAfterRotation(modeling, elementRegistry, element, lanes, false);
+        syncParticipantLaneOrientation(elementRegistry, element, false);
 
         // 💡 SequenceFlow 최종 waypoint 반영
         originalSequenceFlows.forEach((sequenceFlow) => {
@@ -638,6 +840,10 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
             });
         });
 
+        if (options.skipAutoLayout) {
+            onLoadEnd();
+            return;
+        }
         this.applyAutoLayout((onLoadEnd = onLoadEnd));
     } catch (error) {
         console.error(`${logPrefix} 회전 중 오류가 발생했습니다.`, error);
@@ -645,7 +851,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
     }
 };
 
-PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (event, element, onLoadStart = () => { }, onLoadEnd = () => { }) {
+PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (event, element, onLoadStart = () => { }, onLoadEnd = () => { }, options = {}) {
     onLoadStart();
     const modeling = this._modeling;
     const logPrefix = '[changeParticipantOrientation]';
@@ -711,6 +917,7 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (even
             currentY += laneWidth;
 
             modeling.resizeShape(lane, newLaneBounds);
+            setDiagramHorizontal(lane, true);
             modeling.updateProperties(lane, {
                 di: { isHorizontal: true }
             });
@@ -734,6 +941,7 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (even
         };
 
         modeling.resizeShape(element, newParticipantBounds);
+        setDiagramHorizontal(element, true);
         modeling.updateProperties(element, {
             di: { isHorizontal: true }
         });
@@ -835,7 +1043,9 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (even
         });
 
         this.adjustParticipantBoundsByLanes(element, lanes, true);
-        compactLanesAfterRotation(modeling, this._injector && this._injector.get('elementRegistry'), element, lanes, true);
+        const elementRegistry = this._injector && this._injector.get('elementRegistry');
+        compactLanesAfterRotation(modeling, elementRegistry, element, lanes, true);
+        syncParticipantLaneOrientation(elementRegistry, element, true);
 
         // 💡 SequenceFlow 최종 waypoint 반영
         originalSequenceFlows.forEach((sequenceFlow) => {
@@ -849,6 +1059,10 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (even
             modeling.resizeShape(label.label, label.bounds);
         });
 
+        if (options.skipAutoLayout) {
+            onLoadEnd();
+            return;
+        }
         this.applyAutoLayout((onLoadEnd = onLoadEnd));
     } catch (error) {
         console.error(`${logPrefix} 회전 중 오류가 발생했습니다.`, error);

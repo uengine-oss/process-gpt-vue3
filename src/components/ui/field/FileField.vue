@@ -15,7 +15,40 @@
             </p>
             <img :src="imgBaseUrl" alt="Selected Image" style="width: 350px; max-height: auto" />
         </div>
-        <div v-if="localReadonly || localDisabled">
+        <!-- hwpx: 값이 채워지면 제출 전(작성 중)에도 다운로드/미리보기/편집을 표시한다. -->
+        <div v-if="isHwpx && hwpxFileUrl" class="hwpx-panel">
+            <div class="file-link-card d-flex align-center" @click="downloadHwpx">
+                <div class="file-link-icon">
+                    <v-icon size="18">mdi-file-download-outline</v-icon>
+                </div>
+                <div class="file-link-text">
+                    <div class="file-link-name">{{ hwpxName }}</div>
+                    <div class="file-link-sub">다운로드</div>
+                </div>
+            </div>
+            <div class="hwpx-actions">
+                <v-btn
+                    size="small"
+                    variant="tonal"
+                    prepend-icon="mdi-eye-outline"
+                    :disabled="!canPreview"
+                    @click.stop="openHwpx(true)"
+                    >미리보기</v-btn
+                >
+                <v-btn
+                    size="small"
+                    variant="tonal"
+                    color="primary"
+                    prepend-icon="mdi-pencil-outline"
+                    :disabled="!canPreview"
+                    @click.stop="openHwpx(false)"
+                    >편집</v-btn
+                >
+            </div>
+        </div>
+
+        <!-- 비-hwpx 파일: 제출 후(readonly)만 다운로드 카드 표시 -->
+        <div v-if="(localReadonly || localDisabled) && !isHwpx">
             <div v-for="file in selectedFiles" :key="file.name">
                 <div class="file-link-card d-flex align-center" @click="downloadFile(file)">
                     <div class="file-link-icon">
@@ -28,14 +61,26 @@
                 </div>
             </div>
         </div>
+
+        <HwpxEditorDialog
+            v-if="isHwpx"
+            v-model="hwpxDialog"
+            :htmlUrl="hwpxHtmlUrl"
+            :fileUrl="hwpxFileUrl"
+            :name="hwpxName"
+            :readOnly="hwpxReadOnly"
+            @updated="onHwpxUpdated"
+        />
     </div>
 </template>
 
 <script>
 import { commonSettingInfos } from './CommonSettingInfos.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import HwpxEditorDialog from './HwpxEditorDialog.vue';
 
 export default {
+    components: { HwpxEditorDialog },
     props: {
         // UI 관련 설정 props 시작
         hideDetails: {
@@ -76,6 +121,13 @@ export default {
             selectedFiles: [],
             imgBaseUrl: null,
 
+            // hwpx 미리보기/편집(HwpxViewer 재사용)
+            hwpxDialog: false,
+            hwpxReadOnly: false,
+            hwpxHtmlUrl: '',
+            hwpxFileUrl: '',
+            hwpxName: '',
+
             settingInfos: [
                 commonSettingInfos['localName'],
                 commonSettingInfos['localAlias'],
@@ -85,6 +137,18 @@ export default {
 
             backend: null
         };
+    },
+
+    computed: {
+        isHwpx() {
+            const n = (this.hwpxName || '').toLowerCase();
+            const p = (this.hwpxFileUrl || '').toLowerCase().split('?')[0];
+            return !!this.hwpxHtmlUrl || n.endsWith('.hwpx') || p.endsWith('.hwpx');
+        },
+        canPreview() {
+            // 미리보기·편집 모두 변환된 html_url 이 있어야 렌더 가능(없으면 다운로드만).
+            return this.isHwpx && !!this.hwpxHtmlUrl;
+        }
     },
 
     watch: {
@@ -158,7 +222,54 @@ export default {
                 return null;
             }
         },
+        captureHwpxMeta(value) {
+            // 폼값에서 hwpx 미리보기/편집에 필요한 메타(html_url·file_url·name)를 뽑아둔다.
+            if (value && typeof value === 'object') {
+                this.hwpxHtmlUrl = value.html_url || value.htmlUrl || '';
+                this.hwpxFileUrl = value.path || value.fullPath || value.file_path || '';
+                this.hwpxName = value.name || this.guessNameFromPath(this.hwpxFileUrl);
+            } else if (typeof value === 'string') {
+                if (value.split('?')[0].toLowerCase().endsWith('.hwpx')) {
+                    this.hwpxFileUrl = value;
+                    this.hwpxName = this.guessNameFromPath(value);
+                }
+            }
+        },
+        openHwpx(readOnly) {
+            this.hwpxReadOnly = !!readOnly;
+            this.hwpxDialog = true;
+        },
+        downloadHwpx() {
+            const url = this.hwpxFileUrl;
+            if (!url) return;
+            try {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = this.hwpxName || 'output.hwpx';
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                try {
+                    window.open(url, '_blank');
+                } catch (e2) {}
+            }
+        },
+        onHwpxUpdated({ fileUrl, htmlUrl, name } = {}) {
+            // 편집본으로 폼 값 갱신(재저장 시 편집본이 반영되도록).
+            if (fileUrl) this.hwpxFileUrl = fileUrl;
+            if (htmlUrl) this.hwpxHtmlUrl = htmlUrl;
+            if (name) this.hwpxName = name;
+            this.$emit('update:modelValue', {
+                path: this.hwpxFileUrl,
+                name: this.hwpxName,
+                html_url: this.hwpxHtmlUrl,
+                ext: '.hwpx'
+            });
+        },
         async applyModelValue(value) {
+            this.captureHwpxMeta(value);
             const currentPath =
                 this.selectedFiles && this.selectedFiles.length > 0
                     ? this.selectedFiles[0].path || this.selectedFiles[0].name || null
@@ -399,6 +510,14 @@ export default {
 }
 .form-file-field .file-link-card {
     margin-top: 10px;
+}
+.hwpx-panel {
+    margin-top: 10px;
+}
+.hwpx-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
 }
 .file-link-card {
     gap: 10px;

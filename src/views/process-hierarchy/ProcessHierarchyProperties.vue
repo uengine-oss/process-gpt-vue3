@@ -338,6 +338,55 @@
                         </div>
 
                         <!-- PAL 모드 + 태스크: PALUserTaskPanel 사용 -->
+                        <div v-else-if="useGptCallActivityPanel" class="pa-4">
+                            <GPTCallActivityPanel
+                                :key="element.id"
+                                ref="callActivityPanel"
+                                :element="element"
+                                :isViewMode="isViewMode"
+                                :uengineProperties="callActivityProperties"
+                                :processDefinitionId="definitionPath"
+                                :processVariables="processVariables"
+                                @update:uengineProperties="onCallActivityPropertiesUpdate"
+                            />
+                            <v-btn
+                                v-if="!isViewMode"
+                                color="primary"
+                                block
+                                variant="flat"
+                                class="mt-4 save-btn"
+                                @click="saveCallActivity"
+                            >
+                                <v-icon start size="16">mdi-content-save</v-icon>
+                                {{ $t('processHierarchy.save') }}
+                            </v-btn>
+                        </div>
+
+                        <div v-else-if="useUengineCallActivityPanel" class="pa-4">
+                            <CallActivityPanel
+                                :key="element.id"
+                                ref="callActivityPanel"
+                                :element="element"
+                                :isViewMode="isViewMode"
+                                :uengineProperties="callActivityProperties"
+                                :processDefinitionId="definitionPath"
+                                :processVariables="processVariables"
+                                @update:uEngineProperties="onCallActivityPropertiesUpdate"
+                                @update:uengineProperties="onCallActivityPropertiesUpdate"
+                            />
+                            <v-btn
+                                v-if="!isViewMode"
+                                color="primary"
+                                block
+                                variant="flat"
+                                class="mt-4 save-btn"
+                                @click="saveCallActivity"
+                            >
+                                <v-icon start size="16">mdi-content-save</v-icon>
+                                {{ $t('processHierarchy.save') }}
+                            </v-btn>
+                        </div>
+
                         <div v-else-if="usePalUserTaskPanel" class="pa-4">
                             <PALUserTaskPanel
                                 ref="palPanel"
@@ -630,6 +679,8 @@ import { useBpmnStore } from '@/stores/bpmn';
 import { useTaskCatalogStore } from '@/stores/taskCatalog';
 import PALUserTaskPanel from '@/components/designer/bpmnModeling/bpmn/panel/PALUserTaskPanel.vue';
 import PALCallActivityPanel from '@/components/designer/bpmnModeling/bpmn/panel/PALCallActivityPanel.vue';
+import CallActivityPanel from '@/components/designer/bpmnModeling/bpmn/panel/CallActivityPanel.vue';
+import GPTCallActivityPanel from '@/components/designer/bpmnModeling/bpmn/panel/GPTCallActivityPanel.vue';
 
 const ANNUAL_WORKING_HOURS = 2080; // 52 weeks × 40 hours
 
@@ -671,7 +722,7 @@ function calcFte(fte) {
 
 export default {
     name: 'ProcessHierarchyProperties',
-    components: { PALUserTaskPanel, PALCallActivityPanel },
+    components: { PALUserTaskPanel, PALCallActivityPanel, CallActivityPanel, GPTCallActivityPanel },
     props: {
         processDefinition: { type: Object, default: null },
         element: { type: Object, default: null },
@@ -703,12 +754,16 @@ export default {
             dbSelectItems: {},
             freqCycleOptions: ['Yearly', 'Monthly', 'Weekly', 'Daily'],
             palUengineProperties: {},
-            palCallActivityProperties: {}
+            palCallActivityProperties: {},
+            callActivityProperties: {}
         };
     },
     computed: {
         isPalMode() {
             return typeof window !== 'undefined' && window.$pal;
+        },
+        isProcessGptMode() {
+            return typeof window !== 'undefined' && window.$mode === 'ProcessGPT';
         },
         isTaskElement() {
             const type = this.element?.businessObject?.$type || this.element?.type || '';
@@ -723,6 +778,12 @@ export default {
         },
         usePalCallActivityPanel() {
             return this.isPalMode && this.isCallActivityElement;
+        },
+        useGptCallActivityPanel() {
+            return this.isProcessGptMode && this.isCallActivityElement;
+        },
+        useUengineCallActivityPanel() {
+            return !this.isPalMode && !this.isProcessGptMode && this.isCallActivityElement;
         },
         catalogStore() {
             return useTaskCatalogStore();
@@ -773,6 +834,10 @@ export default {
                 this.activeTab = 'task';
                 if (this.usePalCallActivityPanel) {
                     this.initPalCallActivityFromElement(val);
+                } else if (this.useGptCallActivityPanel) {
+                    this.initCallActivityFromElement(val);
+                } else if (this.useUengineCallActivityPanel) {
+                    this.initCallActivityFromElement(val);
                 } else if (this.usePalUserTaskPanel) {
                     this.initPalUenginePropertiesFromElement(val);
                 } else {
@@ -956,6 +1021,64 @@ export default {
                 await this.$refs.palCallActivityPanel.beforeSave();
             }
             this.$nextTick(() => this.writePalCallActivityToElement());
+        },
+        initCallActivityFromElement(el) {
+            const bo = el.businessObject || el;
+            let props = {};
+            if (bo?.extensionElements?.values?.[0]?.json) {
+                try {
+                    props = JSON.parse(bo.extensionElements.values[0].json);
+                } catch (_) {}
+            }
+            this.callActivityProperties = {
+                ...props,
+                variableBindings: props.variableBindings || [],
+                roleBindings: props.roleBindings || [],
+                definitionId: props.definitionId || ''
+            };
+        },
+        onCallActivityPropertiesUpdate(newProps) {
+            this.callActivityProperties = newProps || {};
+        },
+        writeCallActivityToElement() {
+            if (!this.element) return;
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (!modeler) return;
+
+            const modeling = modeler.get('modeling');
+            const elementRegistry = modeler.get('elementRegistry');
+            const bpmnFactory = modeler.get('bpmnFactory');
+            const bo = this.element.businessObject;
+            const shapeElement = elementRegistry.get(bo.id);
+            if (!shapeElement) return;
+
+            const json = JSON.stringify(this.callActivityProperties || {});
+            let otherExtValues = [];
+            if (bo.extensionElements?.values) {
+                otherExtValues = bo.extensionElements.values.filter((v) => v.$type !== 'uengine:Properties');
+            }
+            let variables = [];
+            if (this.callActivityProperties?.customProperties && Array.isArray(this.callActivityProperties.customProperties)) {
+                variables = this.callActivityProperties.customProperties
+                    .filter((p) => p.key && p.key.trim())
+                    .map((p) => bpmnFactory.create('uengine:Variable', { key: p.key, value: p.value, json: '{}' }));
+            }
+            const uengineEl = bpmnFactory.create('uengine:Properties', { json, variables });
+            const newExtElements = bpmnFactory.create('bpmn:ExtensionElements', {
+                values: [...otherExtValues, uengineEl]
+            });
+            modeling.updateProperties(shapeElement, { extensionElements: newExtElements });
+
+            if (this.$toast) {
+                this.$toast.success(this.$t('processHierarchy.callActivitySaveSuccess'));
+            }
+        },
+        async saveCallActivity() {
+            if (this.$refs.callActivityPanel && typeof this.$refs.callActivityPanel.beforeSave === 'function') {
+                await this.$refs.callActivityPanel.beforeSave();
+            }
+            this.$nextTick(() => this.writeCallActivityToElement());
         },
         initPalUenginePropertiesFromElement(el) {
             const bo = el.businessObject || el;

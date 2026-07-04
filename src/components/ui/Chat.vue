@@ -2840,9 +2840,19 @@
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage" />
             <input
                 type="file"
-                accept="image/*,.pdf,.doc,.docx,.hwp,.hwpx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+                accept="image/*,.pdf,.doc,.docx,.hwp,.hwpx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.json,.md,.markdown,.yaml,.yml,.xml,.html,.htm,.js,.ts,.jsx,.tsx,.py,.java,.go,.rs,.sql,.sh,.env,.ini,.toml,.log,.zip"
                 ref="unifiedFileInput"
                 class="d-none"
+                multiple
+                @change="changeImage"
+            />
+            <!-- 폴더 통째 업로드: webkitdirectory 로 폴더 내 파일 전체 선택(허용 확장자만 changeImage 에서 필터). -->
+            <input
+                type="file"
+                ref="unifiedFolderInput"
+                class="d-none"
+                webkitdirectory
+                directory
                 multiple
                 @change="changeImage"
             />
@@ -5775,7 +5785,7 @@ export default {
             const selected = Array.from(e?.target?.files || []);
             if (!selected.length) return;
 
-            // Allow PDF + common Office + image formats (stored to Supabase, converted/OCR’d server-side).
+            // Allow PDF + Office + image + 텍스트/코드/데이터(JSON·MD·YAML·XML·소스코드 등) 포맷.
             const allowedExt = [
                 '.pdf',
                 '.doc',
@@ -5794,14 +5804,38 @@ export default {
                 '.gif',
                 '.webp',
                 '.bmp',
-                '.tiff'
+                '.tiff',
+                // 텍스트·데이터·코드 (지식/스킬 소스로 업로드)
+                '.json',
+                '.md',
+                '.markdown',
+                '.yaml',
+                '.yml',
+                '.xml',
+                '.html',
+                '.htm',
+                '.js',
+                '.ts',
+                '.jsx',
+                '.tsx',
+                '.py',
+                '.java',
+                '.go',
+                '.rs',
+                '.sql',
+                '.sh',
+                '.env',
+                '.ini',
+                '.toml',
+                '.log',
+                '.zip'
             ];
             const invalid = selected.find((f) => {
                 const name = (f?.name || '').toLowerCase();
                 return !allowedExt.some((ext) => name.endsWith(ext));
             });
             if (invalid) {
-                alert('지원되는 파일 형식이 아닙니다. (PDF/Office/Image/Text)');
+                alert('지원되는 파일 형식이 아닙니다. (PDF/Office/Image/Text/JSON/MD/YAML/XML/코드 등)');
                 if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
                 if (this.$refs.unifiedFileInput) this.$refs.unifiedFileInput.value = '';
                 return;
@@ -5956,6 +5990,13 @@ export default {
         },
         uploadImage() {
             const input = this.$refs.unifiedFileInput || this.$refs.uploader;
+            if (!input) return;
+            input.value = '';
+            input.click();
+        },
+        // 폴더 통째 업로드 — webkitdirectory input 을 열어 폴더 내 파일을 선택(changeImage 가 허용 확장자만 필터).
+        uploadFolder() {
+            const input = this.$refs.unifiedFolderInput;
             if (!input) return;
             input.value = '';
             input.click();

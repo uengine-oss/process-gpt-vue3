@@ -514,7 +514,12 @@ export default {
                     item.storage_path;
                 const name = item.file_name || item.fileName || item.name || item.originalFileName || guessNameFromPath(path);
                 if (!path && !name) return null;
-                return { path: path || name, name: name || guessNameFromPath(path) };
+                const meta = { path: path || name, name: name || guessNameFromPath(path) };
+                // hwpx 미리보기/편집(HwpxViewer)용 메타는 보존한다(정규화에서 유실 방지).
+                const htmlUrl = item.html_url || item.htmlUrl || '';
+                if (htmlUrl) meta.html_url = htmlUrl;
+                if (item.ext) meta.ext = item.ext;
+                return meta;
             };
 
             if (Array.isArray(value)) {
@@ -758,6 +763,20 @@ export default {
                 await backend.setVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName, variable);
             }
         },
+        async resolvePostCompleteInstanceId(instId) {
+            if (this.mode !== 'ProcessGPT' || !instId) return instId;
+
+            const instance = await backend.getInstance(instId);
+            if (
+                instance &&
+                String(instance.status || '').toUpperCase() === 'COMPLETED' &&
+                instance.parent_proc_inst_id
+            ) {
+                return instance.parent_proc_inst_id;
+            }
+
+            return instId;
+        },
         async completeTask() {
             let me = this;
             let workItem = { parameterValues: {} };
@@ -769,8 +788,9 @@ export default {
                     workItem['user_input_text'] = this.newMessage;
                 }
 
-                backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
-                me.$router.push(`/instancelist/${me.workItem.worklist.instId.replace(/\./g, '_DOT_')}`);
+                await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
+                const routeInstId = await me.resolvePostCompleteInstanceId(me.workItem.worklist.instId);
+                me.$router.push(`/instancelist/${routeInstId.replace(/\./g, '_DOT_')}`);
             } else {
                 // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
                 me.$try({
@@ -808,7 +828,7 @@ export default {
                             }
                             await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
 
-                            let path = me.workItem.worklist.instId;
+                            let path = await me.resolvePostCompleteInstanceId(me.workItem.worklist.instId);
                             me.$router.push(`/instancelist/${path}`);
                         }
                     }

@@ -1223,14 +1223,18 @@ export default {
             const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             participant.forEach((element) => {
                 const isCurrentlyHorizontal = element.di.isHorizontal !== false && element.width > element.height;
+                const rotateOptions = self.isViewMode ? { skipAutoLayout: true } : {};
                 if (isCurrentlyHorizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
                     element.di.isHorizontal = false;
                 } else {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
                     element.di.isHorizontal = true;
                 }
             });
+            const nextHorizontal = participant[0]?.di?.isHorizontal !== false;
+            palleteProvider.syncAllLaneOrientationForView?.(nextHorizontal);
+            self.syncOrientationFlagsLater(nextHorizontal);
             const refreshLabels = () => {
                 window.BpmnAutoLayout?.adjustLabelsAfterLayout?.(self.bpmnViewer);
             };
@@ -1245,6 +1249,8 @@ export default {
             }, 0);
         },
         initDefaultOrientation(orientation = null) {
+            if (!this.isViewMode) return false;
+
             let self = this;
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
@@ -1269,21 +1275,54 @@ export default {
             participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
                 if (isHorizontal && !horizontal) {
-                    if (element.width < element.height) {
-                        palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
-                        self.isHorizontal = true;
-                        element.di.isHorizontal = true;
-                    }
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd, {
+                        skipAutoLayout: true
+                    });
+                    self.isHorizontal = true;
+                    element.di.isHorizontal = true;
                 } else if (!isHorizontal && horizontal) {
-                    if (element.width > element.height) {
-                        palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
-                        self.isHorizontal = false;
-                        element.di.isHorizontal = false;
-                    }
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd, {
+                        skipAutoLayout: true
+                    });
+                    self.isHorizontal = false;
+                    element.di.isHorizontal = false;
                 }
             });
 
+            palleteProvider.normalizeDiagramBoundsForView?.();
+            palleteProvider.syncAllLaneOrientationForView?.(isHorizontal);
+            self.syncOrientationFlagsLater(isHorizontal);
             // self.resetZoom();
+            return true;
+        },
+        syncOrientationFlags(isHorizontal) {
+            const elementRegistry = this.bpmnViewer?.get('elementRegistry');
+            const modeling = this.bpmnViewer?.get('modeling');
+            if (!elementRegistry) return;
+
+            elementRegistry.filter((element) =>
+                element.type === 'bpmn:Participant' ||
+                element.type === 'bpmn:Lane'
+            ).forEach((element) => {
+                try {
+                    modeling?.updateProperties(element, {
+                        di: { isHorizontal }
+                    });
+                } catch (e) {
+                    // Keep direct DI sync even if the element cannot be updated through modeling.
+                }
+                if (element.di) {
+                    element.di.isHorizontal = isHorizontal;
+                }
+                if (element.businessObject) {
+                    element.businessObject.isHorizontal = isHorizontal;
+                }
+            });
+        },
+        syncOrientationFlagsLater(isHorizontal) {
+            this.syncOrientationFlags(isHorizontal);
+            requestAnimationFrame(() => requestAnimationFrame(() => this.syncOrientationFlags(isHorizontal)));
+            setTimeout(() => this.syncOrientationFlags(isHorizontal), 300);
         },
         setDiagramEvent() {
             var self = this;
@@ -1336,6 +1375,9 @@ export default {
 
                 var canvas = self.bpmnViewer.get('canvas');
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
+                if (self.isViewMode) {
+                    self.bpmnViewer.get('paletteProvider')?.normalizeDiagramBoundsForView?.();
+                }
 
                 // Playwright 테스트용 고유 클래스 추가
                 self.addTestClassesToElements(canvas, elementRegistry);
@@ -1483,7 +1525,7 @@ export default {
                 } else {
                     eventBus.on('element.dblclick', function (e) {
                         if (e.element.type.includes('CallActivity')) {
-                            self.$emit('openDefinition', e.element.businessObject);
+                            self.$emit('openPanel', e.element.id);
                         } else if (e.element.type.includes('Collaboration')) {
                             const businessObject = e.element.businessObject;
                             if (
@@ -1730,10 +1772,6 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
-                // PAL 모드에서도 엑셀 등으로 BPMN 로드 시 자동 레이아웃 적용
-                if (window.$mode !== 'uEngine') {
-                    self.applyAutoLayout();
-                }
                 self.resetZoom();
             });
 
@@ -2293,7 +2331,7 @@ export default {
         },
         onContainerResizeFinished() {
             const container = this.$refs.container;
-            if (!container || this.isAIGenerated || !container.getBoundingClientRect) return;
+            if (!container || !this.isViewMode || this.isAIGenerated || !container.getBoundingClientRect) return;
 
             const { width, height } = container.getBoundingClientRect();
 

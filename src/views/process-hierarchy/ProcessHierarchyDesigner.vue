@@ -173,6 +173,12 @@ export default {
             this.$nextTick(() => {
                 const bpmnVue = this.$refs.bpmnVue;
                 if (!bpmnVue) return;
+                if (!bpmnVue.isViewMode) {
+                    setTimeout(() => {
+                        if (bpmnVue.resetZoom) bpmnVue.resetZoom();
+                    }, 500);
+                    return;
+                }
 
                 // ResizeObserver의 자동 orientation 변경을 항상 horizontal로 고정
                 bpmnVue.onContainerResizeFinished = () => {
@@ -472,9 +478,10 @@ export default {
                         }
                     }
 
-                    // uEngine 모드: Call Activity에 선택된 프로세스가 없으면 에러
+                    // uEngine/ProcessGPT 모드: Call Activity에 선택된 프로세스가 없으면 에러
                     const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
-                    if (isUEngine && (type === 'bpmn:CallActivity' || type?.includes('CallActivity'))) {
+                    const isProcessGPT = typeof window !== 'undefined' && window.$mode === 'ProcessGPT';
+                    if ((isUEngine || isProcessGPT) && (type === 'bpmn:CallActivity' || type?.includes('CallActivity'))) {
                         let definitionId = '';
                         const bo = element.businessObject;
                         if (bo?.extensionElements?.values) {
