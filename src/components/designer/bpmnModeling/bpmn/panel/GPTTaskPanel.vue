@@ -1,5 +1,11 @@
 <template>
     <div>
+        <v-tabs v-model="activeTab" class="pl-4 pr-4">
+            <v-tab value="setting">{{ $t('BpmnPropertyPanel.setting') }}</v-tab>
+            <v-tab value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
+        </v-tabs>
+        <v-window v-model="activeTab">
+            <v-window-item value="setting" class="pa-4">
         <div class="mb-6">
             <!-- Duration -->
             <v-text-field
@@ -92,6 +98,21 @@
                 </div>
             </div>
         </div>
+            </v-window-item>
+            <v-window-item value="inputData" class="pa-4">
+                <ProcessGptReferenceMapper
+                    :inputData="activity.inputData"
+                    :mapperIn="copyUengineProperties.mapperIn"
+                    :processDefinition="processDefinition"
+                    :definition="copyDefinition"
+                    :element="element"
+                    :name="name"
+                    :isViewMode="isViewMode"
+                    @update:inputData="activity.inputData = $event"
+                    @update:mapperIn="copyUengineProperties.mapperIn = $event"
+                />
+            </v-window-item>
+        </v-window>
     </div>
 </template>
 <script>
@@ -100,6 +121,7 @@ import Checkpoints from '@/components/designer/CheckpointsField.vue';
 import Description from '@/components/designer/DescriptionField.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import { useBpmnStore } from '@/stores/bpmn';
+import ProcessGptReferenceMapper from './ProcessGptReferenceMapper.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
@@ -109,7 +131,8 @@ export default {
         Instruction,
         Checkpoints,
         Description,
-        KeyValueField
+        KeyValueField,
+        ProcessGptReferenceMapper
     },
     props: {
         uengineProperties: Object,
@@ -126,8 +149,9 @@ export default {
     data() {
         return {
             copyUengineProperties: this.uengineProperties ? JSON.parse(JSON.stringify(this.uengineProperties)) : {},
-            copyDefinition: null,
+            copyDefinition: this.definition || this.processDefinition,
             backend: null,
+            activeTab: 'setting',
             activity: {
                 type: 'task',
                 duration: 5,
@@ -135,7 +159,8 @@ export default {
                 instruction: '',
                 description: '',
                 checkpoints: [''],
-                customProperties: []
+                customProperties: [],
+                inputData: []
             },
             // Color picker
             showColorPicker: false,
@@ -166,6 +191,8 @@ export default {
             }
         }
         me.activity.type = 'task';
+        if (!me.copyUengineProperties.mapperIn) me.copyUengineProperties.mapperIn = { mappingElements: [] };
+        if (me.copyUengineProperties.inputData) me.activity.inputData = me.copyUengineProperties.inputData;
 
         // Initialize customProperties from copyUengineProperties if available
         if (me.copyUengineProperties && me.copyUengineProperties.customProperties) {
@@ -176,6 +203,7 @@ export default {
         beforeSave() {
             var me = this;
             me.copyUengineProperties.customProperties = me.activity.customProperties;
+            me.copyUengineProperties.inputData = me.activity.inputData;
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },
         setTaskColor(color) {

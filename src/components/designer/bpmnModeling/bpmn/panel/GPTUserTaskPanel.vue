@@ -98,49 +98,17 @@
 
             <!-- Input Data -->
             <v-window-item value="inputData" class="pa-4">
-                <div class="my-4">
-                    <v-select
-                        v-model="selectedForms"
-                        :items="availableForms"
-                        item-title="title"
-                        item-value="formId"
-                        :label="$t('BpmnPropertyPanel.selectForm')"
-                        variant="outlined"
-                        density="compact"
-                        multiple
-                        chips
-                        closable-chips
-                    ></v-select>
-                </div>
-                <!-- Form Fields -->
-                <div v-if="selectedForms.length > 0">
-                    <v-card v-for="formId in selectedForms" :key="formId" class="mb-4" variant="outlined">
-                        <v-card-text class="pa-4">
-                            <div class="mb-3 text-subtitle-1">{{ getFormTitle(formId) }}</div>
-                            <v-row>
-                                <v-col
-                                    cols="12"
-                                    lg="6"
-                                    md="6"
-                                    sm="12"
-                                    v-for="field in getFormFields(formId)"
-                                    :key="`${formId}-${field.fieldId}`"
-                                >
-                                    <v-checkbox
-                                        v-model="field.selected"
-                                        :label="field.fieldName"
-                                        density="compact"
-                                        hide-details
-                                    ></v-checkbox>
-                                </v-col>
-                            </v-row>
-                        </v-card-text>
-                    </v-card>
-                </div>
-                <!-- No form selected message -->
-                <div v-else class="text-center text-grey-500 py-8">
-                    {{ $t('BpmnPropertyPanel.noFormSelected') }}
-                </div>
+                <ProcessGptReferenceMapper
+                    :inputData="activity.inputData"
+                    :mapperIn="referenceMapperContext"
+                    :processDefinition="processDefinition"
+                    :definition="copyDefinition"
+                    :element="element"
+                    :name="name"
+                    :isViewMode="isViewMode"
+                    @update:inputData="activity.inputData = $event"
+                    @update:mapperIn="updateReferenceMapperContext"
+                />
             </v-window-item>
 
             <v-window-item value="edit">
@@ -171,6 +139,7 @@
                 />
             </v-window-item>
         </v-window>
+
     </div>
 </template>
 
@@ -183,6 +152,7 @@ import KeyValueField from '@/components/designer/KeyValueField.vue';
 import ManualLinkField from '@/components/ui/ManualLinkField.vue';
 import UserTaskUnitTest from './UserTaskUnitTest.vue';
 import PiFlagPanel from './PiFlagPanel.vue';
+import ProcessGptReferenceMapper from './ProcessGptReferenceMapper.vue';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
@@ -202,7 +172,8 @@ export default {
         KeyValueField,
         ManualLinkField,
         UserTaskUnitTest,
-        PiFlagPanel
+        PiFlagPanel,
+        ProcessGptReferenceMapper
     },
     props: {
         uengineProperties: Object,
@@ -261,6 +232,8 @@ export default {
     },
     created() {
         this.backend = BackendFactory.createBackend();
+        this.copyDefinition = this.definition || this.processDefinition;
+        this.ensureReferenceMapperContext();
 
         if (this.element.lanes?.length > 0) {
             this.activity.role = this.element.lanes[0].name;
@@ -425,9 +398,36 @@ export default {
         },
         isSubAgentProfile() {
             return this.resolveSubAgentProfile();
+        },
+        referenceMapperContext() {
+            return this.ensureReferenceMapperContext();
         }
     },
     methods: {
+        ensureReferenceMapperContext() {
+            if (!this.copyUengineProperties) this.copyUengineProperties = {};
+            if (!this.copyUengineProperties.eventSynchronization) {
+                this.copyUengineProperties.eventSynchronization = {
+                    eventType: '',
+                    attributes: [],
+                    mappingContext: this.copyUengineProperties.mapperIn || { mappingElements: [] }
+                };
+            }
+            if (!this.copyUengineProperties.eventSynchronization.mappingContext) {
+                this.copyUengineProperties.eventSynchronization.mappingContext =
+                    this.copyUengineProperties.mapperIn || { mappingElements: [] };
+            }
+            if (!Array.isArray(this.copyUengineProperties.eventSynchronization.mappingContext.mappingElements)) {
+                this.copyUengineProperties.eventSynchronization.mappingContext.mappingElements = [];
+            }
+            this.copyUengineProperties.mapperIn = this.copyUengineProperties.eventSynchronization.mappingContext;
+            return this.copyUengineProperties.eventSynchronization.mappingContext;
+        },
+        updateReferenceMapperContext(mappingContext) {
+            this.ensureReferenceMapperContext();
+            this.copyUengineProperties.eventSynchronization.mappingContext = mappingContext || { mappingElements: [] };
+            this.copyUengineProperties.mapperIn = this.copyUengineProperties.eventSynchronization.mappingContext;
+        },
         isAdHocSubProcessType(type) {
             const normalized = (type || '').toString().toLowerCase();
             return normalized === 'bpmn:adhocsubprocess' || normalized.endsWith('adhocsubprocess');
@@ -724,6 +724,7 @@ export default {
 
             // PI Flag 코멘트는 PiFlagPanel 이 모델러로 즉시 저장하므로, 재구성 시 보존만 한다.
             const existingComments = Array.isArray(me.copyUengineProperties?.comments) ? me.copyUengineProperties.comments : [];
+            const eventSynchronization = JSON.parse(JSON.stringify(me.copyUengineProperties.eventSynchronization || {}));
 
             // 편집 내용을 uengineProperties로 전달
             me.copyUengineProperties = {
@@ -744,6 +745,8 @@ export default {
                 menuName: me.activity.menuName,
                 tools: Array.isArray(me.activity.tools) ? [...me.activity.tools] : [],
                 skills: Array.isArray(me.activity.skills) ? [...me.activity.skills] : [],
+                eventSynchronization,
+                mapperIn: eventSynchronization?.mappingContext || { mappingElements: [] },
                 comments: existingComments
             };
 

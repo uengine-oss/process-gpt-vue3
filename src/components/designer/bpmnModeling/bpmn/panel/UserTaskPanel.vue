@@ -28,6 +28,10 @@
             ></v-text-field>
         </div>
 
+        <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="openFormMapper">
+            {{ $t('ReceiveTaskPanel.dataMapping') }}
+        </v-btn>
+
         <div v-if="!isLoading && selectedActivity == 'HumanActivity'">
             <EventSynchronizationForm
                 v-if="useEvent"
@@ -763,7 +767,10 @@ export default {
         },
         async openFormMapper() {
             var me = this;
-            if (!me.selectedForm) return;
+            if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+            if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+            me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
 
             me.isOpenFieldMapper = true;
         },

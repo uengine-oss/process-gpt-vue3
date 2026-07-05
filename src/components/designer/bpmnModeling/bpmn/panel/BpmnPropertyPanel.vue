@@ -182,10 +182,11 @@ export default {
             this.name = this.element.name;
             this.text = this.element.text;
         }
-        const extensionElement = this.element.extensionElements.values[0];
-        const json = extensionElement.json;
+        const extensionElement = this.element.extensionElements.values.find((value) => value.$type === 'uengine:Properties') || this.element.extensionElements.values[0];
+        const json = this.readUengineJson(extensionElement);
         if (json) {
             this.uengineProperties = JSON.parse(json);
+            extensionElement.json = json;
         }
 
         // customProperties 복원
@@ -387,6 +388,13 @@ export default {
     },
     watch: {},
     methods: {
+        readUengineJson(extensionElement) {
+            if (!extensionElement) return '';
+            if (extensionElement.json) return extensionElement.json;
+            const children = extensionElement.values || extensionElement.$children || [];
+            const jsonElement = children.find((child) => child.$type === 'uengine:Json' || child.$type === 'uengine:json' || child.json);
+            return jsonElement?.json || jsonElement?.body || jsonElement?.$body || jsonElement?.text || '';
+        },
         printDocument() {
             var me = this;
             me.html = me.saveHTML();

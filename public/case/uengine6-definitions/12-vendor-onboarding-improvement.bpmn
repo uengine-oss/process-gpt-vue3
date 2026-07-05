@@ -1,0 +1,136 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_vendor_onboarding_improvement" name="협력사 온보딩 개선 프로세스" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
+  <bpmn:collaboration id="Collaboration_vendor_onboarding">
+    <bpmn:participant id="Participant_vendor_onboarding" name="협력사 온보딩 개선 프로세스" processRef="Process_vendor_onboarding" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_vendor_onboarding" name="협력사 온보딩 개선 프로세스" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties>
+        <uengine:variable name="requesterEmail" type="Text" />
+        <uengine:variable name="departmentCode" type="Text" />
+        <uengine:variable name="supplierName" type="Text" />
+        <uengine:variable name="contractValue" type="Number" />
+        <uengine:variable name="담당자" type="Text" />
+        <uengine:variable name="categoryManagerEmail" type="Text" />
+        <uengine:variable name="securityReviewerEmail" type="Text" />
+        <uengine:variable name="remediationOwnerEmail" type="Text" />
+        <uengine:variable name="riskLevel" type="Text" />
+        <uengine:variable name="improvementSummary" type="Text" />
+        <uengine:json>{"definitionName":"협력사 온보딩 개선 프로세스","version":"1.0","shortDescription":{"text":"자동 가로/세로 전환, CallActivity, 매퍼, 동적 lane 역할 매핑을 확인하기 위한 실무형 협력사 온보딩 개선 프로세스입니다."}}</uengine:json>
+      </uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_vendor_onboarding">
+      <bpmn:lane id="Lane_requester" name="요청부서">
+        <bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;requester&quot;}}"><uengine:json>{"roleResolutionContext":{"_type":"org.uengine.five.overriding.IAMRoleResolutionContext","scope":"requester"}}</uengine:json></uengine:properties></bpmn:extensionElements>
+        <bpmn:flowNodeRef>Event_start_vendor</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_submit_vendor_need</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_procurement" name="구매담당자">
+        <bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"><uengine:json>{"roleResolutionContext":{"_type":"org.uengine.five.overriding.IAMRoleResolutionContext","scope":"manager"}}</uengine:json></uengine:properties></bpmn:extensionElements>
+        <bpmn:flowNodeRef>Task_validate_supplier</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_assign_category_manager</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_prepare_onboarding_packet</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_finance" name="재무승인자">
+        <bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"><uengine:json>{"roleResolutionContext":{"_type":"org.uengine.five.overriding.IAMRoleResolutionContext","scope":"manager"}}</uengine:json></uengine:properties></bpmn:extensionElements>
+        <bpmn:flowNodeRef>Task_check_budget</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_security" name="보안검토담당자">
+        <bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"><uengine:json>{"roleResolutionContext":{"_type":"org.uengine.five.overriding.IAMRoleResolutionContext","scope":"manager"}}</uengine:json></uengine:properties></bpmn:extensionElements>
+        <bpmn:flowNodeRef>Call_vendor_security_review</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_improvement" name="개선담당자">
+        <bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"><uengine:json>{"roleResolutionContext":{"_type":"org.uengine.five.overriding.IAMRoleResolutionContext","scope":"manager"}}</uengine:json></uengine:properties></bpmn:extensionElements>
+        <bpmn:flowNodeRef>Task_confirm_improvement_plan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_update_operating_procedure</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_contract" name="계약담당자">
+        <bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"><uengine:json>{"roleResolutionContext":{"_type":"org.uengine.five.overriding.IAMRoleResolutionContext","scope":"manager"}}</uengine:json></uengine:properties></bpmn:extensionElements>
+        <bpmn:flowNodeRef>Task_finalize_contract_terms</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_notify_stakeholders</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_end_vendor</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Event_start_vendor" name="협력사 온보딩 필요 발생"><bpmn:outgoing>Flow_vendor_01</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:userTask id="Task_submit_vendor_need" name="협력사 온보딩 요청 등록">
+      <bpmn:extensionElements><uengine:properties json="{&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;requesterEmail&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;departmentCode&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;supplierName&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;contractValue&quot;,&quot;className&quot;:&quot;Number&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;담당자&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;lane.보안검토담당자.endpoint&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;forms.vendor_onboarding_task_submit_vendor_need_form.담당자&quot;},&quot;isKey&quot;:false}]}},&quot;_type&quot;:&quot;org.uengine.kernel.HumanActivity&quot;}"><uengine:json>{"eventSynchronization":{"eventType":"","attributes":[{"name":"requesterEmail","className":"String","isKey":false,"isCorrKey":false},{"name":"departmentCode","className":"String","isKey":false,"isCorrKey":false},{"name":"supplierName","className":"String","isKey":false,"isCorrKey":false},{"name":"contractValue","className":"Number","isKey":false,"isCorrKey":false},{"name":"담당자","className":"String","isKey":false,"isCorrKey":false}],"mappingContext":{"mappingElements":[{"argument":{"text":"lane.보안검토담당자.endpoint"},"direction":"out","variable":{"name":"forms.vendor_onboarding_task_submit_vendor_need_form.담당자"},"isKey":false}]}},"_type":"org.uengine.kernel.HumanActivity"}</uengine:json></uengine:properties></bpmn:extensionElements>
+      <bpmn:incoming>Flow_vendor_01</bpmn:incoming><bpmn:outgoing>Flow_vendor_02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_validate_supplier" name="협력사 기준정보 확인">
+      <bpmn:incoming>Flow_vendor_07</bpmn:incoming><bpmn:outgoing>Flow_vendor_03</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_assign_category_manager" name="담당자 및 검토자 지정">
+      <bpmn:extensionElements><uengine:properties json="{&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;categoryManagerEmail&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;securityReviewerEmail&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;remediationOwnerEmail&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].categoryManagerEmail&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;categoryManagerEmail&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].securityReviewerEmail&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;securityReviewerEmail&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].remediationOwnerEmail&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;remediationOwnerEmail&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].securityReviewerEmail&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;lane.보안검토담당자.endpoint&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].remediationOwnerEmail&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;lane.개선담당자.endpoint&quot;},&quot;isKey&quot;:false}]}},&quot;_type&quot;:&quot;org.uengine.kernel.HumanActivity&quot;}"><uengine:json>{"eventSynchronization":{"eventType":"","attributes":[{"name":"categoryManagerEmail","className":"String","isKey":false,"isCorrKey":false},{"name":"securityReviewerEmail","className":"String","isKey":false,"isCorrKey":false},{"name":"remediationOwnerEmail","className":"String","isKey":false,"isCorrKey":false}],"mappingContext":{"mappingElements":[{"argument":{"text":"[Arguments].categoryManagerEmail"},"direction":"out","variable":{"name":"categoryManagerEmail"},"isKey":false},{"argument":{"text":"[Arguments].securityReviewerEmail"},"direction":"out","variable":{"name":"securityReviewerEmail"},"isKey":false},{"argument":{"text":"[Arguments].remediationOwnerEmail"},"direction":"out","variable":{"name":"remediationOwnerEmail"},"isKey":false},{"argument":{"text":"[Arguments].securityReviewerEmail"},"direction":"out","variable":{"name":"lane.보안검토담당자.endpoint"},"isKey":false},{"argument":{"text":"[Arguments].remediationOwnerEmail"},"direction":"out","variable":{"name":"lane.개선담당자.endpoint"},"isKey":false}]}},"_type":"org.uengine.kernel.HumanActivity"}</uengine:json></uengine:properties></bpmn:extensionElements>
+      <bpmn:incoming>Flow_vendor_03</bpmn:incoming><bpmn:outgoing>Flow_vendor_04</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_check_budget" name="예산 및 승인 한도 확인">
+      <bpmn:incoming>Flow_vendor_04</bpmn:incoming><bpmn:outgoing>Flow_vendor_05</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_prepare_onboarding_packet" name="온보딩 자료 패키지 준비">
+      <bpmn:incoming>Flow_vendor_05</bpmn:incoming><bpmn:outgoing>Flow_vendor_06</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:callActivity id="Call_vendor_security_review" name="협력사 보안 심사 호출">
+      <bpmn:extensionElements><uengine:properties json="{&quot;definitionId&quot;:&quot;vendor-security-review&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;inheritParentReferenceInfo&quot;:true,&quot;variableBindings&quot;:[],&quot;roleBindings&quot;:[{&quot;direction&quot;:&quot;IN-OUT&quot;,&quot;role&quot;:{&quot;name&quot;:&quot;보안검토담당자&quot;},&quot;argument&quot;:&quot;보안심사자&quot;},{&quot;direction&quot;:&quot;IN-OUT&quot;,&quot;role&quot;:{&quot;name&quot;:&quot;개선담당자&quot;},&quot;argument&quot;:&quot;IT개선담당자&quot;},{&quot;direction&quot;:&quot;IN-OUT&quot;,&quot;role&quot;:{&quot;name&quot;:&quot;구매담당자&quot;},&quot;argument&quot;:&quot;구매담당자&quot;}],&quot;mapperIn&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;Variables.supplierName&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;callActivity.variables.supplierName&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;Variables.담당자&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;callActivity.variables.담당자&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;Variables.담당자&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;callActivity.lane.보안심사자.endpoint&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;Variables.securityReviewerEmail&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;callActivity.variables.assignedReviewerEmail&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;Variables.remediationOwnerEmail&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;callActivity.variables.remediationOwner&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;Variables.departmentCode&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;callActivity.variables.businessUnit&quot;},&quot;isKey&quot;:false}]}}"><uengine:json>{"definitionId":"vendor-security-review","version":"1.0","inheritParentReferenceInfo":true,"variableBindings":[],"roleBindings":[{"direction":"IN-OUT","role":{"name":"보안검토담당자"},"argument":"보안심사자"},{"direction":"IN-OUT","role":{"name":"개선담당자"},"argument":"IT개선담당자"},{"direction":"IN-OUT","role":{"name":"구매담당자"},"argument":"구매담당자"}],"mapperIn":{"mappingElements":[{"argument":{"text":"Variables.supplierName"},"direction":"out","variable":{"name":"callActivity.variables.supplierName"},"isKey":false},{"argument":{"text":"Variables.담당자"},"direction":"out","variable":{"name":"callActivity.variables.담당자"},"isKey":false},{"argument":{"text":"Variables.담당자"},"direction":"out","variable":{"name":"callActivity.lane.보안심사자.endpoint"},"isKey":false},{"argument":{"text":"Variables.securityReviewerEmail"},"direction":"out","variable":{"name":"callActivity.variables.assignedReviewerEmail"},"isKey":false},{"argument":{"text":"Variables.remediationOwnerEmail"},"direction":"out","variable":{"name":"callActivity.variables.remediationOwner"},"isKey":false},{"argument":{"text":"Variables.departmentCode"},"direction":"out","variable":{"name":"callActivity.variables.businessUnit"},"isKey":false}]}}</uengine:json></uengine:properties></bpmn:extensionElements>
+      <bpmn:incoming>Flow_vendor_02</bpmn:incoming><bpmn:outgoing>Flow_vendor_07</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:userTask id="Task_confirm_improvement_plan" name="개선 계획 확정">
+      <bpmn:extensionElements><uengine:properties json="{&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;riskLevel&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;improvementSummary&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].riskLevel&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;riskLevel&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].improvementSummary&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;improvementSummary&quot;},&quot;isKey&quot;:false}]}},&quot;_type&quot;:&quot;org.uengine.kernel.HumanActivity&quot;}"><uengine:json>{"eventSynchronization":{"eventType":"","attributes":[{"name":"riskLevel","className":"String","isKey":false,"isCorrKey":false},{"name":"improvementSummary","className":"String","isKey":false,"isCorrKey":false}],"mappingContext":{"mappingElements":[{"argument":{"text":"[Arguments].riskLevel"},"direction":"out","variable":{"name":"riskLevel"},"isKey":false},{"argument":{"text":"[Arguments].improvementSummary"},"direction":"out","variable":{"name":"improvementSummary"},"isKey":false}]}},"_type":"org.uengine.kernel.HumanActivity"}</uengine:json></uengine:properties></bpmn:extensionElements>
+      <bpmn:incoming>Flow_vendor_06</bpmn:incoming><bpmn:outgoing>Flow_vendor_08</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_update_operating_procedure" name="운영 절차 업데이트">
+      <bpmn:incoming>Flow_vendor_08</bpmn:incoming><bpmn:outgoing>Flow_vendor_09</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_finalize_contract_terms" name="계약 조건 확정">
+      <bpmn:incoming>Flow_vendor_09</bpmn:incoming><bpmn:outgoing>Flow_vendor_10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_notify_stakeholders" name="이해관계자 공지 및 반영">
+      <bpmn:incoming>Flow_vendor_10</bpmn:incoming><bpmn:outgoing>Flow_vendor_11</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_end_vendor" name="협력사 온보딩 완료"><bpmn:incoming>Flow_vendor_11</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_vendor_01" sourceRef="Event_start_vendor" targetRef="Task_submit_vendor_need" />
+    <bpmn:sequenceFlow id="Flow_vendor_02" sourceRef="Task_submit_vendor_need" targetRef="Call_vendor_security_review" />
+    <bpmn:sequenceFlow id="Flow_vendor_03" sourceRef="Task_validate_supplier" targetRef="Task_assign_category_manager" />
+    <bpmn:sequenceFlow id="Flow_vendor_04" sourceRef="Task_assign_category_manager" targetRef="Task_check_budget" />
+    <bpmn:sequenceFlow id="Flow_vendor_05" sourceRef="Task_check_budget" targetRef="Task_prepare_onboarding_packet" />
+    <bpmn:sequenceFlow id="Flow_vendor_06" sourceRef="Task_prepare_onboarding_packet" targetRef="Task_confirm_improvement_plan" />
+    <bpmn:sequenceFlow id="Flow_vendor_07" sourceRef="Call_vendor_security_review" targetRef="Task_validate_supplier" />
+    <bpmn:sequenceFlow id="Flow_vendor_08" sourceRef="Task_confirm_improvement_plan" targetRef="Task_update_operating_procedure" />
+    <bpmn:sequenceFlow id="Flow_vendor_09" sourceRef="Task_update_operating_procedure" targetRef="Task_finalize_contract_terms" />
+    <bpmn:sequenceFlow id="Flow_vendor_10" sourceRef="Task_finalize_contract_terms" targetRef="Task_notify_stakeholders" />
+    <bpmn:sequenceFlow id="Flow_vendor_11" sourceRef="Task_notify_stakeholders" targetRef="Event_end_vendor" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_vendor_onboarding">
+    <bpmndi:BPMNPlane id="BPMNPlane_vendor_onboarding" bpmnElement="Collaboration_vendor_onboarding">
+      <bpmndi:BPMNShape id="Participant_vendor_onboarding_di" bpmnElement="Participant_vendor_onboarding" isHorizontal="true"><dc:Bounds x="120" y="60" width="2100" height="720" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_requester_di" bpmnElement="Lane_requester" isHorizontal="true"><dc:Bounds x="150" y="60" width="2070" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_procurement_di" bpmnElement="Lane_procurement" isHorizontal="true"><dc:Bounds x="150" y="180" width="2070" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_finance_di" bpmnElement="Lane_finance" isHorizontal="true"><dc:Bounds x="150" y="300" width="2070" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_security_di" bpmnElement="Lane_security" isHorizontal="true"><dc:Bounds x="150" y="420" width="2070" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_improvement_di" bpmnElement="Lane_improvement" isHorizontal="true"><dc:Bounds x="150" y="540" width="2070" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_contract_di" bpmnElement="Lane_contract" isHorizontal="true"><dc:Bounds x="150" y="660" width="2070" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_start_vendor_di" bpmnElement="Event_start_vendor"><dc:Bounds x="220" y="102" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_submit_vendor_need_di" bpmnElement="Task_submit_vendor_need"><dc:Bounds x="330" y="80" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Call_vendor_security_review_di" bpmnElement="Call_vendor_security_review"><dc:Bounds x="550" y="440" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_validate_supplier_di" bpmnElement="Task_validate_supplier"><dc:Bounds x="770" y="200" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_assign_category_manager_di" bpmnElement="Task_assign_category_manager"><dc:Bounds x="990" y="200" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_check_budget_di" bpmnElement="Task_check_budget"><dc:Bounds x="1210" y="320" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_prepare_onboarding_packet_di" bpmnElement="Task_prepare_onboarding_packet"><dc:Bounds x="1430" y="200" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_confirm_improvement_plan_di" bpmnElement="Task_confirm_improvement_plan"><dc:Bounds x="1650" y="560" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_update_operating_procedure_di" bpmnElement="Task_update_operating_procedure"><dc:Bounds x="1870" y="560" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_finalize_contract_terms_di" bpmnElement="Task_finalize_contract_terms"><dc:Bounds x="1870" y="680" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_notify_stakeholders_di" bpmnElement="Task_notify_stakeholders"><dc:Bounds x="1650" y="680" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_end_vendor_di" bpmnElement="Event_end_vendor"><dc:Bounds x="2100" y="702" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_vendor_01_di" bpmnElement="Flow_vendor_01"><di:waypoint x="256" y="120" /><di:waypoint x="330" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_vendor_02_di" bpmnElement="Flow_vendor_02"><di:waypoint x="430" y="120" /><di:waypoint x="515" y="120" /><di:waypoint x="515" y="480" /><di:waypoint x="550" y="480" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_vendor_03_di" bpmnElement="Flow_vendor_03"><di:waypoint x="870" y="240" /><di:waypoint x="990" y="240" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_vendor_04_di" bpmnElement="Flow_vendor_04"><di:waypoint x="1090" y="240" /><di:waypoint x="1175" y="240" /><di:waypoint x="1175" y="360" /><di:waypoint x="1210" y="360" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_vendor_05_di" bpmnElement="Flow_vendor_05"><di:waypoint x="1310" y="360" /><di:waypoint x="1395" y="360" /><di:waypoint x="1395" y="240" /><di:waypoint x="1430" y="240" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_vendor_06_di" bpmnElement="Flow_vendor_06"><di:waypoint x="1530" y="240" /><di:waypoint x="1615" y="240" /><di:waypoint x="1615" y="600" /><di:waypoint x="1650" y="600" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_vendor_07_di" bpmnElement="Flow_vendor_07"><di:waypoint x="650" y="480" /><di:waypoint x="735" y="480" /><di:waypoint x="735" y="240" /><di:waypoint x="770" y="240" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_vendor_08_di" bpmnElement="Flow_vendor_08"><di:waypoint x="1750" y="600" /><di:waypoint x="1870" y="600" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_vendor_09_di" bpmnElement="Flow_vendor_09"><di:waypoint x="1920" y="640" /><di:waypoint x="1920" y="680" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_vendor_10_di" bpmnElement="Flow_vendor_10"><di:waypoint x="1870" y="720" /><di:waypoint x="1750" y="720" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_vendor_11_di" bpmnElement="Flow_vendor_11"><di:waypoint x="1750" y="720" /><di:waypoint x="2100" y="720" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -43,6 +43,11 @@ export const router = createRouter({
             path: '/bpmn-auto-layout-e2e',
             component: () => retryDynamicImport(() => import('@/views/e2e/BpmnAutoLayoutE2E.vue'))
         },
+        {
+            name: 'ProcessGPT Mapper UI E2E',
+            path: '/processgpt-mapper-ui-e2e',
+            component: () => retryDynamicImport(() => import('@/views/e2e/ProcessGptMapperUiE2E.vue'))
+        },
         MainRoutes,
         AuthRoutes,
         TenantRoutes,

@@ -347,6 +347,8 @@
                                 :uengineProperties="callActivityProperties"
                                 :processDefinitionId="definitionPath"
                                 :processVariables="processVariables"
+                                :definition="definition"
+                                :name="element.businessObject?.name || ''"
                                 @update:uengineProperties="onCallActivityPropertiesUpdate"
                             />
                             <v-btn

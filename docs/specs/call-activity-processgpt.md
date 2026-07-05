@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+MVP implemented for ProcessGPT backend execution and mapper-backed role/variable transfer.
 
 ## Goal
 
@@ -23,7 +23,7 @@ Current completion behavior:
 - The execution project loads `proc_def.definition` or `proc_def_version.definition`.
 - It maps that JSON into `ProcessDefinition` and `ProcessActivity`.
 - Existing child process logic supports embedded `subProcesses[].children`.
-- External process calls through `CallActivity.definitionId` are not yet a first-class execution path.
+- External process calls through `CallActivity.definitionId` are supported as a ProcessGPT backend execution path.
 
 uEngine reference behavior:
 
@@ -130,6 +130,12 @@ Execution flow:
 
 Initial MVP may inherit parent role bindings directly only as a compatibility fallback. The uEngine-compatible target is explicit `roleBindings` and `parameters`.
 
+State rule:
+
+- The parent CallActivity workitem is the only parent-side workitem that should remain `PENDING` while the child process is active.
+- The already completed parent user task immediately before the CallActivity must remain `DONE`.
+- `PENDING` on a completed activity is valid only when `cannotProceedErrors` explain why the activity cannot proceed. A CallActivity wait must not be represented by rewriting the previous completed activity to `PENDING`.
+
 ## Parent-Child State Contract
 
 The completion project should persist enough state to resume the parent after the child completes.
@@ -149,6 +155,7 @@ Minimum state:
 Expected behavior:
 
 - Parent CallActivity is not considered complete while a non-`runAndForget` child instance is active.
+- Parent CallActivity waiting is represented by the CallActivity workitem status, not by changing the previous activity status.
 - Child completion checks `parent_proc_inst_id` and `return_activity_id`.
 - Parent resumes from the CallActivity outgoing sequence only after the relevant child instance is completed.
 - If multiple child instances are added later, parent resumes only after all children for the same CallActivity are completed.
@@ -160,7 +167,8 @@ Expected behavior:
 uEngine-compatible target:
 
 - `properties.roleBindings` maps parent roles to child roles.
-- The child role binding is created by copying the parent role mapping and assigning it to the target child role.
+- In the current ProcessGPT UI shape, `role.name` is the parent lane/role and `argument` is the child lane/role.
+- The child role binding is created by copying the parent lane/role binding endpoint and assigning it to the target child lane/role.
 
 Example:
 
@@ -168,8 +176,11 @@ Example:
 {
   "roleBindings": [
     {
-      "sourceRole": "requester",
-      "targetRole": "initiator"
+      "direction": "IN-OUT",
+      "role": {
+        "name": "Security Review Coordinator"
+      },
+      "argument": "Vendor Security Analyst"
     }
   ]
 }
@@ -186,25 +197,38 @@ uEngine-compatible target:
 
 - `properties.parameters` maps parent variables to child variables before child execution.
 - `direction` supports at least `IN` for MVP-level execution.
+- ProcessGPT mapper-based parent-to-child variable mapping is stored in `properties.mapperIn`.
+- Mapper target paths for called-process global variables use `callActivity.variables.<variableName>`.
+- Mapper target paths for called-process lane assignment use `callActivity.lane.<laneName>.endpoint`.
+- Parent source paths may read submitted form output using `forms.<formId>.<field>` or `forms.byId.<formId>.<field>`. Both resolve to `todolist.output[formId][field]` in the current backend mapper runtime.
 
 Example:
 
 ```json
 {
-  "parameters": [
-    {
-      "direction": "IN",
-      "source": "customerId",
-      "target": "customerId"
-    }
-  ]
+  "mapperIn": {
+    "mappingElements": [
+      {
+        "argument": {
+          "text": "Variables.supplierName"
+        },
+        "direction": "out",
+        "variable": {
+          "name": "callActivity.variables.supplierName"
+        },
+        "isKey": false
+      }
+    ]
+  }
 }
 ```
 
 MVP:
 
-- No parameter mapping UI is required initially.
-- Backend parser should tolerate an empty `parameters` array.
+- The ProcessGPT CallActivity panel must expose a data mapping button.
+- The mapper target tree must show the called process variables under `callActivity > variables`.
+- The mapper target tree must show the called process lanes under `callActivity > lane > <lane name> > endpoint`.
+- Backend parser should tolerate an empty `parameters` array for compatibility, but ProcessGPT mapper execution should consume `mapperIn`.
 
 ## Implementation Plan
 
@@ -258,13 +282,14 @@ Verify:
 Scope:
 
 - Implement explicit `roleBindings` mapping.
-- Implement basic `parameters` `IN` mapping.
+- Implement ProcessGPT `mapperIn` mapping for `callActivity.variables.*`.
+- Keep basic `parameters` `IN` parsing as compatibility behavior if present.
 - Keep unchanged role inheritance as a fallback only when no explicit mapping exists.
 
 Verify:
 
-- `sourceRole -> targetRole` creates the expected child assignee binding.
-- Parent variable values are copied to child variables according to `parameters`.
+- `role.name -> argument` creates the expected child assignee binding.
+- Parent variable values are copied to child variables according to `mapperIn` targets such as `callActivity.variables.supplierName`.
 - Missing source roles or variables fail with a clear execution error.
 
 ## Acceptance Criteria
@@ -279,12 +304,19 @@ Verify:
 8. Completing the child process resumes the parent process after the CallActivity.
 9. Parent and child instances retain traceability through `parent_proc_inst_id` and `root_proc_inst_id`.
 10. Explicit role binding maps a parent role to a different child role.
+11. The ProcessGPT CallActivity panel can open mapper UI from the data/parameter tab.
+12. The mapper target tree displays called process variables under `callActivity > variables`.
+13. Parent variables can be persisted into child `variables_data` through `mapperIn` targets such as `callActivity.variables.supplierName`.
+14. The mapper target tree displays called process lanes under `callActivity > lane > <lane name> > endpoint`.
+15. Parent submitted form values can be used as mapper sources through `forms.<formId>.<field>` and `forms.byId.<formId>.<field>`.
+16. While the child process is active, the parent CallActivity workitem is `PENDING` and the previous completed parent activity remains `DONE`.
+17. A completed activity may be marked `PENDING` only when its persisted `cannotProceedErrors` explain the blocked condition.
 
 ## Out of Scope for MVP
 
 - Multi-instance CallActivity.
-- Complex role mapping UI.
-- Complex parameter mapping UI.
+- Complex role mapping rules beyond explicit parent lane/role to child lane/role.
+- Legacy `parameters` editing UI beyond the mapper-based ProcessGPT path.
 - Cross-tenant child process invocation.
 - XML-only CallActivity execution without runtime JSON.
 - Compensation/error-boundary behavior around CallActivity.
@@ -296,6 +328,7 @@ Verify:
 - Existing completion model stores `properties` as a string. Invalid JSON will break CallActivity parsing unless validation catches it.
 - Child process version selection must match existing `getExecutionDefinition` and completion version resolution rules, or frontend preview and runtime execution can disagree.
 - Parent resume logic must avoid resuming before all child instances complete.
+- Parent wait logic must not represent CallActivity waiting by rewriting the previous completed activity to `PENDING`.
 - Blindly inheriting all parent roles may hide missing role mapping errors. Treat inheritance as MVP fallback, not the final contract.
 
 ## Verification Plan

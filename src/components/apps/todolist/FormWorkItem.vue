@@ -784,6 +784,8 @@ export default {
 
             if (this.mode == 'ProcessGPT') {
                 workItem.parameterValues = me.formData;
+                workItem.formId = me.formDefId;
+                workItem.tool = `formHandler:${me.formDefId}`;
                 if (this.newMessage && this.newMessage.length > 0) {
                     workItem['user_input_text'] = this.newMessage;
                 }
