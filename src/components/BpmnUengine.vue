@@ -1244,7 +1244,11 @@ export default {
                 setTimeout(refreshLabels, 120);
                 setTimeout(() => {
                     refreshLabels();
-                    self.resetZoom();
+                    if (self.isViewMode) {
+                        self.scheduleFitDiagramToViewport({ padding: 24, maxZoom: 1.5 });
+                    } else {
+                        self.resetZoom();
+                    }
                 }, 300);
             }, 0);
         },
@@ -1292,7 +1296,7 @@ export default {
             palleteProvider.normalizeDiagramBoundsForView?.();
             palleteProvider.syncAllLaneOrientationForView?.(isHorizontal);
             self.syncOrientationFlagsLater(isHorizontal);
-            // self.resetZoom();
+            self.scheduleFitDiagramToViewport({ padding: 24, maxZoom: 1.5 });
             return true;
         },
         syncOrientationFlags(isHorizontal) {
@@ -1377,6 +1381,7 @@ export default {
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
                 if (self.isViewMode) {
                     self.bpmnViewer.get('paletteProvider')?.normalizeDiagramBoundsForView?.();
+                    self.scheduleFitDiagramToViewport({ padding: 24, maxZoom: 1.5 });
                 }
 
                 // Playwright 테스트용 고유 클래스 추가
@@ -2223,6 +2228,100 @@ export default {
             zoomScroll.scaleOffset = bbox.scale;
             zoomScroll.resetMovedDistance();
             this.updateZoomLevel();
+        },
+        getDiagramContentBounds() {
+            const elementRegistry = this.bpmnViewer?.get('elementRegistry');
+            if (!elementRegistry) return null;
+
+            const participants = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+            const elements = participants.length > 0
+                ? participants
+                : elementRegistry.filter((element) =>
+                    element &&
+                    !element.labelTarget &&
+                    element.width > 0 &&
+                    element.height > 0 &&
+                    element.type !== 'bpmn:SequenceFlow' &&
+                    element.type !== 'bpmn:MessageFlow' &&
+                    element.type !== 'bpmn:Collaboration' &&
+                    element.type !== 'bpmn:Process'
+                );
+
+            if (!elements.length) return null;
+
+            const minX = Math.min(...elements.map((element) => element.x));
+            const minY = Math.min(...elements.map((element) => element.y));
+            const maxX = Math.max(...elements.map((element) => element.x + element.width));
+            const maxY = Math.max(...elements.map((element) => element.y + element.height));
+
+            if (![minX, minY, maxX, maxY].every(Number.isFinite)) return null;
+            return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+        },
+        syncCanvasInteractionState() {
+            const canvas = this.bpmnViewer?.get('canvas');
+            const zoomScroll = this.bpmnViewer?.get('zoomScroll');
+            const moveCanvas = this.bpmnViewer?.get('MoveCanvas');
+            const bbox = canvas?.viewbox();
+            if (!bbox || !Number.isFinite(bbox.width) || !Number.isFinite(bbox.height) || !Number.isFinite(bbox.scale)) return;
+
+            if (moveCanvas) {
+                moveCanvas.canvasSize = { height: bbox.height, width: bbox.width, x: bbox.x, y: bbox.y };
+                moveCanvas.scaleOffset = bbox.scale;
+                moveCanvas.resetMovedDistance?.();
+            }
+
+            if (zoomScroll) {
+                zoomScroll.canvasSize = { height: bbox.height, width: bbox.width, x: bbox.x, y: bbox.y };
+                zoomScroll.scaleOffset = bbox.scale;
+                zoomScroll.resetMovedDistance?.();
+            }
+        },
+        fitDiagramToViewport(options = {}) {
+            const container = this.$refs.container;
+            const canvas = this.bpmnViewer?.get('canvas');
+            if (!container || !canvas) return null;
+
+            const rect = container.getBoundingClientRect?.();
+            const containerWidth = rect?.width || container.clientWidth || 0;
+            const containerHeight = rect?.height || container.clientHeight || 0;
+            if (containerWidth <= 0 || containerHeight <= 0) return null;
+
+            canvas.resized?.();
+
+            const bounds = this.getDiagramContentBounds();
+            if (!bounds || bounds.width <= 0 || bounds.height <= 0) return null;
+
+            const padding = options.padding ?? 24;
+            const maxZoom = options.maxZoom ?? 1.5;
+            const minZoom = options.minZoom ?? 0.05;
+            const targetWidth = bounds.width + padding * 2;
+            const targetHeight = bounds.height + padding * 2;
+            const scale = Math.min(maxZoom, Math.max(minZoom, Math.min(containerWidth / targetWidth, containerHeight / targetHeight)));
+            const viewboxWidth = containerWidth / scale;
+            const viewboxHeight = containerHeight / scale;
+            const centerX = bounds.x + bounds.width / 2;
+            const centerY = bounds.y + bounds.height / 2;
+
+            canvas.viewbox({
+                x: centerX - viewboxWidth / 2,
+                y: centerY - viewboxHeight / 2,
+                width: viewboxWidth,
+                height: viewboxHeight
+            });
+
+            this.syncCanvasInteractionState();
+            this.updateZoomLevel?.();
+            return {
+                scale,
+                widthFillRatio: bounds.width / viewboxWidth,
+                heightFillRatio: bounds.height / viewboxHeight
+            };
+        },
+        scheduleFitDiagramToViewport(options = {}) {
+            this.fitDiagramToViewport(options);
+            requestAnimationFrame(() => requestAnimationFrame(() => this.fitDiagramToViewport(options)));
+            setTimeout(() => this.fitDiagramToViewport(options), 120);
+            setTimeout(() => this.fitDiagramToViewport(options), 350);
         },
         zoomIn() {
             const zoomScroll = this.bpmnViewer.get('zoomScroll');

@@ -46,6 +46,32 @@ async function getParticipantOrientation(page) {
   });
 }
 
+async function getViewportFitMetrics(page) {
+  return page.evaluate(() => {
+    const viewer = window.$bpmnAutoLayoutE2E?.$refs?.bpmn?.bpmnViewer;
+    const component = window.$bpmnAutoLayoutE2E?.$refs?.bpmn;
+    const canvas = viewer?.get('canvas');
+    const bounds = component?.getDiagramContentBounds?.();
+    const viewbox = canvas?.viewbox();
+    const zoom = canvas?.zoom();
+
+    if (!bounds || !viewbox) return null;
+
+    return {
+      zoom,
+      bounds,
+      viewbox,
+      widthFillRatio: bounds.width / viewbox.width,
+      heightFillRatio: bounds.height / viewbox.height,
+      contained:
+        bounds.x >= viewbox.x - 2 &&
+        bounds.y >= viewbox.y - 2 &&
+        bounds.x + bounds.width <= viewbox.x + viewbox.width + 2 &&
+        bounds.y + bounds.height <= viewbox.y + viewbox.height + 2
+    };
+  });
+}
+
 async function getSavedOrientationFlags(page) {
   return page.evaluate(async () => {
     const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -120,16 +146,20 @@ test.describe('process-gpt bpmn auto orientation on viewport ratio change', () =
     await page.waitForTimeout(2500);
     await screenshotCanvas(page, '02-portrait-auto-vertical');
     const portrait = await getParticipantOrientation(page);
+    const portraitFit = await getViewportFitMetrics(page);
     const portraitXml = await getSavedOrientationFlags(page);
 
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.waitForTimeout(2500);
     await screenshotCanvas(page, '03-landscape-auto-horizontal');
     const landscapeAgain = await getParticipantOrientation(page);
+    const landscapeAgainFit = await getViewportFitMetrics(page);
     const landscapeAgainXml = await getSavedOrientationFlags(page);
 
     expect(landscape.isHorizontal).toBe(true);
     expect(portrait.isHorizontal).toBe(false);
+    expect(portraitFit?.contained, JSON.stringify(portraitFit)).toBe(true);
+    expect(Math.max(portraitFit.widthFillRatio, portraitFit.heightFillRatio), JSON.stringify(portraitFit)).toBeGreaterThan(0.75);
     expect(portraitXml.participant).toBe('false');
     expect(portraitXml.lanes.length).toBeGreaterThan(0);
     expect(
@@ -137,6 +167,8 @@ test.describe('process-gpt bpmn auto orientation on viewport ratio change', () =
       JSON.stringify(portraitXml.lanes)
     ).toEqual([]);
     expect(landscapeAgain.isHorizontal).toBe(true);
+    expect(landscapeAgainFit?.contained, JSON.stringify(landscapeAgainFit)).toBe(true);
+    expect(Math.max(landscapeAgainFit.widthFillRatio, landscapeAgainFit.heightFillRatio), JSON.stringify(landscapeAgainFit)).toBeGreaterThan(0.75);
     expect(landscapeAgainXml.participant).toBe('true');
     expect(landscapeAgainXml.lanes.length).toBeGreaterThan(0);
     expect(
@@ -157,15 +189,39 @@ test.describe('process-gpt bpmn auto orientation on viewport ratio change', () =
     await page.waitForTimeout(2500);
     await screenshotCanvas(page, '05-attached-view-portrait-normalized');
     const portrait = await getParticipantOrientation(page);
+    const portraitFit = await getViewportFitMetrics(page);
     const portraitXml = await getSavedOrientationFlags(page);
 
     expect(landscape.isHorizontal).toBe(true);
     expect(portrait.isHorizontal).toBe(false);
+    expect(portraitFit?.contained, JSON.stringify(portraitFit)).toBe(true);
+    expect(Math.max(portraitFit.widthFillRatio, portraitFit.heightFillRatio), JSON.stringify(portraitFit)).toBeGreaterThan(0.75);
     expect(portraitXml.participant).toBe('false');
     expect(portraitXml.lanes.length).toBeGreaterThan(0);
     expect(
       portraitXml.lanes.filter((lane) => lane.isHorizontal !== false || lane.saved !== 'false'),
       JSON.stringify(portraitXml.lanes)
     ).toEqual([]);
+  });
+
+  test('auto rotation fits a complex process into the visible viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 760 });
+    await openE2EPage(page);
+    await loadCaseByIndex(page, 4);
+
+    await screenshotCanvas(page, '06-fit-complex-landscape');
+    const landscapeFit = await getViewportFitMetrics(page);
+
+    await page.setViewportSize({ width: 760, height: 1440 });
+    await page.waitForTimeout(2500);
+    await screenshotCanvas(page, '07-fit-complex-portrait');
+    const portrait = await getParticipantOrientation(page);
+    const portraitFit = await getViewportFitMetrics(page);
+
+    expect(landscapeFit?.contained, JSON.stringify(landscapeFit)).toBe(true);
+    expect(Math.max(landscapeFit.widthFillRatio, landscapeFit.heightFillRatio), JSON.stringify(landscapeFit)).toBeGreaterThan(0.75);
+    expect(portrait.isHorizontal).toBe(false);
+    expect(portraitFit?.contained, JSON.stringify(portraitFit)).toBe(true);
+    expect(Math.max(portraitFit.widthFillRatio, portraitFit.heightFillRatio), JSON.stringify(portraitFit)).toBeGreaterThan(0.75);
   });
 });
