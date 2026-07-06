@@ -68,7 +68,7 @@
                     density="compact"
                     variant="outlined"
                     hide-details
-                    placeholder="파일/폴더 검색"
+                    placeholder="파일명 검색"
                     prepend-inner-icon="mdi-magnify"
                     clearable
                     class="ksp-search"
@@ -85,6 +85,7 @@
 
             <div class="ksp-bulk-row">
                 <v-checkbox
+                    v-if="search"
                     :modelValue="allFilteredSelected"
                     :indeterminate="someFilteredSelected && !allFilteredSelected"
                     @update:modelValue="toggleSelectAllFiltered"
@@ -92,12 +93,15 @@
                     hide-details
                     color="primary"
                     class="ksp-bulk-checkbox"
-                    :disabled="visibleFiles.length === 0"
+                    :disabled="searchResults.length === 0"
                 >
                     <template v-slot:label>
-                        <span class="text-caption">{{ search ? `검색 결과 ${visibleFiles.length}개 전체` : `이 탭 전체 ${tabFiles.length}개` }} 선택</span>
+                        <span class="text-caption">검색 결과 {{ searchResults.length }}개 전체 선택</span>
                     </template>
                 </v-checkbox>
+                <span v-else class="text-caption text-medium-emphasis">
+                    폴더를 펼쳐 파일을 선택하거나, 폴더 전체를 체크하세요
+                </span>
                 <span class="text-caption text-medium-emphasis ml-auto">
                     선택됨 <strong class="text-primary">{{ selectedKeys.length }}</strong>개
                 </span>
@@ -108,35 +112,33 @@
             <div class="ksp-list">
                 <div v-if="loading" class="ksp-state">
                     <v-progress-circular indeterminate color="primary" size="32" />
-                    <div class="text-body-2 text-medium-emphasis mt-3">지식공간 문서 로드 중...</div>
+                    <div class="text-body-2 text-medium-emphasis mt-3">지식공간 폴더 로드 중...</div>
                 </div>
                 <div v-else-if="error" class="ksp-state">
                     <v-icon size="40" color="error">mdi-alert-circle-outline</v-icon>
                     <div class="text-body-2 text-medium-emphasis mt-2">{{ error }}</div>
                     <v-btn class="mt-3" variant="tonal" size="small" @click="reload">다시 시도</v-btn>
                 </div>
-                <div v-else-if="tabFiles.length === 0" class="ksp-state">
-                    <v-icon size="40" color="grey-lighten-1">
-                        {{ activeSource === 'drive' ? 'mdi-google-drive' : 'mdi-cloud-upload-outline' }}
-                    </v-icon>
-                    <div class="text-body-2 text-medium-emphasis mt-2">
-                        {{ activeSource === 'drive' ? 'Drive에 인덱싱된 문서가 없습니다' : 'Storage에 업로드된 문서가 없습니다' }}
-                    </div>
+                <div v-else-if="!hasStructure && !search" class="ksp-state">
+                    <v-icon size="40" color="grey-lighten-1">mdi-cloud-upload-outline</v-icon>
+                    <div class="text-body-2 text-medium-emphasis mt-2">Storage에 인덱싱된 문서가 없습니다</div>
                     <div class="text-caption text-medium-emphasis mt-1">
-                        {{ activeSource === 'drive'
-                            ? "드라이브 설정의 '문서 처리' 후 여기에 표시됩니다"
-                            : '설정 → 지식 베이스 탭에서 Storage로 파일을 올릴 수 있습니다' }}
+                        설정 → 지식 베이스 탭에서 Storage로 파일을 올릴 수 있습니다
                     </div>
                 </div>
-                <div v-else-if="visibleFiles.length === 0 && search" class="ksp-state">
+                <div v-else-if="search && searchLoading" class="ksp-state">
+                    <v-progress-circular indeterminate color="primary" size="28" />
+                    <div class="text-body-2 text-medium-emphasis mt-3">검색 중...</div>
+                </div>
+                <div v-else-if="search && searchResults.length === 0" class="ksp-state">
                     <v-icon size="40" color="grey-lighten-1">mdi-file-search-outline</v-icon>
                     <div class="text-body-2 text-medium-emphasis mt-2">검색 결과가 없습니다</div>
                 </div>
 
-                <!-- 검색 모드: 평탄 리스트 -->
+                <!-- 검색 모드: 평탄 리스트 (서버 검색 결과) -->
                 <template v-else-if="search">
                     <div
-                        v-for="f in visibleFiles"
+                        v-for="f in searchResults"
                         :key="f.key"
                         class="ksp-file"
                         :class="{ 'is-selected': selectedKeysSet.has(f.key) }"
@@ -216,9 +218,8 @@
             <v-divider />
 
             <div class="ksp-footer">
-                <span v-if="!loading && !error && tabFiles.length > 0" class="text-caption text-medium-emphasis">
-                    {{ activeSource === 'drive' ? 'Drive' : 'Storage' }}
-                    · {{ tabFiles.length }}개 문서 · {{ folderCount }}개 폴더
+                <span v-if="!loading && !error && hasStructure" class="text-caption text-medium-emphasis">
+                    Storage · {{ roleIndexedTotal }}개 문서 · {{ folderCount }}개 폴더
                 </span>
                 <v-spacer />
                 <v-btn variant="text" @click="$emit('update:modelValue', false)">취소</v-btn>
@@ -255,58 +256,65 @@ function extToMime(name) {
     return map[ext] || '';
 }
 
-// "A/B/C" 경로 배열의 파일들로 트리 빌드
-// node 형태:
-//   { type: 'folder', name, path, children: [...nodes], files: [...] }
-//   children 안에 폴더, files 안에 파일 (UI에서 폴더 → 파일 순으로 렌더)
-function buildTree(files) {
-    const root = { type: 'folder', name: '(루트)', path: '__root__', children: {}, files: [] };
+// knowledge_files row → 프론트 파일 객체(공통 매핑)
+function mapDetail(d) {
+    return {
+        // 같은 파일명이 여러 폴더에 있을 수 있어 source_ref 우선, 없으면 폴더+파일명 조합
+        key: d.source_ref
+            ? `${d.source_type || 'drive'}:${d.source_ref}`
+            : `${d.folder_path || d.drive_folder_name || ''}::${d.file_name}`,
+        name: d.file_name,
+        folderPath: d.folder_path || d.drive_folder_name || '',
+        mimeType: d.mime_type || extToMime(d.file_name),
+        sourceType: d.source_type || 'drive',
+        sourceRef: d.source_ref || '',
+        sizeBytes: d.size_bytes,
+        modifiedTime: d.modified_time,
+        owner: d.owner,
+        indexStatus: d.index_status,
+        indexError: d.index_error,
+        indexedAt: d.indexed_at,
+        docRole: d.doc_role || 'content'
+    };
+}
 
-    for (const f of files) {
-        const segments = (f.folderPath || '').split('/').map((s) => s.trim()).filter(Boolean);
+// lazy 트리 빌드 — *파일 전체* 대신 폴더 경로 목록 + (인덱싱)직속 카운트 + 로드된 폴더별 파일로 구성.
+//   folderPaths: 표시할 폴더 경로 집합(등록 폴더 ∪ 파일 있는 폴더)
+//   directIndexed: { folder_path: 인덱싱 직속 파일수 } — descendantCount(하위 포함) 집계용
+//   filesByFolder: { folder_path: [로드된 인덱싱 파일...] } — 펼친 폴더에만 채워짐
+// node: { type:'folder', name, path, children:[...], files:[...], descendantCount }
+function buildLazyTree(folderPaths, directIndexed, filesByFolder) {
+    const root = { children: {} };
+    const ensure = (path) => {
+        const segs = (path || '').split('/').map((s) => s.trim()).filter(Boolean);
         let cursor = root;
         let acc = '';
-        for (const seg of segments) {
+        for (const seg of segs) {
             acc = acc ? `${acc}/${seg}` : seg;
-            if (!cursor.children[seg]) {
-                cursor.children[seg] = { type: 'folder', name: seg, path: acc, children: {}, files: [] };
-            }
+            if (!cursor.children[seg]) cursor.children[seg] = { name: seg, path: acc, children: {} };
             cursor = cursor.children[seg];
         }
-        cursor.files.push(f);
-    }
+        return cursor;
+    };
+    for (const p of folderPaths) if (p) ensure(p);
 
     function normalize(node) {
         const childFolders = Object.values(node.children)
             .map(normalize)
             .sort((a, b) => a.name.localeCompare(b.name));
-        const sortedFiles = [...node.files].sort((a, b) => a.name.localeCompare(b.name));
-        // 누적 카운트(자손 파일 수) — UI 표시용
-        const descendantCount = sortedFiles.length + childFolders.reduce((s, c) => s + c.descendantCount, 0);
+        const files = (filesByFolder[node.path] || []).slice().sort((a, b) => a.name.localeCompare(b.name));
+        const direct = directIndexed[node.path] || 0; // 이 폴더 직속 인덱싱 파일수
+        const descendantCount = direct + childFolders.reduce((s, c) => s + c.descendantCount, 0);
         return {
             type: 'folder',
             name: node.name,
             path: node.path,
             children: childFolders,
-            files: sortedFiles,
+            files,
             descendantCount
         };
     }
-
-    const normalized = normalize(root);
-    // 루트는 그 자체로 가짜 폴더 — children + files를 평탄화해서 최상위 노드 배열로 반환
-    const top = [...normalized.children];
-    if (normalized.files.length > 0) {
-        top.push({
-            type: 'folder',
-            name: '(루트)',
-            path: '__root__',
-            children: [],
-            files: normalized.files,
-            descendantCount: normalized.files.length
-        });
-    }
-    return top;
+    return Object.values(root.children).map(normalize).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function collectAllFolderPaths(nodes) {
@@ -321,18 +329,15 @@ function collectAllFolderPaths(nodes) {
     return out;
 }
 
-function collectFilesUnder(node) {
-    const out = [...node.files];
-    for (const c of node.children) out.push(...collectFilesUnder(c));
-    return out;
-}
-
 export default {
     name: 'KnowledgeSpacePicker',
     components: { KnowledgeTreeNode },
     props: {
         modelValue: { type: Boolean, default: false },
-        initiallySelectedIds: { type: Array, default: () => [] }
+        initiallySelectedIds: { type: Array, default: () => [] },
+        // 이전에 선택된 문서(전체 shape). lazy 로딩이라 파일 전체를 안 들고 있으므로,
+        // 선택 상태 복원 + confirm 시 누락 방지를 위해 부모가 전체 doc 을 넘겨준다.
+        initiallySelectedDocs: { type: Array, default: () => [] }
     },
     emits: ['update:modelValue', 'confirm'],
     data() {
@@ -340,11 +345,21 @@ export default {
             search: '',
             loading: false,
             error: '',
-            allFiles: [], // [{ key, name, folderPath, mimeType, sourceType, docRole, ... }]
+            // lazy 누적 — 펼치거나 검색해 로드된 파일만 담긴다(전체 아님)
+            allFiles: [],
+            loadedFolders: new Set(), // 직속 파일을 이미 로드한 폴더 경로
+            folders: [], // [{ folder_path, doc_role }] — 경량 폴더 목록
+            folderCounts: { role_totals: {}, folder_direct: {}, folder_direct_indexed: {}, status_totals: {} },
+            allow: null, // 폴더 권한 (null=관리자 전체)
             expandedPaths: new Set(),
             selectedKeysSet: new Set(),
-            activeSource: 'upload', // 'drive' | 'upload' — Google Drive 탭 숨김으로 항상 upload 시작
-            // 역할(doc_role) 필터 — Storage 탭에서만 적용. 항상 단일 role 만 활성.
+            // key → emit 형태 doc. lazy 로드 사이에도 선택을 보존해 confirm 시 누락되지 않게 한다.
+            selectedDocsMap: {},
+            searchResults: [],
+            searchLoading: false,
+            searchToken: 0,
+            searchTimer: null,
+            activeSource: 'upload', // 'drive' | 'upload' — Google Drive 탭 숨김으로 항상 upload
             currentRole: 'content',
             roleFilterOptions: [
                 { value: 'content',   label: '일반',     icon: 'mdi-file-document-outline',   short: '일반' },
@@ -361,39 +376,56 @@ export default {
             return [...this.selectedKeysSet];
         },
         counts() {
-            const c = { drive: 0, upload: 0 };
-            for (const f of this.allFiles) {
-                if (f.sourceType === 'drive') c.drive++;
-                else if (f.sourceType === 'upload') c.upload++;
-            }
-            return c;
+            const rt = this.folderCounts.role_totals || {};
+            const upload = Object.values(rt).reduce((s, n) => s + (n || 0), 0);
+            return { drive: 0, upload };
         },
-        // 현재 탭에 속하는 파일들 (Drive 탭은 role 필터 적용 안 함)
-        tabFiles() {
-            // 인덱싱 완료(indexed)된 문서만 노출 — 아직 처리중/실패/대기인 문서를 선택하면
-            // RAG 에 청크가 없어 빈 컨텍스트가 되므로 모달에서 아예 숨긴다.
-            const ready = this.allFiles.filter((f) => f.indexStatus === 'indexed');
-            const bySource = ready.filter((f) => f.sourceType === this.activeSource);
-            if (this.activeSource !== 'upload') return bySource;
-            return bySource.filter((f) => (f.docRole || 'content') === this.currentRole);
-        },
-        // 현재 Storage 탭 안 role 별 개수 (role 칩 카운트용)
+        // 역할별 총계 (role 칩 카운트) — 경량 카운트 엔드포인트 기준(전역 정확)
         roleCounts() {
-            const c = { all: 0, content: 0, glossary: 0, template: 0, reference: 0, dataset: 0, legal_review: 0 };
-            for (const f of this.allFiles) {
-                if (f.sourceType !== 'upload') continue;
-                c.all++;
-                const r = f.docRole || 'content';
-                if (c[r] !== undefined) c[r]++;
-            }
-            return c;
+            return this.folderCounts.role_totals || {};
         },
-        // 선택된 자료 중 사전·양식이 있으면 사용자에게 자동 활용 의미 안내
+        // 현재 role 의 폴더 목록(권한 필터는 로드 시 적용됨)
+        tabFolders() {
+            return this.folders.filter((f) => (f.doc_role || 'content') === this.currentRole);
+        },
+        // 현재 role 의 폴더별 인덱싱 직속 카운트
+        directIndexed() {
+            return (this.folderCounts.folder_direct_indexed && this.folderCounts.folder_direct_indexed[this.currentRole]) || {};
+        },
+        // 로드된 인덱싱 파일을 폴더별로 (현재 탭/역할 한정) — 트리 노드 file 목록 + 선택 카운트용
+        filesByFolder() {
+            const m = {};
+            for (const f of this.allFiles) {
+                if (f.sourceType !== this.activeSource) continue;
+                if ((f.docRole || 'content') !== this.currentRole) continue;
+                if (f.indexStatus !== 'indexed') continue;
+                const p = f.folderPath || '__root__';
+                (m[p] = m[p] || []).push(f);
+            }
+            return m;
+        },
+        tree() {
+            const ok = (p) => this.allow == null || isFolderAllowed(p, this.allow);
+            const paths = new Set();
+            for (const f of this.tabFolders) if (ok(f.folder_path)) paths.add(f.folder_path);
+            for (const p of Object.keys(this.directIndexed)) if (ok(p)) paths.add(p);
+            for (const p of Object.keys(this.filesByFolder)) if (p !== '__root__' && ok(p)) paths.add(p);
+            return buildLazyTree([...paths], this.directIndexed, this.filesByFolder);
+        },
+        hasStructure() {
+            return this.tree.length > 0;
+        },
+        // 현재 role 전체 인덱싱 문서 수(푸터 표시)
+        roleIndexedTotal() {
+            return Object.values(this.directIndexed).reduce((s, n) => s + (n || 0), 0);
+        },
+        // 선택된 자료 중 사전·양식이 있으면 사용자에게 자동 활용 의미 안내 (선택 doc 기준)
         autoUseHints() {
             const hits = { glossary: 0, template: 0, dataset: 0 };
-            for (const f of this.allFiles) {
-                if (!this.selectedKeysSet.has(f.key)) continue;
-                const r = f.docRole || 'content';
+            for (const k of this.selectedKeysSet) {
+                const d = this.selectedDocsMap[k];
+                if (!d) continue;
+                const r = d.docRole || d.doc_role || 'content';
                 if (r in hits) hits[r]++;
             }
             const out = [];
@@ -408,28 +440,23 @@ export default {
             }
             return out;
         },
-        // 현재 탭 기준 트리
-        tree() {
-            return buildTree(this.tabFiles);
-        },
-        // 폴더경로 → 그 하위에서 선택된 파일 수 (조상 폴더까지 누적).
-        // 선택이 바뀔 때 *한 번만* O(파일수 × 깊이) 로 집계해 트리 노드에 내려준다.
-        // (예전엔 노드마다 서브트리를 재귀 순회해 전체선택 시 O(파일수 × 폴더수) 로 멈췄음.)
-        // buildTree 와 동일한 경로 정규화(trim/filter)·루트(__root__) 규칙을 따른다.
+        // 폴더경로 → 그 하위에서 선택된 (로드된)파일 수. buildLazyTree 와 동일한 경로 규칙.
         folderSelCounts() {
             const m = Object.create(null);
             const sel = this.selectedKeysSet;
-            for (const f of this.tabFiles) {
-                if (!sel.has(f.key)) continue;
-                const segs = (f.folderPath || '').split('/').map((s) => s.trim()).filter(Boolean);
-                if (segs.length === 0) {
-                    m.__root__ = (m.__root__ || 0) + 1;
-                    continue;
-                }
-                let acc = '';
-                for (const s of segs) {
-                    acc = acc ? `${acc}/${s}` : s;
-                    m[acc] = (m[acc] || 0) + 1;
+            for (const p of Object.keys(this.filesByFolder)) {
+                for (const f of this.filesByFolder[p]) {
+                    if (!sel.has(f.key)) continue;
+                    const segs = (f.folderPath || '').split('/').map((s) => s.trim()).filter(Boolean);
+                    if (segs.length === 0) {
+                        m.__root__ = (m.__root__ || 0) + 1;
+                        continue;
+                    }
+                    let acc = '';
+                    for (const s of segs) {
+                        acc = acc ? `${acc}/${s}` : s;
+                        m[acc] = (m[acc] || 0) + 1;
+                    }
                 }
             }
             return m;
@@ -442,52 +469,44 @@ export default {
             if (all.length === 0) return false;
             return all.every((p) => this.expandedPaths.has(p));
         },
-        visibleFiles() {
-            // 검색 모드일 때 평탄 리스트 (현재 탭 한정)
-            const q = (this.search || '').trim().toLowerCase();
-            if (!q) return this.tabFiles;
-            return this.tabFiles.filter((f) => {
-                return (
-                    f.name.toLowerCase().includes(q) ||
-                    (f.folderPath || '').toLowerCase().includes(q)
-                );
-            });
-        },
         allFilteredSelected() {
-            if (this.visibleFiles.length === 0) return false;
-            return this.visibleFiles.every((f) => this.selectedKeysSet.has(f.key));
+            if (this.searchResults.length === 0) return false;
+            return this.searchResults.every((f) => this.selectedKeysSet.has(f.key));
         },
         someFilteredSelected() {
-            return this.visibleFiles.some((f) => this.selectedKeysSet.has(f.key));
+            return this.searchResults.some((f) => this.selectedKeysSet.has(f.key));
         }
     },
     watch: {
         modelValue(v) {
             if (v) {
-                this.selectedKeysSet = new Set(this.initiallySelectedIds || []);
+                this.seedSelection();
                 this.search = '';
-                if (this.allFiles.length === 0) this.fetchDocs();
-                else this.expandToSelected();
+                this.searchResults = [];
+                this.loadStructure();
             }
         },
         activeSource() {
-            // 탭 전환 시 검색 초기화 + 역할 필터를 기본(일반)으로 리셋
             this.search = '';
+            this.searchResults = [];
             this.currentRole = 'content';
-            this.expandToSelected();
+            this.expandTop();
         },
         currentRole() {
-            // role 필터 전환 시 검색 초기화 (트리 컨텍스트 리셋)
             this.search = '';
-            this.expandToSelected();
+            this.searchResults = [];
+            this.expandTop();
+        },
+        search(v) {
+            this.runSearch(v);
         }
+    },
+    beforeUnmount() {
+        if (this.searchTimer) clearTimeout(this.searchTimer);
     },
     methods: {
         roleMeta(role) {
-            return (
-                this.roleFilterOptions.find((r) => r.value === role) ||
-                this.roleFilterOptions[1] // content
-            );
+            return this.roleFilterOptions.find((r) => r.value === role) || this.roleFilterOptions[0];
         },
         iconOf(name) {
             return mimeIcon(extToMime(name));
@@ -521,107 +540,278 @@ export default {
                 excluded: '제외'
             }[s] || '';
         },
-        async fetchDocs() {
+        // 이전 선택 복원 — 부모가 넘긴 전체 doc(권장) 또는 id 목록(fallback)으로 seed.
+        seedSelection() {
+            const docs = (this.initiallySelectedDocs && this.initiallySelectedDocs.length)
+                ? this.initiallySelectedDocs
+                : (this.initiallySelectedIds || []).map((id) => ({ id }));
+            const set = new Set();
+            const map = {};
+            for (const d of docs) {
+                const key = d && d.id;
+                if (!key) continue;
+                set.add(key);
+                map[key] = this.normalizeDoc(d);
+            }
+            this.selectedKeysSet = set;
+            this.selectedDocsMap = map;
+        },
+        // 폴더+카운트만 로드(경량). 파일은 펼치거나 검색할 때 lazy.
+        async loadStructure(force = false) {
             const tenantId = (typeof window !== 'undefined' && window.$tenantName) || '';
             if (!tenantId) {
                 this.error = '테넌트 정보를 확인할 수 없습니다';
                 return;
             }
+            if (!force && this.folders.length > 0) {
+                this.afterStructure();
+                return;
+            }
             this.loading = true;
             this.error = '';
             try {
-                const { data } = await axios.get('/memento/documents/list', {
-                    params: { tenant_id: tenantId }
-                });
-                const details = Array.isArray(data?.file_details) ? data.file_details : [];
-                const mapped = details.map((d) => ({
-                    // 같은 파일명이 여러 폴더에 있을 수 있어 source_ref 우선, 없으면 폴더+파일명 조합
-                    key: d.source_ref ? `${d.source_type || 'drive'}:${d.source_ref}` : `${d.folder_path || d.drive_folder_name || ''}::${d.file_name}`,
-                    name: d.file_name,
-                    folderPath: d.folder_path || d.drive_folder_name || '',
-                    mimeType: d.mime_type || extToMime(d.file_name),
-                    sourceType: d.source_type || 'drive',
-                    sourceRef: d.source_ref || '',
-                    sizeBytes: d.size_bytes,
-                    modifiedTime: d.modified_time,
-                    owner: d.owner,
-                    indexStatus: d.index_status,
-                    indexError: d.index_error,
-                    indexedAt: d.indexed_at,
-                    docRole: d.doc_role || 'content'
-                }));
-                // 약식 폴더 권한 — 일반 사용자는 허용된 폴더의 자료만 보이게 필터
-                this.allFiles = await this.applyFolderPermissions(mapped);
-                this.expandToSelected();
+                this.allow = await fetchAllowedFolders();
+                const [foldersRes, countsRes] = await Promise.all([
+                    axios.get('/memento/knowledge/folders', { params: { tenant_id: tenantId } }),
+                    axios.get('/memento/knowledge/files/counts', { params: { tenant_id: tenantId } })
+                ]);
+                const raw = Array.isArray(foldersRes.data?.folders) ? foldersRes.data.folders : [];
+                let folders = raw.map((f) =>
+                    typeof f === 'string'
+                        ? { folder_path: f, doc_role: 'content' }
+                        : { folder_path: f?.folder_path || '', doc_role: f?.doc_role || 'content' }
+                ).filter((f) => f.folder_path);
+                if (this.allow != null) {
+                    folders = folders.filter((f) => isFolderAllowed(f.folder_path, this.allow));
+                }
+                this.folders = folders;
+                const c = countsRes.data || {};
+                this.folderCounts = {
+                    role_totals: c.role_totals || {},
+                    folder_direct: c.folder_direct || {},
+                    folder_direct_indexed: c.folder_direct_indexed || {},
+                    status_totals: c.status_totals || {}
+                };
+                this.afterStructure();
             } catch (e) {
-                console.error('[KnowledgeSpacePicker] fetch failed', e);
-                this.error = e?.response?.data?.detail || e?.message || '문서 목록을 가져오지 못했습니다';
-                this.allFiles = [];
+                console.error('[KnowledgeSpacePicker] structure load failed', e);
+                this.error = e?.response?.data?.detail || e?.message || '폴더 목록을 가져오지 못했습니다';
             } finally {
                 this.loading = false;
             }
         },
         reload() {
-            this.fetchDocs();
+            this.loadStructure(true);
         },
-        // ── 약식 폴더 권한 필터 (PoC) — 공용 유틸 사용 ──
-        // PocAdmin/superAdmin/admin 은 전체. 일반 사용자는 허용된 폴더(+하위)만 보인다.
-        async applyFolderPermissions(files) {
-            const allow = await fetchAllowedFolders();
-            if (allow == null) return files; // 관리자 = 전체
-            return files.filter((f) => isFolderAllowed(f.folderPath, allow));
+        afterStructure() {
+            this.expandTop();
+            this.loadSelectedFolders();
         },
-        expandToSelected() {
-            // 선택된 파일들의 부모 폴더는 자동으로 펼쳐서 보이게
-            const next = new Set(this.expandedPaths);
-            // 기본 1뎁스 폴더는 펼쳐두기
+        expandTop() {
+            const next = new Set();
             for (const n of this.tree) next.add(n.path);
-            for (const f of this.allFiles) {
-                if (!this.selectedKeysSet.has(f.key)) continue;
-                const segs = (f.folderPath || '').split('/').filter(Boolean);
+            this.expandedPaths = next;
+        },
+        // 미리 선택된 문서들의 폴더를 로드(직속) + 조상 펼치기 → 선택이 트리에 보이게
+        async loadSelectedFolders() {
+            const folders = new Set();
+            for (const k of this.selectedKeysSet) {
+                const d = this.selectedDocsMap[k];
+                const fp = d && (d.folderPath || d.drive_folder_name);
+                if (fp) folders.add(fp);
+            }
+            if (folders.size === 0) return;
+            const next = new Set(this.expandedPaths);
+            for (const fp of folders) {
+                const segs = fp.split('/').filter(Boolean);
                 let acc = '';
                 for (const s of segs) {
                     acc = acc ? `${acc}/${s}` : s;
                     next.add(acc);
                 }
+                this.loadFolderFiles(fp); // fire-and-forget
             }
             this.expandedPaths = next;
+        },
+        filterAllowed(files) {
+            if (this.allow == null) return files;
+            return files.filter((f) => isFolderAllowed(f.folderPath, this.allow));
+        },
+        mergeFiles(files) {
+            if (!files || !files.length) return;
+            const byKey = new Map(this.allFiles.map((f) => [f.key, f]));
+            for (const f of files) byKey.set(f.key, f);
+            this.allFiles = [...byKey.values()];
+        },
+        filesInFolder(path) {
+            return this.allFiles.filter((f) => f.folderPath === path);
+        },
+        // 폴더 파일 lazy 로드. recursive=true 면 하위 전체(폴더 선택 → 파일 refs 해결용).
+        async loadFolderFiles(path, opts = {}) {
+            const recursive = !!opts.recursive;
+            if (!path) return [];
+            const tenantId = (typeof window !== 'undefined' && window.$tenantName) || '';
+            if (!tenantId) return [];
+            if (!recursive && this.loadedFolders.has(path)) return this.filesInFolder(path);
+            try {
+                const { data } = await axios.get('/memento/documents/list', {
+                    params: { tenant_id: tenantId, folder_path: path, recursive }
+                });
+                let files = (Array.isArray(data?.file_details) ? data.file_details : []).map(mapDetail);
+                files = this.filterAllowed(files);
+                this.mergeFiles(files);
+                const loaded = new Set(this.loadedFolders);
+                loaded.add(path); // recursive 도 직속 포함 → 로드 완료로 표시
+                this.loadedFolders = loaded;
+                return files;
+            } catch (e) {
+                console.error('[KnowledgeSpacePicker] folder files load failed', e);
+                return [];
+            }
+        },
+        toDoc(f) {
+            return {
+                id: f.key,
+                name: f.name,
+                file_name: f.name,
+                folderPath: f.folderPath,
+                drive_folder_name: f.folderPath,
+                mimeType: f.mimeType,
+                sourceType: f.sourceType,
+                sourceRef: f.sourceRef,
+                sizeBytes: f.sizeBytes,
+                modifiedTime: f.modifiedTime,
+                owner: f.owner,
+                // 역할(양식/사업개요 등) — 백엔드가 템플릿/자료 구분에 사용. 누락 시 초안 템플릿 인식 불가.
+                doc_role: f.docRole || 'content',
+                docRole: f.docRole || 'content'
+            };
+        },
+        // 부모가 넘긴 doc → confirm emit shape 로 정규화(id 키 보존)
+        normalizeDoc(d) {
+            const role = d.docRole || d.doc_role || 'content';
+            const folderPath = d.folderPath || d.drive_folder_name || '';
+            return {
+                id: d.id,
+                name: d.name || d.file_name,
+                file_name: d.file_name || d.name,
+                folderPath,
+                drive_folder_name: folderPath,
+                mimeType: d.mimeType,
+                sourceType: d.sourceType,
+                sourceRef: d.sourceRef,
+                sizeBytes: d.sizeBytes,
+                modifiedTime: d.modifiedTime,
+                owner: d.owner,
+                doc_role: role,
+                docRole: role
+            };
         },
         toggleFolder(path) {
             const next = new Set(this.expandedPaths);
             if (next.has(path)) next.delete(path);
-            else next.add(path);
+            else {
+                next.add(path);
+                this.loadFolderFiles(path); // 펼칠 때 직속 파일 lazy 로드
+            }
             this.expandedPaths = next;
         },
         toggleExpandAll() {
             if (this.allExpanded) {
                 this.expandedPaths = new Set();
-            } else {
-                this.expandedPaths = new Set(collectAllFolderPaths(this.tree));
+                return;
             }
+            const all = collectAllFolderPaths(this.tree);
+            this.expandedPaths = new Set(all);
+            // 펼친 폴더 중 파일 있는 폴더만 lazy 로드(빈 폴더는 요청 낭비 방지)
+            for (const p of all) if ((this.directIndexed[p] || 0) > 0) this.loadFolderFiles(p);
         },
         toggleFile(f) {
-            const next = new Set(this.selectedKeysSet);
-            if (next.has(f.key)) next.delete(f.key);
-            else next.add(f.key);
-            this.selectedKeysSet = next;
-        },
-        toggleFolderSelect({ node, select }) {
-            const files = collectFilesUnder(node);
-            const next = new Set(this.selectedKeysSet);
-            for (const f of files) {
-                if (select) next.add(f.key);
-                else next.delete(f.key);
+            const set = new Set(this.selectedKeysSet);
+            const map = { ...this.selectedDocsMap };
+            if (set.has(f.key)) {
+                set.delete(f.key);
+                delete map[f.key];
+            } else {
+                set.add(f.key);
+                map[f.key] = this.toDoc(f);
             }
-            this.selectedKeysSet = next;
+            this.selectedKeysSet = set;
+            this.selectedDocsMap = map;
+        },
+        // 폴더 체크 → 하위 전체(재귀) 파일을 서버에서 받아 leaf 파일들을 선택.
+        // deepagents 는 잎 파일 refs 를 받으므로, 폴더 선택도 결국 파일 단위로 flatten 된다.
+        async toggleFolderSelect({ node, select }) {
+            const files = await this.loadFolderFiles(node.path, { recursive: true });
+            const indexed = files.filter((f) => f.indexStatus === 'indexed');
+            const set = new Set(this.selectedKeysSet);
+            const map = { ...this.selectedDocsMap };
+            for (const f of indexed) {
+                if (select) {
+                    set.add(f.key);
+                    map[f.key] = this.toDoc(f);
+                } else {
+                    set.delete(f.key);
+                    delete map[f.key];
+                }
+            }
+            this.selectedKeysSet = set;
+            this.selectedDocsMap = map;
         },
         toggleSelectAllFiltered(checked) {
-            const next = new Set(this.selectedKeysSet);
-            for (const f of this.visibleFiles) {
-                if (checked) next.add(f.key);
-                else next.delete(f.key);
+            const set = new Set(this.selectedKeysSet);
+            const map = { ...this.selectedDocsMap };
+            for (const f of this.searchResults) {
+                if (checked) {
+                    set.add(f.key);
+                    map[f.key] = this.toDoc(f);
+                } else {
+                    set.delete(f.key);
+                    delete map[f.key];
+                }
             }
-            this.selectedKeysSet = next;
+            this.selectedKeysSet = set;
+            this.selectedDocsMap = map;
+        },
+        runSearch(v) {
+            const q = (v || '').trim();
+            if (this.searchTimer) clearTimeout(this.searchTimer);
+            if (!q) {
+                this.searchToken++; // 진행 중 검색 무효화
+                this.searchResults = [];
+                this.searchLoading = false;
+                return;
+            }
+            this.searchLoading = true;
+            this.searchTimer = setTimeout(() => this.doSearch(q), 300);
+        },
+        // 서버측 파일명 검색 — 전체 로드 없이 상위 N건만. 현재 탭/역할로 좁힘.
+        async doSearch(q) {
+            const tenantId = (typeof window !== 'undefined' && window.$tenantName) || '';
+            if (!tenantId) {
+                this.searchLoading = false;
+                return;
+            }
+            const token = ++this.searchToken;
+            try {
+                const { data } = await axios.get('/memento/knowledge/files/search', {
+                    params: { tenant_id: tenantId, q, indexed_only: true, limit: 300 }
+                });
+                if (token !== this.searchToken) return; // stale
+                let files = (Array.isArray(data?.file_details) ? data.file_details : []).map(mapDetail);
+                files = this.filterAllowed(files).filter(
+                    (f) => f.sourceType === this.activeSource && (f.docRole || 'content') === this.currentRole
+                );
+                this.mergeFiles(files); // 선택/토글이 트리와 일관되게
+                this.searchResults = files;
+            } catch (e) {
+                if (token === this.searchToken) {
+                    console.error('[KnowledgeSpacePicker] search failed', e);
+                    this.searchResults = [];
+                }
+            } finally {
+                if (token === this.searchToken) this.searchLoading = false;
+            }
         },
         async openFile(f) {
             const tenantId = window.$tenantName || '';
@@ -641,24 +831,10 @@ export default {
             }
         },
         confirm() {
-            const selectedDocs = this.allFiles
-                .filter((f) => this.selectedKeysSet.has(f.key))
-                .map((f) => ({
-                    id: f.key,
-                    name: f.name,
-                    file_name: f.name,
-                    folderPath: f.folderPath,
-                    drive_folder_name: f.folderPath,
-                    mimeType: f.mimeType,
-                    sourceType: f.sourceType,
-                    sourceRef: f.sourceRef,
-                    sizeBytes: f.sizeBytes,
-                    modifiedTime: f.modifiedTime,
-                    owner: f.owner,
-                    // 역할(양식/사업개요 등) — 백엔드가 템플릿/자료 구분에 사용. 누락 시 초안 템플릿 인식 불가.
-                    doc_role: f.docRole || 'content',
-                    docRole: f.docRole || 'content'
-                }));
+            // 선택된 key 를 보존된 doc map 으로 해석 → lazy 로드 사이에도 누락 없음
+            const selectedDocs = [...this.selectedKeysSet]
+                .map((k) => this.selectedDocsMap[k])
+                .filter(Boolean);
             this.$emit('confirm', selectedDocs);
             this.$emit('update:modelValue', false);
         }

@@ -56,6 +56,7 @@
             v-if="enableKnowledgeBase"
             v-model="knowledgePickerOpen"
             :initiallySelectedIds="selectedKnowledgeIds"
+            :initiallySelectedDocs="selectedKnowledgeDocs"
             @confirm="handleKnowledgeConfirm"
         />
     </div>

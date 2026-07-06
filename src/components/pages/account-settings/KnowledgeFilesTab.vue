@@ -198,11 +198,10 @@
                                     <v-btn
                                         size="x-small"
                                         variant="text"
-                                        :color="currentFolder === '' ? 'primary' : undefined"
+                                        :color="viewAllMode && currentFolder === '' ? 'primary' : undefined"
                                         prepend-icon="mdi-folder-multiple-outline"
-                                        :class="{ 'kft-viewall-active': currentFolder === '' }"
-                                        title="모든 폴더의 파일을 한 번에 봅니다"
-                                        @click="currentFolder = ''"
+                                        title="모든 폴더의 파일을 한 번에 봅니다 (파일이 많으면 느릴 수 있습니다)"
+                                        @click="viewAllFiles"
                                     >
                                         전체 조회
                                     </v-btn>
@@ -969,7 +968,7 @@ export default {
             currentRole: 'content', // 'content' | 'glossary' | 'template' | 'reference' | 'dataset' | 'legal_review'
             roleOptions: [
                 { value: 'content',     label: '일반 자료', icon: 'mdi-file-document-outline',   color: 'primary',         desc: '검색·요약 대상이 되는 본문 자료 (기본값)' },
-                { value: 'glossary',    label: '용어 사전', icon: 'mdi-book-alphabet',           color: 'deep-purple',     desc: '한↔영 등 용어 매핑. 답변 작성 시 자동 참조' },
+                { value: 'glossary',    label: '용어 사전', icon: 'mdi-book-alphabet',           color: 'deep-purple',     desc: '한↔영 용어 매핑. 답변·번역 시 자동 참조. CSV(영문,한글뜻,약어) 업로드 지원' },
                 { value: 'template',    label: '양식',      icon: 'mdi-file-table-outline',      color: 'orange-darken-2', desc: '보고서/계약서 양식. 문서 생성 시 활용 · hwpx/docx만 가능' },
                 { value: 'reference',   label: '참조',      icon: 'mdi-bookmark-outline',        color: 'teal',            desc: '법령·규제·표준 등 인용용 참조' },
                 { value: 'dataset',     label: '데이터',    icon: 'mdi-table',                   color: 'cyan-darken-2',   desc: '엑셀(xlsx) 정량 데이터. 분석 질문 시 코드 실행으로 처리 · xlsx만 가능' },
@@ -979,7 +978,7 @@ export default {
             //   양식: 편집형(hwpx/docx) · 데이터: xlsx · 검토 사례: docx(메모 추출 docx XML 한정)
             roleAllowedExtensions: {
                 content: ['pdf', 'hwp', 'hwpx', 'doc', 'docx', 'pptx', 'txt'],
-                glossary: ['pdf', 'hwp', 'hwpx', 'doc', 'docx', 'pptx', 'txt'],
+                glossary: ['csv'],
                 reference: ['pdf', 'hwp', 'hwpx', 'doc', 'docx', 'pptx', 'txt'],
                 template: ['hwpx', 'docx'],
                 dataset: ['xlsx'],
@@ -1007,6 +1006,9 @@ export default {
             ],
             // 폴더 네비게이션
             currentFolder: '',
+            viewAllMode: false,   // '전체 조회' opt-in — true 일 때만 폴더 미선택에서 전체 파일 로드
+            // 경량 카운트(트리 배지/역할 탭) — 파일 전체를 안 들고도 전역 카운트 표시
+            folderCounts: { role_totals: {}, folder_direct: {}, status_totals: {} },
             folderCard: null,                 // 선택 폴더의 요약 카드 (knowledge_folder_cards)
             // none(파일없음/없음) | loading(조회중) | pending(백그라운드 생성중) | done | stalled(폴링후에도없음)
             folderCardState: 'none',
@@ -1083,14 +1085,9 @@ export default {
             }
             return this.uploadHeaders;
         },
-        // 역할별 파일 개수 (sub-tab chip 표시용)
+        // 역할별 파일 개수 (sub-tab chip 표시용) — lazy: 경량 카운트 엔드포인트의 role_totals 사용(전역 정확)
         roleCounts() {
-            const c = { content: 0, glossary: 0, template: 0, reference: 0, dataset: 0, legal_review: 0 };
-            for (const f of this.uploadFiles) {
-                const r = this.roleOf(f);
-                if (c[r] !== undefined) c[r]++;
-            }
-            return c;
+            return (this.folderCounts && this.folderCounts.role_totals) || {};
         },
         // 현재 선택된 역할 메타 (드롭존·breadcrumb 표시용)
         currentRoleMeta() {
@@ -1117,50 +1114,42 @@ export default {
             return (this.allowedExtsForRole || []).map((e) => e.toUpperCase()).join(', ');
         },
         // 폴더 노드 (트리, 들여쓰기 정보 포함). 현재 역할 scope 기준.
-        // 성능: 폴더마다 전체 파일을 filter 하면 O(폴더수 × 파일수) 라 폴더가 많으면 느리다.
-        // 파일을 한 번만 순회하며 경로 수집 + 직속/하위 카운트를 동시 집계해 O(파일수 × 깊이) 로 처리.
+        // lazy 로딩: 파일 전체를 안 들고 있으므로, 트리는 *등록 폴더 목록 + 경량 카운트 엔드포인트*로 만든다.
+        //  - 경로: 등록 폴더(roleScopedEmptyFolders) ∪ 파일 있는 폴더(folderCounts) + 각자의 조상
+        //  - 직속 카운트: folderCounts.folder_direct[role][path]
+        //  - 하위(subtree) 카운트: 직속 카운트를 자기+조상에 합산
         folderNodes() {
-            const scopedFiles = this.roleScopedUpload; // 역할 필터 적용된 파일
-            const scopedEmpty = this.roleScopedEmptyFolders; // 같은 role 의 빈 폴더만
+            const scopedEmpty = this.roleScopedEmptyFolders;
+            const direct = (this.folderCounts.folder_direct && this.folderCounts.folder_direct[this.currentRole]) || {};
             const pathSet = new Set();
-            const directCount = Object.create(null); // 직속 파일 수 (그 폴더에 정확히 속한 파일)
-            const subtreeCount = Object.create(null); // 하위 전체 포함 파일 수
+            const addWithAncestors = (p) => {
+                const segs = (p || '').split('/').filter(Boolean);
+                let acc = '';
+                for (const s of segs) { acc = acc ? `${acc}/${s}` : s; pathSet.add(acc); }
+            };
+            for (const p of scopedEmpty) addWithAncestors(p);
+            for (const p of Object.keys(direct)) addWithAncestors(p);
 
-            for (const f of scopedFiles) {
-                const p = (f.folder_path || '').trim();
-                if (!p) continue;
+            // 직속 카운트를 자기+조상에 합산 → subtree(하위 전체) 카운트
+            const subtree = Object.create(null);
+            for (const p of Object.keys(direct)) {
+                const cnt = direct[p] || 0;
+                if (!cnt) continue;
                 const segs = p.split('/').filter(Boolean);
                 let acc = '';
-                for (const s of segs) {
-                    acc = acc ? `${acc}/${s}` : s;
-                    pathSet.add(acc);
-                    // 자기 자신 + 모든 조상 폴더의 subtree 카운트 +1
-                    subtreeCount[acc] = (subtreeCount[acc] || 0) + 1;
-                }
-                // 직속 카운트는 가장 깊은(= 파일이 직접 든) 폴더에만 +1
-                directCount[acc] = (directCount[acc] || 0) + 1;
-            }
-            for (const p of scopedEmpty) {
-                if (!p) continue;
-                const segs = p.split('/').filter(Boolean);
-                let acc = '';
-                for (const s of segs) {
-                    acc = acc ? `${acc}/${s}` : s;
-                    pathSet.add(acc);
-                }
+                for (const s of segs) { acc = acc ? `${acc}/${s}` : s; subtree[acc] = (subtree[acc] || 0) + cnt; }
             }
             const paths = [...pathSet].sort();
-            const emptyFolderSet = new Set(scopedEmpty);
             return paths.map((path) => {
                 const segs = path.split('/');
-                const fileCount = subtreeCount[path] || 0; // 하위 전체 포함 (삭제 경고 / isLocal 판정용)
+                const total = subtree[path] || 0;
                 return {
                     path,
                     name: segs[segs.length - 1],
                     depth: segs.length - 1,
-                    directFileCount: directCount[path] || 0, // 직접 이 폴더에 든 파일 수 (배지용)
-                    fileCount,
-                    isLocal: fileCount === 0 && emptyFolderSet.has(path)
+                    directFileCount: direct[path] || 0,  // 직접 이 폴더에 든 파일 수 (배지용)
+                    fileCount: total,                    // 하위 전체 포함 (삭제 경고용)
+                    isLocal: total === 0                 // 하위 통틀어 파일 0 = 빈 폴더
                 };
             });
         },
@@ -1220,7 +1209,8 @@ export default {
         currentFolder() {
             // 폴더 선택 변경 시마다 저장 ('전체' 버튼 인라인 변경 포함) → 새로고침 유지
             this.persistNavState();
-            this.fetchFolderCard();   // 선택 폴더의 요약 카드 갱신
+            this.fetchFolderCard();          // 선택 폴더의 요약 카드 갱신
+            this.loadCurrentFolderFiles();   // lazy — 선택 폴더 파일만 로드
         }
     },
     mounted() {
@@ -1305,16 +1295,13 @@ export default {
                 excluded: 'grey-darken-1'
             }[s] || 'grey';
         },
+        // 폴더 트리(가벼움)는 항상, 파일은 *선택 폴더만* 로드(lazy) — 수만 건 테넌트에서 전체 조회 회피.
         async fetchList() {
             const tenantId = window.$tenantName || '';
             if (!tenantId) return;
             this.loading = true;
             try {
-                const [filesRes, foldersRes] = await Promise.all([
-                    axios.get('/memento/documents/list', { params: { tenant_id: tenantId } }),
-                    axios.get('/memento/knowledge/folders', { params: { tenant_id: tenantId } })
-                ]);
-                let files = Array.isArray(filesRes.data?.file_details) ? filesRes.data.file_details : [];
+                const foldersRes = await axios.get('/memento/knowledge/folders', { params: { tenant_id: tenantId } });
                 // 백엔드는 [{folder_path, doc_role}, ...] 반환. 문자열 배열도 backward-compat 으로 수용.
                 const rawFolders = Array.isArray(foldersRes.data?.folders) ? foldersRes.data.folders : [];
                 let emptyFolders = rawFolders.map((f) =>
@@ -1325,16 +1312,57 @@ export default {
                 // 약식 폴더 권한 — 일반 사용자는 허용된 폴더(+하위)만 보인다 (관리자는 전체).
                 const allow = await fetchAllowedFolders();
                 if (allow != null) {
-                    files = files.filter((f) => isFolderAllowed(f.folder_path || f.drive_folder_name || '', allow));
                     emptyFolders = emptyFolders.filter((f) => isFolderAllowed(f.folder_path, allow));
                 }
-                this.files = files;
                 this.emptyFolders = emptyFolders;
+                // 트리 배지/역할 탭용 경량 카운트(전역) + 현재 폴더 파일을 병렬 로드.
+                await Promise.all([this.loadFolderCounts(), this.loadCurrentFolderFiles()]);
             } catch (e) {
                 console.error('[KnowledgeFilesTab] fetch failed', e);
                 this.notify('파일 목록 조회 실패', 'error', e?.message);
             } finally {
                 this.loading = false;
+            }
+        },
+        // 경량 카운트 엔드포인트 — 파일 전체를 안 들고도 역할별/폴더별 직속 카운트를 얻는다.
+        async loadFolderCounts() {
+            const tenantId = window.$tenantName || '';
+            if (!tenantId) return;
+            try {
+                const { data } = await axios.get('/memento/knowledge/files/counts', { params: { tenant_id: tenantId } });
+                this.folderCounts = {
+                    role_totals: data?.role_totals || {},
+                    folder_direct: data?.folder_direct || {},
+                    status_totals: data?.status_totals || {},
+                };
+            } catch (e) {
+                console.error('[KnowledgeFilesTab] counts fetch failed', e);
+            }
+        },
+        // 현재 선택 폴더의 파일만 조회해 this.files 에 담는다(lazy). 폴더 미선택이면 비우고,
+        // '전체 조회'(viewAllMode) 일 때만 테넌트 전체를 로드한다(대량이면 느릴 수 있음 — 명시적 opt-in).
+        async loadCurrentFolderFiles() {
+            const tenantId = window.$tenantName || '';
+            if (!tenantId) { this.files = []; return; }
+            const fp = this.currentFolder;
+            const params = { tenant_id: tenantId };
+            if (fp) {
+                params.folder_path = fp;          // 그 폴더의 직속 파일만
+            } else if (!this.viewAllMode) {
+                this.files = [];                  // 폴더 미선택 + 전체조회 아님 → 비움
+                return;
+            }
+            try {
+                const { data } = await axios.get('/memento/documents/list', { params });
+                let files = Array.isArray(data?.file_details) ? data.file_details : [];
+                const allow = await fetchAllowedFolders();
+                if (allow != null) {
+                    files = files.filter((f) => isFolderAllowed(f.folder_path || f.drive_folder_name || '', allow));
+                }
+                this.files = files;
+            } catch (e) {
+                console.error('[KnowledgeFilesTab] folder files fetch failed', e);
+                this.files = [];
             }
         },
         notify(msg, color = 'success', detail = null) {
@@ -1614,6 +1642,9 @@ export default {
         // 업로드는 즉시 접수(pending)되고 서버가 백그라운드로 인덱싱한다. pending/processing 파일이
         // 남아있는 동안 주기적으로 목록을 다시 받아 상태 배지를 자동 갱신한다(수동 새로고침 불필요).
         hasProcessingFiles() {
+            // lazy: 현재 폴더 파일뿐 아니라 전역 상태 카운트도 확인(다른 폴더 처리중 → 폴링 유지)
+            const st = (this.folderCounts && this.folderCounts.status_totals) || {};
+            if ((st.pending || 0) + (st.processing || 0) > 0) return true;
             return this.files.some(
                 (f) => f.index_status === 'pending' || f.index_status === 'processing'
             );
@@ -1664,11 +1695,10 @@ export default {
             const token = (this._folderCardToken = (this._folderCardToken || 0) + 1);
             this.folderCard = null;
             if (!tenantId || !fp) { this.folderCardState = 'none'; return; }
-            // 이 폴더(또는 하위)에 파일이 있으면 카드가 곧 생성될 것으로 기대 → 폴링 대상
-            const expectsCard = this.uploadFiles.some((f) => {
-                const p = f.folder_path || '';
-                return p === fp || p.startsWith(fp + '/');
-            });
+            // 이 폴더(또는 하위)에 파일이 있으면 카드가 곧 생성될 것으로 기대 → 폴링 대상.
+            // lazy: 파일 전체가 없으므로 folderNodes 의 하위 포함 카운트(fileCount)로 판정.
+            const node = this.folderNodes.find((n) => n.path === fp);
+            const expectsCard = !!(node && node.fileCount > 0);
             const stale = () => this.currentFolder !== fp || token !== this._folderCardToken;
             const tryFetch = async () => {
                 const { data } = await axios.get('/memento/folders/card', {
@@ -1811,10 +1841,20 @@ export default {
         // (chevron 클릭은 선택과 무관하게 항상 토글)
         onFolderRowClick(node) {
             const alreadyCurrent = this.currentFolder === node.path;
+            this.viewAllMode = false;          // 특정 폴더 선택 → 전체조회 해제
             this.currentFolder = node.path;
             if (!this.folderHasChildren(node.path)) return;
             if (alreadyCurrent || !this.isFolderExpanded(node.path)) {
                 this.toggleFolderExpand(node.path);
+            }
+        },
+        // '전체 조회' — 폴더 미선택 상태로 테넌트 전체 파일을 로드(opt-in, 대량이면 느릴 수 있음)
+        viewAllFiles() {
+            this.viewAllMode = true;
+            if (this.currentFolder === '') {
+                this.loadCurrentFolderFiles();  // watch 안 뜨는 경우(이미 '') 직접 로드
+            } else {
+                this.currentFolder = '';        // watch 가 loadCurrentFolderFiles 호출
             }
         },
         // ─── 폴더 우클릭 컨텍스트 메뉴 ───
