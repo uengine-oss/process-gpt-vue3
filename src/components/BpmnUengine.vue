@@ -1223,7 +1223,7 @@ export default {
             const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             participant.forEach((element) => {
                 const isCurrentlyHorizontal = element.di.isHorizontal !== false && element.width > element.height;
-                const rotateOptions = self.isViewMode ? { skipAutoLayout: true } : {};
+                const rotateOptions = {};
                 if (isCurrentlyHorizontal) {
                     palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
                     element.di.isHorizontal = false;
@@ -1279,15 +1279,11 @@ export default {
             participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
                 if (isHorizontal && !horizontal) {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd, {
-                        skipAutoLayout: true
-                    });
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
                     self.isHorizontal = true;
                     element.di.isHorizontal = true;
                 } else if (!isHorizontal && horizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd, {
-                        skipAutoLayout: true
-                    });
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
                     self.isHorizontal = false;
                     element.di.isHorizontal = false;
                 }
