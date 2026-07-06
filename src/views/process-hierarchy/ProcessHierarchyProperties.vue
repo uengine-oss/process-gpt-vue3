@@ -347,6 +347,7 @@
                                 :uengineProperties="callActivityProperties"
                                 :processDefinitionId="definitionPath"
                                 :processVariables="processVariables"
+                                :processDefinition="processDefinition"
                                 :definition="definition"
                                 :name="element.businessObject?.name || ''"
                                 @update:uengineProperties="onCallActivityPropertiesUpdate"
@@ -683,6 +684,9 @@ import PALUserTaskPanel from '@/components/designer/bpmnModeling/bpmn/panel/PALU
 import PALCallActivityPanel from '@/components/designer/bpmnModeling/bpmn/panel/PALCallActivityPanel.vue';
 import CallActivityPanel from '@/components/designer/bpmnModeling/bpmn/panel/CallActivityPanel.vue';
 import GPTCallActivityPanel from '@/components/designer/bpmnModeling/bpmn/panel/GPTCallActivityPanel.vue';
+import BackendFactory from '@/components/api/BackendFactory';
+
+const backend = BackendFactory.createBackend();
 
 const ANNUAL_WORKING_HOURS = 2080; // 52 weeks × 40 hours
 
@@ -1042,6 +1046,67 @@ export default {
         onCallActivityPropertiesUpdate(newProps) {
             this.callActivityProperties = newProps || {};
         },
+        findLaneRoleByActivityId(activityId) {
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (!modeler || !activityId) return '';
+
+            try {
+                const definitions = modeler.getDefinitions();
+                const processElements = (definitions?.rootElements || []).filter((element) => element.$type === 'bpmn:Process');
+                for (const process of processElements) {
+                    for (const laneSet of process.laneSets || []) {
+                        for (const lane of laneSet.lanes || []) {
+                            const refs = lane.flowNodeRef || [];
+                            if (refs.some((ref) => ref?.id === activityId)) {
+                                return lane.name || '';
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to resolve CallActivity lane role:', e);
+            }
+
+            return '';
+        },
+        writeCallActivityToRuntimeDefinition() {
+            if (!this.isProcessGptMode || !this.processDefinition || !this.element) return;
+
+            const bo = this.element.businessObject || this.element;
+            const id = bo.id;
+            if (!id) return;
+
+            if (!this.processDefinition.definition) {
+                this.processDefinition.definition = {};
+            }
+            if (!Array.isArray(this.processDefinition.definition.activities)) {
+                this.processDefinition.definition.activities = [];
+            }
+
+            const activities = this.processDefinition.definition.activities;
+            const existingIndex = activities.findIndex((activity) => activity?.id === id);
+            const previous = existingIndex >= 0 ? activities[existingIndex] : {};
+            const role = previous.role || this.findLaneRoleByActivityId(id);
+            const next = {
+                ...previous,
+                id,
+                name: bo.name || previous.name || id,
+                type: 'CallActivity',
+                description: previous.description || '',
+                properties: JSON.stringify(this.callActivityProperties || {})
+            };
+
+            if (role) {
+                next.role = role;
+            }
+
+            if (existingIndex >= 0) {
+                activities.splice(existingIndex, 1, next);
+            } else {
+                activities.push(next);
+            }
+        },
         writeCallActivityToElement() {
             if (!this.element) return;
             const store = useBpmnStore();
@@ -1071,16 +1136,41 @@ export default {
                 values: [...otherExtValues, uengineEl]
             });
             modeling.updateProperties(shapeElement, { extensionElements: newExtElements });
+            this.writeCallActivityToRuntimeDefinition();
 
             if (this.$toast) {
                 this.$toast.success(this.$t('processHierarchy.callActivitySaveSuccess'));
             }
         },
+        async persistProcessGptCallActivity() {
+            if (!this.isProcessGptMode || !this.definitionPath || !this.processDefinition?.definition) return;
+
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (!modeler || typeof modeler.saveXML !== 'function') return;
+
+            const { xml } = await modeler.saveXML({ format: true });
+            if (!xml) return;
+
+            await backend.putRawDefinition(xml, this.definitionPath, {
+                name: this.processDefinition.name || this.processDefinition.definition.processDefinitionName || this.definitionPath,
+                definition: this.processDefinition.definition
+            });
+        },
         async saveCallActivity() {
             if (this.$refs.callActivityPanel && typeof this.$refs.callActivityPanel.beforeSave === 'function') {
                 await this.$refs.callActivityPanel.beforeSave();
             }
-            this.$nextTick(() => this.writeCallActivityToElement());
+            await this.$nextTick();
+            this.writeCallActivityToElement();
+            try {
+                await this.persistProcessGptCallActivity();
+            } catch (e) {
+                console.error('Failed to persist CallActivity definition:', e);
+                if (this.$toast) {
+                    this.$toast.error(e?.message || 'Failed to save CallActivity.');
+                }
+            }
         },
         initPalUenginePropertiesFromElement(el) {
             const bo = el.businessObject || el;

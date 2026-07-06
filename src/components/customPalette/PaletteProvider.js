@@ -157,11 +157,6 @@ PaletteProvider.prototype.adjustParticipantBoundsByLanes = function (participant
 };
 
 PaletteProvider.prototype.applyAutoLayout = function (onLoadStart = () => { }, onLoadEnd = () => { }) {
-    if (this._isViewMode) {
-        onLoadEnd();
-        return;
-    }
-
     var injector = this._injector;
     var elementFactory = this._elementFactory;
     var eventBus = this._eventBus;

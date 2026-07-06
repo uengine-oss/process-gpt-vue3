@@ -11,6 +11,7 @@ import JSON5 from 'json5';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 import { getBpmnModelService } from '@/services/bpmnModelService';
 import { normalizeUengineBpmnXmlForBackend } from '@/utils/uengineXmlTransform';
+import { syncBpmnCallActivitiesIntoDefinition } from '@/utils/bpmnCallActivityDefinitionSync';
 
 const backend = BackendFactory.createBackend();
 
@@ -71,8 +72,9 @@ export default {
                     this.processDefinition
                 );
             }
+            const syncedDefinition = syncBpmnCallActivitiesIntoDefinition(xmlString, processDefinition);
             if (callback && typeof callback === 'function') {
-                callback(processDefinition);
+                callback(syncedDefinition);
             }
         });
     },
@@ -813,6 +815,7 @@ export default {
                         if (info.name && info.name != '') {
                             me.processDefinition.processDefinitionName = info.name;
                         }
+                        me.processDefinition = syncBpmnCallActivitiesIntoDefinition(xmlObj.xml, me.processDefinition);
                         info.definition = me.processDefinition;
                     }
 
@@ -909,7 +912,7 @@ export default {
                             updatedProcessDefinition.dmn_rules = savedDmnRules;
                         }
 
-                        me.processDefinition = updatedProcessDefinition;
+                        me.processDefinition = syncBpmnCallActivitiesIntoDefinition(xmlObj.xml, updatedProcessDefinition);
                         info.definition = me.processDefinition;
                         console.log('[FORM_DEBUG] after Path2 processDefinition replaced', {
                             formDraftsCount: me.processDefinition.formDrafts?.length
@@ -2080,6 +2083,7 @@ export default {
                         if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                             throw new Error('processDefinitionId or processDefinitionName is missing');
                         }
+                        me.processDefinition = syncBpmnCallActivitiesIntoDefinition(xml, me.processDefinition);
                         // saveModel 내부에서 activity.tool이 바뀐 최신 정의를 proc_def.definition으로 저장하도록 동기화
                         info.definition = me.processDefinition;
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
@@ -2335,7 +2339,7 @@ export default {
                                     }
 
                                     const options = {
-                                        definition: processDefinition
+                                        definition: syncBpmnCallActivitiesIntoDefinition(this.bpmn, processDefinition)
                                     };
                                     backend.putRawDefinition(this.bpmn, processDefinition.processDefinitionId, options);
                                     this.$try({

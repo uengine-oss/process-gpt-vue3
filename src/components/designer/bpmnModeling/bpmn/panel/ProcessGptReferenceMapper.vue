@@ -123,15 +123,26 @@ export default {
                             .map((item) => String(item || '').split('.')[0])
                             .filter((formId) => formId)
                     )
-                ];
-                this.selectedForms = formIds.filter((formId) => formId !== this.currentActivityFormId);
+                ].filter((formId) => formId !== this.currentActivityFormId);
+                // 사용자가 드롭다운에서 선택한 폼은 필드 체크 여부와 무관하게 유지해야 한다.
+                // inputData 는 "체크된 필드"만 담으므로, 여기서 selectedForms 를 통째로 교체하면
+                // 체크된 필드가 없는 선택 폼(b, c)이 사라진다. 따라서 inputData 에 있는 폼을 "추가"만 한다.
+                // (폼 제거는 v-select 칩 닫기로 selectedForms 를 직접 변경할 때만 일어난다.)
+                const merged = [...this.selectedForms];
+                formIds.forEach((formId) => {
+                    if (!merged.includes(formId)) merged.push(formId);
+                });
+                if (!this.sameStringArray(merged, this.selectedForms)) {
+                    this.selectedForms = merged;
+                }
                 this.syncSelectedFlags();
             }
         },
         availableForms() {
             this.rebuildFormFields();
         },
-        selectedForms() {
+        selectedForms(value, oldValue) {
+            this.ensureSelectedFormDefaults(value, oldValue);
             this.updateInputData();
         },
         formFields: {
@@ -146,6 +157,11 @@ export default {
         await this.loadPreviousFormsForMapper();
     },
     methods: {
+        sameStringArray(a, b) {
+            if (a === b) return true;
+            if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+            return a.every((value, index) => value === b[index]);
+        },
         async openFieldMapper() {
             if (!this.availableForms.length) await this.loadPreviousFormsForMapper();
             const inputData = this.syncReferenceFormInputData();
@@ -245,6 +261,18 @@ export default {
                 });
             });
         },
+        ensureSelectedFormDefaults(selectedForms = [], oldSelectedForms = []) {
+            const previous = new Set(Array.isArray(oldSelectedForms) ? oldSelectedForms : []);
+            (Array.isArray(selectedForms) ? selectedForms : []).forEach((formId) => {
+                if (previous.has(formId) || formId === this.currentActivityFormId) return;
+                const fields = Array.isArray(this.formFields[formId]) ? this.formFields[formId] : [];
+                if (fields.length > 0 && !fields.some((field) => field.selected)) {
+                    fields.forEach((field) => {
+                        field.selected = true;
+                    });
+                }
+            });
+        },
         updateInputData() {
             if (!this.availableForms.length) return Array.isArray(this.inputData) ? this.inputData : [];
             const inputData = [];
@@ -256,7 +284,10 @@ export default {
                         if (field.selected) inputData.push(`${formId}.${field.fieldId}`);
                     });
                 });
-            this.$emit('update:inputData', inputData);
+            // 부모 prop(inputData)과 내용이 같으면 emit 하지 않아 재귀 갱신 루프를 끊는다
+            if (!this.sameStringArray(inputData, Array.isArray(this.inputData) ? this.inputData : [])) {
+                this.$emit('update:inputData', inputData);
+            }
             return inputData;
         },
         syncReferenceFormInputData() {
