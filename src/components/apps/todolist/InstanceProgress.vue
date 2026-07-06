@@ -50,7 +50,7 @@ export default {
         }
     }),
     created() {
-        this.init();
+        this.init({ noLoading: true });
         this.EventBus.on('process-definition-updated', async () => {
             this.bpmn = await backend.getRawDefinition(this.instance.defId, { type: 'bpmn', version: this.instance.defVer });
             this.updatedDefKey++;
@@ -59,6 +59,7 @@ export default {
     mounted() {
         let me = this;
         me.$try({
+            noLoading: true,
             action: async () => {
                 if (me.$route.params && me.$route.params.instId) {
                     await me.initStatus();
@@ -83,7 +84,7 @@ export default {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal.params.instId !== oldVal.params.instId) {
-                    await this.init();
+                    await this.init({ noLoading: true });
                 }
             }
         },
@@ -91,16 +92,17 @@ export default {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal && (!oldVal || newVal.instId !== oldVal.instId)) {
-                    await this.init();
+                    await this.init({ noLoading: true });
                 }
             }
         }
     },
     methods: {
-        init() {
+        init(options = {}) {
             var me = this;
             me.$try({
                 context: me,
+                noLoading: options.noLoading,
                 action: async () => {
                     if (me.instance && me.instance.defId) {
                         if (me.mode == 'ProcessGPT') {

@@ -47,19 +47,21 @@ export default {
         workListWatchRef: null
     }),
     created() {
-        this.init();
+        this.init({ noLoading: true });
     },
     async mounted() {
-        this.EventBus.on('instances-updated', this.init);
+        this.EventBus.on('instances-updated', this.handleInstancesUpdated);
         if (this.instance) {
             this.workListWatchRef = await backend.watchWorkList(
-                () => { this.init(); },
+                () => {
+                    this.init({ noLoading: true });
+                },
                 { instId: this.instance.instId }
             );
         }
     },
     beforeUnmount() {
-        this.EventBus.off('instances-updated', this.init);
+        this.EventBus.off('instances-updated', this.handleInstancesUpdated);
         if (this.workListWatchRef) {
             backend.watchOff(this.workListWatchRef);
         }
@@ -95,16 +97,20 @@ export default {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal.params.instId !== oldVal.params.instId) {
-                    await this.init();
+                    await this.init({ noLoading: true });
                 }
             }
         }
     },
     methods: {
-        init() {
+        handleInstancesUpdated() {
+            this.init({ noLoading: true });
+        },
+        init(options = {}) {
             var me = this;
             me.$try({
                 context: me,
+                noLoading: options.noLoading,
                 action: async () => {
                     if (me.instance) {
                         me.workListByInstId = await backend.getAllWorkListByInstId(me.instance.instId);
@@ -122,7 +128,7 @@ export default {
             me.$router.push(`/todolist/${obj._item.taskId}`);
             this.$nextTick(() => {
                 me.delay(500).then(() => {
-                    me.init();
+                    me.init({ noLoading: true });
                     me.updatedKey++;
                 });
             });

@@ -306,7 +306,8 @@ export default {
         updatedKey: 0,
         deleteDialog: false,
         participantUsers: [],
-        parentRedirectTimer: null,
+        parentRedirectWatchRef: null,
+        workListWatchRefs: [],
         callActivityIds: new Set()
     }),
     watch: {
@@ -314,7 +315,7 @@ export default {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
-                    this.clearParentRedirectTimer();
+                    await this.clearParentRedirectWatch();
                     this.tab = this.resolveInitialTab('progress');
                     await this.init();
                 }
@@ -339,14 +340,14 @@ export default {
                 await this.$nextTick();
                 const activeComponents = this.$refs[newVal];
                 if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
-                    await activeComponents[0].init();
+                    await activeComponents[0].init({ noLoading: true });
                 }
 
                 // PC에서 progress 탭 선택 시 workhistory 컴포넌트도 초기화
                 if (newVal === 'progress' && !this.isMobile) {
                     const workhistoryComponents = this.$refs.workhistory;
                     if (workhistoryComponents && workhistoryComponents.init) {
-                        await workhistoryComponents.init();
+                        await workhistoryComponents.init({ noLoading: true });
                     }
                 }
             }
@@ -369,7 +370,7 @@ export default {
                     this.$nextTick(async () => {
                         const activeComponents = this.$refs[this.tab];
                         if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
-                            await activeComponents[0].init();
+                            await activeComponents[0].init({ noLoading: true });
                         }
                     });
                 }
@@ -378,12 +379,13 @@ export default {
     },
     mounted() {
         this.tab = this.resolveInitialTab('workhistory');
-        this.init();
+        this.init({ noLoading: true });
 
         this.EventBus.on('todolist-updated', this.handleTodolistUpdated);
     },
     unmounted() {
-        this.clearParentRedirectTimer();
+        this.clearParentRedirectWatch();
+        this.clearWorkListWatch();
         this.EventBus.off('todolist-updated', this.handleTodolistUpdated);
     },
     computed: {
@@ -455,11 +457,16 @@ export default {
             const lastTab = localStorage.getItem('instanceCard-lastTab');
             return lastTab || defaultTab;
         },
-        clearParentRedirectTimer() {
-            if (this.parentRedirectTimer) {
-                clearTimeout(this.parentRedirectTimer);
-                this.parentRedirectTimer = null;
+        async clearParentRedirectWatch() {
+            if (this.parentRedirectWatchRef) {
+                await backend.watchOff(this.parentRedirectWatchRef);
+                this.parentRedirectWatchRef = null;
             }
+        },
+        async clearWorkListWatch() {
+            const refs = this.workListWatchRefs || [];
+            this.workListWatchRefs = [];
+            await Promise.all(refs.map((ref) => backend.watchOff(ref)));
         },
         async redirectToParentIfCompleted(instance) {
             if (
@@ -470,7 +477,7 @@ export default {
                 return false;
             }
 
-            this.clearParentRedirectTimer();
+            await this.clearParentRedirectWatch();
             const parentRouteId = instance.parent_proc_inst_id.replace(/\./g, '_DOT_');
             await this.$router.replace({
                 path: `/instancelist/${parentRouteId}`,
@@ -478,22 +485,27 @@ export default {
             });
             return true;
         },
-        scheduleParentRedirectCheck(instance) {
+        async watchParentRedirect(instance) {
             if (window.$mode !== 'ProcessGPT' || !instance?.parent_proc_inst_id) return;
             if (String(instance.status || '').toUpperCase() === 'COMPLETED') return;
-            if (this.parentRedirectTimer) return;
+            if (this.parentRedirectWatchRef) return;
 
             const childInstId = instance.instId;
-            this.parentRedirectTimer = setTimeout(async () => {
-                this.parentRedirectTimer = null;
-
+            this.parentRedirectWatchRef = await backend.watchInstance(childInstId, async (latest) => {
                 if (this.id !== childInstId) return;
+                if (!latest) return;
+                this.instance = latest;
+                await this.redirectToParentIfCompleted(latest);
+            });
+        },
+        async watchWorkListChanges() {
+            if (!this.id || this.workListWatchRefs.length > 0) return;
 
-                const latest = await backend.getInstance(childInstId);
-                if (await this.redirectToParentIfCompleted(latest)) return;
-
-                this.scheduleParentRedirectCheck(latest || instance);
-            }, 2000);
+            const refs = await Promise.all([
+                backend.watchWorkList(() => this.loadTasks(), { instId: this.id }),
+                backend.watchWorkList(() => this.loadTasks(), { rootInstId: this.id })
+            ]);
+            this.workListWatchRefs = refs.filter(Boolean);
         },
         async handleTodolistUpdated() {
             await this.loadTasks();
@@ -513,15 +525,17 @@ export default {
             this.updatedKey++;
 
             // 이후 백엔드에서 최신 데이터를 다시 로드 (느려도 UI는 이미 완료 화면)
-            await this.init();
+            await this.init({ noLoading: true });
         },
-        async init() {
+        async init(options = {}) {
             var me = this;
             me.$try({
                 context: me,
+                noLoading: options.noLoading,
                 action: async () => {
                     if (!me.id) return;
                     me.isLoading = true;
+                    await me.clearWorkListWatch();
 
                     const serverInstance = await backend.getInstance(me.id);
 
@@ -542,7 +556,7 @@ export default {
 
                     if (me.instance) {
                         if (await me.redirectToParentIfCompleted(me.instance)) return;
-                        me.scheduleParentRedirectCheck(me.instance);
+                        await me.watchParentRedirect(me.instance);
 
                         me.eventList = await backend.getEventList(me.instance.instId);
                         await me.loadCallActivityIds();
@@ -579,6 +593,7 @@ export default {
                     // }
 
                     await me.loadTasks();
+                    await me.watchWorkListChanges();
 
                     me.isLoading = false;
                 }
@@ -676,7 +691,7 @@ export default {
         },
         async fireMessage(event) {
             await backend.fireMessage(this.instance.instId, event);
-            this.init();
+            this.init({ noLoading: true });
             const progressComponent = this.$refs.progress[0];
             if (progressComponent) {
                 progressComponent.initStatus();
