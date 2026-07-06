@@ -337,7 +337,9 @@ export default {
         initiallySelectedIds: { type: Array, default: () => [] },
         // 이전에 선택된 문서(전체 shape). lazy 로딩이라 파일 전체를 안 들고 있으므로,
         // 선택 상태 복원 + confirm 시 누락 방지를 위해 부모가 전체 doc 을 넘겨준다.
-        initiallySelectedDocs: { type: Array, default: () => [] }
+        initiallySelectedDocs: { type: Array, default: () => [] },
+        // 이전에 폴더째 선택한 경로들 (복원용)
+        initiallySelectedFolders: { type: Array, default: () => [] }
     },
     emits: ['update:modelValue', 'confirm'],
     data() {
@@ -355,6 +357,8 @@ export default {
             selectedKeysSet: new Set(),
             // key → emit 형태 doc. lazy 로드 사이에도 선택을 보존해 confirm 시 누락되지 않게 한다.
             selectedDocsMap: {},
+            // 폴더째 체크한 경로들 → confirm 시 knowledge_folders 로 emit (deepagents 폴더 스코프)
+            selectedFolderPaths: new Set(),
             searchResults: [],
             searchLoading: false,
             searchToken: 0,
@@ -555,6 +559,14 @@ export default {
             }
             this.selectedKeysSet = set;
             this.selectedDocsMap = map;
+            // 폴더째 선택 복원
+            const folders = new Set();
+            for (const p of this.initiallySelectedFolders || []) {
+                if (typeof p === 'string' && p.trim()) {
+                    folders.add(p.trim().replace(/^\/+|\/+$/g, ''));
+                }
+            }
+            this.selectedFolderPaths = folders;
         },
         // 폴더+카운트만 로드(경량). 파일은 펼치거나 검색할 때 lazy.
         async loadStructure(force = false) {
@@ -729,9 +741,21 @@ export default {
         toggleFile(f) {
             const set = new Set(this.selectedKeysSet);
             const map = { ...this.selectedDocsMap };
-            if (set.has(f.key)) {
+            const deselecting = set.has(f.key);
+            if (deselecting) {
                 set.delete(f.key);
                 delete map[f.key];
+                // 이 파일을 포함하던 '폴더째 선택'은 더 이상 완전선택이 아니므로 해제 → file 스코프로 폴백
+                const fp = f.folderPath || '';
+                const fset = new Set(this.selectedFolderPaths);
+                let changed = false;
+                for (const p of [...fset]) {
+                    if (fp === p || fp.startsWith(p + '/')) {
+                        fset.delete(p);
+                        changed = true;
+                    }
+                }
+                if (changed) this.selectedFolderPaths = fset;
             } else {
                 set.add(f.key);
                 map[f.key] = this.toDoc(f);
@@ -757,6 +781,24 @@ export default {
             }
             this.selectedKeysSet = set;
             this.selectedDocsMap = map;
+            // 폴더째 선택 추적 — 이 폴더(+하위)는 하나의 스코프. 상위/하위 중복은 정리.
+            const fset = new Set(this.selectedFolderPaths);
+            if (select) {
+                // 이미 선택된 조상/자손 폴더가 있으면 이 폴더로 병합(중복 스코프 방지)
+                for (const p of [...fset]) {
+                    if (p === node.path || p.startsWith(node.path + '/') || node.path.startsWith(p + '/')) {
+                        fset.delete(p);
+                    }
+                }
+                fset.add(node.path);
+            } else {
+                fset.delete(node.path);
+                // 조상 폴더가 통째로 선택돼 있었다면, 그 조상도 해제(부분 해제됐으므로)
+                for (const p of [...fset]) {
+                    if (node.path.startsWith(p + '/')) fset.delete(p);
+                }
+            }
+            this.selectedFolderPaths = fset;
         },
         toggleSelectAllFiltered(checked) {
             const set = new Set(this.selectedKeysSet);
@@ -835,7 +877,9 @@ export default {
             const selectedDocs = [...this.selectedKeysSet]
                 .map((k) => this.selectedDocsMap[k])
                 .filter(Boolean);
-            this.$emit('confirm', selectedDocs);
+            // 폴더째 선택 경로 — deepagents 가 폴더 스코프로 탐색(수천 file_id 나열 회피)
+            const folders = [...this.selectedFolderPaths].filter((p) => typeof p === 'string' && p.trim());
+            this.$emit('confirm', selectedDocs, folders);
             this.$emit('update:modelValue', false);
         }
     }

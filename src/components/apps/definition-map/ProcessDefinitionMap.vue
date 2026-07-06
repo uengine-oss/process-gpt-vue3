@@ -1476,8 +1476,12 @@ export default {
                         file: primaryFile,
                         files: messageFiles,
                         orchestration,
-                        // 메인 화면에서 선택한 지식 베이스 문서 (sourceRef/file_id 등 포함)
+                        // 메인 화면에서 선택한 지식 베이스 자료 → 채팅방으로 인계.
+                        // ⚠️ 지식 선택 필드는 여기 kickoff 페이로드에도 반드시 실어야 함(과거 2회 누락된 지점).
+                        //    전체 배선 체크리스트: UnifiedChatInput.vue forwardSendMessage 주석 참고.
                         knowledgeDocs: Array.isArray(message?.knowledgeDocs) ? message.knowledgeDocs : [],
+                        // 폴더째 선택한 경로들 — deepagents 폴더 스코프 탐색용(누락 시 collapse 폴백)
+                        knowledgeFolders: Array.isArray(message?.knowledgeFolders) ? message.knowledgeFolders : [],
                         createdAt: nowIso
                     })
                 );

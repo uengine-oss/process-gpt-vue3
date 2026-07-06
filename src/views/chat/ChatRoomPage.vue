@@ -211,6 +211,8 @@
                                 :enableKnowledgeBase="true"
                                 :knowledgeDocs="selectedKnowledgeDocs"
                                 @update:knowledgeDocs="onKnowledgeDocsUpdate"
+                                :knowledgeFolders="selectedKnowledgeFolders"
+                                @update:knowledgeFolders="onKnowledgeFoldersUpdate"
                                 @sendMessage="handleSendMessage"
                                 @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
                                 @desktop-voice-toggle="toggleDesktopVoice"
@@ -935,6 +937,7 @@ export default {
             // 산출물 미리보기 패널 (공통)
             artifactPanels: [], // [{ id, type, label, data: { htmlUrl, fileUrl, messageId } }]
             selectedKnowledgeDocs: [], // 지식 베이스(Google Drive) RAG 컨텍스트로 선택된 문서
+            selectedKnowledgeFolders: [], // 폴더째 선택한 경로들 → deepagents 폴더 스코프 탐색용
             activeArtifactId: null, // 현재 활성 탭 ID
             artifactSidebarVisible: false,
             artifactSidebarWidth: 820,
@@ -2427,6 +2430,9 @@ export default {
                 // 메인 화면에서 선택한 지식 베이스 문서를 채팅방으로 인계 — 입력창 칩 + 사이드 컨텍스트 표시
                 if (Array.isArray(payload?.knowledgeDocs) && payload.knowledgeDocs.length > 0) {
                     this.selectedKnowledgeDocs = payload.knowledgeDocs;
+                    if (Array.isArray(payload?.knowledgeFolders)) {
+                        this.selectedKnowledgeFolders = payload.knowledgeFolders;
+                    }
                     this.upsertKnowledgePanel();
                     // 방 컨텍스트에 저장 → 새로고침/재진입 시에도 선택 유지 (kickoff 경로 누락분)
                     this.persistSelectedKnowledge();
@@ -2620,6 +2626,7 @@ export default {
                 const knowledgeDocs = Array.isArray(ctx.knowledgeDocs) ? ctx.knowledgeDocs : [];
                 if (knowledgeDocs.length) {
                     this.selectedKnowledgeDocs = knowledgeDocs;
+                    this.selectedKnowledgeFolders = Array.isArray(ctx.knowledgeFolders) ? ctx.knowledgeFolders : [];
                     this.planSideInfoEnabled.knowledge = true;
                     this.upsertKnowledgePanel();
                 }
@@ -4988,6 +4995,10 @@ export default {
             this.upsertKnowledgePanel();
             this.persistSelectedKnowledge();
         },
+        onKnowledgeFoldersUpdate(folders) {
+            this.selectedKnowledgeFolders = Array.isArray(folders) ? folders : [];
+            this.persistSelectedKnowledge();
+        },
         /** 선택한 지식 베이스 자료를 방 컨텍스트에 저장 → 방 재진입 시 칩/패널 복원.
          *  (restoreSideInfoFromRoomContext 가 ctx.knowledgeDocs 를 읽어 되살린다.) */
         persistSelectedKnowledge() {
@@ -4997,7 +5008,8 @@ export default {
                 const prev = this.normalizeRoomContext(this.readChatRoomContext(room));
                 const next = {
                     ...prev,
-                    knowledgeDocs: Array.isArray(this.selectedKnowledgeDocs) ? this.selectedKnowledgeDocs : []
+                    knowledgeDocs: Array.isArray(this.selectedKnowledgeDocs) ? this.selectedKnowledgeDocs : [],
+                    knowledgeFolders: Array.isArray(this.selectedKnowledgeFolders) ? this.selectedKnowledgeFolders : []
                 };
                 this.writeChatRoomContext(next, room);
                 this.putChatRoomMerged(room).catch(() => {});
@@ -6196,6 +6208,11 @@ export default {
                                       // 역할(양식/사업개요 등) — 백엔드 초안 템플릿/자료 구분에 필수
                                       doc_role: d.docRole || d.doc_role || 'content'
                                   }))
+                            : [],
+                        // 사용자가 폴더째 선택한 경우 그 폴더 경로들. deepagents 는 이걸 우선 루트로 써서
+                        // (수천 개 file_id 나열 대신) 폴더 스코프로 트리 탐색한다. 없으면 file_id 로 폴백.
+                        knowledge_folders: Array.isArray(this.selectedKnowledgeFolders)
+                            ? this.selectedKnowledgeFolders.filter((p) => typeof p === 'string' && p.trim())
                             : [],
                         input_data: {
                             file: requestPrimaryFile,

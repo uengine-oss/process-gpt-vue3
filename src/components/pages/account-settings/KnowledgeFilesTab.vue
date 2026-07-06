@@ -2003,7 +2003,7 @@ export default {
             if (!node) return;
             this.deleteFolderLoading = true;
             try {
-                await axios.delete('/memento/knowledge/folders', {
+                const { data } = await axios.delete('/memento/knowledge/folders', {
                     params: {
                         tenant_id: window.$tenantName,
                         folder_path: node.path,
@@ -2011,11 +2011,22 @@ export default {
                         doc_role: this.currentRole
                     }
                 });
+                // 백엔드가 실제 삭제 여부를 ok 로 반환 — 예전엔 실패해도 성공처럼 보였음.
+                if (data && data.ok === false) {
+                    await this.fetchList();
+                    this.notify('폴더 삭제 실패 — 다시 시도해주세요', 'error',
+                        `대상 ${data.total ?? '?'}건 중 0건 처리됨`);
+                    return;
+                }
                 if (this.currentFolder === node.path || this.currentFolder.startsWith(node.path + '/')) {
                     this.currentFolder = '';
                 }
                 await this.fetchList();
-                this.notify('폴더가 삭제되었습니다');
+                if (data && data.partial) {
+                    this.notify('폴더 삭제됨 (일부 색인 아티팩트 정리는 지연될 수 있음)', 'success');
+                } else {
+                    this.notify('폴더가 삭제되었습니다');
+                }
                 this.deleteFolderDialog = false;
             } catch (e) {
                 this.notify('폴더 삭제 실패', 'error', e?.response?.data?.detail || e?.message);

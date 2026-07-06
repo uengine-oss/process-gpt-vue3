@@ -57,6 +57,7 @@
             v-model="knowledgePickerOpen"
             :initiallySelectedIds="selectedKnowledgeIds"
             :initiallySelectedDocs="selectedKnowledgeDocs"
+            :initiallySelectedFolders="selectedKnowledgeFolders"
             @confirm="handleKnowledgeConfirm"
         />
     </div>
@@ -124,6 +125,11 @@ export default {
         knowledgeDocs: {
             type: Array,
             default: () => []
+        },
+        // 폴더째 선택한 경로들 (deepagents 폴더 스코프 탐색용)
+        knowledgeFolders: {
+            type: Array,
+            default: () => []
         }
     },
     emits: [
@@ -131,7 +137,8 @@ export default {
         'recording-mode-change',
         'stopMessage',
         'desktop-voice-toggle',
-        'update:knowledgeDocs'
+        'update:knowledgeDocs',
+        'update:knowledgeFolders'
     ],
     computed: {
         containerVariantClass() {
@@ -142,22 +149,30 @@ export default {
         },
         selectedKnowledgeIds() {
             return this.selectedKnowledgeDocs.map((d) => d.id);
+        },
+        selectedKnowledgeFolders() {
+            return this.knowledgeFolders && this.knowledgeFolders.length > 0
+                ? this.knowledgeFolders
+                : this.internalKnowledgeFolders;
         }
     },
     data() {
         return {
             isDragOver: false,
             knowledgePickerOpen: false,
-            internalKnowledgeDocs: []
+            internalKnowledgeDocs: [],
+            internalKnowledgeFolders: []
         };
     },
     methods: {
         openKnowledgePicker() {
             this.knowledgePickerOpen = true;
         },
-        handleKnowledgeConfirm(docs) {
+        handleKnowledgeConfirm(docs, folders) {
             this.internalKnowledgeDocs = docs;
+            this.internalKnowledgeFolders = Array.isArray(folders) ? folders : [];
             this.$emit('update:knowledgeDocs', docs);
+            this.$emit('update:knowledgeFolders', this.internalKnowledgeFolders);
         },
         handleWrapperDrop(e) {
             this.isDragOver = false;
@@ -196,8 +211,21 @@ export default {
                 mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],
                 // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)
                 reply: message.reply || null,
+                // ⚠️ 지식 베이스 선택 필드 배선 가이드 — 새 필드(예: knowledgeFolders) 추가 시 *모든* hop 갱신:
+                //   1) KnowledgeSpacePicker.vue    : 선택 추적 + confirm() 에서 emit
+                //   2) UnifiedChatInput.vue        : prop + emit('update:X') + internal + computed
+                //                                    + handleKnowledgeConfirm + 여기(payload) + 피커 :initiallyX
+                //   3) MainChatInput.vue           : :X + @update:X + data
+                //   4) ProcessDefinitionMap.vue    : handleMainChatSubmit 의 chatKickoff 페이로드  ← 자주 누락!
+                //   5) ChatRoomPage.vue            : data + 템플릿 바인딩 + onXUpdate + kickoff 복원(~2431)
+                //                                    + restoreSideInfoFromRoomContext + persistSelectedKnowledge
+                //                                    + 전송 metadata(commonParams.metadata ~6187 → snake_case 키)
+                //   6) deepagents runtime.build_context : metadata.knowledge_folders 소비
+                // 피커는 공유지만 *배선은 진입점마다 중복*이라 하나 빼먹으면 그 진입점만 조용히 누락됨.
                 // 지식 베이스에서 선택된 문서 (RAG 컨텍스트로 사용)
-                knowledgeDocs: this.selectedKnowledgeDocs
+                knowledgeDocs: this.selectedKnowledgeDocs,
+                // 폴더째 선택한 경로들 (deepagents 폴더 스코프 탐색)
+                knowledgeFolders: this.selectedKnowledgeFolders
             });
         }
     }
