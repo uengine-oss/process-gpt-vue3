@@ -67,7 +67,7 @@ Example parent-to-child form mapping:
 
 ## UI Behavior
 
-1. Load parent reference forms from previous parent process form tasks.
+1. Load parent reference forms from all parent process form tasks, not only tasks before the CallActivity.
 2. When `definitionId` is set, load child reference forms from the child process definition.
 3. Find form activities whose `tool` starts with `formHandler:`.
 4. Resolve each form from:
@@ -86,6 +86,7 @@ Mapper dialog requirements:
 - The left and right mapper trees show the same top-level roots so users can compare equivalent context on both sides.
 - Root order is `Variables`, `lane`, `instance`, `activities`, then selected form roots.
 - `parentForm` and `childForm` appear at the bottom of the mapper tree.
+- Parent reference form candidates include every form task in the parent process except the CallActivity activity itself. This is required because child-to-parent mapping may target a parent form that appears after the CallActivity.
 - Selected `parentForm` and `childForm` nodes are expanded by default.
 - Visible form names should show the human-readable form title only. Internal ids inside parentheses must not be shown in the mapper labels.
 - The mapper line renderer must connect the real saved path, not a fallback row. For form paths this means `parentForm.formId.fieldKey` and `childForm.formId.fieldKey` must resolve to concrete ports on both sides.
