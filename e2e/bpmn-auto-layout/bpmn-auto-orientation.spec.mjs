@@ -4,6 +4,7 @@ import { join } from 'path';
 
 const SCREENSHOT_DIR = 'e2e/bpmn-auto-layout/e2e-results/bpmn-auto-layout/screenshots';
 const E2E_ROUTE = '/bpmn-auto-layout-e2e?viewMode=true';
+const AUTO_ORIENTATION_MODE_KEY = 'bpmn-auto-orientation-mode';
 
 function shotPath(name) {
   return join(SCREENSHOT_DIR, `process-gpt-bpmn-auto-orientation-${name}.png`);
@@ -13,6 +14,32 @@ async function openE2EPage(page) {
   await page.goto(E2E_ROUTE);
   await page.waitForSelector('.djs-container, [class*="djs-"]', { timeout: 15000 });
   await page.waitForSelector('.djs-element, .djs-shape', { timeout: 15000 });
+}
+
+async function setAutoOrientationMode(page, mode) {
+  await page.addInitScript(
+    ([key, value]) => window.localStorage.setItem(key, value),
+    [AUTO_ORIENTATION_MODE_KEY, mode]
+  );
+}
+
+async function installAutoLayoutCounter(page) {
+  await page.evaluate(() => {
+    const autoLayout = window.BpmnAutoLayout;
+    if (!autoLayout || typeof autoLayout.applyAutoLayout !== 'function' || autoLayout.__playwrightCounted) return;
+
+    const originalApplyAutoLayout = autoLayout.applyAutoLayout.bind(autoLayout);
+    window.__bpmnAutoLayoutApplyCount = 0;
+    autoLayout.applyAutoLayout = (...args) => {
+      window.__bpmnAutoLayoutApplyCount += 1;
+      return originalApplyAutoLayout(...args);
+    };
+    autoLayout.__playwrightCounted = true;
+  });
+}
+
+async function getAutoLayoutApplyCount(page) {
+  return page.evaluate(() => window.__bpmnAutoLayoutApplyCount || 0);
 }
 
 async function openCaseDialog(page) {
@@ -134,6 +161,7 @@ test.describe('process-gpt bpmn auto orientation on viewport ratio change', () =
   });
 
   test('auto rotates by viewport ratio and relayouts after rotation', async ({ page }) => {
+    await setAutoOrientationMode(page, 'rotate-auto-layout');
     await page.setViewportSize({ width: 1366, height: 768 });
     await openE2EPage(page);
     await loadCaseByIndex(page, 3);
@@ -177,7 +205,40 @@ test.describe('process-gpt bpmn auto orientation on viewport ratio change', () =
     ).toEqual([]);
   });
 
+  test('default auto orientation rotates only without post auto layout', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await openE2EPage(page);
+    await loadCaseByIndex(page, 3);
+    await installAutoLayoutCounter(page);
+
+    await page.setViewportSize({ width: 768, height: 1366 });
+    await page.waitForTimeout(2500);
+    await screenshotCanvas(page, '08-default-rotate-only-portrait');
+    const portrait = await getParticipantOrientation(page);
+    const autoLayoutCount = await getAutoLayoutApplyCount(page);
+
+    expect(portrait.isHorizontal).toBe(false);
+    expect(autoLayoutCount).toBe(0);
+  });
+
+  test('none auto orientation mode keeps current orientation on viewport ratio change', async ({ page }) => {
+    await setAutoOrientationMode(page, 'none');
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await openE2EPage(page);
+    await loadCaseByIndex(page, 3);
+    const landscape = await getParticipantOrientation(page);
+
+    await page.setViewportSize({ width: 768, height: 1366 });
+    await page.waitForTimeout(2500);
+    await screenshotCanvas(page, '09-none-keeps-landscape');
+    const afterResize = await getParticipantOrientation(page);
+
+    expect(landscape.isHorizontal).toBe(true);
+    expect(afterResize.isHorizontal).toBe(true);
+  });
+
   test('view mode normalizes attached contract review bounds before auto rotation', async ({ page }) => {
+    await setAutoOrientationMode(page, 'rotate-auto-layout');
     await page.setViewportSize({ width: 1366, height: 768 });
     await openE2EPage(page);
     await loadCaseByIndex(page, 10);
@@ -205,6 +266,7 @@ test.describe('process-gpt bpmn auto orientation on viewport ratio change', () =
   });
 
   test('auto rotation fits a complex process into the visible viewport', async ({ page }) => {
+    await setAutoOrientationMode(page, 'rotate-auto-layout');
     await page.setViewportSize({ width: 1440, height: 760 });
     await openE2EPage(page);
     await loadCaseByIndex(page, 4);

@@ -102,6 +102,7 @@ import minimapModule from 'diagram-js-minimap';
 import { uengineJsonElementToAttr, uengineJsonAttrToElement, normalizeUengineBpmnXmlForBackend, isUengineMode } from '@/utils/uengineXmlTransform';
 import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
+import { BPMN_AUTO_ORIENTATION_MODES, getAutoOrientationRotateOptions, getBpmnAutoOrientationMode } from '@/utils/bpmnAutoOrientationMode';
 
 const backend = BackendFactory.createBackend();
 
@@ -1254,11 +1255,14 @@ export default {
         },
         initDefaultOrientation(orientation = null) {
             if (!this.isViewMode) return false;
+            const autoOrientationMode = getBpmnAutoOrientationMode();
+            if (autoOrientationMode === BPMN_AUTO_ORIENTATION_MODES.NONE) return false;
 
             let self = this;
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
+            const rotateOptions = getAutoOrientationRotateOptions(autoOrientationMode);
             let isHorizontal = false;
             if (self.isMobile) {
                 isHorizontal = false;
@@ -1279,11 +1283,11 @@ export default {
             participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
                 if (isHorizontal && !horizontal) {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
+                    palleteProvider.changeParticipantVerticalToHorizontal(undefined, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
                     self.isHorizontal = true;
                     element.di.isHorizontal = true;
                 } else if (!isHorizontal && horizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
+                    palleteProvider.changeParticipantHorizontalToVertical(undefined, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
                     self.isHorizontal = false;
                     element.di.isHorizontal = false;
                 }
@@ -2432,10 +2436,10 @@ export default {
 
             let isHorizontal = false;
             if (width - 100 > height) {
-                this.initDefaultOrientation('horizontal');
+                if (!this.initDefaultOrientation('horizontal')) return;
                 isHorizontal = true;
             } else {
-                this.initDefaultOrientation('vertical');
+                if (!this.initDefaultOrientation('vertical')) return;
                 isHorizontal = false;
             }
             this.EventBus.emit('orientation-changed', {

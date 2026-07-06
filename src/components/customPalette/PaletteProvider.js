@@ -469,6 +469,15 @@ function collectBounds(elements) {
   return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
 }
 
+function getSequenceFlowEndpoint(flow, endpoint) {
+  const businessObject = flow && flow.businessObject;
+  const ref = endpoint === 'source'
+    ? businessObject?.sourceRef || flow.source
+    : businessObject?.targetRef || flow.target;
+
+  return ref && ref.id ? ref.id : null;
+}
+
 function isBoundsOverlapping(bounds, containerBounds) {
   if (!bounds || !containerBounds) return false;
 
@@ -521,6 +530,43 @@ function syncParticipantLaneOrientation(elementRegistry, participant, isHorizont
   );
 
   lanes.forEach(lane => setDiagramHorizontal(lane, isHorizontal));
+}
+
+function collectParticipantRotationElements(elementRegistry, participant, lanes, participantBounds, isHorizontal) {
+  if (!elementRegistry || !participant || !participantBounds) {
+    return { shapes: [], sequenceFlows: [] };
+  }
+
+  const laneBoundsList = (lanes || []).map(getElementBounds).filter(Boolean);
+  const isInsideRotatingArea = element => {
+    const bounds = getElementBounds(element);
+    return isElementDescendantOf(element, participant) ||
+      isBoundsInLane(bounds, participantBounds, isHorizontal) ||
+      laneBoundsList.some(laneBounds => isBoundsInLane(bounds, laneBounds, isHorizontal)) ||
+      isBoundsOverlapping(bounds, participantBounds);
+  };
+
+  const shapes = elementRegistry.getAll().filter(element =>
+    isRealDiagramShape(element) &&
+    element.type !== 'bpmn:BoundaryEvent' &&
+    isInsideRotatingArea(element)
+  );
+  const shapeIds = new Set(shapes.map(element => element.id));
+
+  const sequenceFlows = elementRegistry.filter(element => {
+    if (!element || element.type !== 'bpmn:SequenceFlow') return false;
+    const sourceId = getSequenceFlowEndpoint(element, 'source');
+    const targetId = getSequenceFlowEndpoint(element, 'target');
+    const source = sourceId ? elementRegistry.get(sourceId) : null;
+    const target = targetId ? elementRegistry.get(targetId) : null;
+    return (
+      (sourceId && shapeIds.has(sourceId)) ||
+      (targetId && shapeIds.has(targetId)) ||
+      (source && isInsideRotatingArea(source) && target && isInsideRotatingArea(target))
+    );
+  });
+
+  return { shapes, sequenceFlows };
 }
 
 PaletteProvider.prototype.syncAllLaneOrientationForView = function (isHorizontal) {
@@ -672,6 +718,15 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
             width: oldMaxX - oldMinX,
             height: oldMaxY - oldMinY
         };
+        const elementRegistry = this._injector && this._injector.get('elementRegistry');
+        const rotationElements = collectParticipantRotationElements(elementRegistry, element, lanes, oldParticipantBounds, true);
+        const childElementIds = new Set(childElements.map((child) => child.id));
+        [...rotationElements.shapes, ...rotationElements.sequenceFlows].forEach((child) => {
+            if (child && !childElementIds.has(child.id)) {
+                childElements.push(child);
+                childElementIds.add(child.id);
+            }
+        });
 
         // 💡 lane 회전 전 bounds 저장 → 회전 후 bounds 계산에 사용
         const laneNewBoundsMap = new Map();
@@ -782,8 +837,9 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
         childElements.forEach((child) => {
             if (child.type !== 'bpmn:Lane' && child.type !== 'bpmn:LaneSet' && child.type !== 'bpmn:Participant') {
                 if (child.type !== 'bpmn:SequenceFlow' && child.type !== 'bpmn:BoundaryEvent') {
-                    const originalCenterX = child.di.bounds.x + child.di.bounds.width / 2;
-                    const originalCenterY = child.di.bounds.y + child.di.bounds.height / 2;
+                    const oldChildBounds = { ...child.di.bounds };
+                    const originalCenterX = oldChildBounds.x + oldChildBounds.width / 2;
+                    const originalCenterY = oldChildBounds.y + oldChildBounds.height / 2;
 
                     const relativeX = originalCenterX - oldParticipantBounds.x;
                     const relativeY = originalCenterY - oldParticipantBounds.y;
@@ -793,10 +849,10 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
                     const rotated = this._rotateRelativePosition(relativeX, relativeY, scaleX, scaleY);
 
                     const newChildBounds = {
-                        x: newParticipantBounds.x + rotated.x - child.di.bounds.width / 2,
-                        y: newParticipantBounds.y + rotated.y - child.di.bounds.height / 2,
-                        width: child.di.bounds.width,
-                        height: child.di.bounds.height
+                        x: newParticipantBounds.x + rotated.x - oldChildBounds.width / 2,
+                        y: newParticipantBounds.y + rotated.y - oldChildBounds.height / 2,
+                        width: oldChildBounds.width,
+                        height: oldChildBounds.height
                     };
 
                     modeling.resizeShape(child, newChildBounds);
@@ -805,7 +861,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
                         child.attachers.forEach((attacher) => {
                             const newBounds = this.rotateAndSnapAttacher(
                                 attacher,
-                                child.di.bounds,
+                                oldChildBounds,
                                 newChildBounds,
                                 ATTACHER_ROTATION.horizontalToVertical
                             );
@@ -823,8 +879,9 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
         });
 
         this.adjustParticipantBoundsByLanes(element, lanes, false);
-        const elementRegistry = this._injector && this._injector.get('elementRegistry');
-        compactLanesAfterRotation(modeling, elementRegistry, element, lanes, false);
+        if (!options.skipAutoLayout) {
+            compactLanesAfterRotation(modeling, elementRegistry, element, lanes, false);
+        }
         syncParticipantLaneOrientation(elementRegistry, element, false);
 
         // 💡 SequenceFlow 최종 waypoint 반영
@@ -890,6 +947,15 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (even
             width: oldMaxX - oldMinX,
             height: oldMaxY - oldMinY
         };
+        const elementRegistry = this._injector && this._injector.get('elementRegistry');
+        const rotationElements = collectParticipantRotationElements(elementRegistry, element, lanes, oldParticipantBounds, false);
+        const childElementIds = new Set(childElements.map((child) => child.id));
+        [...rotationElements.shapes, ...rotationElements.sequenceFlows].forEach((child) => {
+            if (child && !childElementIds.has(child.id)) {
+                childElements.push(child);
+                childElementIds.add(child.id);
+            }
+        });
 
         // 💡 lane 회전 전 bounds 저장 → 회전 후 bounds 계산에 사용
         const laneNewBoundsMap = new Map();
@@ -1001,8 +1067,9 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (even
         childElements.forEach((child) => {
             if (child.type !== 'bpmn:Lane' && child.type !== 'bpmn:LaneSet' && child.type !== 'bpmn:Participant') {
                 if (child.type !== 'bpmn:SequenceFlow' && child.type !== 'bpmn:BoundaryEvent') {
-                    const originalCenterX = child.di.bounds.x + child.di.bounds.width / 2;
-                    const originalCenterY = child.di.bounds.y + child.di.bounds.height / 2;
+                    const oldChildBounds = { ...child.di.bounds };
+                    const originalCenterX = oldChildBounds.x + oldChildBounds.width / 2;
+                    const originalCenterY = oldChildBounds.y + oldChildBounds.height / 2;
 
                     const relativeX = originalCenterX - oldParticipantBounds.x;
                     const relativeY = originalCenterY - oldParticipantBounds.y;
@@ -1012,10 +1079,10 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (even
                     const rotated = this._rotateRelativePosition(relativeX, relativeY, scaleX, scaleY);
 
                     const newChildBounds = {
-                        x: newParticipantBounds.x + rotated.x - child.di.bounds.width / 2,
-                        y: newParticipantBounds.y + rotated.y - child.di.bounds.height / 2,
-                        width: child.di.bounds.width,
-                        height: child.di.bounds.height
+                        x: newParticipantBounds.x + rotated.x - oldChildBounds.width / 2,
+                        y: newParticipantBounds.y + rotated.y - oldChildBounds.height / 2,
+                        width: oldChildBounds.width,
+                        height: oldChildBounds.height
                     };
 
                     modeling.resizeShape(child, newChildBounds);
@@ -1024,7 +1091,7 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (even
                         child.attachers.forEach((attacher) => {
                             const newBounds = this.rotateAndSnapAttacher(
                                 attacher,
-                                child.di.bounds,
+                                oldChildBounds,
                                 newChildBounds,
                                 ATTACHER_ROTATION.verticalToHorizontal
                             );
@@ -1038,8 +1105,9 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (even
         });
 
         this.adjustParticipantBoundsByLanes(element, lanes, true);
-        const elementRegistry = this._injector && this._injector.get('elementRegistry');
-        compactLanesAfterRotation(modeling, elementRegistry, element, lanes, true);
+        if (!options.skipAutoLayout) {
+            compactLanesAfterRotation(modeling, elementRegistry, element, lanes, true);
+        }
         syncParticipantLaneOrientation(elementRegistry, element, true);
 
         // 💡 SequenceFlow 최종 waypoint 반영

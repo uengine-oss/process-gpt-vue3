@@ -149,6 +149,7 @@ import customBpmnModule from './customBpmn';
 import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequence-flow-final-module';
 import paletteProvider from './customPalette/PaletteProvider';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
+import { BPMN_AUTO_ORIENTATION_MODES, getAutoOrientationRotateOptions, getBpmnAutoOrientationMode } from '@/utils/bpmnAutoOrientationMode';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
@@ -1317,10 +1318,14 @@ export default {
             }, 0);
         },
         initDefaultOrientation(orientation = null) {
+            const autoOrientationMode = getBpmnAutoOrientationMode();
+            if (autoOrientationMode === BPMN_AUTO_ORIENTATION_MODES.NONE) return false;
+
             let self = this;
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
+            const rotateOptions = getAutoOrientationRotateOptions(autoOrientationMode);
             let isHorizontal = false;
             if (self.isMobile) {
                 isHorizontal = false;
@@ -1339,11 +1344,11 @@ export default {
             participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
                 if (isHorizontal && !horizontal) {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
+                    palleteProvider.changeParticipantVerticalToHorizontal(undefined, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
                     self.isHorizontal = true;
                     element.di.isHorizontal = true;
                 } else if (!isHorizontal && horizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
+                    palleteProvider.changeParticipantHorizontalToVertical(undefined, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
                     self.isHorizontal = false;
                     element.di.isHorizontal = false;
                 }
