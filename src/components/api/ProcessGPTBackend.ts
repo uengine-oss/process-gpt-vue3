@@ -2888,12 +2888,39 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async watchWorkList(callback: (payload: any) => void, options?: any) {
+    async watchInstance(instanceId: string, callback: (instance: any, payload: any) => void) {
         try {
-            const filter = options?.instId ? `proc_inst_id=eq.${options.instId}` : undefined;
+            if (!instanceId) return null;
+
             return await storage._watch(
                 {
-                    channel: 'workitem',
+                    channel: `instance-${instanceId}-${Date.now()}`,
+                    table: 'bpm_proc_inst',
+                    filter: `proc_inst_id=eq.${instanceId}`
+                },
+                (payload) => {
+                    const row = payload.new || payload.old;
+                    callback(row ? this.returnInstanceObject(row) : null, payload);
+                }
+            );
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async watchWorkList(callback: (payload: any) => void, options?: any) {
+        try {
+            let filter = options?.filter;
+            if (!filter && options?.rootInstId) {
+                filter = `root_proc_inst_id=eq.${options.rootInstId}`;
+            }
+            if (!filter && options?.instId) {
+                filter = `proc_inst_id=eq.${options.instId}`;
+            }
+            return await storage._watch(
+                {
+                    channel: options?.channel || `workitem-${Date.now()}-${Math.random().toString(36).slice(2)}`,
                     table: 'todolist',
                     ...(filter ? { filter } : {})
                 },

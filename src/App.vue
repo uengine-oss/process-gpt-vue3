@@ -367,8 +367,11 @@ export default {
                 };
                 options = Object.assign(options, options_);
             }
+            const useGlobalLoading = !options?.noLoading;
             try {
-                window.$app_.loading = true;
+                if (useGlobalLoading) {
+                    window.$app_.loading = true;
+                }
                 await options.action(options.parameters);
                 if (options.successMsg) {
                     // console.log(options.successMsg)
@@ -416,7 +419,9 @@ export default {
                 }
                 console.log(e);
             } finally {
-                window.$app_.loading = false;
+                if (useGlobalLoading) {
+                    window.$app_.loading = false;
+                }
             }
         }
     },
