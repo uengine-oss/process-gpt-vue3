@@ -199,7 +199,7 @@ spring:
                   predicates:
                       - Path=/api/analytics/**
                   filters:
-                      - RewritePath=/api/analytics/?(?<segment>.*), /api/$\{segment}
+                      - RewritePath=/api/analytics/?(?<segment>.*), /api/analytics/$\{segment}
                   order: 44
 
                 # Agent Router 서비스 (agent pod warmup/proxy, SSE 지원)
