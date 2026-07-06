@@ -464,13 +464,31 @@
                             <div
                                 v-for="(tool, idx) in getToolUsageList(item.payload.jobId)"
                                 :key="`${item.payload.jobId}-${tool.tool_name}-${idx}`"
-                                class="tool-usage-status-item"
                             >
-                                <div class="tool-status-indicator">
-                                    <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
-                                    <div v-else class="check-mark">✓</div>
+                                <div class="tool-usage-status-item">
+                                    <div class="tool-status-indicator">
+                                        <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
+                                        <div v-else class="check-mark">✓</div>
+                                    </div>
+                                    <span class="tool-usage-status-text">{{ getToolStatusText(tool) }}</span>
+                                    <button
+                                        v-if="tool.status === 'done' && tool.info"
+                                        class="tool-result-toggle-btn"
+                                        @click="toggleToolUsageExpansion(item.payload.jobId, idx)"
+                                    >
+                                        {{
+                                            isToolUsageExpanded(item.payload.jobId, idx)
+                                                ? $t('agentMonitor.collapse')
+                                                : $t('EventTimeline.viewResult')
+                                        }}
+                                    </button>
                                 </div>
-                                <span>{{ getToolStatusText(tool) }}</span>
+                                <div
+                                    v-if="tool.status === 'done' && tool.info && isToolUsageExpanded(item.payload.jobId, idx)"
+                                    class="tool-usage-result"
+                                >
+                                    {{ tool.info }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -597,7 +615,8 @@ export default {
                 files: null
             },
             images: [],
-            processedBrowserUseTasks: new Set() // 이미 처리된 browser-use 작업 추적
+            processedBrowserUseTasks: new Set(), // 이미 처리된 browser-use 작업 추적
+            expandedToolUsage: {}
         };
     },
     computed: {
@@ -833,8 +852,15 @@ export default {
         getToolStatusText(tool) {
             const status =
                 tool.status === 'done' ? this.$t('EventTimeline.toolUsageComplete') : this.$t('EventTimeline.toolUsageInProgress');
-            const detail = tool.query || tool.info;
+            const detail = tool.query;
             return `${tool.tool_name} ${this.$t('EventTimeline.tool')} ${status}${detail ? ': ' + detail : ''}`;
+        },
+        toggleToolUsageExpansion(jobId, idx) {
+            const key = `${jobId}-${idx}`;
+            this.expandedToolUsage[key] = !this.expandedToolUsage[key];
+        },
+        isToolUsageExpanded(jobId, idx) {
+            return !!this.expandedToolUsage[`${jobId}-${idx}`];
         },
         getHumanResultText(payload) {
             const status = String(payload?.humanResponse?.status || '').toUpperCase();
@@ -1909,6 +1935,41 @@ export default {
     padding-left: 8px;
     letter-spacing: -0.2px;
     position: relative;
+}
+
+.tool-usage-status-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.tool-result-toggle-btn {
+    flex-shrink: 0;
+    margin-left: 8px;
+    padding: 2px 8px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #495057;
+    background-color: #f1f3f5;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.tool-result-toggle-btn:hover {
+    background-color: #e9ecef;
+}
+
+.tool-usage-result {
+    margin: 2px 0 8px 28px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #495057;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .tool-usage-status-item::before {

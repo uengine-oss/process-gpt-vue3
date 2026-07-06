@@ -2607,13 +2607,15 @@ export default {
                 const ctx = this.readChatRoomContext(this.currentChatRoom);
                 if (!ctx || typeof ctx !== 'object') return;
 
-                const enabled = ctx.enabled && typeof ctx.enabled === 'object' ? ctx.enabled : {};
-                const enabledSkills = enabled.skills === true || Array.isArray(ctx.skills);
-                const enabledTodos = enabled.todos === true || Array.isArray(ctx.todos);
-
                 const tools = Array.isArray(ctx.tools) ? ctx.tools : [];
                 const skills = Array.isArray(ctx.skills) ? ctx.skills : [];
                 const todos = Array.isArray(ctx.todos) ? ctx.todos : [];
+                const connectors = Array.isArray(ctx.connectors) ? ctx.connectors : [];
+
+                // enabled.* 플래그는 실사용 여부와 무관하게 세팅될 수 있으므로,
+                // 실제 항목이 존재할 때만 패널을 활성화한다.
+                const enabledSkills = skills.length > 0;
+                const enabledTodos = todos.length > 0;
 
                 // ctx.tools → 활동 패널 복원 (도구·서브에이전트 실행 내역)
                 if (tools.length > 0) {
@@ -2654,11 +2656,9 @@ export default {
                     this.upsertSkillsPanel();
                 }
 
-                const mcpTools = Array.isArray(ctx.mcpTools) ? ctx.mcpTools : [];
-                const connectorServers = [...new Set(mcpTools.flatMap((m) => Array.isArray(m?.servers) ? m.servers : []).filter(Boolean))];
-                if (connectorServers.length > 0) {
+                if (connectors.length > 0) {
                     this.planSideInfoEnabled.connectors = true;
-                    this.plannedConnectors = connectorServers;
+                    this.plannedConnectors = connectors;
                     this.upsertConnectorsPanel();
                 }
 

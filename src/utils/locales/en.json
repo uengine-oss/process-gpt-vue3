@@ -3330,6 +3330,7 @@
         "toolUsageComplete": "completed",
         "toolUsageInProgress": "in progress",
         "tool": "tool",
+        "viewResult": "View Result",
         "parsingDocument": "Parsing document...",
         "parsingFailed": "Parsing failed",
         "approved": "Approved",

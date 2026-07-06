@@ -431,7 +431,7 @@ export default {
                         for (let i = list.length - 1; i >= 0; i--) {
                             if (list[i].tool_name === data.tool_name && list[i].status === 'searching') {
                                 list[i].status = 'done';
-                                list[i].info = data.info || data.message || null;
+                                list[i].info = data.info || data.message || data.result || null;
                                 break;
                             }
                         }
