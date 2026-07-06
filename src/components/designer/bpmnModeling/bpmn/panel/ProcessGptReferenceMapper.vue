@@ -141,7 +141,8 @@ export default {
         availableForms() {
             this.rebuildFormFields();
         },
-        selectedForms() {
+        selectedForms(value, oldValue) {
+            this.ensureSelectedFormDefaults(value, oldValue);
             this.updateInputData();
         },
         formFields: {
@@ -258,6 +259,18 @@ export default {
                 this.formFields[formId].forEach((field) => {
                     field.selected = formId === this.currentActivityFormId || (this.inputData || []).includes(`${formId}.${field.fieldId}`);
                 });
+            });
+        },
+        ensureSelectedFormDefaults(selectedForms = [], oldSelectedForms = []) {
+            const previous = new Set(Array.isArray(oldSelectedForms) ? oldSelectedForms : []);
+            (Array.isArray(selectedForms) ? selectedForms : []).forEach((formId) => {
+                if (previous.has(formId) || formId === this.currentActivityFormId) return;
+                const fields = Array.isArray(this.formFields[formId]) ? this.formFields[formId] : [];
+                if (fields.length > 0 && !fields.some((field) => field.selected)) {
+                    fields.forEach((field) => {
+                        field.selected = true;
+                    });
+                }
             });
         },
         updateInputData() {

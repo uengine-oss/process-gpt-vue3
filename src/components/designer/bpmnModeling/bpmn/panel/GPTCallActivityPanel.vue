@@ -79,12 +79,29 @@
             </v-window-item>
 
             <v-window-item value="data" class="pa-4">
-                <v-alert v-if="!copyUengineProperties.definitionId" type="info" variant="tonal" density="compact" class="mb-4">
+                <ProcessGptCallActivityFormMapper
+                    :uengine-properties="copyUengineProperties"
+                    :definition-id="copyUengineProperties.definitionId"
+                    :definition="definition"
+                    :process-definition="processDefinition"
+                    :element="element"
+                    :name="name"
+                    :is-view-mode="isViewMode"
+                    :backend-override="backendOverride"
+                    :parent-definition-override="parentDefinitionOverride"
+                    :child-definition-override="childDefinitionOverride"
+                    @update:uengineProperties="onFormMappingUpdate"
+                />
+
+                <v-divider class="my-5" />
+
+                <div class="section-title mb-2">파라미터 컨텍스트</div>
+                <v-alert v-if="false && !copyUengineProperties.definitionId" type="info" variant="tonal" density="compact" class="mb-4">
                     먼저 호출할 프로세스를 선택하세요.
                 </v-alert>
                 <div class="d-flex justify-end mb-2">
                     <v-btn
-                        v-if="!isViewMode && copyUengineProperties.definitionId"
+                        v-if="false && !isViewMode && copyUengineProperties.definitionId"
                         variant="text"
                         size="small"
                         color="primary"
@@ -95,6 +112,7 @@
                     </v-btn>
                 </div>
                 <bpmn-parameter-contexts
+                    v-if="false"
                     :for-sub-process="true"
                     :definition-variables="definitionVariables"
                     :is-view-mode="isViewMode"
@@ -145,6 +163,7 @@ import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDis
 import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue';
 import BpmnRoleParameterContexts from '@/components/designer/bpmnModeling/bpmn/role/BpmnRoleParameterContexts.vue';
 import Mapper from '@/components/designer/mapper/Mapper.vue';
+import ProcessGptCallActivityFormMapper from '@/components/designer/bpmnModeling/bpmn/panel/ProcessGptCallActivityFormMapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 
 export default {
@@ -153,7 +172,8 @@ export default {
         ProcessDefinitionDisplay,
         BpmnParameterContexts,
         BpmnRoleParameterContexts,
-        Mapper
+        Mapper,
+        ProcessGptCallActivityFormMapper
     },
     props: {
         uengineProperties: Object,
@@ -162,7 +182,11 @@ export default {
         processVariables: Array,
         element: Object,
         definition: Object,
-        name: String
+        processDefinition: Object,
+        name: String,
+        backendOverride: Object,
+        parentDefinitionOverride: Object,
+        childDefinitionOverride: Object
     },
     data() {
         const props = this.uengineProperties ? JSON.parse(JSON.stringify(this.uengineProperties)) : {};
@@ -174,6 +198,9 @@ export default {
                 definitionId: props.definitionId || '',
                 variableBindings: props.variableBindings || [],
                 mapperIn: props.mapperIn || { mappingElements: [] },
+                mapperOut: props.mapperOut || { mappingElements: [] },
+                parentFormFields: props.parentFormFields || [],
+                childFormFields: props.childFormFields || [],
                 roleBindings: props.roleBindings || [],
                 inheritParentReferenceInfo: props.inheritParentReferenceInfo !== false
             },
@@ -196,7 +223,7 @@ export default {
         };
     },
     async mounted() {
-        this.backend = BackendFactory.createBackend();
+        this.backend = this.backendOverride || BackendFactory.createBackend();
         this.loadCallerRoles();
         if (this.copyUengineProperties.definitionId) {
             await this.setDefinitionInfo(this.copyUengineProperties.definitionId);
@@ -226,6 +253,13 @@ export default {
     methods: {
         emitUpdate() {
             this.$emit('update:uengineProperties', this.copyUengineProperties);
+        },
+        onFormMappingUpdate(properties) {
+            this.copyUengineProperties = {
+                ...this.copyUengineProperties,
+                ...(properties || {})
+            };
+            this.emitUpdate();
         },
         moveDefinition() {
             if (!this.copyUengineProperties.definitionId) return;

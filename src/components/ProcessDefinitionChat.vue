@@ -448,6 +448,7 @@ import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { hasSubstantialChanges } from '@/utils/xmlDiff';
 import { isLegacyProcessDefinition, convertLegacyProcessDefinitionToElements } from '@/utils/legacyProcessDefinition';
+import { syncBpmnCallActivitiesIntoDefinition } from '@/utils/bpmnCallActivityDefinitionSync';
 import { useBpmnExport } from '@/composables/useBpmnExport';
 const storage = StorageBaseFactory.getStorage();
 
@@ -1571,7 +1572,7 @@ export default {
                 if (!info.xml) return;
 
                 // processDefinition 변환
-                me.processDefinition = await me.convertXMLToJSON(info.xml);
+                me.processDefinition = syncBpmnCallActivitiesIntoDefinition(info.xml, await me.convertXMLToJSON(info.xml));
 
                 // 기존 putRawDefinition 메서드를 사용해서 안전하게 업데이트
                 await me.backend.putRawDefinition(info.xml, info.id, {
@@ -1724,7 +1725,7 @@ export default {
                                             me.projectName ||
                                             fullPath,
                                         // XML만 복구하고 definition 원문은 보존한다.
-                                        definition: originalDefinitionForPersist
+                                        definition: syncBpmnCallActivitiesIntoDefinition(bpmn, originalDefinitionForPersist)
                                     });
                                 } catch (persistError) {
                                     console.warn('[loadData] rebuilt BPMN persisted failed:', persistError);

@@ -580,6 +580,9 @@ export default {
                     }
                     if (path != '') {
                         this.addPortToBlockTemplates(currentPath, offset, blockName);
+                        if (nodeName.includes('.') && nodeName !== currentPath) {
+                            this.addPortToBlockTemplates(nodeName, offset, blockName);
+                        }
                     }
                     if (children.length > 0) {
                         calculateOffsets(children, currentPath, nodeName);
@@ -771,7 +774,9 @@ export default {
     color: #eee;
 }
 .form-mapper #formArea {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
     height: 80vh;
     background: #eee;
 }
@@ -919,9 +924,11 @@ export default {
     padding-left: 0 !important;
 } */
 .form-mapper .left-treeview {
+    flex: 0 0 250px;
     width: 250px;
 }
 .form-mapper .right-treeview {
+    flex: 0 0 250px;
     width: 250px;
 }
 </style>

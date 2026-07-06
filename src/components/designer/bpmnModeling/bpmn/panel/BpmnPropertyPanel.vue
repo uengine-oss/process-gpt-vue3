@@ -69,7 +69,15 @@
                 </template>
                 <span>{{ $t('taskCatalog.saveToCatalog') || 'Save to Catalog' }}</span>
             </v-tooltip>
-            <v-btn v-if="!isViewMode" @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
+            <v-btn
+                v-if="!isViewMode"
+                @click="save"
+                icon
+                variant="text"
+                density="comfortable"
+                class="panel-close-btn"
+                data-testid="bpmn-property-panel-save"
+            >
                 <v-icon>mdi-content-save</v-icon>
             </v-btn>
             <v-btn @click="closePanel" icon variant="text" density="comfortable" class="panel-close-btn">

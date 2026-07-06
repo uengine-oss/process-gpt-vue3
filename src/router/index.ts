@@ -48,6 +48,11 @@ export const router = createRouter({
             path: '/processgpt-mapper-ui-e2e',
             component: () => retryDynamicImport(() => import('@/views/e2e/ProcessGptMapperUiE2E.vue'))
         },
+        {
+            name: 'ProcessGPT CallActivity Form Mapping E2E',
+            path: '/processgpt-callactivity-form-mapping-e2e',
+            component: () => retryDynamicImport(() => import('@/views/e2e/ProcessGptCallActivityFormMappingE2E.vue'))
+        },
         MainRoutes,
         AuthRoutes,
         TenantRoutes,

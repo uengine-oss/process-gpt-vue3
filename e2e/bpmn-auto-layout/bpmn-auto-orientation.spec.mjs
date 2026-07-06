@@ -133,7 +133,7 @@ test.describe('process-gpt bpmn auto orientation on viewport ratio change', () =
     mkdirSync(SCREENSHOT_DIR, { recursive: true });
   });
 
-  test('auto rotates by viewport ratio without auto layout', async ({ page }) => {
+  test('auto rotates by viewport ratio and relayouts after rotation', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await openE2EPage(page);
     await loadCaseByIndex(page, 3);

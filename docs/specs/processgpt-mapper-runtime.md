@@ -261,11 +261,13 @@ Target:
 Purpose:
 
 - Map parent process form-data or instance-variable context into the child process initial context.
+- Make mapped child form data available to the child process AI decision/fill step.
 
 Target:
 
 - child instance `variables_data` when the mapper target is `callActivity.variables.*`.
-- child initial workitem form data when a future target explicitly addresses a child form field.
+- child initial workitem form data when the mapper target is `childForm.<formId>.<fieldKey>`.
+- child role binding when the mapper target is `callActivity.lane.<laneName>.endpoint`.
 
 Important:
 
@@ -274,8 +276,11 @@ Important:
 - In ProcessGPT authoring UI, the CallActivity panel must open the mapper from the data/parameter tab.
 - The mapper target tree for CallActivity must include `callActivity > variables > <called process variable name>`.
 - The mapper target tree for CallActivity must include `callActivity > lane > <called process lane name> > endpoint`.
+- The mapper tree for form mapping must include `parentForm` and `childForm` roots on both sides.
+- `parentForm` and `childForm` roots must be shown after `Variables`, `lane`, `instance`, and `activities`.
 - The `callActivity.variables.*` target names are authored in the frontend and consumed by backend CallActivity child creation.
 - The `callActivity.lane.*.endpoint` target names are authored in the frontend and consumed by backend CallActivity child role-binding creation.
+- `parentForm.<formId>.<fieldKey>` and `childForm.<formId>.<fieldKey>` names are authored in the frontend and consumed by backend CallActivity child creation.
 
 ## Mapping Runtime API
 
@@ -456,10 +461,21 @@ CallActivity panel:
 
 - `GPTCallActivityPanel` must show a data mapping button when a called process is selected.
 - The button opens `Mapper.vue`.
+- The mapper tree contains the same root set on the left and right so the saved source and target paths resolve to real ports on both sides.
+- Root order is `Variables`, `lane`, `instance`, `activities`, then selected form roots.
+- Selected form roots appear as `parentForm` and `childForm` at the bottom of the tree.
+- Visible form labels use human-readable form names. Internal ids are persisted in paths but are not shown in parentheses in the mapper labels.
 - The source tree is the parent process context: forms, variables, lane, instance, and activities.
 - The target tree includes the called process variables under `callActivity > variables`.
 - The target tree includes the called process lanes under `callActivity > lane > <lane name> > endpoint`.
-- Saving the mapper persists JSON into `uengineProperties.mapperIn`.
+- Saving parent-to-child form mapping persists JSON into `uengineProperties.mapperIn` with `parentForm.<formId>.<fieldKey>` source paths and `childForm.<formId>.<fieldKey>` target paths.
+- Saving child-to-parent form mapping persists JSON into `uengineProperties.mapperOut` with the same prefixed path rule.
+
+Form-selection storage:
+
+- `parentFormFields` and `childFormFields` store selected form fields as `formId.fieldKey`.
+- `mapperIn` and `mapperOut` store executable mapper paths as `parentForm.formId.fieldKey` or `childForm.formId.fieldKey`.
+- The unprefixed selection arrays are UI state; the prefixed mapper paths are the runtime contract.
 
 Role mapping tab:
 
@@ -501,6 +517,33 @@ Example persisted mapper:
         "direction": "out",
         "variable": {
           "name": "callActivity.variables.supplierName"
+        },
+        "isKey": false
+      }
+    ]
+  }
+}
+```
+
+Example persisted form mapper:
+
+```json
+{
+  "parentFormFields": [
+    "vendor_onboarding_task_submit_vendor_need_form.supplierName"
+  ],
+  "childFormFields": [
+    "vendor_security_task_assess_security_risk_form.assessmentSummary"
+  ],
+  "mapperIn": {
+    "mappingElements": [
+      {
+        "argument": {
+          "text": "childForm.vendor_security_task_assess_security_risk_form.assessmentSummary"
+        },
+        "direction": "out",
+        "variable": {
+          "name": "parentForm.vendor_onboarding_task_submit_vendor_need_form.supplierName"
         },
         "isKey": false
       }
@@ -758,9 +801,38 @@ Evaluate parent-to-child mapping before child first workitem creation.
 
 Output:
 
-- child initial form data or child execution context.
+- child initial form data in the child first workitem `output[formId][fieldKey]`.
+- child execution context such as `variables_data` or `role_bindings`.
+- mapper trace data in reserved output fields such as `__mapped` and `__mappedTrace`.
 - parent CallActivity waiting workitem status is `PENDING` while the child is active.
 - the already completed parent activity immediately before the CallActivity must remain `DONE`; it must not be rewritten to `PENDING` just because the CallActivity is waiting.
+
+AI prompt input rule:
+
+- If the child first workitem has `ui_definition.id`, and its `output` contains a matching form id, runtime processing unwraps `output[ui_definition.id]`.
+- The unwrapped mapped child form values become the AI prompt input under `chain_input_completed["output"]`.
+- The same mapped values are available to the next-step prompt context, so the AI decision/fill stage can use data that came from the parent CallActivity mapping.
+
+Example child first workitem output after `mapperIn`:
+
+```json
+{
+  "vendor_security_task_assess_security_risk_form": {
+    "assessmentSummary": "ACME Partners",
+    "criticalFinding": "5000000"
+  },
+  "__mapped": {
+    "childForm.vendor_security_task_assess_security_risk_form.assessmentSummary": "ACME Partners"
+  },
+  "__mappedTrace": [
+    {
+      "source": "parentForm.vendor_onboarding_task_submit_vendor_need_form.supplierName",
+      "target": "childForm.vendor_security_task_assess_security_risk_form.assessmentSummary",
+      "status": "mapped"
+    }
+  ]
+}
+```
 
 ### CallActivity Parent Resume
 
@@ -907,6 +979,10 @@ Verify:
 17. CallActivity child creation applies `callActivity.lane.*.endpoint` into the child instance `role_bindings` before the child first workitem is created.
 18. CallActivity role mapping supports `>`, `<`, and `<>` direction UI.
 19. CallActivity completion applies child-to-parent role propagation for `OUT` and `IN-OUT` role mappings before creating parent follow-up workitems.
+20. CallActivity form mapper UI persists executable form paths with `parentForm.<formId>.<fieldKey>` and `childForm.<formId>.<fieldKey>` prefixes.
+21. CallActivity child creation applies `mapperIn` `childForm.*` targets into the child first workitem `output[formId][fieldKey]`.
+22. Child workitem processing passes mapped child form values into AI prompt input by unwrapping `output[ui_definition.id]`.
+23. Mapper UI renders real connected lines for saved prefixed form paths on both sides.
 
 ## MVP Definition of Done
 
@@ -923,7 +999,7 @@ This MVP covers backend ProcessGPT completion runtime only. The frontend scope i
 9. Backend trace records mapped/skipped status, source, target, transformer, scope, and errors.
 10. Unsupported transformers produce structured runtime errors or trace entries according to backend policy; they must not be silently ignored.
 11. Explicit lane binding targets update internal instance role bindings and current completion assignees before next activity routing.
-12. Automated backend/integration tests cover object-map compatibility, legacy array compatibility, direct mapping, explicit form target mapping, supported transformer mapping, lane binding mapping, and polling/background completion.
+12. Automated backend/integration tests cover object-map compatibility, legacy array compatibility, direct mapping, explicit form target mapping, supported transformer mapping, lane binding mapping, CallActivity child initial form mapping, AI prompt input usage, and polling/background completion.
 
 ## Manual E2E Checkpoints
 
@@ -937,6 +1013,8 @@ Use a ProcessGPT definition where one activity has persisted mapper JSON in its 
 | Map to an explicit form target | Backend completion payload or created target workitem contains that form field. |
 | Map `approverEmail` to `lane.approver.endpoint` | Internal `bpm_proc_inst.role_bindings` contains `{ name: "approver", endpoint: approverEmail }` and the next approver task is assigned to that endpoint. |
 | Map `supplierName` to `callActivity.variables.supplierName` | Child process instance `variables_data.supplierName` is initialized before the called process first workitem is created. |
+| Map `parentForm.vendorForm.supplierName` to `childForm.securityForm.assessmentSummary` | Child first workitem output contains `{ "securityForm": { "assessmentSummary": "<supplierName>" } }`. |
+| Process the child first workitem after CallActivity mapping | AI prompt input receives the mapped child form data as `chain_input_completed["output"]`. |
 | Inspect backend trace/log/debug output | Trace shows source, target, transformer, scope, and `mapped` or `skipped/error` status. |
 | Use legacy array-shaped `variables_data` as source | Backend mapper can read the value and write the mapped target. |
 | Use unsupported transformer | Backend returns/records a structured unsupported-transformer result instead of silently succeeding. |
