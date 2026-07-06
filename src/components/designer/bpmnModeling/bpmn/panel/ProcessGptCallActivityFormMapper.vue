@@ -373,7 +373,10 @@ export default {
                     this.resolveParentDefinition(),
                     this.definitionId ? this.resolveChildDefinition() : Promise.resolve(null)
                 ]);
-                this.parentForms = await this.resolveForms(parentDefinition, this.element?.id);
+                this.parentForms = await this.resolveForms(parentDefinition, {
+                    excludeActivityId: this.element?.id,
+                    includeAllActivities: true
+                });
                 this.childForms = childDefinition ? await this.resolveForms(childDefinition) : [];
                 if (this.definitionId && this.childForms.length === 0) {
                     this.loadError = '자식 프로세스에서 폼 참조정보를 찾지 못했습니다.';
@@ -397,18 +400,14 @@ export default {
             const raw = await this.backend.getRawDefinition(normalizedId, null);
             return raw?.definition || raw || {};
         },
-        async resolveForms(definition, beforeActivityId = '') {
+        async resolveForms(definition, options = {}) {
             if (!definition) return [];
-            if (beforeActivityId && this.backend?.getPreviousForms) {
-                const previousForms = await this.backend.getPreviousForms(beforeActivityId, definition);
-                if (Array.isArray(previousForms) && previousForms.length > 0) {
-                    return previousForms
-                        .map((form) => this.normalizeForm(form))
-                        .filter((form) => form.formId);
-                }
-            }
+            const normalizedOptions = typeof options === 'string' ? { beforeActivityId: options } : (options || {});
+            const beforeActivityId = normalizedOptions.beforeActivityId || '';
+            const excludeActivityId = normalizedOptions.excludeActivityId || '';
+            const includeAllActivities = Boolean(normalizedOptions.includeAllActivities);
 
-            const activities = this.filterActivitiesBefore(definition, beforeActivityId);
+            const activities = this.filterActivities(definition, { beforeActivityId, excludeActivityId, includeAllActivities });
             const formDrafts = Array.isArray(definition?.formDrafts) ? definition.formDrafts : [];
             const forms = [];
             const seen = new Set();
@@ -423,24 +422,38 @@ export default {
             }
 
             formDrafts.forEach((draft) => {
+                const draftActivityId = draft?.activity_id || draft?.activityId || '';
+                if (excludeActivityId && draftActivityId === excludeActivityId) return;
                 const formId = draft?.id || draft?.formId || draft?.form_id || (draft?.activity_id || draft?.activityId ? `${draft.activity_id || draft.activityId}_form` : '');
                 if (!formId || seen.has(formId)) return;
                 seen.add(formId);
                 forms.push({
                     formId,
-                    activityId: draft.activity_id || draft.activityId || '',
+                    activityId: draftActivityId,
                     title: draft.name || draft.title || formId,
                     fields: this.normalizeFields(draft.fields_json || draft.fieldsJson || [])
                 });
             });
 
+            if (forms.length === 0 && beforeActivityId && this.backend?.getPreviousForms) {
+                const previousForms = await this.backend.getPreviousForms(beforeActivityId, definition);
+                if (Array.isArray(previousForms) && previousForms.length > 0) {
+                    return previousForms
+                        .map((form) => this.normalizeForm(form))
+                        .filter((form) => form.formId);
+                }
+            }
+
             return forms;
         },
-        filterActivitiesBefore(definition, beforeActivityId) {
+        filterActivities(definition, { beforeActivityId = '', excludeActivityId = '', includeAllActivities = false } = {}) {
             const activities = Array.isArray(definition?.activities) ? definition.activities : [];
-            if (!beforeActivityId) return activities;
+            const filtered = excludeActivityId
+                ? activities.filter((activity) => activity?.id !== excludeActivityId)
+                : activities;
+            if (includeAllActivities || !beforeActivityId) return filtered;
             const index = activities.findIndex((activity) => activity?.id === beforeActivityId);
-            return index > 0 ? activities.slice(0, index) : activities;
+            return index > 0 ? filtered.slice(0, index) : filtered;
         },
         getActivityFormId(activity) {
             const directFormId = activity?.formId || activity?.form_id || activity?.form?.id || activity?.form?.formId || activity?.form?.form_id;

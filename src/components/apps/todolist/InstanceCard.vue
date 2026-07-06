@@ -306,7 +306,8 @@ export default {
         updatedKey: 0,
         deleteDialog: false,
         participantUsers: [],
-        parentRedirectTimer: null
+        parentRedirectTimer: null,
+        callActivityIds: new Set()
     }),
     watch: {
         $route: {
@@ -544,6 +545,7 @@ export default {
                         me.scheduleParentRedirectCheck(me.instance);
 
                         me.eventList = await backend.getEventList(me.instance.instId);
+                        await me.loadCallActivityIds();
 
                         // 시작자와 시작일시 정보를 위해 첫 번째 workItem 가져오기
                         const workItems = await backend.getWorkList({ instId: me.id });
@@ -582,6 +584,32 @@ export default {
                 }
             });
         },
+        async loadCallActivityIds() {
+            this.callActivityIds = new Set();
+            const defId = this.instance?.defId;
+            if (!defId || !backend.getRawDefinition) return;
+
+            try {
+                const rawDefinition = await backend.getRawDefinition(defId, null);
+                const parsedDefinition = typeof rawDefinition === 'string' ? JSON.parse(rawDefinition) : rawDefinition;
+                const rawProcessDefinition = parsedDefinition?.definition || parsedDefinition?.processDefinition || parsedDefinition || {};
+                const definition = typeof rawProcessDefinition === 'string' ? JSON.parse(rawProcessDefinition) : rawProcessDefinition;
+                const activities = Array.isArray(definition.activities) ? definition.activities : [];
+                const callActivityIds = activities
+                    .filter((activity) => String(activity?.type || '').toLowerCase() === 'callactivity')
+                    .map((activity) => activity?.id)
+                    .filter(Boolean);
+                this.callActivityIds = new Set(callActivityIds);
+            } catch (error) {
+                console.warn('[InstanceCard] Failed to load CallActivity metadata for todo filtering.', error);
+            }
+        },
+        isCallActivityWorkItem(task) {
+            if (!task) return false;
+            const type = String(task.type || task.activityType || task.bpmnType || '').toLowerCase();
+            if (type === 'callactivity') return true;
+            return this.callActivityIds.has(task.tracingTag);
+        },
         async loadTasks() {
             var me = this;
             let result = [];
@@ -597,6 +625,7 @@ export default {
                 result = result.concat(updatedWorklist);
             }
             me.tasks = result;
+            const kanbanTasks = me.tasks.filter((task) => !me.isCallActivityWorkItem(task));
             const rawDependencies = await backend.getTaskDependencyByInstId(me.id);
             const dependencies = Array.isArray(rawDependencies) ? rawDependencies : [];
             if (!Array.isArray(rawDependencies) && rawDependencies != null) {
@@ -605,7 +634,7 @@ export default {
             me.dependencies = me.settingTaskDependency(dependencies, me.tasks);
             me.columns.forEach((column) => {
                 if (column.id == 'IN_PROGRESS') {
-                    column.tasks = me.tasks.filter(
+                    column.tasks = kanbanTasks.filter(
                         (task) =>
                             task.status === 'SUBMITTED' ||
                             task.status === 'IN_PROGRESS' ||
@@ -613,7 +642,7 @@ export default {
                             task.status === 'Running'
                     );
                 } else {
-                    column.tasks = me.tasks.filter((task) => task.status === column.id);
+                    column.tasks = kanbanTasks.filter((task) => task.status === column.id);
                 }
             });
         },

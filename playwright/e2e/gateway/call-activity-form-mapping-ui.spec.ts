@@ -16,6 +16,7 @@ test.describe('ProcessGPT CallActivity form mapping UI', () => {
         await expect(page.getByTestId('callactivity-parent-form-select')).toBeVisible({ timeout: 30_000 });
         await expect(page.getByTestId('callactivity-child-form-select')).toBeVisible({ timeout: 30_000 });
         await page.getByTestId('callactivity-parent-form-select').click();
+        await expect(page.locator('.v-overlay-container .v-list-item', { hasText: 'Post Review Summary' })).toBeVisible({ timeout: 30_000 });
         await page.locator('.v-overlay-container .v-list-item').first().click();
         await page.getByTestId('callactivity-child-form-select').click();
         await page.locator('.v-overlay-container .v-list-item').first().click();

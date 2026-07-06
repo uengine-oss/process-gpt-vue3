@@ -464,6 +464,7 @@ CallActivity panel:
 - The mapper tree contains the same root set on the left and right so the saved source and target paths resolve to real ports on both sides.
 - Root order is `Variables`, `lane`, `instance`, `activities`, then selected form roots.
 - Selected form roots appear as `parentForm` and `childForm` at the bottom of the tree.
+- Parent reference form candidates are collected from every parent process form task, not only activities before the CallActivity, because child-to-parent mapping can target parent forms that are created after the child returns.
 - Visible form labels use human-readable form names. Internal ids are persisted in paths but are not shown in parentheses in the mapper labels.
 - The source tree is the parent process context: forms, variables, lane, instance, and activities.
 - The target tree includes the called process variables under `callActivity > variables`.

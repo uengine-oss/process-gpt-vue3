@@ -121,6 +121,11 @@ export default {
                     id: 'CallActivity_Review',
                     name: '협력사 보안 심사 호출',
                     type: 'CallActivity'
+                },
+                {
+                    id: 'PostReviewSummary',
+                    name: 'Post Review Summary',
+                    tool: 'formHandler:postReviewSummaryForm'
                 }
             ],
             formDrafts: [
@@ -131,6 +136,14 @@ export default {
                         { key: 'vendorName', text: '협력사명', type: 'Text' },
                         { key: 'riskLevel', text: '위험 등급', type: 'Text' },
                         { key: 'requesterEmail', text: '요청자 이메일', type: 'Text' }
+                    ]
+                },
+                {
+                    id: 'postReviewSummaryForm',
+                    activity_id: 'PostReviewSummary',
+                    fields_json: [
+                        { key: 'approvalMemo', text: 'Approval Memo', type: 'Text' },
+                        { key: 'finalDecision', text: 'Final Decision', type: 'Text' }
                     ]
                 }
             ]
