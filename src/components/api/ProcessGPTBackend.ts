@@ -2713,7 +2713,7 @@ class ProcessGPTBackend implements Backend {
                 me.updateInstanceChat(workItem.proc_inst_id, newMessage);
             }
 
-            const formId = workItem.tool.replace('formHandler:', '');
+            const formId = inputData.formId || inputData.tool?.replace('formHandler:', '') || workItem.tool.replace('formHandler:', '');
             const formValues = {};
             if (formId && inputData.parameterValues) {
                 formValues[formId] = inputData.parameterValues;

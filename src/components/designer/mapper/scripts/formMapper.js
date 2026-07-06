@@ -493,7 +493,11 @@ export default {
         },
         filterTransformItems(blockTemplates) {
             var items = [];
+            var processGptHiddenTransformers = ['BeanValue', 'DirectSQL', 'SequenceGenerator', 'XMLParsing'];
             Object.keys(blockTemplates).forEach((key) => {
+                if (window.$mode === 'ProcessGPT' && processGptHiddenTransformers.includes(key)) {
+                    return;
+                }
                 if (blockTemplates[key].isTransform) {
                     var item = {
                         title: key,

@@ -17,6 +17,8 @@ const CASES = [
   { slug: 'uengine6-09-trouble-report-basic', index: 8, label: 'uEngine6 Trouble Report Basic' },
   { slug: 'uengine6-10-trouble-report-mapping', index: 9, label: 'uEngine6 Trouble Report Mapping' },
   { slug: 'uengine6-11-attached-contract-review', index: 10, label: 'uEngine6 Attached Contract Review' },
+  { slug: 'uengine6-12-vendor-onboarding-improvement', index: 11, label: 'uEngine6 협력사 온보딩 개선 프로세스' },
+  { slug: 'uengine6-13-vendor-security-review', index: 12, label: 'uEngine6 협력사 보안 심사 프로세스' },
 ];
 
 function shotPath(name) {

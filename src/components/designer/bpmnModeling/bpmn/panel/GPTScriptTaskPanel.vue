@@ -1,5 +1,11 @@
 <template>
     <div>
+        <v-tabs v-model="activeTab" class="pl-4 pr-4">
+            <v-tab value="setting">{{ $t('BpmnPropertyPanel.setting') }}</v-tab>
+            <v-tab value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
+        </v-tabs>
+        <v-window v-model="activeTab">
+            <v-window-item value="setting" class="pa-4">
         <div class="mb-6">
             <div class="mb-2">{{ $t('BpmnPropertyPanel.scriptType') + ' : ' + language }}</div>
             <h6 class="text-caption mb-2">※ {{ $t('BpmnPropertyPanel.scriptVariable') }}</h6>
@@ -88,6 +94,22 @@
                 </div>
             </div>
         </div>
+            </v-window-item>
+            <v-window-item value="inputData" class="pa-4">
+                <ProcessGptReferenceMapper
+                    v-if="activity"
+                    :inputData="activity.inputData"
+                    :mapperIn="copyUengineProperties.mapperIn"
+                    :processDefinition="processDefinition"
+                    :definition="copyDefinition"
+                    :element="element"
+                    :name="name"
+                    :isViewMode="isViewMode"
+                    @update:inputData="activity.inputData = $event"
+                    @update:mapperIn="copyUengineProperties.mapperIn = $event"
+                />
+            </v-window-item>
+        </v-window>
     </div>
 </template>
 <script>
@@ -95,6 +117,7 @@ import GenerateScriptPanel from './GenerateScriptPanel.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import { useBpmnStore } from '@/stores/bpmn';
+import ProcessGptReferenceMapper from './ProcessGptReferenceMapper.vue';
 
 export default {
     name: 'gpt-script-task-panel',
@@ -104,16 +127,19 @@ export default {
         processDefinition: Object,
         isViewMode: Boolean,
         definition: Object,
-        element: Object
+        element: Object,
+        name: String
     },
     components: {
         GenerateScriptPanel,
-        KeyValueField
+        KeyValueField,
+        ProcessGptReferenceMapper
     },
     data() {
         return {
             copyUengineProperties: JSON.parse(JSON.stringify(this.uengineProperties)),
             copyDefinition: this.definition,
+            activeTab: 'setting',
             language: 'python',
             activity: null,
             organizationChart: null,
@@ -135,6 +161,7 @@ export default {
     },
     created() {
         if (!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
+        if (!this.copyUengineProperties.mapperIn) this.copyUengineProperties.mapperIn = { mappingElements: [] };
     },
     watch: {
         activity: {
@@ -150,11 +177,13 @@ export default {
             const activity = this.processDefinition.activities.find((activity) => activity.id === this.element.id);
             if (activity) {
                 this.activity = activity;
+                if (!this.activity.inputData) this.activity.inputData = this.copyUengineProperties.inputData || [];
                 if (this.activity.pythonCode) {
                     this.copyUengineProperties.script = this.activity.pythonCode;
                 }
             } else {
                 console.log('Activity not found');
+                this.activity = { inputData: this.copyUengineProperties.inputData || [] };
             }
         }
         const backend = BackendFactory.createBackend();
@@ -163,6 +192,7 @@ export default {
     methods: {
         beforeSave() {
             this.activity.pythonCode = this.copyUengineProperties.script;
+            this.copyUengineProperties.inputData = this.activity.inputData || [];
             this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
         setTaskColor(color) {

@@ -9,10 +9,10 @@
             :disabled="localDisabled"
             item-title="username"
             :item-value="itemValue"
-            :return-object="returnObject"
+            :return-object="normalizedReturnObject"
             chips
             small-chips
-            :multiple="useMultiple"
+            :multiple="normalizedUseMultiple"
             :closable-chips="!localReadonly"
             :readonly="localReadonly"
             :variant="localReadonly ? 'filled' : 'outlined'"
@@ -50,6 +50,13 @@ import BackendFactory from '@/components/api/BackendFactory';
 
 import { useDefaultSetting } from '@/stores/defaultSetting';
 
+const coerceBooleanProp = (value, defaultValue) => {
+    if (value === undefined || value === null || value === '') return defaultValue;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') return value.toLowerCase() === 'true';
+    return Boolean(value);
+};
+
 export default {
     name: 'UserSelectField',
 
@@ -64,7 +71,7 @@ export default {
             default: 'compact'
         },
         // UI 관련 설정 props 끝
-        modelValue: Array,
+        modelValue: [Array, String, Object, Number],
         vueRenderUUID: String,
         tagName: String,
 
@@ -115,7 +122,7 @@ export default {
 
     data() {
         return {
-            localModelValue: this.useMultiple ? [] : null,
+            localModelValue: coerceBooleanProp(this.useMultiple, true) ? [] : null,
 
             localName: '',
             localAlias: '',
@@ -143,18 +150,18 @@ export default {
             handler() {
                 if (JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return;
                 if (this.isProcessGPT) {
-                    if (this.useMultiple) {
+                    if (this.normalizedUseMultiple) {
                         this.localModelValue = this.modelValue && this.modelValue.length > 0 ? this.modelValue : [];
                     } else {
                         this.localModelValue = this.modelValue || null;
                     }
                 } else {
                     if (!this.modelValue) {
-                        this.localModelValue = this.useMultiple ? [] : null;
+                        this.localModelValue = this.normalizedUseMultiple ? [] : null;
                     } else if (Object.keys(this.modelValue).includes('values')) {
                         this.localModelValue = this.modelValue.values;
                     } else {
-                        if (this.useMultiple) {
+                        if (this.normalizedUseMultiple) {
                             this.localModelValue = Array.isArray(this.modelValue) ? this.modelValue : [this.modelValue];
                         } else {
                             this.localModelValue = Array.isArray(this.modelValue) ? this.modelValue[0] : this.modelValue;
@@ -180,7 +187,7 @@ export default {
         }
     },
     created() {
-        this.localModelValue = this.modelValue ?? (this.useMultiple ? [] : null);
+        this.localModelValue = this.modelValue ?? (coerceBooleanProp(this.useMultiple, true) ? [] : null);
 
         this.localName = this.name ?? 'name';
         this.localAlias = this.alias ?? '';
@@ -191,7 +198,7 @@ export default {
         this.backend = BackendFactory.createBackend();
         this.userList = await this.backend.getUserList();
 
-        if (this.useAgent) {
+        if (this.normalizedUseAgent) {
             // 기본 에이전트 목록 추가
             const defaultSetting = useDefaultSetting();
             const defaultAgentList = defaultSetting.getAgentList;
@@ -227,12 +234,12 @@ export default {
 
     methods: {
         handleSelectionChange(newValue) {
-            if (!this.useAgent || !this.useMultiple) {
+            if (!this.normalizedUseAgent || !this.normalizedUseMultiple) {
                 return;
             }
 
             const getUserData = (user) => {
-                return this.returnObject ? user : this.usersToSelect.find((u) => u[this.itemValue] === user);
+                return this.normalizedReturnObject ? user : this.usersToSelect.find((u) => u[this.itemValue] === user);
             };
 
             // newValue를 순서대로 처리
@@ -332,6 +339,17 @@ export default {
                 default:
                     return 'Agent';
             }
+        }
+    },
+    computed: {
+        normalizedUseMultiple() {
+            return coerceBooleanProp(this.useMultiple, true);
+        },
+        normalizedUseAgent() {
+            return coerceBooleanProp(this.useAgent, false);
+        },
+        normalizedReturnObject() {
+            return coerceBooleanProp(this.returnObject, window.$mode !== 'ProcessGPT');
         }
     }
 };

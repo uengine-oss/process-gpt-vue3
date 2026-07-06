@@ -78,6 +78,8 @@ playwright/playwright-report/
 playwright/test-results/
 playwright/.cache/
 playwright/live-shots/
+playwright/e2e/**/e2e-results/
+e2e/**/e2e-results/
 
 docker-compose-gs/
 

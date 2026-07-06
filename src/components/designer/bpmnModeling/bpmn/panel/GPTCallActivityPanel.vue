@@ -82,6 +82,18 @@
                 <v-alert v-if="!copyUengineProperties.definitionId" type="info" variant="tonal" density="compact" class="mb-4">
                     먼저 호출할 프로세스를 선택하세요.
                 </v-alert>
+                <div class="d-flex justify-end mb-2">
+                    <v-btn
+                        v-if="!isViewMode && copyUengineProperties.definitionId"
+                        variant="text"
+                        size="small"
+                        color="primary"
+                        prepend-icon="mdi-sitemap"
+                        @click="openCallActivityMapper"
+                    >
+                        {{ $t('EventSynchronizationForm.dataMapping') }}
+                    </v-btn>
+                </div>
                 <bpmn-parameter-contexts
                     :for-sub-process="true"
                     :definition-variables="definitionVariables"
@@ -102,6 +114,28 @@
                 />
             </v-window-item>
         </v-window>
+
+        <v-dialog
+            v-model="isOpenCallActivityMapper"
+            class="mapper-dialog"
+            max-width="80%"
+            max-height="80%"
+            @afterLeave="$refs.callActivityMapper && $refs.callActivityMapper.saveFormMapperJson()"
+        >
+            <mapper
+                ref="callActivityMapper"
+                :name="name"
+                :definition="definition"
+                :formMapperJson="formMapperJson"
+                :expandableTrees="{}"
+                :rightExpandableTrees="callActivityTargetTrees"
+                :replaceFromExpandableNode="replaceFromExpandableNode"
+                :replaceToExpandableNode="replaceToExpandableNode"
+                :preferredRootOrder="['callActivity', 'Variables', 'lane', 'instance', 'activities']"
+                @saveFormMapperJson="saveMapperJson"
+                @closeFormMapper="isOpenCallActivityMapper = false"
+            />
+        </v-dialog>
     </div>
 </template>
 
@@ -110,6 +144,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
 import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/variable/BpmnParameterContexts.vue';
 import BpmnRoleParameterContexts from '@/components/designer/bpmnModeling/bpmn/role/BpmnRoleParameterContexts.vue';
+import Mapper from '@/components/designer/mapper/Mapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 
 export default {
@@ -117,14 +152,17 @@ export default {
     components: {
         ProcessDefinitionDisplay,
         BpmnParameterContexts,
-        BpmnRoleParameterContexts
+        BpmnRoleParameterContexts,
+        Mapper
     },
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
         isViewMode: Boolean,
         processVariables: Array,
-        element: Object
+        element: Object,
+        definition: Object,
+        name: String
     },
     data() {
         const props = this.uengineProperties ? JSON.parse(JSON.stringify(this.uengineProperties)) : {};
@@ -135,12 +173,18 @@ export default {
                 ...props,
                 definitionId: props.definitionId || '',
                 variableBindings: props.variableBindings || [],
+                mapperIn: props.mapperIn || { mappingElements: [] },
                 roleBindings: props.roleBindings || [],
                 inheritParentReferenceInfo: props.inheritParentReferenceInfo !== false
             },
             definitionRoles: [],
             calleeDefinitionRoles: [],
             definitionVariables: [],
+            formMapperJson: '',
+            isOpenCallActivityMapper: false,
+            callActivityTargetTrees: {},
+            replaceFromExpandableNode: () => null,
+            replaceToExpandableNode: () => null,
             selectedVariable: props.forEachVariable?.name || null,
             definitionSelectOptions: {
                 label: '호출할 프로세스',
@@ -186,6 +230,70 @@ export default {
         moveDefinition() {
             if (!this.copyUengineProperties.definitionId) return;
             window.open(`/definitions/${this.copyUengineProperties.definitionId.replace('.bpmn', '')}`, '_blank');
+        },
+        openCallActivityMapper() {
+            if (!this.copyUengineProperties.mapperIn) {
+                this.copyUengineProperties.mapperIn = { mappingElements: [] };
+            }
+            this.callActivityTargetTrees = this.buildCallActivityTargetTrees();
+            this.formMapperJson = JSON.stringify(this.copyUengineProperties.mapperIn, null, 2);
+            this.isOpenCallActivityMapper = true;
+        },
+        saveMapperJson(jsonString) {
+            this.formMapperJson = jsonString;
+            this.copyUengineProperties.mapperIn = JSON.parse(jsonString || '{"mappingElements":[]}');
+            this.emitUpdate();
+        },
+        buildCallActivityTargetTrees() {
+            const nodes = {
+                callActivity: {
+                    text: 'callActivity',
+                    children: ['callActivity.variables', 'callActivity.lane'],
+                    parent: null
+                },
+                'callActivity.variables': {
+                    text: 'variables',
+                    children: [],
+                    parent: 'callActivity'
+                },
+                'callActivity.lane': {
+                    text: 'lane',
+                    children: [],
+                    parent: 'callActivity'
+                }
+            };
+            const seen = new Set();
+            (this.definitionVariables || []).forEach((variable) => {
+                const variableName = variable && variable.name;
+                if (!variableName || seen.has(variableName)) return;
+                seen.add(variableName);
+                const nodeId = `callActivity.variables.${variableName}`;
+                nodes['callActivity.variables'].children.push(nodeId);
+                nodes[nodeId] = {
+                    text: variableName,
+                    children: [],
+                    parent: 'callActivity.variables'
+                };
+            });
+            const seenLane = new Set();
+            (this.calleeDefinitionRoles || []).forEach((laneName) => {
+                if (!laneName || seenLane.has(laneName)) return;
+                seenLane.add(laneName);
+                const laneNodeId = `callActivity.lane.${laneName}`;
+                const endpointNodeId = `${laneNodeId}.endpoint`;
+                nodes['callActivity.lane'].children.push(laneNodeId);
+                nodes[laneNodeId] = {
+                    text: laneName,
+                    children: [endpointNodeId],
+                    parent: 'callActivity.lane'
+                };
+                nodes[endpointNodeId] = {
+                    text: 'endpoint',
+                    children: [],
+                    parent: laneNodeId
+                };
+            });
+            return nodes;
         },
         async beforeSave() {
             if (this.copyUengineProperties.definitionId) {

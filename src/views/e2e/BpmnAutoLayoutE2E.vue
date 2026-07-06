@@ -125,7 +125,9 @@ export default {
         { path: '/case/uengine6-definitions/08-incident-reception.bpmn', title: 'Incident Reception', subtitle: 'uEngine6 definitions #8' },
         { path: '/case/uengine6-definitions/09-trouble-report-basic.bpmn', title: 'Trouble Report Basic', subtitle: 'uEngine6 definitions #9' },
         { path: '/case/uengine6-definitions/10-trouble-report-mapping.bpmn', title: 'Trouble Report Mapping', subtitle: 'uEngine6 definitions #10' },
-        { path: '/case/uengine6-definitions/11-attached-contract-review.bpmn', title: 'Attached Contract Review', subtitle: 'uEngine6 definitions #11' }
+        { path: '/case/uengine6-definitions/11-attached-contract-review.bpmn', title: 'Attached Contract Review', subtitle: 'uEngine6 definitions #11' },
+        { path: '/case/uengine6-definitions/12-vendor-onboarding-improvement.bpmn', title: '협력사 온보딩 개선 프로세스', subtitle: '자동 방향 전환, CallActivity, 매퍼, 동적 역할 매핑' },
+        { path: '/case/uengine6-definitions/13-vendor-security-review.bpmn', title: '협력사 보안 심사 프로세스', subtitle: 'CallActivity로 호출되는 보안 심사 프로세스' }
       ]
     };
   },

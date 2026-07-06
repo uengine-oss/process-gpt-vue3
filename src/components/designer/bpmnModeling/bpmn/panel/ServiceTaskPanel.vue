@@ -60,7 +60,9 @@
                 {{ $t('ServiceTaskPanel.generation') }}
             </v-btn>
         </div>
-        <!-- <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ServiceTaskPanel.dataMapping') }}</v-btn> -->
+        <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="openFieldMapper">
+            {{ $t('ServiceTaskPanel.dataMapping') }}
+        </v-btn>
         <div v-if="!isLoading">
             <EventSynchronizationForm v-model="tempOutputMapping" :definition="copyDefinition" />
         </div>
@@ -299,6 +301,7 @@ export default {
         if (!this.copyUengineProperties) this.copyUengineProperties = {};
         if (!this.copyUengineProperties.headers) this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json' }];
         if (!this.copyUengineProperties.method) this.copyUengineProperties.method = 'GET';
+        if (!this.copyUengineProperties.mapperIn) this.copyUengineProperties.mapperIn = { mappingElements: [] };
         if (!this.copyUengineProperties.outputMapping) this.copyUengineProperties.outputMapping = {};
         if (!this.copyUengineProperties.outputMapping.attributes) this.copyUengineProperties.outputMapping.attributes = [];
         if (!this.copyUengineProperties.outputMapping.mappingContext)
@@ -456,7 +459,7 @@ export default {
                 };
             });
 
-            me.formMapperJson = JSON.stringify(me.copyUengineProperties.selectedOut, null, 2);
+            me.formMapperJson = JSON.stringify(me.copyUengineProperties.mapperIn, null, 2);
         }
     },
     computed: {},
@@ -478,6 +481,11 @@ export default {
             // this.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
             this.copyUengineProperties.mapperIn = JSON.parse(jsonString);
             // this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        },
+        openFieldMapper() {
+            if (!this.copyUengineProperties.mapperIn) this.copyUengineProperties.mapperIn = { mappingElements: [] };
+            this.formMapperJson = JSON.stringify(this.copyUengineProperties.mapperIn, null, 2);
+            this.isOpenFieldMapper = true;
         },
         beforeSave() {
             this.copyUengineProperties.outputMapping = this.tempOutputMapping.eventSynchronization;

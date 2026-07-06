@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_vendor_security_review" name="협력사 보안 심사 프로세스" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
+  <bpmn:collaboration id="Collaboration_vendor_security">
+    <bpmn:participant id="Participant_vendor_security" name="협력사 보안 심사 프로세스" processRef="Process_vendor_security" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_vendor_security" name="협력사 보안 심사 프로세스" isExecutable="true">
+    <bpmn:extensionElements>
+      <uengine:properties>
+        <uengine:variable name="supplierName" type="Text" />
+        <uengine:variable name="businessUnit" type="Text" />
+        <uengine:variable name="담당자" type="Text" />
+        <uengine:variable name="assignedReviewerEmail" type="Text" />
+        <uengine:variable name="remediationOwner" type="Text" />
+        <uengine:variable name="riskLevel" type="Text" />
+        <uengine:variable name="assessmentSummary" type="Text" />
+        <uengine:json>{"definitionName":"협력사 보안 심사 프로세스","version":"1.0","shortDescription":{"text":"협력사 온보딩 개선 프로세스에서 CallActivity로 호출되는 보안 심사 및 개선 조치 프로세스입니다."}}</uengine:json>
+      </uengine:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_vendor_security">
+      <bpmn:lane id="Lane_vendor_security_analyst" name="보안심사자">
+        <bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"><uengine:json>{"roleResolutionContext":{"_type":"org.uengine.five.overriding.IAMRoleResolutionContext","scope":"manager"}}</uengine:json></uengine:properties></bpmn:extensionElements>
+        <bpmn:flowNodeRef>Event_start_security</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_collect_security_questionnaire</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_assess_security_risk</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_it_owner" name="IT개선담당자">
+        <bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"><uengine:json>{"roleResolutionContext":{"_type":"org.uengine.five.overriding.IAMRoleResolutionContext","scope":"manager"}}</uengine:json></uengine:properties></bpmn:extensionElements>
+        <bpmn:flowNodeRef>Task_define_remediation_actions</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_procurement_owner" name="구매담당자">
+        <bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;:{&quot;_type&quot;:&quot;org.uengine.five.overriding.IAMRoleResolutionContext&quot;,&quot;scope&quot;:&quot;manager&quot;}}"><uengine:json>{"roleResolutionContext":{"_type":"org.uengine.five.overriding.IAMRoleResolutionContext","scope":"manager"}}</uengine:json></uengine:properties></bpmn:extensionElements>
+        <bpmn:flowNodeRef>Task_publish_security_decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_end_security</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Event_start_security" name="보안 심사 요청"><bpmn:outgoing>Flow_security_01</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:userTask id="Task_collect_security_questionnaire" name="보안 체크리스트 수집">
+      <bpmn:incoming>Flow_security_01</bpmn:incoming><bpmn:outgoing>Flow_security_02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_assess_security_risk" name="보안 위험 평가">
+      <bpmn:extensionElements><uengine:properties json="{&quot;eventSynchronization&quot;:{&quot;eventType&quot;:&quot;&quot;,&quot;attributes&quot;:[{&quot;name&quot;:&quot;riskLevel&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false},{&quot;name&quot;:&quot;assessmentSummary&quot;,&quot;className&quot;:&quot;String&quot;,&quot;isKey&quot;:false,&quot;isCorrKey&quot;:false}],&quot;mappingContext&quot;:{&quot;mappingElements&quot;:[{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].riskLevel&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;riskLevel&quot;},&quot;isKey&quot;:false},{&quot;argument&quot;:{&quot;text&quot;:&quot;[Arguments].assessmentSummary&quot;},&quot;direction&quot;:&quot;out&quot;,&quot;variable&quot;:{&quot;name&quot;:&quot;assessmentSummary&quot;},&quot;isKey&quot;:false}]}},&quot;_type&quot;:&quot;org.uengine.kernel.HumanActivity&quot;}"><uengine:json>{"eventSynchronization":{"eventType":"","attributes":[{"name":"riskLevel","className":"String","isKey":false,"isCorrKey":false},{"name":"assessmentSummary","className":"String","isKey":false,"isCorrKey":false}],"mappingContext":{"mappingElements":[{"argument":{"text":"[Arguments].riskLevel"},"direction":"out","variable":{"name":"riskLevel"},"isKey":false},{"argument":{"text":"[Arguments].assessmentSummary"},"direction":"out","variable":{"name":"assessmentSummary"},"isKey":false}]}},"_type":"org.uengine.kernel.HumanActivity"}</uengine:json></uengine:properties></bpmn:extensionElements>
+      <bpmn:incoming>Flow_security_02</bpmn:incoming><bpmn:outgoing>Flow_security_03</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_define_remediation_actions" name="개선 조치 정의">
+      <bpmn:incoming>Flow_security_03</bpmn:incoming><bpmn:outgoing>Flow_security_04</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_publish_security_decision" name="보안 심사 결과 공유">
+      <bpmn:incoming>Flow_security_04</bpmn:incoming><bpmn:outgoing>Flow_security_05</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_end_security" name="보안 심사 완료"><bpmn:incoming>Flow_security_05</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_security_01" sourceRef="Event_start_security" targetRef="Task_collect_security_questionnaire" />
+    <bpmn:sequenceFlow id="Flow_security_02" sourceRef="Task_collect_security_questionnaire" targetRef="Task_assess_security_risk" />
+    <bpmn:sequenceFlow id="Flow_security_03" sourceRef="Task_assess_security_risk" targetRef="Task_define_remediation_actions" />
+    <bpmn:sequenceFlow id="Flow_security_04" sourceRef="Task_define_remediation_actions" targetRef="Task_publish_security_decision" />
+    <bpmn:sequenceFlow id="Flow_security_05" sourceRef="Task_publish_security_decision" targetRef="Event_end_security" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_vendor_security">
+    <bpmndi:BPMNPlane id="BPMNPlane_vendor_security" bpmnElement="Collaboration_vendor_security">
+      <bpmndi:BPMNShape id="Participant_vendor_security_di" bpmnElement="Participant_vendor_security" isHorizontal="true"><dc:Bounds x="120" y="80" width="1050" height="360" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_vendor_security_analyst_di" bpmnElement="Lane_vendor_security_analyst" isHorizontal="true"><dc:Bounds x="150" y="80" width="1020" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_it_owner_di" bpmnElement="Lane_it_owner" isHorizontal="true"><dc:Bounds x="150" y="200" width="1020" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_procurement_owner_di" bpmnElement="Lane_procurement_owner" isHorizontal="true"><dc:Bounds x="150" y="320" width="1020" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_start_security_di" bpmnElement="Event_start_security"><dc:Bounds x="220" y="122" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_collect_security_questionnaire_di" bpmnElement="Task_collect_security_questionnaire"><dc:Bounds x="330" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_assess_security_risk_di" bpmnElement="Task_assess_security_risk"><dc:Bounds x="550" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_define_remediation_actions_di" bpmnElement="Task_define_remediation_actions"><dc:Bounds x="770" y="220" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_publish_security_decision_di" bpmnElement="Task_publish_security_decision"><dc:Bounds x="770" y="340" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_end_security_di" bpmnElement="Event_end_security"><dc:Bounds x="1010" y="362" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_security_01_di" bpmnElement="Flow_security_01"><di:waypoint x="256" y="140" /><di:waypoint x="330" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_security_02_di" bpmnElement="Flow_security_02"><di:waypoint x="430" y="140" /><di:waypoint x="550" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_security_03_di" bpmnElement="Flow_security_03"><di:waypoint x="650" y="140" /><di:waypoint x="735" y="140" /><di:waypoint x="735" y="260" /><di:waypoint x="770" y="260" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_security_04_di" bpmnElement="Flow_security_04"><di:waypoint x="820" y="300" /><di:waypoint x="820" y="340" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_security_05_di" bpmnElement="Flow_security_05"><di:waypoint x="870" y="380" /><di:waypoint x="1010" y="380" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

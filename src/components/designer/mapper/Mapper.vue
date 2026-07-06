@@ -142,6 +142,14 @@ export default {
             required: true,
             default: null
         },
+        leftExpandableTrees: {
+            type: Object,
+            default: null
+        },
+        rightExpandableTrees: {
+            type: Object,
+            default: null
+        },
         replaceFromExpandableNode: {
             type: Function, // function replaceFromExpandableNode(nodeKey) return String
             required: true
@@ -149,6 +157,10 @@ export default {
         replaceToExpandableNode: {
             type: Function, // function replaceToExpandableNode(nodeKey) return String
             required: true
+        },
+        preferredRootOrder: {
+            type: Array,
+            default: () => []
         }
     },
     components: {
@@ -195,6 +207,8 @@ export default {
         await this.initializeNodesAndConfig();
         await this.processNodes(this.leftNodes, 'Source');
         await this.processNodes(this.rightNodes, 'Target');
+        this.applyPreferredRootOrder();
+        this.refreshTreeViewPorts();
         this.renderKey++;
     },
     mounted() {
@@ -222,6 +236,23 @@ export default {
         this.renderFormMapperFromMappingElementJson(this.formMapperJson);
     },
     methods: {
+        applyPreferredRootOrder() {
+            if (!Array.isArray(this.preferredRootOrder) || this.preferredRootOrder.length === 0) return;
+            const ordered = [];
+            this.preferredRootOrder.forEach((root) => {
+                if (this.config.roots.includes(root) && !ordered.includes(root)) ordered.push(root);
+            });
+            this.config.roots.forEach((root) => {
+                if (!ordered.includes(root)) ordered.push(root);
+            });
+            this.config.roots = ordered;
+        },
+        refreshTreeViewPorts() {
+            this.updateBlockTemplates(this.leftNodes, 'Source');
+            this.updateBlockTemplates(this.rightNodes, 'Target');
+            this.blockTemplates.Source.ports = this.reverseObject(this.blockTemplates.Source.ports);
+            this.blockTemplates.Target.ports = this.reverseObject(this.blockTemplates.Target.ports);
+        },
         async initVariableData() {
             var me = this;
             if (!me.definition) return;
@@ -363,7 +394,7 @@ export default {
             this.processRoleNodes(nodes);
             this.processInstanceNodes(nodes);
             this.processActivityNodes(nodes);
-            this.processExpandableNodes(nodes);
+            this.processExpandableNodes(nodes, blockName);
             this.updateBlockTemplates(nodes, blockName);
             this.blockTemplates.Source.ports = this.reverseObject(this.blockTemplates.Source.ports);
             this.blockTemplates.Target.ports = this.reverseObject(this.blockTemplates.Target.ports);
@@ -371,7 +402,10 @@ export default {
         processVariableNodes(nodes) {
             const definition = this.definition;
             if (!definition) return;
+            const seenVariableNames = new Set();
             for (const variable of definition.processVariables) {
+                if (!variable?.name || seenVariableNames.has(variable.name)) continue;
+                seenVariableNames.add(variable.name);
                 if (!this.config.roots.includes('Variables')) {
                     this.config.roots.push('Variables');
                 }
@@ -398,23 +432,23 @@ export default {
         processRoleNodes(nodes) {
             const roles = this.roles;
             if (roles.length > 0) {
-                if (!this.config.roots.includes('roles')) {
-                    this.config.roots.push('roles');
+                if (!this.config.roots.includes('lane')) {
+                    this.config.roots.push('lane');
                 }
 
-                if (!nodes['roles']) {
-                    nodes['roles'] = {
-                        text: 'roles',
+                if (!nodes['lane']) {
+                    nodes['lane'] = {
+                        text: 'lane',
                         children: [],
                         parent: null
                     };
                 }
 
                 roles.forEach((role) => {
-                    const roleName = 'roles.' + role;
-                    if (nodes['roles']) {
-                        nodes['roles'].children.push(roleName);
-                        nodes[roleName] = {
+                    const endpointName = `lane.${role}.endpoint`;
+                    if (nodes['lane']) {
+                        nodes['lane'].children.push(endpointName);
+                        nodes[endpointName] = {
                             text: role,
                             children: []
                         };
@@ -508,9 +542,13 @@ export default {
                 }
             }
         },
-        processExpandableNodes(nodes) {
+        processExpandableNodes(nodes, blockName) {
             var me = this;
-            const expandableTrees = me.expandableTrees;
+            const sideTrees = blockName === 'Source' ? me.leftExpandableTrees : me.rightExpandableTrees;
+            const expandableTrees = {
+                ...(me.expandableTrees || {}),
+                ...(sideTrees || {})
+            };
 
             if (!expandableTrees) return;
             Object.keys(expandableTrees).forEach((key) => {
@@ -592,7 +630,13 @@ export default {
             }
 
             const result = [];
-            const rootKeys = Object.keys(data).filter((key) => data[key].parent === null);
+            const unorderedRootKeys = Object.keys(data).filter((key) => data[key].parent === null);
+            const rootKeys = this.config.roots.length
+                ? [
+                      ...this.config.roots.filter((key) => unorderedRootKeys.includes(key)),
+                      ...unorderedRootKeys.filter((key) => !this.config.roots.includes(key))
+                  ]
+                : unorderedRootKeys;
 
             // 필터링된 키에 대해 반복 처리
             rootKeys.forEach((key) => {
@@ -704,6 +748,8 @@ export default {
                 await this.initializeNodesAndConfig();
                 await this.processNodes(this.leftNodes, 'Source');
                 await this.processNodes(this.rightNodes, 'Target');
+                this.applyPreferredRootOrder();
+                this.refreshTreeViewPorts();
             },
             deep: true
         }

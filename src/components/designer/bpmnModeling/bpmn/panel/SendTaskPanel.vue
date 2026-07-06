@@ -30,7 +30,7 @@
             <v-row class="ma-0 pa-0 mb-4">
                 <v-text-field v-model="copyUengineProperties.fromRole" :label="$t('ReceiveTaskPanel.descriptionFromRole')"></v-text-field>
             </v-row>
-            <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{
+            <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="openFieldMapper">{{
                 $t('ReceiveTaskPanel.dataMapping')
             }}</v-btn>
         </div>
@@ -112,6 +112,9 @@
                     {{ $t('SendTaskPanel.generation') }}
                 </v-btn>
             </div>
+            <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="openFieldMapper">
+                {{ $t('ReceiveTaskPanel.dataMapping') }}
+            </v-btn>
             <div class="mt-4">
                 <v-row class="ma-0 pa-0 align-center pb-4">
                     <v-autocomplete
@@ -200,6 +203,25 @@
                 <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
             </div>
         </div>
+        <v-dialog
+            v-model="isOpenFieldMapper"
+            max-width="80%"
+            max-height="80%"
+            class="mapper-dialog"
+            @afterLeave="$refs.mapper && $refs.mapper.saveFormMapperJson()"
+        >
+            <mapper
+                ref="mapper"
+                :name="name"
+                :definition="copyDefinition"
+                :formMapperJson="formMapperJson"
+                :expandableTrees="nodes"
+                :replaceFromExpandableNode="replaceFromExpandableNode"
+                :replaceToExpandableNode="replaceToExpandableNode"
+                @saveFormMapperJson="saveMapperJson"
+                @closeFormMapper="isOpenFieldMapper = !isOpenFieldMapper"
+            />
+        </v-dialog>
     </div>
 </template>
 <script>
@@ -208,6 +230,7 @@ import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
 import BPMNAPIGenerator from '@/components/ai/BPMNAPIGenerator.js';
 import BackendFactory from '@/components/api/BackendFactory';
+import Mapper from '@/components/designer/mapper/Mapper.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import LeadTimeInput from './LeadTimeInput.vue';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
@@ -215,6 +238,7 @@ import LeadTimeInput from './LeadTimeInput.vue';
 export default {
     name: 'send-task-panel',
     components: {
+        Mapper,
         KeyValueField,
         LeadTimeInput
     },
@@ -236,6 +260,7 @@ export default {
         });
         if (!this.copyUengineProperties.headers) this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json' }];
         if (!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
+        if (!this.copyUengineProperties.mapperIn) this.copyUengineProperties.mapperIn = { mappingElements: [] };
     },
     data() {
         return {
@@ -270,6 +295,11 @@ export default {
             method: null,
             copyDefinition: this.definition,
             processVariables: [],
+            formMapperJson: '',
+            isOpenFieldMapper: false,
+            replaceFromExpandableNode: null,
+            replaceToExpandableNode: null,
+            nodes: {},
             apiServiceURL: '',
             sendType: 'email',
             methodTypeDescription: [
@@ -311,6 +341,7 @@ export default {
         } else {
             this.selectedActivity = 'rest_api';
         }
+        this.formMapperJson = JSON.stringify(this.copyUengineProperties.mapperIn, null, 2);
     },
     computed: {},
     watch: {
@@ -454,6 +485,15 @@ export default {
         removeHeader(header) {
             if (!header) return;
             this.copyUengineProperties.headers.splice(this.copyUengineProperties.headers.indexOf(header), 1);
+        },
+        openFieldMapper() {
+            if (!this.copyUengineProperties.mapperIn) this.copyUengineProperties.mapperIn = { mappingElements: [] };
+            this.formMapperJson = JSON.stringify(this.copyUengineProperties.mapperIn, null, 2);
+            this.isOpenFieldMapper = true;
+        },
+        saveMapperJson(jsonString) {
+            this.formMapperJson = jsonString;
+            this.copyUengineProperties.mapperIn = JSON.parse(jsonString);
         },
         setTaskColor(color) {
             this.copyUengineProperties.taskColor = color;
