@@ -3025,7 +3025,7 @@ class ProcessGPTBackend implements Backend {
                 } else if (selectedItem.status == 'IN_PROGRESS' || selectedItem.status == 'SUBMITTED') {
                     result[selectedItem.activity_id] = 'Running';
                 } else if (selectedItem.status == 'PENDING') {
-                    result[selectedItem.activity_id] = isCallActivity ? 'Completed' : 'Pending';
+                    result[selectedItem.activity_id] = isCallActivity ? 'Running' : 'Pending';
                 } else if (selectedItem.status == 'TODO') {
                     result[selectedItem.activity_id] = 'New';
                 } else if (selectedItem.status == 'CANCELLED') {
