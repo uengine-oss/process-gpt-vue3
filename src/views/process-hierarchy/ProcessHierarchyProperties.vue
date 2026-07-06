@@ -347,6 +347,7 @@
                                 :uengineProperties="callActivityProperties"
                                 :processDefinitionId="definitionPath"
                                 :processVariables="processVariables"
+                                :processDefinition="processDefinition"
                                 :definition="definition"
                                 :name="element.businessObject?.name || ''"
                                 @update:uengineProperties="onCallActivityPropertiesUpdate"
