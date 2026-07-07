@@ -150,9 +150,18 @@ class ProcessGPTBackend implements Backend {
                 return procDefs;
             } else {
                 if (options) {
-                    options.match = { isdeleted: false };
-                    if (path) {
+                    if (!options.match || !options.match['isdeleted']) {
+                        options.match = { ...options.match, isdeleted: false };
+                    }
+                    if (path && !options.like) {
                         options.like = `${path}%`;
+                    }
+                } else {
+                    options = {
+                        match: {
+                            isdeleted: false,
+                            type: 'bpmn'
+                        }
                     }
                 }
                 const procDefs = await storage.list('proc_def', options);
@@ -2483,31 +2492,6 @@ class ProcessGPTBackend implements Backend {
     extractFields(html: string) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        const fields: any[] = [];
-
-        function extractFieldAttributes(elements: any) {
-            elements.forEach((element: any) => {
-                const alias = element.getAttribute('alias');
-                const nameAttr = element.getAttribute('name') || '';
-                const vModel = element.getAttribute('v-model') || '';
-                // v-model 바인딩에서 bracket 표기법으로 키를 추출, 없으면 name 속성을 기본으로 사용
-                const bracketMatch = vModel.match(/\[['"](.+?)['"]\]/);
-                const key = bracketMatch && bracketMatch[1] ? bracketMatch[1] : nameAttr;
-                const tagName = element.tagName.toLowerCase();
-                const disabled = element.getAttribute('disabled');
-                const readonly = element.getAttribute('readonly');
-                const type = element.getAttribute('type') || tagName.replace('-field', '');
-
-                const field: any = {
-                    text: alias || '',
-                    key: key,
-                    type: type,
-                    disabled: disabled ? disabled : false,
-                    readonly: readonly ? readonly : false
-                };
-                fields.push(field);
-            });
-        }
 
         const fieldTags = [
             'text-field',
@@ -2524,12 +2508,87 @@ class ProcessGPTBackend implements Backend {
             'bpmn-uengine-field'
         ];
 
-        fieldTags.forEach((tag) => {
-            const elements = doc.querySelectorAll(tag);
-            extractFieldAttributes(elements);
-        });
+        function parseItemsAttr(raw: string | null) {
+            if (!raw) return undefined;
+            try {
+                return JSON.parse(raw.replace(/'/g, '"'));
+            } catch (error) {
+                return undefined;
+            }
+        }
 
-        return fields;
+        function extractFieldAttributes(element: any) {
+            const alias = element.getAttribute('alias');
+            const nameAttr = element.getAttribute('name') || '';
+            const vModel = element.getAttribute('v-model') || '';
+            // v-model 바인딩에서 bracket 표기법으로 키를 추출, 없으면 name 속성을 기본으로 사용
+            const bracketMatch = vModel.match(/\[['"](.+?)['"]\]/);
+            const key = bracketMatch && bracketMatch[1] ? bracketMatch[1] : nameAttr;
+            const tagName = element.tagName.toLowerCase();
+            const disabled = element.getAttribute('disabled');
+            const readonly = element.getAttribute('readonly');
+            const type = element.getAttribute('type') || tagName.replace('-field', '');
+
+            const field: any = {
+                key: key,
+                text: alias || '',
+                type: type,
+                disabled: disabled ? disabled : false,
+                readonly: readonly ? readonly : false
+            };
+
+            const items = parseItemsAttr(element.getAttribute('items'));
+            if (items) field.items = items;
+
+            return field;
+        }
+
+        // row-layout은 여러 필드를 묶는 컨테이너로, is_multidata_mode='true'일 때만
+        // 내부 필드들이 배열(v-for) 형태로 반복되므로 group.fields 로 중첩시킴.
+        // false(단건 입력)인 경우는 기존 로직대로 하위 필드를 최상위로 그대로 펼쳐서 반환
+        function extractRowLayout(element: any) {
+            const isMultidataMode = element.getAttribute('is_multidata_mode') === 'true';
+            const innerFields = collectFields(element);
+
+            if (!isMultidataMode) {
+                return innerFields;
+            }
+
+            const alias = element.getAttribute('alias');
+            const nameAttr = element.getAttribute('name') || '';
+
+            return [
+                {
+                    key: nameAttr,
+                    text: alias || '',
+                    type: 'row-layout',
+                    is_multidata_mode: true,
+                    fields: innerFields
+                }
+            ];
+        }
+
+        // DOM 트리를 내려가면서 field 태그나 row-layout을 만나면 수집하고,
+        // row-layout 내부는 재귀 호출로 별도 처리하여 중복 수집을 막음
+        function collectFields(root: any) {
+            const fields: any[] = [];
+
+            Array.from(root.children as any[]).forEach((child: any) => {
+                const tagName = child.tagName.toLowerCase();
+
+                if (tagName === 'row-layout') {
+                    fields.push(...extractRowLayout(child));
+                } else if (fieldTags.includes(tagName)) {
+                    fields.push(extractFieldAttributes(child));
+                } else {
+                    fields.push(...collectFields(child));
+                }
+            });
+
+            return fields;
+        }
+
+        return collectFields(doc.body);
     }
 
     async getVariableWithTaskId(instId: string, taskId: string, formDefId: string) {
@@ -2562,7 +2621,11 @@ class ProcessGPTBackend implements Backend {
                 }
                 if (fields && fields.length > 0) {
                     fields.forEach((field: any) => {
-                        if (!varData[field.key]) {
+                        if (field.type === 'row-layout') {
+                            if (!varData[field.key]) {
+                                varData[field.key] = field.is_multidata_mode ? [] : {};
+                            }
+                        } else if (!varData[field.key]) {
                             varData[field.key] = '';
                         }
                     });

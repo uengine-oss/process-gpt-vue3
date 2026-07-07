@@ -2129,7 +2129,8 @@
         "changeParticipants": "Change Participants",
         "chat": "Chat",
         "loadingUserInfo": "Loading user info...",
-        "deleteWarning": "- Deleted chats cannot be recovered."
+        "deleteWarning": "- Deleted chats cannot be recovered.",
+        "toolsSettings": "Tools Settings"
     },
     "userListing": {
         "search": "User search",
@@ -4211,6 +4212,7 @@
         "generating": "Generating feedback automatically...",
         "inputData": "Input Data",
         "checkpoints": "Checkpoints",
+        "description": "Overview",
         "instruction": "Instruction",
         "conditionExamples": "Condition Examples"
     },
