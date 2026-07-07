@@ -18,21 +18,21 @@
                                             size="small"
                                             @click="createChildSkill()"
                                         >
-                                            <v-icon>mdi-source-fork</v-icon>
+                                            <v-icon>mdi-axis-arrow</v-icon>
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-tooltip location="bottom" :text="showGitHistory ? $t('SkillDetail.showEditor') : $t('SkillDetail.showGitHistory')">
+                                <v-tooltip location="bottom" :text="showHistory ? $t('SkillDetail.showEditor') : $t('SkillDetail.showHistory')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
                                             v-bind="props"
                                             :icon="true"
                                             variant="text"
                                             size="small"
-                                            :color="showGitHistory ? 'primary' : undefined"
-                                            @click="showGitHistory = !showGitHistory"
+                                            :color="showHistory ? 'primary' : undefined"
+                                            @click="showHistory = !showHistory"
                                         >
-                                            <v-icon>{{ showGitHistory ? 'mdi-file-edit-outline' : 'mdi-source-branch' }}</v-icon>
+                                            <v-icon>{{ showHistory ? 'mdi-file-edit-outline' : 'mdi-history' }}</v-icon>
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
@@ -296,7 +296,7 @@
             <template v-slot:rightpart>
                 <div class="skill-detail-right d-flex flex-column">
                     <SkillGitHistory
-                        v-if="showGitHistory"
+                        v-if="showHistory"
                         :skillName="skillDisplayName || skillId"
                         :selected-branch="selectedBranch"
                     />
@@ -461,7 +461,7 @@ export default {
             defaultBranch: 'main',
             isSkillOwner: false,
 
-            showGitHistory: false,
+            showHistory: false,
             leftViewMode: 'files',
             /** API에서 받은 스킬 전체 파일 목록 (그래프는 이걸 기준으로 항상 전체 파일 노드 생성) */
             skillFilesFromApi: [],
@@ -770,7 +770,7 @@ export default {
             this.branches = [];
             this.selectedBranch = '';
             this.defaultBranch = 'main';
-            this.showGitHistory = false;
+            this.showHistory = false;
             this.leftViewMode = 'files';
             this.destroyGraph();
             this.graphElements = [];

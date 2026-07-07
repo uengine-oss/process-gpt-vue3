@@ -1064,6 +1064,10 @@ class ProcessGPTBackend implements Backend {
 
             if (definition && definition.definition) {
                 activityInfo = definition.definition.activities.find((activity: any) => activity.id === workitem.activity_id);
+                if (!activityInfo) {
+                    // activity_id가 (ad-hoc) 서브프로세스를 가리키는 경우도 폼 조회 대상에 포함
+                    activityInfo = this.findSubProcessById(definition.definition, workitem.activity_id);
+                }
                 if (activityInfo && activityInfo.properties) {
                     const properties = JSON.parse(activityInfo.properties);
                     if (properties.parameters && instance) {
@@ -1408,6 +1412,7 @@ class ProcessGPTBackend implements Backend {
 
         const sequences = definition.sequences;
         const activities = definition.activities;
+        const subProcesses = definition.subProcesses || [];
         const previousActivities = new Set<string>();
         const visited = new Set<string>();
 
@@ -1424,9 +1429,11 @@ class ProcessGPTBackend implements Backend {
             for (const sequence of incomingSequences) {
                 const sourceId = sequence.source;
 
-                // 소스가 액티비티인지 확인 (events, gateways 제외)
+                // 소스가 액티비티나 서브프로세스인지 확인 (events, gateways 제외)
+                // 서브프로세스도 자체 워크아이템/폼 산출물을 가지는 유효한 이전 단계이므로 포함한다.
                 const sourceActivity = activities.find((act: any) => act.id === sourceId);
-                if (sourceActivity) {
+                const sourceSubProcess = !sourceActivity && subProcesses.find((sp: any) => sp.id === sourceId);
+                if (sourceActivity || sourceSubProcess) {
                     previousActivities.add(sourceId);
                     // 재귀적으로 더 이전 액티비티들을 찾음
                     findPreviousActivities(sourceId);
@@ -1439,13 +1446,33 @@ class ProcessGPTBackend implements Backend {
 
         findPreviousActivities(activityId);
 
-        // Set을 배열로 변환하고 액티비티 객체들을 반환
+        // Set을 배열로 변환하고 액티비티/서브프로세스 객체들을 반환
         return Array.from(previousActivities)
-            .map((actId) => activities.find((act: any) => act.id === actId))
+            .map((actId) => activities.find((act: any) => act.id === actId) || subProcesses.find((sp: any) => sp.id === actId))
             .filter((act) => act !== undefined);
     }
 
     // 액티비티가 속한 서브프로세스를 찾는 헬퍼 함수
+    // id로 서브프로세스 자체를 재귀적으로 찾는 함수 (중첩된 서브프로세스 포함)
+    private findSubProcessById(definition: any, subProcessId: string): any {
+        if (!definition || !definition.subProcesses || definition.subProcesses.length === 0) {
+            return null;
+        }
+
+        for (const subProcess of definition.subProcesses) {
+            if (subProcess.id === subProcessId) {
+                return subProcess;
+            }
+            if (subProcess.children) {
+                const nestedSubProcess = this.findSubProcessById(subProcess.children, subProcessId);
+                if (nestedSubProcess) {
+                    return nestedSubProcess;
+                }
+            }
+        }
+        return null;
+    }
+
     private findSubProcessContainingActivity(activityId: string, definition: any): any {
         if (!definition.subProcesses || definition.subProcesses.length === 0) {
             return null;
@@ -1457,13 +1484,74 @@ class ProcessGPTBackend implements Backend {
                 if (foundActivity) {
                     return subProcess;
                 }
-                // 중첩된 서브프로세스도 확인
+            }
+            // activityId 자체가 (중첩된) 서브프로세스의 id인 경우, 그 부모 서브프로세스를 찾음
+            // (서브프로세스 경계 바깥으로 거슬러 올라갈 때 필요)
+            if (subProcess.children && Array.isArray(subProcess.children.subProcesses)) {
+                const foundChildSubProcess = subProcess.children.subProcesses.find((sp: any) => sp.id === activityId);
+                if (foundChildSubProcess) {
+                    return subProcess;
+                }
+            }
+            // 중첩된 서브프로세스도 확인
+            if (subProcess.children) {
                 const nestedSubProcess = this.findSubProcessContainingActivity(activityId, subProcess.children);
                 if (nestedSubProcess) {
                     return nestedSubProcess;
                 }
             }
         }
+        return null;
+    }
+
+    // 시퀀스 상 targetId 바로 이전(활동 또는 서브프로세스)의 id를 scope 내에서 찾음.
+    // scope는 루트 definition 또는 특정 서브프로세스의 children 일 수 있다.
+    private findNearestPredecessorInScope(targetId: string, scope: any): string | null {
+        if (!scope || !scope.sequences) {
+            return null;
+        }
+        const activities = scope.activities || [];
+        const subProcesses = scope.subProcesses || [];
+        const visited = new Set<string>();
+        const queue: string[] = [targetId];
+
+        while (queue.length > 0) {
+            const currentTarget = queue.shift() as string;
+            if (visited.has(currentTarget)) continue;
+            visited.add(currentTarget);
+
+            const incomingFlows = scope.sequences.filter((seq: any) => seq.target === currentTarget);
+            for (const flow of incomingFlows) {
+                const sourceId = flow.source;
+                const isActivity = activities.some((act: any) => act.id === sourceId);
+                const isSubProcess = subProcesses.some((sp: any) => sp.id === sourceId);
+                if (isActivity || isSubProcess) {
+                    return sourceId;
+                }
+                queue.push(sourceId);
+            }
+        }
+        return null;
+    }
+
+    // 런타임 워크아이템 화면에서 사용하는, 서브프로세스 경계를 인식하는 '바로 이전 단계' 조회.
+    // 현재 액티비티가 서브프로세스 내부에 있으면 그 내부에서 먼저 찾고, 없으면
+    // (서브프로세스의 첫 액티비티인 경우) 서브프로세스 자체의 이전 단계로 거슬러 올라간다.
+    async getPreviousStepId(activityId: string, definition: any): Promise<string | null> {
+        if (!definition) return null;
+
+        const containingSubProcess = this.findSubProcessContainingActivity(activityId, definition);
+        const scope = containingSubProcess ? containingSubProcess.children : definition;
+
+        const localResult = this.findNearestPredecessorInScope(activityId, scope);
+        if (localResult) {
+            return localResult;
+        }
+
+        if (containingSubProcess) {
+            return this.getPreviousStepId(containingSubProcess.id, definition);
+        }
+
         return null;
     }
 
@@ -6665,133 +6753,94 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // output[formId]는 단일 실행이면 { [fieldId]: value }, 멀티 인스턴스면
+    // { [executionScope]: { [fieldId]: value }, ... } 형태일 수 있어 두 모양을 모두 지원한다.
+    private extractFieldFromOutput(output: any, formId: string, fieldId: string) {
+        if (!output || !output[formId]) return undefined;
+        const formOutput = output[formId];
+        if (formOutput[fieldId] !== undefined) {
+            return formOutput[fieldId];
+        }
+        for (const scopeKey of Object.keys(formOutput)) {
+            const scoped = formOutput[scopeKey];
+            if (scoped && typeof scoped === 'object' && scoped[fieldId] !== undefined) {
+                return scoped[fieldId];
+            }
+        }
+        return undefined;
+    }
+
     async getFieldValue(field: string, procDefId: string, instanceId: string) {
         try {
             if (!field || !procDefId || !instanceId) {
                 throw new Error('field, procDefId, instanceId is required');
             }
 
-            const fieldValue = {};
-            const procDef = await this.getRawDefinition(procDefId, null);
-            if (!procDef) {
-                throw new Error('procDef not found');
-            }
-            const definition = procDef.definition;
+            const fieldValue: any = {};
             const fieldInfo = field.split('.');
             const formId = fieldInfo[0];
             const fieldId = fieldInfo[1];
 
-            let activityId = null;
-            if (definition.activities.length > 0) {
-                definition.activities.forEach((activity: any) => {
-                    if (activity.tool && activity.tool.includes('formHandler:') && activity.tool.replace('formHandler:', '') === formId) {
-                        activityId = activity.id;
-                    }
-                });
-            } else {
-                activityId = null;
-            }
+            // BPMN 시퀀스/서브프로세스 위치와 무관하게, 같은 루트 프로세스 인스턴스 내
+            // 워크아이템의 산출물(output)에서 formId/fieldId로 직접 조회한다.
+            const instance = await this.getInstance(instanceId);
+            const rootInstanceId = (instance && instance.root_proc_inst_id) || instanceId;
 
-            let executionScope = null;
-
-            let workitem = null;
-            let workitems = null;
             const { data, error } = await window.$supabase
                 .from('todolist')
                 .select('*')
-                .eq('proc_inst_id', instanceId)
-                .ilike('activity_id', activityId)
-                .eq('status', 'DONE')
-                .order('updated_at', { ascending: false })
-                .limit(1);
+                .eq('root_proc_inst_id', rootInstanceId)
+                .eq('status', 'DONE');
 
-            if (!error) {
-                workitem = data[0];
-            }
-
-            if (!workitem) {
-                const instance = await this.getInstance(instanceId);
-                const rootInstanceId = instance.root_proc_inst_id;
-                executionScope = instance.execution_scope;
-                const { data, error } = await window.$supabase
-                    .from('todolist')
-                    .select('*')
-                    .eq('proc_inst_id', rootInstanceId)
-                    .ilike('activity_id', activityId)
-                    .eq('status', 'DONE')
-                    .order('updated_at', { ascending: false })
-                    .limit(1);
-
-                if (!error) {
-                    workitem = data[0];
-                }
-            }
-
-            if (!workitem) {
-                const { data, error } = await window.$supabase
-                    .from('todolist')
-                    .select('*')
-                    .eq('root_proc_inst_id', instanceId)
-                    .ilike('activity_id', activityId);
-                if (!error) {
-                    workitems = data;
-
-                    const sorted = (workitems ?? []).sort((a, b) => Number(a.execution_scope ?? 0) - Number(b.execution_scope ?? 0));
-
-                    workitems = sorted;
-                }
-            }
-
-            if (!workitem && !workitems) {
+            if (error) {
                 throw new Error('workitem not found');
             }
 
-            if (workitems) {
-                const fieldList = [];
-                workitems.forEach((item: any, index: number) => {
-                    workitem = item;
-                    const output = item.output;
-                    if (output && output[formId]) {
-                        const field = output[formId][fieldId];
-                        if (field) {
-                            fieldList.push(workitem.execution_scope + ':' + field);
-                        }
+            let candidates = (data || []).filter(
+                (item: any) => this.extractFieldFromOutput(item.output, formId, fieldId) !== undefined
+            );
+
+            if (candidates.length === 0) {
+                throw new Error('workitem not found');
+            }
+
+            // formId/fieldId만으로 둘 이상 후보가 매칭되면(예: 서로 다른 프로세스 정의가
+            // 우연히 같은 formId 번호를 재사용하는 경우), formId의 실제 소유 proc_def_id로
+            // 한 번 더 좁힌다.
+            if (candidates.length > 1) {
+                const form = await storage.getObject('form_def', {
+                    match: {
+                        id: formId,
+                        tenant_id: window.$tenantName
                     }
                 });
-
-                fieldValue[formId] = {
-                    [fieldId]: fieldList
-                };
-                return fieldValue;
-            }
-            if (workitem) {
-                const output = workitem.output;
-                if (output && output[formId]) {
-                    const filed = output[formId][fieldId];
-                    if (filed) {
-                        fieldValue[formId] = {
-                            [fieldId]: filed
-                        };
-                    } else {
-                        const group = Object.values(output[formId]);
-                        if (group) {
-                            group.forEach((item: any) => {
-                                if (executionScope) {
-                                    if (item[executionScope][fieldId]) {
-                                        fieldValue[formId] = {
-                                            [fieldId]: item[executionScope][fieldId]
-                                        };
-                                    }
-                                }
-                            });
-                        }
+                const ownerProcDefId = form && (form as any).proc_def_id;
+                if (ownerProcDefId) {
+                    const filtered = candidates.filter((item: any) => item.proc_def_id === ownerProcDefId);
+                    if (filtered.length > 0) {
+                        candidates = filtered;
                     }
-                    return fieldValue;
-                } else {
-                    return null;
                 }
             }
+
+            if (candidates.length > 1) {
+                const sorted = candidates.sort((a: any, b: any) => Number(a.execution_scope ?? 0) - Number(b.execution_scope ?? 0));
+                const fieldList: any[] = [];
+                sorted.forEach((item: any) => {
+                    const value = this.extractFieldFromOutput(item.output, formId, fieldId);
+                    if (value !== undefined) {
+                        fieldList.push(item.execution_scope + ':' + value);
+                    }
+                });
+                fieldValue[formId] = { [fieldId]: fieldList };
+                return fieldValue;
+            }
+
+            const value = this.extractFieldFromOutput(candidates[0].output, formId, fieldId);
+            fieldValue[formId] = { [fieldId]: value };
+            return fieldValue;
         } catch (error) {
+            //@ts-ignore
             throw new Error(error.message);
         }
     }

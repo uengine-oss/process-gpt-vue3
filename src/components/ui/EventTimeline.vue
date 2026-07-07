@@ -678,17 +678,13 @@ export default {
                     fileData.parsed_at = parseResult.parsedAt;
                     fileData.parsing = false;
 
-                    if (parseResult.cached) {
-                        console.log(`✅ [EventTimeline] 캐시된 데이터 사용: ${fileName}`);
-                    } else {
+                    if (!parseResult.cached) {
                         this.isParseSuccess = true;
-                        console.log(`✅ [EventTimeline] 파싱 성공: ${fileName} (${parseResult.text?.length || 0} 문자)`);
                     }
                 } else {
                     // 파싱 실패
                     fileData.parsed_error = parseResult.error;
                     fileData.parsing = false;
-                    console.warn(`⚠️ [EventTimeline] 파싱 실패: ${fileName} - ${parseResult.error}`);
                 }
             } catch (error) {
                 console.error(`❌ [EventTimeline] 파싱 결과 세팅 실패: ${fileName}`, error);
@@ -716,11 +712,7 @@ export default {
                     data: eventItem.outputRaw // outputRaw에 generated_files가 포함되어 있고, 파싱 결과도 함께
                 };
 
-                console.log(`[EventTimeline] DB에 이벤트 저장 중... (ID: ${eventItem.id})`);
-
                 await backend.putEvent(eventData);
-
-                console.log(`✅ [EventTimeline] DB 저장 완료: ${eventItem.id}`);
             } catch (error) {
                 console.error('❌ [EventTimeline] DB 저장 실패:', error);
             }
@@ -889,20 +881,10 @@ export default {
             return !name || name.toLowerCase() === 'unknown' ? task.role : task.name;
         },
         getTaskDescription(task) {
-            console.log('[EventTimeline] getTaskDescription 호출:', {
-                taskId: task.id,
-                taskDescription: task.taskDescription,
-                goal: task.goal,
-                crewType: task.crewType,
-                hasTaskDescription: !!task.taskDescription
-            });
             // task_description이 있으면 항상 표시
             if (task.taskDescription) {
-                console.log('[EventTimeline] task_description 반환:', task.taskDescription);
                 return task.taskDescription;
             }
-            console.log('[EventTimeline] goal 반환:', task.goal || 'Task');
-            return task.goal || 'Task';
         },
         getStatusText(task) {
             if (!task.isCompleted) return this.$t('EventTimeline.inProgress');
@@ -1240,9 +1222,6 @@ export default {
                     console.error('URL 데이터가 없습니다.');
                     return null;
                 }
-
-                console.log(`[EventTimeline] URL에서 파일 가져오기: ${fileName} from ${fileData.url}`);
-
                 // URL에서 파일 다운로드
                 const response = await fetch(fileData.url);
                 if (!response.ok) {
@@ -1260,9 +1239,6 @@ export default {
                     type: mimeType,
                     lastModified: Date.now()
                 });
-
-                console.log(`File 객체 생성 완료: ${fileName} (${file.size} bytes, ${file.type})`);
-
                 return file;
             } catch (error) {
                 console.error('File 객체 생성 중 오류 발생:', fileName, error);
@@ -1275,8 +1251,6 @@ export default {
                     console.error('URL 데이터가 없습니다.');
                     return;
                 }
-
-                console.log(`[EventTimeline] 파일 다운로드: ${fileName} from ${fileData.url}`);
 
                 // URL에서 파일 가져오기
                 const response = await fetch(fileData.url);
@@ -1297,8 +1271,6 @@ export default {
                 // 정리
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(url);
-
-                console.log(`파일 다운로드 완료: ${fileName}`);
             } catch (error) {
                 console.error('파일 다운로드 중 오류 발생:', error);
                 alert('파일 다운로드에 실패했습니다.');

@@ -999,12 +999,11 @@ export default {
             if (!activity) {
                 return;
             }
-            const isFirstActivity = !this.findPreviousHumanActivity(me.workItem.activity.tracingTag, definition);
-            if (isFirstActivity) {
-                return;
-            }
+
             let inputFields = {};
             if (activity.inputData && activity.inputData.length > 0) {
+                // 명시적으로 설정된 입력 데이터는 시퀀스/서브프로세스 위치와 무관하게
+                // 같은 루트 인스턴스 내에서 formId/fieldId로 직접 조회한다.
                 const fieldValuePromises = activity.inputData.map(async (fieldInfo) => {
                     const fieldValue = await backend.getFieldValue(fieldInfo, procDefId, me.workItem.worklist.instId);
                     if (fieldValue) {
@@ -1015,7 +1014,9 @@ export default {
                 });
                 await Promise.all(fieldValuePromises);
             } else {
-                const prevActivityId = me.findPreviousHumanActivity(me.workItem.activity.tracingTag, definition);
+                // 입력 데이터가 설정되지 않은 경우의 폴백: 시퀀스 상 바로 이전 단계
+                // (서브프로세스 포함)의 폼 전체를 보여준다.
+                const prevActivityId = await me.findPreviousHumanActivity(me.workItem.activity.tracingTag, definition);
                 if (prevActivityId) {
                     const formInfo = await backend.getFormFields(null, prevActivityId, procDefId);
                     if (formInfo && formInfo.fields_json) {
@@ -1045,24 +1046,13 @@ export default {
         backToPrevStep() {
             this.$emit('backToPrevStep');
         },
-        findPreviousHumanActivity(targetId, definition) {
-            if (!definition.sequences || !definition.activities) return null;
-            const visited = new Set();
-            const queue = [targetId];
-            while (queue.length > 0) {
-                const currentTarget = queue.shift();
-                if (visited.has(currentTarget)) continue;
-                visited.add(currentTarget);
-                const incomingFlows = definition.sequences.filter((seq) => seq.target === currentTarget);
-                for (const flow of incomingFlows) {
-                    const sourceId = flow.source;
-                    if (definition.activities.some((act) => act.id === sourceId)) {
-                        return sourceId;
-                    }
-                    queue.push(sourceId);
-                }
-            }
-            return null;
+        async findPreviousHumanActivity(targetId, definition) {
+            // 서브프로세스 경계를 인식하는 탐색은 ProcessGPTBackend의 공용 로직을 재사용한다
+            // (design-time 모델러 패널에서 쓰는 것과 동일한 트래버설).
+            // 주의: backend는 BackendFactory에서 모든 메서드를 async 프록시로 감싸므로
+            // (원본이 동기 함수여도) 반드시 await 해야 한다. await 없이 반환하면 Promise
+            // 객체 자체가 되어 항상 truthy로 취급되는 버그가 생긴다.
+            return await backend.getPreviousStepId(targetId, definition);
         },
 
         updateFormHtmlWithChipValues(data) {

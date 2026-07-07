@@ -9,10 +9,10 @@
         <!-- 레포 없음 -->
         <div v-else-if="hasRepo === false" class="d-flex flex-column align-center justify-center py-10 px-6 text-center">
             <v-icon size="44" color="grey-lighten-1" class="mb-3">mdi-git</v-icon>
-            <div class="text-body-2 font-weight-medium mb-1">Git 레포지토리 없음</div>
-            <div class="text-caption text-medium-emphasis mb-4">레포를 생성하면 변경 이력과 PR을 관리할 수 있습니다.</div>
+            <div class="text-body-2 font-weight-medium mb-1">{{ $t('SkillGitHistory.noRepoTitle') }}</div>
+            <div class="text-caption text-medium-emphasis mb-4">{{ $t('SkillGitHistory.noRepoDesc') }}</div>
             <v-btn color="primary" variant="flat" size="small" rounded :loading="creatingRepo" @click="createRepo">
-                레포 생성
+                {{ $t('SkillGitHistory.createRepo') }}
             </v-btn>
             <v-alert v-if="createRepoError" type="error" density="compact" class="mt-3 w-100" closable @click:close="createRepoError = ''">
                 {{ createRepoError }}
@@ -45,15 +45,15 @@
 
             <!-- 헤더 + 세그먼트 컨트롤 -->
             <div class="gh-header flex-shrink-0">
-                <span class="gh-title">변경 이력 · 리뷰</span>
+                <span class="gh-title">{{ $t('SkillGitHistory.title') }}</span>
                 <div class="seg-ctrl">
                     <button :class="['seg-btn', { active: activeTab === 'commits' }]" @click="switchTab('commits')">
                         <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 12h6M15 12h6"/></svg>
-                        커밋
+                        {{ $t('SkillGitHistory.commitsTab') }}
                     </button>
                     <button :class="['seg-btn', { active: activeTab === 'prs' }]" @click="switchTab('prs')">
                         <svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M6 8.5V14a4 4 0 0 0 4 4h5"/></svg>
-                        PR
+                        {{ $t('SkillGitHistory.prsTab') }}
                         <span v-if="openPrCount > 0" class="pr-pill">{{ openPrCount }}</span>
                     </button>
                 </div>
@@ -81,8 +81,8 @@
                     <!-- 내 리뷰 필요 -->
                     <template v-if="needsMyReviewPrs.length">
                         <div class="sec-h">
-                            내 리뷰가 필요해요
-                            <span class="sec-n">· {{ isOwner ? 'owner' : '작성자' }}</span>
+                            {{ $t('SkillGitHistory.needsMyReview') }}
+                            <span class="sec-n">· {{ isOwner ? $t('SkillGitHistory.roleOwner') : $t('SkillGitHistory.roleAuthor') }}</span>
                         </div>
                         <div v-for="pr in needsMyReviewPrs" :key="pr.id" class="prc" @click="openPr(pr)">
                             <span :class="['pr-accent', prAccentClass(pr.status)]"></span>
@@ -96,7 +96,7 @@
                                     <span :class="['st-badge', prBadgeClass(pr.status)]">{{ prStatusLabel(pr.status) }}</span>
                                 </div>
                                 <div class="prc-byline">
-                                    <b>{{ pr.requester_name || '알 수 없음' }}</b>
+                                    <b>{{ pr.requester_name || $t('SkillGitHistory.unknownUser') }}</b>
                                     <span class="dot-sep">·</span>
                                     <span class="pr-time">{{ relativeTime(pr.updated_at || pr.created_at) }}</span>
                                     <template v-if="prActionText(pr)">
@@ -112,12 +112,12 @@
                                 </div>
                             </div>
                             <div class="prc-actions">
-                                <button v-if="isOwner" class="rbtn" @click="openPr(pr)">검토하기</button>
+                                <button v-if="isOwner" class="rbtn" @click="openPr(pr)">{{ $t('SkillGitHistory.reviewAction') }}</button>
                                 <button v-else-if="!isOwner && pr.status === 'CHANGES_REQUESTED'"
                                         class="rbtn ghost"
                                         :disabled="resubmittingPR === pr.id"
                                         @click.stop="resubmitPR(pr)">
-                                    재검토 요청
+                                    {{ $t('SkillGitHistory.resubmitAction') }}
                                 </button>
                             </div>
                         </div>
@@ -126,8 +126,8 @@
                     <!-- 다른 활성 PR -->
                     <template v-if="otherActivePrs.length">
                         <div class="sec-h">
-                            {{ needsMyReviewPrs.length ? '검토 대기 중' : '활성 PR' }}
-                            <span class="sec-n">· 다른 리뷰어</span>
+                            {{ needsMyReviewPrs.length ? $t('SkillGitHistory.waitingReview') : $t('SkillGitHistory.activePr') }}
+                            <span class="sec-n">· {{ $t('SkillGitHistory.otherReviewer') }}</span>
                         </div>
                         <div v-for="pr in otherActivePrs" :key="pr.id" class="prc" @click="openPr(pr)">
                             <span :class="['pr-accent', prAccentClass(pr.status)]"></span>
@@ -141,7 +141,7 @@
                                     <span :class="['st-badge', prBadgeClass(pr.status)]">{{ prStatusLabel(pr.status) }}</span>
                                 </div>
                                 <div class="prc-byline">
-                                    <b>{{ pr.requester_name || '알 수 없음' }}</b>
+                                    <b>{{ pr.requester_name || $t('SkillGitHistory.unknownUser') }}</b>
                                     <span class="dot-sep">·</span>
                                     <span class="pr-time">{{ relativeTime(pr.updated_at || pr.created_at) }}</span>
                                     <template v-if="prActionText(pr)">
@@ -157,7 +157,7 @@
                                 </div>
                             </div>
                             <div class="prc-actions">
-                                <button v-if="isOwner && pr.status === 'APPROVED'" class="rbtn rbtn-merge">병합</button>
+                                <button v-if="isOwner && pr.status === 'APPROVED'" class="rbtn rbtn-merge">{{ $t('SkillGitHistory.mergeAction') }}</button>
                                 <svg v-else class="ico chev-ico" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
                             </div>
                         </div>
@@ -166,8 +166,8 @@
                     <!-- 최근 병합됨 -->
                     <template v-if="filteredMergedPrs.length">
                         <div class="sec-h">
-                            최근 병합됨
-                            <span class="sec-n">· {{ filteredMergedPrs.length }}건</span>
+                            {{ $t('SkillGitHistory.recentlyMerged') }}
+                            <span class="sec-n">· {{ $t('SkillGitHistory.mergedCount', { count: filteredMergedPrs.length }) }}</span>
                         </div>
                         <div v-for="pr in filteredMergedPrs" :key="pr.id" class="prc merged" @click="openPr(pr)">
                             <span class="pr-accent pr-accent-merged"></span>
@@ -178,17 +178,17 @@
                             <div class="prc-body">
                                 <div class="prc-title">
                                     {{ pr.title }}
-                                    <span class="st-badge st-merged">병합됨</span>
+                                    <span class="st-badge st-merged">{{ $t('SkillGitHistory.mergedBadge') }}</span>
                                 </div>
                                 <div class="prc-byline">
-                                    <b>{{ pr.requester_name || '알 수 없음' }}</b>
+                                    <b>{{ pr.requester_name || $t('SkillGitHistory.unknownUser') }}</b>
                                     <span class="dot-sep">·</span>
                                     <span class="pr-time">{{ relativeTime(pr.merged_at || pr.updated_at) }}</span>
                                 </div>
                                 <div v-if="prMergedByName(pr)" class="prc-mergedby">
                                     <span class="merger-chip">
                                         <svg class="ico-xs" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 8.5v7M8.4 7.4 15.6 7.6M18 11.5c0 3-3 4-6 4"/></svg>
-                                        {{ prMergedByName(pr) }}님이 병합
+                                        {{ $t('SkillGitHistory.mergedBy', { name: prMergedByName(pr) }) }}
                                     </span>
                                 </div>
                                 <div class="prc-branchline">
@@ -211,7 +211,7 @@
                     <div v-if="!needsMyReviewPrs.length && !otherActivePrs.length && !filteredMergedPrs.length"
                          class="d-flex flex-column align-center justify-center py-8">
                         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#BDBDBD" stroke-width="1.5"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M6 8.5V14a4 4 0 0 0 4 4h5"/></svg>
-                        <div class="text-caption text-medium-emphasis mt-2">PR이 없습니다.</div>
+                        <div class="text-caption text-medium-emphasis mt-2">{{ $t('SkillGitHistory.noPrs') }}</div>
                     </div>
                 </div>
             </template>
@@ -223,7 +223,7 @@
                 </div>
                 <div v-else-if="commits.length === 0" class="d-flex flex-column align-center justify-center py-8">
                     <v-icon size="36" color="grey-lighten-1" class="mb-2">mdi-history</v-icon>
-                    <div class="text-caption text-medium-emphasis">커밋이 없습니다.</div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('SkillGitHistory.noCommits') }}</div>
                 </div>
                 <div v-else class="gh-body flex-grow-1 overflow-y-auto">
                     <div v-for="(group, date) in groupedCommits" :key="date" class="commit-daygrp">
@@ -326,11 +326,11 @@ export default {
         prFilterOptions() {
             const all = this.prRecords;
             return [
-                { key: 'all',               label: '전체',     count: all.length },
-                { key: 'OPEN',              label: '검토 대기', count: all.filter(p => p.status === 'OPEN').length },
-                { key: 'CHANGES_REQUESTED', label: '변경 요청', count: all.filter(p => p.status === 'CHANGES_REQUESTED').length },
-                { key: 'APPROVED',          label: '승인됨',   count: all.filter(p => p.status === 'APPROVED').length },
-                { key: 'MERGED',            label: '병합됨',   count: all.filter(p => p.status === 'MERGED' || p.status === 'CLOSED').length }
+                { key: 'all',               label: this.$t('SkillGitHistory.filterAll'),               count: all.length },
+                { key: 'OPEN',              label: this.$t('SkillGitHistory.filterOpen'),              count: all.filter(p => p.status === 'OPEN').length },
+                { key: 'CHANGES_REQUESTED', label: this.$t('SkillGitHistory.filterChangesRequested'),  count: all.filter(p => p.status === 'CHANGES_REQUESTED').length },
+                { key: 'APPROVED',          label: this.$t('SkillGitHistory.filterApproved'),          count: all.filter(p => p.status === 'APPROVED').length },
+                { key: 'MERGED',            label: this.$t('SkillGitHistory.filterMerged'),            count: all.filter(p => p.status === 'MERGED' || p.status === 'CLOSED').length }
             ].filter(f => f.key === 'all' || f.count > 0);
         },
         groupedCommits() {
@@ -598,14 +598,18 @@ export default {
         authorColor: getAvatarColor,
         prActionText(pr) {
             const reviews = this.prReviewsMap[pr.id] || [];
-            if (pr.status === 'OPEN') return '검토 요청함';
+            if (pr.status === 'OPEN') return this.$t('SkillGitHistory.actionRequestedReview');
             if (pr.status === 'CHANGES_REQUESTED') {
                 const last = [...reviews].reverse().find(r => r.action === 'CHANGES_REQUESTED');
-                return last?.reviewer_name ? `${last.reviewer_name}님이 변경 요청` : '변경 요청됨';
+                return last?.reviewer_name
+                    ? this.$t('SkillGitHistory.actionChangesRequestedBy', { name: last.reviewer_name })
+                    : this.$t('SkillGitHistory.actionChangesRequested');
             }
             if (pr.status === 'APPROVED') {
                 const last = [...reviews].reverse().find(r => r.action === 'APPROVED');
-                return last?.reviewer_name ? `${last.reviewer_name}님이 승인` : '승인됨';
+                return last?.reviewer_name
+                    ? this.$t('SkillGitHistory.actionApprovedBy', { name: last.reviewer_name })
+                    : this.$t('SkillGitHistory.actionApproved');
             }
             return '';
         },
@@ -615,13 +619,15 @@ export default {
             return last?.reviewer_name || null;
         },
         formatDateHeader(d) {
-            if (!d) return '날짜 없음';
-            try { return new Date(d).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }); }
+            if (!d) return this.$t('SkillGitHistory.noDate');
+            const locale = this.$i18n.locale === 'ko' ? 'ko-KR' : 'en-US';
+            try { return new Date(d).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' }); }
             catch { return d; }
         },
         formatTime(d) {
             if (!d) return '';
-            try { return new Date(d).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }); }
+            const locale = this.$i18n.locale === 'ko' ? 'ko-KR' : 'en-US';
+            try { return new Date(d).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }); }
             catch { return ''; }
         },
         firstLine(msg) { return (msg || '').split('\n')[0].trim(); }

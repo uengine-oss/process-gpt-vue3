@@ -67,10 +67,7 @@ export default {
             }
             const processDefinition = await this.convertXMLToJSON(xmlString);
             if (processDefinition?.activities && this.processDefinition) {
-                processDefinition.activities = this.mergeActivitiesPreservingMetadata(
-                    processDefinition.activities,
-                    this.processDefinition
-                );
+                this.mergeProcessDefinitionActivities(processDefinition, this.processDefinition);
             }
             const syncedDefinition = syncBpmnCallActivitiesIntoDefinition(xmlString, processDefinition);
             if (callback && typeof callback === 'function') {
@@ -155,9 +152,7 @@ export default {
             }
             return bucket;
         },
-        mergeActivitiesPreservingMetadata(newActivities, previousDefinition) {
-            if (!Array.isArray(newActivities) || !previousDefinition) return newActivities;
-
+        buildPreviousActivityMap(previousDefinition) {
             const previousActivities = this.collectActivitiesForMerge(previousDefinition, []);
             const previousActivityMap = new Map();
             previousActivities.forEach((activity) => {
@@ -165,6 +160,10 @@ export default {
                     previousActivityMap.set(activity.id, activity);
                 }
             });
+            return previousActivityMap;
+        },
+        mergeActivitiesArrayWithMap(newActivities, previousActivityMap) {
+            if (!Array.isArray(newActivities)) return newActivities;
 
             return newActivities.map((newActivity) => {
                 const previousActivity = previousActivityMap.get(newActivity?.id);
@@ -175,6 +174,37 @@ export default {
                 if (newActivity?.id) merged.id = newActivity.id;
                 return merged;
             });
+        },
+        // 서브프로세스(중첩 포함) 내부의 children.activities에도 동일한 폴백 병합을 적용한다.
+        mergeSubProcessActivitiesRecursively(subProcesses, previousActivityMap) {
+            if (!Array.isArray(subProcesses)) return;
+
+            subProcesses.forEach((subProcess) => {
+                if (!subProcess?.children) return;
+                if (Array.isArray(subProcess.children.activities)) {
+                    subProcess.children.activities = this.mergeActivitiesArrayWithMap(
+                        subProcess.children.activities,
+                        previousActivityMap
+                    );
+                }
+                if (Array.isArray(subProcess.children.subProcesses)) {
+                    this.mergeSubProcessActivitiesRecursively(subProcess.children.subProcesses, previousActivityMap);
+                }
+            });
+        },
+        // 최상위 activities와 서브프로세스 트리 전체에 메타데이터 보존 병합을 적용한다.
+        mergeProcessDefinitionActivities(newProcessDefinition, previousDefinition) {
+            if (!newProcessDefinition || !previousDefinition) return newProcessDefinition;
+
+            const previousActivityMap = this.buildPreviousActivityMap(previousDefinition);
+            if (Array.isArray(newProcessDefinition.activities)) {
+                newProcessDefinition.activities = this.mergeActivitiesArrayWithMap(
+                    newProcessDefinition.activities,
+                    previousActivityMap
+                );
+            }
+            this.mergeSubProcessActivitiesRecursively(newProcessDefinition.subProcesses, previousActivityMap);
+            return newProcessDefinition;
         },
         async checkedFormData() {
             console.log('[FORM_DEBUG] checkedFormData called', {
@@ -536,6 +566,9 @@ export default {
                 if (sp.role) {
                     props.role = sp.role;
                 }
+                if (sp.tool !== undefined && sp.tool !== null) {
+                    props.tool = sp.tool;
+                }
 
                 this.upsertElementJsonProperties(modeler, sp.id, JSON.stringify(props));
 
@@ -791,10 +824,7 @@ export default {
                             // }
 
                             if (newProcessDefinition.activities) {
-                                newProcessDefinition.activities = this.mergeActivitiesPreservingMetadata(
-                                    newProcessDefinition.activities,
-                                    me.processDefinition
-                                );
+                                this.mergeProcessDefinitionActivities(newProcessDefinition, me.processDefinition);
                             }
 
                             me.processDefinition = newProcessDefinition;
@@ -892,10 +922,7 @@ export default {
                         updatedProcessDefinition.data = me.processVariables;
 
                         if (updatedProcessDefinition.activities && me.processDefinition.activities) {
-                            updatedProcessDefinition.activities = this.mergeActivitiesPreservingMetadata(
-                                updatedProcessDefinition.activities,
-                                me.processDefinition
-                            );
+                            this.mergeProcessDefinitionActivities(updatedProcessDefinition, me.processDefinition);
                         }
 
                         if (info.name && info.name != '') {
@@ -1532,6 +1559,8 @@ export default {
                     task.inputData = [];
                     task.outputData = [];
                     task.tool = 'formHandler:defaultform';
+                    task.tools = [];
+                    task.skills = [];
                     task.properties = activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
                     if (window.$pal && window.$mode === 'uEngine') {
                         task.uuid = activity.id;
@@ -1555,6 +1584,8 @@ export default {
                         task.inputData = propsJson.inputData || task.inputData;
                         task.outputData = propsJson.outputData || task.outputData;
                         task.tool = propsJson.tool || task.tool;
+                        task.tools = propsJson.tools || task.tools;
+                        task.skills = propsJson.skills || task.skills;
                     }
 
                     if (propsJson && propsJson.variableForHtmlFormContext && propsJson.variableForHtmlFormContext.name) {
@@ -1676,6 +1707,7 @@ export default {
                                 duration: propsJson?.duration ? propsJson.duration : 5,
                                 description: propsJson.description || '',
                                 instruction: propsJson.instruction || '',
+                                tool: propsJson.tool || 'formHandler:defaultform',
                                 properties: serializePropsJson(childSp, propsJson),
                                 attachedEvents: childSp.attachedEvents || null,
                                 // 재귀
@@ -1776,6 +1808,7 @@ export default {
                                 duration: propsJson?.duration ? propsJson.duration : 5,
                                 description: propsJson.description || '',
                                 instruction: propsJson.instruction || '',
+                                tool: propsJson.tool || 'formHandler:defaultform',
                                 properties: serializePropsJson(sp, propsJson),
                                 attachedEvents: sp.attachedEvents || null,
                                 children: buildSubprocessChildren(sp.childrenRaw, lanes, definitionName, processDefinitionId)
@@ -2277,10 +2310,7 @@ export default {
             if (!processDefinition || !processDefinition.activities) {
                 processDefinition = await this.convertXMLToJSON(this.bpmn);
                 if (processDefinition?.activities && previousDefinitionSnapshot) {
-                    processDefinition.activities = this.mergeActivitiesPreservingMetadata(
-                        processDefinition.activities,
-                        previousDefinitionSnapshot
-                    );
+                    this.mergeProcessDefinitionActivities(processDefinition, previousDefinitionSnapshot);
                 }
             }
 
