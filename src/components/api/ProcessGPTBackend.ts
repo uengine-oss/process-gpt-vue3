@@ -3063,6 +3063,8 @@ class ProcessGPTBackend implements Backend {
         try {
             const list = await storage.list('todolist', { match: { proc_inst_id: instId } });
             const result: any = {};
+            const procDefId = list.find((item: any) => item?.proc_def_id)?.proc_def_id;
+            const callActivityIds = await this.getCallActivityIdsForDefinition(procDefId);
 
             // activity_id별로 그룹화하고 rework_count가 큰 순서로 정렬
             const groupedByActivity = list.reduce((acc: any, item: any) => {
@@ -3079,13 +3081,14 @@ class ProcessGPTBackend implements Backend {
                 // rework_count가 큰 순서로 정렬 (내림차순)
                 const sortedItems = items.sort((a: any, b: any) => (b.rework_count || 0) - (a.rework_count || 0));
                 const selectedItem = sortedItems[0]; // 가장 큰 rework_count를 가진 아이템
+                const isCallActivity = callActivityIds.has(selectedItem.activity_id);
 
                 if (selectedItem.status == 'DONE') {
                     result[selectedItem.activity_id] = 'Completed';
                 } else if (selectedItem.status == 'IN_PROGRESS' || selectedItem.status == 'SUBMITTED') {
                     result[selectedItem.activity_id] = 'Running';
                 } else if (selectedItem.status == 'PENDING') {
-                    result[selectedItem.activity_id] = 'Pending';
+                    result[selectedItem.activity_id] = isCallActivity ? 'Running' : 'Pending';
                 } else if (selectedItem.status == 'TODO') {
                     result[selectedItem.activity_id] = 'New';
                 } else if (selectedItem.status == 'CANCELLED') {
@@ -3097,6 +3100,28 @@ class ProcessGPTBackend implements Backend {
         } catch (e) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    private async getCallActivityIdsForDefinition(procDefId?: string): Promise<Set<string>> {
+        if (!procDefId) return new Set();
+
+        try {
+            const procDef = await storage.getObject('proc_def', {
+                match: { id: procDefId }
+            });
+            const rawDefinition = procDef?.definition;
+            const definition = typeof rawDefinition === 'string' ? JSON.parse(rawDefinition) : rawDefinition;
+            const activities = Array.isArray(definition?.activities) ? definition.activities : [];
+            return new Set(
+                activities
+                    .filter((activity: any) => String(activity?.type || '').toLowerCase() === 'callactivity')
+                    .map((activity: any) => activity?.id)
+                    .filter(Boolean)
+            );
+        } catch (error) {
+            console.warn('[ProcessGPTBackend] Failed to resolve CallActivity ids for activity status.', error);
+            return new Set();
         }
     }
 
