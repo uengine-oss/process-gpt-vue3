@@ -306,11 +306,6 @@ export default {
 
                 const roomId = crypto.randomUUID();
                 const nowIso = new Date().toISOString();
-                const editingSkillFile = {
-                    skill_name: this.skillName,
-                    file_path: this.filePath,
-                    branch: this.selectedBranch || this.defaultBranch
-                };
 
                 const room = {
                     id: roomId,
@@ -319,14 +314,13 @@ export default {
                     message: { msg: 'NEW', type: 'text', createdAt: nowIso },
                     context: {
                         orchestration: 'deepagents',
-                        editingSkillFile,
                         updatedAt: nowIso
                     }
                 };
                 await this.backend.putObject('db://chat_rooms', room);
 
                 const msgUuid = crypto.randomUUID();
-                const text = `${this.filePath} 파일을 편집하려고 합니다.`;
+                const text = `${this.skillName} 스킬의 ${this.filePath} 파일을 편집하려고 합니다. 워크스페이스에서 스킬 편집을 준비해주세요.`;
                 const msg = {
                     uuid: msgUuid,
                     role: 'user',
@@ -350,7 +344,6 @@ export default {
                             message_uuid: msgUuid,
                             text,
                             orchestration: 'deepagents',
-                            editingSkillFile,
                             createdAt: nowIso
                         })
                     );
