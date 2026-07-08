@@ -3,10 +3,6 @@
         :showExamples="true"
         :disableChat="isUploading"
         :enableKnowledgeBase="true"
-        :knowledgeDocs="selectedKnowledgeDocs"
-        @update:knowledgeDocs="(docs) => (selectedKnowledgeDocs = docs)"
-        :knowledgeFolders="selectedKnowledgeFolders"
-        @update:knowledgeFolders="(folders) => (selectedKnowledgeFolders = folders)"
         @sendMessage="handleUnifiedSend"
         @recording-mode-change="handleRecordingModeChange"
     />
@@ -33,9 +29,7 @@ export default {
     data() {
         return {
             isUploading: false,
-            recordingMode: false,
-            selectedKnowledgeDocs: [],
-            selectedKnowledgeFolders: []
+            recordingMode: false
         };
     },
     methods: {

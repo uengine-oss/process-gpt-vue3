@@ -103,7 +103,7 @@
                     폴더를 펼쳐 파일을 선택하거나, 폴더 전체를 체크하세요
                 </span>
                 <span class="text-caption text-medium-emphasis ml-auto">
-                    선택됨 <strong class="text-primary">{{ selectedKeys.length }}</strong>개
+                    선택됨 {{ selectionLabel }}
                 </span>
             </div>
 
@@ -207,6 +207,7 @@
                         :expanded="expandedPaths"
                         :selectedKeysSet="selectedKeysSet"
                         :selCountMap="folderSelCounts"
+                        :folderScope="selectedFolderPaths"
                         @toggle-folder="toggleFolder"
                         @toggle-file="toggleFile"
                         @toggle-folder-select="toggleFolderSelect"
@@ -225,7 +226,7 @@
                 <v-btn variant="text" @click="$emit('update:modelValue', false)">취소</v-btn>
                 <v-btn color="primary" variant="flat" @click="confirm" :disabled="loading">
                     <v-icon start size="16">mdi-check</v-icon>
-                    {{ selectedKeys.length > 0 ? `${selectedKeys.length}개 사용` : '선택 없이 닫기' }}
+                    {{ hasSelection ? `${selectionLabel} 사용` : '선택 없이 닫기' }}
                 </v-btn>
             </div>
         </v-card>
@@ -378,6 +379,19 @@ export default {
     computed: {
         selectedKeys() {
             return [...this.selectedKeysSet];
+        },
+        selectedFolderCount() {
+            return this.selectedFolderPaths ? this.selectedFolderPaths.size : 0;
+        },
+        hasSelection() {
+            return this.selectedKeys.length > 0 || this.selectedFolderCount > 0;
+        },
+        // 폴더째 선택은 파일을 안 세고 '폴더 N'으로 표시(수천 파일이 폴더 1건으로 접힘)
+        selectionLabel() {
+            const parts = [];
+            if (this.selectedFolderCount > 0) parts.push(`폴더 ${this.selectedFolderCount}`);
+            if (this.selectedKeys.length > 0) parts.push(`파일 ${this.selectedKeys.length}`);
+            return parts.length ? parts.join(' · ') : '0';
         },
         counts() {
             const rt = this.folderCounts.role_totals || {};
@@ -763,40 +777,38 @@ export default {
             this.selectedKeysSet = set;
             this.selectedDocsMap = map;
         },
-        // 폴더 체크 → 하위 전체(재귀) 파일을 서버에서 받아 leaf 파일들을 선택.
-        // deepagents 는 잎 파일 refs 를 받으므로, 폴더 선택도 결국 파일 단위로 flatten 된다.
-        async toggleFolderSelect({ node, select }) {
-            const files = await this.loadFolderFiles(node.path, { recursive: true });
-            const indexed = files.filter((f) => f.indexStatus === 'indexed');
-            const set = new Set(this.selectedKeysSet);
-            const map = { ...this.selectedDocsMap };
-            for (const f of indexed) {
-                if (select) {
-                    set.add(f.key);
-                    map[f.key] = this.toDoc(f);
-                } else {
-                    set.delete(f.key);
-                    delete map[f.key];
-                }
-            }
-            this.selectedKeysSet = set;
-            this.selectedDocsMap = map;
-            // 폴더째 선택 추적 — 이 폴더(+하위)는 하나의 스코프. 상위/하위 중복은 정리.
+        // 폴더 체크 = *폴더 스코프* 로 기록. 하위 파일을 일일이 선택/전송하지 않는다(수천 file_id
+        // flatten·재조회 회피). deepagents 는 folder_paths 로 그 폴더 subtree 를 탐색하고, confirm 은
+        // 폴더로 커버된 개별 파일을 knowledge_docs 에서 접는다. 파일 커버 표시는 folderScope 로 O(1).
+        toggleFolderSelect({ node, select }) {
             const fset = new Set(this.selectedFolderPaths);
             if (select) {
-                // 이미 선택된 조상/자손 폴더가 있으면 이 폴더로 병합(중복 스코프 방지)
+                // 조상/자손 폴더 중복 스코프 제거 — 이 폴더로 병합
                 for (const p of [...fset]) {
                     if (p === node.path || p.startsWith(node.path + '/') || node.path.startsWith(p + '/')) {
                         fset.delete(p);
                     }
                 }
                 fset.add(node.path);
+                // 이 폴더로 커버되는 개별 파일 선택은 제거(폴더 스코프가 대신)
+                const set = new Set(this.selectedKeysSet);
+                const map = { ...this.selectedDocsMap };
+                let changed = false;
+                for (const k of [...set]) {
+                    const d = map[k];
+                    const fp = (d && (d.folderPath || d.drive_folder_name)) || '';
+                    if (fp === node.path || fp.startsWith(node.path + '/')) {
+                        set.delete(k);
+                        delete map[k];
+                        changed = true;
+                    }
+                }
+                if (changed) {
+                    this.selectedKeysSet = set;
+                    this.selectedDocsMap = map;
+                }
             } else {
                 fset.delete(node.path);
-                // 조상 폴더가 통째로 선택돼 있었다면, 그 조상도 해제(부분 해제됐으므로)
-                for (const p of [...fset]) {
-                    if (node.path.startsWith(p + '/')) fset.delete(p);
-                }
             }
             this.selectedFolderPaths = fset;
         },
@@ -874,11 +886,19 @@ export default {
         },
         confirm() {
             // 선택된 key 를 보존된 doc map 으로 해석 → lazy 로드 사이에도 누락 없음
-            const selectedDocs = [...this.selectedKeysSet]
-                .map((k) => this.selectedDocsMap[k])
-                .filter(Boolean);
             // 폴더째 선택 경로 — deepagents 가 폴더 스코프로 탐색(수천 file_id 나열 회피)
             const folders = [...this.selectedFolderPaths].filter((p) => typeof p === 'string' && p.trim());
+            const coveredByFolder = (fp) => {
+                const p = (fp || '').trim().replace(/^\/+|\/+$/g, '');
+                return folders.some((r) => p === r || p.startsWith(r + '/'));
+            };
+            // ⚠️ 폴더로 커버되는 파일은 knowledge_docs 에서 제외 — 폴더 1건이 그 안 수천 파일을 대신한다.
+            //    (안 그러면 활동탭 패널·방 컨텍스트·매 메시지 metadata 에 수천 doc 이 그대로 실려 부하 폭증)
+            //    폴더 스코프로 접근되므로 개별 file_id 나열 불필요. 폴더에 안 덮인 개별 파일만 남긴다.
+            const selectedDocs = [...this.selectedKeysSet]
+                .map((k) => this.selectedDocsMap[k])
+                .filter(Boolean)
+                .filter((d) => !coveredByFolder(d.folderPath || d.drive_folder_name || ''));
             this.$emit('confirm', selectedDocs, folders);
             this.$emit('update:modelValue', false);
         }

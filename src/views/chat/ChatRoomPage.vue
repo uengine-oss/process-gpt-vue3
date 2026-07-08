@@ -209,10 +209,6 @@
                                 :desktopVoiceActive="isDesktopVoiceActive"
                                 :enableDesktopVoice="isVoiceEnabled"
                                 :enableKnowledgeBase="true"
-                                :knowledgeDocs="selectedKnowledgeDocs"
-                                @update:knowledgeDocs="onKnowledgeDocsUpdate"
-                                :knowledgeFolders="selectedKnowledgeFolders"
-                                @update:knowledgeFolders="onKnowledgeFoldersUpdate"
                                 @sendMessage="handleSendMessage"
                                 @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
                                 @desktop-voice-toggle="toggleDesktopVoice"
@@ -814,6 +810,7 @@ import deepAgentRouterService from '@/services/DeepAgentRouterService';
 import FixedBaseWorkAssistantAgentService from '@/services/FixedBaseWorkAssistantAgentService';
 import { getValidToken } from '@/utils/supabaseAuth';
 import { isLegacyProcessDefinition, convertLegacyProcessDefinitionToElements } from '@/utils/legacyProcessDefinition';
+import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 import { processGptAgent } from '@/constants/processGptAgent';
 import { PROCESS_GPT_AGENT_ID } from '@/constants/processGptAgent';
 
@@ -841,6 +838,10 @@ const MAIN_PROCESS_GPT_AGENT_META = {
 
 export default {
     name: 'ChatRoomPage',
+    // 지식 선택은 전역 스토어(단일 소스). 이 페이지가 방 lifecycle(로드/저장/이월)을 이 스토어로 조율.
+    setup() {
+        return { knowledgeStore: useKnowledgeSelectionStore() };
+    },
     props: {
         embedded: { type: Boolean, default: false },
         contextAgentId: { type: String, default: null },
@@ -936,8 +937,8 @@ export default {
 
             // 산출물 미리보기 패널 (공통)
             artifactPanels: [], // [{ id, type, label, data: { htmlUrl, fileUrl, messageId } }]
-            selectedKnowledgeDocs: [], // 지식 베이스(Google Drive) RAG 컨텍스트로 선택된 문서
-            selectedKnowledgeFolders: [], // 폴더째 선택한 경로들 → deepagents 폴더 스코프 탐색용
+            // 지식 선택(docs/folders)은 전역 스토어가 소유 — 여기 data 에 복사본을 두지 않는다.
+            // 읽기는 computed selectedKnowledgeDocs/Folders 프록시로.
             activeArtifactId: null, // 현재 활성 탭 ID
             artifactSidebarVisible: false,
             artifactSidebarWidth: 820,
@@ -991,6 +992,13 @@ export default {
         };
     },
     computed: {
+        // 지식 선택 — 전역 스토어 프록시(읽기 전용). 쓰기는 knowledgeStore 액션 사용.
+        selectedKnowledgeDocs() {
+            return this.knowledgeStore.docs;
+        },
+        selectedKnowledgeFolders() {
+            return this.knowledgeStore.folders;
+        },
         /**
          * 마지막 메시지에서 미제출 __humanFeedback 추출
          * 입력부 상단에 표시할 human feedback 데이터
@@ -1373,6 +1381,13 @@ export default {
         }
     },
     watch: {
+        // 전역 지식 스토어 변경 → 저장/패널/방소유 처리(1틱 debounce 로 중복 DB 쓰기 방지)
+        selectedKnowledgeDocs() {
+            this.onKnowledgeSelectionChanged();
+        },
+        selectedKnowledgeFolders() {
+            this.onKnowledgeSelectionChanged();
+        },
         roomId: {
             immediate: true,
             async handler(newRoomId, oldRoomId) {
@@ -2305,8 +2320,8 @@ export default {
             this.planSideInfoEnabled = { activity: false, tools: false, skills: false, todos: false, attachments: false, knowledge: true };
             this.plannedActivityById = {};
             this._activityOrder = 0;
-            // 방 전환 시 지식 베이스 선택 상태도 초기화 (kickoff에서 새로 세팅 가능)
-            this.selectedKnowledgeDocs = [];
+            // 지식 선택은 아래 restoreSideInfoFromRoomContext 의 knowledgeStore.bindRoom 이
+            // 방별로 결정한다(기존 방=컨텍스트 로드 / 메인화면 이월=채택 / 그 외=초기화).
             try {
                 // 방 전환 시 히스토리 페이지네이션 상태 초기화
                 this.resetHistoryPagination();
@@ -2427,16 +2442,8 @@ export default {
                 // 1회만 실행
                 sessionStorage.removeItem(`chatKickoff:${roomId}`);
 
-                // 메인 화면에서 선택한 지식 베이스 문서를 채팅방으로 인계 — 입력창 칩 + 사이드 컨텍스트 표시
-                if (Array.isArray(payload?.knowledgeDocs) && payload.knowledgeDocs.length > 0) {
-                    this.selectedKnowledgeDocs = payload.knowledgeDocs;
-                    if (Array.isArray(payload?.knowledgeFolders)) {
-                        this.selectedKnowledgeFolders = payload.knowledgeFolders;
-                    }
-                    this.upsertKnowledgePanel();
-                    // 방 컨텍스트에 저장 → 새로고침/재진입 시에도 선택 유지 (kickoff 경로 누락분)
-                    this.persistSelectedKnowledge();
-                }
+                // 메인 화면에서 고른 지식 선택은 전역 스토어가 이미 들고 있고, restoreSideInfoFromRoomContext 의
+                // knowledgeStore.bindRoom 이 이 새 방으로 이월/저장한다. (kickoff 로 안 넘김 — 단일 소스)
 
                 // 메인 화면에서 전달된 raw File이 있으면 memento 경유 업로드 (임베딩 + 벡터 저장)
                 const pendingFiles = window.__pendingMementoFiles;
@@ -2622,13 +2629,18 @@ export default {
                     this.upsertTodosPanel();
                 }
 
-                // 선택했던 지식 베이스 자료(폴더/파일) 복원 — 입력창 칩 + 사이드 패널
-                const knowledgeDocs = Array.isArray(ctx.knowledgeDocs) ? ctx.knowledgeDocs : [];
-                if (knowledgeDocs.length) {
-                    this.selectedKnowledgeDocs = knowledgeDocs;
-                    this.selectedKnowledgeFolders = Array.isArray(ctx.knowledgeFolders) ? ctx.knowledgeFolders : [];
-                    this.planSideInfoEnabled.knowledge = true;
-                    this.upsertKnowledgePanel();
+                // 지식 선택 — 전역 스토어가 방 바인딩을 결정한다.
+                //  · 기존 방(ctx 에 선택 있음) → 그 방 선택 로드
+                //  · 메인화면 이월분(스토어에만 선택 있음) → 이 방으로 채택 후 저장
+                //  · 그 외(다른 방 전환 등) → 초기화 (이전 방 선택이 새 방으로 새지 않게)
+                const roomId = this.currentChatRoom?.id;
+                if (roomId) {
+                    const carried = this.knowledgeStore.bindRoom(roomId, ctx);
+                    if (this.knowledgeStore.hasSelection) {
+                        this.planSideInfoEnabled.knowledge = true;
+                        this.upsertKnowledgePanel();
+                        if (carried) this.persistSelectedKnowledge(); // 이월분을 이 방 컨텍스트에 저장
+                    }
                 }
             } catch (e) {
                 // ignore
@@ -4988,29 +5000,28 @@ export default {
             this.artifactSidebarVisible = true;
         },
 
-        /** ArtifactPanel의 panel-action 이벤트 중앙 처리 */
-        // 지식 베이스(Google Drive) — 입력창 칩 선택 변경
-        onKnowledgeDocsUpdate(docs) {
-            this.selectedKnowledgeDocs = Array.isArray(docs) ? docs : [];
-            this.upsertKnowledgePanel();
-            this.persistSelectedKnowledge();
+        // 지식 선택(전역 스토어)이 바뀌면 호출 — 방 컨텍스트 저장 + 활동탭 패널 갱신 + 이 방 소유로 표시.
+        // (watch: knowledgeStore.docs/folders. 예전의 onKnowledgeDocsUpdate/onKnowledgeFoldersUpdate 대체)
+        onKnowledgeSelectionChanged() {
+            // docs·folders 가 동시에 바뀌면 watcher 가 2번 뜨므로 1틱으로 합쳐 DB 중복쓰기 방지
+            if (this._ksChangePending) return;
+            this._ksChangePending = true;
+            this.$nextTick(() => {
+                this._ksChangePending = false;
+                if (this.knowledgeStore.hasSelection) this.planSideInfoEnabled.knowledge = true;
+                this.upsertKnowledgePanel();
+                this.persistSelectedKnowledge();
+                const rid = this.currentChatRoom?.id;
+                if (rid) this.knowledgeStore.claimRoom(rid);
+            });
         },
-        onKnowledgeFoldersUpdate(folders) {
-            this.selectedKnowledgeFolders = Array.isArray(folders) ? folders : [];
-            this.persistSelectedKnowledge();
-        },
-        /** 선택한 지식 베이스 자료를 방 컨텍스트에 저장 → 방 재진입 시 칩/패널 복원.
-         *  (restoreSideInfoFromRoomContext 가 ctx.knowledgeDocs 를 읽어 되살린다.) */
+        /** 현재 지식 선택(스토어)을 방 컨텍스트에 저장 → 방 재진입 시 복원. */
         persistSelectedKnowledge() {
             try {
                 const room = this.currentChatRoom;
                 if (!room || !room.id) return;
                 const prev = this.normalizeRoomContext(this.readChatRoomContext(room));
-                const next = {
-                    ...prev,
-                    knowledgeDocs: Array.isArray(this.selectedKnowledgeDocs) ? this.selectedKnowledgeDocs : [],
-                    knowledgeFolders: Array.isArray(this.selectedKnowledgeFolders) ? this.selectedKnowledgeFolders : []
-                };
+                const next = { ...prev, ...this.knowledgeStore.contextPayload };
                 this.writeChatRoomContext(next, room);
                 this.putChatRoomMerged(room).catch(() => {});
             } catch (e) {
@@ -5021,11 +5032,13 @@ export default {
         /** 우측 사이드바에 지식 베이스 컨텍스트 패널 생성/갱신 */
         upsertKnowledgePanel() {
             const items = Array.isArray(this.selectedKnowledgeDocs) ? this.selectedKnowledgeDocs : [];
+            // 폴더째 선택 — 수천 파일 대신 폴더 경로 몇 개로 표시(활동탭 패널 부하 방지)
+            const folders = Array.isArray(this.selectedKnowledgeFolders) ? this.selectedKnowledgeFolders : [];
             const enabled = !!this.planSideInfoEnabled?.knowledge;
-            const data = { enabled, items };
+            const data = { enabled, items, folders };
 
             const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'knowledge');
-            if (items.length === 0) {
+            if (items.length === 0 && folders.length === 0) {
                 if (existingIdx !== -1) this.artifactPanels.splice(existingIdx, 1);
                 if (this.artifactPanels.length === 0) {
                     this.artifactSidebarVisible = false;
@@ -6191,29 +6204,9 @@ export default {
                         assigned_skills: assignedSkills,
                         agent_profile: agentProfileForRuntime,
                         tool_settings: this.readToolsSettingsFromStorage(),
-                        // 지식 베이스(Google Drive)에서 사용자가 선택한 문서 목록.
-                        // 백엔드(memento)는 metadata.file_id 에 prefix 없는 원본 키
-                        // (Drive file id 또는 Storage path)를 저장하므로,
-                        // picker UI 의 prefix 키(`drive:`/`upload:`)가 아닌
-                        // sourceRef 를 그대로 id 로 보낸다.
-                        knowledge_docs: Array.isArray(this.selectedKnowledgeDocs)
-                            ? this.selectedKnowledgeDocs
-                                  .filter((d) => d && d.sourceRef)
-                                  .map((d) => ({
-                                      id: d.sourceRef,
-                                      source_type: d.sourceType || 'drive',
-                                      file_name: d.file_name || d.name || '',
-                                      mime_type: d.mimeType || '',
-                                      folder_path: d.folderPath || '',
-                                      // 역할(양식/사업개요 등) — 백엔드 초안 템플릿/자료 구분에 필수
-                                      doc_role: d.docRole || d.doc_role || 'content'
-                                  }))
-                            : [],
-                        // 사용자가 폴더째 선택한 경우 그 폴더 경로들. deepagents 는 이걸 우선 루트로 써서
-                        // (수천 개 file_id 나열 대신) 폴더 스코프로 트리 탐색한다. 없으면 file_id 로 폴백.
-                        knowledge_folders: Array.isArray(this.selectedKnowledgeFolders)
-                            ? this.selectedKnowledgeFolders.filter((p) => typeof p === 'string' && p.trim())
-                            : [],
+                        // 지식 선택 metadata(knowledge_docs=개별 파일 sourceRef, knowledge_folders=폴더 스코프).
+                        // 전역 스토어가 단일 소스 — snake_case 변환은 requestMetadata getter 가 담당.
+                        ...this.knowledgeStore.requestMetadata,
                         input_data: {
                             file: requestPrimaryFile,
                             files: requestFiles,

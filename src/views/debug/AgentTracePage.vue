@@ -3,7 +3,7 @@
     <div class="atp-root">
         <!-- ── 상단바 ── -->
         <div class="atp-topbar">
-            <span class="atp-logo">🐛 에이전트 디버그</span>
+            <span class="atp-logo">에이전트 디버그</span>
             <div class="atp-breadcrumb">
                 <template v-if="selectedRoomId">
                     <v-icon size="15" class="mr-1">mdi-forum-outline</v-icon>
@@ -191,6 +191,21 @@
                     <div class="atp-dhead"><v-icon size="18" class="mr-1">mdi-information-outline</v-icon>턴 개요</div>
                     <div class="atp-label mt-2">사용자 메시지</div>
                     <pre class="atp-pre">{{ turnDetail.userMessage || '(없음)' }}</pre>
+                    <!-- 이 턴에 선택된 지식베이스 폴더/파일 -->
+                    <template v-if="(turnDetail.metaFolders && turnDetail.metaFolders.length) || turnDetail.metaDocCount">
+                        <div class="atp-label mt-3">선택 지식베이스</div>
+                        <ul v-if="turnDetail.metaFolders && turnDetail.metaFolders.length" class="atp-kb-list">
+                            <li v-for="(f, i) in turnDetail.metaFolders" :key="i">
+                                <v-icon size="14" color="amber-darken-2" class="mr-1">mdi-folder-outline</v-icon>{{ f }}
+                            </li>
+                        </ul>
+                        <div v-if="turnDetail.metaDocCount" class="text-caption text-medium-emphasis mt-1">
+                            개별 파일 {{ turnDetail.metaDocCount }}개
+                        </div>
+                        <div v-if="!(turnDetail.metaFolders && turnDetail.metaFolders.length) && !turnDetail.metaDocCount" class="text-caption text-medium-emphasis">
+                            (선택 없음)
+                        </div>
+                    </template>
                     <template v-if="turnDetail.finalAnswer">
                         <div class="atp-label mt-3">최종 답변</div>
                         <pre class="atp-pre atp-answer">{{ turnDetail.finalAnswer }}</pre>
@@ -297,9 +312,15 @@ export default {
         turnDetail() {
             const t = this.turns.find((x) => x.runId === this.selectedRunId);
             if (!t) return {};
-            const metaFiles = (t.meta && t.meta.selected_files) || [];
+            const meta = t.meta || {};
+            const metaFiles = meta.selected_files || [];
             const metaSummary = metaFiles.length ? `선택 자료: ${metaFiles.join(', ')}` : '';
-            return { ...t, metaSummary };
+            // 이 턴에 선택된 지식베이스 — 폴더(폴더째 선택) + 개별 파일 수
+            const metaFolders = Array.isArray(meta.knowledge_folders)
+                ? meta.knowledge_folders.filter((p) => typeof p === 'string' && p.trim())
+                : [];
+            const metaDocCount = Array.isArray(meta.knowledge_docs) ? meta.knowledge_docs.length : 0;
+            return { ...t, metaSummary, metaFolders, metaDocCount };
         },
         tree() {
             return this.buildTree(this.events);
@@ -1020,6 +1041,8 @@ export default {
     border-bottom: 1px solid rgba(var(--v-border-color), 0.1);
 }
 .atp-label { font-size: 11px; font-weight: 700; color: rgba(var(--v-theme-on-surface), 0.55); margin-bottom: 3px; }
+.atp-kb-list { list-style: none; margin: 0; padding: 0; }
+.atp-kb-list li { display: flex; align-items: center; font-size: 12px; padding: 2px 0; color: rgba(var(--v-theme-on-surface), 0.8); word-break: break-all; }
 .atp-pre {
     white-space: pre-wrap;
     word-break: break-word;

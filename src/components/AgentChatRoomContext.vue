@@ -38,9 +38,17 @@
         <details v-if="showKnowledgeBlock" class="side-info__box" open>
             <summary class="side-info__summary">
                 <span class="side-info__title">지식 베이스</span>
-                <span class="side-info__count">{{ knowledgeList.length }}</span>
+                <span class="side-info__count">{{ knowledgeFolderList.length + knowledgeList.length }}</span>
             </summary>
             <ul class="side-info__list side-info__list--scroll">
+                <!-- 폴더째 선택 — 수천 파일을 폴더 1건으로 표시(활동탭 부하 방지) -->
+                <li v-for="fld in knowledgeFolderList" :key="fld.key" class="side-info__item side-info__kb" :title="fld.path">
+                    <v-icon size="14" color="#FFA726" class="side-info__kb-icon">mdi-folder</v-icon>
+                    <span class="side-info__kb-main">
+                        <span class="side-info__item-label">{{ fld.name }}</span>
+                        <span class="side-info__kb-path">{{ fld.path }} · 폴더 전체</span>
+                    </span>
+                </li>
                 <li v-for="d in knowledgeList" :key="d.key" class="side-info__item side-info__kb" :title="d.title">
                     <v-icon size="14" :color="d.icon.color" class="side-info__kb-icon">{{ d.icon.icon }}</v-icon>
                     <span class="side-info__kb-main">
@@ -199,6 +207,18 @@ export default {
                 })
                 .filter((x) => x.label);
         },
+        knowledgeFolderList() {
+            const p = this.sideInfoPanels.get('knowledge');
+            const folders = Array.isArray(p?.data?.folders) ? p.data.folders : [];
+            return folders
+                .map((f, idx) => {
+                    const path = (typeof f === 'string' ? f : f?.folder_path || f?.folderPath || '').toString().trim();
+                    if (!path) return null;
+                    const name = path.split('/').filter(Boolean).pop() || path;
+                    return { key: `kfld-${idx}-${path}`, path, name };
+                })
+                .filter(Boolean);
+        },
         toolsList() {
             const p = this.sideInfoPanels.get('tools');
             const items = Array.isArray(p?.data?.items) ? p.data.items : [];
@@ -250,7 +270,7 @@ export default {
             return this.activityEnabled && this.activityList.length > 0;
         },
         showKnowledgeBlock() {
-            return this.knowledgeEnabled && this.knowledgeList.length > 0;
+            return this.knowledgeEnabled && (this.knowledgeList.length > 0 || this.knowledgeFolderList.length > 0);
         },
         showAttachmentsBlock() {
             return this.attachmentsEnabled && this.attachmentsList.length > 0;

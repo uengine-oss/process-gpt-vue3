@@ -38,14 +38,14 @@
                     <v-btn
                         @click="openKnowledgePicker"
                         class="ml-2 text-medium-emphasis knowledge-tool-btn"
-                        :class="{ 'has-selected': selectedKnowledgeDocs.length > 0 }"
+                        :class="{ 'has-selected': knowledgeSelectionCount > 0 }"
                         variant="outlined"
                         rounded="pill"
                         prepend-icon="mdi-bookshelf"
                     >
                         <span class="knowledge-tool-btn__label">지식 베이스</span>
-                        <span v-if="selectedKnowledgeDocs.length > 0" class="knowledge-tool-btn__count">
-                            {{ selectedKnowledgeDocs.length }}
+                        <span v-if="knowledgeSelectionCount > 0" class="knowledge-tool-btn__count">
+                            {{ knowledgeSelectionCount }}
                         </span>
                     </v-btn>
                 </template>
@@ -66,10 +66,15 @@
 <script>
 import Chat from '@/components/ui/Chat.vue';
 import KnowledgeSpacePicker from '@/components/knowledge/KnowledgeSpacePicker.vue';
+import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 
 export default {
     name: 'UnifiedChatInput',
     components: { Chat, KnowledgeSpacePicker },
+    // 지식 선택은 전역 스토어(단일 소스). 예전의 props/emit/internal 배선을 제거.
+    setup() {
+        return { knowledgeStore: useKnowledgeSelectionStore() };
+    },
     props: {
         /**
          * - panel: 기존 메인/definition-map 스타일(파란 톤 배경 + 패딩/테두리)
@@ -120,48 +125,37 @@ export default {
         enableKnowledgeBase: {
             type: Boolean,
             default: false
-        },
-        // 외부에서 주입된 선택된 문서 (아티팩트 패널과 동기화)
-        knowledgeDocs: {
-            type: Array,
-            default: () => []
-        },
-        // 폴더째 선택한 경로들 (deepagents 폴더 스코프 탐색용)
-        knowledgeFolders: {
-            type: Array,
-            default: () => []
         }
     },
     emits: [
         'sendMessage',
         'recording-mode-change',
         'stopMessage',
-        'desktop-voice-toggle',
-        'update:knowledgeDocs',
-        'update:knowledgeFolders'
+        'desktop-voice-toggle'
     ],
     computed: {
         containerVariantClass() {
             return this.variant === 'inline' ? 'main-chat-input-container--inline' : 'main-chat-input-container--panel';
         },
+        // 아래 3개는 피커 바인딩용 — 전역 스토어를 그대로 참조(복사본 없음)
         selectedKnowledgeDocs() {
-            return this.knowledgeDocs && this.knowledgeDocs.length > 0 ? this.knowledgeDocs : this.internalKnowledgeDocs;
+            return this.knowledgeStore.docs;
         },
         selectedKnowledgeIds() {
-            return this.selectedKnowledgeDocs.map((d) => d.id);
+            return this.knowledgeStore.docIds;
         },
         selectedKnowledgeFolders() {
-            return this.knowledgeFolders && this.knowledgeFolders.length > 0
-                ? this.knowledgeFolders
-                : this.internalKnowledgeFolders;
+            return this.knowledgeStore.folders;
+        },
+        // 버튼 배지 — 폴더 + 파일 (폴더-only 면 docs 가 비어도 폴더로 카운트)
+        knowledgeSelectionCount() {
+            return this.knowledgeStore.count;
         }
     },
     data() {
         return {
             isDragOver: false,
-            knowledgePickerOpen: false,
-            internalKnowledgeDocs: [],
-            internalKnowledgeFolders: []
+            knowledgePickerOpen: false
         };
     },
     methods: {
@@ -169,10 +163,8 @@ export default {
             this.knowledgePickerOpen = true;
         },
         handleKnowledgeConfirm(docs, folders) {
-            this.internalKnowledgeDocs = docs;
-            this.internalKnowledgeFolders = Array.isArray(folders) ? folders : [];
-            this.$emit('update:knowledgeDocs', docs);
-            this.$emit('update:knowledgeFolders', this.internalKnowledgeFolders);
+            // 단일 소스에 기록 — 방/화면 배선 없이 전역 반영
+            this.knowledgeStore.setSelection(docs, folders);
         },
         handleWrapperDrop(e) {
             this.isDragOver = false;
@@ -210,22 +202,9 @@ export default {
                 // mention 메타데이터 pass-through (Chat.vue -> ChatRoomPage 라우팅)
                 mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],
                 // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)
-                reply: message.reply || null,
-                // ⚠️ 지식 베이스 선택 필드 배선 가이드 — 새 필드(예: knowledgeFolders) 추가 시 *모든* hop 갱신:
-                //   1) KnowledgeSpacePicker.vue    : 선택 추적 + confirm() 에서 emit
-                //   2) UnifiedChatInput.vue        : prop + emit('update:X') + internal + computed
-                //                                    + handleKnowledgeConfirm + 여기(payload) + 피커 :initiallyX
-                //   3) MainChatInput.vue           : :X + @update:X + data
-                //   4) ProcessDefinitionMap.vue    : handleMainChatSubmit 의 chatKickoff 페이로드  ← 자주 누락!
-                //   5) ChatRoomPage.vue            : data + 템플릿 바인딩 + onXUpdate + kickoff 복원(~2431)
-                //                                    + restoreSideInfoFromRoomContext + persistSelectedKnowledge
-                //                                    + 전송 metadata(commonParams.metadata ~6187 → snake_case 키)
-                //   6) deepagents runtime.build_context : metadata.knowledge_folders 소비
-                // 피커는 공유지만 *배선은 진입점마다 중복*이라 하나 빼먹으면 그 진입점만 조용히 누락됨.
-                // 지식 베이스에서 선택된 문서 (RAG 컨텍스트로 사용)
-                knowledgeDocs: this.selectedKnowledgeDocs,
-                // 폴더째 선택한 경로들 (deepagents 폴더 스코프 탐색)
-                knowledgeFolders: this.selectedKnowledgeFolders
+                reply: message.reply || null
+                // 지식 선택(문서/폴더)은 전역 스토어(useKnowledgeSelectionStore)가 단일 소스.
+                // 더 이상 메시지 payload 로 배선하지 않는다 — 전송·저장·복원 모두 ChatRoomPage 가 스토어에서 읽는다.
             });
         }
     }
