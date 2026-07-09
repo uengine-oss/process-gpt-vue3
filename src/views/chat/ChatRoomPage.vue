@@ -1835,7 +1835,10 @@ export default {
             const uniq = [];
             const seen = new Set();
             for (const f of files) {
-                const key = `${f.fileUrl || f.url || f.publicUrl || f.fullPath || f.path || ''}|${f.fileName || f.name || ''}`;
+                // file_id 가 있으면 그걸로 정체성 판별(가장 안정) — 없으면 URL|이름 폴백.
+                const key =
+                    (f.file_id || f.fileId || f.id || '').toString() ||
+                    `${f.fileUrl || f.url || f.publicUrl || f.fullPath || f.path || ''}|${f.fileName || f.name || ''}`;
                 if (!key || seen.has(key)) continue;
                 seen.add(key);
                 uniq.push(f);
@@ -1892,6 +1895,9 @@ export default {
                         publicUrl: uploadResult?.publicUrl || resolvedUrl,
                         fullPath: uploadResult?.fullPath || resolvedUrl,
                         path: uploadResult?.path || '',
+                        // memento 가 준 stable file_id — 에이전트가 이걸 보면 재-ingest 없이 KB 파일처럼 읽고,
+                        // chat_attachments 도 이 값으로 멱등 저장된다. (없으면 file_path 폴백)
+                        file_id: uploadResult?.file_id || uploadResult?.file_path || '',
                         fileType: (f?.type || '').toString(),
                         fileSize: Number.isFinite(f?.size) ? f.size : null
                     });
@@ -2472,6 +2478,8 @@ export default {
                                     fileUrl: resolvedUrl,
                                     publicUrl: resolvedUrl,
                                     fullPath: resolvedUrl,
+                                    // memento stable file_id — 에이전트가 재-ingest 없이 KB 파일처럼 읽게
+                                    file_id: uploadResult?.file_id || uploadResult?.file_path || '',
                                     fileType: f.type,
                                     fileSize: f.size
                                 });
@@ -2919,7 +2927,8 @@ export default {
                     const list = Array.isArray(this.plannedAttachments) ? this.plannedAttachments : [];
                     const id = (attachment?.id || '').toString();
                     const exists = id ? list.some((a) => (a?.id || '').toString() === id) : false;
-                    const next = exists ? list : [...list, attachment];
+                    // id 중복뿐 아니라 *같은 파일* 중복(다른 id 로 온 동일 첨부)도 제거
+                    const next = this.dedupAttachments(exists ? list : [...list, attachment]);
                     this.plannedAttachments = next;
                     this.planSideInfoEnabled.attachments = next.length > 0;
                     if (this.planSideInfoEnabled.attachments) this.upsertAttachmentsPanel();
@@ -4702,6 +4711,54 @@ export default {
             return out;
         },
 
+        /** 방에 올린 세션 첨부(파일) 중 stable file_id 가 있는 것 → knowledge_docs 형태로.
+         *  KB 폴더/파일 선택과 *함께*(union) 에이전트 scope 에 항상 포함되게 해, "아까 올린 파일"
+         *  후속 질의가 폴더 선택 뒤에도 동작하게 한다. (백엔드 scope 가 folder∪file union) */
+        roomSessionKnowledgeDocs() {
+            const seen = new Set();
+            const out = [];
+            const add = (f) => {
+                if (!f || typeof f !== 'object') return;
+                const fid = (f.file_id || f.fileId || '').toString();
+                if (!fid || seen.has(fid)) return;
+                seen.add(fid);
+                out.push({
+                    id: fid,
+                    source_type: 'upload',
+                    file_name: (f.fileName || f.name || '').toString(),
+                    mime_type: (f.fileType || f.type || '').toString(),
+                    folder_path: '',
+                    doc_role: 'content'
+                });
+            };
+            try {
+                for (const m of this.messages || []) {
+                    if (!m || m.role !== 'user') continue;
+                    if (m.pdfFile) add(m.pdfFile);
+                    if (Array.isArray(m.pdfFiles)) m.pdfFiles.forEach(add);
+                }
+            } catch (e) {
+                // 수집 실패해도 nominal flow 유지
+            }
+            return out;
+        },
+        /** picker 선택(knowledgeStore) + 방 세션 첨부를 합친 요청 metadata(knowledge_docs/folders). */
+        knowledgeRequestMetadataWithSession() {
+            const base = this.knowledgeStore.requestMetadata || {};
+            const docs = Array.isArray(base.knowledge_docs) ? [...base.knowledge_docs] : [];
+            const seen = new Set(docs.map((d) => (d && d.id ? d.id.toString() : '')).filter(Boolean));
+            for (const sd of this.roomSessionKnowledgeDocs()) {
+                if (sd.id && !seen.has(sd.id)) {
+                    seen.add(sd.id);
+                    docs.push(sd);
+                }
+            }
+            return {
+                knowledge_docs: docs,
+                knowledge_folders: Array.isArray(base.knowledge_folders) ? base.knowledge_folders : []
+            };
+        },
+
         buildMessageForAgent(userText, payload, policy) {
             let messageForAgent = (userText || '').toString();
             // 첨부 정보는 기존 방식처럼 [InputData]로 전달
@@ -4720,6 +4777,8 @@ export default {
                 sessionFilesMap[url] = {
                     fileName: name,
                     fileUrl: url,
+                    // memento stable file_id — 방 세션 첨부를 나중 턴에서도 자료 scope 로 쓰기 위함
+                    file_id: (f.file_id || f.fileId || '').toString() || '',
                     fileType: f.fileType || f.type || '',
                     fileSize: f.fileSize || f.size || 0,
                 };
@@ -4981,10 +5040,36 @@ export default {
             this.artifactSidebarVisible = true;
         },
 
+        /** 첨부 목록에서 동일 파일 중복 제거 — 같은 파일이 여러 행(다른 id)으로 들어와도 1개로 표시.
+         *  같은 이름의 '업로드 전(경로 없음)' 행과 '업로드 후(URL 있음)' 행은 URL 있는 쪽으로 병합. */
+        dedupAttachments(list) {
+            const out = [];
+            const idxByName = new Map();
+            const seenPathName = new Set();
+            for (const a of Array.isArray(list) ? list : []) {
+                if (!a) continue;
+                const name = (a.file_name || a.name || '').toString().trim();
+                const path = (a.file_path || a.file_url || a.fileUrl || '').toString().trim();
+                const strongKey = `${path}|${name}`;
+                if (path && seenPathName.has(strongKey)) continue; // 완전히 동일(경로+이름)
+                if (name && idxByName.has(name)) {
+                    // 같은 이름이 이미 있음 — 경로 없는 placeholder 를 URL 있는 행으로 업그레이드하고 하나만 유지
+                    const i = idxByName.get(name);
+                    const existingPath = (out[i].file_path || out[i].file_url || out[i].fileUrl || '').toString().trim();
+                    if (!existingPath && path) out[i] = a;
+                    if (path) seenPathName.add(strongKey);
+                    continue;
+                }
+                if (name) idxByName.set(name, out.length);
+                if (path) seenPathName.add(strongKey);
+                out.push(a);
+            }
+            return out;
+        },
         /** 우측 사이드바에 첨부(chat_attachments) 패널 생성/갱신 */
         upsertAttachmentsPanel() {
             if (!this.planSideInfoEnabled?.attachments) return;
-            const items = Array.isArray(this.plannedAttachments) ? this.plannedAttachments : [];
+            const items = this.dedupAttachments(this.plannedAttachments);
             const data = { enabled: true, items };
 
             const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'attachments');
@@ -6205,8 +6290,9 @@ export default {
                         agent_profile: agentProfileForRuntime,
                         tool_settings: this.readToolsSettingsFromStorage(),
                         // 지식 선택 metadata(knowledge_docs=개별 파일 sourceRef, knowledge_folders=폴더 스코프).
-                        // 전역 스토어가 단일 소스 — snake_case 변환은 requestMetadata getter 가 담당.
-                        ...this.knowledgeStore.requestMetadata,
+                        // picker 선택 + *방 세션 첨부(file_id)* 를 합쳐 넘긴다 → 폴더 선택 뒤에도 방에 올린
+                        // 파일이 자료 scope 에 남아 "아까 올린 파일" 후속 질의가 동작(백엔드 folder∪file union).
+                        ...this.knowledgeRequestMetadataWithSession(),
                         input_data: {
                             file: requestPrimaryFile,
                             files: requestFiles,

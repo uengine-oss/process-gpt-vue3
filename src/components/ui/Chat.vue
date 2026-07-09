@@ -5679,6 +5679,8 @@ export default {
                                 publicUrl: uploadResult?.publicUrl || resolvedUrl,
                                 fullPath: uploadResult?.fullPath || resolvedUrl,
                                 path: uploadResult?.path || '',
+                                // memento stable file_id — 에이전트가 재-ingest 없이 KB 파일처럼 읽게
+                                file_id: uploadResult?.file_id || uploadResult?.file_path || '',
                                 fileType: f.type,
                                 fileSize: f.size
                             });
