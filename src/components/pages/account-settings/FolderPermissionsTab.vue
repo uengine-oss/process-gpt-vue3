@@ -97,11 +97,11 @@
                     </div>
 
                     <div
-                        v-if="selectedUser.role === 'PocAdmin'"
+                        v-if="selectedUser.is_admin || selectedUser.role === 'PocAdmin' || selectedUser.role === 'superAdmin'"
                         class="fp-admin-note text-caption"
                     >
                         <v-icon size="14" class="mr-1">mdi-information-outline</v-icon>
-                        PocAdmin 은 권한 설정과 무관하게 모든 폴더를 조회할 수 있습니다.
+                        관리자(admin) 는 권한 설정과 무관하게 모든 폴더를 조회할 수 있습니다.
                     </div>
 
                     <div class="fp-folder-list">
@@ -142,7 +142,6 @@
                                 {{ node.hasChildren && expandedPaths.has(node.path) ? 'mdi-folder-open-outline' : 'mdi-folder-outline' }}
                             </v-icon>
                             <span class="fp-folder-name" @click="node.hasChildren && toggleExpand(node.path)">{{ node.name }}</span>
-                            <span class="fp-folder-count">{{ node.fileCount }}</span>
                             <span
                                 v-if="!isAllowed(node.path) && isInheritedAllowed(node.path)"
                                 class="fp-inherit"
@@ -167,8 +166,9 @@ export default {
             users: [],
             selectedUser: null,
             userSearch: '',
-            files: [], // /memento/documents/list 의 file_details
-            emptyFolders: [], // /memento/knowledge/folders — 파일 없는 폴더 포함 ([{folder_path, doc_role}])
+            // 폴더 권한만 부여하면 되므로 파일 목록은 로드하지 않는다(파일 수만 개면 전량 조회가 느림).
+            // /memento/knowledge/folders 는 knowledge_folders 테이블(폴더당 1행)만 읽어 파일 수와 무관하게 가볍다.
+            folders: [], // /memento/knowledge/folders — 등록된 모든 폴더(빈 폴더 포함) ([{folder_path, doc_role}])
             allowedPaths: [], // 선택 사용자의 허용 folder_path 목록
             expandedPaths: new Set(), // 펼쳐진 폴더 경로
             loadingUsers: false,
@@ -203,50 +203,32 @@ export default {
         currentRoleMeta() {
             return this.roleOptions.find((r) => r.value === this.currentRole) || this.roleOptions[0];
         },
-        // 분류(doc_role)별 파일 수 — 탭 카운트
+        // 분류(doc_role)별 폴더 수 — 탭 카운트 (파일 수 대신 폴더 수: 권한 부여 대상이 폴더라서)
         roleCounts() {
             const c = {};
-            for (const f of this.files) {
+            for (const f of this.folders) {
                 const r = f.doc_role || 'content';
                 c[r] = (c[r] || 0) + 1;
             }
             return c;
         },
-        // 현재 선택된 분류에 속한 파일만 (폴더 트리도 이 분류 기준으로 짜인다)
-        roleScopedFiles() {
-            return this.files.filter((f) => (f.doc_role || 'content') === this.currentRole);
-        },
-        // 현재 분류의 (파일 없는 것 포함) 등록된 폴더 경로
-        roleScopedEmptyFolders() {
-            return this.emptyFolders
+        // 현재 분류에 등록된 폴더 경로 (빈 폴더 포함 — 그래야 admin 이 빈 폴더에도 권한을 줄 수 있다)
+        roleScopedFolders() {
+            return this.folders
                 .filter((f) => (f.doc_role || 'content') === this.currentRole)
                 .map((f) => f.folder_path);
         },
-        // 파일들의 folder_path + 등록된 빈 폴더에서 모든 조상 폴더를 포함한 고유 폴더 트리 — 현재 분류 scope.
+        // 등록된 폴더 경로에서 모든 조상 폴더를 포함한 고유 폴더 트리 — 현재 분류 scope.
+        // (파일 목록을 안 들고 오므로 folder_path 만으로 트리를 짠다.)
         folderNodes() {
-            const direct = {}; // path -> 직속 파일 수
-            const total = {}; // path -> 하위 전체 파일 수
             const all = new Set();
-            for (const f of this.roleScopedFiles) {
-                const fp = (f.folder_path || f.drive_folder_name || '').trim().replace(/^\/+|\/+$/g, '');
-                if (!fp) continue;
-                direct[fp] = (direct[fp] || 0) + 1;
-                const segs = fp.split('/').filter(Boolean);
-                let acc = '';
-                for (const s of segs) {
-                    acc = acc ? `${acc}/${s}` : s;
-                    all.add(acc);
-                    total[acc] = (total[acc] || 0) + 1;
-                }
-            }
-            // 파일이 하나도 없는 폴더도 트리에 포함 — 그래야 admin 이 빈 폴더에도 권한을 줄 수 있다.
-            for (const fp0 of this.roleScopedEmptyFolders) {
+            for (const fp0 of this.roleScopedFolders) {
                 const fp = (fp0 || '').trim().replace(/^\/+|\/+$/g, '');
                 if (!fp) continue;
                 let acc = '';
                 for (const s of fp.split('/').filter(Boolean)) {
                     acc = acc ? `${acc}/${s}` : s;
-                    all.add(acc); // total 은 그대로(파일 0) — fileCount 0 으로 표시됨
+                    all.add(acc);
                 }
             }
             const sorted = [...all].sort();
@@ -254,7 +236,6 @@ export default {
                 path: p,
                 name: p.split('/').pop(),
                 depth: p.split('/').length - 1,
-                fileCount: total[p] || 0,
                 hasChildren: sorted.some((q) => q.startsWith(p + '/'))
             }));
         },
@@ -276,9 +257,9 @@ export default {
         }
     },
     watch: {
-        // 분류 전환 시 그 분류의 폴더를 펼친 상태로 초기화 (loadFolders 기본 동작과 동일)
+        // 분류 전환 시 그 분류의 최상위 폴더만 펼친 상태로 초기화 (loadFolders 기본 동작과 동일)
         currentRole() {
-            this.expandedPaths = new Set(this.folderNodes.map((n) => n.path));
+            this.resetExpandToTop();
         }
     },
     mounted() {
@@ -312,29 +293,29 @@ export default {
             this.loadingFolders = true;
             const tenantId = window.$tenantName || '';
             try {
-                // 파일 목록 + 등록된 폴더(빈 폴더 포함)를 함께 로드해야 파일 없는 폴더도 권한 부여 가능.
-                const [filesRes, foldersRes] = await Promise.all([
-                    axios.get('/memento/documents/list', { params: { tenant_id: tenantId } }),
-                    axios.get('/memento/knowledge/folders', { params: { tenant_id: tenantId } })
-                ]);
-                this.files = Array.isArray(filesRes.data?.file_details) ? filesRes.data.file_details : [];
+                // 등록된 폴더(빈 폴더 포함)만 로드 — knowledge_folders 테이블 조회라 파일 수와 무관하게 가볍다.
+                // (예전엔 /memento/documents/list 로 테넌트 전체 파일을 받아 트리를 짰는데, 파일이 수만이면 느렸다.)
+                const foldersRes = await axios.get('/memento/knowledge/folders', { params: { tenant_id: tenantId } });
                 const rawFolders = Array.isArray(foldersRes.data?.folders) ? foldersRes.data.folders : [];
-                this.emptyFolders = rawFolders
+                this.folders = rawFolders
                     .map((f) =>
                         typeof f === 'string'
                             ? { folder_path: f, doc_role: 'content' }
                             : { folder_path: f?.folder_path || '', doc_role: f?.doc_role || 'content' }
                     )
                     .filter((f) => f.folder_path);
-                // 기본: 전체 펼친 상태로 시작 (접기 가능)
-                this.expandedPaths = new Set(this.folderNodes.map((n) => n.path));
+                // 기본: 최상위 폴더만 펼친 상태로 시작 (깊은 트리는 필요할 때 펼침 — 초기 렌더 경량화)
+                this.resetExpandToTop();
             } catch (e) {
                 console.error('[FolderPermissionsTab] loadFolders failed', e);
-                this.files = [];
-                this.emptyFolders = [];
+                this.folders = [];
             } finally {
                 this.loadingFolders = false;
             }
+        },
+        // 최상위(depth 0) 폴더만 펼침 → 그 직속 자식까지 보이고 나머지는 접힘
+        resetExpandToTop() {
+            this.expandedPaths = new Set(this.folderNodes.filter((n) => n.depth === 0).map((n) => n.path));
         },
         toggleExpand(path) {
             const next = new Set(this.expandedPaths);
@@ -626,14 +607,6 @@ export default {
 }
 .fp-allow-count {
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.5);
-}
-.fp-folder-count {
-    margin-left: 8px;
-    font-size: 10px;
-    padding: 1px 6px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.06);
     color: rgba(0, 0, 0, 0.5);
 }
 .fp-inherit {

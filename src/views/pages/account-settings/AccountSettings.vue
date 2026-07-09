@@ -52,8 +52,8 @@
                                     </v-tab> -->
                                 </template>
                             </template>
-                            <!-- 폴더 권한 관리 (PocAdmin 전용) -->
-                            <v-tab v-if="pocAdmin" value="FolderPermissions">
+                            <!-- 폴더 권한 관리 (관리자 전용 — users.is_admin=true) -->
+                            <v-tab v-if="folderAdmin" value="FolderPermissions">
                                 <v-icon class="mr-2" size="20">mdi-shield-account-outline</v-icon>
                                 폴더 권한 관리
                             </v-tab>
@@ -250,8 +250,8 @@
                             </div>
                         </v-window-item>
 
-                        <!-- FolderPermissions: 폴더 권한 관리 (PocAdmin 전용) -->
-                        <v-window-item v-if="pocAdmin" value="FolderPermissions">
+                        <!-- FolderPermissions: 폴더 권한 관리 (관리자 전용 — users.is_admin=true) -->
+                        <v-window-item v-if="folderAdmin" value="FolderPermissions">
                             <div style="overflow: hidden" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: 70vh;'">
                                 <FolderPermissionsTab />
                             </div>
@@ -367,7 +367,10 @@ export default {
         return {
             tab: '',
             superAdmin: localStorage.getItem('role') === 'superAdmin',
-            pocAdmin: localStorage.getItem('role') === 'PocAdmin',
+            // 폴더 권한 관리 탭 노출 기준 = users.is_admin (localStorage 'isAdmin' 로 반영).
+            // role 은 setTenant() 가 로그인/테넌트전환마다 'user'/'superAdmin' 으로 덮어써서
+            // PocAdmin 등 승격 role 이 간헐적으로 강등되므로, 리셋되지 않는 is_admin 을 기준으로 쓴다.
+            folderAdmin: localStorage.getItem('isAdmin') === 'true',
             tabItems: [
                 { value: 'Account', label: 'Account' },
                 { value: 'ManageAccess', label: 'Manage Access' },
