@@ -68,6 +68,38 @@ export default defineConfig({
     },
     server: {
         proxy: {
+            // Analytics(OLAP) 서비스. Spring Cloud Gateway 의 analytic 라우트와 동일하게
+            // /api/analytics/** 를 analytic-service 로 보내고 /api/analytics prefix 를 /api 로 rewrite 한다.
+            // (gateway application.yml: RewritePath=/api/analytics/?(?<segment>.*), /api/${segment})
+            // dev 에서는 로컬 실행 중인 analytic backend(:8899)로 직접 프록시한다.
+            '/api/analytics': {
+                target: 'http://127.0.0.1:8899',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api\/analytics\/?/, '/api/')
+            },
+            // 인스턴스 실행 등 /completion/* 호출은 nginx 게이트웨이(:8088) 경유로.
+            // nginx 가 /completion prefix 를 strip 해서 completion 서비스로 라우팅한다.
+            // (반드시 아래 '/complete' 보다 먼저 매칭되도록 최상단에 둔다.)
+            '/completion/': {
+                target: 'http://127.0.0.1:8088',
+                changeOrigin: true
+            },
+            // 인스턴스 자동분류 · Top List · 유사 인스턴스 API.
+            // dev 에서는 서비스 published 포트(:8013)로 직접 프록시(게이트웨이 재기동 불필요).
+            // 운영에서는 nginx 가 /instance-classifier prefix 를 strip 해 서비스로 라우팅한다.
+            '/instance-classifier/': {
+                target: 'http://127.0.0.1:8013',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/instance-classifier/, '')
+            },
+            // BSC 전략맵 · KPI · 이니셔티브 · 설문 (strategy 서비스).
+            // dev 에서는 서비스 published 포트(:8014)로 직접 프록시.
+            // 운영에서는 nginx 가 /strategy-service prefix 를 strip 해 서비스로 라우팅한다.
+            '/strategy-service/': {
+                target: 'http://127.0.0.1:8014',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/strategy-service/, '')
+            },
             '/query': {
                 target: 'http://localhost:8005',
                 changeOrigin: true
@@ -114,7 +146,9 @@ export default defineConfig({
                 changeOrigin: true
             },
             '/langchain-chat': {
-                target: 'http://127.0.0.1:8000',
+                // 호스트 :8000 이 다른 프로젝트(ontology-studio python 백엔드)와 충돌하므로
+                // nginx 게이트웨이(:8088)를 경유해 completion 으로 라우팅한다.
+                target: 'http://127.0.0.1:8088',
                 changeOrigin: true
             },
             // Work Assistant Agent API

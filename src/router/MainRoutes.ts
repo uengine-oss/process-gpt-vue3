@@ -41,6 +41,11 @@ const allRoutes = [
         component: () => import('@/components/apps/todolist/WorkItem.vue')
     },
     {
+        name: 'InstanceTopList',
+        path: '/instance-toplist',
+        component: () => import('@/components/apps/instance-classifier/InstanceTopList.vue')
+    },
+    {
         name: 'System',
         path: '/system',
         component: () => import('@/components/ui/SystemList.vue')
@@ -476,6 +481,16 @@ const allRoutes = [
         name: 'PI Flag Board',
         path: '/analytics/pi-flags',
         component: () => import('@/views/analytics/PiFlagBoard.vue')
+    },
+    {
+        name: 'Strategy Board',
+        path: '/strategy-board',
+        component: () => import('@/views/strategy/StrategyBoard.vue')
+    },
+    {
+        name: 'Survey Response',
+        path: '/strategy/surveys/:requestId',
+        component: () => import('@/views/strategy/SurveyResponse.vue')
     },
     {
         name: 'Review Board',

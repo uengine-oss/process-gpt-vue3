@@ -206,6 +206,30 @@ hr {
 
 }
 
+/* 컨테이너 폭 기반 반응형: 폼이 담긴 컨테이너(좁은 패널 등)가 좁아지면
+   뷰포트와 무관하게 컬럼을 세로로 쌓아 폭에 맞춘다. */
+.form-layout-card-contents-desktop {
+    container-type: inline-size;
+}
+@container (max-width: 560px) {
+    .form-layout-card-contents-desktop .row {
+        flex-direction: column !important;
+    }
+    .form-layout-card-contents-desktop [class*='col-'] {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 0.75rem;
+    }
+    .form-layout-card-contents-desktop [class*='col-']:not(:only-child):not(:last-child) {
+        border-right: none !important;
+        padding-right: 0 !important;
+        margin-right: 0 !important;
+        border-bottom: solid 1px rgba(0, 0, 0, 0.12);
+        padding-bottom: 0.5rem;
+    }
+}
+
 .gantt_cal_ltitle {
     cursor: default !important;
     background: white !important;

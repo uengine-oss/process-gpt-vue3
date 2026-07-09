@@ -730,6 +730,13 @@ export default {
                     disable: false
                 },
                 {
+                    title: '요청 Top List',
+                    icon: 'chart-square-linear',
+                    BgColor: 'primary',
+                    to: '/instance-toplist',
+                    disable: false
+                },
+                {
                     title: 'analytics.heatmap',
                     icon: 'ibm-process-mining',
                     BgColor: 'primary',
@@ -741,6 +748,13 @@ export default {
                     icon: 'strategy',
                     BgColor: 'primary',
                     to: '/analytics/kpi',
+                    disable: false
+                },
+                {
+                    title: 'analytics.strategyBoard',
+                    icon: 'strategy-map',
+                    BgColor: 'primary',
+                    to: '/strategy-board',
                     disable: false
                 },
                 {
