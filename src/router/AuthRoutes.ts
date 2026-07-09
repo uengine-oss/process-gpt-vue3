@@ -1,3 +1,5 @@
+import BackendFactory from '@/components/api/BackendFactory';
+
 const AuthRoutes = {
     path: '/auth',
     component: () => import('@/layouts/blank/BlankLayout.vue'),
@@ -8,7 +10,22 @@ const AuthRoutes = {
         {
             name: 'Landing Page',
             path: '/',
-            component: () => import('@/views/pages/landingpage/index.vue')
+            // 초기 랜딩 화면 제거: 진입 시 로그인 여부에 따라 로그인 페이지 또는 메인으로 바로 이동한다.
+            // (로그인 로직은 HeroSection.vue 의 gotoStart() 와 동일하게 맞춘다.)
+            beforeEnter: async (to: any, from: any, next: any) => {
+                try {
+                    const backend = BackendFactory.createBackend();
+                    const isLogin = await backend.checkDBConnection();
+                    if (!isLogin) {
+                        return next('/auth/login');
+                    }
+                    return next((window as any).$isTenantServer ? '/tenant/manage' : '/definition-map');
+                } catch (e) {
+                    // 로그인 상태 확인 실패 시 안전하게 로그인 페이지로 보낸다.
+                    return next('/auth/login');
+                }
+            },
+            component: () => import('@/views/authentication/SideLogin.vue')
         },
         {
             name: 'Side Login',

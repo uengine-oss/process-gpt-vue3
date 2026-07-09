@@ -26,8 +26,8 @@ const emailRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterEmail'),
     (v: string) => /.+@.+\..+/.test(v) || proxy.$t('createAccount.invalidEmailFormat')
 ]);
-const username = ref('');
-const usernameRules = ref([(v: string) => !!v || proxy.$t('createAccount.enterName')]);
+// 폐쇄망 환경: 이름 입력 필드를 제거하고 이메일 앞부분에서 표시 이름을 자동 생성한다.
+const username = computed(() => (email.value ? email.value.split('@')[0] : ''));
 
 // 비밀번호 일치 여부 검증 함수
 const confirmPasswordRules = ref([
@@ -36,7 +36,6 @@ const confirmPasswordRules = ref([
 ]);
 
 const isRegisterFormValid = computed(() => {
-    if (!username.value) return false;
     if (!email.value || !/.+@.+\..+/.test(email.value)) return false;
     if (!password.value || password.value.length < 8) return false;
     if (!/[a-zA-Z]/.test(password.value)) return false;
@@ -49,10 +48,6 @@ const isRegisterFormValid = computed(() => {
 function validate(values: any, { setErrors }: any) {
     // 필수 입력값 및 이메일 형식 검증
     let hasError = false;
-    if (!username.value) {
-        setErrors({ username: proxy.$t('createAccount.enterName') });
-        hasError = true;
-    }
     if (!email.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
         setErrors({ email: proxy.$t('createAccount.invalidEmailFormat') });
         hasError = true;
@@ -108,8 +103,6 @@ function validate(values: any, { setErrors }: any) {
         </v-label>
         <v-divider class="mb-4" />
 
-        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.userName') }}</v-label>
-        <VTextField v-model="username" :rules="usernameRules" required></VTextField>
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.email') }}</v-label>
         <VTextField v-model="email" :rules="emailRules" required></VTextField>
         <!-- 암호 확인 부분 -->

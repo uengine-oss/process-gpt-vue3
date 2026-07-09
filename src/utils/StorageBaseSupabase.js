@@ -346,6 +346,29 @@ export default class StorageBaseSupabase {
                 });
 
                 if (!result.error) {
+                    // auth.users 에만 계정이 생기고 public.users 프로필 행이 없으면
+                    // 로그인 시 "가입된 이메일이 아닙니다"로 막힌다. (signIn 이 public.users 를 조회)
+                    // auth.users -> public.users 동기화 트리거가 없는 환경을 대비해 앱에서 직접 프로필 행을 생성한다.
+                    // 테넌트는 현재 앱이 사용하는 값(window.$tenantName)을 그대로 사용한다.
+                    try {
+                        const newUserId = result.data?.user?.id;
+                        if (newUserId) {
+                            await window.$supabase.from('users').upsert(
+                                {
+                                    id: newUserId,
+                                    email: userInfo.email,
+                                    username: userInfo.username,
+                                    tenant_id: tenantId,
+                                    is_admin: false,
+                                    role: 'user'
+                                },
+                                { onConflict: 'id,tenant_id', ignoreDuplicates: true }
+                            );
+                        }
+                    } catch (profileErr) {
+                        // 프로필 생성 실패가 가입 자체를 막지는 않도록 로그만 남긴다.
+                        console.warn('[signUp] public.users 프로필 행 생성 실패(가입은 계속 진행):', profileErr);
+                    }
                     result.data['isNewUser'] = true;
                     return result.data;
                 } else {

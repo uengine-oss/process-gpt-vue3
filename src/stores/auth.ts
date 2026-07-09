@@ -92,18 +92,20 @@ export const useAuthStore = defineStore({
                     } else {
                         const tenantId = window.$tenantName;
                         await backend.setTenant(tenantId);
-                        if (result['isNewUser']) {
+                        // 폐쇄망 등 이메일 인증이 비활성화(autoconfirm)된 환경에서는 signUp 직후 세션이 즉시 발급된다.
+                        // 세션이 있으면 인증 대기 없이 바로 로그인 처리하고, 세션이 없으면(이메일 확인 필요) 기존 안내를 유지한다.
+                        if (result['session']) {
+                            await (window as any).$app_.try({
+                                action: () => Promise.resolve(),
+                                successMsg: proxy.$t('auth.registrationSuccess')
+                            });
+                            router.push(window.$isTenantServer ? '/tenant/manage' : '/definition-map');
+                        } else {
                             await (window as any).$app_.try({
                                 action: () => Promise.resolve(),
                                 successMsg: proxy.$t('auth.verificationEmailSent')
                             });
                             router.push('/auth/login');
-                        } else {
-                            await (window as any).$app_.try({
-                                action: () => Promise.resolve(),
-                                successMsg: proxy.$t('auth.registrationSuccess')
-                            });
-                            router.push('/definition-map');
                         }
                     }
                 }
