@@ -6,6 +6,8 @@ import defaultProcessesData from './defaultProcesses.json';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { runValidation } from '@/utils/bpmnValidationRules';
 import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
+import { convertXMLToJSON as convertXMLToJSONShared } from '@/utils/bpmnXmlToDefinition';
+import { applySelectedChanges } from '@/utils/bpmnSelectiveMerge';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -3149,7 +3151,15 @@ class ProcessGPTBackend implements Backend {
         // instance/{instanceId}/completed
         //TODO: 현재 프로세스 진행상태 추가
         try {
-            const list = await storage.list('todolist', { match: { proc_inst_id: instId } });
+            // 서브프로세스(특히 ad-hoc) 내부의 자식 액티비티는 proc_inst_id가 메인 인스턴스가 아니라
+            // 별도의 자식 인스턴스로 저장되고, root_proc_inst_id만 메인 인스턴스와 같다. proc_inst_id
+            // 단일 매치만 하면 서브프로세스 내부 노드의 상태가 통째로 빠지므로 root_proc_inst_id도 함께 조회한다.
+            const { data, error } = await window.$supabase
+                .from('todolist')
+                .select('*')
+                .or(`proc_inst_id.eq.${instId},root_proc_inst_id.eq.${instId}`);
+            if (error) throw error;
+            const list = data || [];
             const result: any = {};
             const procDefId = list.find((item: any) => item?.proc_def_id)?.proc_def_id;
             const callActivityIds = await this.getCallActivityIdsForDefinition(procDefId);
@@ -3186,6 +3196,27 @@ class ProcessGPTBackend implements Backend {
 
             return result;
         } catch (e) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // 다이어그램에서 완료된 노드를 더블클릭했을 때(process-feedback-whole-definition-review) 그 노드에
+    // 해당하는 workitem을 찾기 위한 조회. rework_count가 가장 큰(가장 최근 재수행된) 것을 우선한다.
+    async getWorkItemByActivity(instId: string, activityId: string) {
+        try {
+            // getActivitiesStatus와 동일한 이유로 root_proc_inst_id도 함께 조회해야
+            // 서브프로세스(특히 ad-hoc) 내부 액티비티의 workitem을 찾을 수 있다.
+            const { data, error } = await window.$supabase
+                .from('todolist')
+                .select('*')
+                .or(`proc_inst_id.eq.${instId},root_proc_inst_id.eq.${instId}`)
+                .eq('activity_id', activityId);
+            if (error) throw error;
+            if (!data || data.length === 0) return null;
+            const sorted = [...data].sort((a: any, b: any) => (b.rework_count || 0) - (a.rework_count || 0));
+            return this.convertKeysToCamelCase(sorted[0]);
+        } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -6907,8 +6938,24 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async applyFeedback(diff: any, taskId: string) {
+    // 전체 프로세스 개선안 노드 단위 선택 반영 — process-feedback-whole-definition-review.
+    // selectedIds가 changes 전체를 포함하면(전체 선택) afterXml을 그대로 새 snapshot으로 채택하고,
+    // 일부만 선택되면 applySelectedChanges로 beforeXml에 선택된 변경만 병합한 XML을 snapshot으로 쓴다.
+    // 어느 경우든 최종 snapshot(XML)을 convertXMLToJSON으로 재해석해 definition(JSON)을 재생성한다
+    // — 두 표현이 항상 일치하도록.
+    async applyFeedback(
+        diff: {
+            afterXml: string;
+            beforeXml?: string;
+            changes?: Array<{ type: 'added' | 'modified' | 'removed'; id: string }>;
+            selectedIds?: string[];
+        },
+        taskId: string
+    ) {
         try {
+            if (!diff || !diff.afterXml) {
+                throw new Error('afterXml not provided');
+            }
             const workItem = await storage.getObject('todolist', {
                 match: {
                     id: taskId
@@ -6932,35 +6979,14 @@ class ProcessGPTBackend implements Backend {
                 throw new Error('process not found');
             }
 
-            const definition = process.definition;
-            const activity = definition.activities.find((activity: any) => activity.id === activityId);
-            if (!activity) {
-                throw new Error('activity not found');
-            }
-            if (diff.inputData) {
-                activity.inputData = diff.inputData;
-            }
-            if (diff.checkpoints) {
-                activity.checkpoints = diff.checkpoints;
-            }
-            if (diff.description) {
-                activity.description = diff.description;
-            }
-            if (diff.instruction) {
-                activity.instruction = diff.instruction;
-            }
-
-            if (diff.conditionExamples && diff.conditionExamples.sequenceId) {
-                const sequence = process.definition.sequences.find((sequence: any) => sequence.id === diff.conditionExamples.sequenceId);
-                if (sequence) {
-                    const properties = JSON.parse(sequence.properties);
-                    properties.examples = {
-                        good_example: diff.conditionExamples.good_example,
-                        bad_example: diff.conditionExamples.bad_example
-                    };
-                    sequence.properties = JSON.stringify(properties);
+            let newSnapshot = diff.afterXml;
+            if (diff.selectedIds && diff.changes && diff.changes.length > 0 && diff.beforeXml) {
+                const allSelected = diff.changes.every((c) => diff.selectedIds!.includes(c.id));
+                if (!allSelected) {
+                    newSnapshot = applySelectedChanges(diff.beforeXml, diff.afterXml, diff.changes, diff.selectedIds);
                 }
             }
+            const definition = await convertXMLToJSONShared(newSnapshot, defId);
 
             let parentVersion: string = process.version || version;
             if (parentVersion.includes('-')) {
@@ -6971,7 +6997,7 @@ class ProcessGPTBackend implements Backend {
                 proc_def_id: defId,
                 version: newVersion,
                 version_tag: 'minor',
-                snapshot: process.snapshot,
+                snapshot: newSnapshot,
                 definition: definition,
                 arcv_id: defId + '_' + newVersion,
                 parent_version: parentVersion,
@@ -6982,24 +7008,22 @@ class ProcessGPTBackend implements Backend {
             // 병합 요청 생성
             const majorNum = (parseInt(String(parentVersion).split('.')[0]) || 0) + 1;
             const user = await this.getUserInfo();
+            const feedbackActivity = definition.activities?.find((a: any) => a.id === activityId);
             await this.createResourcePrRecord('bpmn', {
                 resourceId: defId,
                 branchName: `v${newVersion}`,
                 baseBranch: `v${majorNum}.0`,
-                title: `[피드백] ${activity.name || activityId} 정의 변경`,
+                title: `[피드백] ${feedbackActivity?.name || activityId}에서 시작된 프로세스 개선`,
                 description: `피드백 기반 자동 생성 (task: ${workItem.id})`,
                 requesterId: user.uid,
                 requesterName: user.name || localStorage.getItem('userName') || ''
             });
 
             // 임시 minor 버전으로 해당 워크아이템만 재실행
-            workItem.version = newVersion;
-            workItem.version_tag = 'minor';
-            workItem.status = 'SUBMITTED';
-            await storage.putObject('todolist', workItem);
-
-            const { arcv_id, parent_version, source_todolist_id, ...procDefData } = process;
-            await storage.putObject('proc_def', procDefData, { onConflict: 'id,tenant_id' });
+            // workItem.version = newVersion;
+            // workItem.version_tag = 'minor';
+            // workItem.status = 'SUBMITTED';
+            // await storage.putObject('todolist', workItem);
         } catch (error) {
             throw new Error(error.message);
         }

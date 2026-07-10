@@ -594,6 +594,7 @@ export default {
             const paramObj = {};
 
             if (element.description) paramObj.description = element.description;
+            if (element.instruction) paramObj.instruction = element.instruction;
             if (element.role) paramObj.role = element.role;
 
             // input/output 매핑
@@ -604,8 +605,16 @@ export default {
                     type: this.checkForm(data, item) ? this.DEFAULT_VALUES.FORM_ACTIVITY_TYPE : this.DEFAULT_VALUES.EVALUATE_TYPE
                 }));
 
-            if (element.inputData?.length) paramObj.inputMapping = toMappingObj(element.inputData, 'to');
-            if (element.outputData?.length) paramObj.outputMapping = toMappingObj(element.outputData, 'from');
+            if (element.inputData?.length) {
+                paramObj.inputMapping = toMappingObj(element.inputData, 'to');
+                // convertXMLToJSON(bpmnXmlToDefinition.js)은 inputMapping이 아니라 평범한 문자열
+                // 배열인 inputData/outputData를 읽으므로, 왕복 시 유실되지 않도록 원본도 함께 저장한다.
+                paramObj.inputData = element.inputData;
+            }
+            if (element.outputData?.length) {
+                paramObj.outputMapping = toMappingObj(element.outputData, 'from');
+                paramObj.outputData = element.outputData;
+            }
 
             if (element.checkpoints?.length) paramObj.checkpoints = element.checkpoints;
 
@@ -1915,10 +1924,30 @@ export default {
                     node.nodeType = bpmnType;
                 });
 
-            // 엣지 추가 (Sequence 요소)
+            // 서브프로세스도 그래프 노드로 추가한다. subProcess의 실제 박스 위치/크기는
+            // createSubProcessShape가 별도로 계산하므로(역할 기준 배치), 여기서는 시퀀스가
+            // 참조하는 노드가 그래프에 반드시 존재하도록 자리만 만들어 레이어 배정이 깨지지
+            // 않게 한다(이 노드에 배정된 x/y는 사용하지 않음).
+            if (jsonModel.subProcesses && Array.isArray(jsonModel.subProcesses)) {
+                jsonModel.subProcesses.forEach((subProcess) => {
+                    if (!subProcess || !subProcess.id || graph.getNode(subProcess.id)) return;
+                    graph.addNode(subProcess.id, subProcess.name);
+                    const node = graph.getNode(subProcess.id);
+                    node.width = 200;
+                    node.height = 150;
+                    node.nodeType = 'bpmn:subProcess';
+                });
+            }
+
+            // 엣지 추가 (Sequence 요소). source/target 노드가 그래프에 없는 경우(참조 오류 등)
+            // 레이어 배정 단계에서 undefined 노드에 접근해 크래시하므로 건너뛴다.
             elements
                 .filter((element) => element.elementType === 'Sequence')
                 .forEach((element) => {
+                    if (!graph.getNode(element.source) || !graph.getNode(element.target)) {
+                        console.warn('[createAutoLayout] 시퀀스가 존재하지 않는 노드를 참조해 건너뜀:', element);
+                        return;
+                    }
                     graph.addEdge(element.source, element.target);
                 });
 

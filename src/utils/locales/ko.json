@@ -4230,6 +4230,11 @@
         "analyzing": "분석 중...",
         "goToDefinition": "프로세스 편집으로 이동"
     },
+    "ProcessFeedbackDrawer": {
+        "title": "단계 상세",
+        "rateStep": "이 단계는 어땠나요?",
+        "completed": "완료됨"
+    },
     "ProcessFeedback": {
         "applyTitle": "피드백 반영",
         "inputTitle": "피드백을 입력해주세요",
@@ -4249,7 +4254,22 @@
         "checkpoints": "체크포인트",
         "description": "개요",
         "instruction": "지침",
-        "conditionExamples": "조건 예시"
+        "conditionExamples": "조건 예시",
+        "diffError": "개선안을 생성하지 못했습니다.",
+        "nodeAdded": "노드 추가",
+        "nodeModified": "속성 변경",
+        "nodeRemoved": "삭제됨",
+        "changesCount": "{count}건 변경됨",
+        "reviewButton": "비교해서 검토하기"
+    },
+    "ProcessFeedbackCompare": {
+        "title": "개선안 검토",
+        "before": "현재",
+        "after": "개선안",
+        "applyButton": "반영",
+        "selectedCount": "{selected}/{total}건 선택됨",
+        "changesTitle": "변경 노드",
+        "mergeError": "선택한 조합으로는 개선안을 반영할 수 없습니다."
     },
     "ProcessInstanceTable": {
         "status": "상태",

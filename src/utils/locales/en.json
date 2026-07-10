@@ -4230,6 +4230,11 @@
         "analyzing": "Analyzing...",
         "goToDefinition": "Go to Process Editor"
     },
+    "ProcessFeedbackDrawer": {
+        "title": "Step Details",
+        "rateStep": "How was this step?",
+        "completed": "Completed"
+    },
     "ProcessFeedback": {
         "applyTitle": "Apply Feedback",
         "inputTitle": "Please enter your feedback",
@@ -4249,7 +4254,22 @@
         "checkpoints": "Checkpoints",
         "description": "Overview",
         "instruction": "Instruction",
-        "conditionExamples": "Condition Examples"
+        "conditionExamples": "Condition Examples",
+        "diffError": "Failed to generate the improvement.",
+        "nodeAdded": "Added",
+        "nodeModified": "Modified",
+        "nodeRemoved": "Removed",
+        "changesCount": "{count} change(s)",
+        "reviewButton": "Compare and Review"
+    },
+    "ProcessFeedbackCompare": {
+        "title": "Review Improvement",
+        "before": "Current",
+        "after": "Proposed",
+        "applyButton": "Apply",
+        "selectedCount": "{selected}/{total} selected",
+        "changesTitle": "Changed Nodes",
+        "mergeError": "The selected combination could not be applied."
     },
     "ProcessInstanceTable": {
         "status": "Status",

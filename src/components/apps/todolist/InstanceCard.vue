@@ -137,34 +137,10 @@
                         </div>
                     </v-window-item>
 
-                    <!-- PC에서 액티비티와 프로세스를 가로 배치 -->
+                    <!-- 프로세스: 다이어그램 전체 폭(process-feedback-whole-definition-review).
+                         완료 노드 더블클릭 시 드로어에서 산출물/피드백을 확인하므로 별도 업무 테이블은 제거했다. -->
                     <v-window-item value="progress" class="instance-card-tab-2">
-                        <v-row v-if="!isMobile" no-gutters class="ma-0 pa-0" style="height: 100%">
-                            <!-- 프로세스 영역 (왼쪽, 5/12) -->
-                            <v-col cols="5" class="pr-2 ma-0 pa-0" style="border-right: 1px solid #e0e0e0">
-                                <div class="instance-card-process-box">
-                                    <InstanceProgress
-                                        :key="`progress-${updatedKey}-${instance?.instId}`"
-                                        :instance="instance"
-                                        ref="progress"
-                                    />
-                                </div>
-                            </v-col>
-
-                            <!-- 액티비티 영역 (오른쪽, 7/12) -->
-                            <v-col cols="7" class="pl-2 ma-0 pa-0">
-                                <InstanceWorkHistory
-                                    @updated="handleInstanceUpdated"
-                                    class="instance-card-tab-4"
-                                    :key="`workhistory-desktop-${updatedKey}-${instance?.instId}`"
-                                    :instance="instance"
-                                    ref="workhistory"
-                                />
-                            </v-col>
-                        </v-row>
-
-                        <!-- 모바일에서는 기존 프로세스만 표시 -->
-                        <div v-else class="instance-card-process-box">
+                        <div class="instance-card-process-box" style="height: 100%">
                             <InstanceProgress :key="`progress-${updatedKey}-${instance?.instId}`" :instance="instance" ref="progress" />
                         </div>
                     </v-window-item>
