@@ -213,16 +213,21 @@ async function setupSupabase() {
     const supabaseKey = window._env_?.VITE_SUPABASE_KEY || import.meta.env.VITE_SUPABASE_KEY;
 
     try {
+        const client = createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true
+            }
+        });
         Object.defineProperty(window, '$supabase', {
-            value: createClient(supabaseUrl, supabaseKey, {
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true
-                }
-            }),
+            value: client,
             writable: false,
             configurable: false
         });
+        // localStorage에 저장된 세션이 복원될 때까지 대기.
+        // 이걸 기다리지 않으면 mounted() 시점의 첫 쿼리(예: tenants 조회)가
+        // 로그인 세션이 있어도 anon 롤로 나가서 authenticated 전용 RLS 정책에 막힌다.
+        await client.auth.getSession();
         console.log('[Main] $supabase 클라이언트가 성공적으로 설정되었습니다.');
     } catch (error) {
         console.error('[Main] $supabase 설정 중 오류 발생:', error);
