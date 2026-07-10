@@ -8173,8 +8173,45 @@ export default {
                 .reverse()
                 .find((tc) => typeof tc?.name === 'string' && tc.name.includes('edit_hwpx_page_html'));
 
-            // 프로세스 컨설팅/생성은 work-assistant-agent 강제 라우팅(컨설팅 흐름)이 직접 처리하므로
-            // 프론트의 레거시 start_process_consulting/generate_process 후처리는 제거되었다.
+            // 프로세스 생성 요청 → 클라이언트 컨설팅 모드로 전환 (WorkAssistantChatPanel과 동일 패턴).
+            // 배포된 base-agent(work-assistant-agent) 버전이 server-side 프로세스 생성을 하지 않으므로,
+            // 최신 프론트에서도 start_process_consulting 도구 호출 시 클라이언트가
+            // ConsultingGenerator(/completion/langchain-chat/messages)로 생성 → onModelCreated 에서 proc_def 저장한다.
+            const consultingToolCall = [...toolCalls]
+                .reverse()
+                .find((tc) => typeof tc?.name === 'string' && tc.name.includes('start_process_consulting'));
+            if (consultingToolCall?.name) {
+                let imageAnalysis = null;
+                try {
+                    const parsed = this.parseToolOutput(consultingToolCall.output);
+                    if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
+                        imageAnalysis = parsed.image_analysis_result;
+                    }
+                } catch (e) {}
+                let originalMessage;
+                if (imageAnalysis) {
+                    originalMessage = `${userText || ''}\n\n[이미지 분석 결과]\n${imageAnalysis}`;
+                } else {
+                    originalMessage =
+                        `${userText || ''}\n\n[전체 요청 및 첨부 이미지 분석 내용]: ${JSON.stringify(consultingToolCall.output ?? null)}`;
+                }
+                await this.switchToConsultingMode(originalMessage);
+                return;
+            }
+
+            // 컨설팅 후 생성 확정 → definitions 생성 화면으로 전환 (WorkAssistantChatPanel:952-957 과 동일).
+            // base-agent 가 generate_process 도구를 호출하면 지금까지의 대화를 store 에 실어
+            // /definitions/chat 로 넘겨 실제 proc_def 를 생성/저장하게 한다.
+            const generateToolCall = [...toolCalls]
+                .reverse()
+                .find((tc) => typeof tc?.name === 'string' && tc.name.includes('generate_process'));
+            if (generateToolCall?.name) {
+                const messagesForDefinition = this.buildMessagesForDefinitionGeneration();
+                this.$store.dispatch('updateMessages', messagesForDefinition);
+                this.$router.push('/definitions/chat');
+                return;
+            }
+
             if (!pageEditToolCall?.name) return;
 
             if (pageEditToolCall?.name) {

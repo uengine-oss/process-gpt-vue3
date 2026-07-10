@@ -267,6 +267,17 @@
                         <v-window-item v-if="isTabAvailable('output')" value="output" class="pa-2">
                             <InstanceOutput :instance="processInstance" :isInWorkItem="true" />
                         </v-window-item>
+                        <v-window-item v-if="isTabAvailable('similar')" value="similar" class="pa-0">
+                            <!-- 아코디언/폼 확장 시 탭 영역 내부에서 스크롤되도록 높이 제한 -->
+                            <div
+                                :style="{
+                                    height: $globalState.state.isZoomed ? 'calc(100vh - 130px)' : 'calc(100vh - 260px)',
+                                    overflowY: 'auto'
+                                }"
+                            >
+                                <SimilarInstancesPanel v-if="procInstId" :procInstId="procInstId" />
+                            </div>
+                        </v-window-item>
                     </v-window>
                 </v-alert>
             </v-col>
@@ -520,6 +531,7 @@ import DefaultWorkItem from './DefaultWorkItem.vue';
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
 import URLWorkItem from './URLWorkItem.vue';
 import InstanceOutput from './InstanceOutput.vue';
+import SimilarInstancesPanel from '@/components/apps/instance-classifier/SimilarInstancesPanel.vue';
 import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import AgentMonitor from '@/views/markdown/AgentMonitor.vue';
 
@@ -586,6 +598,7 @@ export default {
         DynamicForm,
         FormDefinition,
         InstanceOutput,
+        SimilarInstancesPanel,
         AgentMonitor,
         DelegateTaskForm,
         ReworkDialog,
@@ -810,6 +823,19 @@ export default {
         window.addEventListener('resize', this.handleResize);
     },
     async mounted() {
+        // KPI 설문 워크아이템(strategy 서비스 발행, activity_id='kpi_survey')은 전용 응답 화면으로 이동
+        const taskId = this.taskId || this.$route.params.taskId;
+        if (taskId && window.$supabase) {
+            try {
+                const { data } = await window.$supabase.from('todolist').select('activity_id').eq('id', taskId).maybeSingle();
+                if (data && data.activity_id === 'kpi_survey') {
+                    this.$router.replace(`/strategy/surveys/${taskId}`);
+                    return;
+                }
+            } catch (e) {
+                // 조회 실패 시 일반 워크아이템으로 처리
+            }
+        }
         await this.init();
     },
     beforeUnmount() {
@@ -979,6 +1005,11 @@ export default {
                     tabs.push({ value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') });
                 }
 
+                // 유사 과거 사례(인스턴스 자동분류) 탭 — 인스턴스가 있을 때만
+                if (this.procInstId && !tabs.find((t) => t.value === 'similar')) {
+                    tabs.push({ value: 'similar', label: '유사 사례' });
+                }
+
                 return tabs;
             } else {
                 return [
@@ -992,6 +1023,9 @@ export default {
                 //     });
                 // }
             }
+        },
+        procInstId() {
+            return this.workItem?.worklist?.instId || null;
         },
         currentUserEmail() {
             return localStorage.getItem('email');

@@ -1,10 +1,11 @@
 <template>
     <div class="form-text-area">
-        <!-- 읽기 전용 + 내용이 markdown/json 이면 원본 대신 보기 좋게 렌더한다. -->
-        <div v-if="isReadonlyView && formattedKind !== 'text'" class="form-text-area__readonly">
+        <!-- 읽기 전용(view) 모드: readonly textarea 대신 마크다운 뷰어로 표시(JSON 은 정돈 출력). -->
+        <div v-if="isReadonlyView" class="form-text-area__readonly">
             <div class="form-text-area__label">{{ displayLabel }}</div>
             <pre v-if="formattedKind === 'json'" class="form-text-area__json">{{ prettyJson }}</pre>
-            <div v-else class="form-text-area__md" v-html="renderedMarkdown"></div>
+            <div v-else-if="hasContent" class="form-text-area__md" v-html="renderedMarkdown"></div>
+            <div v-else class="form-text-area__empty">-</div>
         </div>
         <v-textarea
             v-else
@@ -89,6 +90,9 @@ export default {
         },
         isReadonlyView() {
             return this.localReadonly || this.localDisabled;
+        },
+        hasContent() {
+            return !!(this.localModelValue || '').toString().trim();
         },
         formattedKind() {
             // 읽기 전용일 때만 md/json 을 렌더 대상으로 판단(편집 중엔 원본 유지).
@@ -232,10 +236,19 @@ export default {
     font-size: 12.5px;
     color: #1f2937;
 }
+.form-text-area__empty {
+    font-size: 13.5px;
+    color: #9ca3af;
+}
 .form-text-area__md {
     font-size: 13.5px;
     color: #1f2937;
     line-height: 1.6;
+    white-space: normal;
+    word-break: break-word;
+}
+.form-text-area__md :deep(p) {
+    margin: 0 0 6px;
 }
 .form-text-area__md :deep(h1),
 .form-text-area__md :deep(h2),

@@ -294,6 +294,9 @@ export default {
                 } else if (notification.type === 'merge_request') {
                     notiHeader = notification.from_user_id || 'PR 알림';
                     notiBody = notification.title || 'PR 상태가 변경되었습니다';
+                } else if (notification.type === 'survey') {
+                    notiHeader = notification.title || '설문 요청';
+                    notiBody = notification.description || '프로세스 완료에 따른 설문에 응답해 주세요';
                 } else if (notification.type === 'chat') {
                     const notiChatRoomId = this.getChatRoomIdFromUrl(notification.url);
                     if (

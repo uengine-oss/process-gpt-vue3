@@ -19,6 +19,7 @@ import {
 } from 'chart.js';
 import { Doughnut, Line, Bar } from 'vue-chartjs';
 import { useKpiStore } from '@/stores/analytics/kpiStore';
+import { useStrategyStore } from '@/stores/strategy/strategyStore';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Filler);
 
@@ -137,6 +138,31 @@ function pipelinePercent(type: string) {
     return 0;
 }
 
+// ============== Strategy 목표달성도 (strategy 서비스 연동) ==============
+
+const strategyStore = useStrategyStore();
+const PERSPECTIVE_COLORS: Record<string, string> = {
+    financial: '#1565c0',
+    customer: '#2e7d32',
+    internal_process: '#e65100',
+    learning_growth: '#6a1b9a'
+};
+
+// 측정된 목표들의 평균 달성률 (전략 종합 달성도)
+const strategyOverall = computed(() => {
+    const rates = strategyStore.objectives.map((o: any) => o.achievement).filter((r: any) => r != null);
+    if (!rates.length) return null;
+    return Math.round((rates.reduce((a: number, b: number) => a + b, 0) / rates.length) * 10) / 10;
+});
+
+function strategyBarColor(rate: number | null) {
+    if (rate == null) return 'grey';
+    if (rate >= 100) return 'success';
+    if (rate >= 70) return 'primary';
+    if (rate >= 40) return 'warning';
+    return 'error';
+}
+
 // ============== Data Loading ==============
 
 async function loadData() {
@@ -151,6 +177,12 @@ async function loadData() {
         loading.value = false;
         await nextTick();
         chartsReady.value = true;
+    }
+    // 전략 서비스는 별도 기동이므로 실패해도 대시보드 본체에 영향 없게 분리
+    try {
+        await strategyStore.loadMap();
+    } catch (e) {
+        console.warn('strategy map load skipped:', e);
     }
 }
 
@@ -219,8 +251,8 @@ onMounted(loadData);
                 <h2 class="text-h5 font-weight-bold">{{ $t('analytics.kpi') }}</h2>
             </div>
             <div class="d-flex align-center gap-3">
-                <v-btn variant="outlined" size="small" @click="router.push('/review-board')">
-                    <v-icon start size="16">mdi-clipboard-check-outline</v-icon>
+                <v-btn variant="outlined" size="small" @click="router.push('/strategy-board')">
+                    <v-icon start size="16">mdi-map-outline</v-icon>
                     {{ $t('analytics.strategyBoard') }}
                 </v-btn>
             </div>
@@ -233,6 +265,50 @@ onMounted(loadData);
 
         <!-- Dashboard Cards -->
         <v-row v-else>
+            <!-- 전략 목표달성도 (Strategy Board 연동) -->
+            <v-col v-if="strategyStore.objectives.length" cols="12">
+                <v-card variant="outlined" rounded="lg" class="pa-4" data-testid="strategy-achievement-card">
+                    <div class="d-flex align-center justify-space-between mb-3">
+                        <span class="text-subtitle-1 font-weight-bold">{{ $t('strategyBoard.dashboardTitle') }}</span>
+                        <div class="d-flex align-center ga-3">
+                            <template v-if="strategyOverall != null">
+                                <span class="text-caption text-medium-emphasis">{{ $t('strategyBoard.overall') }}</span>
+                                <span class="text-h6 font-weight-bold" :class="`text-${strategyBarColor(strategyOverall)}`">
+                                    {{ strategyOverall }}%
+                                </span>
+                            </template>
+                            <v-btn variant="text" size="small" color="primary" @click="router.push('/strategy-board')">
+                                {{ $t('analytics.strategyBoard') }}
+                                <v-icon end size="14">mdi-arrow-right</v-icon>
+                            </v-btn>
+                        </div>
+                    </div>
+                    <v-row dense>
+                        <v-col v-for="objective in strategyStore.objectives" :key="objective.id" cols="12" sm="6" md="3">
+                            <div class="pa-2">
+                                <div class="d-flex align-center justify-space-between mb-1">
+                                    <span class="text-body-2 font-weight-medium text-truncate" style="max-width: 70%">
+                                        {{ objective.name }}
+                                    </span>
+                                    <span class="text-caption font-weight-bold" :class="`text-${strategyBarColor(objective.achievement)}`">
+                                        {{ objective.achievement != null ? objective.achievement + '%' : $t('strategyBoard.notMeasured') }}
+                                    </span>
+                                </div>
+                                <v-progress-linear
+                                    :model-value="Math.min(objective.achievement || 0, 100)"
+                                    :color="strategyBarColor(objective.achievement)"
+                                    height="6"
+                                    rounded
+                                />
+                                <span class="text-caption text-medium-emphasis" :style="{ color: PERSPECTIVE_COLORS[objective.perspective] }">
+                                    {{ $t(`strategyBoard.perspectives.${objective.perspective}`) }}
+                                </span>
+                            </div>
+                        </v-col>
+                    </v-row>
+                </v-card>
+            </v-col>
+
             <!-- KPI Achievement (Doughnut) -->
             <v-col cols="12" md="6">
                 <v-card variant="outlined" rounded="lg" class="pa-4">

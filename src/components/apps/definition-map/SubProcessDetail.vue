@@ -150,6 +150,7 @@
         </div>
 
         <v-card-text
+            class="itl-view-bounds"
             style="width: 100%"
             :style="isMobile ? 'height: calc(100vh - 94px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 188px); padding: 10px;'"
         >
@@ -191,11 +192,15 @@
                 <dry-run-process :definitionId="processDefinition.id" @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
+
+        <!-- 요청 유형 Top 3 (다이어그램 우측 애니메이션 막대, 데이터 없으면 자동 숨김) -->
+        <InstanceTopBars v-if="processDefinition && processDefinition.id" :procDefId="processDefinition.id" />
     </v-card>
 </template>
 
 <script>
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import InstanceTopBars from '@/components/apps/instance-classifier/InstanceTopBars.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
@@ -210,6 +215,7 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         ProcessDefinition,
+        InstanceTopBars,
         'dry-run-process': DryRunProcess,
         'process-gpt-execute': ProcessGPTExecute
     },
