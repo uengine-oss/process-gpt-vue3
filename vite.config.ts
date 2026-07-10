@@ -96,7 +96,8 @@ export default defineConfig({
             // dev 에서는 서비스 published 포트(:8014)로 직접 프록시.
             // 운영에서는 nginx 가 /strategy-service prefix 를 strip 해 서비스로 라우팅한다.
             '/strategy-service/': {
-                target: 'http://127.0.0.1:8014',
+                // 온톨로지 데모 서버 등 다른 포트로 붙일 수 있게 env 오버라이드 허용.
+                target: env.STRATEGY_PROXY_TARGET || process.env.STRATEGY_PROXY_TARGET || 'http://127.0.0.1:8014',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/strategy-service/, '')
             },
@@ -172,6 +173,31 @@ export default defineConfig({
                 // - /agent-router/route -> /route
                 // - (레거시) /agent-router/agents/<agentId>/... -> /agents/<agentId>/...
                 rewrite: (path) => path.replace(/^\/agent-router/, '')
+            },
+            // Skills API (claude-skills backend). Must be registered BEFORE the generic
+            // '/process-gpt-deepagents/' route so skill calls are routed to claude-skills.
+            // Path map: /process-gpt-deepagents/skills -> claude-skills /skills/list,
+            //           /process-gpt-deepagents/skills-builtin -> /skills/list-builtin,
+            //           /process-gpt-deepagents/skills/... -> /skills/... (upload, {name}/files, ...)
+            '/process-gpt-deepagents/skills': {
+                target: 'http://127.0.0.1:8765',
+                changeOrigin: true,
+                timeout: 0,
+                proxyTimeout: 0,
+                rewrite: (path) => {
+                    let p = path.replace(/^\/process-gpt-deepagents/, '');
+                    p = p.replace(/^\/skills-builtin(\?|$)/, '/skills/list-builtin$1');
+                    p = p.replace(/^\/skills(\?|$)/, '/skills/list$1');
+                    return p;
+                }
+            },
+            // checkSkills() calls /claude-skills/skills/check -> claude-skills /skills/check
+            '/claude-skills/': {
+                target: 'http://127.0.0.1:8765',
+                changeOrigin: true,
+                timeout: 0,
+                proxyTimeout: 0,
+                rewrite: (path) => path.replace(/^\/claude-skills/, '')
             },
             // DeepAgents Router API
             '/process-gpt-deepagents/': {

@@ -110,6 +110,42 @@ export const useStrategyStore = defineStore('strategy', () => {
         return data;
     }
 
+    // ---- 온톨로지 그래프 / 영향도 -------------------------------------
+    // 기업 운영 온톨로지(전략→프로세스→리소스→지식) 4레이어 그래프.
+    async function getOntologyGraph(layers?: string[]) {
+        const { data } = await axios.get(`${BASE}/ontology/graph`, {
+            params: {
+                tenant_id: tenantId(),
+                ...(layers && layers.length ? { layers: layers.join(',') } : {})
+            }
+        });
+        return data;
+    }
+    async function getNodeNeighbors(id: string, depth = 1) {
+        const { data } = await axios.get(`${BASE}/ontology/nodes/${encodeURIComponent(id)}/neighbors`, {
+            params: { tenant_id: tenantId(), depth }
+        });
+        return data;
+    }
+    async function getImpactKpi(id: string) {
+        const { data } = await axios.get(`${BASE}/impact/kpi/${encodeURIComponent(id)}`, {
+            params: { tenant_id: tenantId() }
+        });
+        return data;
+    }
+    async function getImpactStrategy(id: string) {
+        const { data } = await axios.get(`${BASE}/impact/strategy/${encodeURIComponent(id)}`, {
+            params: { tenant_id: tenantId() }
+        });
+        return data;
+    }
+    async function runOntologySync() {
+        const { data } = await axios.post(`${BASE}/ontology/sync`, null, {
+            params: { tenant_id: tenantId() }
+        });
+        return data;
+    }
+
     return {
         loading,
         objectives,
@@ -132,6 +168,11 @@ export const useStrategyStore = defineStore('strategy', () => {
         getSurveys,
         getSurvey,
         respondSurvey,
-        importLegacyBscard
+        importLegacyBscard,
+        getOntologyGraph,
+        getNodeNeighbors,
+        getImpactKpi,
+        getImpactStrategy,
+        runOntologySync
     };
 });

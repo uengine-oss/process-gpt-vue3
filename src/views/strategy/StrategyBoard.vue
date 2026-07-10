@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useStrategyStore } from '@/stores/strategy/strategyStore';
 
 const store = useStrategyStore();
+const router = useRouter();
 
 const PERSPECTIVES = ['financial', 'customer', 'internal_process', 'learning_growth'];
 const PERSPECTIVE_COLORS: Record<string, string> = {
@@ -366,6 +368,11 @@ onBeforeUnmount(() => window.removeEventListener('resize', handleResize));
                 <v-btn variant="outlined" size="small" :loading="measuring" @click="refreshMeasurement">
                     <v-icon start size="16">mdi-refresh</v-icon>
                     {{ $t('strategyBoard.refreshMeasure') }}
+                </v-btn>
+                <!-- 온톨로지 뷰(애널리틱스)로 이동 — 전략/프로세스/리소스/지식 전체 그래프 -->
+                <v-btn variant="outlined" size="small" @click="router.push('/analytics/ontology')">
+                    <v-icon start size="16">mdi-graph-outline</v-icon>
+                    온톨로지 뷰
                 </v-btn>
                 <v-btn color="primary" size="small" @click="openObjectiveDialog()">
                     <v-icon start size="16">mdi-plus</v-icon>

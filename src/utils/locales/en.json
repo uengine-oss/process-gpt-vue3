@@ -4110,6 +4110,7 @@
         "onTrack": "On Track",
         "avgWeeklyDeployment": "Avg Weekly Deployment",
         "strategyBoard": "Strategy Board",
+        "ontology": "Ontology",
         "publishedNote": "Only processes published after review are counted toward KPI targets",
         "noData": "No data available",
         "heatmap": "Heatmap",

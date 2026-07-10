@@ -758,6 +758,13 @@ export default {
                     disable: false
                 },
                 {
+                    title: 'analytics.ontology',
+                    icon: 'ibm-process-mining',
+                    BgColor: 'primary',
+                    to: '/analytics/ontology',
+                    disable: false
+                },
+                {
                     title: 'analytics.piFlag',
                     icon: 'flag',
                     BgColor: 'primary',

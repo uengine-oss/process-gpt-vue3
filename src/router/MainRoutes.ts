@@ -2,6 +2,7 @@ const isGsMode = (window as any)._env_?.VITE_GS_MODE === 'true' || import.meta.e
 
 const gsExcludedRoutes = [
     'Analytics Dashboard',
+    'Ontology Explorer',
     'Heatmap',
     'Skills Management',
     'Skill Detail',
@@ -486,6 +487,11 @@ const allRoutes = [
         name: 'Strategy Board',
         path: '/strategy-board',
         component: () => import('@/views/strategy/StrategyBoard.vue')
+    },
+    {
+        name: 'Ontology Explorer',
+        path: '/analytics/ontology',
+        component: () => import('@/views/strategy/OntologyExplorer.vue')
     },
     {
         name: 'Survey Response',
