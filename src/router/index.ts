@@ -54,6 +54,12 @@ export const router = createRouter({
             component: () => retryDynamicImport(() => import('@/views/debug/AgentTracePage.vue'))
         },
         {
+            // 파싱 미리보기(dry-run) — 문서 업로드 시 파서가 뽑는 마크다운을 저장 없이 확인
+            name: 'Parse Test',
+            path: '/parse-test',
+            component: () => retryDynamicImport(() => import('@/views/debug/ParseTestPage.vue'))
+        },
+        {
             name: 'Slide',
             path: '/slide-editor',
             component: () => retryDynamicImport(() => import('@/views/markdown/SlideEditor.vue'))

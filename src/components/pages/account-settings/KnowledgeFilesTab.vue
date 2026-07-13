@@ -611,6 +611,20 @@
                                     </v-chip>
                                 </template>
                                 <template v-slot:[`item.actions`]="{ item }">
+                                    <v-tooltip v-if="item.index_status === 'indexed'" text="파싱 결과 미리보기" location="top">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                size="small"
+                                                :loading="previewingKeys.has(rowKey(item))"
+                                                @click="openPreview(item)"
+                                            >
+                                                <v-icon size="16">mdi-file-search-outline</v-icon>
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
                                     <v-tooltip text="다운로드" location="top">
                                         <template v-slot:activator="{ props }">
                                             <v-btn
@@ -887,6 +901,28 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <!-- 파싱 결과 미리보기 — document_pages 에 저장된(=RAG가 읽는) 페이지 본문을 마크다운으로 -->
+        <v-dialog v-model="previewDialog" max-width="1000" height="86vh" scrollable>
+            <v-card class="preview-card">
+                <v-card-title class="d-flex align-center py-2">
+                    <v-icon size="18" class="mr-2">mdi-file-search-outline</v-icon>
+                    <span class="text-subtitle-1 text-truncate">파싱 결과 미리보기</span>
+                    <v-spacer />
+                    <v-btn icon variant="text" size="small" @click="previewDialog = false">
+                        <v-icon size="18">mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-divider />
+                <ParsedPagesView
+                    :pages="previewPages"
+                    :file-name="previewFileName"
+                    :loading="previewLoading"
+                    :error="previewError"
+                    class="preview-card__viewer"
+                />
+            </v-card>
+        </v-dialog>
     </v-card>
 </template>
 
@@ -894,6 +930,7 @@
 import axios from 'axios';
 import { mimeIcon } from '@/utils/fileIcon';
 import { fetchAllowedFolders, isFolderAllowed } from '@/utils/folderPermissions';
+import ParsedPagesView from '@/components/knowledge/ParsedPagesView.vue';
 
 function extToMime(name) {
     const ext = (name || '').split('.').pop()?.toLowerCase() || '';
@@ -912,6 +949,7 @@ function extToMime(name) {
 
 export default {
     name: 'KnowledgeFilesTab',
+    components: { ParsedPagesView },
     data() {
         const isAdmin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
         return {
@@ -944,6 +982,12 @@ export default {
             reindexingKeys: new Set(), // 재인덱싱 진행 중인 파일 rowKey
             resummarizingKeys: new Set(), // 재요약 진행 중인 파일 rowKey
             downloadingKeys: new Set(), // 다운로드 URL 조회 중인 파일 rowKey
+            previewingKeys: new Set(), // 파싱 미리보기 조회 중인 파일 rowKey
+            previewDialog: false,
+            previewLoading: false,
+            previewError: '',
+            previewPages: [],
+            previewFileName: '',
             deleteDialog: false,
             deleteTarget: null,
             duplicateDialog: false,
@@ -2113,6 +2157,37 @@ export default {
             }
         },
         // 인덱싱 실패 파일 1건 재인덱싱 (스토리지 원본 재처리)
+        // 파싱 결과 미리보기 — document_pages(저장된 페이지 본문)를 열어 파서가 뽑은 마크다운을 확인.
+        async openPreview(item) {
+            const tenantId = window.$tenantName || '';
+            if (!tenantId || !item?.source_ref) return;
+            const key = this.rowKey(item);
+            const next = new Set(this.previewingKeys);
+            next.add(key);
+            this.previewingKeys = next;
+            // 다이얼로그 즉시 오픈 + 로딩 표시
+            this.previewFileName = item.file_name || '';
+            this.previewPages = [];
+            this.previewError = '';
+            this.previewLoading = true;
+            this.previewDialog = true;
+            try {
+                const { data } = await axios.get('/memento/parse/stored', {
+                    params: { tenant_id: tenantId, source_ref: item.source_ref }
+                });
+                this.previewPages = data?.pages || [];
+                if (!this.previewPages.length) {
+                    this.previewError = '저장된 페이지 본문이 없습니다. (인덱싱 방식에 따라 페이지 본문이 없을 수 있어요)';
+                }
+            } catch (e) {
+                this.previewError = e?.response?.data?.detail || e?.message || '미리보기를 불러오지 못했습니다';
+            } finally {
+                this.previewLoading = false;
+                const after = new Set(this.previewingKeys);
+                after.delete(key);
+                this.previewingKeys = after;
+            }
+        },
         // 파일 다운로드 — memento 가 원본 파일명 Content-Disposition 이 박힌 storage URL 을 돌려준다.
         // (내부망 배포에선 kong:8000 → 외부 host 로 치환된 URL — 백엔드 get_knowledge_file_url 참고)
         async downloadFile(item) {
@@ -2269,6 +2344,18 @@ export default {
 </script>
 
 <style scoped>
+.preview-card {
+    display: flex;
+    flex-direction: column;
+    height: 86vh;
+    overflow: hidden;
+}
+
+.preview-card__viewer {
+    flex: 1;
+    min-height: 0;
+}
+
 .kft-header {
     display: flex;
     align-items: flex-start;

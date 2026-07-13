@@ -5407,6 +5407,35 @@ export default {
             return ct.includes('application/pdf') || fn.toLowerCase().endsWith('.pdf');
         },
 
+        /** CSV 아티팩트 JSON 인지 판별 (요구사항 추출 등) */
+        isCsvPayload(parsed) {
+            if (!parsed || typeof parsed !== 'object') return false;
+            const fileUrl = parsed.file_url || parsed.fileUrl || '';
+            if (!fileUrl) return false;
+            if (parsed.artifact_type === 'csv') return true;
+            const ct = (parsed.content_type || parsed.contentType || '').toString();
+            const fn = (parsed.file_name || parsed.fileName || '').toString();
+            return ct.includes('text/csv') || fn.toLowerCase().endsWith('.csv');
+        },
+
+        /** CSV 결과(요구사항 표 등)를 CSV 아티팩트 패널로 등록 */
+        pushCsvArtifact(parsed, msgIdx) {
+            const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
+            if (!fileUrl) return;
+            const msg = this.messages?.[msgIdx];
+            const title = (parsed?.file_name || parsed?.fileName || 'CSV').toString();
+            if (msg) {
+                msg.csvArtifactUrl = fileUrl;
+                msg.csvArtifactName = title;
+            }
+            this.pushArtifactPanel({
+                type: 'csv',
+                label: title,
+                data: { fileUrl, fileName: title, messageId: msg?.uuid || null }
+            });
+            this.attachMessageDownload(msgIdx, fileUrl, title, 'text/csv');
+        },
+
         /** PDF 결과(검토 의견서 등)를 PDF 아티팩트 패널로 등록 */
         pushPdfArtifact(parsed, msgIdx) {
             const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
@@ -5464,6 +5493,11 @@ export default {
                 // PDF 아티팩트 감지 (NDA/MOU 검토 의견서 등)
                 if (this.isPdfPayload(parsed)) {
                     this.pushPdfArtifact(parsed, msgIdx);
+                    return;
+                }
+                // CSV 아티팩트 감지 (요구사항 추출 등)
+                if (this.isCsvPayload(parsed)) {
+                    this.pushCsvArtifact(parsed, msgIdx);
                     return;
                 }
                 // markdown 아티팩트 감지 (NDA 검토 비교표 등)
@@ -6616,6 +6650,8 @@ export default {
                                 this.pushSlideArtifact(parsed, idx);
                             } else if (this.isPdfPayload(parsed)) {
                                 this.pushPdfArtifact(parsed, idx);
+                            } else if (this.isCsvPayload(parsed)) {
+                                this.pushCsvArtifact(parsed, idx);
                             } else if (this.isMarkdownPayload(parsed)) {
                                 this.pushMarkdownArtifact(parsed, idx);
                             } else if (this.isDocxPayload(parsed)) {
