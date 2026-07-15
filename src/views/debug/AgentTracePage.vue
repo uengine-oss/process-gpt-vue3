@@ -92,6 +92,7 @@
                             <span v-if="t.feedback" class="atp-fb-badge">{{ t.feedback.rating === -1 ? '👎' : '👍' }}</span>
                         </div>
                         <div class="atp-turn-sub">
+                            <span v-if="t.userName || t.userEmail" class="atp-turn-user">{{ t.userName || t.userEmail }} · </span>
                             {{ formatRel(t.startTs) }}
                             <span v-if="t.totalTokens"> · {{ shortNum(t.totalTokens) }} tok</span>
                             <span v-if="t.durationMs"> · {{ formatDur(t.durationMs) }}</span>
@@ -110,6 +111,7 @@
                 <template v-else>
                     <!-- run 헤더 -->
                     <div class="atp-runhead">
+                        <v-chip v-if="turnDetail.userName || turnDetail.userEmail || turnDetail.userUid" size="small" variant="tonal" color="blue-grey" :title="turnDetail.userEmail || turnDetail.userUid"><v-icon start size="14">mdi-account-outline</v-icon>{{ turnDetail.userName || turnDetail.userEmail || turnDetail.userUid }}</v-chip>
                         <v-chip size="small" :color="statusColor(turnDetail.status)" variant="tonal"><v-icon start size="14">{{ statusIcon(turnDetail.status) }}</v-icon>{{ turnDetail.status || 'running' }}</v-chip>
                         <v-chip v-if="turnDetail.durationMs" size="small" variant="text">{{ formatDur(turnDetail.durationMs) }}</v-chip>
                         <v-chip v-if="turnDetail.totalTokens" size="small" variant="text">{{ turnDetail.totalTokens.toLocaleString() }} tok</v-chip>
@@ -189,22 +191,49 @@
 
                 <div v-else-if="!selectedSpan" class="atp-dbody">
                     <div class="atp-dhead"><v-icon size="18" class="mr-1">mdi-information-outline</v-icon>턴 개요</div>
+                    <!-- 누가 이 턴을 보냈는지 -->
+                    <div v-if="turnDetail.userName || turnDetail.userEmail || turnDetail.userUid" class="atp-user">
+                        <v-icon size="15" class="mr-1">mdi-account-circle-outline</v-icon>
+                        <span class="atp-user-name">{{ turnDetail.userName || turnDetail.userEmail || turnDetail.userUid }}</span>
+                        <span v-if="turnDetail.userEmail && turnDetail.userEmail !== turnDetail.userName" class="atp-user-sub">{{ turnDetail.userEmail }}</span>
+                        <span v-if="turnDetail.userUid" class="atp-user-uid" :title="turnDetail.userUid">{{ turnDetail.userUid }}</span>
+                    </div>
                     <div class="atp-label mt-2">사용자 메시지</div>
                     <pre class="atp-pre">{{ turnDetail.userMessage || '(없음)' }}</pre>
-                    <!-- 이 턴에 선택된 지식베이스 폴더/파일 -->
-                    <template v-if="(turnDetail.metaFolders && turnDetail.metaFolders.length) || turnDetail.metaDocCount">
+                    <!-- 이 턴에 선택된 지식베이스 폴더/파일 + 채팅 첨부 -->
+                    <template v-if="(turnDetail.metaFolders && turnDetail.metaFolders.length) || (turnDetail.metaDocs && turnDetail.metaDocs.length) || (turnDetail.metaFiles && turnDetail.metaFiles.length)">
                         <div class="atp-label mt-3">선택 지식베이스</div>
                         <ul v-if="turnDetail.metaFolders && turnDetail.metaFolders.length" class="atp-kb-list">
-                            <li v-for="(f, i) in turnDetail.metaFolders" :key="i">
+                            <li v-for="(f, i) in turnDetail.metaFolders" :key="'fd' + i">
                                 <v-icon size="14" color="amber-darken-2" class="mr-1">mdi-folder-outline</v-icon>{{ f }}
                             </li>
                         </ul>
-                        <div v-if="turnDetail.metaDocCount" class="text-caption text-medium-emphasis mt-1">
-                            개별 파일 {{ turnDetail.metaDocCount }}개
-                        </div>
-                        <div v-if="!(turnDetail.metaFolders && turnDetail.metaFolders.length) && !turnDetail.metaDocCount" class="text-caption text-medium-emphasis">
-                            (선택 없음)
-                        </div>
+                        <ul v-if="turnDetail.metaDocs && turnDetail.metaDocs.length" class="atp-kb-list">
+                            <li v-for="(d, i) in turnDetail.metaDocs" :key="'dc' + i" class="atp-kb-doc">
+                                <v-icon size="14" :color="mimeIconOf(d.fileName).color" class="mr-1">{{ mimeIconOf(d.fileName).icon }}</v-icon>
+                                <span class="atp-kb-fname" :title="d.folderPath ? d.folderPath + '/' + d.fileName : d.fileName">{{ d.fileName }}</span>
+                                <span v-if="d.folderPath" class="atp-kb-fpath">{{ d.folderPath }}</span>
+                                <v-btn
+                                    v-if="d.id"
+                                    class="atp-kb-dl"
+                                    size="x-small"
+                                    variant="text"
+                                    icon
+                                    :loading="downloadingIds.has(d.id)"
+                                    title="다운로드"
+                                    @click="downloadKnowledgeDoc(d)"
+                                ><v-icon size="15">mdi-download-outline</v-icon></v-btn>
+                            </li>
+                        </ul>
+                        <template v-if="turnDetail.metaFiles && turnDetail.metaFiles.length">
+                            <div class="text-caption text-medium-emphasis mt-2 mb-1">채팅 첨부 {{ turnDetail.metaFiles.length }}개</div>
+                            <ul class="atp-kb-list">
+                                <li v-for="(n, i) in turnDetail.metaFiles" :key="'af' + i" class="atp-kb-doc">
+                                    <v-icon size="14" :color="mimeIconOf(n).color" class="mr-1">{{ mimeIconOf(n).icon }}</v-icon>
+                                    <span class="atp-kb-fname" :title="n">{{ n }}</span>
+                                </li>
+                            </ul>
+                        </template>
                     </template>
                     <template v-if="turnDetail.finalAnswer">
                         <div class="atp-label mt-3">최종 답변</div>
@@ -214,7 +243,6 @@
                         <div class="atp-label mt-3 text-error">에러</div>
                         <pre class="atp-pre atp-err">{{ turnDetail.error }}</pre>
                     </template>
-                    <div v-if="turnDetail.metaSummary" class="text-caption text-medium-emphasis mt-3">{{ turnDetail.metaSummary }}</div>
                     <div class="atp-hint mt-4">← 타임라인 노드를 클릭(또는 ↑/↓)하면 그 단계의 프롬프트·응답·도구 입출력이 여기 표시됩니다.</div>
                 </div>
 
@@ -259,6 +287,28 @@
 </template>
 
 <script>
+import axios from 'axios';
+import { mimeIcon } from '@/utils/fileIcon';
+
+// 파일명 확장자 → mime (fileIcon.mimeIcon 이 mime 를 받으므로 매핑). KnowledgeFilesTab 과 동일.
+function extToMime(name) {
+    const ext = (name || '').split('.').pop()?.toLowerCase() || '';
+    const map = {
+        pdf: 'application/pdf',
+        doc: 'application/msword',
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        xls: 'application/vnd.ms-excel',
+        xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ppt: 'application/vnd.ms-powerpoint',
+        pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        hwp: 'application/x-hwp',
+        hwpx: 'application/vnd.hancom.hwpx',
+        md: 'text/markdown',
+        txt: 'text/plain',
+    };
+    return map[ext] || '';
+}
+
 export default {
     name: 'AgentTracePage',
     data() {
@@ -283,6 +333,7 @@ export default {
             _runMarkers: [],
             feedbackByTarget: {}, // chat_feedback: target_uuid(=답변 response_uuid) → {rating,category,comment,user_name}
             onlyFeedback: false,
+            downloadingIds: new Set(), // 다운로드 URL 조회 중인 knowledge_doc id
             // 리사이즈
             railWidth: Number(localStorage.getItem('att_railW')) || 260,
             detailWidth: Number(localStorage.getItem('att_detailW')) || 560,
@@ -313,14 +364,21 @@ export default {
             const t = this.turns.find((x) => x.runId === this.selectedRunId);
             if (!t) return {};
             const meta = t.meta || {};
-            const metaFiles = meta.selected_files || [];
-            const metaSummary = metaFiles.length ? `선택 자료: ${metaFiles.join(', ')}` : '';
-            // 이 턴에 선택된 지식베이스 — 폴더(폴더째 선택) + 개별 파일 수
+            // 채팅 첨부(업로드 파일) — run_start 에는 이름만 저장됨(다운로드 URL 없음)
+            const metaFiles = (meta.selected_files || []).filter((n) => typeof n === 'string' && n.trim());
+            // 이 턴에 선택된 지식베이스 — 폴더(폴더째 선택) + 개별 파일(다운로드 가능)
             const metaFolders = Array.isArray(meta.knowledge_folders)
                 ? meta.knowledge_folders.filter((p) => typeof p === 'string' && p.trim())
                 : [];
-            const metaDocCount = Array.isArray(meta.knowledge_docs) ? meta.knowledge_docs.length : 0;
-            return { ...t, metaSummary, metaFolders, metaDocCount };
+            const metaDocs = (Array.isArray(meta.knowledge_docs) ? meta.knowledge_docs : [])
+                .filter((d) => d && typeof d === 'object')
+                .map((d) => ({
+                    id: d.id || d.source_ref || '',
+                    sourceType: d.source_type || 'drive',
+                    fileName: d.file_name || d.name || d.id || '(이름 없음)',
+                    folderPath: d.folder_path || '',
+                }));
+            return { ...t, metaFiles, metaFolders, metaDocs };
         },
         tree() {
             return this.buildTree(this.events);
@@ -520,6 +578,9 @@ export default {
                     runId: s.run_id,
                     startTs: s.ts,
                     userMessage: sp.user_message || '',
+                    userName: sp.user_name || '',
+                    userEmail: sp.user_email || '',
+                    userUid: sp.user_uid || '',
                     model: sp.model || '',
                     profile: sp.profile || '',
                     meta: sp.meta || {},
@@ -752,6 +813,34 @@ export default {
         },
         fbCategoryLabel(c) {
             return { wrong: '틀린 정보', insufficient: '정보 부족', irrelevant: '엉뚱함', other: '기타' }[c] || c;
+        },
+        mimeIconOf(name) {
+            return mimeIcon(extToMime(name));
+        },
+        // 지식베이스 개별 파일 다운로드 — KnowledgeFilesTab 과 동일 엔드포인트 재사용.
+        async downloadKnowledgeDoc(doc) {
+            if (!doc || !doc.id) return;
+            const next = new Set(this.downloadingIds);
+            next.add(doc.id);
+            this.downloadingIds = next;
+            try {
+                const { data } = await axios.get('/memento/knowledge/files/url', {
+                    params: {
+                        tenant_id: this.tenantId,
+                        source_type: doc.sourceType || 'drive',
+                        source_ref: doc.id,
+                        file_name: doc.fileName || '',
+                    },
+                });
+                if (data && data.url) window.open(data.url, '_blank', 'noopener');
+                else this.error = '다운로드 URL을 가져오지 못했습니다: ' + (doc.fileName || doc.id);
+            } catch (e) {
+                this.error = '다운로드 실패: ' + (e?.response?.data?.detail || e?.message || e);
+            } finally {
+                const after = new Set(this.downloadingIds);
+                after.delete(doc.id);
+                this.downloadingIds = after;
+            }
         },
         formatRel(ts) {
             if (!ts) return '';
@@ -1043,6 +1132,34 @@ export default {
 .atp-label { font-size: 11px; font-weight: 700; color: rgba(var(--v-theme-on-surface), 0.55); margin-bottom: 3px; }
 .atp-kb-list { list-style: none; margin: 0; padding: 0; }
 .atp-kb-list li { display: flex; align-items: center; font-size: 12px; padding: 2px 0; color: rgba(var(--v-theme-on-surface), 0.8); word-break: break-all; }
+.atp-kb-doc { gap: 2px; }
+.atp-kb-fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.atp-kb-fpath { flex: 0 0 auto; margin-left: 6px; font-size: 10.5px; color: rgba(var(--v-theme-on-surface), 0.45); white-space: nowrap; }
+.atp-kb-dl { margin-left: auto; flex: 0 0 auto; }
+.atp-user {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin: 4px 0 2px;
+    font-size: 12.5px;
+    color: rgba(var(--v-theme-on-surface), 0.85);
+}
+.atp-user-name { font-weight: 600; }
+.atp-user-sub { color: rgba(var(--v-theme-on-surface), 0.6); }
+.atp-user-uid {
+    font-size: 10.5px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+    background: rgba(var(--v-theme-on-surface), 0.05);
+    border-radius: 4px;
+    padding: 0 5px;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.atp-turn-user { color: rgba(var(--v-theme-primary), 0.85); font-weight: 600; }
 .atp-pre {
     white-space: pre-wrap;
     word-break: break-word;

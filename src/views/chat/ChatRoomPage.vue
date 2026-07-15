@@ -1895,9 +1895,10 @@ export default {
                         publicUrl: uploadResult?.publicUrl || resolvedUrl,
                         fullPath: uploadResult?.fullPath || resolvedUrl,
                         path: uploadResult?.path || '',
-                        // memento 가 준 stable file_id — 에이전트가 이걸 보면 재-ingest 없이 KB 파일처럼 읽고,
-                        // chat_attachments 도 이 값으로 멱등 저장된다. (없으면 file_path 폴백)
-                        file_id: uploadResult?.file_id || uploadResult?.file_path || '',
+                        // file_id는 콘텐츠 인덱싱 성공 시에만 온다. 단순 storage path를 ID로 승격하면
+                        // 처리 실패 파일을 "이미 인덱싱됨"으로 오인해 백엔드 재처리까지 건너뛴다.
+                        file_id: uploadResult?.file_id || '',
+                        processed: uploadResult?.processed === true,
                         fileType: (f?.type || '').toString(),
                         fileSize: Number.isFinite(f?.size) ? f.size : null
                     });
@@ -2478,8 +2479,9 @@ export default {
                                     fileUrl: resolvedUrl,
                                     publicUrl: resolvedUrl,
                                     fullPath: resolvedUrl,
-                                    // memento stable file_id — 에이전트가 재-ingest 없이 KB 파일처럼 읽게
-                                    file_id: uploadResult?.file_id || uploadResult?.file_path || '',
+                                    // stable file_id는 콘텐츠 인덱싱 성공 응답에서만 사용한다.
+                                    file_id: uploadResult?.file_id || '',
+                                    processed: uploadResult?.processed === true,
                                     fileType: f.type,
                                     fileSize: f.size
                                 });
@@ -6872,7 +6874,10 @@ export default {
                             // 출처(sources) — deepagents-lite done 이벤트가 navigator 도구에서
                             // 결정론적으로 수집한 구조화 출처를 싣는다. 답변 하단에 칩 + 스니펫 모달로 렌더.
                             const _sources = Array.isArray(doneEvent?.sources) ? doneEvent.sources : [];
-                            if (_sources.length) this.messages[idx].sources = _sources;
+                            // sources는 채팅방 누적 상태가 아니라 이 assistant 응답의 스냅샷이다.
+                            // 빈 배열도 반드시 대입해야 optimistic/realtime 메시지 병합 과정에서
+                            // 이전 턴 sources가 남는 일을 막을 수 있다.
+                            this.messages[idx].sources = _sources;
 
                             // NOTE: 이전에는 0.5초 후 optimistic 메시지를 강제 splice 했지만,
                             // 그 사이에 __humanFeedback 같은 프런트엔드 전용 상태가 사라져

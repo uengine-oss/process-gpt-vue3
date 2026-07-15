@@ -5679,8 +5679,9 @@ export default {
                                 publicUrl: uploadResult?.publicUrl || resolvedUrl,
                                 fullPath: uploadResult?.fullPath || resolvedUrl,
                                 path: uploadResult?.path || '',
-                                // memento stable file_id — 에이전트가 재-ingest 없이 KB 파일처럼 읽게
-                                file_id: uploadResult?.file_id || uploadResult?.file_path || '',
+                                // storage path는 인덱스 ID가 아니다. 처리 성공 시 반환된 file_id만 신뢰한다.
+                                file_id: uploadResult?.file_id || '',
+                                processed: uploadResult?.processed === true,
                                 fileType: f.type,
                                 fileSize: f.size
                             });
