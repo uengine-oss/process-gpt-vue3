@@ -201,6 +201,11 @@
                                                         <v-progress-circular indeterminate size="24" width="2" color="primary" />
                                                     </template>
                                                     <template v-else>
+                                                        <SkillProposalBadge
+                                                            :pending-targets="skillProposalsMap.get(item.name) || []"
+                                                            class="mr-1"
+                                                            @open-review="openProposalReview(item.name)"
+                                                        />
                                                         <v-tooltip location="left" text="상속 스킬 만들기">
                                                             <template v-slot:activator="{ props }">
                                                                 <v-btn
@@ -331,6 +336,11 @@
                                                                 />
                                                             </template>
                                                             <template v-else>
+                                                                <SkillProposalBadge
+                                                                    :pending-targets="skillProposalsMap.get(skill.name) || []"
+                                                                    size="x-small"
+                                                                    @open-review="openProposalReview(skill.name)"
+                                                                />
                                                                 <v-btn
                                                                     icon
                                                                     variant="text"
@@ -548,16 +558,27 @@
             </v-card>
         </v-dialog>
 
+        <SkillProposalReviewModal
+            v-model="reviewModalOpen"
+            :skill-name="reviewSkillName"
+            :pending-targets="reviewTargets"
+            :backend="backend"
+            :user-info="currentUserInfo"
+        />
+
     </v-card>
 </template>
 
 <script>
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import SkillProposalBadge from '@/components/ui/SkillProposalBadge.vue';
+import SkillProposalReviewModal from '@/components/ui/SkillProposalReviewModal.vue';
+import { buildSkillProposalMap } from '@/composables/useSkillProposals';
 
 export default {
     name: 'SkillsManagement',
-    components: { AppBaseCard },
+    components: { AppBaseCard, SkillProposalBadge, SkillProposalReviewModal },
     data() {
         return {
             backend: null,
@@ -578,6 +599,12 @@ export default {
             searchBuiltin: '',
             cardPageUploaded: 1,
             cardPageBuiltin: 1,
+            skillProposalsMap: new Map(),
+            proposalsWatchRef: null,
+            currentUserInfo: null,
+            reviewModalOpen: false,
+            reviewSkillName: '',
+            reviewTargets: []
         };
     },
     watch: {
@@ -698,10 +725,58 @@ export default {
             this.viewMode = 'card';
         }
         this.refreshAll();
+        this.loadCurrentUser();
+        this.loadSkillProposals();
+        this.subscribeSkillProposals();
+    },
+    beforeUnmount() {
+        if (this.proposalsWatchRef && typeof this.proposalsWatchRef.unsubscribe === 'function') {
+            this.proposalsWatchRef.unsubscribe();
+        }
     },
     methods: {
         async refreshAll() {
             await Promise.all([this.loadSkillList(), this.loadSkillUsageCounts()]);
+        },
+
+        async loadCurrentUser() {
+            try {
+                this.currentUserInfo = await this.backend.getUserInfo();
+            } catch (e) {
+                this.currentUserInfo = null;
+            }
+        },
+
+        async loadSkillProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                const batches = await this.backend.getPendingSkillProposalBatches(tenantId);
+                this.skillProposalsMap = buildSkillProposalMap(batches);
+            } catch (error) {
+                console.error(this.$t('SkillProposal.loadFailed'), error);
+            }
+        },
+
+        async subscribeSkillProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                this.proposalsWatchRef = await this.backend.watchFeedbackProposals(
+                    () => {
+                        this.loadSkillProposals();
+                    },
+                    {
+                        filter: tenantId ? `tenant_id=eq.${tenantId}` : null
+                    }
+                );
+            } catch (e) {
+                console.error('Failed to subscribe feedback_proposals realtime:', e);
+            }
+        },
+
+        openProposalReview(skillName) {
+            this.reviewSkillName = skillName;
+            this.reviewTargets = this.skillProposalsMap.get(skillName) || [];
+            this.reviewModalOpen = true;
         },
 
         async loadSkillList() {

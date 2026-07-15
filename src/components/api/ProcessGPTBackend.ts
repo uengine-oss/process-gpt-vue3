@@ -7588,6 +7588,75 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // ============================================================
+    // 스킬 피드백 제안 (DB: feedback_proposals)
+    // 워크아이템 피드백을 바탕으로 생성된 스킬 개선 제안을 조회/결정한다.
+    // ============================================================
+
+    async getPendingSkillProposalBatches(tenantId: string) {
+        try {
+            const response = await axios.get('/feedback-proposals', {
+                params: { tenant_id: tenantId }
+            });
+            const proposals = Array.isArray(response.data?.proposals) ? response.data.proposals : [];
+            // list_feedback_proposals only ever returns PROPOSED batches, but doesn't echo a
+            // status field back — buildSkillProposalMap (useSkillProposals.js) requires one.
+            return proposals.map((p: any) => ({ ...p, status: 'PROPOSED' }));
+        } catch (error) {
+            console.error('스킬 제안 배치 조회 실패:', error);
+            return [];
+        }
+    }
+
+    async watchFeedbackProposals(callback: (payload: any) => void, options: any = {}) {
+        try {
+            const channel = options?.channel || `feedback-proposals-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            return await storage._watch(
+                {
+                    channel,
+                    table: 'feedback_proposals',
+                    filter: options?.filter || null
+                },
+                (payload) => {
+                    callback(payload);
+                }
+            );
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async decideFeedbackProposalTarget(params: {
+        batchId: string;
+        targetType: string;
+        status: string;
+        decidedBy: string;
+        decidedByName?: string;
+        decidedByEmail?: string;
+        decisionNote?: string;
+    }) {
+        try {
+            // APPROVED SKILL targets trigger apply_approved_proposal (deep agent run) as a
+            // background task on the agent-feedback service — a direct DB write here would
+            // mark the decision but silently skip that application step.
+            const action = params.status === 'APPROVED' ? 'approve' : 'reject';
+            const response = await axios.post(
+                `/feedback-proposals/${encodeURIComponent(params.batchId)}/targets/${encodeURIComponent(params.targetType)}/${action}`,
+                {
+                    approver_id: params.decidedBy,
+                    approver_name: params.decidedByName || null,
+                    approver_email: params.decidedByEmail || null,
+                    decision_note: params.decisionNote || null
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error('스킬 제안 결정 처리 실패:', error);
+            throw error;
+        }
+    }
+
     async getSkillFile(skillName: string, fileName?: string) {
         try {
             let url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/files`;

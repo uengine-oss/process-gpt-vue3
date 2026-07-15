@@ -207,6 +207,11 @@ export default defineConfig({
                 proxyTimeout: 0,
                 rewrite: (path) => path.replace(/^\/process-gpt-deepagents/, '')
             },
+            // 스킬 피드백 제안 조회/승인/반려 API (agent-feedback 서비스)
+            '/feedback-proposals': {
+                target: 'http://127.0.0.1:6789',
+                changeOrigin: true
+            },
             '/definition': {
                 target: uengineGatewayTarget,
                 changeOrigin: true,

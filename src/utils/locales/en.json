@@ -3524,6 +3524,24 @@
         "empty": "No registered skills",
         "loadFailed": "Failed to load skill list"
     },
+    "SkillProposal": {
+        "badgeTooltip": "There is a proposal pending review",
+        "modalTitle": "Proposed improvements",
+        "pendingCount": "{count} proposal(s) pending review · {skillName}",
+        "itemLabel": "Proposal {index} / {total}",
+        "loadFailed": "Failed to load proposals",
+        "noProposals": "No proposals to review",
+        "noProposalsHint": "All proposals have been processed",
+        "hintMatch": "This skill isn't the confirmed target — it was inferred from a hint included with the proposal",
+        "hintMatchWithCandidates": "Not a confirmed target skill — inferred from a candidate hint (other candidates: {skillNames})",
+        "sharedBatchWarning": "Other skill proposals ({skillNames}) share this batch, so a different item may be resolved first",
+        "decideMismatch": "Another skill proposal in the same batch was resolved first, so this item is still pending. Please try again shortly.",
+        "approve": "Approve",
+        "reject": "Reject",
+        "decisionNoteLabel": "Decision note (optional)",
+        "decideFailed": "Failed to process the proposal",
+        "decided": "Processed"
+    },
     "UserList": {
         "loading": "Loading users...",
         "empty": "No registered users.",

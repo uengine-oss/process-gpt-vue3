@@ -79,6 +79,11 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
+import { useDefaultSetting } from '@/stores/defaultSetting';
+import { writeUengineProperties } from '@/utils/bpmnUengineProperties';
+
+const DIRECT_ROLE_RESOLUTION_TYPE = 'org.uengine.kernel.DirectRoleResolutionContext';
+const CASCADE_ORCHESTRATION = 'langchain-react';
 
 export default {
     name: 'gpt-lane-panel',
@@ -110,6 +115,8 @@ export default {
     },
     data() {
         return {
+            defaultSetting: useDefaultSetting(),
+            backend: null,
             definitions: [],
             definitionRoles: [],
             calleeDefinitionRoles: [],
@@ -171,8 +178,8 @@ export default {
             });
         });
         // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
-        const backend = BackendFactory.createBackend();
-        const value = await backend.listDefinition();
+        this.backend = BackendFactory.createBackend();
+        const value = await this.backend.listDefinition();
         if (value) {
             this.definitions = value;
         }
@@ -219,6 +226,11 @@ export default {
                 }
             }
         },
+        'copyUengineProperties.roleResolutionContext.endpoint': {
+            handler(newVal) {
+                this.onDirectEndpointChanged(newVal);
+            }
+        },
         selectedOrganization(newVal) {
             if (this.type === 'Organization' && this.copyUengineProperties.roleResolutionContext) {
                 if (newVal) {
@@ -259,6 +271,74 @@ export default {
                         if (savedOrg) {
                             this.selectedOrganization = savedOrg;
                         }
+                    });
+                }
+            }
+        },
+        // 레인의 역할을 "직접 사용자 선택"으로 두고 특정 에이전트(agent_type === 'agent')를 고르면,
+        // 해당 레인 소속 태스크들의 orchestration/agent를 자동으로 채운다.
+        // pgagent(기본 제공 시스템 에이전트)/a2a/사람은 대상에서 제외한다.
+        async onDirectEndpointChanged(newVal) {
+            if (this.type !== DIRECT_ROLE_RESOLUTION_TYPE) return;
+
+            // user-select-field는 기본적으로 다중 선택(useMultiple 기본값 true)이라
+            // endpoint가 배열로 들어올 수 있다. 단일 항목 배열만 캐스케이드 대상으로 취급하고,
+            // 비어있거나 둘 이상 선택된 경우는 "특정 에이전트 하나를 지정"한 것으로 보지 않는다.
+            let candidate = newVal;
+            if (Array.isArray(candidate)) {
+                if (candidate.length !== 1) return;
+                candidate = candidate[0];
+            }
+            if (!candidate || typeof candidate !== 'string') return;
+
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate);
+            if (!isUUID) return;
+            newVal = candidate;
+
+            let agent = this.defaultSetting.getAgentById(newVal);
+            if (!agent) {
+                try {
+                    if (!this.backend) this.backend = BackendFactory.createBackend();
+                    agent = await this.backend.getUserById(newVal);
+                } catch (error) {
+                    agent = null;
+                }
+            }
+            if (!agent || !agent.is_agent || agent.agent_type !== 'agent') return;
+
+            this.cascadeAgentToLaneActivities(newVal);
+        },
+        cascadeAgentToLaneActivities(agentId) {
+            if (!this.processDefinition || !Array.isArray(this.processDefinition.activities)) return;
+            const laneName = this.element?.businessObject?.name || this.element?.name;
+            if (!laneName) return;
+
+            const updatedActivityIds = [];
+            this.processDefinition.activities
+                .filter((activity) => activity.role === laneName)
+                .forEach((activity) => {
+                    if (activity.agentAssignedFrom === 'manual') return;
+                    activity.orchestration = CASCADE_ORCHESTRATION;
+                    activity.agent = agentId;
+                    activity.agentAssignedFrom = 'lane-cascade';
+                    updatedActivityIds.push(activity.id);
+
+                    if (this.bpmnModeler) {
+                        writeUengineProperties(this.bpmnModeler, activity.id, {
+                            orchestration: CASCADE_ORCHESTRATION,
+                            agent: agentId,
+                            agentAssignedFrom: 'lane-cascade'
+                        });
+                    }
+                });
+
+            if (updatedActivityIds.length > 0) {
+                this.$emit('update:processDefinition', this.processDefinition);
+                if (this.EventBus) {
+                    this.EventBus.emit('lane-agent-cascade-applied', {
+                        activityIds: updatedActivityIds,
+                        agent: agentId,
+                        orchestration: CASCADE_ORCHESTRATION
                     });
                 }
             }

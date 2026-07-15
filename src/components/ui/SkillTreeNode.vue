@@ -19,6 +19,7 @@
                         <span class="skill-name">{{ skill.name || 'Unnamed Skill' }}</span>
                         <span v-if="skill.description" class="skill-description">{{ skill.description }}</span>
                     </div>
+                    <SkillProposalBadge :pending-targets="pendingTargets" size="x-small" @open-review="$emit('open-review', skill.name)" />
                 </div>
             </template>
         </v-tooltip>
@@ -29,17 +30,22 @@
                 :skill="child"
                 :skills-by-name="skillsByName"
                 :selected-skill-name="selectedSkillName"
+                :skill-proposals-map="skillProposalsMap"
                 :visited="childVisited"
                 :depth="depth + 1"
                 @select="onSelect"
+                @open-review="(name) => $emit('open-review', name)"
             />
         </template>
     </div>
 </template>
 
 <script>
+import SkillProposalBadge from '@/components/ui/SkillProposalBadge.vue';
+
 export default {
     name: 'SkillTreeNode',
+    components: { SkillProposalBadge },
     props: {
         skill: {
             type: Object,
@@ -53,6 +59,10 @@ export default {
             type: String,
             default: null
         },
+        skillProposalsMap: {
+            type: Map,
+            default: () => new Map()
+        },
         // Ancestor names already rendered on the path from the root to this node,
         // used to break inheritance cycles (e.g. A extends B extends A).
         visited: {
@@ -64,7 +74,7 @@ export default {
             default: 0
         }
     },
-    emits: ['select'],
+    emits: ['select', 'open-review'],
     computed: {
         childVisited() {
             return new Set([...this.visited, this.skill.name]);
@@ -75,6 +85,9 @@ export default {
                 .filter((name) => name && name !== this.skill.name && !this.visited.has(name))
                 .map((name) => this.skillsByName[name])
                 .filter(Boolean);
+        },
+        pendingTargets() {
+            return this.skillProposalsMap.get(this.skill.name) || [];
         }
     },
     methods: {

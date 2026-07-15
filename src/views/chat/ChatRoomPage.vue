@@ -1407,8 +1407,9 @@ export default {
                 const isDifferentRoom = !!oldRoomId && oldRoomId !== newRoomId;
 
                 if (isDifferentRoom) {
-                    // 완전히 다른 방으로 이동: 음성 종료 후 정상 bootstrap
+                    // 완전히 다른 방으로 이동: 음성 종료 + 이전 방의 attach 재접속 정리 후 정상 bootstrap
                     this.stopDesktopVoice();
+                    this.abortAttachStream(oldRoomId);
                     await this.bootstrapRoom(newRoomId);
                 } else if (isVoiceDraftTransition) {
                     // 음성 중 드래프트→방 전환: 메시지 초기화 없이 구독·에이전트 워밍업만
@@ -1786,11 +1787,7 @@ export default {
             const r = room !== undefined && room !== null ? room : this.currentChatRoom;
             if (!r || !r.id) return;
             try {
-                const { data: existing, error } = await window.$supabase
-                    .from('chat_rooms')
-                    .select('context')
-                    .eq('id', r.id)
-                    .maybeSingle();
+                const { data: existing, error } = await window.$supabase.from('chat_rooms').select('context').eq('id', r.id).maybeSingle();
                 if (!error) {
                     const existingCtx = this.normalizeRoomContext(existing?.context);
                     const incomingCtx = this.normalizeRoomContext(r.context);
@@ -1921,8 +1918,7 @@ export default {
         normalizeChatAttachmentRow(file, roomId) {
             if (!file || typeof file !== 'object') return null;
             const fileName = (file.fileName || file.name || '').toString().trim();
-            const filePath =
-                (file.fileUrl || file.url || file.publicUrl || file.fullPath || file.path || '').toString() || '';
+            const filePath = (file.fileUrl || file.url || file.publicUrl || file.fullPath || file.path || '').toString() || '';
             if (!fileName && !filePath) return null;
             return {
                 id: this.uuid(),
@@ -1938,9 +1934,7 @@ export default {
                 const files = this.normalizePayloadFiles({ files: rawFiles });
                 if (!roomId || files.length === 0) return;
                 const list = Array.isArray(this.plannedAttachments) ? this.plannedAttachments : [];
-                const seen = new Set(
-                    list.map((a) => `${a?.file_path || ''}|${a?.file_name || ''}`).filter(Boolean)
-                );
+                const seen = new Set(list.map((a) => `${a?.file_path || ''}|${a?.file_name || ''}`).filter(Boolean));
                 const localAdded = [];
                 for (const f of files) {
                     const row = this.normalizeChatAttachmentRow(f, roomId);
@@ -2327,7 +2321,15 @@ export default {
             this.plannedConnectors = [];
             this.plannedTodos = [];
             this.plannedAttachments = [];
-            this.planSideInfoEnabled = { activity: false, tools: false, skills: false, connectors: false, todos: false, attachments: false, knowledge: true };
+            this.planSideInfoEnabled = {
+                activity: false,
+                tools: false,
+                skills: false,
+                connectors: false,
+                todos: false,
+                attachments: false,
+                knowledge: true
+            };
             this.plannedActivityById = {};
             this._activityOrder = 0;
             // 방 전환 시 지식 베이스 선택 상태도 초기화 (kickoff에서 새로 세팅 가능)
@@ -2355,9 +2357,13 @@ export default {
                 this.isLoadingRoom = false;
             }
 
-            // 실시간 구독은 화면 렌더를 막지 않도록 백그라운드에서 시작
+            // 실시간 구독 + 진행 중인 스트림 재접속은 화면 렌더를 막지 않도록 백그라운드에서 시작
             if (bootstrapSucceeded) {
-                Promise.allSettled([this.subscribeToRoom(roomId), this.subscribeToAttachments(roomId)]).catch(() => {});
+                Promise.allSettled([
+                    this.subscribeToRoom(roomId),
+                    this.subscribeToAttachments(roomId),
+                    this.attachToActiveStream(roomId)
+                ]).catch(() => {});
             }
 
             // definition-map 메인 채팅에서 생성된 방:
@@ -2506,8 +2512,7 @@ export default {
                 // kickoff payload와 context.orchestration을 동일하게 맞춘 뒤 스트림
                 try {
                     const effectiveOrchestration =
-                        ((payload?.orchestration != null ? String(payload.orchestration) : '') || '').trim() ||
-                        this.getRoomOrchestration();
+                        ((payload?.orchestration != null ? String(payload.orchestration) : '') || '').trim() || this.getRoomOrchestration();
                     if (this.shouldClientWriteChatDb(effectiveOrchestration)) {
                         await this.setRoomOrchestration(effectiveOrchestration);
                     }
@@ -2937,6 +2942,98 @@ export default {
                 } catch (e) {}
             });
         },
+        /**
+         * 방 진입 시 진행 중인 채팅 스트림(있다면)에 재접속해 catch-up 스냅샷과
+         * 실시간 토큰을 기존 activeStreams 렌더링 경로로 이어붙인다. 실패/활성
+         * 스트림 없음은 항상 조용히 무시하는 베스트 에포트 동작이다.
+         */
+        async attachToActiveStream(roomId) {
+            try {
+                if (!roomId) return;
+                // 단일 에이전트 방에서만 시도한다 — attach 응답에 agentId가 없어도
+                // activeStreams를 시드할 키를 결정할 수 있는 안전한 경우로 범위를 제한한다.
+                const agentParticipants = this.agentParticipants || [];
+                if (agentParticipants.length !== 1) return;
+                const agentTarget = agentParticipants[0];
+                const agentId = agentTarget?.id;
+                if (!agentId) return;
+                // 이미 스트리밍 중(예: 방금 내가 보낸 메시지의 sendMessageStream)이면 건너뜀
+                if (this.activeStreams[agentId]) return;
+
+                const userJwt = (await getValidToken()) || '';
+                const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+
+                const abortController = new AbortController();
+                const abortKey = `${roomId}:attach:${agentId}`;
+                this.agentAbortControllers[abortKey] = abortController;
+
+                let seeded = false;
+                let full = '';
+                const assistantUuid = this.uuid();
+
+                await deepAgentRouterService.attachToStream(
+                    roomId,
+                    {
+                        onToken: (content) => {
+                            // roomId가 바뀐 뒤 도착한 잔여 이벤트는 무시
+                            if ((this.currentChatRoom?.id || this.roomId) !== roomId) return;
+                            if (!seeded) {
+                                full = (content || '').toString();
+                                seeded = true;
+                                this.activeStreams[agentId] = {
+                                    uuid: assistantUuid,
+                                    role: 'assistant',
+                                    content: full || '생각 중...',
+                                    contentType: 'text',
+                                    isLoading: true,
+                                    toolCalls: [],
+                                    timeStamp: new Date().toISOString(),
+                                    email: agentTarget.email || `agent:${agentId}`,
+                                    name: agentTarget.username || agentId,
+                                    userName: agentTarget.username || agentId,
+                                    profile: agentTarget.profile || null,
+                                    agentId,
+                                    agentPlan: { summary: '', steps: [] }
+                                };
+                                this.setAgentStatus(agentId, { state: 'streaming', message: '' });
+                            } else {
+                                full += content;
+                                const msg = this.activeStreams[agentId];
+                                if (msg) msg.content = full;
+                            }
+                            this.$nextTick(() => this.scrollToBottomSafe());
+                        },
+                        onDone: () => {
+                            // 최종 메시지는 Realtime INSERT(handleRealtimeMessage)가 처리한다.
+                        },
+                        onError: (err) => {
+                            console.warn('[ChatRoomPage] attachToStream 오류(무시):', err?.message || err);
+                        },
+                        onAbort: () => {}
+                    },
+                    { tenantId, userJwt, signal: abortController.signal }
+                );
+
+                delete this.agentAbortControllers[abortKey];
+            } catch (e) {
+                // attach는 부가 기능이므로 실패해도 기존 흐름에 영향 없이 조용히 무시
+                console.warn('[ChatRoomPage] attachToActiveStream 실패(무시):', e?.message || e);
+            }
+        },
+        /** 방을 나가거나 전환할 때 그 방의 attach 재접속 연결만 정리한다(일반 에이전트 생성 스트림은 유지). */
+        abortAttachStream(roomId) {
+            const rid = (roomId || '').toString();
+            if (!rid) return;
+            const map = this.agentAbortControllers || {};
+            Object.keys(map).forEach((k) => {
+                if (k.startsWith(`${rid}:attach:`)) {
+                    try {
+                        map[k]?.abort?.();
+                    } catch (e) {}
+                    delete map[k];
+                }
+            });
+        },
         handleRealtimeMessage(payload) {
             try {
                 if (!payload) return;
@@ -2993,12 +3090,13 @@ export default {
                         const inEmail = (incoming.email || '').toString();
 
                         const activeKeys = Object.keys(this.activeStreams);
-                        const matchKey = activeKeys.find((k) => {
-                            const s = this.activeStreams[k];
-                            if (inAgentId && s.agentId && s.agentId.toString() === inAgentId) return true;
-                            if (inEmail && s.email && s.email.toString() === inEmail) return true;
-                            return false;
-                        }) ?? (activeKeys.length === 1 ? activeKeys[0] : null);
+                        const matchKey =
+                            activeKeys.find((k) => {
+                                const s = this.activeStreams[k];
+                                if (inAgentId && s.agentId && s.agentId.toString() === inAgentId) return true;
+                                if (inEmail && s.email && s.email.toString() === inEmail) return true;
+                                return false;
+                            }) ?? (activeKeys.length === 1 ? activeKeys[0] : null);
 
                         if (matchKey) {
                             this.carryOptimisticOnlyFields(this.activeStreams[matchKey], incoming);
@@ -3234,9 +3332,8 @@ export default {
                 if (!raw) return fallback;
                 const parsed = JSON.parse(raw);
                 if (!parsed || typeof parsed !== 'object') return fallback;
-                const lv = typeof parsed.pdf2bpmnLevel === 'string' && allowedLevels.has(parsed.pdf2bpmnLevel)
-                    ? parsed.pdf2bpmnLevel
-                    : 'standard';
+                const lv =
+                    typeof parsed.pdf2bpmnLevel === 'string' && allowedLevels.has(parsed.pdf2bpmnLevel) ? parsed.pdf2bpmnLevel : 'standard';
                 return { ...parsed, pdf2bpmnLevel: lv };
             } catch (e) {
                 return fallback;
@@ -3515,7 +3612,7 @@ export default {
                     selected_ids: ids,
                     selected_items: items,
                     custom_text: r.customText || '',
-                    answer: labels.length ? labels.join(', ') : (ids.join(', ') || '선택 없음'),
+                    answer: labels.length ? labels.join(', ') : ids.join(', ') || '선택 없음',
                     reason: r.customText || '',
                     target_type: q.target_type || (q.option_meta && q.option_meta.stage) || '',
                     target_id: q.target_id || ''
@@ -3859,7 +3956,11 @@ export default {
                 contract = data;
             } else {
                 // 구버전 요약(saved_*) 호환 — 카드만
-                const procs = Array.isArray(data.saved_processes) ? data.saved_processes : Array.isArray(data.savedProcesses) ? data.savedProcesses : [];
+                const procs = Array.isArray(data.saved_processes)
+                    ? data.saved_processes
+                    : Array.isArray(data.savedProcesses)
+                    ? data.savedProcesses
+                    : [];
                 skills = Array.isArray(data.saved_skills) ? data.saved_skills : Array.isArray(data.savedSkills) ? data.savedSkills : [];
                 agents = Array.isArray(data.saved_agents) ? data.saved_agents : Array.isArray(data.savedAgents) ? data.savedAgents : [];
                 savedProcesses = procs
@@ -3871,9 +3972,7 @@ export default {
                     .filter((p) => p.process_id || (p.process_name && p.process_name !== 'Unnamed Process'));
             }
 
-            const savedSkills = skills
-                .map((s) => (typeof s === 'string' ? { name: s } : s))
-                .filter((s) => s && (s.name || s.safe_name));
+            const savedSkills = skills.map((s) => (typeof s === 'string' ? { name: s } : s)).filter((s) => s && (s.name || s.safe_name));
             const savedAgents = agents.filter((a) => a && a.id);
 
             if (!savedProcesses.length && !savedSkills.length && !savedAgents.length && !contract) return null;
@@ -4031,7 +4130,7 @@ export default {
             const r = feedbackResult || {};
             if (r.type === 'multi') {
                 // 멀티프로세스 일괄 응답 → 프로세스별로 묶어 "[프로세스명] ..." 줄로 에이전트에 전달.
-                const qs = (message?.__humanFeedback?.questions || []);
+                const qs = message?.__humanFeedback?.questions || [];
                 const stage = message?.__humanFeedback?.__mpStage || 'consult';
                 const byId = {};
                 qs.forEach((q) => {
@@ -4047,12 +4146,14 @@ export default {
                         order.push(proc);
                     }
                     if (stage === 'consult') {
-                        const dec = resp.decision === 'approve' ? '승인' : resp.decision === 'reject' ? '반려' : (resp.reason ? '수정요청' : '승인');
+                        const dec =
+                            resp.decision === 'approve' ? '승인' : resp.decision === 'reject' ? '반려' : resp.reason ? '수정요청' : '승인';
                         const reason = (resp.reason || '').toString().trim();
                         perProc[proc].push(reason ? `${dec} - ${reason}` : dec);
                     } else {
                         const kind = q.target_type;
-                        const kindLabel = kind === 'skills' ? '스킬' : kind === 'agents' ? '에이전트' : kind === 'dmn' ? 'DMN' : (kind || '항목');
+                        const kindLabel =
+                            kind === 'skills' ? '스킬' : kind === 'agents' ? '에이전트' : kind === 'dmn' ? 'DMN' : kind || '항목';
                         const labels = (resp.selectedItems || []).map((it) => it?.label).filter(Boolean);
                         const custom = (resp.customText || '').toString().trim();
                         let v = labels.length ? labels.join(', ') : '(없음)';
@@ -4124,11 +4225,9 @@ export default {
             }
 
             // deepagent HITL 은 건너뛰어도 '없음' 답변으로 interrupt 를 재개해야 멈추지 않는다.
-            const fbForSkip = (message && message.__humanFeedback) ? message.__humanFeedback : feedback;
+            const fbForSkip = message && message.__humanFeedback ? message.__humanFeedback : feedback;
             if (fbForSkip && fbForSkip.__deepagentHitl) {
-                const targetMsg = (message && message.__humanFeedback)
-                    ? message
-                    : this.pendingHumanFeedbackMessage;
+                const targetMsg = message && message.__humanFeedback ? message : this.pendingHumanFeedbackMessage;
                 this._submitDeepagentHitl(targetMsg, { __skip: true });
             }
         },
@@ -4143,14 +4242,14 @@ export default {
             if (!feedbackResult) return;
             console.log('[HumanFeedback] handleHumanFeedbackSubmit:', feedbackResult);
 
-            const messageRef = messageOrFeedback && messageOrFeedback.__humanFeedback ? messageOrFeedback : this.pendingHumanFeedbackMessage;
+            const messageRef =
+                messageOrFeedback && messageOrFeedback.__humanFeedback ? messageOrFeedback : this.pendingHumanFeedbackMessage;
             const feedback = messageOrFeedback && !messageOrFeedback.__humanFeedback ? messageOrFeedback : messageRef?.__humanFeedback;
 
             // CRITICAL: 인라인 패널의 message 는 filteredMessages 의 deep copy 일 수 있으므로,
             // 원본 this.messages 에서 같은 uuid 를 찾아 그 객체를 갱신해야 readonly 상태가 보존된다.
-            const realMessage = (messageRef && messageRef.uuid)
-                ? this.messages.find((m) => m && m.uuid === messageRef.uuid) || messageRef
-                : messageRef;
+            const realMessage =
+                messageRef && messageRef.uuid ? this.messages.find((m) => m && m.uuid === messageRef.uuid) || messageRef : messageRef;
             const targetMessage = realMessage || messageRef;
 
             // 메시지를 제출 완료 상태로 변경 + 사용자가 무엇을 골랐는지 저장 (readonly 표시용)
@@ -4167,19 +4266,13 @@ export default {
                     fb.__selectedIds = (feedbackResult.selectedIds || []).slice();
                     fb.__selectedItems = (feedbackResult.selectedItems || []).slice();
                     fb.__customText = (feedbackResult.customText || '').toString();
-                    const labels = (feedbackResult.selectedItems || [])
-                        .map((it) => it?.label)
-                        .filter(Boolean);
+                    const labels = (feedbackResult.selectedItems || []).map((it) => it?.label).filter(Boolean);
                     let summary = '';
                     if (labels.length > 0) summary = `선택됨: ${labels.join(', ')}`;
                     else if (feedbackResult.selectedItems?.length) summary = `${feedbackResult.selectedItems.length}개 선택됨`;
                     if (fb.__customText) {
-                        const preview = fb.__customText.length > 30
-                            ? fb.__customText.slice(0, 30) + '…'
-                            : fb.__customText;
-                        summary = summary
-                            ? `${summary} · 직접 입력: "${preview}"`
-                            : `직접 입력: "${preview}"`;
+                        const preview = fb.__customText.length > 30 ? fb.__customText.slice(0, 30) + '…' : fb.__customText;
+                        summary = summary ? `${summary} · 직접 입력: "${preview}"` : `직접 입력: "${preview}"`;
                     }
                     fb.__submittedText = summary || '응답 완료';
                 } else if (feedbackResult.type === 'approve_reject_with_edit') {
@@ -4232,10 +4325,8 @@ export default {
             //   option_meta.tool === 'pdf2bpmn' 또는 task_id 가 있으면 워커 응답으로 라우팅
             // ============================================================
             const hitl = feedback || {};
-            const optMeta = (hitl.option_meta && typeof hitl.option_meta === 'object') ? hitl.option_meta : null;
-            const isWorkerHitl =
-                !!hitl.task_id ||
-                (optMeta && optMeta.tool === 'pdf2bpmn' && optMeta.task_id);
+            const optMeta = hitl.option_meta && typeof hitl.option_meta === 'object' ? hitl.option_meta : null;
+            const isWorkerHitl = !!hitl.task_id || (optMeta && optMeta.tool === 'pdf2bpmn' && optMeta.task_id);
 
             // multi 응답: 최종 제출 시에만 todolist.output.hitl_feedbacks 에 일괄 기록
             if (feedbackResult.type === 'multi') {
@@ -4249,9 +4340,7 @@ export default {
                     if (!qid) continue;
                     await this._submitOnePdf2bpmnHitlResponse(hitl, taskId, q, r.skipped ? { ...r, skipped: true } : r);
                 }
-                const allQids = questions
-                    .map((q) => String(q?.question_id || '').trim())
-                    .filter(Boolean);
+                const allQids = questions.map((q) => String(q?.question_id || '').trim()).filter(Boolean);
                 await this.requestPdf2BpmnWorkerResume(taskId, allQids);
                 return;
             }
@@ -4286,7 +4375,7 @@ export default {
                     selected_ids: ids,
                     selected_items: items,
                     custom_text: customText,
-                    answer: labels.length ? labels.join(', ') : (ids.join(', ') || '선택 없음'),
+                    answer: labels.length ? labels.join(', ') : ids.join(', ') || '선택 없음',
                     reason: customText,
                     target_type: hitl.target_type || optMeta?.stage || '',
                     target_id: hitl.target_id || ''
@@ -4303,7 +4392,7 @@ export default {
             // 옵션 응답인지 식별: 백엔드가 ask_user 응답에 option_meta = {tool, key} 를 실어 보낸다.
             // 옵션 응답이면 본문은 선택 id 만 보내고, localStorage 의 tool_settings[key] 도 함께 갱신해
             // 다음 /chat/stream 요청의 metadata.tool_settings 에 자동 포함되게 한다.
-            const optionMeta = (feedback && typeof feedback.option_meta === 'object') ? feedback.option_meta : null;
+            const optionMeta = feedback && typeof feedback.option_meta === 'object' ? feedback.option_meta : null;
             // 도구 옵션 응답(예: pdf2bpmnLevel="standard")은 채팅 본문에 노출하지 않는다.
             // HumanFeedbackPanel 의 readonly 상태가 이미 사용자에게 무엇을 골랐는지 보여주므로 중복 표시 불필요.
             let hideUserMessage = false;
@@ -4320,7 +4409,7 @@ export default {
                     try {
                         const STORAGE_KEY = 'process-gpt:toolsSettings';
                         const raw = localStorage.getItem(STORAGE_KEY);
-                        const prev = raw ? (JSON.parse(raw) || {}) : {};
+                        const prev = raw ? JSON.parse(raw) || {} : {};
                         const next = { ...(typeof prev === 'object' && prev ? prev : {}), [optionMeta.key]: valueId };
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
                     } catch (e) {
@@ -4352,9 +4441,7 @@ export default {
          */
         async requestPdf2BpmnWorkerResume(taskId, questionIds) {
             const tid = String(taskId || '').trim();
-            const qids = (Array.isArray(questionIds) ? questionIds : [])
-                .map((q) => String(q || '').trim())
-                .filter(Boolean);
+            const qids = (Array.isArray(questionIds) ? questionIds : []).map((q) => String(q || '').trim()).filter(Boolean);
             if (!tid || !qids.length || !window.$supabase) return false;
 
             try {
@@ -4468,7 +4555,11 @@ export default {
             const fallbackRawFileInfos = this.mapRawFilesToDisplayInfos(rawFiles);
             const initialFiles = fileMeta.hasFile ? fileMeta.files : fallbackRawFileInfos;
             const hasRawFiles = rawFiles.length > 0;
-            if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && initialFiles.length === 0 && !hasRawFiles)) return;
+            if (
+                !payload ||
+                (!payload.text && (!payload.images || payload.images.length === 0) && initialFiles.length === 0 && !hasRawFiles)
+            )
+                return;
             if (!this.currentChatRoom?.id) return;
             const text = (payload.text || '').trim();
             const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
@@ -4556,7 +4647,10 @@ export default {
                 // 업로드 완료 시 사용자 메시지/요청 payload를 URL 기반 정보로 교체한다.
                 if (hasRawFiles) {
                     const embeddingMsgUuid = this.uuid();
-                    const fileNames = rawFiles.map((f) => (f?.name || '').toString()).filter(Boolean).join(', ');
+                    const fileNames = rawFiles
+                        .map((f) => (f?.name || '').toString())
+                        .filter(Boolean)
+                        .join(', ');
                     this.upsertMessageByKeys({
                         uuid: embeddingMsgUuid,
                         role: 'assistant',
@@ -4594,7 +4688,7 @@ export default {
                 }
 
                 // last message update
-                const firstFile = (requestUsableFiles[0] || requestFiles[0] || initialFiles[0] || null);
+                const firstFile = requestUsableFiles[0] || requestFiles[0] || initialFiles[0] || null;
                 const fileName = (firstFile?.name || firstFile?.fileName || '').toString();
                 const fileCount = requestFiles.length > 0 ? requestFiles.length : initialFiles.length;
                 const preview =
@@ -5322,7 +5416,7 @@ export default {
                     fileName: name,
                     fileUrl: url,
                     fileType: f.fileType || f.type || '',
-                    fileSize: f.fileSize || f.size || 0,
+                    fileSize: f.fileSize || f.size || 0
                 };
             };
             try {
@@ -5485,7 +5579,9 @@ export default {
                 const pd = (files || []).find((f) => (f.name || '').toLowerCase() === 'process-definition.json');
                 if (pd && pd.content) {
                     const obj = JSON.parse(pd.content);
-                    const nm = (obj.processDefinitionName || (obj.processDefinition && obj.processDefinition.processDefinitionName) || '').toString().trim();
+                    const nm = (obj.processDefinitionName || (obj.processDefinition && obj.processDefinition.processDefinitionName) || '')
+                        .toString()
+                        .trim();
                     if (nm && nm !== '생성된 프로세스') return nm;
                 }
             } catch (e) {
@@ -5617,9 +5713,7 @@ export default {
                 if (!xml) return null;
                 const dir = (pdEntry.path || '').replace(/\\/g, '/').replace(/process-definition\.json$/, '');
                 const base =
-                    def.processDefinitionName && def.processDefinitionName !== '생성된 프로세스'
-                        ? def.processDefinitionName
-                        : 'process';
+                    def.processDefinitionName && def.processDefinitionName !== '생성된 프로세스' ? def.processDefinitionName : 'process';
                 const name = `${base}.bpmn`;
                 // .bpmn 파일이 연결된 process-definition.json 내용도 함께 들고 다닌다(JSON 탭/편집/AI편집 + 저장용).
                 return {
@@ -5640,8 +5734,7 @@ export default {
         /** 우측 사이드바에 활동(현재 실행 중 tool / 서브에이전트) 패널 생성/갱신 */
         upsertActivityPanel() {
             if (!this.planSideInfoEnabled?.activity) return;
-            const items = Object.values(this.plannedActivityById || {})
-                .sort((a, b) => (a.__order ?? 0) - (b.__order ?? 0));
+            const items = Object.values(this.plannedActivityById || {}).sort((a, b) => (a.__order ?? 0) - (b.__order ?? 0));
             const data = { enabled: true, items };
             const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'activity');
             if (existingIdx !== -1) {
@@ -5718,9 +5811,7 @@ export default {
             if (!this.planSideInfoEnabled?.skills) return;
             const raw = Array.isArray(this.plannedSkills) ? this.plannedSkills : [];
             // 서버 포맷: ["korea-econ-indicators"] 처럼 문자열 배열
-            const items = raw
-                .map((s) => (typeof s === 'string' ? { name: s } : s))
-                .filter((s) => s && (s.name || s.label || s.skill));
+            const items = raw.map((s) => (typeof s === 'string' ? { name: s } : s)).filter((s) => s && (s.name || s.label || s.skill));
             const data = { enabled: true, items };
 
             const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'skills');
@@ -5740,9 +5831,7 @@ export default {
         upsertConnectorsPanel() {
             if (!this.planSideInfoEnabled?.connectors) return;
             const raw = Array.isArray(this.plannedConnectors) ? this.plannedConnectors : [];
-            const items = raw
-                .map((s) => (typeof s === 'string' ? { name: s } : s))
-                .filter((s) => s && (s.name || s.label));
+            const items = raw.map((s) => (typeof s === 'string' ? { name: s } : s)).filter((s) => s && (s.name || s.label));
             const data = { enabled: true, items };
 
             const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'connectors');
@@ -5840,7 +5929,7 @@ export default {
                 } else if (action === 'navigate-process') {
                     // 산출물 '편집' → 내부 편집기로 이동(임시저장 draft 를 수정). kind 별 라우팅.
                     const kind = (payload && payload.kind ? payload.kind : 'process').toString();
-                    const id = (payload && (payload.id || payload.name) ? (payload.id || payload.name) : '').toString().trim();
+                    const id = (payload && (payload.id || payload.name) ? payload.id || payload.name : '').toString().trim();
                     if (!id) return;
                     let path = '';
                     if (kind === 'skill') path = `/skills/${encodeURIComponent(id)}`;
@@ -5862,7 +5951,10 @@ export default {
                 let edited = await this._aiEditText(content, instruction, ext);
                 edited = (edited || '').toString().trim();
                 // 모델이 코드펜스로 감싸면 제거
-                edited = edited.replace(/^```[a-zA-Z0-9]*\n?/, '').replace(/\n?```$/, '').trim();
+                edited = edited
+                    .replace(/^```[a-zA-Z0-9]*\n?/, '')
+                    .replace(/\n?```$/, '')
+                    .trim();
                 if (edited) {
                     // bpmn 은 JSON 을 수정 대상으로(편집 시 XML 자동 갱신), 그 외는 content.
                     if (payload?.target === 'def-json') {
@@ -6023,7 +6115,9 @@ export default {
                     }
                     continue;
                 }
-                const st = this.workspaceSaveStateByGroup[group] || (this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' });
+                const st =
+                    this.workspaceSaveStateByGroup[group] ||
+                    (this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' });
                 if (st.__validated || st.validating) continue;
 
                 let pd;
@@ -6039,7 +6133,7 @@ export default {
                 // (편집기 이동·검증이 동일 id 를 쓰게 됨). 빈 id 로 skip → 편집기 빈화면/검증 미수행의 주요 원인 제거.
                 let procId = (definition.processDefinitionId || pd.processDefinitionId || '').toString().trim();
                 if (!procId) {
-                    procId = slugToUuid(`${(this.currentChatRoom?.id || this.roomId || 'room')}:${group}:${procName}`);
+                    procId = slugToUuid(`${this.currentChatRoom?.id || this.roomId || 'room'}:${group}:${procName}`);
                     definition.processDefinitionId = procId;
                 }
                 const bpmnFile = files.find((f) => (f.ext || '').toLowerCase() === '.bpmn');
@@ -6118,7 +6212,9 @@ export default {
                                 await saveDraftAgent({ ...obj, id: agentStableId(obj, af.path) });
                             }
                             // (2) 레거시 agents.json(배열/딕셔너리).
-                            const agFile = files.find((f) => (f.name || '').toLowerCase() === 'agents.json' || (f.path || '').endsWith('agents.json'));
+                            const agFile = files.find(
+                                (f) => (f.name || '').toLowerCase() === 'agents.json' || (f.path || '').endsWith('agents.json')
+                            );
                             if (agFile) {
                                 let parsed;
                                 try {
@@ -6160,7 +6256,8 @@ export default {
                     }
 
                     // 3) 개선된 정의를 우측 패널(process-definition.json + .bpmn)에 반영
-                    const improved = report && report.final_definition && typeof report.final_definition === 'object' ? report.final_definition : null;
+                    const improved =
+                        report && report.final_definition && typeof report.final_definition === 'object' ? report.final_definition : null;
                     if (improved && (Array.isArray(improved.activities) || Array.isArray(improved.elements))) {
                         const newContent = JSON.stringify(improved, null, 2);
                         pdFile.content = newContent;
@@ -6227,7 +6324,11 @@ export default {
             );
             if (!pdFile) {
                 // 단독 스킬 산출물(프로세스 없음): SKILL.md 만 있으면 스킬만 저장(정식 등록/승격).
-                const hasSkill = list.some((f) => /\/skills\/[^/]+\/SKILL\.md$/i.test((f.path || '').replace(/\\/g, '/')) || (f.name || '').toLowerCase() === 'skill.md');
+                const hasSkill = list.some(
+                    (f) =>
+                        /\/skills\/[^/]+\/SKILL\.md$/i.test((f.path || '').replace(/\\/g, '/')) ||
+                        (f.name || '').toLowerCase() === 'skill.md'
+                );
                 if (hasSkill) {
                     st.saving = true;
                     st.error = '';
@@ -6265,13 +6366,24 @@ export default {
                 if (!procId) throw new Error('processDefinitionId 가 없습니다.');
 
                 // .bpmn 파생 파일(createBpmnXml 결과)이 있으면 proc_def.bpmn 에 함께 저장.
-                const bpmnFile = list.find((f) => (f.ext || '').toLowerCase() === '.bpmn' || (f.name || '').toLowerCase().endsWith('.bpmn'));
+                const bpmnFile = list.find(
+                    (f) => (f.ext || '').toLowerCase() === '.bpmn' || (f.name || '').toLowerCase().endsWith('.bpmn')
+                );
                 const bpmnXml = bpmnFile && bpmnFile.content ? bpmnFile.content : this._buildBpmnXmlFromDefinition(definition) || null;
 
                 // 1) proc_def 저장 — 최종 저장(사용자 클릭)이므로 draft 를 승격(is_draft=false)해 목록에 노출.
                 await backend.putObject(
                     'proc_def',
-                    { id: procId, name: procName, definition, bpmn: bpmnXml, type: 'bpmn', isdeleted: false, is_draft: false, tenant_id: tenantId },
+                    {
+                        id: procId,
+                        name: procName,
+                        definition,
+                        bpmn: bpmnXml,
+                        type: 'bpmn',
+                        isdeleted: false,
+                        is_draft: false,
+                        tenant_id: tenantId
+                    },
                     { onConflict: 'id,tenant_id' }
                 );
 
@@ -6289,7 +6401,9 @@ export default {
                 for (const f of list) {
                     const p = (f.path || '').replace(/\\/g, '/');
                     const lname = (f.name || '').toLowerCase();
-                    const isForm = /\/forms\//.test(p) && (f.ext === '.html' || f.ext === '.form' || lname.endsWith('.html') || lname.endsWith('.form'));
+                    const isForm =
+                        /\/forms\//.test(p) &&
+                        (f.ext === '.html' || f.ext === '.form' || lname.endsWith('.html') || lname.endsWith('.form'));
                     if (!isForm) continue;
                     const activityId = toSnake((f.name || '').replace(/\.(?:html|form)$/i, ''));
                     const html = (f.content || '').toString();
@@ -6395,7 +6509,9 @@ export default {
                 }
 
                 if (this.$toast && this.$toast.success)
-                    this.$toast.success(`저장되었습니다(폼 ${formsSaved}개, 스킬 ${savedSkillNames.length}개, 에이전트 ${savedAgents.length}개).`);
+                    this.$toast.success(
+                        `저장되었습니다(폼 ${formsSaved}개, 스킬 ${savedSkillNames.length}개, 에이전트 ${savedAgents.length}개).`
+                    );
             } catch (e) {
                 st.saving = false;
                 st.error = (e && (e.message || e.toString())) || '저장 실패';
@@ -7473,7 +7589,7 @@ export default {
                             // 이번 메시지에 첨부·업로드된 파일도 memento file_id(=storage path)로
                             // knowledge_docs 에 합쳐, deepagent 가 업로드 즉시 문서를 조회하게 한다.
                             const seen = new Set(picked.map((d) => d.id));
-                            for (const f of (requestFiles || [])) {
+                            for (const f of requestFiles || []) {
                                 const id = (f?.fileId || f?.file_id || f?.filePath || f?.file_path || '').toString().trim();
                                 if (!id || seen.has(id)) continue;
                                 seen.add(id);
@@ -7515,8 +7631,10 @@ export default {
                             msg.content = msg.__humanFeedback
                                 ? ''
                                 : hasHumanFeedback
-                                  ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
-                                  : (full.length === 0 ? '생각 중...' : full);
+                                ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
+                                : full.length === 0
+                                ? '생각 중...'
+                                : full;
                             msg.isLoading = !msg.__humanFeedback;
                         }
                         this.setAgentStatus(agentId, { state: 'streaming', message: '' });
@@ -7644,10 +7762,7 @@ export default {
 
                             // 우측 활동 패널 갱신 (모든 tool/subagent 호출 시각화)
                             try {
-                                const subagentType =
-                                    name === 'task'
-                                        ? (input?.subagent_type || input?.subagentType || '').toString()
-                                        : '';
+                                const subagentType = name === 'task' ? (input?.subagent_type || input?.subagentType || '').toString() : '';
                                 const activityId =
                                     (rawEvent?.id || rawEvent?.tool_call_id || rawEvent?.run_id || '').toString() ||
                                     `${name}:${Date.now()}`;
@@ -7722,8 +7837,7 @@ export default {
 
                             // 우측 활동 패널 — running 상태인 항목을 done 으로 마감
                             try {
-                                const eventId =
-                                    (rawEvent?.id || rawEvent?.tool_call_id || rawEvent?.run_id || '').toString();
+                                const eventId = (rawEvent?.id || rawEvent?.tool_call_id || rawEvent?.run_id || '').toString();
                                 let target = eventId ? this.plannedActivityById[eventId] : null;
                                 if (!target) {
                                     // id 매칭 실패 시 가장 최근 running 항목 done 처리
@@ -7775,7 +7889,7 @@ export default {
                                             hasHumanFeedback = true;
                                             const fallbackText = isLegacyListRef
                                                 ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
-                                                : (fbParsed.question || '생성 옵션을 선택해 주세요.');
+                                                : fbParsed.question || '생성 옵션을 선택해 주세요.';
                                             msg.content = fallbackText;
                                             if (!msg.__humanFeedback) {
                                                 msg.__humanFeedback = fbParsed;
@@ -7974,7 +8088,7 @@ export default {
                             // HITL 패널(__humanFeedback)이 붙은 메시지는 본문을 비워 둔다.
                             // (interrupt 후 빈 final done 의 onDone 이 본문을 초안 텍스트로 덮어써 패널 대신
                             //  텍스트가 보이던 문제 방지 — 체크박스/승인 패널만 표시.)
-                            msg.content = msg.__humanFeedback ? '' : (safeFinal || full || '');
+                            msg.content = msg.__humanFeedback ? '' : safeFinal || full || '';
                             displayContent = this.extractDisplayAssistantContent(msg.content);
                             msg.isLoading = false;
                             msg.contentType = 'text';
@@ -7987,8 +8101,7 @@ export default {
                                 }
                             }
                             const hasRawHwpxInContent =
-                                /https?:\/\/\S+\.hwpx/i.test(msg.content) ||
-                                /https?:\/\/\S*filled-\S+\.html/i.test(msg.content);
+                                /https?:\/\/\S+\.hwpx/i.test(msg.content) || /https?:\/\/\S*filled-\S+\.html/i.test(msg.content);
                             if (hasRawHwpxInContent) {
                                 // cleanupHwpxMessageContent는 messages 인덱스 기반이므로 직접 정리
                                 msg.content = msg.content
@@ -8084,14 +8197,16 @@ export default {
                             delete this.activeStreams[agentId];
                         } else {
                             // 스트림 메시지 객체가 없으면 새 에러 메시지를 추가해서라도 표시
-                            this.messages.push(this.normalizeAssistantMessageForDisplay({
-                                uuid: assistantUuid,
-                                role: 'assistant',
-                                agentId,
-                                content: display,
-                                isError: true,
-                                isLoading: false
-                            }));
+                            this.messages.push(
+                                this.normalizeAssistantMessageForDisplay({
+                                    uuid: assistantUuid,
+                                    role: 'assistant',
+                                    agentId,
+                                    content: display,
+                                    isError: true,
+                                    isLoading: false
+                                })
+                            );
                         }
                         const roomId = this.currentChatRoom?.id || this.roomId || null;
                         const state = this.getOrCreateProcessGenerationState(roomId);
@@ -8162,10 +8277,7 @@ export default {
          */
         async handleAgentDirectiveToolCalls({ assistantUuid, userText, agentId }) {
             // onDone 직후에는 activeStreams에 있을 수 있고, realtime 도착 후에는 messages에 있음
-            const msg =
-                this.activeStreams[agentId] ??
-                this.messages.find((m) => m?.uuid === assistantUuid) ??
-                {};
+            const msg = this.activeStreams[agentId] ?? this.messages.find((m) => m?.uuid === assistantUuid) ?? {};
             const toolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
             if (toolCalls.length === 0) return;
 
@@ -8192,8 +8304,9 @@ export default {
                 if (imageAnalysis) {
                     originalMessage = `${userText || ''}\n\n[이미지 분석 결과]\n${imageAnalysis}`;
                 } else {
-                    originalMessage =
-                        `${userText || ''}\n\n[전체 요청 및 첨부 이미지 분석 내용]: ${JSON.stringify(consultingToolCall.output ?? null)}`;
+                    originalMessage = `${userText || ''}\n\n[전체 요청 및 첨부 이미지 분석 내용]: ${JSON.stringify(
+                        consultingToolCall.output ?? null
+                    )}`;
                 }
                 await this.switchToConsultingMode(originalMessage);
                 return;
@@ -8630,10 +8743,7 @@ export default {
                 if (toolCalls.length === 0) continue;
 
                 const pdf2bpmnTool = toolCalls.find(
-                    (t) =>
-                        t?.name &&
-                        (t.name.includes('create_pdf2bpmn_workitem') ||
-                            t.name.includes('create_consulting_process_workitem'))
+                    (t) => t?.name && (t.name.includes('create_pdf2bpmn_workitem') || t.name.includes('create_consulting_process_workitem'))
                 );
                 const outputStr = pdf2bpmnTool?.output;
                 if (!outputStr) continue;
@@ -8734,10 +8844,8 @@ export default {
                         let content = `✅ **BPMN 프로세스 생성 완료**\n\n`;
                         content += `${processCount}개의 프로세스가 생성되었습니다.`;
 
-                        const integratedGraph =
-                            resultData?.integrated_graph || resultData?.integratedGraph || null;
-                        const processGraphs =
-                            resultData?.process_graphs || resultData?.processGraphs || {};
+                        const integratedGraph = resultData?.integrated_graph || resultData?.integratedGraph || null;
+                        const processGraphs = resultData?.process_graphs || resultData?.processGraphs || {};
                         const graphName = String(resultData?.graph_name || '').trim();
 
                         const msgObj = me.createMessageObj(content, 'assistant');
@@ -8966,7 +9074,10 @@ export default {
                         progressState.isActive = true;
                         progressState.status = 'failed';
                         progressState.message = messageData.error || message || '작업 실패';
-                        const errorMsg = me.createMessageObj(`BPMN 프로세스 생성 실패: ${messageData.error || '알 수 없는 오류'}`, 'assistant');
+                        const errorMsg = me.createMessageObj(
+                            `BPMN 프로세스 생성 실패: ${messageData.error || '알 수 없는 오류'}`,
+                            'assistant'
+                        );
                         if (me.currentChatRoom?.id === targetRoomId) {
                             me.messages.push(errorMsg);
                         }
@@ -9010,14 +9121,11 @@ export default {
 
             const allQuestions = Array.isArray(eventData?.questions) ? eventData.questions : [];
             const isMulti = allQuestions.length > 1;
-            const question =
-                isMulti ? allQuestions[0] : (eventData?.question || allQuestions[0] || {});
+            const question = isMulti ? allQuestions[0] : eventData?.question || allQuestions[0] || {};
             const questionIds = isMulti
                 ? allQuestions.map((q) => String(q?.question_id || '').trim()).filter(Boolean)
                 : [String(question?.question_id || `${taskId}-q`).trim()].filter(Boolean);
-            const batchKey = questionIds.length
-                ? `${taskId}::${questionIds.sort().join('|')}`
-                : `${taskId}::single`;
+            const batchKey = questionIds.length ? `${taskId}::${questionIds.sort().join('|')}` : `${taskId}::single`;
             // 같은 질문(batchKey 또는 question_id)이 이미 있으면 추가하지 않는다.
             // __submitted(답변 완료) 여부와 무관하게 검사해야 한다 — 새로고침 시
             // waiting_for_user 이벤트가 재처리되어도, 이미 답변한 질문이 빈 UI 로
@@ -9036,26 +9144,27 @@ export default {
             // select_items 모드면 워커가 items 를 직접 실어 보낸다 (스킬 후보, DMN 옵션 등).
             const incomingItems = Array.isArray(question?.items) ? question.items : [];
 
-            const content =
-                isMulti
-                    ? (eventData?.message || `${allQuestions.length}개의 질문에 한 번에 응답해 주세요.`)
-                    : fbType === 'select_items'
-                        ? (question?.prompt || '아래에서 선택해 주세요.')
-                        : '모호한 항목이 감지되었습니다. 아래 내용을 확인하고 승인/반려 또는 보정 의견을 입력해 주세요.';
+            const content = isMulti
+                ? eventData?.message || `${allQuestions.length}개의 질문에 한 번에 응답해 주세요.`
+                : fbType === 'select_items'
+                ? question?.prompt || '아래에서 선택해 주세요.'
+                : '모호한 항목이 감지되었습니다. 아래 내용을 확인하고 승인/반려 또는 보정 의견을 입력해 주세요.';
             const msgObj = me.createMessageObj(content, 'assistant');
             msgObj.__humanFeedback = {
                 user_request_type: fbType,
                 feedback_type: fbType,
                 question: isMulti
-                    ? (eventData?.message || `${allQuestions.length}개 결정이 필요합니다.`)
-                    : (question?.prompt || eventData?.message || '확인이 필요합니다.'),
+                    ? eventData?.message || `${allQuestions.length}개 결정이 필요합니다.`
+                    : question?.prompt || eventData?.message || '확인이 필요합니다.',
                 context: question?.context || '아래 내용을 확인한 후 응답해 주세요.',
-                suggestions: Array.isArray(question?.choices) ? question.choices : (
-                    Array.isArray(question?.suggestions) ? question.suggestions : []
-                ),
+                suggestions: Array.isArray(question?.choices)
+                    ? question.choices
+                    : Array.isArray(question?.suggestions)
+                    ? question.suggestions
+                    : [],
                 items: incomingItems,
                 allow_multiple: !!question?.allow_multiple,
-                min_select: typeof question?.min_select === 'number' ? question.min_select : (fbType === 'select_items' ? 0 : 1),
+                min_select: typeof question?.min_select === 'number' ? question.min_select : fbType === 'select_items' ? 0 : 1,
                 allow_other: !!question?.allow_other,
                 allow_skip: !!question?.allow_skip,
                 // multi 모드: questions 배열 전체를 그대로 보존 → Chat.vue 가 v-for 로 렌더
@@ -9067,9 +9176,7 @@ export default {
                 evidence_spans: Array.isArray(question?.evidence_spans) ? question.evidence_spans : [],
                 impact_preview: Array.isArray(question?.impact_preview) ? question.impact_preview : [],
                 task_id: taskId,
-                option_meta: question?.option_meta && typeof question.option_meta === 'object'
-                    ? question.option_meta
-                    : null,
+                option_meta: question?.option_meta && typeof question.option_meta === 'object' ? question.option_meta : null,
                 __submitted: false,
                 __submittedText: '',
                 // multi 응답 보존용 — 선택 즉시 채움, DB 저장은 최종 제출만
@@ -9103,10 +9210,8 @@ export default {
             //    프론트는 외부 API 호출 없이 이 데이터를 그대로 렌더링한다.
             //  - integrated_graph: { elements, counts } (todo 단위 통합 그래프)
             //  - process_graphs: { neo4j_proc_id: { elements, counts } } (프로세스별)
-            const integratedGraph =
-                resultData?.integrated_graph || resultData?.integratedGraph || null;
-            const processGraphs =
-                resultData?.process_graphs || resultData?.processGraphs || {};
+            const integratedGraph = resultData?.integrated_graph || resultData?.integratedGraph || null;
+            const processGraphs = resultData?.process_graphs || resultData?.processGraphs || {};
             const graphName = String(resultData?.graph_name || '').trim();
 
             const msgObj = me.createMessageObj(content, 'assistant');
@@ -9525,10 +9630,7 @@ export default {
             return {
                 graph_name: (ex && String(ex.neo4j_graph_name || '').trim()) || '',
                 tenant_id: (ex && String(ex.tenant_id || '').trim()) || fallbackTenantId || '',
-                task_id:
-                    (ex && String(ex.task_id || ex.todo_id || '').trim()) ||
-                    String(this.selectedBpmn?.task_id || '').trim() ||
-                    ''
+                task_id: (ex && String(ex.task_id || ex.todo_id || '').trim()) || String(this.selectedBpmn?.task_id || '').trim() || ''
             };
         },
 
@@ -9781,11 +9883,17 @@ export default {
                 let next = NaN;
                 for (let j = i - 1; j >= 0; j--) {
                     const t = tsOf(list[j]);
-                    if (Number.isFinite(t)) { prev = t; break; }
+                    if (Number.isFinite(t)) {
+                        prev = t;
+                        break;
+                    }
                 }
                 for (let j = i + 1; j < list.length; j++) {
                     const t = tsOf(list[j]);
-                    if (Number.isFinite(t)) { next = t; break; }
+                    if (Number.isFinite(t)) {
+                        next = t;
+                        break;
+                    }
                 }
                 let synth;
                 if (Number.isFinite(prev) && Number.isFinite(next)) {
@@ -9847,9 +9955,7 @@ export default {
             for (const key of carryKeys) {
                 const incomingVal = toMsg[key];
                 const hasIncoming =
-                    incomingVal !== undefined &&
-                    incomingVal !== null &&
-                    !(Array.isArray(incomingVal) && incomingVal.length === 0);
+                    incomingVal !== undefined && incomingVal !== null && !(Array.isArray(incomingVal) && incomingVal.length === 0);
                 if (!hasIncoming && fromMsg[key] !== undefined && fromMsg[key] !== null) {
                     toMsg[key] = fromMsg[key];
                 }
@@ -9907,7 +10013,7 @@ export default {
                     pp: hasProcessPreview ? 1 : 0,
                     wf: hasWorkspaceFiles ? wsFilesArr.length : 0,
                     rs: hasRunState ? 1 : 0,
-                    ol: hasOpenuiLang ? (msg.openuiLang.length || 0) : 0,
+                    ol: hasOpenuiLang ? msg.openuiLang.length || 0 : 0,
                     al: hasAgentLogs ? msg.agentLogs.length : 0,
                     ap: hasAgentPlan ? 1 : 0
                 });

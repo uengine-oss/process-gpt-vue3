@@ -432,6 +432,7 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
             task.agent = '';
             task.agentMode = '';
             task.orchestration = '';
+            task.agentAssignedFrom = null;
             task.attachments = [];
             task.inputData = [];
             task.outputData = [];
@@ -457,6 +458,7 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
                 task.agent = propsJson.agent || task.agent;
                 task.agentMode = propsJson.agentMode || task.agentMode;
                 task.orchestration = propsJson.orchestration || task.orchestration;
+                task.agentAssignedFrom = propsJson.agentAssignedFrom || task.agentAssignedFrom;
                 task.attachments = propsJson.attachments || task.attachments;
                 task.inputData = propsJson.inputData || task.inputData;
                 task.outputData = propsJson.outputData || task.outputData;

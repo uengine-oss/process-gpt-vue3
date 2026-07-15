@@ -155,6 +155,7 @@ import PDFPreviewer from '@/components/PDFPreviewer.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import ZeebePropertiesPanel from '@/components/designer/bpmnModeling/bpmn/panel/ZeebePropertiesPanel.vue';
 import { useTerminology } from '@/composables/useTerminology';
+import { getLaneTaskShapes, writeUengineProperties } from '@/utils/bpmnUengineProperties';
 
 import BusinessRuleTaskPanel from '@/components/designer/bpmnModeling/bpmn/panel/BusinessRuleTaskPanel.vue';
 
@@ -479,7 +480,12 @@ export default {
 
             const elementCopyDeep = _.cloneDeep(this.elementCopy);
             if (task) {
+                const isLane = task.type === 'bpmn:Lane' || task.businessObject?.$type === 'bpmn:Lane';
+                const oldName = this.elementCopy?.name;
                 modeling.updateProperties(task, { name: name });
+                if (isLane && oldName !== name) {
+                    this.cascadeLaneRenameToActivities(task, name);
+                }
             } else {
                 this.$emit('close');
             }
@@ -534,6 +540,24 @@ export default {
             this.$emit('close');
 
             console.log(task.businessObject.extensionElements.values[0]);
+        },
+        // 레인 이름 변경 시 해당 레인 소속 태스크들의 role을 즉시 동기화한다.
+        // (activity.role은 태스크 저장 시점에 얼려서 저장되므로, 레인 이름만 바뀌면
+        //  각 태스크 패널을 다시 열어 저장하기 전까지 옛 이름과 어긋난 채로 남아있었음)
+        cascadeLaneRenameToActivities(laneShape, newName) {
+            const laneBo = laneShape.businessObject || laneShape;
+            const taskShapes = getLaneTaskShapes(this.bpmnModeler, laneBo);
+            if (taskShapes.length === 0) return;
+
+            taskShapes.forEach((taskShape) => {
+                writeUengineProperties(this.bpmnModeler, taskShape, { role: newName });
+                if (this.processDefinition && Array.isArray(this.processDefinition.activities)) {
+                    const activity = this.processDefinition.activities.find((a) => a.id === taskShape.id);
+                    if (activity) activity.role = newName;
+                }
+            });
+
+            this.$emit('update:processDefinition', this.processDefinition);
         },
         setupModelChangeListener() {
             if (!this.bpmnModeler) return;

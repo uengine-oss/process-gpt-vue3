@@ -17,11 +17,21 @@
                         :skill="skill"
                         :skills-by-name="skillsByName"
                         :selected-skill-name="selectedSkillName"
+                        :skill-proposals-map="skillProposalsMap"
                         @select="goToSkillDetail"
+                        @open-review="openReview"
                     />
                 </div>
             </template>
         </ExpandableList>
+
+        <SkillProposalReviewModal
+            v-model="reviewModalOpen"
+            :skill-name="reviewSkillName"
+            :pending-targets="reviewTargets"
+            :backend="backend"
+            :user-info="currentUserInfo"
+        />
     </div>
 </template>
 
@@ -29,6 +39,8 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 import SkillTreeNode from '@/components/ui/SkillTreeNode.vue';
+import SkillProposalReviewModal from '@/components/ui/SkillProposalReviewModal.vue';
+import { buildSkillProposalMap } from '@/composables/useSkillProposals';
 
 const backend = BackendFactory.createBackend();
 
@@ -36,14 +48,22 @@ export default {
     name: 'SkillList',
     components: {
         ExpandableList,
-        SkillTreeNode
+        SkillTreeNode,
+        SkillProposalReviewModal
     },
     data() {
         return {
+            backend,
             skillList: [],
             isLoading: false,
             selectedSkillName: null,
-            skillsWatchRef: null
+            skillsWatchRef: null,
+            skillProposalsMap: new Map(),
+            proposalsWatchRef: null,
+            currentUserInfo: null,
+            reviewModalOpen: false,
+            reviewSkillName: '',
+            reviewTargets: []
         };
     },
     computed: {
@@ -65,10 +85,16 @@ export default {
         await this.loadSkillList();
         this.updateSelectedSkill();
         this.subscribeSkills();
+        this.loadCurrentUser();
+        this.loadSkillProposals();
+        this.subscribeSkillProposals();
     },
     beforeUnmount() {
         if (this.skillsWatchRef && typeof this.skillsWatchRef.unsubscribe === 'function') {
             this.skillsWatchRef.unsubscribe();
+        }
+        if (this.proposalsWatchRef && typeof this.proposalsWatchRef.unsubscribe === 'function') {
+            this.proposalsWatchRef.unsubscribe();
         }
     },
     watch: {
@@ -129,7 +155,47 @@ export default {
         },
 
         onExpanded() {},
-        onCollapsed() {}
+        onCollapsed() {},
+
+        async loadCurrentUser() {
+            try {
+                this.currentUserInfo = await backend.getUserInfo();
+            } catch (e) {
+                this.currentUserInfo = null;
+            }
+        },
+
+        async loadSkillProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                const batches = await backend.getPendingSkillProposalBatches(tenantId);
+                this.skillProposalsMap = buildSkillProposalMap(batches);
+            } catch (error) {
+                console.error(this.$t('SkillProposal.loadFailed'), error);
+            }
+        },
+
+        async subscribeSkillProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                this.proposalsWatchRef = await backend.watchFeedbackProposals(
+                    () => {
+                        this.loadSkillProposals();
+                    },
+                    {
+                        filter: tenantId ? `tenant_id=eq.${tenantId}` : null
+                    }
+                );
+            } catch (e) {
+                console.error('Failed to subscribe feedback_proposals realtime:', e);
+            }
+        },
+
+        openReview(skillName) {
+            this.reviewSkillName = skillName;
+            this.reviewTargets = this.skillProposalsMap.get(skillName) || [];
+            this.reviewModalOpen = true;
+        }
     }
 };
 </script>

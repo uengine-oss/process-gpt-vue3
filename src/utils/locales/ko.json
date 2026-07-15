@@ -3524,6 +3524,24 @@
         "empty": "등록된 스킬이 없습니다",
         "loadFailed": "스킬 목록 로딩 실패"
     },
+    "SkillProposal": {
+        "badgeTooltip": "검토 대기 중인 제안이 있습니다",
+        "modalTitle": "개선 제안",
+        "pendingCount": "검토 대기 중인 제안 {count}건 · {skillName}",
+        "itemLabel": "제안 {index} / {total}",
+        "loadFailed": "제안 목록을 불러오지 못했습니다",
+        "noProposals": "처리할 제안이 없습니다",
+        "noProposalsHint": "모든 제안이 처리되었습니다",
+        "hintMatch": "이 스킬이 확정된 대상은 아니며, 제안에 포함된 힌트로 추정된 항목입니다",
+        "hintMatchWithCandidates": "확정된 대상 스킬이 아니라 후보 힌트로 추정된 항목입니다 (다른 후보: {skillNames})",
+        "sharedBatchWarning": "같은 배치에 다른 스킬 제안({skillNames})도 함께 있어, 이 항목이 아닌 다른 항목이 먼저 처리될 수 있습니다",
+        "decideMismatch": "같은 배치의 다른 스킬 제안이 먼저 처리되어 이 항목은 아직 대기 중입니다. 잠시 후 다시 시도해주세요",
+        "approve": "승인",
+        "reject": "반려",
+        "decisionNoteLabel": "결정 메모 (선택)",
+        "decideFailed": "제안 처리에 실패했습니다",
+        "decided": "처리되었습니다"
+    },
     "UserList": {
         "loading": "유저 목록을 불러오는 중...",
         "empty": "등록된 유저가 없습니다.",
