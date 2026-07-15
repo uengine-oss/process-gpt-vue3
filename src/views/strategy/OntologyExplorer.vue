@@ -277,7 +277,7 @@ function buildCy() {
                     color: 'data(groupColor)',
                     'text-margin-x': 10,
                     'text-margin-y': 8,
-                    padding: 18,
+                    padding: 18 as any,
                     'z-index': 0
                 }
             },
