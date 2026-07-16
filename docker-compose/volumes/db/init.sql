@@ -3655,7 +3655,7 @@ create table if not exists public.resource_pull_requests (
   title          text                not null,
   description    text                null,
   status         resource_pr_status  not null default 'OPEN',
-  requester_id   uuid                not null,
+  requester_id   uuid[]              not null default '{}'::uuid[],
   reviewer_id    uuid                null,
   git_pr_number  integer             null,
   git_pr_url     text                null,
@@ -3667,8 +3667,6 @@ create table if not exists public.resource_pull_requests (
   constraint resource_pull_requests_resource_type_check check (
     resource_type in ('skill', 'bpmn', 'dmn')
   ),
-  constraint resource_pull_requests_requester_fkey foreign key (requester_id, tenant_id)
-    references public.users (id, tenant_id) on update cascade on delete cascade,
   constraint resource_pull_requests_reviewer_fkey foreign key (reviewer_id, tenant_id)
     references public.users (id, tenant_id) on update cascade on delete cascade
 ) tablespace pg_default;

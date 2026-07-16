@@ -33,7 +33,7 @@
             :merge-error="mergeError"
             :comment-loading="commentLoading"
             :comment-error="commentError"
-            :requester-profile="requesterProfileMap[selectedPr.requester_id] || null"
+            :requester-profile="requesterProfileMap[primaryRequesterId(selectedPr)] || null"
             @back="closePr"
             @submit-review="submitReview"
             @submit-merge="submitMerge"
@@ -86,8 +86,8 @@
                         </div>
                         <div v-for="pr in needsMyReviewPrs" :key="pr.id" class="prc" @click="openPr(pr)">
                             <span :class="['pr-accent', prAccentClass(pr.status)]"></span>
-                            <span class="pr-ava" :style="{ background: requesterProfileMap[pr.requester_id] ? 'transparent' : authorColor(pr.requester_name) }">
-                                <img v-if="requesterProfileMap[pr.requester_id]" :src="requesterProfileMap[pr.requester_id]" class="pr-ava-img" @error="clearProfile(pr.requester_id)" />
+                            <span class="pr-ava" :style="{ background: requesterProfileMap[primaryRequesterId(pr)] ? 'transparent' : authorColor(pr.requester_name) }">
+                                <img v-if="requesterProfileMap[primaryRequesterId(pr)]" :src="requesterProfileMap[primaryRequesterId(pr)]" class="pr-ava-img" @error="clearProfile(primaryRequesterId(pr))" />
                                 <template v-else>{{ authorInitials(pr.requester_name || '') }}</template>
                             </span>
                             <div class="prc-body">
@@ -131,8 +131,8 @@
                         </div>
                         <div v-for="pr in otherActivePrs" :key="pr.id" class="prc" @click="openPr(pr)">
                             <span :class="['pr-accent', prAccentClass(pr.status)]"></span>
-                            <span class="pr-ava" :style="{ background: requesterProfileMap[pr.requester_id] ? 'transparent' : authorColor(pr.requester_name) }">
-                                <img v-if="requesterProfileMap[pr.requester_id]" :src="requesterProfileMap[pr.requester_id]" class="pr-ava-img" @error="clearProfile(pr.requester_id)" />
+                            <span class="pr-ava" :style="{ background: requesterProfileMap[primaryRequesterId(pr)] ? 'transparent' : authorColor(pr.requester_name) }">
+                                <img v-if="requesterProfileMap[primaryRequesterId(pr)]" :src="requesterProfileMap[primaryRequesterId(pr)]" class="pr-ava-img" @error="clearProfile(primaryRequesterId(pr))" />
                                 <template v-else>{{ authorInitials(pr.requester_name || '') }}</template>
                             </span>
                             <div class="prc-body">
@@ -171,8 +171,8 @@
                         </div>
                         <div v-for="pr in filteredMergedPrs" :key="pr.id" class="prc merged" @click="openPr(pr)">
                             <span class="pr-accent pr-accent-merged"></span>
-                            <span class="pr-ava pr-ava-merged" :style="{ background: requesterProfileMap[pr.requester_id] ? 'transparent' : authorColor(pr.requester_name) }">
-                                <img v-if="requesterProfileMap[pr.requester_id]" :src="requesterProfileMap[pr.requester_id]" class="pr-ava-img pr-ava-img-merged" @error="clearProfile(pr.requester_id)" />
+                            <span class="pr-ava pr-ava-merged" :style="{ background: requesterProfileMap[primaryRequesterId(pr)] ? 'transparent' : authorColor(pr.requester_name) }">
+                                <img v-if="requesterProfileMap[primaryRequesterId(pr)]" :src="requesterProfileMap[primaryRequesterId(pr)]" class="pr-ava-img pr-ava-img-merged" @error="clearProfile(primaryRequesterId(pr))" />
                                 <template v-else>{{ authorInitials(pr.requester_name || '') }}</template>
                             </span>
                             <div class="prc-body">
@@ -459,8 +459,12 @@ export default {
             }
         },
 
+        primaryRequesterId(pr) {
+            return Array.isArray(pr?.requester_id) ? pr.requester_id[0] : pr?.requester_id;
+        },
+
         async fetchRequesterProfiles(prRecords) {
-            const uniqueIds = [...new Set(prRecords.map(pr => pr.requester_id).filter(Boolean))];
+            const uniqueIds = [...new Set(prRecords.map(pr => this.primaryRequesterId(pr)).filter(Boolean))];
             const results = await Promise.allSettled(
                 uniqueIds.map(id => this.backend.getUserById(id))
             );

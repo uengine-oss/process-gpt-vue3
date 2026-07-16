@@ -150,6 +150,16 @@ class ProcessGPTBackend implements Backend {
                 }
                 const procDefs = await storage.list('proc_def', options);
                 return procDefs;
+            } else if (path === 'bpmn') {
+                if (!options) {
+                    options = { match: { type: 'bpmn' } };
+                } else if (!options.match) {
+                    options.match = { type: 'bpmn' };
+                } else {
+                    options.match['type'] = 'bpmn';
+                }
+                const procDefs = await storage.list('proc_def', options);
+                return procDefs;
             } else {
                 if (options) {
                     if (!options.match || !options.match['isdeleted']) {
@@ -162,7 +172,6 @@ class ProcessGPTBackend implements Backend {
                     options = {
                         match: {
                             isdeleted: false,
-                            type: 'bpmn'
                         }
                     }
                 }
@@ -7886,13 +7895,14 @@ class ProcessGPTBackend implements Backend {
         baseBranch: string;
         title: string;
         description?: string;
-        requesterId: string;
+        requesterId: string | string[];
         requesterName?: string;
         gitPrNumber?: number;
         gitPrUrl?: string;
         gitRepoUrl?: string;
     }): Promise<any> {
         const tenantId = window.$tenantName;
+        const requesterIds = Array.isArray(data.requesterId) ? data.requesterId : [data.requesterId];
         const record = {
             id: this.uuid(),
             tenant_id: tenantId,
@@ -7903,7 +7913,7 @@ class ProcessGPTBackend implements Backend {
             title: data.title,
             description: data.description || null,
             status: 'OPEN',
-            requester_id: data.requesterId,
+            requester_id: requesterIds,
             requester_name: data.requesterName || null,
             git_pr_number: data.gitPrNumber ?? null,
             git_pr_url: data.gitPrUrl ?? null,
@@ -7912,14 +7922,14 @@ class ProcessGPTBackend implements Backend {
         await storage.putObject('resource_pull_requests', record, { onConflict: 'id' });
 
         const ownerId = await this.getResourceOwner(resourceType, data.resourceId);
-        if (ownerId && ownerId !== data.requesterId) {
+        if (ownerId && !requesterIds.includes(ownerId)) {
             await this.sendNotification({
                 userId: ownerId,
                 type: 'merge_request',
                 title: `[PR 요청] ${data.title}`,
                 description: `${resourceType} 병합 요청`,
                 url: this.getResourcePrUrl(resourceType, data.resourceId),
-                fromUserId: data.requesterId
+                fromUserId: requesterIds[0]
             });
         }
 
@@ -7957,15 +7967,16 @@ class ProcessGPTBackend implements Backend {
             MERGED: '[PR 병합]',
             CHANGES_REQUESTED: '[수정 요청]'
         };
-        if (statusLabel[status] && pr.requester_id) {
-            await this.sendNotification({
-                userId: pr.requester_id,
+        const requesterIds: string[] = Array.isArray(pr.requester_id) ? pr.requester_id : (pr.requester_id ? [pr.requester_id] : []);
+        if (statusLabel[status] && requesterIds.length) {
+            await Promise.all(requesterIds.map(requesterId => this.sendNotification({
+                userId: requesterId,
                 type: 'merge_request',
                 title: `${statusLabel[status]} ${pr.title}`,
                 description: `${pr.resource_type} PR`,
                 url: this.getResourcePrUrl(pr.resource_type, pr.resource_id),
                 fromUserId: localStorage.getItem('email') || undefined
-            });
+            })));
         }
     }
 
