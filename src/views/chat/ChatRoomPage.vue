@@ -6190,7 +6190,7 @@ export default {
                                         description: a.description || '',
                                         model: a.model || '',
                                         isAgent: true,
-                                        type: a.type || 'TaskAgent',
+                                        type: 'agent',
                                         is_draft: true
                                     });
                                 } catch (ae) {
