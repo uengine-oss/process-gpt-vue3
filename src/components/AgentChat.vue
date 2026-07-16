@@ -9,7 +9,6 @@
                     :dmnList="dmnList"
                     :isSkillLoading="isSkillLoading"
                     @agentUpdated="handleAgentUpdated"
-                    @knowledgeSetupDone="handleKnowledgeSetupDone"
                     @openSkillFile="openSkillFile"
                     @deleteAgent="handleDeleteAgent"
                     @tabChange="activeTab = $event"
@@ -30,7 +29,6 @@
                     :dmnList="dmnList"
                     :isSkillLoading="isSkillLoading"
                     @agentUpdated="handleAgentUpdated"
-                    @knowledgeSetupDone="handleKnowledgeSetupDone"
                     @openSkillFile="openSkillFile"
                     @deleteAgent="handleDeleteAgent"
                     @tabChange="activeTab = $event"
@@ -55,8 +53,6 @@ import AgentChatActions from '@/components/AgentChatActions.vue';
 import AgentKnowledgeManagement from '@/components/AgentKnowledgeManagement.vue';
 import BusinessRuleLearning from '@/components/BusinessRuleLearning.vue';
 import AgentSkillEdit from '@/components/AgentSkillEdit.vue';
-import AgentSkillHistory from '@/components/AgentSkillHistory.vue';
-import AgentDmnHistory from '@/components/AgentDmnHistory.vue';
 
 import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 
@@ -75,9 +71,7 @@ export default {
         AgentChatActions,
         AgentKnowledgeManagement,
         BusinessRuleLearning,
-        AgentSkillEdit,
-        AgentSkillHistory,
-        AgentDmnHistory
+        AgentSkillEdit
     },
     data: () => ({
         defaultSetting: useDefaultSetting(),
@@ -314,27 +308,6 @@ export default {
                     activate: () => {}
                 };
 
-                // 스킬 변경 이력 (agent일 때만)
-                handlers['skill-history'] = {
-                    component: 'AgentSkillHistory',
-                    props: (vm) => ({
-                        agentId: vm.agentInfo.id,
-                        showHistory: true
-                    }),
-                    events: () => ({}),
-                    activate: () => {}
-                };
-
-                // 비즈니스 규칙 변경 이력 (agent일 때만)
-                handlers['dmn-history'] = {
-                    component: 'AgentDmnHistory',
-                    props: (vm) => ({
-                        agentId: vm.agentInfo.id,
-                        showHistory: true
-                    }),
-                    events: () => ({}),
-                    activate: () => {}
-                };
             }
 
             // 채팅 모드 (모든 agent_type 공통)
@@ -431,22 +404,6 @@ export default {
                 ...item,
                 children: item.children ? this.removeNodeFromTree(item.children, targetId) : item.children
             }));
-        },
-
-        /** AgentChatInfo에서 초기 지식 셋업 DONE/FAILED 시 에이전트 정보 갱신 */
-        handleKnowledgeSetupDone() {
-            if (!this.agentInfo?.id) return;
-            try {
-                this.$try({
-                    context: this,
-                    action: async () => {
-                        this.agentInfo = await this.backend.getUserById(this.agentInfo.id);
-                    },
-                    successMsg: '지식 셋업이 완료되었습니다. 에이전트 정보가 갱신되었습니다.'
-                });
-            } catch (e) {
-                console.warn('[AgentChat] 초기 지식 셋업 완료 후 에이전트 갱신 실패:', e);
-            }
         },
 
         // agent update handler

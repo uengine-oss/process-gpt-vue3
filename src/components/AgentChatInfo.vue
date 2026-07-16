@@ -1,8 +1,8 @@
 <template>
     <div v-if="agentInfo">
         <div v-if="!editDialog && !toolPriorityDialog">
-            <!-- 편집 모드가 아닐 때만 일반 화면 표시 (지식 셋팅 중일 때 테두리 linear progress) -->
-            <div class="agent-info-area" :class="{ 'agent-info-area--setup-in-progress': isKnowledgeSetupInProgress }">
+            <!-- 편집 모드가 아닐 때만 일반 화면 표시 -->
+            <div class="agent-info-area">
                 <v-row class="align-center pa-4 ma-0">
                     <v-avatar size="24" class="mr-2 flex-shrink-0">
                         <!-- 프로필 이미지가 있고 로딩 성공했을 때만 표시 -->
@@ -77,13 +77,6 @@
                         </v-tooltip>
                     </v-btn>
                 </v-row>
-
-                <template v-if="isKnowledgeSetupInProgress">
-                    <v-progress-linear indeterminate color="primary" class="agent-info-area__progress" />
-                    <div class="agent-info-area__label text-caption text-medium-emphasis px-3 py-1">
-                        {{ $t('AgentChatInfo.knowledgeSetupInProgress') }}
-                    </div>
-                </template>
 
                 <div class="agent-chat-info-content pa-4">
                     <!-- Goal Section (agent only) -->
@@ -259,17 +252,6 @@
                             <v-btn size="x-small" variant="text" icon @click="$emit('openNewDmn')">
                                 <v-icon>mdi-plus</v-icon>
                             </v-btn>
-                            <v-btn
-                                v-if="agentType === 'agent' && agentInfo.id"
-                                size="x-small"
-                                variant="text"
-                                icon
-                                class="ml-auto"
-                                @click="openDmnHistory"
-                            >
-                                <v-icon>mdi-history</v-icon>
-                                <v-tooltip activator="parent" location="left"> 비즈니스 규칙 변경 이력 </v-tooltip>
-                            </v-btn>
                         </div>
                         <v-tabs
                             v-if="dmnList.length > 0"
@@ -428,9 +410,7 @@ export default {
             toolPriorityDialog: false,
             deleteAgentDialog: false,
 
-            backend: null,
-            knowledgeSetupChannel: null,
-            isKnowledgeSetupInProgress: false
+            backend: null
         };
     },
     created() {
@@ -438,9 +418,6 @@ export default {
     },
     mounted() {
         this.initializeImage();
-    },
-    beforeUnmount() {
-        this.unsubscribeKnowledgeSetup();
     },
     computed: {
         gs() {
@@ -522,15 +499,6 @@ export default {
             },
             deep: true,
             immediate: true
-        },
-        'agentInfo.id': {
-            handler(agentId) {
-                this.unsubscribeKnowledgeSetup();
-                if (agentId && this.backend?.watchData && this.backend?.getAgentKnowledgeSetupLog) {
-                    this.subscribeKnowledgeSetup(agentId);
-                }
-            },
-            immediate: true
         }
     },
     methods: {
@@ -540,45 +508,6 @@ export default {
 
         handleDmnClick(dmnId) {
             this.$emit('dmnChange', dmnId);
-        },
-
-        /** 에이전트 초기 지식 셋업 상태 실시간 구독 (STARTED 또는 로그 없을 때만, DONE/FAILED 시 부모에 갱신 요청 후 해제) */
-        async subscribeKnowledgeSetup(agentId) {
-            this.unsubscribeKnowledgeSetup();
-            this.isKnowledgeSetupInProgress = false;
-            if (!agentId || !this.backend?.watchData || !this.backend?.getAgentKnowledgeSetupLog) return;
-            try {
-                const log = await this.backend.getAgentKnowledgeSetupLog(agentId);
-                if (!log || log.status === 'DONE' || log.status === 'FAILED') return;
-                this.isKnowledgeSetupInProgress = true;
-                const channel = `agent-knowledge-setup-${agentId}-${Date.now()}`;
-                this.knowledgeSetupChannel = await this.backend.watchData(
-                    'agent_knowledge_setup_log',
-                    channel,
-                    (payload) => {
-                        if (!payload?.new || (payload.eventType !== 'INSERT' && payload.eventType !== 'UPDATE')) return;
-                        const row = payload.new;
-                        if (row.agent_id !== agentId) return;
-                        if (row.status === 'DONE' || row.status === 'FAILED') {
-                            this.isKnowledgeSetupInProgress = false;
-                            this.$emit('knowledgeSetupDone');
-                            this.unsubscribeKnowledgeSetup();
-                        }
-                    },
-                    { filter: `agent_id=eq.${agentId}` }
-                );
-            } catch (e) {
-                this.isKnowledgeSetupInProgress = false;
-                console.warn('[AgentChatInfo] 초기 지식 셋업 구독 실패:', e);
-            }
-        },
-
-        unsubscribeKnowledgeSetup() {
-            if (this.knowledgeSetupChannel && window.$supabase) {
-                window.$supabase.removeChannel(this.knowledgeSetupChannel);
-            }
-            this.knowledgeSetupChannel = null;
-            this.isKnowledgeSetupInProgress = false;
         },
 
         initializeImage() {
@@ -743,10 +672,6 @@ export default {
             return this.parsedTools && this.parsedTools.length > 4;
         },
 
-        openDmnHistory() {
-            this.$emit('tabChange', 'dmn-history');
-        },
-
         openToolPriorityDialog() {
             this.toolPriorityDialog = true;
         },
@@ -759,15 +684,6 @@ export default {
 </script>
 
 <style scoped>
-.agent-info-area__progress {
-    margin: 0;
-}
-
-.agent-info-area__label {
-    padding-top: 2px;
-    padding-bottom: 2px;
-}
-
 .agent-tabs {
     width: 100%;
 }

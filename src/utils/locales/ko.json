@@ -160,30 +160,6 @@
         "noXmlData": "XML 데이터가 없습니다.",
         "hoursAgo": "{hours}시간 전"
     },
-    "businessRuleDmnHistory": {
-        "title": "비즈니스 규칙 변경 이력",
-        "description": "비즈니스 규칙 변경 내역을 확인할 수 있습니다.",
-        "noHistory": "변경 이력이 없습니다",
-        "noHistoryDescription": "비즈니스 규칙이 변경되면 이력이 표시됩니다.",
-        "businessRule": "비즈니스 규칙",
-        "operation": "작업",
-        "changeContent": "변경 내용",
-        "changer": "변경자",
-        "changeDate": "변경 일시",
-        "previous": "이전:",
-        "new": "새:",
-        "feedback": "피드백:",
-        "structuredChanges": "구조화된 변경사항",
-        "rawXml": "원본 XML",
-        "xmlParseFailed": "XML 파싱에 실패했습니다. 원본 XML 탭에서 확인하세요.",
-        "previousContent": "이전 내용",
-        "newContent": "새 내용",
-        "noChangeContent": "변경 내용이 없습니다.",
-        "operationCreate": "생성",
-        "operationUpdate": "수정",
-        "operationDelete": "삭제",
-        "operationMove": "이동"
-    },
     "changePath": "저장되지 않은 변경사항이 있습니다. 이동하시겠습니까?",
     "successMsg": {
         "simulatedProcess": "Process 시뮬레이션 완료",
@@ -3605,7 +3581,6 @@
         "expand": "더보기",
         "collapse": "접기",
         "defaultAgentName": "에이전트",
-        "knowledgeSetupInProgress": "지식 셋팅 중",
         "labels": {
             "goal": "목표",
             "persona": "페르소나",

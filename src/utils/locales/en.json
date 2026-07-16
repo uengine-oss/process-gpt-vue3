@@ -160,30 +160,6 @@
         "noXmlData": "No XML data.",
         "hoursAgo": "{hours} hours ago"
     },
-    "businessRuleDmnHistory": {
-        "title": "Business Rule Change History",
-        "description": "View business rule change history.",
-        "noHistory": "No change history",
-        "noHistoryDescription": "History will appear when business rules are changed.",
-        "businessRule": "Business Rule",
-        "operation": "Operation",
-        "changeContent": "Change Content",
-        "changer": "Changed By",
-        "changeDate": "Change Date",
-        "previous": "Previous:",
-        "new": "New:",
-        "feedback": "Feedback:",
-        "structuredChanges": "Structured Changes",
-        "rawXml": "Raw XML",
-        "xmlParseFailed": "XML parsing failed. Check the Raw XML tab.",
-        "previousContent": "Previous Content",
-        "newContent": "New Content",
-        "noChangeContent": "No change content.",
-        "operationCreate": "Create",
-        "operationUpdate": "Update",
-        "operationDelete": "Delete",
-        "operationMove": "Move"
-    },
     "changePath": "You have unsaved changes. Are you sure you want to leave?",
     "successMsg": {
         "simulatedProcess": "Simulated process completed",
@@ -3605,7 +3581,6 @@
         "expand": "Show more",
         "collapse": "Show less",
         "defaultAgentName": "Agent",
-        "knowledgeSetupInProgress": "Setting up knowledge",
         "labels": {
             "goal": "Goal",
             "persona": "Persona",
