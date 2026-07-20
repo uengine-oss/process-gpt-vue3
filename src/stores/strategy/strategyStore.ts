@@ -146,6 +146,17 @@ export const useStrategyStore = defineStore('strategy', () => {
         return data;
     }
 
+    // ---- 채팅 기반 전략맵 편집 ----------------------------------------
+    async function sendChatMessage(message: string, history: { role: string; content: string }[]) {
+        const { data } = await axios.post(
+            `${BASE}/strategy/chat`,
+            { message, history },
+            { params: { tenant_id: tenantId() } }
+        );
+        objectives.value = data.map?.objectives || [];
+        return data as { reply: string; actions: any[]; map: { objectives: any[] } };
+    }
+
     return {
         loading,
         objectives,
@@ -173,6 +184,7 @@ export const useStrategyStore = defineStore('strategy', () => {
         getNodeNeighbors,
         getImpactKpi,
         getImpactStrategy,
-        runOntologySync
+        runOntologySync,
+        sendChatMessage
     };
 });

@@ -2,9 +2,11 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStrategyStore } from '@/stores/strategy/strategyStore';
+import StrategyChatPanel from '@/components/strategy/StrategyChatPanel.vue';
 
 const store = useStrategyStore();
 const router = useRouter();
+const chatPanelOpen = ref(false);
 
 const PERSPECTIVES = ['financial', 'customer', 'internal_process', 'learning_growth'];
 const PERSPECTIVE_COLORS: Record<string, string> = {
@@ -13,7 +15,7 @@ const PERSPECTIVE_COLORS: Record<string, string> = {
     internal_process: '#e65100',
     learning_growth: '#6a1b9a'
 };
-const MEASURE_TYPES = ['instance_count', 'avg_duration_hours', 'survey_score', 'manual'];
+const MEASURE_TYPES = ['instance_count', 'avg_duration_hours', 'survey_score', 'external_source', 'manual'];
 const INITIATIVE_STATUSES = ['planned', 'in_progress', 'completed', 'on_hold'];
 const STATUS_COLORS: Record<string, string> = {
     planned: 'grey',
@@ -136,7 +138,9 @@ const kpiDialog = reactive({
         target_value: null as number | null,
         period_start: '',
         period_end: '',
-        survey_questions: [] as string[]
+        survey_questions: [] as string[],
+        source_url: '',
+        source_field: ''
     }
 });
 
@@ -155,7 +159,9 @@ function openKpiDialog(kpi?: any) {
         target_value: kpi?.target_value != null ? Number(kpi.target_value) : null,
         period_start: kpi?.period_start || '',
         period_end: kpi?.period_end || '',
-        survey_questions: [...(kpi?.survey_questions || [])]
+        survey_questions: [...(kpi?.survey_questions || [])],
+        source_url: kpi?.source_url || '',
+        source_field: kpi?.source_field || ''
     };
     kpiDialog.open = true;
 }
@@ -194,7 +200,9 @@ async function saveKpi() {
         target_value: kpiDialog.form.target_value ?? null,
         period_start: kpiDialog.form.period_start || null,
         period_end: kpiDialog.form.period_end || null,
-        survey_questions: kpiDialog.form.survey_questions.filter((q) => q && q.trim())
+        survey_questions: kpiDialog.form.survey_questions.filter((q) => q && q.trim()),
+        source_url: kpiDialog.form.source_url || null,
+        source_field: kpiDialog.form.source_field || null
     };
     if (kpiDialog.editingId) await store.updateKpi(kpiDialog.editingId, payload);
     else await store.createKpi(payload);
@@ -374,12 +382,19 @@ onBeforeUnmount(() => window.removeEventListener('resize', handleResize));
                     <v-icon start size="16">mdi-graph-outline</v-icon>
                     온톨로지 뷰
                 </v-btn>
+                <!-- 채팅으로 전략맵 편집 -->
+                <v-btn variant="outlined" size="small" @click="chatPanelOpen = true">
+                    <v-icon start size="16">mdi-robot</v-icon>
+                    {{ $t('strategyBoard.chatButton') }}
+                </v-btn>
                 <v-btn color="primary" size="small" @click="openObjectiveDialog()">
                     <v-icon start size="16">mdi-plus</v-icon>
                     {{ $t('strategyBoard.addObjective') }}
                 </v-btn>
             </div>
         </div>
+
+        <StrategyChatPanel v-model="chatPanelOpen" />
 
         <!-- Loading -->
         <div v-if="store.loading" class="d-flex justify-center py-12">
@@ -801,6 +816,25 @@ onBeforeUnmount(() => window.removeEventListener('resize', handleResize));
                         </v-btn>
                     </div>
                     <p class="text-caption text-medium-emphasis mt-1">{{ $t('strategyBoard.surveyHint') }}</p>
+                </template>
+
+                <!-- 외부 System of Record 연동 -->
+                <template v-if="kpiDialog.form.measure_type === 'external_source'">
+                    <v-text-field
+                        v-model="kpiDialog.form.source_url"
+                        :label="$t('strategyBoard.sourceUrl')"
+                        density="compact"
+                        variant="outlined"
+                        placeholder="https://sor.example.com/api/metrics"
+                    />
+                    <v-text-field
+                        v-model="kpiDialog.form.source_field"
+                        :label="$t('strategyBoard.sourceField')"
+                        density="compact"
+                        variant="outlined"
+                        placeholder="data.metrics.nps_score"
+                    />
+                    <p class="text-caption text-medium-emphasis mt-1">{{ $t('strategyBoard.sourceHint') }}</p>
                 </template>
 
                 <div class="d-flex justify-end ga-2 mt-2">
