@@ -48,9 +48,7 @@ export default {
     },
     computed: {
         rootSkills() {
-            const childSet = new Set(
-                this.skillList.flatMap((s) => s.children || [])
-            );
+            const childSet = new Set(this.skillList.flatMap((s) => s.children || []));
             return this.skillList.filter((s) => !childSet.has(s.name));
         },
         skillsByName() {

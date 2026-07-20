@@ -91,7 +91,11 @@
                                                 >{{ showPiFlag ? 'mdi-flag' : 'mdi-flag-outline' }}</v-icon
                                             >
                                         </template>
-                                        <span>{{ showPiFlag ? ($t('piFlagPanel.hide') || 'PI Flag 숨기기') : ($t('piFlagPanel.show') || 'PI Flag 표시') }}</span>
+                                        <span>{{
+                                            showPiFlag
+                                                ? $t('piFlagPanel.hide') || 'PI Flag 숨기기'
+                                                : $t('piFlagPanel.show') || 'PI Flag 표시'
+                                        }}</span>
                                     </v-tooltip>
                                     <!-- 채팅창 열기/닫기 토글 버튼 -->
                                     <v-tooltip v-if="!isMobile" location="bottom">
@@ -744,12 +748,16 @@ export default {
             const diff = (prev, next, marker) => {
                 prev.forEach((id) => {
                     if (!next.has(id) && elementRegistry.get(id)) {
-                        try { canvas.removeMarker(id, marker); } catch (e) {}
+                        try {
+                            canvas.removeMarker(id, marker);
+                        } catch (e) {}
                     }
                 });
                 next.forEach((id) => {
                     if (elementRegistry.get(id)) {
-                        try { canvas.addMarker(id, marker); } catch (e) {}
+                        try {
+                            canvas.addMarker(id, marker);
+                        } catch (e) {}
                     }
                 });
             };
@@ -761,8 +769,12 @@ export default {
         clearCanvasMarkers() {
             // beforeUnmount 에서 호출. store 도 비워서 다음 진입 시 깨끗한 상태로 시작.
             const store = useBpmnStore();
-            try { store.clearRunningActivityIds(); } catch (e) {}
-            try { store.clearCompletedActivityIds(); } catch (e) {}
+            try {
+                store.clearRunningActivityIds();
+            } catch (e) {}
+            try {
+                store.clearCompletedActivityIds();
+            } catch (e) {}
             this.applyCanvasMarkers();
         },
         // 댓글 관련 메서드

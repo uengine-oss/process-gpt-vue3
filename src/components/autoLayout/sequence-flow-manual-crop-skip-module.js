@@ -8,34 +8,34 @@
 var manualCropPostprocessSkipped = false;
 
 export function isSequenceFlowManualCropPostprocessSkipped() {
-  return manualCropPostprocessSkipped;
+    return manualCropPostprocessSkipped;
 }
 
 function SequenceFlowManualCropSkip(eventBus) {
-  function setSkip(v) {
-    manualCropPostprocessSkipped = !!v;
-  }
+    function setSkip(v) {
+        manualCropPostprocessSkipped = !!v;
+    }
 
-  eventBus.on('bendpoint.move.start', function () {
-    setSkip(true);
-  });
-  eventBus.on(['bendpoint.move.cleanup', 'bendpoint.move.cancel'], function () {
-    setSkip(false);
-  });
+    eventBus.on('bendpoint.move.start', function () {
+        setSkip(true);
+    });
+    eventBus.on(['bendpoint.move.cleanup', 'bendpoint.move.cancel'], function () {
+        setSkip(false);
+    });
 
-  eventBus.on('connectionSegment.move.start', function () {
-    setSkip(true);
-  });
-  eventBus.on(['connectionSegment.move.cleanup', 'connectionSegment.move.cancel'], function () {
-    setSkip(false);
-  });
+    eventBus.on('connectionSegment.move.start', function () {
+        setSkip(true);
+    });
+    eventBus.on(['connectionSegment.move.cleanup', 'connectionSegment.move.cancel'], function () {
+        setSkip(false);
+    });
 }
 
 SequenceFlowManualCropSkip.$inject = ['eventBus'];
 
 export const sequenceFlowManualCropSkipModule = {
-  __init__: ['sequenceFlowManualCropSkip'],
-  sequenceFlowManualCropSkip: ['type', SequenceFlowManualCropSkip],
+    __init__: ['sequenceFlowManualCropSkip'],
+    sequenceFlowManualCropSkip: ['type', SequenceFlowManualCropSkip]
 };
 
 export default sequenceFlowManualCropSkipModule;

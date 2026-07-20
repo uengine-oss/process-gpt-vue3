@@ -5,13 +5,7 @@
                 <v-icon size="18" class="mr-1">mdi-sitemap-outline</v-icon>
                 <span>{{ processName }}</span>
             </div>
-            <v-chip
-                v-if="result.__saved"
-                size="small"
-                color="success"
-                variant="flat"
-                prepend-icon="mdi-check"
-            >저장됨</v-chip>
+            <v-chip v-if="result.__saved" size="small" color="success" variant="flat" prepend-icon="mdi-check">저장됨</v-chip>
         </div>
 
         <div class="process-artifact__summary">
@@ -49,12 +43,9 @@
         </div>
 
         <div class="process-artifact__actions">
-            <v-btn
-                size="small"
-                variant="tonal"
-                prepend-icon="mdi-eye-outline"
-                @click="$emit('preview-bpmn', previewPayload)"
-            >미리보기</v-btn>
+            <v-btn size="small" variant="tonal" prepend-icon="mdi-eye-outline" @click="$emit('preview-bpmn', previewPayload)"
+                >미리보기</v-btn
+            >
             <v-btn
                 size="small"
                 color="primary"
@@ -63,7 +54,8 @@
                 :disabled="result.__saved || !canSave"
                 prepend-icon="mdi-content-save-outline"
                 @click="$emit('save-generated-process', result)"
-            >{{ result.__saved ? '저장됨' : '저장' }}</v-btn>
+                >{{ result.__saved ? '저장됨' : '저장' }}</v-btn
+            >
         </div>
 
         <div v-if="result.__saveError" class="process-artifact__error">
@@ -99,8 +91,7 @@ export default {
             if (pd && Array.isArray(pd.elements)) return pd.elements.length;
             // flattened 호환
             if (pd) {
-                return ['activities', 'events', 'gateways', 'sequences']
-                    .reduce((n, k) => n + (Array.isArray(pd[k]) ? pd[k].length : 0), 0);
+                return ['activities', 'events', 'gateways', 'sequences'].reduce((n, k) => n + (Array.isArray(pd[k]) ? pd[k].length : 0), 0);
             }
             return 0;
         },
@@ -114,7 +105,7 @@ export default {
             return this.contract && Array.isArray(this.contract.forms) ? this.contract.forms : [];
         },
         canSave() {
-            return !!(this.processDefinition);
+            return !!this.processDefinition;
         },
         previewPayload() {
             const sp = (this.result && this.result.savedProcesses && this.result.savedProcesses[0]) || null;

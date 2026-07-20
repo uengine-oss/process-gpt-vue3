@@ -83,84 +83,84 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
 
         const append = autoPlace
             ? function (_, element) {
-                const shape = elementFactory.createShape(assign({ type }, options));
+                  const shape = elementFactory.createShape(assign({ type }, options));
 
-                // Check if this is a Task type (for middle insertion)
-                const isTaskType = type.includes('Task');
+                  // Check if this is a Task type (for middle insertion)
+                  const isTaskType = type.includes('Task');
 
-                // Check if source element is a Gateway (don't insert in middle for Gateway sources)
-                const isSourceGateway = element.type && element.type.includes('Gateway');
+                  // Check if source element is a Gateway (don't insert in middle for Gateway sources)
+                  const isSourceGateway = element.type && element.type.includes('Gateway');
 
-                // Check if we should insert in the middle of a flow
-                // Only for Task types, and not when source is a Gateway
-                if (isTaskType && !isSourceGateway) {
-                    const outgoingConnections = element.outgoing || [];
+                  // Check if we should insert in the middle of a flow
+                  // Only for Task types, and not when source is a Gateway
+                  if (isTaskType && !isSourceGateway) {
+                      const outgoingConnections = element.outgoing || [];
 
-                    // Only insert in middle if there's exactly one outgoing connection
-                    if (outgoingConnections.length === 1) {
-                        const connection = outgoingConnections[0];
-                        const targetElement = connection.target;
+                      // Only insert in middle if there's exactly one outgoing connection
+                      if (outgoingConnections.length === 1) {
+                          const connection = outgoingConnections[0];
+                          const targetElement = connection.target;
 
-                        // Insert in middle if there's a valid target
-                        if (targetElement) {
-                            try {
-                                // Calculate position for new shape (between source and target)
-                                const sourceCenter = {
-                                    x: element.x + element.width / 2,
-                                    y: element.y + element.height / 2
-                                };
-                                const targetCenter = {
-                                    x: targetElement.x + targetElement.width / 2,
-                                    y: targetElement.y + targetElement.height / 2
-                                };
+                          // Insert in middle if there's a valid target
+                          if (targetElement) {
+                              try {
+                                  // Calculate position for new shape (between source and target)
+                                  const sourceCenter = {
+                                      x: element.x + element.width / 2,
+                                      y: element.y + element.height / 2
+                                  };
+                                  const targetCenter = {
+                                      x: targetElement.x + targetElement.width / 2,
+                                      y: targetElement.y + targetElement.height / 2
+                                  };
 
-                                // Position new shape in the middle
-                                const newPosition = {
-                                    x: (sourceCenter.x + targetCenter.x) / 2,
-                                    y: (sourceCenter.y + targetCenter.y) / 2
-                                };
+                                  // Position new shape in the middle
+                                  const newPosition = {
+                                      x: (sourceCenter.x + targetCenter.x) / 2,
+                                      y: (sourceCenter.y + targetCenter.y) / 2
+                                  };
 
-                                // Store original target before modifying
-                                const originalTarget = targetElement;
+                                  // Store original target before modifying
+                                  const originalTarget = targetElement;
 
-                                // Create the new shape at the calculated position
-                                const newShape = modeling.createShape(shape, newPosition, element.parent);
+                                  // Create the new shape at the calculated position
+                                  const newShape = modeling.createShape(shape, newPosition, element.parent);
 
-                                // Reconnect: element -> newShape (modify existing connection)
-                                modeling.reconnectEnd(connection, newShape, {
-                                    x: newShape.x + newShape.width / 2,
-                                    y: newShape.y + newShape.height / 2
-                                });
+                                  // Reconnect: element -> newShape (modify existing connection)
+                                  modeling.reconnectEnd(connection, newShape, {
+                                      x: newShape.x + newShape.width / 2,
+                                      y: newShape.y + newShape.height / 2
+                                  });
 
-                                // Create new connection: newShape -> originalTarget
-                                modeling.connect(newShape, originalTarget);
+                                  // Create new connection: newShape -> originalTarget
+                                  modeling.connect(newShape, originalTarget);
 
-                                return;
-                            } catch (e) {
-                                console.warn('Failed to insert task in middle of flow:', e);
-                                // Fall through to default behavior
-                            }
-                        }
-                    }
-                }
+                                  return;
+                              } catch (e) {
+                                  console.warn('Failed to insert task in middle of flow:', e);
+                                  // Fall through to default behavior
+                              }
+                          }
+                      }
+                  }
 
-                // Default behavior: append without insertion
-                autoPlace.append(element, shape);
-            }
+                  // Default behavior: append without insertion
+                  autoPlace.append(element, shape);
+              }
             : appendStart;
 
         const previewAppend = autoPlace
             ? function (_, element) {
-                try {
-                    appendPreview.create(element, type, options);
-                } catch (e) {
-                    console.warn('[appendPreview] 실패:', e);
-                }
+                  try {
+                      appendPreview.create(element, type, options);
+                  } catch (e) {
+                      console.warn('[appendPreview] 실패:', e);
+                  }
 
-                return () => {
-                    appendPreview.cleanUp();
-                };
-            }
+                  return () => {
+                      appendPreview.cleanUp();
+                  };
+              }
             : null;
 
         return {
@@ -324,51 +324,50 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         return phaseContainer.height > phaseContainer.width;
     }
 
-  function getShapeCenter(bounds) {
-    return {
-      x: bounds.x + bounds.width / 2,
-      y: bounds.y + bounds.height / 2
-    };
-  }
-
-  function getPhaseChildren(phaseContainer) {
-    return (phaseContainer.children || []).filter(child =>
-      child.type === 'phase:Phase' ||
-      child.businessObject?.$type === 'phase:Phase'
-    );
-  }
-
-  function getPhaseStripBounds(phaseContainer, isVertical) {
-    const phases = getPhaseChildren(phaseContainer);
-    if (!phases.length) {
-      return {
-        x: phaseContainer.x,
-        y: phaseContainer.y,
-        width: phaseContainer.width,
-        height: phaseContainer.height
-      };
+    function getShapeCenter(bounds) {
+        return {
+            x: bounds.x + bounds.width / 2,
+            y: bounds.y + bounds.height / 2
+        };
     }
 
-    if (isVertical) {
-      const minX = Math.min(...phases.map(phase => phase.x));
-      const maxX = Math.max(...phases.map(phase => phase.x + phase.width));
-      return {
-        x: minX,
-        y: phaseContainer.y,
-        width: maxX - minX,
-        height: phaseContainer.height
-      };
+    function getPhaseChildren(phaseContainer) {
+        return (phaseContainer.children || []).filter(
+            (child) => child.type === 'phase:Phase' || child.businessObject?.$type === 'phase:Phase'
+        );
     }
 
-    const minY = Math.min(...phases.map(phase => phase.y));
-    const maxY = Math.max(...phases.map(phase => phase.y + phase.height));
-    return {
-      x: phaseContainer.x,
-      y: minY,
-      width: phaseContainer.width,
-      height: maxY - minY
-    };
-  }
+    function getPhaseStripBounds(phaseContainer, isVertical) {
+        const phases = getPhaseChildren(phaseContainer);
+        if (!phases.length) {
+            return {
+                x: phaseContainer.x,
+                y: phaseContainer.y,
+                width: phaseContainer.width,
+                height: phaseContainer.height
+            };
+        }
+
+        if (isVertical) {
+            const minX = Math.min(...phases.map((phase) => phase.x));
+            const maxX = Math.max(...phases.map((phase) => phase.x + phase.width));
+            return {
+                x: minX,
+                y: phaseContainer.y,
+                width: maxX - minX,
+                height: phaseContainer.height
+            };
+        }
+
+        const minY = Math.min(...phases.map((phase) => phase.y));
+        const maxY = Math.max(...phases.map((phase) => phase.y + phase.height));
+        return {
+            x: phaseContainer.x,
+            y: minY,
+            width: phaseContainer.width,
+            height: maxY - minY
+        };
+    }
 
     /** Phase 좌/우에 새 Phase 추가 후 전체 너비 재배분 */
     function insertPhaseAt(phaseElement, side) {
@@ -393,12 +392,12 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         });
 
         const isVerticalContainer = isPhaseContainerVertical(phaseContainer);
-    const stripBounds = getPhaseStripBounds(phaseContainer, isVerticalContainer);
-    const pcX = stripBounds.x;
-    const pcY = stripBounds.y;
-    const pcW = stripBounds.width;
-    const pcH = stripBounds.height;
-    const newPhaseCount = laneSet.lanes.length + 1;
+        const stripBounds = getPhaseStripBounds(phaseContainer, isVerticalContainer);
+        const pcX = stripBounds.x;
+        const pcY = stripBounds.y;
+        const pcW = stripBounds.width;
+        const pcH = stripBounds.height;
+        const newPhaseCount = laneSet.lanes.length + 1;
 
         if (isVerticalContainer) {
             const phaseHeight = pcH / newPhaseCount;
@@ -424,7 +423,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                 const bounds = { x: pcX, y: pcY + i * phaseHeightFinal, width: pcW, height: h };
                 const existing = phaseContainer.children.find((c) => c.businessObject === phaseBo);
                 if (existing) {
-        modeling.resizeShape(existing, bounds);
+                    modeling.resizeShape(existing, bounds);
                 } else {
                     const phaseShape = elementFactory.createShape({
                         type: 'phase:Phase',
@@ -458,15 +457,15 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
 
         const phaseCount = laneSet.lanes.length;
         const phaseWidthFinal = pcW / phaseCount;
-    let selectedPhase = null;
-    for (let i = 0; i < phaseCount; i++) {
+        let selectedPhase = null;
+        for (let i = 0; i < phaseCount; i++) {
             const phaseBo = laneSet.lanes[i];
             const w = i === phaseCount - 1 ? pcW - phaseWidthFinal * (phaseCount - 1) : phaseWidthFinal;
             const bounds = { x: pcX + i * phaseWidthFinal, y: pcY, width: w, height: pcH };
             const existing = phaseContainer.children.find((c) => c.businessObject === phaseBo);
             if (existing) {
-        modeling.resizeShape(existing, bounds);
-        if (phaseBo === newPhaseBo) selectedPhase = existing;
+                modeling.resizeShape(existing, bounds);
+                if (phaseBo === newPhaseBo) selectedPhase = existing;
             } else {
                 const phaseShape = elementFactory.createShape({
                     type: 'phase:Phase',
@@ -494,12 +493,12 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         });
 
         const isVerticalContainer = isPhaseContainerVertical(phaseContainerElement);
-    const stripBounds = getPhaseStripBounds(phaseContainerElement, isVerticalContainer);
-    const pcX = stripBounds.x;
-    const pcY = stripBounds.y;
-    const pcW = stripBounds.width;
-    const pcH = stripBounds.height;
-    const newPhaseCount = laneSet.lanes.length + 1;
+        const stripBounds = getPhaseStripBounds(phaseContainerElement, isVerticalContainer);
+        const pcX = stripBounds.x;
+        const pcY = stripBounds.y;
+        const pcW = stripBounds.width;
+        const pcH = stripBounds.height;
+        const newPhaseCount = laneSet.lanes.length + 1;
         const insertIndex = position === 'start' ? 0 : laneSet.lanes.length;
 
         if (isVerticalContainer) {
@@ -528,7 +527,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                 const bounds = { x: pcX, y: pcY + i * phaseHeightFinal, width: pcW, height: h };
                 const existing = phaseContainerElement.children.find((c) => c.businessObject === phaseBo);
                 if (existing) {
-        modeling.resizeShape(existing, bounds);
+                    modeling.resizeShape(existing, bounds);
                 } else {
                     const phaseShape = elementFactory.createShape({
                         type: 'phase:Phase',
@@ -564,15 +563,15 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
 
         const phaseCount = laneSet.lanes.length;
         const phaseWidthFinal = pcW / phaseCount;
-    let selectedPhase = null;
-    for (let i = 0; i < phaseCount; i++) {
+        let selectedPhase = null;
+        for (let i = 0; i < phaseCount; i++) {
             const phaseBo = laneSet.lanes[i];
             const w = i === phaseCount - 1 ? pcW - phaseWidthFinal * (phaseCount - 1) : phaseWidthFinal;
             const bounds = { x: pcX + i * phaseWidthFinal, y: pcY, width: w, height: pcH };
             const existing = phaseContainerElement.children.find((c) => c.businessObject === phaseBo);
             if (existing) {
-        modeling.resizeShape(existing, bounds);
-        if (phaseBo === newPhaseBo) selectedPhase = existing;
+                modeling.resizeShape(existing, bounds);
+                if (phaseBo === newPhaseBo) selectedPhase = existing;
             } else {
                 const phaseShape = elementFactory.createShape({
                     type: 'phase:Phase',
@@ -800,21 +799,21 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                         ? 'mdi mdi-arrow-up-bold'
                         : 'mdi mdi-arrow-left-bold'
                     : isHorizontal
-                        ? 'bpmn-icon-lane-insert-above'
-                        : 'bpmn-icon-lane-insert-above icon-rotate-270',
+                    ? 'bpmn-icon-lane-insert-above'
+                    : 'bpmn-icon-lane-insert-above icon-rotate-270',
                 title: usePhaseAdd
                     ? isPhaseVertical
                         ? i18n.global.t('customContextPad.phaseAbove')
                         : i18n.global.t('customContextPad.phaseLeft')
                     : isHorizontal
-                        ? i18n.global.t('customContextPad.laneAbove')
-                        : i18n.global.t('customContextPad.laneToTheLeft'),
+                    ? i18n.global.t('customContextPad.laneAbove')
+                    : i18n.global.t('customContextPad.laneToTheLeft'),
                 action: {
                     click: usePhaseAdd
                         ? function (event, el) {
-                            if (isPhase) insertPhaseAt(el, 'left');
-                            else addPhaseToContainer(el, 'start');
-                        }
+                              if (isPhase) insertPhaseAt(el, 'left');
+                              else addPhaseToContainer(el, 'start');
+                          }
                         : actions['lane-insert-above'] && actions['lane-insert-above'].action.click
                 }
             },
@@ -825,49 +824,49 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
                         ? 'mdi mdi-arrow-down-bold'
                         : 'mdi mdi-arrow-right-bold'
                     : isHorizontal
-                        ? 'bpmn-icon-lane-insert-below'
-                        : 'bpmn-icon-lane-insert-below icon-rotate-270',
+                    ? 'bpmn-icon-lane-insert-below'
+                    : 'bpmn-icon-lane-insert-below icon-rotate-270',
                 title: usePhaseAdd
                     ? isPhaseVertical
                         ? i18n.global.t('customContextPad.phaseBelow')
                         : i18n.global.t('customContextPad.phaseRight')
                     : isHorizontal
-                        ? i18n.global.t('customContextPad.laneBelow')
-                        : i18n.global.t('customContextPad.laneToTheRight'),
+                    ? i18n.global.t('customContextPad.laneBelow')
+                    : i18n.global.t('customContextPad.laneToTheRight'),
                 action: {
                     click: usePhaseAdd
                         ? function (event, el) {
-                            if (isPhase) insertPhaseAt(el, 'right');
-                            else addPhaseToContainer(el, 'end');
-                        }
+                              if (isPhase) insertPhaseAt(el, 'right');
+                              else addPhaseToContainer(el, 'end');
+                          }
                         : actions['lane-insert-below'] && actions['lane-insert-below'].action.click
                 }
             },
             ...(usePhaseAdd
                 ? {}
                 : {
-                    'lane-divide-two': {
-                        group: 'lane',
-                        className: isHorizontal ? 'bpmn-icon-lane-divide-two' : 'bpmn-icon-lane-divide-two icon-rotate-270',
-                        title: i18n.global.t('customContextPad.laneDivideTwo'),
-                        action: { click: divideIntoTwoLanes }
-                    },
-                    'lane-divide-three': {
-                        group: 'lane',
-                        className: isHorizontal ? 'bpmn-icon-lane-divide-three' : 'bpmn-icon-lane-divide-three icon-rotate-270',
-                        title: i18n.global.t('customContextPad.laneDivideThree'),
-                        action: { click: divideIntoThreeLanes }
-                    },
-                    'lane-insert-single': {
-                        group: 'lane',
-                        className: isHorizontal ? 'bpmn-icon-participant' : 'bpmn-icon-participant icon-rotate-90',
-                        title: isHorizontal ? i18n.global.t('customContextPad.lane') : i18n.global.t('customContextPad.laneToTheLeft'),
-                        action: function (event, element) {
-                            const laneCount = element.children.filter((child) => child.type === 'bpmn:Lane').length;
-                            insertLanes(1);
-                        }
-                    }
-                }),
+                      'lane-divide-two': {
+                          group: 'lane',
+                          className: isHorizontal ? 'bpmn-icon-lane-divide-two' : 'bpmn-icon-lane-divide-two icon-rotate-270',
+                          title: i18n.global.t('customContextPad.laneDivideTwo'),
+                          action: { click: divideIntoTwoLanes }
+                      },
+                      'lane-divide-three': {
+                          group: 'lane',
+                          className: isHorizontal ? 'bpmn-icon-lane-divide-three' : 'bpmn-icon-lane-divide-three icon-rotate-270',
+                          title: i18n.global.t('customContextPad.laneDivideThree'),
+                          action: { click: divideIntoThreeLanes }
+                      },
+                      'lane-insert-single': {
+                          group: 'lane',
+                          className: isHorizontal ? 'bpmn-icon-participant' : 'bpmn-icon-participant icon-rotate-90',
+                          title: isHorizontal ? i18n.global.t('customContextPad.lane') : i18n.global.t('customContextPad.laneToTheLeft'),
+                          action: function (event, element) {
+                              const laneCount = element.children.filter((child) => child.type === 'bpmn:Lane').length;
+                              insertLanes(1);
+                          }
+                      }
+                  }),
             'lane-equalize': {
                 group: 'lane',
                 className: 'mdi mdi-equal',
@@ -923,7 +922,9 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
     }
     if (actions['append.append-task']) {
         const appendTaskType =
-            typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$mode === 'ProcessGPT' || window.$pal) ? 'bpmn:UserTask' : 'bpmn:ManualTask';
+            typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$mode === 'ProcessGPT' || window.$pal)
+                ? 'bpmn:UserTask'
+                : 'bpmn:ManualTask';
         const newAction = appendAction(appendTaskType, actions['append.append-task'].className, i18n.global.t('customContextPad.task'), {});
 
         actions['append.append-task'].action = newAction.action;
@@ -1007,8 +1008,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         ];
 
         // 활성화된 Task 타입만 필터링
-        const enabledTypes =
-            window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
+        const enabledTypes = window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
             window.$paletteSettings?.visibleTaskTypes || ['bpmn:UserTask'];
 
         const filteredTaskTypes = taskTypes.filter((t) => enabledTypes.includes(t.type));
@@ -1225,8 +1225,7 @@ function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, 
     ];
 
     // 활성화된 Task 타입만 필터링
-    const enabledTypes =
-        window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
+    const enabledTypes = window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
         window.$paletteSettings?.visibleTaskTypes || ['bpmn:UserTask'];
 
     const filteredTaskTypes = taskTypes.filter((t) => enabledTypes.includes(t.type));

@@ -279,6 +279,7 @@
                                 @capturePng="capturePng"
                                 @createFormUrl="createFormUrl"
                                 @toggleMarketplaceDialog="toggleMarketplaceDialog"
+                                @exportComponent="exportComponent"
                                 @duplicateProcess="duplicateProcess"
                                 @validateBpmn="runStandaloneValidation"
                                 @timeTravelChanged="onTimeTravelChanged"
@@ -333,6 +334,7 @@
                                 @capturePng="capturePng"
                                 @createFormUrl="createFormUrl"
                                 @toggleMarketplaceDialog="toggleMarketplaceDialog"
+                                @exportComponent="exportComponent"
                                 @duplicateProcess="duplicateProcess"
                                 @validateBpmn="runStandaloneValidation"
                                 @timeTravelChanged="onTimeTravelChanged"
@@ -446,7 +448,6 @@ import ProcessDefinitionMarketPlaceDialog from '@/components/ProcessDefinitionMa
 import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
 import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
-import { hasSubstantialChanges } from '@/utils/xmlDiff';
 import { isLegacyProcessDefinition, convertLegacyProcessDefinitionToElements } from '@/utils/legacyProcessDefinition';
 import { syncBpmnCallActivitiesIntoDefinition } from '@/utils/bpmnCallActivityDefinitionSync';
 import { useBpmnExport } from '@/composables/useBpmnExport';
@@ -960,6 +961,42 @@ export default {
         toggleMarketplaceDialog(value) {
             this.marketplaceDialog = value;
         },
+        notifyComponent(message, color = 'info') {
+            // 앱 전역 스낵바(App.vue) 사용. $toast/$snackbar 는 전역 등록되어 있지 않다.
+            if (window.$app_) {
+                window.$app_.snackbarMessage = message;
+                window.$app_.snackbarColor = color;
+                window.$app_.snackbar = true;
+            } else {
+                console.log(`[processComponent] ${message}`);
+            }
+        },
+        async exportComponent() {
+            const defId = this.fullPath?.replace('.bpmn', '') || '';
+            if (!defId) {
+                this.notifyComponent(this.$t('processComponent.exportNoTarget') || '내보낼 프로세스가 없습니다.', 'error');
+                return;
+            }
+            try {
+                this.notifyComponent(this.$t('processComponent.exporting') || '컴포넌트를 내보내는 중입니다...', 'info');
+                const { blob, manifest } = await backend.exportProcessComponent(defId);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${manifest.componentId}-${manifest.version}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                this.notifyComponent(this.$t('processComponent.exportSuccess') || '컴포넌트를 내보냈습니다.', 'success');
+            } catch (error) {
+                console.error('[exportComponent] 실패:', error);
+                this.notifyComponent(
+                    (this.$t('processComponent.exportFailed') || '컴포넌트 내보내기에 실패했습니다.') + ' ' + (error?.message || ''),
+                    'error'
+                );
+            }
+        },
         async duplicateProcess() {
             try {
                 // Generate unique name with copy suffix
@@ -1036,6 +1073,24 @@ export default {
 
             this.startGenerate();
         },
+        /**
+         * 열려 있는 BPMN 속성 패널의 미적용 편집을 모델러에 커밋(flush)한다.
+         * 패널의 save() 는 내부 beforeSave() 로 지침/역할 등 값을 모아
+         * modeling.updateProperties 로 반영한 뒤 패널을 닫는다.
+         * 저장 직전에 호출하여 "패널을 연 채 저장 → 편집 유실/미감지" 문제를 방지한다.
+         */
+        async flushOpenPropertyPanel() {
+            try {
+                const def = this.$refs.definitionComponent;
+                const panel = def && def.$refs && def.$refs.bpmnPropertyPanel;
+                if (def && def.panel && panel && typeof panel.save === 'function') {
+                    await panel.save();
+                    await this.$nextTick();
+                }
+            } catch (e) {
+                console.warn('속성 패널 flush 실패, 저장 진행:', e);
+            }
+        },
         async beforeSaveDefinition(info) {
             if (this.chatMode == 'consulting') {
                 await this.$emit('createdBPMN', this.processDefinition);
@@ -1065,12 +1120,20 @@ export default {
             }
 
             // 변경 사항 확인 (변동 없으면 저장 스킵)
+            // 1) 열려 있는 속성 패널의 미적용 편집(지침/역할/설명/체크포인트 등)을 먼저 모델러에 반영한다.
+            //    패널은 다른 요소/배경 클릭 시에만 자동 flush 되므로, 패널을 연 채로 저장하면
+            //    편집 내용이 모델러 XML 에 아직 없을 수 있다.
+            await this.flushOpenPropertyPanel();
+
             const store = useBpmnStore();
             const modeler = store.getModeler;
-            if (modeler && this.lastSavedXML) {
+            // 2) BPMN XML 만이 아니라 XML 밖 편집 상태(폼/DMN/프로세스 변수/활동 메타)까지 포함한
+            //    복합 시그니처로 비교한다. lastSavedSignature 는 마지막 저장 시점에 기록된다.
+            if (modeler && this.lastSavedSignature) {
                 try {
                     const { xml: currentXML } = await modeler.saveXML({ format: true });
-                    if (!hasSubstantialChanges(this.lastSavedXML, currentXML)) {
+                    const currentSignature = this.computeDefinitionSignature(currentXML, this.processDefinition);
+                    if (currentSignature === this.lastSavedSignature) {
                         // 변경 사항 없음 알림
                         if (this.$snackbar) {
                             this.$snackbar.show({

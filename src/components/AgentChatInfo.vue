@@ -459,7 +459,7 @@ export default {
             } else {
                 this.agentType = this.agentInfo?.agent_type;
                 return [
-                    { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' },
+                    { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' }
                     // { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
                 ];
             }

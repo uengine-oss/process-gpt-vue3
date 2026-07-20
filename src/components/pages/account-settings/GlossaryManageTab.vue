@@ -29,9 +29,7 @@
                             <template #title>
                                 {{ item.name }}
                             </template>
-                            <template #subtitle>
-                                {{ item.type }} · {{ item.termCount || 0 }} terms
-                            </template>
+                            <template #subtitle> {{ item.type }} · {{ item.termCount || 0 }} terms </template>
                         </v-list-item>
                         <v-list-item v-if="!loadingGlossaries && glossaries.length === 0">
                             <template #title>등록된 용어집이 없습니다.</template>
@@ -48,13 +46,7 @@
                             <div class="text-caption text-medium-emphasis">{{ selectedGlossary ? selectedGlossary.description : '' }}</div>
                         </div>
                         <div class="d-flex ga-2">
-                            <v-btn
-                                size="small"
-                                variant="outlined"
-                                color="error"
-                                :disabled="!selectedGlossary"
-                                @click="deleteGlossary"
-                            >
+                            <v-btn size="small" variant="outlined" color="error" :disabled="!selectedGlossary" @click="deleteGlossary">
                                 용어집 삭제
                             </v-btn>
                             <v-btn size="small" color="primary" :disabled="!selectedGlossary" @click="openCreateTerm">용어 추가</v-btn>
@@ -64,13 +56,7 @@
                     <v-card-text>
                         <v-row>
                             <v-col cols="12" md="6">
-                                <v-text-field
-                                    v-model="searchQuery"
-                                    density="compact"
-                                    variant="outlined"
-                                    hide-details
-                                    label="용어 검색"
-                                />
+                                <v-text-field v-model="searchQuery" density="compact" variant="outlined" hide-details label="용어 검색" />
                             </v-col>
                             <v-col cols="12" md="3">
                                 <v-select
@@ -131,7 +117,11 @@
                             label="CSV/Excel/TXT 파일 선택"
                         />
                         <div class="d-flex justify-end">
-                            <v-btn color="primary" :disabled="!selectedGlossary || !uploadFiles.length || uploading" @click="uploadBulkFiles">
+                            <v-btn
+                                color="primary"
+                                :disabled="!selectedGlossary || !uploadFiles.length || uploading"
+                                @click="uploadBulkFiles"
+                            >
                                 {{ uploading ? '업로드 중...' : '업로드' }}
                             </v-btn>
                         </div>
@@ -155,7 +145,12 @@
                 <v-card-title>용어집 추가</v-card-title>
                 <v-card-text>
                     <v-text-field v-model="glossaryForm.name" label="이름" variant="outlined" density="comfortable" />
-                    <v-text-field v-model="glossaryForm.type" label="유형 (Business/Technical/DataQuality)" variant="outlined" density="comfortable" />
+                    <v-text-field
+                        v-model="glossaryForm.type"
+                        label="유형 (Business/Technical/DataQuality)"
+                        variant="outlined"
+                        density="comfortable"
+                    />
                     <v-textarea v-model="glossaryForm.description" label="설명" variant="outlined" density="comfortable" rows="3" />
                 </v-card-text>
                 <v-card-actions class="justify-end">

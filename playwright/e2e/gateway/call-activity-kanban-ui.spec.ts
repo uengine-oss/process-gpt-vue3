@@ -62,7 +62,10 @@ test.describe('ProcessGPT CallActivity Kanban UI', () => {
                     })
                 }
             ],
-            events: [{ id: 'start', type: 'startEvent' }, { id: 'end', type: 'endEvent' }],
+            events: [
+                { id: 'start', type: 'startEvent' },
+                { id: 'end', type: 'endEvent' }
+            ],
             gateways: [],
             sequences: [
                 { id: 'flow_start_a', source: 'start', target: 'A' },
@@ -76,7 +79,10 @@ test.describe('ProcessGPT CallActivity Kanban UI', () => {
             processDefinitionId: childDefId,
             roles: [{ name: 'child_worker' }],
             activities: [{ id: 'X', name: 'Child task', type: 'userTask', role: 'child_worker', description: '' }],
-            events: [{ id: 'child_start', type: 'startEvent' }, { id: 'child_end', type: 'endEvent' }],
+            events: [
+                { id: 'child_start', type: 'startEvent' },
+                { id: 'child_end', type: 'endEvent' }
+            ],
             gateways: [],
             sequences: [
                 { id: 'flow_child_start_x', source: 'child_start', target: 'X' },
@@ -288,7 +294,14 @@ test.describe('ProcessGPT CallActivity Kanban UI', () => {
                         id: parentDefId,
                         name: parentName,
                         tenant_id: tenantId,
-                        definition: { processDefinitionName: parentName, processDefinitionId: parentDefId, activities: [], events: [], gateways: [], sequences: [] },
+                        definition: {
+                            processDefinitionName: parentName,
+                            processDefinitionId: parentDefId,
+                            activities: [],
+                            events: [],
+                            gateways: [],
+                            sequences: []
+                        },
                         bpmn: '<bpmn:process />',
                         isdeleted: false,
                         type: 'process'
@@ -297,7 +310,14 @@ test.describe('ProcessGPT CallActivity Kanban UI', () => {
                         id: childDefId,
                         name: childName,
                         tenant_id: tenantId,
-                        definition: { processDefinitionName: childName, processDefinitionId: childDefId, activities: [], events: [], gateways: [], sequences: [] },
+                        definition: {
+                            processDefinitionName: childName,
+                            processDefinitionId: childDefId,
+                            activities: [],
+                            events: [],
+                            gateways: [],
+                            sequences: []
+                        },
                         bpmn: '<bpmn:process />',
                         isdeleted: false,
                         type: 'process'

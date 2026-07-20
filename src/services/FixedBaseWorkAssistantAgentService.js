@@ -50,7 +50,11 @@ class FixedBaseWorkAssistantAgentService {
                     conversation_id: params.conversation_id || null,
                     file: params.file || null,
                     files: Array.isArray(params.files) ? params.files : [],
-                    file_count: Number.isFinite(params.file_count) ? params.file_count : Array.isArray(params.files) ? params.files.length : 0,
+                    file_count: Number.isFinite(params.file_count)
+                        ? params.file_count
+                        : Array.isArray(params.files)
+                        ? params.files.length
+                        : 0,
                     stream: true,
                     metadata: params.metadata || {}
                 })
@@ -155,4 +159,3 @@ class FixedBaseWorkAssistantAgentService {
 }
 
 export default FixedBaseWorkAssistantAgentService;
-

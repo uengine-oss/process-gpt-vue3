@@ -1,8 +1,6 @@
 <template>
     <div class="lane-role-mapping">
-        <div v-if="copyRoleBindings.length === 0" class="empty-state">
-            등록된 lane 역할 매핑이 없습니다.
-        </div>
+        <div v-if="copyRoleBindings.length === 0" class="empty-state">등록된 lane 역할 매핑이 없습니다.</div>
 
         <div v-for="(roleBinding, idx) in copyRoleBindings" :key="idx" class="mapping-row">
             <v-select
@@ -58,7 +56,8 @@
         </div>
 
         <div v-for="(roleBinding, idx) in copyRoleBindings" :key="`summary-${idx}`" class="mapping-summary">
-            상위 프로세스의 '{{ roleBinding.role?.name || '-' }}' 담당자를 하위 프로세스의 '{{ roleBinding.argument || '-' }}' 담당자로 사용합니다.
+            상위 프로세스의 '{{ roleBinding.role?.name || '-' }}' 담당자를 하위 프로세스의 '{{ roleBinding.argument || '-' }}' 담당자로
+            사용합니다.
         </div>
 
         <v-btn text color="primary" variant="flat" rounded class="add-button" :disabled="isViewMode" @click="add">

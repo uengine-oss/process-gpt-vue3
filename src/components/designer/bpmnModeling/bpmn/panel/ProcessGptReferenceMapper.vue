@@ -1,14 +1,7 @@
 <template>
     <div>
         <div class="d-flex justify-end mb-2">
-            <v-btn
-                v-if="!isViewMode"
-                variant="text"
-                size="small"
-                color="primary"
-                prepend-icon="mdi-sitemap"
-                @click="openFieldMapper"
-            >
+            <v-btn v-if="!isViewMode" variant="text" size="small" color="primary" prepend-icon="mdi-sitemap" @click="openFieldMapper">
                 {{ $t('EventSynchronizationForm.dataMapping') }}
             </v-btn>
         </div>
@@ -33,14 +26,7 @@
                 <v-card-text class="pa-4">
                     <div class="mb-3 text-subtitle-1">{{ getFormTitle(formId) }}</div>
                     <v-row>
-                        <v-col
-                            v-for="field in getFormFields(formId)"
-                            :key="`${formId}-${field.fieldId}`"
-                            cols="12"
-                            lg="6"
-                            md="6"
-                            sm="12"
-                        >
+                        <v-col v-for="field in getFormFields(formId)" :key="`${formId}-${field.fieldId}`" cols="12" lg="6" md="6" sm="12">
                             <v-checkbox v-model="field.selected" :label="field.fieldName" density="compact" hide-details />
                         </v-col>
                     </v-row>
@@ -119,9 +105,7 @@ export default {
             handler(value) {
                 const formIds = [
                     ...new Set(
-                        (Array.isArray(value) ? value : [])
-                            .map((item) => String(item || '').split('.')[0])
-                            .filter((formId) => formId)
+                        (Array.isArray(value) ? value : []).map((item) => String(item || '').split('.')[0]).filter((formId) => formId)
                     )
                 ].filter((formId) => formId !== this.currentActivityFormId);
                 // 사용자가 드롭다운에서 선택한 폼은 필드 체크 여부와 무관하게 유지해야 한다.

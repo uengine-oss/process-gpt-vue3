@@ -154,7 +154,11 @@
                                             <div class="hitl-multi-header">
                                                 <v-icon size="18" color="primary">mdi-comment-question-outline</v-icon>
                                                 <span class="hitl-multi-title">
-                                                    {{ getCurrentMultiGroup(message).label || message.__humanFeedback.question || '아래 항목에 응답해 주세요.' }}
+                                                    {{
+                                                        getCurrentMultiGroup(message).label ||
+                                                        message.__humanFeedback.question ||
+                                                        '아래 항목에 응답해 주세요.'
+                                                    }}
                                                 </span>
                                                 <v-chip size="x-small" variant="tonal" color="primary" class="ml-2">
                                                     {{ getMultiCurrentStep(message) + 1 }} / {{ getMultiGroupCount(message) }}
@@ -181,33 +185,49 @@
                                                 v-for="(entry, eIdx) in getCurrentMultiGroup(message).items"
                                                 :key="entry.q.question_id || entry.idx"
                                             >
-                                            <div class="hitl-multi-section">
-                                                <div class="hitl-multi-section-proc">
-                                                    <v-icon size="14" color="primary">mdi-shape-outline</v-icon>
-                                                    <span>{{ getProcessLabelForQuestion(entry.q) }}</span>
+                                                <div class="hitl-multi-section">
+                                                    <div class="hitl-multi-section-proc">
+                                                        <v-icon size="14" color="primary">mdi-shape-outline</v-icon>
+                                                        <span>{{ getProcessLabelForQuestion(entry.q) }}</span>
+                                                    </div>
+                                                    <HumanFeedbackPanel
+                                                        :ref="(el) => registerMultiPanelRef(message.uuid, entry.idx, el)"
+                                                        :feedbackType="entry.q.feedback_type || 'select_items'"
+                                                        :question="entry.q.prompt || '선택해 주세요.'"
+                                                        :context="entry.q.context || ''"
+                                                        :items="getHitlQuestionItems(entry.q)"
+                                                        :suggestions="
+                                                            Array.isArray(entry.q.suggestions)
+                                                                ? entry.q.suggestions
+                                                                : Array.isArray(entry.q.choices)
+                                                                ? entry.q.choices
+                                                                : []
+                                                        "
+                                                        :evidenceSpans="Array.isArray(entry.q.evidence_spans) ? entry.q.evidence_spans : []"
+                                                        :impactPreview="Array.isArray(entry.q.impact_preview) ? entry.q.impact_preview : []"
+                                                        :allowMultiple="!!entry.q.allow_multiple"
+                                                        :minSelect="
+                                                            typeof entry.q.min_select === 'number'
+                                                                ? entry.q.min_select
+                                                                : entry.q.feedback_type === 'select_items'
+                                                                ? 0
+                                                                : 1
+                                                        "
+                                                        :allowSkip="false"
+                                                        :allowOther="!!entry.q.allow_other"
+                                                        :submitted="!!message.__humanFeedback.__submitted"
+                                                        :submittedText="
+                                                            message.__humanFeedback.__submitted
+                                                                ? getMultiSectionSubmittedText(message, entry.idx)
+                                                                : ''
+                                                        "
+                                                        :initialSelectedIds="getMultiInitialSelectedIds(message, entry.idx)"
+                                                        :initialCustomText="getMultiInitialCustomText(message, entry.idx)"
+                                                        :hideSubmit="true"
+                                                        :headerIcon="'mdi-help-circle-outline'"
+                                                        @selection-change="() => syncMultiStepSelection(message, entry.idx)"
+                                                    />
                                                 </div>
-                                                <HumanFeedbackPanel
-                                                    :ref="(el) => registerMultiPanelRef(message.uuid, entry.idx, el)"
-                                                    :feedbackType="entry.q.feedback_type || 'select_items'"
-                                                    :question="entry.q.prompt || '선택해 주세요.'"
-                                                    :context="entry.q.context || ''"
-                                                    :items="getHitlQuestionItems(entry.q)"
-                                                    :suggestions="Array.isArray(entry.q.suggestions) ? entry.q.suggestions : (Array.isArray(entry.q.choices) ? entry.q.choices : [])"
-                                                    :evidenceSpans="Array.isArray(entry.q.evidence_spans) ? entry.q.evidence_spans : []"
-                                                    :impactPreview="Array.isArray(entry.q.impact_preview) ? entry.q.impact_preview : []"
-                                                    :allowMultiple="!!entry.q.allow_multiple"
-                                                    :minSelect="typeof entry.q.min_select === 'number' ? entry.q.min_select : (entry.q.feedback_type === 'select_items' ? 0 : 1)"
-                                                    :allowSkip="false"
-                                                    :allowOther="!!entry.q.allow_other"
-                                                    :submitted="!!message.__humanFeedback.__submitted"
-                                                    :submittedText="message.__humanFeedback.__submitted ? getMultiSectionSubmittedText(message, entry.idx) : ''"
-                                                    :initialSelectedIds="getMultiInitialSelectedIds(message, entry.idx)"
-                                                    :initialCustomText="getMultiInitialCustomText(message, entry.idx)"
-                                                    :hideSubmit="true"
-                                                    :headerIcon="'mdi-help-circle-outline'"
-                                                    @selection-change="() => syncMultiStepSelection(message, entry.idx)"
-                                                />
-                                            </div>
                                             </template>
 
                                             <div v-if="!message.__humanFeedback.__submitted" class="hitl-multi-actions">
@@ -270,13 +290,7 @@
                                         </div>
 
                                         <!-- single-question 모드 (기존): questions 배열이 없을 때 -->
-                                        <div
-                                            v-else-if="
-                                                message &&
-                                                message.__humanFeedback
-                                            "
-                                            class="hitl-feedback-wrap mb-2 mt-2"
-                                        >
+                                        <div v-else-if="message && message.__humanFeedback" class="hitl-feedback-wrap mb-2 mt-2">
                                             <HumanFeedbackPanel
                                                 :feedbackType="
                                                     message.__humanFeedback.feedback_type ||
@@ -285,7 +299,7 @@
                                                 "
                                                 :question="message.__humanFeedback.question || '확인이 필요합니다.'"
                                                 :context="message.__humanFeedback.context || ''"
-                                                    :items="getHitlQuestionItems(message.__humanFeedback)"
+                                                :items="getHitlQuestionItems(message.__humanFeedback)"
                                                 :suggestions="message.__humanFeedback.suggestions || []"
                                                 :evidenceSpans="message.__humanFeedback.evidence_spans || []"
                                                 :impactPreview="message.__humanFeedback.impact_preview || []"
@@ -375,7 +389,6 @@
                                                         </v-chip>
                                                     </div>
                                                 </div>
-
                                             </v-card>
                                         </div>
 
@@ -1242,7 +1255,10 @@
                                                                     }}
                                                                 </div>
                                                                 <span
-                                                                    v-if="(message.role === 'assistant' || message.role === 'agent') && message.timeStamp"
+                                                                    v-if="
+                                                                        (message.role === 'assistant' || message.role === 'agent') &&
+                                                                        message.timeStamp
+                                                                    "
                                                                     class="chat-room-timestamp-text ml-2"
                                                                 >
                                                                     {{ formatTime(message.timeStamp) }}
@@ -1430,7 +1446,9 @@
                                                                             showTeamMemberSelector === index
                                                                                 ? 'chat-message-bubble-select-team-member'
                                                                                 : 'chat-message-bubble',
-                                                                            (message.role === 'assistant' || message.role === 'agent') ? 'ai-message-bubble' : ''
+                                                                            message.role === 'assistant' || message.role === 'agent'
+                                                                                ? 'ai-message-bubble'
+                                                                                : ''
                                                                         ]"
                                                                     >
                                                                         <div class="pa-2">
@@ -1469,8 +1487,10 @@
                                                                                 class="chat-tool-activity"
                                                                             >
                                                                                 <summary class="chat-tool-activity__summary">
-                                                                                    <v-icon size="13" class="mr-1">mdi-tools</v-icon>
-                                                                                    도구 {{ getToolCallList(message).length }}개 사용
+                                                                                    <v-icon size="13" class="mr-1"
+                                                                                        >mdi-timeline-check-outline</v-icon
+                                                                                    >
+                                                                                    실행 상세 {{ getToolCallList(message).length }}건
                                                                                 </summary>
                                                                                 <div class="chat-tool-activity__list">
                                                                                     <div
@@ -1482,18 +1502,43 @@
                                                                                             <v-icon
                                                                                                 size="12"
                                                                                                 class="mr-1"
-                                                                                                :color="tc.status === 'error' ? 'error' : tc.status === 'done' ? 'success' : 'primary'"
-                                                                                                >{{ tc.kind === 'subagent' ? 'mdi-robot-outline' : 'mdi-wrench-outline' }}</v-icon
+                                                                                                :color="
+                                                                                                    tc.status === 'error'
+                                                                                                        ? 'error'
+                                                                                                        : tc.status === 'done'
+                                                                                                        ? 'success'
+                                                                                                        : 'primary'
+                                                                                                "
+                                                                                                >{{ getExecutionItemIcon(tc) }}</v-icon
                                                                                             >
-                                                                                            <span class="chat-tool-activity__name">{{ tc.label }}</span>
-                                                                                            <span class="chat-tool-activity__status" :class="`is-${tc.status}`">{{ tc.status }}</span>
+                                                                                            <span class="chat-tool-activity__name">{{
+                                                                                                tc.label
+                                                                                            }}</span>
                                                                                             <span
-                                                                                                v-if="tc.output"
+                                                                                                class="chat-tool-activity__status"
+                                                                                                :class="`is-${tc.status}`"
+                                                                                                >{{ tc.status }}</span
+                                                                                            >
+                                                                                            <span
+                                                                                                v-if="tc.details"
                                                                                                 class="chat-tool-activity__result-toggle"
-                                                                                                @click="toolOutputOpenMap[`${index}-${tcIdx}`] = !toolOutputOpenMap[`${index}-${tcIdx}`]"
-                                                                                            >결과</span>
+                                                                                                @click="
+                                                                                                    toolOutputOpenMap[`${index}-${tcIdx}`] =
+                                                                                                        !toolOutputOpenMap[
+                                                                                                            `${index}-${tcIdx}`
+                                                                                                        ]
+                                                                                                "
+                                                                                                >내용</span
+                                                                                            >
                                                                                         </div>
-                                                                                        <pre v-if="toolOutputOpenMap[`${index}-${tcIdx}`] && tc.output" class="chat-tool-activity__output">{{ tc.output }}</pre>
+                                                                                        <pre
+                                                                                            v-if="
+                                                                                                toolOutputOpenMap[`${index}-${tcIdx}`] &&
+                                                                                                tc.details
+                                                                                            "
+                                                                                            class="chat-tool-activity__output"
+                                                                                            >{{ tc.details }}</pre
+                                                                                        >
                                                                                     </div>
                                                                                 </div>
                                                                             </details>
@@ -1681,10 +1726,7 @@
                                                                                     )
                                                                                 "
                                                                             ></div>
-                                                                            <div
-                                                                                v-if="message.openuiLang"
-                                                                                class="mt-2"
-                                                                            >
+                                                                            <div v-if="message.openuiLang" class="mt-2">
                                                                                 <OpenUiRenderer
                                                                                     :response="message.openuiLang"
                                                                                     :isStreaming="Boolean(message.openuiIsStreaming)"
@@ -1739,7 +1781,11 @@
                                                                                     </v-btn>
                                                                                     <!-- 저장: 시스템이 자동 저장하지 않고, 사용자가 확인 후 클릭하면 저장 -->
                                                                                     <v-btn
-                                                                                        v-if="message.pdf2bpmnResult && message.pdf2bpmnResult.__contract && !message.pdf2bpmnResult.__saved"
+                                                                                        v-if="
+                                                                                            message.pdf2bpmnResult &&
+                                                                                            message.pdf2bpmnResult.__contract &&
+                                                                                            !message.pdf2bpmnResult.__saved
+                                                                                        "
                                                                                         size="x-small"
                                                                                         variant="flat"
                                                                                         color="success"
@@ -1751,7 +1797,10 @@
                                                                                         저장
                                                                                     </v-btn>
                                                                                     <v-chip
-                                                                                        v-else-if="message.pdf2bpmnResult && message.pdf2bpmnResult.__saved"
+                                                                                        v-else-if="
+                                                                                            message.pdf2bpmnResult &&
+                                                                                            message.pdf2bpmnResult.__saved
+                                                                                        "
                                                                                         size="x-small"
                                                                                         color="success"
                                                                                         variant="tonal"
@@ -1762,7 +1811,10 @@
                                                                                     </v-chip>
                                                                                 </div>
                                                                                 <div
-                                                                                    v-if="message.pdf2bpmnResult && message.pdf2bpmnResult.__saveError"
+                                                                                    v-if="
+                                                                                        message.pdf2bpmnResult &&
+                                                                                        message.pdf2bpmnResult.__saveError
+                                                                                    "
                                                                                     class="text-caption mb-2"
                                                                                     style="color: rgb(var(--v-theme-error))"
                                                                                 >
@@ -2369,7 +2421,9 @@
                                                                         :class="{ 'is-hover': replyIndex === index, 'is-mobile': isMobile }"
                                                                     >
                                                                         <span
-                                                                            v-if="!(message.role === 'assistant' || message.role === 'agent')"
+                                                                            v-if="
+                                                                                !(message.role === 'assistant' || message.role === 'agent')
+                                                                            "
                                                                             class="chat-room-timestamp-text"
                                                                             :style="
                                                                                 shouldDisplayMessageTimestamp(message, index)
@@ -2847,15 +2901,7 @@
                 @change="changeImage"
             />
             <!-- 폴더 통째 업로드: webkitdirectory 로 폴더 내 파일 전체 선택(허용 확장자만 changeImage 에서 필터). -->
-            <input
-                type="file"
-                ref="unifiedFolderInput"
-                class="d-none"
-                webkitdirectory
-                directory
-                multiple
-                @change="changeImage"
-            />
+            <input type="file" ref="unifiedFolderInput" class="d-none" webkitdirectory directory multiple @change="changeImage" />
             <div style="z-index: 9999" class="d-flex flex-wrap">
                 <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
                     <img :src="image.url" width="56" height="56" style="border: 1px solid #ccc; border-radius: 10px; margin: 8px" />
@@ -3270,20 +3316,21 @@
                         <div class="text-caption" style="white-space: normal; line-height: 1.5">
                             <div class="font-weight-bold mb-1">처리 강도 안내</div>
                             <div class="mb-1">
-                                <b>간결</b> — 유사도 평가를 관대하게 적용합니다. 표현이 조금 다른 단계도 같은 활동으로 묶어 흐름을 압축해서 보여줍니다. 핵심 골격만 빠르게 파악하고 싶을 때 적합합니다.
+                                <b>간결</b> — 유사도 평가를 관대하게 적용합니다. 표현이 조금 다른 단계도 같은 활동으로 묶어 흐름을 압축해서
+                                보여줍니다. 핵심 골격만 빠르게 파악하고 싶을 때 적합합니다.
                             </div>
                             <div class="mb-1">
-                                <b>표준</b> — 권장 기본값입니다. 명백히 같은 단계만 합치고, 지침/설명이 다르면 분리해 균형 잡힌 결과를 보여줍니다.
+                                <b>표준</b> — 권장 기본값입니다. 명백히 같은 단계만 합치고, 지침/설명이 다르면 분리해 균형 잡힌 결과를
+                                보여줍니다.
                             </div>
                             <div>
-                                <b>상세</b> — 엄격하게 분리합니다. 이름이 같아도 지침/설명이 조금이라도 다르면 별개 단계로 유지하여, 원문 절차에 가장 가까운 자세한 결과를 보여줍니다.
+                                <b>상세</b> — 엄격하게 분리합니다. 이름이 같아도 지침/설명이 조금이라도 다르면 별개 단계로 유지하여, 원문
+                                절차에 가장 가까운 자세한 결과를 보여줍니다.
                             </div>
                         </div>
                     </v-tooltip>
                 </div>
-                <div class="text-caption text-medium-emphasis mb-2">
-                    문서에서 추출한 단계와 역할의 정규화·중복 제거 강도입니다.
-                </div>
+                <div class="text-caption text-medium-emphasis mb-2">문서에서 추출한 단계와 역할의 정규화·중복 제거 강도입니다.</div>
                 <v-btn-toggle
                     v-model="toolsSettingsDraft.pdf2bpmnLevel"
                     mandatory
@@ -3307,13 +3354,11 @@
                     </v-btn>
                 </v-btn-toggle>
                 <div class="text-caption text-medium-emphasis mt-3" style="line-height: 1.5">
-                    {{ pdf2bpmnLevelOptions.find(o => o.value === toolsSettingsDraft.pdf2bpmnLevel)?.detail }}
+                    {{ pdf2bpmnLevelOptions.find((o) => o.value === toolsSettingsDraft.pdf2bpmnLevel)?.detail }}
                 </div>
             </v-card-text>
             <v-card-actions class="pa-3 pt-0">
-                <v-btn variant="text" size="small" @click="resetToolsSettingsDraft">
-                    기본값
-                </v-btn>
+                <v-btn variant="text" size="small" @click="resetToolsSettingsDraft"> 기본값 </v-btn>
                 <v-spacer></v-spacer>
                 <v-btn variant="text" @click="closeToolsSettingsDialog">취소</v-btn>
                 <v-btn color="primary" variant="flat" rounded @click="confirmToolsSettings">
@@ -3632,22 +3677,19 @@ export default {
                     value: 'concise',
                     label: '간결',
                     short: '간략한 결과',
-                    detail:
-                        '유사도 평가를 관대하게 적용해 표현이 조금 다른 단계도 같은 활동으로 묶습니다. 결과 BPMN 의 단계 수가 줄어 핵심 흐름만 빠르게 파악할 수 있습니다.'
+                    detail: '유사도 평가를 관대하게 적용해 표현이 조금 다른 단계도 같은 활동으로 묶습니다. 결과 BPMN 의 단계 수가 줄어 핵심 흐름만 빠르게 파악할 수 있습니다.'
                 },
                 {
                     value: 'standard',
                     label: '표준',
                     short: '권장 기본값',
-                    detail:
-                        '지침/설명이 유사한 단계만 병합하고, 지침/설명이 다르면 분리합니다. 정확성과 가독성의 균형을 잡은 권장 설정입니다.'
+                    detail: '지침/설명이 유사한 단계만 병합하고, 지침/설명이 다르면 분리합니다. 정확성과 가독성의 균형을 잡은 권장 설정입니다.'
                 },
                 {
                     value: 'detailed',
                     label: '상세',
                     short: '원문에 가까운 결과',
-                    detail:
-                        '엄격하게 분리합니다. 문서 내 지침/설명이 조금이라도 다르면 별개 단계로 유지하여 원문 절차에 가장 가까운 자세한 결과를 보여줍니다.'
+                    detail: '엄격하게 분리합니다. 문서 내 지침/설명이 조금이라도 다르면 별개 단계로 유지하여 원문 절차에 가장 가까운 자세한 결과를 보여줍니다.'
                 }
             ]
         };
@@ -4056,11 +4098,11 @@ export default {
             // 메시지가 명시적으로 전달된 경우(메시지 인라인 HITL 패널) 그 메시지 객체를 emit 첫 인자로.
             // 부모(ChatRoomPage.handleHumanFeedbackSubmit)가 .__humanFeedback 으로 정확한 매칭 가능.
             // 메시지가 없으면 기존 동작 유지(pendingHumanFeedback - 가장 최근 미제출 피드백).
-            const firstArg = (message && message.__humanFeedback) ? message : (this.pendingHumanFeedback || null);
+            const firstArg = message && message.__humanFeedback ? message : this.pendingHumanFeedback || null;
             this.$emit('human-feedback-submit', firstArg, feedbackResult);
         },
         emitHumanFeedbackSkip(message = null) {
-            const firstArg = (message && message.__humanFeedback) ? message : (this.pendingHumanFeedback || null);
+            const firstArg = message && message.__humanFeedback ? message : this.pendingHumanFeedback || null;
             this.$emit('human-feedback-skip', firstArg);
         },
 
@@ -4300,15 +4342,13 @@ export default {
             const responses = message?.__humanFeedback?.__responses;
             if (!Array.isArray(responses)) return [];
             const r = responses[qIdx];
-            return (r && Array.isArray(r.selectedIds))
-                ? r.selectedIds.map((x) => String(x ?? '').trim()).filter(Boolean)
-                : [];
+            return r && Array.isArray(r.selectedIds) ? r.selectedIds.map((x) => String(x ?? '').trim()).filter(Boolean) : [];
         },
         getMultiInitialCustomText(message, qIdx) {
             const responses = message?.__humanFeedback?.__responses;
             if (!Array.isArray(responses)) return '';
             const r = responses[qIdx];
-            return (r && r.customText) ? String(r.customText) : '';
+            return r && r.customText ? String(r.customText) : '';
         },
         getMultiSectionSubmittedText(message, qIdx) {
             const responses = message?.__humanFeedback?.__responses;
@@ -4351,11 +4391,7 @@ export default {
                         customText: ''
                     };
                 }
-                if (
-                    Array.isArray(prior.selectedItems) &&
-                    prior.selectedItems.length === 0 &&
-                    (prior.customText || '') === ''
-                ) {
+                if (Array.isArray(prior.selectedItems) && prior.selectedItems.length === 0 && (prior.customText || '') === '') {
                     prior.customText = 'skipped';
                 }
                 responses.push({
@@ -4410,7 +4446,15 @@ export default {
         renderStreamingMarkdown(message) {
             const raw = (message?.content || '').toString();
             const t = raw.trim();
-            if (!t || t === '...' || t === '….' || t === '생각 중...' || t === '생각 중…' || t === 'AI 생성중...' || t === 'AI 생성 중...') {
+            if (
+                !t ||
+                t === '...' ||
+                t === '….' ||
+                t === '생각 중...' ||
+                t === '생각 중…' ||
+                t === 'AI 생성중...' ||
+                t === 'AI 생성 중...'
+            ) {
                 return '<span style="color:rgba(0,0,0,0.55)">생각 중...</span>';
             }
             marked.setOptions({ breaks: true, gfm: true });
@@ -4428,27 +4472,80 @@ export default {
         getToolCallList(message) {
             try {
                 const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
-                return tools
+                const toolItems = tools
                     .map((t) => {
                         const name = (t?.name || t?.tool || '').toString();
-                        const kind = (t?.kind || (name === 'task' ? 'subagent' : 'tool')).toString();
+                        const connectors = Array.isArray(t?.connectors) ? t.connectors.filter(Boolean) : [];
+                        const kind = (t?.kind || (connectors.length ? 'mcp' : name === 'task' ? 'subagent' : 'tool')).toString();
                         const rawOutput = t?.output ?? null;
-                        let output = '';
-                        if (rawOutput != null) {
-                            output = this.formatToolOutput(rawOutput);
-                        }
+                        const input = t?.input != null ? this.formatExecutionValue(t.input) : '';
+                        const output = rawOutput != null ? this.formatToolOutput(rawOutput) : '';
+                        const detailParts = [];
+                        if (connectors.length) detailParts.push(`MCP: ${connectors.join(', ')}`);
+                        if (input) detailParts.push(`입력\n${input}`);
+                        if (output) detailParts.push(`결과\n${output}`);
                         return {
                             name,
-                            label: this.formatToolName(name) || name,
+                            label: `${connectors.length ? `${connectors.join(', ')} · ` : ''}${this.formatToolName(name) || name}`,
                             kind,
                             status: (t?.status || 'done').toString(),
                             output,
+                            details: detailParts.join('\n\n'),
                             rawOutput: rawOutput
                         };
                     })
                     .filter((t) => t.label);
+                const skills = (Array.isArray(message?.executionSkills) ? message.executionSkills : [])
+                    .map((s) => (typeof s === 'string' ? s : (s?.name || s?.id || '').toString()))
+                    .filter(Boolean)
+                    .map((name) => ({
+                        name,
+                        label: name,
+                        kind: 'skill',
+                        status: 'done',
+                        details: `사용한 스킬: ${name}`
+                    }));
+                const toolConnectorNames = new Set(tools.flatMap((t) => (Array.isArray(t?.connectors) ? t.connectors : [])).map(String));
+                const connectors = (Array.isArray(message?.executionConnectors) ? message.executionConnectors : [])
+                    .map((c) => (typeof c === 'string' ? c : (c?.name || c?.id || '').toString()))
+                    .filter((name) => name && !toolConnectorNames.has(name))
+                    .map((name) => ({
+                        name,
+                        label: name,
+                        kind: 'mcp',
+                        status: 'done',
+                        details: `사용한 MCP 서버: ${name}`
+                    }));
+                return [...skills, ...connectors, ...toolItems];
             } catch (e) {
                 return [];
+            }
+        },
+        getExecutionItemIcon(item) {
+            if (item?.kind === 'skill') return 'mdi-lightning-bolt-outline';
+            if (item?.kind === 'mcp') return 'mdi-server-network-outline';
+            if (item?.kind === 'subagent') return 'mdi-robot-outline';
+            return 'mdi-wrench-outline';
+        },
+        formatExecutionValue(raw) {
+            const sensitive = /(^|_)(authorization|password|passwd|secret|token|jwt|api_?key|access_?key)($|_)/i;
+            const redact = (value, depth = 0) => {
+                if (depth > 8) return '[생략]';
+                if (Array.isArray(value)) return value.slice(0, 50).map((v) => redact(v, depth + 1));
+                if (value && typeof value === 'object') {
+                    return Object.fromEntries(
+                        Object.entries(value)
+                            .slice(0, 100)
+                            .map(([key, val]) => [key, sensitive.test(key) ? '[보안상 숨김]' : redact(val, depth + 1)])
+                    );
+                }
+                return value;
+            };
+            try {
+                const normalized = typeof raw === 'string' ? raw : JSON.stringify(redact(raw), null, 2);
+                return normalized.length > 6000 ? `${normalized.slice(0, 6000)}\n…(이하 생략)` : normalized;
+            } catch {
+                return String(raw).slice(0, 6000);
             }
         },
         formatToolOutput(raw) {
@@ -4458,8 +4555,12 @@ export default {
                 if (contentMatch) str = contentMatch[1];
                 str = str.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
                 let data;
-                try { data = JSON.parse(str); } catch { return str; }
-                return JSON.stringify(data, null, 2);
+                try {
+                    data = JSON.parse(str);
+                } catch {
+                    return this.formatExecutionValue(str);
+                }
+                return this.formatExecutionValue(data);
             } catch {
                 return String(raw);
             }
@@ -4484,14 +4585,20 @@ export default {
                                 return '\\' + c;
                             });
                         }
-                        try { raw = JSON.parse(raw); } catch { continue; }
+                        try {
+                            raw = JSON.parse(raw);
+                        } catch {
+                            continue;
+                        }
                     }
                     if (raw && typeof raw === 'object' && raw.html) {
                         const msgKey = message.uuid || '';
                         if (msgKey && !this.formFieldsFormValues[msgKey]) {
                             const init = {};
                             if (Array.isArray(raw.fields_json)) {
-                                raw.fields_json.forEach(f => { if (f.key) init[f.key] = ''; });
+                                raw.fields_json.forEach((f) => {
+                                    if (f.key) init[f.key] = '';
+                                });
                             }
                             this.formFieldsFormValues[msgKey] = init;
                         }
@@ -4504,14 +4611,16 @@ export default {
                     }
                 }
                 return null;
-            } catch { return null; }
+            } catch {
+                return null;
+            }
         },
         submitFormFields(message) {
             const formData = this.getFormFieldsFromToolCalls(message);
             const values = this.formFieldsFormValues[message.uuid] || {};
             const lines = [];
             if (formData && Array.isArray(formData.fieldsJson)) {
-                formData.fieldsJson.forEach(f => {
+                formData.fieldsJson.forEach((f) => {
                     const label = f.label || f.key || '';
                     const val = values[f.key] ?? '';
                     lines.push(`${label}: ${val}`);
@@ -4843,10 +4952,7 @@ export default {
                 const hasOpenUi = !!(message?.openuiLang && String(message.openuiLang).trim());
                 return hasText || hasImage || hasImages || hasFile || hasOpenUi;
             } catch (e) {
-                return (
-                    !!message?.content ||
-                    !!(message?.openuiLang && String(message.openuiLang).trim())
-                );
+                return !!message?.content || !!(message?.openuiLang && String(message.openuiLang).trim());
             }
         },
         getFilenameFromUrl(url) {

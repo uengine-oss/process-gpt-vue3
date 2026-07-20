@@ -94,6 +94,18 @@ volumes/
 .codex/
 
 openspec/
+!openspec/
+openspec/*
+!openspec/AGENTS.md
+!openspec/project.md
+!openspec/specs/
+openspec/specs/*
+!openspec/specs/bpmn-artifact-display/
+!openspec/specs/bpmn-artifact-display/spec.md
+!openspec/specs/deep-agent-chat-state/
+!openspec/specs/deep-agent-chat-state/spec.md
+!openspec/specs/deep-agent-process-generation/
+!openspec/specs/deep-agent-process-generation/spec.md
 
 qa_report/
 

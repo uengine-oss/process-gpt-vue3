@@ -26,14 +26,14 @@ export default {
     },
     props: {
         uengineProperties: Object,
-        isViewMode: Boolean,
+        isViewMode: Boolean
     },
     data() {
         return {
             calleeDefinitionRoles: [],
             copyUengineProperties: JSON.parse(JSON.stringify(this.uengineProperties)),
             mentionCandidates: [],
-            bpmnModeler: null,
+            bpmnModeler: null
         };
     },
     async mounted() {

@@ -60,7 +60,6 @@
         </v-card-text>
 
         <v-card-actions class="justify-end">
-
             <v-btn
                 v-if="!isEditMode"
                 @click="processDriveFolderDocuments"

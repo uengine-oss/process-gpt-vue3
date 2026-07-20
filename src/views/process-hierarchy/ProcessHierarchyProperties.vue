@@ -352,14 +352,7 @@
                                 :name="element.businessObject?.name || ''"
                                 @update:uengineProperties="onCallActivityPropertiesUpdate"
                             />
-                            <v-btn
-                                v-if="!isViewMode"
-                                color="primary"
-                                block
-                                variant="flat"
-                                class="mt-4 save-btn"
-                                @click="saveCallActivity"
-                            >
+                            <v-btn v-if="!isViewMode" color="primary" block variant="flat" class="mt-4 save-btn" @click="saveCallActivity">
                                 <v-icon start size="16">mdi-content-save</v-icon>
                                 {{ $t('processHierarchy.save') }}
                             </v-btn>
@@ -377,14 +370,7 @@
                                 @update:uEngineProperties="onCallActivityPropertiesUpdate"
                                 @update:uengineProperties="onCallActivityPropertiesUpdate"
                             />
-                            <v-btn
-                                v-if="!isViewMode"
-                                color="primary"
-                                block
-                                variant="flat"
-                                class="mt-4 save-btn"
-                                @click="saveCallActivity"
-                            >
+                            <v-btn v-if="!isViewMode" color="primary" block variant="flat" class="mt-4 save-btn" @click="saveCallActivity">
                                 <v-icon start size="16">mdi-content-save</v-icon>
                                 {{ $t('processHierarchy.save') }}
                             </v-btn>

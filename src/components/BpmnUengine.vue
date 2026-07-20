@@ -99,7 +99,12 @@ import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequen
 import sequenceFlowManualCropSkipModule from '@/components/autoLayout/sequence-flow-manual-crop-skip-module.js';
 import { markRaw } from 'vue';
 import minimapModule from 'diagram-js-minimap';
-import { uengineJsonElementToAttr, uengineJsonAttrToElement, normalizeUengineBpmnXmlForBackend, isUengineMode } from '@/utils/uengineXmlTransform';
+import {
+    uengineJsonElementToAttr,
+    uengineJsonAttrToElement,
+    normalizeUengineBpmnXmlForBackend,
+    isUengineMode
+} from '@/utils/uengineXmlTransform';
 import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 import { BPMN_AUTO_ORIENTATION_MODES, getAutoOrientationRotateOptions, getBpmnAutoOrientationMode } from '@/utils/bpmnAutoOrientationMode';
@@ -516,7 +521,9 @@ export default {
                         'pointer-events: auto',
                         'white-space: nowrap'
                     ].join(';');
-                    badge.innerHTML = `<i class="mdi mdi-flag" style="font-size:13px;line-height:1;"></i>${count > 1 ? `<span>${count}</span>` : ''}`;
+                    badge.innerHTML = `<i class="mdi mdi-flag" style="font-size:13px;line-height:1;"></i>${
+                        count > 1 ? `<span>${count}</span>` : ''
+                    }`;
                     badge.addEventListener('click', function (ev) {
                         ev.stopPropagation();
                         self.$emit('addPiFlag', elementId);
@@ -1283,11 +1290,23 @@ export default {
             participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
                 if (isHorizontal && !horizontal) {
-                    palleteProvider.changeParticipantVerticalToHorizontal(undefined, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
+                    palleteProvider.changeParticipantVerticalToHorizontal(
+                        undefined,
+                        element,
+                        self.onLoadStart,
+                        self.onLoadEnd,
+                        rotateOptions
+                    );
                     self.isHorizontal = true;
                     element.di.isHorizontal = true;
                 } else if (!isHorizontal && horizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(undefined, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
+                    palleteProvider.changeParticipantHorizontalToVertical(
+                        undefined,
+                        element,
+                        self.onLoadStart,
+                        self.onLoadEnd,
+                        rotateOptions
+                    );
                     self.isHorizontal = false;
                     element.di.isHorizontal = false;
                 }
@@ -1304,24 +1323,23 @@ export default {
             const modeling = this.bpmnViewer?.get('modeling');
             if (!elementRegistry) return;
 
-            elementRegistry.filter((element) =>
-                element.type === 'bpmn:Participant' ||
-                element.type === 'bpmn:Lane'
-            ).forEach((element) => {
-                try {
-                    modeling?.updateProperties(element, {
-                        di: { isHorizontal }
-                    });
-                } catch (e) {
-                    // Keep direct DI sync even if the element cannot be updated through modeling.
-                }
-                if (element.di) {
-                    element.di.isHorizontal = isHorizontal;
-                }
-                if (element.businessObject) {
-                    element.businessObject.isHorizontal = isHorizontal;
-                }
-            });
+            elementRegistry
+                .filter((element) => element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane')
+                .forEach((element) => {
+                    try {
+                        modeling?.updateProperties(element, {
+                            di: { isHorizontal }
+                        });
+                    } catch (e) {
+                        // Keep direct DI sync even if the element cannot be updated through modeling.
+                    }
+                    if (element.di) {
+                        element.di.isHorizontal = isHorizontal;
+                    }
+                    if (element.businessObject) {
+                        element.businessObject.isHorizontal = isHorizontal;
+                    }
+                });
         },
         syncOrientationFlagsLater(isHorizontal) {
             this.syncOrientationFlags(isHorizontal);
@@ -1580,7 +1598,10 @@ export default {
 
                 // ContextPad에서 묶음(다중 선택) PI Flag 작성 버튼 클릭 시
                 eventBus.on('elements.addPiFlag', function (e) {
-                    self.$emit('addPiFlag', e.elements.map((el) => el.id));
+                    self.$emit(
+                        'addPiFlag',
+                        e.elements.map((el) => el.id)
+                    );
                 });
 
                 // directEditing 시작/종료 시 커스텀 텍스트 처리 (인라인 편집 충돌 방지)
@@ -2234,18 +2255,20 @@ export default {
             if (!elementRegistry) return null;
 
             const participants = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
-            const elements = participants.length > 0
-                ? participants
-                : elementRegistry.filter((element) =>
-                    element &&
-                    !element.labelTarget &&
-                    element.width > 0 &&
-                    element.height > 0 &&
-                    element.type !== 'bpmn:SequenceFlow' &&
-                    element.type !== 'bpmn:MessageFlow' &&
-                    element.type !== 'bpmn:Collaboration' &&
-                    element.type !== 'bpmn:Process'
-                );
+            const elements =
+                participants.length > 0
+                    ? participants
+                    : elementRegistry.filter(
+                          (element) =>
+                              element &&
+                              !element.labelTarget &&
+                              element.width > 0 &&
+                              element.height > 0 &&
+                              element.type !== 'bpmn:SequenceFlow' &&
+                              element.type !== 'bpmn:MessageFlow' &&
+                              element.type !== 'bpmn:Collaboration' &&
+                              element.type !== 'bpmn:Process'
+                      );
 
             if (!elements.length) return null;
 

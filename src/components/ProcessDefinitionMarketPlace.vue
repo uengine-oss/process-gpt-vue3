@@ -120,8 +120,11 @@
                             </v-img>
                             <div class="pa-2">
                                 <v-row class="ma-0 pa-0">
-                                    <v-col cols="9" class="ma-0 pa-0">
+                                    <v-col cols="9" class="ma-0 pa-0 d-flex align-center">
                                         <v-card-title class="ma-0 pa-0">{{ definition.name }}</v-card-title>
+                                        <v-chip v-if="definition.version" size="x-small" color="secondary" variant="tonal" class="ml-2">
+                                            v{{ definition.version }}
+                                        </v-chip>
                                     </v-col>
                                     <v-col cols="3" class="ma-0 pa-0 d-flex justify-end">
                                         <v-chip v-if="definition.import_count > 0" color="primary" density="compact">
@@ -155,6 +158,18 @@
                                         rounded="xl"
                                     >
                                         {{ $t('ProcessDefinitionMarketPlace.deleteButton') }}
+                                    </v-btn>
+                                    <v-btn
+                                        v-if="hasUpdate(definition)"
+                                        @click="updateComponent(definition)"
+                                        color="success"
+                                        variant="flat"
+                                        density="compact"
+                                        class="mr-2"
+                                        rounded="xl"
+                                    >
+                                        <v-icon size="14" class="mr-1">mdi-update</v-icon>
+                                        {{ $t('processComponent.updateButton') || '업데이트' }}
                                     </v-btn>
                                     <v-btn
                                         :disabled="definition.isImported"
@@ -303,14 +318,16 @@ export default {
         previewDialog: false,
         previewBpmn: null,
         previewName: '',
-        previewLoading: false
+        previewLoading: false,
+        // componentId → 업데이트 정보(설치본이 최신보다 낮을 때)
+        updatesByComponent: {}
     }),
     async mounted() {
         // 현재 로그인한 사용자 UID 가져오기
         const userInfo = await backend.getUserInfo();
         this.currentUserUid = userInfo?.uid;
 
-        await Promise.all([this.getDefinitionList(), this.loadAllTags()]);
+        await Promise.all([this.getDefinitionList(), this.loadAllTags(), this.loadUpdates()]);
         // 데이터 로딩 완료 후 첫 번째 탭 선택
         this.$nextTick(() => {
             if (this.categories.length > 0) {
@@ -492,13 +509,40 @@ export default {
         async importDefinition(definition) {
             this.$try({
                 action: async () => {
-                    const result = await backend.duplicateDefinition(definition);
+                    // 패키지 기반 설치(신규 패키지) 또는 레거시 행 합성 → 표준 import 경로.
+                    const result = await backend.installProcessComponent(definition);
                     if (result) {
                         definition.isImported = true;
                         this.EventBus.emit('definitions-updated');
+                        await this.loadUpdates();
                     }
                 },
                 successMsg: '추가되었습니다.'
+            });
+        },
+        async loadUpdates() {
+            try {
+                const updates = await backend.checkComponentUpdates();
+                const map = {};
+                for (const u of updates || []) map[u.component_id] = u;
+                this.updatesByComponent = map;
+            } catch (e) {
+                console.warn('[MarketPlace] 업데이트 확인 실패:', e);
+            }
+        },
+        hasUpdate(definition) {
+            return !!this.updatesByComponent[definition.id];
+        },
+        async updateComponent(definition) {
+            const update = this.updatesByComponent[definition.id];
+            if (!update) return;
+            this.$try({
+                action: async () => {
+                    await backend.updateInstalledComponent(update);
+                    this.EventBus.emit('definitions-updated');
+                    await this.loadUpdates();
+                },
+                successMsg: this.$t('processComponent.updateSuccess') || '최신 버전으로 업데이트했습니다.'
             });
         },
         deleteDefinition(definition) {

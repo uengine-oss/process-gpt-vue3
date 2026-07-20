@@ -5,13 +5,7 @@
                 <div v-if="isSimulate == 'true'" class="text-h4 font-weight-semibold">{{ $t('ProcessGPTExecute.processSimulate') }}</div>
                 <div v-else class="text-h4 font-weight-semibold">{{ processDefinition.processDefinitionName }}</div>
                 <!-- 시뮬레이션 모드일 때만 단위 테스트 탭 노출 -->
-                <v-tabs
-                    v-if="isSimulate == 'true'"
-                    v-model="topTab"
-                    color="primary"
-                    density="compact"
-                    class="ml-4"
-                >
+                <v-tabs v-if="isSimulate == 'true'" v-model="topTab" color="primary" density="compact" class="ml-4">
                     <v-tab value="execute">
                         <v-icon start size="18">mdi-play-circle-outline</v-icon>
                         {{ $t('ProcessGPTExecute.processSimulate') }}
@@ -253,7 +247,9 @@ export default {
             const store = useBpmnStore();
             store.clearRunningActivityIds();
             store.clearCompletedActivityIds();
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+            /* ignore */
+        }
     },
     computed: {
         resolvedDefinitionId() {
@@ -296,7 +292,9 @@ export default {
             try {
                 canvas = viewer.get('canvas');
                 elementRegistry = viewer.get('elementRegistry');
-            } catch (e) { return; }
+            } catch (e) {
+                return;
+            }
             const store = useBpmnStore();
             const running = new Set((store.runningActivityIds || []).filter(Boolean).map(String));
             const completed = new Set((store.completedActivityIds || []).filter(Boolean).map(String));
@@ -305,12 +303,16 @@ export default {
             const diff = (prev, next, marker) => {
                 prev.forEach((id) => {
                     if (!next.has(id) && elementRegistry.get(id)) {
-                        try { canvas.removeMarker(id, marker); } catch (e) {}
+                        try {
+                            canvas.removeMarker(id, marker);
+                        } catch (e) {}
                     }
                 });
                 next.forEach((id) => {
                     if (elementRegistry.get(id)) {
-                        try { canvas.addMarker(id, marker); } catch (e) {}
+                        try {
+                            canvas.addMarker(id, marker);
+                        } catch (e) {}
                     }
                 });
             };

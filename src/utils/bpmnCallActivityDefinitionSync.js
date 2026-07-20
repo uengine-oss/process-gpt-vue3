@@ -12,7 +12,8 @@ function readUengineProperties(element) {
     );
     if (!props) return {};
 
-    const raw = props.getAttribute('json') || Array.from(props.children || []).find((child) => child.localName === 'json')?.textContent || '';
+    const raw =
+        props.getAttribute('json') || Array.from(props.children || []).find((child) => child.localName === 'json')?.textContent || '';
     if (!raw || !raw.trim()) return {};
 
     try {
@@ -81,8 +82,7 @@ export function syncBpmnCallActivitiesIntoDefinition(xml, sourceDefinition) {
                 properties: JSON.stringify(properties)
             };
 
-            const roleName =
-                (typeof properties?.role === 'string' ? properties.role : properties?.role?.name) || roleByActivityId[id];
+            const roleName = (typeof properties?.role === 'string' ? properties.role : properties?.role?.name) || roleByActivityId[id];
             if (roleName) {
                 next.role = roleName;
             }

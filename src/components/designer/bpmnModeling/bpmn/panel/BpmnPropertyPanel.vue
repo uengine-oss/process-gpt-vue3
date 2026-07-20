@@ -190,7 +190,9 @@ export default {
             this.name = this.element.name;
             this.text = this.element.text;
         }
-        const extensionElement = this.element.extensionElements.values.find((value) => value.$type === 'uengine:Properties') || this.element.extensionElements.values[0];
+        const extensionElement =
+            this.element.extensionElements.values.find((value) => value.$type === 'uengine:Properties') ||
+            this.element.extensionElements.values[0];
         const json = this.readUengineJson(extensionElement);
         if (json) {
             this.uengineProperties = JSON.parse(json);

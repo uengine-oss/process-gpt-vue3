@@ -413,8 +413,23 @@ export default {
     },
     methods: {
         ensureVisibleTab() {
-            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'GlossaryManage', 'TaskCatalog']);
-            const hiddenInGs = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'GlossaryManage', 'TaskCatalog', 'OrgChartGroup']);
+            const hiddenInUEngine = new Set([
+                'Drive',
+                'MCP-Servers',
+                'MCP-Environments',
+                'ConnectionInfo',
+                'GlossaryManage',
+                'TaskCatalog'
+            ]);
+            const hiddenInGs = new Set([
+                'Drive',
+                'MCP-Servers',
+                'MCP-Environments',
+                'ConnectionInfo',
+                'GlossaryManage',
+                'TaskCatalog',
+                'OrgChartGroup'
+            ]);
             if (!this.tab) {
                 this.tab = 'Account';
                 return;

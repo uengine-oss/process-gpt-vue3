@@ -74,13 +74,7 @@
                 <p class="mb-3">{{ $t('AgentSkillEdit.deleteDialogMessage') }}</p>
 
                 <!-- feature 브랜치에서 삭제 시 커밋 방식 선택 -->
-                <v-radio-group
-                    v-if="isOnFeatureBranch"
-                    v-model="deleteBranchMode"
-                    class="mb-3"
-                    hide-details
-                    density="compact"
-                >
+                <v-radio-group v-if="isOnFeatureBranch" v-model="deleteBranchMode" class="mb-3" hide-details density="compact">
                     <v-radio value="current" :label="$t('AgentSkillEdit.deleteBranchModeCurrent')" />
                     <v-radio value="new-branch" :label="$t('AgentSkillEdit.deleteBranchModeNew')" />
                 </v-radio-group>
@@ -158,9 +152,13 @@ marked.setOptions({
     gfm: true,
     highlight(code, lang) {
         if (lang && hljs.getLanguage(lang)) {
-            try { return hljs.highlight(code, { language: lang }).value; } catch (_) {}
+            try {
+                return hljs.highlight(code, { language: lang }).value;
+            } catch (_) {}
         }
-        try { return hljs.highlightAuto(code).value; } catch (_) {}
+        try {
+            return hljs.highlightAuto(code).value;
+        } catch (_) {}
         return code;
     }
 });
@@ -202,7 +200,7 @@ export default {
 
             deleteDialog: false,
             deleteCommitMessage: '',
-            deleteBranchMode: 'current',   // 'current' | 'new-branch'
+            deleteBranchMode: 'current', // 'current' | 'new-branch'
             deletePrBranchName: '',
             deletePrTitle: '',
             generatingDeleteCommitMsg: false,
@@ -248,11 +246,22 @@ export default {
         editorLanguage() {
             const ext = (this.fileName || '').split('.').pop().toLowerCase();
             const map = {
-                json: 'json', md: 'markdown', markdown: 'markdown',
-                js: 'javascript', jsx: 'javascript',
-                ts: 'typescript', tsx: 'typescript',
-                vue: 'vue', html: 'html', css: 'css', scss: 'scss',
-                py: 'python', java: 'java', yaml: 'yaml', yml: 'yaml', txt: 'plaintext'
+                json: 'json',
+                md: 'markdown',
+                markdown: 'markdown',
+                js: 'javascript',
+                jsx: 'javascript',
+                ts: 'typescript',
+                tsx: 'typescript',
+                vue: 'vue',
+                html: 'html',
+                css: 'css',
+                scss: 'scss',
+                py: 'python',
+                java: 'java',
+                yaml: 'yaml',
+                yml: 'yaml',
+                txt: 'plaintext'
             };
             return map[ext] || 'plaintext';
         }
@@ -364,12 +373,12 @@ export default {
             }
         },
         onSaved({ mode }) {
-            const msg = mode === 'direct'
-                ? '스킬 파일이 성공적으로 저장되었습니다.'
-                : 'PR이 성공적으로 생성되었습니다.';
+            const msg = mode === 'direct' ? '스킬 파일이 성공적으로 저장되었습니다.' : 'PR이 성공적으로 생성되었습니다.';
             this.$try({
                 context: this,
-                action: () => { this.$emit('file-saved'); },
+                action: () => {
+                    this.$emit('file-saved');
+                },
                 successMsg: msg
             });
         },
@@ -383,7 +392,9 @@ export default {
                         this.deleteCommitMessage = (result || '').trim();
                         this.generatingDeleteCommitMsg = false;
                     },
-                    onError: () => { this.generatingDeleteCommitMsg = false; }
+                    onError: () => {
+                        this.generatingDeleteCommitMsg = false;
+                    }
                 },
                 {
                     originalContent: this.skillContent,
@@ -406,7 +417,10 @@ export default {
             this.deleteCommitMessage = `Delete ${this.fileName}`;
             this.deleteBranchMode = 'current';
             const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const base = (this.fileName || 'file').replace(/\.[^.]+$/, '').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+            const base = (this.fileName || 'file')
+                .replace(/\.[^.]+$/, '')
+                .replace(/[^a-z0-9]/gi, '-')
+                .toLowerCase();
             this.deletePrBranchName = `feature/delete-${base}-${date}`;
             this.deletePrTitle = `Delete ${this.fileName}`;
             this.deleteDialog = true;
@@ -421,13 +435,13 @@ export default {
             try {
                 if (this.isOnFeatureBranch && this.deleteBranchMode === 'new-branch') {
                     await this.backend.createSkillBranch(this.skillName, this.deletePrBranchName, this.defaultBranch);
-                    await this.backend.deleteSkillFile(
-                        this.skillName, this.fileName,
-                        this.deleteCommitMessage, this.deletePrBranchName
-                    );
+                    await this.backend.deleteSkillFile(this.skillName, this.fileName, this.deleteCommitMessage, this.deletePrBranchName);
                     const pr = await this.backend.createSkillPullRequest(
-                        this.skillName, this.deletePrTitle, '',
-                        this.deletePrBranchName, this.defaultBranch
+                        this.skillName,
+                        this.deletePrTitle,
+                        '',
+                        this.deletePrBranchName,
+                        this.defaultBranch
                     );
                     try {
                         const userInfo = await this.backend.getUserInfo();
@@ -446,17 +460,23 @@ export default {
                     } catch (_) {}
                     this.$try({
                         context: this,
-                        action: () => { this.$emit('file-deleted'); },
+                        action: () => {
+                            this.$emit('file-deleted');
+                        },
                         successMsg: 'PR이 성공적으로 생성되었습니다.'
                     });
                 } else {
                     await this.backend.deleteSkillFile(
-                        this.skillName, this.fileName,
-                        this.deleteCommitMessage, this.selectedBranch || this.defaultBranch
+                        this.skillName,
+                        this.fileName,
+                        this.deleteCommitMessage,
+                        this.selectedBranch || this.defaultBranch
                     );
                     this.$try({
                         context: this,
-                        action: () => { this.$emit('file-deleted'); },
+                        action: () => {
+                            this.$emit('file-deleted');
+                        },
                         successMsg: '스킬 파일이 성공적으로 삭제되었습니다.'
                     });
                 }

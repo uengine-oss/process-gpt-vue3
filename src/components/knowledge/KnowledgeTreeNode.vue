@@ -1,10 +1,6 @@
 <template>
     <div class="ktn-node">
-        <div
-            class="ktn-folder-row"
-            :style="{ paddingLeft: `${8 + depth * 16}px` }"
-            @click="$emit('toggle-folder', node.path)"
-        >
+        <div class="ktn-folder-row" :style="{ paddingLeft: `${8 + depth * 16}px` }" @click="$emit('toggle-folder', node.path)">
             <v-icon size="14" class="ktn-caret">{{ isOpen ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
             <v-checkbox
                 :modelValue="folderState.checked"
@@ -55,11 +51,7 @@
                 />
                 <v-icon size="16" :color="iconOf(f.name).color">{{ iconOf(f.name).icon }}</v-icon>
                 <span class="ktn-file-name">{{ f.name }}</span>
-                <span
-                    v-if="f.docRole && f.docRole !== 'content'"
-                    class="ktn-role-badge"
-                    :class="`is-${f.docRole}`"
-                >
+                <span v-if="f.docRole && f.docRole !== 'content'" class="ktn-role-badge" :class="`is-${f.docRole}`">
                     {{ roleShort(f.docRole) }}
                 </span>
                 <span v-if="f.indexStatus && f.indexStatus !== 'indexed'" class="ktn-status-badge" :class="`is-${f.indexStatus}`">
@@ -141,12 +133,14 @@ export default {
             return mimeIcon(extToMime(name));
         },
         statusLabel(s) {
-            return {
-                pending: '대기',
-                processing: '처리중',
-                failed: '실패',
-                excluded: '제외'
-            }[s] || '';
+            return (
+                {
+                    pending: '대기',
+                    processing: '처리중',
+                    failed: '실패',
+                    excluded: '제외'
+                }[s] || ''
+            );
         },
         roleShort(r) {
             return { glossary: '사전', template: '양식', reference: '참조' }[r] || '';
@@ -266,10 +260,22 @@ export default {
     font-weight: 500;
 }
 
-.ktn-role-badge.is-glossary  { background: rgba(123, 31, 162, 0.12); color: #7b1fa2; }
-.ktn-role-badge.is-template  { background: rgba(239, 108, 0, 0.12);  color: #ef6c00; }
-.ktn-role-badge.is-reference { background: rgba(56, 142, 60, 0.12);  color: #388e3c; }
-.ktn-role-badge.is-dataset   { background: rgba(0, 137, 123, 0.12);  color: #00897b; }
+.ktn-role-badge.is-glossary {
+    background: rgba(123, 31, 162, 0.12);
+    color: #7b1fa2;
+}
+.ktn-role-badge.is-template {
+    background: rgba(239, 108, 0, 0.12);
+    color: #ef6c00;
+}
+.ktn-role-badge.is-reference {
+    background: rgba(56, 142, 60, 0.12);
+    color: #388e3c;
+}
+.ktn-role-badge.is-dataset {
+    background: rgba(0, 137, 123, 0.12);
+    color: #00897b;
+}
 
 .ktn-file-action {
     flex: 0 0 auto;

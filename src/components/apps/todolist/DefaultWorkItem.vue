@@ -264,11 +264,7 @@ export default {
             if (this.mode !== 'ProcessGPT' || !instId) return instId;
 
             const instance = await backend.getInstance(instId);
-            if (
-                instance &&
-                String(instance.status || '').toUpperCase() === 'COMPLETED' &&
-                instance.parent_proc_inst_id
-            ) {
+            if (instance && String(instance.status || '').toUpperCase() === 'COMPLETED' && instance.parent_proc_inst_id) {
                 return instance.parent_proc_inst_id;
             }
 

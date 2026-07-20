@@ -126,8 +126,12 @@
                             class="mb-3"
                             icon="mdi-information-outline"
                         >
-                            <div>v{{ information.version || '0.0' }} → <b>v{{ newVersion }}</b> (마이너)으로 저장됩니다.</div>
-                            <div class="text-caption mt-1" style="opacity:.7">메이저 업데이트는 담당자의 승인을 통한 병합으로만 가능합니다.</div>
+                            <div>
+                                v{{ information.version || '0.0' }} → <b>v{{ newVersion }}</b> (마이너)으로 저장됩니다.
+                            </div>
+                            <div class="text-caption mt-1" style="opacity: 0.7">
+                                메이저 업데이트는 담당자의 승인을 통한 병합으로만 가능합니다.
+                            </div>
                         </v-alert>
 
                         <!-- 병합 요청 체크박스 + PR 제목 (마이너일 때만) -->
@@ -345,19 +349,11 @@ export default {
         },
         versionTagOptions() {
             const minor = {
-                title:
-                    this.$t('ProcessDefinitionVersionDialog.minor') +
-                    ' (' +
-                    this.$t('ProcessDefinitionVersionDialog.minorDesc') +
-                    ')',
+                title: this.$t('ProcessDefinitionVersionDialog.minor') + ' (' + this.$t('ProcessDefinitionVersionDialog.minorDesc') + ')',
                 value: 'minor'
             };
             const major = {
-                title:
-                    this.$t('ProcessDefinitionVersionDialog.major') +
-                    ' (' +
-                    this.$t('ProcessDefinitionVersionDialog.majorDesc') +
-                    ')',
+                title: this.$t('ProcessDefinitionVersionDialog.major') + ' (' + this.$t('ProcessDefinitionVersionDialog.majorDesc') + ')',
                 value: 'major'
             };
             if (!this.isOwnerUser && !this.isNew) return [minor];
@@ -672,7 +668,7 @@ export default {
                     owner: me.information.owner
                 });
 
-                const user = me.currentUserInfo || await backend.getUserInfo();
+                const user = me.currentUserInfo || (await backend.getUserInfo());
                 const currentVersion = me.information.version || '0.0';
                 const majorNum = (parseInt(String(currentVersion).split('.')[0]) || 0) + 1;
                 await backend.createResourcePrRecord('bpmn', {

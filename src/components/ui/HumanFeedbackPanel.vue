@@ -77,13 +77,7 @@
             select_items / suggestions 모드에서 allowOther=true 면 표시.
             사용자는 옵션 선택 + 자유 의견 추가 또는 자유 의견만 단독 제출 가능.
         -->
-        <div
-            v-if="
-                allowOther &&
-                (feedbackType === 'select_items' || feedbackType === 'suggestions')
-            "
-            class="human-feedback-panel__other"
-        >
+        <div v-if="allowOther && (feedbackType === 'select_items' || feedbackType === 'suggestions')" class="human-feedback-panel__other">
             <div class="human-feedback-panel__other-label">직접 입력 (선택)</div>
             <v-textarea
                 v-model="customText"
@@ -282,9 +276,7 @@ export default {
     emits: ['submit', 'skip', 'selection-change'],
     data() {
         return {
-            selectedIds: new Set(
-                (this.initialSelectedIds || []).map((x) => String(x ?? '').trim()).filter(Boolean)
-            ),
+            selectedIds: new Set((this.initialSelectedIds || []).map((x) => String(x ?? '').trim()).filter(Boolean)),
             selectedSuggestion: this.initialSelectedSuggestion || null,
             decision: this.initialDecision || '',
             freeText: this.initialFreeText || '',
@@ -340,11 +332,7 @@ export default {
             }
             if (this.feedbackType === 'approve_reject_with_edit') {
                 // 승인/반려를 고르거나, 고르지 않아도 수정 의견을 적었으면 제출 가능.
-                return (
-                    this.decision === 'approve' ||
-                    this.decision === 'reject' ||
-                    (this.freeText || '').trim().length > 0
-                );
+                return this.decision === 'approve' || this.decision === 'reject' || (this.freeText || '').trim().length > 0;
             }
             return true; // confirm 모드
         }
@@ -361,9 +349,7 @@ export default {
             if (this._selectionNotifyTimer) {
                 clearTimeout(this._selectionNotifyTimer);
             }
-            const delay = this.hideSubmit
-                ? 0
-                : (this.feedbackType === 'select_items' && this.allowMultiple ? 700 : 120);
+            const delay = this.hideSubmit ? 0 : this.feedbackType === 'select_items' && this.allowMultiple ? 700 : 120;
             this._selectionNotifyTimer = setTimeout(() => {
                 this._selectionNotifyTimer = null;
                 this.$emit('selection-change', {
@@ -433,12 +419,7 @@ export default {
                 this.$emit('submit', {
                     type: 'approve_reject_with_edit',
                     decision: this.decision,
-                    answer:
-                        this.decision === 'approve'
-                            ? '승인'
-                            : this.decision === 'reject'
-                              ? '반려'
-                              : (this.freeText || '').trim(),
+                    answer: this.decision === 'approve' ? '승인' : this.decision === 'reject' ? '반려' : (this.freeText || '').trim(),
                     reason: (this.freeText || '').trim(),
                     selectedSuggestion: this.selectedSuggestion || null
                 });
@@ -476,12 +457,7 @@ export default {
                 return {
                     type: 'approve_reject_with_edit',
                     decision: this.decision,
-                    answer:
-                        this.decision === 'approve'
-                            ? '승인'
-                            : this.decision === 'reject'
-                              ? '반려'
-                              : (this.freeText || '').trim(),
+                    answer: this.decision === 'approve' ? '승인' : this.decision === 'reject' ? '반려' : (this.freeText || '').trim(),
                     reason: (this.freeText || '').trim(),
                     selectedSuggestion: this.selectedSuggestion || null
                 };

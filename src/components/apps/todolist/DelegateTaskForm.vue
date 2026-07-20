@@ -151,12 +151,9 @@
                                     <span class="font-weight-bold">{{ record.from_username || record.from_user_id }}</span>
                                     <v-icon size="16" class="mx-1">mdi-arrow-right</v-icon>
                                     <span class="font-weight-bold">{{ record.to_username || record.to_user_id }}</span>
-                                    <v-chip
-                                        :color="getStatusColor(record.status)"
-                                        size="x-small"
-                                        variant="tonal"
-                                        class="ml-1"
-                                    >{{ $t('DelegateTask.status_' + record.status) }}</v-chip>
+                                    <v-chip :color="getStatusColor(record.status)" size="x-small" variant="tonal" class="ml-1">{{
+                                        $t('DelegateTask.status_' + record.status)
+                                    }}</v-chip>
                                 </div>
                                 <div v-if="record.reason" class="text-caption text-medium-emphasis mt-1">
                                     {{ $t('DelegateTask.reason') }}: {{ record.reason }}

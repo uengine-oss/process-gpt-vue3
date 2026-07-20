@@ -160,10 +160,25 @@ test.describe('ProcessGPT mapper live UI screenshot', () => {
                         }
                     })
                 },
-                { id: 'B_APPROVED', name: approvedActivityName, type: 'userTask', role: 'approver', description: 'Started because fullName == JaneKim and assigned through mapped role binding' },
-                { id: 'B_REVIEW', name: reviewActivityName, type: 'userTask', role: 'requester', description: 'Should not start when mapper condition is true' }
+                {
+                    id: 'B_APPROVED',
+                    name: approvedActivityName,
+                    type: 'userTask',
+                    role: 'approver',
+                    description: 'Started because fullName == JaneKim and assigned through mapped role binding'
+                },
+                {
+                    id: 'B_REVIEW',
+                    name: reviewActivityName,
+                    type: 'userTask',
+                    role: 'requester',
+                    description: 'Should not start when mapper condition is true'
+                }
             ],
-            events: [{ id: 'start', type: 'startEvent' }, { id: 'end', type: 'endEvent' }],
+            events: [
+                { id: 'start', type: 'startEvent' },
+                { id: 'end', type: 'endEvent' }
+            ],
             gateways: [],
             sequences: [
                 { id: 'flow_start_a', source: 'start', target: 'A' },
@@ -323,7 +338,8 @@ test.describe('ProcessGPT mapper live UI screenshot', () => {
             expect(routedError?.message || routedError).toBeFalsy();
             expect(
                 routedWorkitems?.some(
-                    (item) => item.activity_id === 'B_APPROVED' && item.activity_name === approvedActivityName && item.status === 'IN_PROGRESS'
+                    (item) =>
+                        item.activity_id === 'B_APPROVED' && item.activity_name === approvedActivityName && item.status === 'IN_PROGRESS'
                 ),
                 JSON.stringify(routedWorkitems, null, 2)
             ).toBe(true);

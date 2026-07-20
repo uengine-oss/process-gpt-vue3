@@ -241,8 +241,12 @@
                         class="mb-3"
                         icon="mdi-information-outline"
                     >
-                        <div>v{{ saveCurrentVersion }} → <b>v{{ saveNewVersion }}</b> (마이너)으로 저장됩니다.</div>
-                        <div class="text-caption mt-1" style="opacity:.7">메이저 업데이트는 담당자의 승인을 통한 병합으로만 가능합니다.</div>
+                        <div>
+                            v{{ saveCurrentVersion }} → <b>v{{ saveNewVersion }}</b> (마이너)으로 저장됩니다.
+                        </div>
+                        <div class="text-caption mt-1" style="opacity: 0.7">
+                            메이저 업데이트는 담당자의 승인을 통한 병합으로만 가능합니다.
+                        </div>
                     </v-alert>
 
                     <!-- 병합 요청 체크박스 + PR 제목 (마이너일 때만) -->
@@ -516,7 +520,9 @@ export default {
         },
         versionFlowMessage() {
             const cur = this.saveCurrentVersion || '0.0';
-            return `${this.$t('ProcessDefinitionVersionDialog.currentVersion')} : v${cur} -> ${this.$t('ProcessDefinitionVersionDialog.nextVersion')} : v${this.saveNewVersion}`;
+            return `${this.$t('ProcessDefinitionVersionDialog.currentVersion')} : v${cur} -> ${this.$t(
+                'ProcessDefinitionVersionDialog.nextVersion'
+            )} : v${this.saveNewVersion}`;
         },
         versionTagOptions() {
             const minor = {
@@ -529,7 +535,7 @@ export default {
             };
             if (!this.isOwnerUser && !this.isNewDmn) return [minor];
             return [minor, major];
-        },
+        }
     },
     methods: {
         async openSaveDialog() {
@@ -563,7 +569,7 @@ export default {
                     }
                     // 오너 여부 판별
                     try {
-                        const currentUser = this.userInfo || await this.backend.getUserInfo();
+                        const currentUser = this.userInfo || (await this.backend.getUserInfo());
                         const currentUid = currentUser?.uid || '';
                         this.isOwnerUser = !defOwner || !currentUid || defOwner === currentUid;
                         if (!this.isOwnerUser) {
@@ -647,7 +653,7 @@ export default {
                 me.isAIUpdated = false;
                 me.isChanged = false;
 
-                const user = me.userInfo || await me.backend.getUserInfo();
+                const user = me.userInfo || (await me.backend.getUserInfo());
                 const majorNum = (parseInt(String(me.saveCurrentVersion).split('.')[0]) || 0) + 1;
                 await me.backend.createResourcePrRecord('dmn', {
                     resourceId: me.dmnIdToSave,
@@ -1010,5 +1016,4 @@ export default {
         height: calc(100vh - 40px);
     }
 }
-
 </style>

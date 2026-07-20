@@ -4,8 +4,7 @@ import path from 'node:path';
 
 const executionRoot = process.env.EXECUTION_ROOT || 'D:\\uEngineProjectC\\processEsecution\\process-gpt-execution';
 const executionPython =
-    process.env.EXECUTION_PYTHON ||
-    'C:\\Users\\m6023\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe';
+    process.env.EXECUTION_PYTHON || 'C:\\Users\\m6023\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe';
 const uvCacheDir = path.resolve(process.cwd(), '.tmp', 'uv-cache');
 
 function spawnPython(script: string) {

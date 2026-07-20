@@ -11,8 +11,7 @@ dotenv.config();
 const executionRoot = process.env.EXECUTION_ROOT || 'D:\\uEngineProjectC\\processEsecution\\process-gpt-execution';
 const uvCacheDir = path.resolve(process.cwd(), '.tmp', 'uv-cache');
 const executionPython =
-    process.env.EXECUTION_PYTHON ||
-    'C:\\Users\\m6023\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe';
+    process.env.EXECUTION_PYTHON || 'C:\\Users\\m6023\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe';
 
 function spawnPython(script: string) {
     const result = spawnSync(executionPython, ['-c', script], {
@@ -371,9 +370,7 @@ print(json.dumps({
             root_proc_inst_id: 'parent_process.1',
             status: 'NEW'
         });
-        expect(payload.insertedInstances[0].role_bindings).toEqual([
-            { name: 'child_worker', endpoint: 'requester@example.com' }
-        ]);
+        expect(payload.insertedInstances[0].role_bindings).toEqual([{ name: 'child_worker', endpoint: 'requester@example.com' }]);
         expect(payload.upsertedWorkitems).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
@@ -776,7 +773,10 @@ print(json.dumps({
                     })
                 }
             ],
-            events: [{ id: 'start', type: 'startEvent' }, { id: 'end', type: 'endEvent' }],
+            events: [
+                { id: 'start', type: 'startEvent' },
+                { id: 'end', type: 'endEvent' }
+            ],
             gateways: [],
             sequences: [
                 { id: 'flow_start_a', source: 'start', target: 'A' },
@@ -790,7 +790,10 @@ print(json.dumps({
             processDefinitionId: childDefId,
             roles: [{ name: 'child_worker' }],
             activities: [{ id: 'X', name: 'Child task', type: 'userTask', role: 'child_worker', description: '' }],
-            events: [{ id: 'child_start', type: 'startEvent' }, { id: 'child_end', type: 'endEvent' }],
+            events: [
+                { id: 'child_start', type: 'startEvent' },
+                { id: 'child_end', type: 'endEvent' }
+            ],
             gateways: [],
             sequences: [
                 { id: 'flow_child_start_x', source: 'child_start', target: 'X' },
@@ -800,9 +803,7 @@ print(json.dumps({
         };
 
         try {
-            await expectNoSupabaseError(
-                supabase.from('tenants').upsert({ id: tenantId }, { onConflict: 'id' })
-            );
+            await expectNoSupabaseError(supabase.from('tenants').upsert({ id: tenantId }, { onConflict: 'id' }));
             await expectNoSupabaseError(
                 supabase.from('proc_def').upsert([
                     {
@@ -893,7 +894,9 @@ print(json.dumps({
             const childInstance = await expectNoSupabaseError(
                 supabase
                     .from('bpm_proc_inst')
-                    .select('proc_inst_id, proc_def_id, parent_proc_inst_id, root_proc_inst_id, role_bindings, current_activity_ids, status')
+                    .select(
+                        'proc_inst_id, proc_def_id, parent_proc_inst_id, root_proc_inst_id, role_bindings, current_activity_ids, status'
+                    )
                     .eq('proc_inst_id', childInstId)
                     .eq('tenant_id', tenantId)
                     .single()

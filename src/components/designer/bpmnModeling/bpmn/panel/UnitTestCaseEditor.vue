@@ -1,9 +1,18 @@
 <template>
     <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" max-width="680" persistent scrollable>
         <v-card>
-            <v-card-title>{{ caseObject && caseObject.id ? $t('ProcessUnitTest.editTitle') : $t('ProcessUnitTest.newTitle') }}</v-card-title>
+            <v-card-title>{{
+                caseObject && caseObject.id ? $t('ProcessUnitTest.editTitle') : $t('ProcessUnitTest.newTitle')
+            }}</v-card-title>
             <v-card-text style="max-height: 70vh">
-                <v-text-field v-model="draft.name" :label="$t('ProcessUnitTest.testName')" density="compact" variant="outlined" hide-details class="mb-4" />
+                <v-text-field
+                    v-model="draft.name"
+                    :label="$t('ProcessUnitTest.testName')"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="mb-4"
+                />
 
                 <div class="text-subtitle-2 font-weight-medium mt-2 mb-1">{{ $t('ProcessUnitTest.givenTitle') }}</div>
                 <div class="text-caption text-medium-emphasis mb-2">{{ $t('ProcessUnitTest.givenDesc') }}</div>
@@ -14,7 +23,11 @@
                             <v-expansion-panel-title>{{ form.title || form.activityId }}</v-expansion-panel-title>
                             <v-expansion-panel-text>
                                 <DynamicForm
-                                    :ref="(el) => { if (el) givenFormRefs[form.activityId] = el; }"
+                                    :ref="
+                                        (el) => {
+                                            if (el) givenFormRefs[form.activityId] = el;
+                                        }
+                                    "
                                     :formHTML="form.html"
                                     :model-value="givenFormValue(form.activityId)"
                                 />
@@ -28,7 +41,12 @@
                         {{ $t('ProcessUnitTest.noGivenOptions') }}
                     </div>
                     <template v-else>
-                        <div v-for="(row, index) in draft.givenRows" :key="'given-' + index" class="d-flex align-center mb-1" style="gap: 4px">
+                        <div
+                            v-for="(row, index) in draft.givenRows"
+                            :key="'given-' + index"
+                            class="d-flex align-center mb-1"
+                            style="gap: 4px"
+                        >
                             <v-select
                                 v-model="row.k"
                                 :items="givenOptions"
@@ -40,8 +58,12 @@
                                 class="flex-grow-1"
                             />
                             <v-text-field
-                                v-model="row.v" :placeholder="$t('ProcessUnitTest.valuePlaceholder')"
-                                density="compact" variant="outlined" hide-details class="flex-grow-1"
+                                v-model="row.v"
+                                :placeholder="$t('ProcessUnitTest.valuePlaceholder')"
+                                density="compact"
+                                variant="outlined"
+                                hide-details
+                                class="flex-grow-1"
                             />
                             <v-icon size="small" @click="draft.givenRows.splice(index, 1)">mdi-close</v-icon>
                         </div>
@@ -56,53 +78,68 @@
                 <!-- 폼 모드: 이 작업의 실제 폼을 그대로 렌더. 저장 시 ref 로 직접 읽음. -->
                 <template v-if="currentForm && currentForm.html">
                     <v-card variant="outlined" class="pa-3 mb-2">
-                        <DynamicForm
-                            ref="whenForm"
-                            :formHTML="currentForm.html"
-                            :model-value="draft.whenValues"
-                        />
+                        <DynamicForm ref="whenForm" :formHTML="currentForm.html" :model-value="draft.whenValues" />
                     </v-card>
                 </template>
                 <template v-else>
-                <div v-for="(row, index) in draft.whenRows" :key="'when-' + index" class="d-flex align-center mb-1" style="gap: 4px">
-                    <v-combobox
-                        v-model="row.k"
-                        :items="taskParameterOptions"
-                        :placeholder="$t('ProcessUnitTest.whenRowPlaceholder')"
-                        :no-data-text="$t('ProcessUnitTest.noWhenOptions')"
-                        density="compact"
-                        variant="outlined"
-                        hide-details
-                        class="flex-grow-1"
-                    />
-                    <!-- 값 입력: 필드 타입별 분기 -->
-                    <v-select v-if="valueKind(whenFieldFor(row.k)) === 'select'"
-                        v-model="row.v"
-                        :items="selectItemsFor(whenFieldFor(row.k))"
-                        :placeholder="$t('ProcessUnitTest.valuePlaceholder')"
-                        density="compact" variant="outlined" hide-details clearable
-                        class="flex-grow-1"
-                    />
-                    <v-checkbox v-else-if="valueKind(whenFieldFor(row.k)) === 'check'"
-                        :model-value="toBool(row.v)"
-                        @update:model-value="row.v = $event"
-                        hide-details density="compact" color="primary" class="flex-grow-1"
-                    />
-                    <v-textarea v-else-if="valueKind(whenFieldFor(row.k)) === 'textarea'"
-                        v-model="row.v" :placeholder="$t('ProcessUnitTest.valuePlaceholder')" rows="2" auto-grow
-                        density="compact" variant="outlined" hide-details
-                        class="flex-grow-1"
-                    />
-                    <v-text-field v-else
-                        v-model="row.v" :type="valueKind(whenFieldFor(row.k))"
-                        :placeholder="$t('ProcessUnitTest.valuePlaceholder')" density="compact" variant="outlined" hide-details
-                        class="flex-grow-1"
-                    />
-                    <v-icon size="small" @click="draft.whenRows.splice(index, 1)">mdi-close</v-icon>
-                </div>
-                <v-btn size="x-small" variant="text" prepend-icon="mdi-plus" @click="draft.whenRows.push({ k: '', v: '' })">
-                    {{ $t('ProcessUnitTest.add') }}
-                </v-btn>
+                    <div v-for="(row, index) in draft.whenRows" :key="'when-' + index" class="d-flex align-center mb-1" style="gap: 4px">
+                        <v-combobox
+                            v-model="row.k"
+                            :items="taskParameterOptions"
+                            :placeholder="$t('ProcessUnitTest.whenRowPlaceholder')"
+                            :no-data-text="$t('ProcessUnitTest.noWhenOptions')"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            class="flex-grow-1"
+                        />
+                        <!-- 값 입력: 필드 타입별 분기 -->
+                        <v-select
+                            v-if="valueKind(whenFieldFor(row.k)) === 'select'"
+                            v-model="row.v"
+                            :items="selectItemsFor(whenFieldFor(row.k))"
+                            :placeholder="$t('ProcessUnitTest.valuePlaceholder')"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            clearable
+                            class="flex-grow-1"
+                        />
+                        <v-checkbox
+                            v-else-if="valueKind(whenFieldFor(row.k)) === 'check'"
+                            :model-value="toBool(row.v)"
+                            @update:model-value="row.v = $event"
+                            hide-details
+                            density="compact"
+                            color="primary"
+                            class="flex-grow-1"
+                        />
+                        <v-textarea
+                            v-else-if="valueKind(whenFieldFor(row.k)) === 'textarea'"
+                            v-model="row.v"
+                            :placeholder="$t('ProcessUnitTest.valuePlaceholder')"
+                            rows="2"
+                            auto-grow
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            class="flex-grow-1"
+                        />
+                        <v-text-field
+                            v-else
+                            v-model="row.v"
+                            :type="valueKind(whenFieldFor(row.k))"
+                            :placeholder="$t('ProcessUnitTest.valuePlaceholder')"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            class="flex-grow-1"
+                        />
+                        <v-icon size="small" @click="draft.whenRows.splice(index, 1)">mdi-close</v-icon>
+                    </div>
+                    <v-btn size="x-small" variant="text" prepend-icon="mdi-plus" @click="draft.whenRows.push({ k: '', v: '' })">
+                        {{ $t('ProcessUnitTest.add') }}
+                    </v-btn>
                 </template>
 
                 <div class="text-subtitle-2 font-weight-medium mt-4 mb-1">{{ $t('ProcessUnitTest.expectedResult') }}</div>
@@ -158,21 +195,41 @@
                 />
 
                 <div class="d-flex align-center mt-4">
-                    <v-btn variant="text" size="small"
+                    <v-btn
+                        variant="text"
+                        size="small"
                         :prepend-icon="advancedOpen ? 'mdi-chevron-down' : 'mdi-chevron-right'"
-                        @click="advancedOpen = !advancedOpen">
+                        @click="advancedOpen = !advancedOpen"
+                    >
                         {{ $t('ProcessUnitTest.advancedSettings') }}
                     </v-btn>
                 </div>
                 <v-expand-transition>
-                    <div v-show="advancedOpen" class="pl-4 mt-2 mb-2" style="border-left: 2px solid rgba(0,0,0,0.08)">
+                    <div v-show="advancedOpen" class="pl-4 mt-2 mb-2" style="border-left: 2px solid rgba(0, 0, 0, 0.08)">
                         <div class="text-subtitle-2 font-weight-medium mt-1 mb-1">{{ $t('ProcessUnitTest.aiMockTitle') }}</div>
                         <div class="text-caption text-medium-emphasis mb-2">
                             {{ $t('ProcessUnitTest.aiMockDesc') }}
                         </div>
-                        <div v-for="(row, index) in draft.aiMockRows" :key="'ai-' + index" class="d-flex align-center mb-1" style="gap: 4px">
-                            <v-text-field v-model="row.k" :placeholder="$t('ProcessUnitTest.aiMockKeyPlaceholder')" density="compact" variant="outlined" hide-details />
-                            <v-text-field v-model="row.v" :placeholder="$t('ProcessUnitTest.aiMockValuePlaceholder')" density="compact" variant="outlined" hide-details />
+                        <div
+                            v-for="(row, index) in draft.aiMockRows"
+                            :key="'ai-' + index"
+                            class="d-flex align-center mb-1"
+                            style="gap: 4px"
+                        >
+                            <v-text-field
+                                v-model="row.k"
+                                :placeholder="$t('ProcessUnitTest.aiMockKeyPlaceholder')"
+                                density="compact"
+                                variant="outlined"
+                                hide-details
+                            />
+                            <v-text-field
+                                v-model="row.v"
+                                :placeholder="$t('ProcessUnitTest.aiMockValuePlaceholder')"
+                                density="compact"
+                                variant="outlined"
+                                hide-details
+                            />
                             <v-icon size="small" @click="draft.aiMockRows.splice(index, 1)">mdi-close</v-icon>
                         </div>
                         <v-btn size="x-small" variant="text" prepend-icon="mdi-plus" @click="draft.aiMockRows.push({ k: '', v: '' })">
@@ -212,14 +269,20 @@ function parseValue(value) {
     if (value === 'false') return false;
     if (!isNaN(Number(value)) && /^-?\d+(\.\d+)?$/.test(value)) return Number(value);
     if ((value.startsWith('{') && value.endsWith('}')) || (value.startsWith('[') && value.endsWith(']'))) {
-        try { return JSON.parse(value); } catch (e) { return value; }
+        try {
+            return JSON.parse(value);
+        } catch (e) {
+            return value;
+        }
     }
     return value;
 }
 
 function rowsToObject(rows) {
     const result = {};
-    (rows || []).forEach((row) => { if (row && row.k) result[row.k] = parseValue(row.v); });
+    (rows || []).forEach((row) => {
+        if (row && row.k) result[row.k] = parseValue(row.v);
+    });
     return result;
 }
 
@@ -305,18 +368,26 @@ export default {
         // 빠른 lookup 용. givenOptions/taskParameterOptions value → option 전체.
         givenOptionByValue() {
             const map = {};
-            (this.givenOptions || []).forEach((opt) => { if (opt && opt.value != null) map[opt.value] = opt; });
+            (this.givenOptions || []).forEach((opt) => {
+                if (opt && opt.value != null) map[opt.value] = opt;
+            });
             return map;
         },
         taskParamOptionByValue() {
             const map = {};
-            (this.taskParameterOptions || []).forEach((opt) => { if (opt && opt.value != null) map[opt.value] = opt; });
+            (this.taskParameterOptions || []).forEach((opt) => {
+                if (opt && opt.value != null) map[opt.value] = opt;
+            });
             return map;
         }
     },
     methods: {
-        givenFieldFor(key) { return key ? this.givenOptionByValue[key] : null; },
-        whenFieldFor(key) { return key ? this.taskParamOptionByValue[key] : null; },
+        givenFieldFor(key) {
+            return key ? this.givenOptionByValue[key] : null;
+        },
+        whenFieldFor(key) {
+            return key ? this.taskParamOptionByValue[key] : null;
+        },
         // 폼 모드: 특정 활동의 given 값 객체. 없으면 빈 객체 반환 (참조 안정성을 위해 초기 init).
         givenFormValue(activityId) {
             if (!this.draft.given[activityId]) this.draft.given[activityId] = {};
@@ -344,7 +415,7 @@ export default {
             if (!Array.isArray(raw)) return [];
             return raw.map((o) => {
                 if (o && typeof o === 'object') {
-                    const value = o.value != null ? o.value : (o.text || o.label || o.title);
+                    const value = o.value != null ? o.value : o.text || o.label || o.title;
                     const title = o.title || o.label || o.text || String(value);
                     return { title, value };
                 }
@@ -361,8 +432,8 @@ export default {
             return {
                 name: '',
                 // 폼 모드 데이터 — DynamicForm 의 modelValue 와 직접 바인딩
-                given: {},        // { activityId: { fieldName: value } }
-                whenValues: {},   // { fieldName: value }
+                given: {}, // { activityId: { fieldName: value } }
+                whenValues: {}, // { fieldName: value }
                 // rows 폴백 모드
                 givenRows: [],
                 whenRows: [],
@@ -381,7 +452,7 @@ export default {
                 draft.name = tc.name || '';
                 // 폼 모드용 — 원본 객체를 깊은 복사로 채워둠.
                 draft.given = tc.given ? JSON.parse(JSON.stringify(tc.given)) : {};
-                draft.whenValues = (tc.when && tc.when.parameterValues) ? JSON.parse(JSON.stringify(tc.when.parameterValues)) : {};
+                draft.whenValues = tc.when && tc.when.parameterValues ? JSON.parse(JSON.stringify(tc.when.parameterValues)) : {};
                 // rows 폴백 모드용 — 같은 데이터를 행 형태로도 미리 채워둠.
                 draft.givenRows = givenToRows(tc.given);
                 draft.whenRows = objectToRows(tc.when && tc.when.parameterValues);
@@ -390,13 +461,15 @@ export default {
                 draft.expectedActiveActivityIds = Array.isArray(expected.activeActivityIds) ? [...expected.activeActivityIds] : [];
                 draft.expectedPassedActivityIds = Array.isArray(expected.passedActivityIds) ? [...expected.passedActivityIds] : [];
                 draft.expectedProcessStatus = expected.processStatus || '';
-                draft.expectedInstanceCount = Number.isFinite(Number(expected.instanceCount)) && expected.instanceCount !== null && expected.instanceCount !== ''
-                    ? Number(expected.instanceCount) : null;
+                draft.expectedInstanceCount =
+                    Number.isFinite(Number(expected.instanceCount)) && expected.instanceCount !== null && expected.instanceCount !== ''
+                        ? Number(expected.instanceCount)
+                        : null;
                 draft.timeoutSec = Number(tc.timeoutSec) > 0 ? Number(tc.timeoutSec) : 120;
             }
             this.draft = draft;
-            this.advancedOpen = (draft.aiMockRows && draft.aiMockRows.length > 0)
-                || (Number(draft.timeoutSec) > 0 && Number(draft.timeoutSec) !== 120);
+            this.advancedOpen =
+                (draft.aiMockRows && draft.aiMockRows.length > 0) || (Number(draft.timeoutSec) > 0 && Number(draft.timeoutSec) !== 120);
         },
         cancel() {
             this.$emit('update:modelValue', false);
@@ -404,11 +477,17 @@ export default {
         save() {
             const draft = this.draft;
             const expected = {};
-            if (draft.expectedActiveActivityIds && draft.expectedActiveActivityIds.length) expected.activeActivityIds = [...draft.expectedActiveActivityIds];
-            if (draft.expectedPassedActivityIds && draft.expectedPassedActivityIds.length) expected.passedActivityIds = [...draft.expectedPassedActivityIds];
+            if (draft.expectedActiveActivityIds && draft.expectedActiveActivityIds.length)
+                expected.activeActivityIds = [...draft.expectedActiveActivityIds];
+            if (draft.expectedPassedActivityIds && draft.expectedPassedActivityIds.length)
+                expected.passedActivityIds = [...draft.expectedPassedActivityIds];
             if (draft.expectedProcessStatus) expected.processStatus = draft.expectedProcessStatus;
             // 비우면 저장 안 함 → 비교 시 기본 1 로 처리.
-            if (draft.expectedInstanceCount !== null && draft.expectedInstanceCount !== '' && Number.isFinite(Number(draft.expectedInstanceCount))) {
+            if (
+                draft.expectedInstanceCount !== null &&
+                draft.expectedInstanceCount !== '' &&
+                Number.isFinite(Number(draft.expectedInstanceCount))
+            ) {
                 expected.instanceCount = Number(draft.expectedInstanceCount);
             }
             const tc = this.caseObject;
@@ -424,7 +503,9 @@ export default {
                         if (v && typeof v === 'object' && Object.keys(v).length > 0) {
                             givenData[activityId] = JSON.parse(JSON.stringify(v));
                         }
-                    } catch (e) { /* ignore */ }
+                    } catch (e) {
+                        /* ignore */
+                    }
                 });
             } else {
                 givenData = rowsToGiven(draft.givenRows);
@@ -434,7 +515,9 @@ export default {
                 try {
                     const v = this.$refs.whenForm && this.$refs.whenForm.formValues;
                     whenData = v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : {};
-                } catch (e) { whenData = {}; }
+                } catch (e) {
+                    whenData = {};
+                }
             } else {
                 whenData = rowsToObject(draft.whenRows);
             }

@@ -18,14 +18,7 @@
                     hide-details
                     @keyup.enter="addLink"
                 />
-                <v-btn
-                    icon
-                    size="small"
-                    variant="text"
-                    :disabled="!newUrl.trim()"
-                    :title="$t('manualLink.addUrl')"
-                    @click="addLink"
-                >
+                <v-btn icon size="small" variant="text" :disabled="!newUrl.trim()" :title="$t('manualLink.addUrl')" @click="addLink">
                     <v-icon size="18" color="black">mdi-plus</v-icon>
                 </v-btn>
             </div>

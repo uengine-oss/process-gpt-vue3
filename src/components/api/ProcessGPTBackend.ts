@@ -82,7 +82,7 @@ class ProcessGPTBackend implements Backend {
         await this.deleteTest(`${path}/record`, '', index);
     }
 
-    async releaseVersion(releaseName: string): Promise<any> { }
+    async releaseVersion(releaseName: string): Promise<any> {}
 
     async testList(_path: string): Promise<any> {
         const map = this.__loadTestRawMap();
@@ -189,16 +189,22 @@ class ProcessGPTBackend implements Backend {
         if (opts.maxIters) input.max_iters = opts.maxIters;
         if (opts.email) input.email = opts.email;
         if (opts.userUid) input.user_uid = opts.userUid;
-        const response = await axios.post('/validate-and-improve', { input }, {
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 0
-        });
+        const response = await axios.post(
+            '/validate-and-improve',
+            { input },
+            {
+                headers: { 'Content-Type': 'application/json' },
+                timeout: 0
+            }
+        );
         return response.data;
     }
 
     /** draft(임시저장) proc_def 행을 삭제한다(방 단위 재생성 시 이전 draft 정리). */
     async deleteDraftProcDef(defId: string) {
-        const id = String(defId || '').toLowerCase().replace(/\.bpmn$/i, '');
+        const id = String(defId || '')
+            .toLowerCase()
+            .replace(/\.bpmn$/i, '');
         if (!id) return;
         try {
             await storage.delete('proc_def', { match: { id, tenant_id: window.$tenantName } });
@@ -479,6 +485,10 @@ class ProcessGPTBackend implements Backend {
                     diff: options.diff,
                     message: options.message
                 };
+                // 컴포넌트 업데이트(import update 모드) 시 이전 설치 버전을 부모로 연결.
+                if (options.parent_version) {
+                    procDefVersion.parent_version = options.parent_version;
+                }
                 // 기존 행이 있으면 uuid를 포함하여 UPDATE로 동작하게 함
                 if (existingUuid) {
                     procDefVersion.uuid = existingUuid;
@@ -718,6 +728,20 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error: any) {
             return { error: error.message || error };
+        }
+    }
+
+    async generateSemanticName(kind: 'chat' | 'instance', source: any, processName = ''): Promise<string | null> {
+        try {
+            const response = await axios.post(
+                '/completion/generate-name',
+                { kind, source, process_name: processName },
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+            const name = String(response?.data?.name || '').trim();
+            return name ? name.substring(0, 50) : null;
+        } catch (error) {
+            return null;
         }
     }
 
@@ -1136,14 +1160,14 @@ class ProcessGPTBackend implements Backend {
     async getTaskReturnAvailability(taskId: string): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 반송 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-            'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/return/availability`)를 먼저 제공한 뒤 구현해주세요.'
+                'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/return/availability`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
     async returnTask(taskId: string, payload: any): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 반송 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-            'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/return`)를 먼저 제공한 뒤 구현해주세요.'
+                'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/return`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
@@ -1157,14 +1181,14 @@ class ProcessGPTBackend implements Backend {
     async getTaskSkipAvailability(taskId: string): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 SKIP 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-            'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/skip/availability`)를 먼저 제공한 뒤 구현해주세요.'
+                'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/skip/availability`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
     async skipTask(taskId: string, payload: any): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 SKIP 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-            'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/skip`)를 먼저 제공한 뒤 구현해주세요.'
+                'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/skip`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
@@ -1296,10 +1320,18 @@ class ProcessGPTBackend implements Backend {
                 await storage.putObject('todolist', putObj);
 
                 const _currentEmail = localStorage.getItem('email');
-                const _currentUuid = (() => { try { return JSON.parse(localStorage.getItem('sb-127-auth-token') || '{}')?.user?.id; } catch { return null; } })();
+                const _currentUuid = (() => {
+                    try {
+                        return JSON.parse(localStorage.getItem('sb-127-auth-token') || '{}')?.user?.id;
+                    } catch {
+                        return null;
+                    }
+                })();
                 if (
                     (workItem.status === 'IN_PROGRESS' || workItem.status === 'PENDING') &&
-                    putObj.user_id && putObj.user_id !== _currentEmail && putObj.user_id !== _currentUuid
+                    putObj.user_id &&
+                    putObj.user_id !== _currentEmail &&
+                    putObj.user_id !== _currentUuid
                 ) {
                     await this.sendNotification({
                         userId: putObj.user_id,
@@ -2794,8 +2826,10 @@ class ProcessGPTBackend implements Backend {
             if (!options) {
                 // 기본 정렬
                 options = {
-                    orderBy: 'updated_at',
-                    sort: 'desc'
+                    orderBy: 'start_date',
+                    sort: 'desc',
+                    secondaryOrderBy: 'proc_inst_id',
+                    secondarySort: 'asc'
                 };
             }
 
@@ -2830,8 +2864,10 @@ class ProcessGPTBackend implements Backend {
                     column: 'participants',
                     values: [uid]
                 },
-                orderBy: 'updated_at',
+                orderBy: 'start_date',
                 sort: 'desc',
+                secondaryOrderBy: 'proc_inst_id',
+                secondarySort: 'asc',
                 range: null,
                 like: null
             };
@@ -3303,7 +3339,13 @@ class ProcessGPTBackend implements Backend {
         try {
             let notifications: any[] = [];
             const userId = localStorage.getItem('email');
-            const userUuid = (() => { try { return JSON.parse(localStorage.getItem('sb-127-auth-token') || '{}')?.user?.id; } catch { return null; } })();
+            const userUuid = (() => {
+                try {
+                    return JSON.parse(localStorage.getItem('sb-127-auth-token') || '{}')?.user?.id;
+                } catch {
+                    return null;
+                }
+            })();
             const userIds = [userId, ...(userUuid && userUuid !== userId ? [userUuid] : [])].filter(Boolean);
             const options: any = {
                 size: 50,
@@ -3387,10 +3429,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    private async getResourceOwner(
-        resourceType: 'skill' | 'bpmn' | 'dmn',
-        resourceId: string
-    ): Promise<string | null> {
+    private async getResourceOwner(resourceType: 'skill' | 'bpmn' | 'dmn', resourceId: string): Promise<string | null> {
         try {
             if (resourceType === 'skill') return await this.getSkillOwner(resourceId);
             const row: any = await storage.getObject('proc_def', {
@@ -3684,12 +3723,12 @@ class ProcessGPTBackend implements Backend {
                 const skillsArray =
                     typeof putObj.skills === 'string'
                         ? putObj.skills
-                            .split(',')
-                            .map((s: string) => s.trim())
-                            .filter((s: string) => s.length > 0)
+                              .split(',')
+                              .map((s: string) => s.trim())
+                              .filter((s: string) => s.length > 0)
                         : Array.isArray(putObj.skills)
-                            ? putObj.skills
-                            : [];
+                        ? putObj.skills
+                        : [];
 
                 try {
                     await this.replaceAgentSkills({
@@ -3950,7 +3989,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadDefinition(file: File, path: string) { }
+    async uploadDefinition(file: File, path: string) {}
 
     async getLock(id: string) {
         try {
@@ -4358,11 +4397,7 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             const err: any = error;
             const status = err?.response?.status;
-            const detail =
-                err?.response?.data?.detail ||
-                err?.response?.data?.message ||
-                err?.message ||
-                '알 수 없는 오류';
+            const detail = err?.response?.data?.detail || err?.response?.data?.message || err?.message || '알 수 없는 오류';
 
             if (status === 504 || status === 408) {
                 throw new Error('파일 처리 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.');
@@ -4453,15 +4488,24 @@ class ProcessGPTBackend implements Backend {
 
     async getGitConfigs() {
         try {
-            return await storage.list('tenant_git_config', {
-                match: { tenant_id: window.$tenantName }
-            }) || [];
+            return (
+                (await storage.list('tenant_git_config', {
+                    match: { tenant_id: window.$tenantName }
+                })) || []
+            );
         } catch (error) {
             throw new Error(error.message);
         }
     }
 
-    async saveGitConfig(config: { id?: string; provider: string; base_url?: string; username: string; token: string; is_default: boolean }) {
+    async saveGitConfig(config: {
+        id?: string;
+        provider: string;
+        base_url?: string;
+        username: string;
+        token: string;
+        is_default: boolean;
+    }) {
         try {
             if (config.is_default) {
                 const existing = await storage.list('tenant_git_config', {
@@ -4598,7 +4642,7 @@ class ProcessGPTBackend implements Backend {
      * - 기존 `processFile()`과 분리된 신규 호출로, 기존 로직에 영향이 없습니다.
      * - 백엔드가 폴더 전체 처리를 지원하는 경우(file_path 없이 storage_type="drive") 이를 사용합니다.
      */
-    async processDriveFolder(options?: { drive_folder_id?: string;[key: string]: any }) {
+    async processDriveFolder(options?: { drive_folder_id?: string; [key: string]: any }) {
         try {
             const response = await axios.post(
                 '/memento/process',
@@ -5143,7 +5187,10 @@ class ProcessGPTBackend implements Backend {
 
     async listMarketplaceDefinition(tagOrKeyword?: string, isSearch = false, limit?: number, offset = 0) {
         try {
-            const selectColumns = 'uuid, id, name, description, image, tags, author_name, author_uid, import_count, category';
+            // 컴포넌트 id 별 최신 버전만 노출하는 뷰에서 조회(버전/패키지 인지형).
+            const sourceTable = 'proc_def_marketplace_latest';
+            const selectColumns =
+                'uuid, id, name, description, image, tags, author_name, author_uid, import_count, category, version, package_path';
 
             // 검색 기능이 활성화된 경우 - DB 레벨에서 검색
             if (isSearch && tagOrKeyword && tagOrKeyword.trim() !== '') {
@@ -5152,7 +5199,7 @@ class ProcessGPTBackend implements Backend {
 
                 // Supabase를 직접 사용하여 DB 레벨에서 검색
                 let query = window.$supabase
-                    .from('proc_def_marketplace')
+                    .from(sourceTable)
                     .select(selectColumns)
                     .or(`name.ilike.${searchPattern},author_name.ilike.${searchPattern},tags.ilike.${searchPattern}`)
                     .order('import_count', { ascending: false });
@@ -5175,7 +5222,7 @@ class ProcessGPTBackend implements Backend {
                 const searchPattern = `%${tagOrKeyword}%`;
 
                 let query = window.$supabase
-                    .from('proc_def_marketplace')
+                    .from(sourceTable)
                     .select(selectColumns)
                     .ilike('tags', searchPattern)
                     .order('import_count', { ascending: false });
@@ -5208,7 +5255,7 @@ class ProcessGPTBackend implements Backend {
                     };
                 }
 
-                const list = await storage.list('proc_def_marketplace', options);
+                const list = await storage.list(sourceTable, options);
 
                 if (!Array.isArray(list)) {
                     console.error('storage.list가 배열을 반환하지 않았습니다:', list);
@@ -5223,10 +5270,29 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /** 특정 컴포넌트 id 의 모든 등록 버전 목록(최신순). */
+    async listMarketplaceVersions(componentId: string) {
+        try {
+            const { data, error } = await window.$supabase
+                .from('proc_def_marketplace')
+                .select('uuid, id, name, version, package_path, source_arcv_id, created_at, import_count, category')
+                .eq('id', componentId)
+                .order('created_at', { ascending: false });
+            if (error) {
+                console.error('[백엔드] listMarketplaceVersions 오류:', error);
+                return [];
+            }
+            return data || [];
+        } catch (error) {
+            console.error('[백엔드] listMarketplaceVersions 오류:', error);
+            return [];
+        }
+    }
+
     async getAllMarketplaceTags() {
         try {
-            // Supabase를 직접 사용하여 tags 컬럼만 조회
-            const { data, error } = await window.$supabase.from('proc_def_marketplace').select('tags');
+            // Supabase를 직접 사용하여 tags 컬럼만 조회(최신 버전 뷰)
+            const { data, error } = await window.$supabase.from('proc_def_marketplace_latest').select('tags');
 
             if (error) {
                 console.error('태그 목록 조회 중 오류:', error);
@@ -5293,87 +5359,444 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async putTemplateDefinition(definition: any) {
-        try {
-            const user = await this.getUserInfo();
-            if (user && user.uid) {
-                const putObj = {
-                    id: definition.id,
-                    name: definition.name,
-                    definition: definition.definition,
-                    bpmn: definition.bpmn,
-                    description: definition.description,
-                    category: definition.category,
-                    tags: definition.tags,
-                    author_name: user.name,
-                    author_uid: user.uid,
-                    image: definition.image
-                };
-                const response = await storage.putObject('proc_def_marketplace', putObj);
-
-                if (!response.error) {
-                    const formList = await storage.list('form_def', {
-                        match: {
-                            proc_def_id: definition.id,
-                            tenant_id: window.$tenantName
-                        }
-                    });
-                    if (formList && formList.length > 0) {
-                        for (const form of formList) {
-                            const formObj = {
-                                id: form.id,
-                                proc_def_id: definition.id,
-                                activity_id: form.activity_id,
-                                html: form.html,
-                                author_uid: user.uid
-                            };
-                            const formResponse = await storage.putObject('form_def_marketplace', formObj);
-                            if (formResponse.error) {
-                                console.log(formResponse.error);
-                            }
-                        }
-                    }
-
-                    return response;
-                } else {
-                    throw new Error('User not found');
-                }
-            } else {
-                throw new Error('User not found');
-            }
-        } catch (error) {
-            throw new Error(error.message);
-        }
-    }
+    /**
+     * @deprecated 레거시 마켓플레이스 복사 API. 이제 표준 패키지 설치 경로(installProcessComponent)로 위임한다.
+     * 최소 정보({id, name, author_uid})만 넘어와도 마켓플레이스 최신 행을 조회해 설치한다.
+     */
     async duplicateDefinition(definition: any, tenantId?: string) {
         try {
-            // Supabase function을 사용하여 프로세스 정의 복사
-            const result = await storage.callProcedure('duplicate_definition_from_marketplace', {
-                p_definition_id: definition.id,
-                p_definition_name: definition.name,
-                p_author_uid: definition.author_uid,
-                p_tenant_id: tenantId || window.$tenantName
-            });
+            // package_path/definition 이 이미 실려 있으면 그대로, 아니면 최신 행 조회.
+            let entry = definition;
+            if (!definition.package_path && !definition.definition) {
+                const { data } = await window.$supabase.from('proc_def_marketplace_latest').select('*').eq('id', definition.id).limit(1);
+                if (Array.isArray(data) && data.length > 0) {
+                    entry = { ...data[0], ...definition };
+                }
+            }
+            return await this.installProcessComponent(entry, tenantId);
+        } catch (error: any) {
+            throw new Error(error?.message || String(error));
+        }
+    }
 
-            if (result && result.success) {
-                // 프로세스 정의 체계도 업데이트
-                const megaId = definition.category.split('/')[0];
-                const majorId = definition.category.split('/')[1];
+    // =========================================================================
+    // 프로세스 컴포넌트 패키지(zip) export / import
+    // - 프로세스 + 에이전트 + 스킬(+폼/DMN)을 하나의 표준 zip 으로 묶고 푸는 단일 경로.
+    // - 마켓플레이스 등록/설치, 파일 내보내기/가져오기가 공통으로 사용한다.
+    // =========================================================================
+
+    /** 짧은 충돌 회피용 접미사. */
+    private _shortUuid(): string {
+        if (typeof crypto !== 'undefined' && (crypto as any).randomUUID) {
+            return (crypto as any).randomUUID().split('-')[0];
+        }
+        return Math.random().toString(36).slice(2, 10);
+    }
+
+    /** 현재 테넌트에 해당 id 의 프로세스 정의가 존재하는지. */
+    async hasProcessDefinition(defId: string): Promise<boolean> {
+        try {
+            const existing = await storage.getObject('proc_def', { match: { id: String(defId).toLowerCase() } });
+            return !!existing;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * 포터블 에이전트 스펙 배열로 users(is_agent=true) 행을 생성/재사용한다.
+     * username/role 정규화 매칭으로 기존 테넌트 에이전트를 재사용하고, 없으면 신규 생성한다.
+     * putAgent 가 내부적으로 replaceAgentSkills 로 agent_skills·users.skills 를 동기화한다.
+     * (saveGeneratedProcessArtifacts 의 에이전트 처리 로직을 추출·공용화한 것)
+     */
+    async ensureAgentsFromSpecs(
+        specs: any[],
+        agentMapping?: Record<string, { action?: 'create' | 'skip' | 'existing'; existingId?: string }>
+    ): Promise<{ created: string[]; warnings: string[] }> {
+        const created: string[] = [];
+        const warnings: string[] = [];
+        if (!Array.isArray(specs) || specs.length === 0) return { created, warnings };
+
+        let existingAgents: any[] = [];
+        try {
+            existingAgents = (await storage.list('users', { match: { is_agent: true, tenant_id: window.$tenantName } })) || [];
+        } catch (e) {
+            /* best-effort */
+        }
+        const norm = (s: any) =>
+            String(s || '')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, '');
+
+        for (const a of specs) {
+            try {
+                const name = a.name || a.username;
+                const role = a.role || '';
+                // agentMapping: 역할/이름 키로 'skip' 지정 시 생성 건너뜀.
+                if (agentMapping) {
+                    const key = String(role || name || '').toLowerCase();
+                    const decision = agentMapping[key];
+                    if (decision && decision.action === 'skip') continue;
+                    if (decision && decision.action === 'existing' && decision.existingId) {
+                        created.push(decision.existingId);
+                        continue;
+                    }
+                }
+                const dup = existingAgents.find(
+                    (u: any) => (name && norm(u.username) === norm(name)) || (role && norm(u.role) === norm(role))
+                );
+                const agentId =
+                    dup?.id ||
+                    a.id ||
+                    (typeof crypto !== 'undefined' && (crypto as any).randomUUID
+                        ? (crypto as any).randomUUID()
+                        : `agent_${Date.now()}_${created.length}`);
+                const skills = Array.isArray(a.skills)
+                    ? a.skills
+                    : typeof a.skills === 'string'
+                    ? a.skills
+                          .split(',')
+                          .map((s: string) => s.trim())
+                          .filter(Boolean)
+                    : [];
+                await this.putAgent({
+                    id: agentId,
+                    name,
+                    role,
+                    goal: a.goal || '',
+                    persona: a.persona || '',
+                    tools: a.tools || '',
+                    endpoint: null,
+                    description: a.description || null,
+                    skills,
+                    model: a.model || null,
+                    isAgent: true,
+                    type: 'agent',
+                    alias: a.alias || null
+                });
+                created.push(agentId);
+            } catch (e: any) {
+                warnings.push(`agent '${a?.username || a?.name}' 생성 실패: ${e?.message || e}`);
+            }
+        }
+        return { created, warnings };
+    }
+
+    /** 스킬 파일을 zip(ArrayBuffer)으로 받아온다(백엔드 /skills/{name}/export). */
+    async fetchSkillExportZip(skillName: string): Promise<ArrayBuffer | null> {
+        try {
+            const resp = await axios.get(`/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/export`, {
+                params: { tenant_id: window.$tenantName },
+                responseType: 'arraybuffer',
+                // deepagents 미기동/지연 시 export 전체가 멈추지 않도록 타임아웃.
+                timeout: 15000
+            });
+            return resp.data as ArrayBuffer;
+        } catch (e) {
+            console.warn('[exportProcessComponent] 스킬 export 실패(건너뜀):', skillName, e);
+            return null;
+        }
+    }
+
+    /**
+     * 프로세스 정의를 표준 컴포넌트 패키지(zip Blob)로 export 한다.
+     * @param defId 프로세스 정의 id
+     * @param arcvId 특정 버전 스냅샷(proc_def_version.arcv_id). 없으면 실행용 버전 해석(prod→major→minor→현재).
+     * @param meta 마켓플레이스 메타(description/category/tags/author/thumbnail). 파일 export 시 생략 가능.
+     */
+    async exportProcessComponent(
+        defId: string,
+        arcvId?: string,
+        meta?: {
+            description?: string;
+            category?: { mega?: string; major?: string } | string;
+            tags?: string[] | string;
+            author?: { name?: string; uid?: string };
+            thumbnail?: { data: ArrayBuffer | Uint8Array | Blob; ext?: string } | null;
+        }
+    ): Promise<{ blob: Blob; manifest: any }> {
+        const { buildPackage, sanitizeDefinition, collectSkillNames } = await import('@/utils/processComponentPackage');
+
+        const lowerId = String(defId).toLowerCase();
+        const procDef: any = await storage.getObject('proc_def', { match: { id: lowerId } });
+        if (!procDef) throw new Error(`프로세스 정의를 찾을 수 없습니다: ${defId}`);
+
+        // 1) 버전/정의/BPMN 해석
+        let definition: any = procDef.definition;
+        let bpmn: string | null = procDef.bpmn || null;
+        let version = '1.0';
+        let versionTag: string | null = null;
+        let sourceArcvId: string | null = null;
+
+        if (arcvId) {
+            const row: any = await storage.getObject('proc_def_version', { match: { arcv_id: arcvId } });
+            if (row) {
+                definition = row.definition ?? definition;
+                bpmn = row.snapshot ?? bpmn;
+                version = row.version ?? version;
+                versionTag = row.version_tag ?? null;
+                sourceArcvId = row.arcv_id;
+            }
+        } else {
+            const resolved = await this.getExecutionDefinition(lowerId);
+            if (resolved) {
+                definition = resolved.definition ?? definition;
+                bpmn = resolved.bpmn ?? bpmn;
+                if (resolved.version) {
+                    version = resolved.version;
+                    versionTag = resolved.version_tag ?? null;
+                    sourceArcvId = `${lowerId}_${resolved.version}`;
+                }
+            }
+        }
+        if (!definition) throw new Error('프로세스 정의(JSON)가 비어 있어 export 할 수 없습니다.');
+
+        const componentId = procDef.id;
+        const sanitized = sanitizeDefinition(definition, componentId);
+
+        // 2) 폼 수집
+        let forms: any[] = [];
+        try {
+            forms =
+                (await storage.list('form_def', {
+                    match: { proc_def_id: lowerId, tenant_id: window.$tenantName }
+                })) || [];
+        } catch (e) {
+            forms = [];
+        }
+        const formEntries = forms.map((f: any) => ({
+            id: f.id,
+            activity_id: f.activity_id,
+            html: f.html,
+            fields_json: f.fields_json ?? null
+        }));
+
+        // 3) 에이전트 수집 — 정의가 참조하는 역할/이름에 매칭되는 tenant 에이전트를 포터블 스펙으로 축소
+        let agentSpecs: any[] = [];
+        try {
+            const users: any[] = (await storage.list('users', { match: { is_agent: true, tenant_id: window.$tenantName } })) || [];
+            const { collectAgentRefs } = await import('@/utils/processComponentPackage');
+            const refs = new Set(collectAgentRefs(sanitized).map((r) => r.toLowerCase()));
+            const norm = (s: any) =>
+                String(s || '')
+                    .trim()
+                    .toLowerCase();
+            const matched = users.filter((u: any) => refs.has(norm(u.role)) || refs.has(norm(u.username)) || refs.has(norm(u.alias)));
+            const pool = matched.length > 0 ? matched : users;
+            agentSpecs = pool.map((u: any) => ({
+                username: u.username,
+                role: u.role || '',
+                alias: u.alias || null,
+                goal: u.goal || '',
+                persona: u.persona || '',
+                model: u.model || null,
+                tools: u.tools || '',
+                skills:
+                    typeof u.skills === 'string'
+                        ? u.skills
+                              .split(',')
+                              .map((s: string) => s.trim())
+                              .filter(Boolean)
+                        : Array.isArray(u.skills)
+                        ? u.skills
+                        : [],
+                description: u.description || null
+            }));
+        } catch (e) {
+            agentSpecs = [];
+        }
+
+        // 4) 스킬 수집 — 정의·에이전트가 참조하는 스킬 파일을 백엔드에서 zip 으로 받아 동봉
+        const skillNames = collectSkillNames(sanitized, agentSpecs);
+        const skillPacks: Array<{ name: string; nestedZip: ArrayBuffer }> = [];
+        for (const name of skillNames) {
+            const zipBuf = await this.fetchSkillExportZip(name);
+            if (zipBuf) skillPacks.push({ name, nestedZip: zipBuf });
+        }
+
+        // 5) 메타 정규화
+        const category =
+            typeof meta?.category === 'string'
+                ? { mega: meta.category.split('/')[0], major: meta.category.split('/')[1] }
+                : meta?.category || {};
+        const tags = Array.isArray(meta?.tags)
+            ? meta?.tags
+            : typeof meta?.tags === 'string'
+            ? (meta?.tags as string)
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+            : [];
+        let author = meta?.author;
+        if (!author) {
+            try {
+                const u = await this.getUserInfo();
+                author = { name: u?.name, uid: u?.uid };
+            } catch (e) {
+                /* ignore */
+            }
+        }
+
+        return await buildPackage({
+            componentId,
+            name: procDef.name,
+            version,
+            sourceArcvId,
+            versionTag,
+            description: meta?.description ?? '',
+            category,
+            tags,
+            author,
+            definition: sanitized,
+            bpmn,
+            forms: formEntries,
+            agents: agentSpecs,
+            skills: skillPacks,
+            thumbnail: meta?.thumbnail ?? null
+        });
+    }
+
+    /**
+     * 표준 컴포넌트 패키지(zip)를 현재 테넌트로 import 한다(단일 경로).
+     * 파일 가져오기·마켓플레이스 설치·업데이트가 모두 이 함수를 호출한다.
+     * @param zipData 패키지 zip
+     * @param opts.mode 'install'(신규/충돌 시 복제) | 'update'(targetDefId 갱신)
+     */
+    async importProcessComponent(
+        zipData: ArrayBuffer | Uint8Array | Blob,
+        opts: {
+            mode?: 'install' | 'update';
+            targetDefId?: string;
+            versionTag?: string;
+            parentVersion?: string;
+            agentMapping?: Record<string, { action?: 'create' | 'skip' | 'existing'; existingId?: string }>;
+        } = {}
+    ): Promise<any> {
+        const { parsePackage } = await import('@/utils/processComponentPackage');
+        const parsed = await parsePackage(zipData);
+        const manifest = parsed.manifest;
+        const mode = opts.mode || 'install';
+
+        const report: any = {
+            componentId: manifest.componentId,
+            name: manifest.name,
+            version: manifest.version,
+            newDefId: '',
+            forms: 0,
+            agents: [] as string[],
+            skills: [] as string[],
+            skillsSkipped: [] as string[],
+            warnings: [] as string[]
+        };
+
+        // 1) 대상 defId 결정
+        let newDefId = manifest.componentId;
+        if (mode === 'update' && opts.targetDefId) {
+            newDefId = opts.targetDefId;
+        } else {
+            let collides = false;
+            try {
+                const existing = await storage.getObject('proc_def', { match: { id: manifest.componentId } });
+                collides = !!existing;
+            } catch (e) {
+                collides = false;
+            }
+            if (collides) {
+                newDefId = `${manifest.componentId}_${this._shortUuid()}`;
+            }
+        }
+        report.newDefId = newDefId;
+
+        // 2) 정의의 processDefinitionId 재작성(복제된 경우)
+        const definition = { ...parsed.definition, processDefinitionId: newDefId };
+
+        // 3) proc_def + proc_def_version 저장(기존 putRawDefinition 경로 재사용)
+        try {
+            await this.putRawDefinition(parsed.bpmn ?? null, newDefId, {
+                name: manifest.name,
+                type: 'bpmn',
+                definition,
+                version: manifest.version,
+                version_tag: opts.versionTag || (mode === 'install' ? 'published' : 'major'),
+                message: `Imported from package ${manifest.componentId}@${manifest.version}`,
+                ...(mode === 'update' && opts.parentVersion ? { parent_version: opts.parentVersion } : {})
+            });
+        } catch (e: any) {
+            throw new Error('프로세스 정의 저장 실패: ' + (e?.message || e));
+        }
+
+        // 4) 폼 저장
+        for (const form of parsed.forms) {
+            try {
+                await storage.putObject(
+                    'form_def',
+                    {
+                        id: form.id,
+                        proc_def_id: newDefId,
+                        activity_id: form.activity_id,
+                        html: form.html ?? '',
+                        fields_json: form.fields_json ?? null,
+                        tenant_id: window.$tenantName
+                    },
+                    { onConflict: 'id,tenant_id' }
+                );
+                report.forms += 1;
+            } catch (e: any) {
+                report.warnings.push(`form '${form.id}' 저장 실패: ${e?.message || e}`);
+            }
+        }
+
+        // 5) 에이전트 생성/매핑
+        try {
+            const { created, warnings } = await this.ensureAgentsFromSpecs(parsed.agents, opts.agentMapping);
+            report.agents = created;
+            report.warnings.push(...warnings);
+        } catch (e: any) {
+            report.warnings.push(`에이전트 처리 실패: ${e?.message || e}`);
+        }
+
+        // 6) 스킬 업로드(파일) + 등록(tenant_skills). 409(이미 존재)는 재사용으로 간주.
+        const registeredSkills: string[] = [];
+        for (const skill of parsed.skills) {
+            const file = new File([skill.zipBlob], `${skill.name}.zip`, { type: 'application/zip' });
+            try {
+                await this.uploadSkills({ type: 'file', file, skipRegister: true });
+                report.skills.push(skill.name);
+                registeredSkills.push(skill.name);
+            } catch (e: any) {
+                const msg = String(e?.message || e);
+                if (msg.includes('409') || msg.toLowerCase().includes('already exists')) {
+                    report.skillsSkipped.push(skill.name);
+                    registeredSkills.push(skill.name); // 이름은 등록 유지
+                } else {
+                    report.warnings.push(`skill '${skill.name}' 업로드 실패: ${msg}`);
+                }
+            }
+        }
+        if (registeredSkills.length > 0) {
+            try {
+                await this.saveSkills(registeredSkills);
+            } catch (e: any) {
+                report.warnings.push(`skills 등록 실패: ${e?.message || e}`);
+            }
+        }
+
+        // 7) 프로세스 정의 체계도(맵) 갱신
+        try {
+            const mega = manifest.category?.mega;
+            const major = manifest.category?.major;
+            if (mega && major) {
                 const newProcessMap = {
                     mega_proc_list: [
                         {
-                            id: megaId,
-                            name: megaId,
+                            id: mega,
+                            name: mega,
                             major_proc_list: [
                                 {
-                                    id: majorId,
-                                    name: majorId,
-                                    sub_proc_list: [
-                                        {
-                                            id: result.new_definition_id,
-                                            name: definition.name
-                                        }
-                                    ]
+                                    id: major,
+                                    name: major,
+                                    sub_proc_list: [{ id: newDefId, name: manifest.name }]
                                 }
                             ]
                         }
@@ -5382,18 +5805,365 @@ class ProcessGPTBackend implements Backend {
                 const existed = await this.getProcessDefinitionMap();
                 const merged = await this.mergeProcessMaps(existed, newProcessMap);
                 await this.putProcessDefinitionMap(merged);
-
-                return result;
             }
+        } catch (e: any) {
+            report.warnings.push(`프로세스 맵 갱신 실패: ${e?.message || e}`);
+        }
 
-            throw new Error('Failed to duplicate definition');
-        } catch (error) {
-            if (error && error.cause && error.cause.message && error.cause.message.includes('409 Conflict')) {
-                throw new Error('이미 추가된 프로세스입니다.');
-            } else {
-                throw new Error(error.message);
+        return report;
+    }
+
+    // ---- 마켓플레이스: 패키지 기반 등록/설치 --------------------------------
+
+    private _marketplaceBucket() {
+        return window.$supabase.storage.from('process-components');
+    }
+
+    /**
+     * 프로세스 정의를 컴포넌트 패키지로 export 해 Storage 버킷에 올리고,
+     * proc_def_marketplace 에 버전 메타 행을 등록한다.
+     * 같은 id+version 재등록은 유니크 인덱스로 차단된다("버전을 올리세요").
+     */
+    async publishProcessComponent(
+        defId: string,
+        arcvId: string | undefined,
+        meta: {
+            name?: string;
+            description?: string;
+            category?: { mega?: string; major?: string } | string;
+            tags?: string[] | string;
+            image?: string | null;
+        }
+    ): Promise<any> {
+        const user = await this.getUserInfo();
+        if (!user || !user.uid) throw new Error('User not found');
+
+        // 썸네일(base64) 을 패키지 assets 에도 동봉(선택).
+        let thumbnail: any = null;
+        if (meta.image && typeof meta.image === 'string' && meta.image.startsWith('data:')) {
+            try {
+                const commaIdx = meta.image.indexOf(',');
+                const b64 = meta.image.slice(commaIdx + 1);
+                const bin = atob(b64);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+                const mime = meta.image.slice(5, meta.image.indexOf(';'));
+                const ext = mime.split('/')[1] || 'png';
+                thumbnail = { data: bytes, ext };
+            } catch (e) {
+                /* 썸네일 동봉 실패는 무시 */
             }
         }
+
+        const { blob, manifest } = await this.exportProcessComponent(defId, arcvId, {
+            description: meta.description,
+            category: meta.category,
+            tags: meta.tags,
+            author: { name: user.name, uid: user.uid },
+            thumbnail
+        });
+
+        const category =
+            typeof meta.category === 'string'
+                ? meta.category
+                : meta.category
+                ? `${meta.category.mega || ''}/${meta.category.major || ''}`
+                : '';
+        const tagsStr = Array.isArray(meta.tags) ? meta.tags.join(',') : meta.tags || '';
+
+        // 중복 버전 사전 체크(친절한 에러 메시지).
+        try {
+            const dup = await storage.getObject('proc_def_marketplace', {
+                match: { id: manifest.componentId, version: manifest.version }
+            });
+            if (dup) {
+                throw new Error(`이미 등록된 버전입니다: ${manifest.componentId} v${manifest.version}. 버전을 올린 뒤 다시 등록하세요.`);
+            }
+        } catch (e: any) {
+            if (e?.message && e.message.includes('이미 등록된 버전')) throw e;
+            /* 조회 실패는 통과(등록 시 유니크 인덱스가 최종 방어) */
+        }
+
+        // 1) Storage 업로드
+        const packagePath = `${manifest.componentId}/${manifest.version}.zip`;
+        const { error: upErr } = await this._marketplaceBucket().upload(packagePath, blob, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: 'application/zip'
+        });
+        if (
+            upErr &&
+            !String(upErr.message || '')
+                .toLowerCase()
+                .includes('exists')
+        ) {
+            throw new Error('패키지 업로드 실패: ' + (upErr.message || upErr));
+        }
+
+        // 2) 메타 행 insert(버전별 신규 행)
+        const row: any = {
+            id: manifest.componentId,
+            name: meta.name || manifest.name,
+            definition: manifest && (await this._readPackageDefinition(blob)),
+            bpmn: await this._readPackageBpmn(blob),
+            description: meta.description || '',
+            category,
+            tags: tagsStr,
+            author_name: user.name,
+            author_uid: user.uid,
+            image: meta.image || null,
+            version: manifest.version,
+            package_path: packagePath,
+            source_arcv_id: manifest.sourceArcvId || null,
+            manifest
+        };
+        try {
+            await storage.putObject('proc_def_marketplace', row);
+        } catch (e: any) {
+            const msg = String(e?.message || e);
+            if (msg.includes('proc_def_marketplace_id_version_uq') || msg.toLowerCase().includes('duplicate') || msg.includes('23505')) {
+                throw new Error(`이미 등록된 버전입니다: ${manifest.componentId} v${manifest.version}. 버전을 올린 뒤 다시 등록하세요.`);
+            }
+            throw new Error('마켓플레이스 등록 실패: ' + msg);
+        }
+        return { manifest, packagePath };
+    }
+
+    /** 패키지 blob 에서 정의 JSON 을 읽어 미리보기/검색용 컬럼에 저장한다. */
+    private async _readPackageDefinition(blob: Blob): Promise<any> {
+        try {
+            const { parsePackage } = await import('@/utils/processComponentPackage');
+            const parsed = await parsePackage(blob);
+            return parsed.definition;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    private async _readPackageBpmn(blob: Blob): Promise<string | null> {
+        try {
+            const { parsePackage } = await import('@/utils/processComponentPackage');
+            const parsed = await parsePackage(blob);
+            return parsed.bpmn;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * 마켓플레이스 항목을 현재 테넌트에 설치한다(표준 import 경로).
+     * package_path 가 있으면 zip 다운로드 후 import, 없으면(레거시) 메모리에서 패키지를 합성한다.
+     */
+    async installProcessComponent(entry: any, tenantId?: string): Promise<any> {
+        let zipData: ArrayBuffer;
+        if (entry.package_path) {
+            const { data, error } = await this._marketplaceBucket().download(entry.package_path);
+            if (error || !data) throw new Error('패키지 다운로드 실패: ' + (error?.message || 'no data'));
+            zipData = await data.arrayBuffer();
+        } else {
+            const blob = await this.synthesizeLegacyPackage(entry);
+            zipData = await blob.arrayBuffer();
+        }
+
+        const report = await this.importProcessComponent(zipData, { mode: 'install', versionTag: 'published' });
+
+        // import_count 증가(특정 행 우선, 없으면 id 기준)
+        try {
+            if (entry.uuid) {
+                await window.$supabase
+                    .from('proc_def_marketplace')
+                    .update({ import_count: (entry.import_count || 0) + 1 })
+                    .eq('uuid', entry.uuid);
+            }
+        } catch (e) {
+            /* best-effort */
+        }
+
+        // 설치 추적 기록(best-effort)
+        try {
+            await storage.putObject(
+                'installed_components',
+                {
+                    tenant_id: tenantId || window.$tenantName,
+                    component_id: entry.id,
+                    marketplace_uuid: entry.uuid || null,
+                    installed_version: entry.version || report.version || '0',
+                    local_proc_def_id: report.newDefId,
+                    updated_at: new Date().toISOString()
+                },
+                { onConflict: 'tenant_id,local_proc_def_id' }
+            );
+        } catch (e) {
+            report.warnings.push('설치 추적 기록 실패(무시): ' + ((e as any)?.message || e));
+        }
+
+        return report;
+    }
+
+    /**
+     * 레거시 마켓플레이스 행(패키지 없음)을 메모리에서 표준 패키지로 합성한다.
+     * definition + bpmn + form_def_marketplace 만 담고 에이전트/스킬은 비운다.
+     */
+    async synthesizeLegacyPackage(entry: any): Promise<Blob> {
+        const { buildPackage } = await import('@/utils/processComponentPackage');
+
+        // 전체 행(정의/bpmn) 조회
+        const full: any = entry.definition ? entry : await storage.getObject('proc_def_marketplace', { match: { uuid: entry.uuid } });
+        if (!full || !full.definition) throw new Error('레거시 마켓플레이스 정의를 찾을 수 없습니다.');
+
+        // 폼 수집(form_def_marketplace)
+        let forms: any[] = [];
+        try {
+            forms = (await storage.list('form_def_marketplace', { match: { proc_def_id: full.id } })) || [];
+        } catch (e) {
+            forms = [];
+        }
+        const formEntries = forms.map((f: any) => ({
+            id: f.id,
+            activity_id: f.activity_id,
+            html: f.html,
+            fields_json: f.fields_json ?? null
+        }));
+
+        const cat = typeof full.category === 'string' ? full.category : '';
+        const category = { mega: cat.split('/')[0], major: cat.split('/')[1] };
+
+        const { blob } = await buildPackage({
+            componentId: full.id,
+            name: full.name,
+            version: entry.version || '0',
+            description: full.description || '',
+            category,
+            tags:
+                typeof full.tags === 'string'
+                    ? full.tags
+                          .split(',')
+                          .map((s: string) => s.trim())
+                          .filter(Boolean)
+                    : [],
+            author: { name: full.author_name, uid: full.author_uid },
+            definition: full.definition,
+            bpmn: full.bpmn || null,
+            forms: formEntries,
+            agents: [],
+            skills: []
+        });
+        return blob;
+    }
+
+    /** major.minor 형태 버전 비교. a>b → 1, a<b → -1, 같음 → 0. */
+    private _compareVersion(a?: string, b?: string): number {
+        const pa = String(a || '0')
+            .split('.')
+            .map((v) => parseInt(v, 10) || 0);
+        const pb = String(b || '0')
+            .split('.')
+            .map((v) => parseInt(v, 10) || 0);
+        const len = Math.max(pa.length, pb.length);
+        for (let i = 0; i < len; i += 1) {
+            const av = pa[i] ?? 0;
+            const bv = pb[i] ?? 0;
+            if (av !== bv) return av > bv ? 1 : -1;
+        }
+        return 0;
+    }
+
+    /** 현재 테넌트에 설치된 컴포넌트 목록. */
+    async listInstalledComponents(tenantId?: string): Promise<any[]> {
+        try {
+            const { data, error } = await window.$supabase
+                .from('installed_components')
+                .select('*')
+                .eq('tenant_id', tenantId || window.$tenantName);
+            if (error) {
+                console.error('[백엔드] listInstalledComponents 오류:', error);
+                return [];
+            }
+            return data || [];
+        } catch (e) {
+            console.error('[백엔드] listInstalledComponents 오류:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 설치된 컴포넌트 중 마켓플레이스 최신 버전이 더 높은 항목을 반환한다.
+     * 각 항목: { component_id, local_proc_def_id, installed_version, latest }
+     */
+    async checkComponentUpdates(tenantId?: string): Promise<any[]> {
+        try {
+            const installed = await this.listInstalledComponents(tenantId);
+            if (!installed || installed.length === 0) return [];
+
+            const ids = Array.from(new Set(installed.map((i: any) => i.component_id)));
+            const { data: latestRows, error } = await window.$supabase
+                .from('proc_def_marketplace_latest')
+                .select('uuid, id, name, version, package_path, category, import_count, image')
+                .in('id', ids);
+            if (error) {
+                console.error('[백엔드] checkComponentUpdates 오류:', error);
+                return [];
+            }
+            const latestById: Record<string, any> = {};
+            for (const row of latestRows || []) latestById[row.id] = row;
+
+            const updates: any[] = [];
+            for (const inst of installed) {
+                const latest = latestById[inst.component_id];
+                if (!latest || !latest.version) continue;
+                if (this._compareVersion(latest.version, inst.installed_version) > 0) {
+                    updates.push({
+                        component_id: inst.component_id,
+                        local_proc_def_id: inst.local_proc_def_id,
+                        installed_version: inst.installed_version,
+                        latest
+                    });
+                }
+            }
+            return updates;
+        } catch (e) {
+            console.error('[백엔드] checkComponentUpdates 오류:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 설치된 컴포넌트를 마켓플레이스 최신 버전으로 업그레이드한다.
+     * 새 proc_def_version 행에 parent_version(이전 설치 버전)을 연결하고 installed_components 를 갱신한다.
+     * 실행 중 인스턴스는 버전을 고정하고 있어 영향받지 않는다.
+     */
+    async updateInstalledComponent(update: any, tenantId?: string): Promise<any> {
+        const latest = update.latest;
+        if (!latest) throw new Error('업데이트 대상 최신 버전 정보가 없습니다.');
+
+        let zipData: ArrayBuffer;
+        if (latest.package_path) {
+            const { data, error } = await this._marketplaceBucket().download(latest.package_path);
+            if (error || !data) throw new Error('패키지 다운로드 실패: ' + (error?.message || 'no data'));
+            zipData = await data.arrayBuffer();
+        } else {
+            const blob = await this.synthesizeLegacyPackage(latest);
+            zipData = await blob.arrayBuffer();
+        }
+
+        const report = await this.importProcessComponent(zipData, {
+            mode: 'update',
+            targetDefId: update.local_proc_def_id,
+            versionTag: 'published',
+            parentVersion: update.installed_version
+        });
+
+        try {
+            await window.$supabase
+                .from('installed_components')
+                .update({ installed_version: latest.version, updated_at: new Date().toISOString() })
+                .eq('tenant_id', tenantId || window.$tenantName)
+                .eq('local_proc_def_id', update.local_proc_def_id);
+        } catch (e) {
+            report.warnings.push('설치 추적 갱신 실패(무시): ' + ((e as any)?.message || e));
+        }
+
+        return report;
     }
 
     async duplicateLocalProcess(
@@ -6150,19 +6920,27 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getAgentEvents(taskId: string) {
-        return await storage.list('events', {
-            match: { todo_id: taskId },
-            inArray: {
-                column: 'event_type',
-                values: [
-                    'task_started', 'task_completed', 'crew_completed',
-                    'tool_usage_started', 'tool_usage_finished',
-                    'human_asked', 'human_response', 'error',
-                    'human_checked', 'task_working'
-                ]
-            },
-            orderBy: 'timestamp'
-        }) || [];
+        return (
+            (await storage.list('events', {
+                match: { todo_id: taskId },
+                inArray: {
+                    column: 'event_type',
+                    values: [
+                        'task_started',
+                        'task_completed',
+                        'crew_completed',
+                        'tool_usage_started',
+                        'tool_usage_finished',
+                        'human_asked',
+                        'human_response',
+                        'error',
+                        'human_checked',
+                        'task_working'
+                    ]
+                },
+                orderBy: 'timestamp'
+            })) || []
+        );
     }
 
     async getAgentEventById(eventId: string) {
@@ -6186,25 +6964,31 @@ class ProcessGPTBackend implements Backend {
     }
 
     async watchAgentEvents(taskId: string, callback: (row: any) => void) {
-        return await storage._watch({
-            channel: `events-${taskId}`,
-            event: 'INSERT',
-            table: 'events',
-            filter: `todo_id=eq.${taskId}`
-        }, (payload: any) => {
-            callback(payload.new);
-        });
+        return await storage._watch(
+            {
+                channel: `events-${taskId}`,
+                event: 'INSERT',
+                table: 'events',
+                filter: `todo_id=eq.${taskId}`
+            },
+            (payload: any) => {
+                callback(payload.new);
+            }
+        );
     }
 
     async watchTodoStatus(taskId: string, callback: (newRow: any, oldRow: any) => void) {
-        return await storage._watch({
-            channel: `todolist-${taskId}`,
-            event: 'UPDATE',
-            table: 'todolist',
-            filter: `id=eq.${taskId}`
-        }, (payload: any) => {
-            callback(payload.new, payload.old);
-        });
+        return await storage._watch(
+            {
+                channel: `todolist-${taskId}`,
+                event: 'UPDATE',
+                table: 'todolist',
+                filter: `id=eq.${taskId}`
+            },
+            (payload: any) => {
+                callback(payload.new, payload.old);
+            }
+        );
     }
 
     unwatchChannel(ref: any) {
@@ -7225,8 +8009,7 @@ class ProcessGPTBackend implements Backend {
             const activityId = f.activity_id || f.activityId;
             const html = f.html || f.content;
             if (!activityId || !html) continue;
-            const formId =
-                f.form_id || f.formId || `${procDefId}_${String(activityId).toLowerCase()}_form`;
+            const formId = f.form_id || f.formId || `${procDefId}_${String(activityId).toLowerCase()}_form`;
             try {
                 await this.putRawDefinition(html, formId, {
                     type: 'form',
@@ -7255,11 +8038,7 @@ class ProcessGPTBackend implements Backend {
         // 4) 에이전트 생성/매핑 (pdf2bpmn _insert_agent_user + _sync_skills_to_supabase 동일).
         //    - users(is_agent=true) 행 생성. 중복은 username/role 기준으로 기존 agent 재사용.
         //    - putAgent가 내부적으로 replaceAgentSkills로 agent_skills + users.skills 동기화.
-        const agents: any[] = Array.isArray(payload.agents)
-            ? payload.agents
-            : Array.isArray(def.agents)
-                ? def.agents
-                : [];
+        const agents: any[] = Array.isArray(payload.agents) ? payload.agents : Array.isArray(def.agents) ? def.agents : [];
         if (agents.length > 0) {
             let existingAgents: any[] = [];
             try {
@@ -7293,8 +8072,11 @@ class ProcessGPTBackend implements Backend {
                     const skills = Array.isArray(a.skills)
                         ? a.skills
                         : typeof a.skills === 'string'
-                            ? a.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
-                            : [];
+                        ? a.skills
+                              .split(',')
+                              .map((s: string) => s.trim())
+                              .filter(Boolean)
+                        : [];
                     await this.putAgent({
                         id: agentId,
                         name,
@@ -7318,11 +8100,7 @@ class ProcessGPTBackend implements Backend {
         }
 
         // 5) 재사용 스킬명 등록 (tenants.skills). 에이전트별 매핑은 위 putAgent에서 이미 수행됨.
-        const skillNames: string[] = Array.isArray(payload.skills)
-            ? payload.skills
-            : Array.isArray(def.skills)
-                ? def.skills
-                : [];
+        const skillNames: string[] = Array.isArray(payload.skills) ? payload.skills : Array.isArray(def.skills) ? def.skills : [];
         if (skillNames.length > 0) {
             try {
                 await this.saveSkills(skillNames);
@@ -7473,7 +8251,13 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async putSkillFile(skillName: string, filePath: string, content: string, commitMessage: string = 'docs: update skill description', branch: string = 'main') {
+    async putSkillFile(
+        skillName: string,
+        filePath: string,
+        content: string,
+        commitMessage = 'docs: update skill description',
+        branch = 'main'
+    ) {
         try {
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/commit`;
             const tenantId = window.$tenantName;
@@ -7489,15 +8273,11 @@ class ProcessGPTBackend implements Backend {
                 body.author_email = localStorage.getItem('email');
             }
 
-            const response = await axios.post(
-                url,
-                body,
-                {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+            const response = await axios.post(url, body, {
+                headers: {
+                    'Content-Type': 'application/json'
                 }
-            );
+            });
             if (response.status === 200 || response.status === 201) {
                 return response.data;
             } else {
@@ -7508,7 +8288,13 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async addCommitToSkillPrBranch(skillName: string, branchName: string, filePath: string, content: string, commitMessage: string): Promise<any> {
+    async addCommitToSkillPrBranch(
+        skillName: string,
+        branchName: string,
+        filePath: string,
+        content: string,
+        commitMessage: string
+    ): Promise<any> {
         return this.putSkillFile(skillName, filePath, content, commitMessage, branchName);
     }
 
@@ -7562,7 +8348,7 @@ class ProcessGPTBackend implements Backend {
         throw new Error(response.data?.message || 'Repo creation failed');
     }
 
-    async createSkillBranch(skillName: string, branch: string, from: string = 'main') {
+    async createSkillBranch(skillName: string, branch: string, from = 'main') {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches`;
         const response = await axios.post(url, {
             tenant_id: window.$tenantName,
@@ -7575,7 +8361,7 @@ class ProcessGPTBackend implements Backend {
         throw new Error(response.data?.message || 'Branch creation failed');
     }
 
-    async createSkillPullRequest(skillName: string, title: string, description: string, head: string, base: string = 'main') {
+    async createSkillPullRequest(skillName: string, title: string, description: string, head: string, base = 'main') {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests`;
         const response = await axios.post(url, {
             tenant_id: window.$tenantName,
@@ -7590,7 +8376,7 @@ class ProcessGPTBackend implements Backend {
         throw new Error(response.data?.message || 'PR creation failed');
     }
 
-    async getSkillPullRequests(skillName: string, state: string = 'open') {
+    async getSkillPullRequests(skillName: string, state = 'open') {
         const params = new URLSearchParams();
         if (window.$tenantName) params.set('tenant_id', window.$tenantName);
         params.set('state', state);
@@ -7600,7 +8386,10 @@ class ProcessGPTBackend implements Backend {
         throw new Error(response.data?.message || 'Failed to fetch pull requests');
     }
 
-    async getSkillPrFiles(skillName: string, prNumber: number): Promise<{ filename: string; status: string; additions: number; deletions: number; patch?: string }[]> {
+    async getSkillPrFiles(
+        skillName: string,
+        prNumber: number
+    ): Promise<{ filename: string; status: string; additions: number; deletions: number; patch?: string }[]> {
         try {
             const params = new URLSearchParams();
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
@@ -7646,7 +8435,9 @@ class ProcessGPTBackend implements Backend {
             const params = new URLSearchParams();
             params.set('branch', branch);
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
-            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches/files/${encodeURIComponent(filePath)}?${params}`;
+            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches/files/${encodeURIComponent(
+                filePath
+            )}?${params}`;
             const response = await axios.get(url);
             if (response.status === 200) {
                 return response.data;
@@ -7658,7 +8449,9 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getSkillInheritance(skillName: string): Promise<{ skill: string; extends: string[]; chain: { name: string }[]; warnings?: string[] } | null> {
+    async getSkillInheritance(
+        skillName: string
+    ): Promise<{ skill: string; extends: string[]; chain: { name: string }[]; warnings?: string[] } | null> {
         try {
             const params = new URLSearchParams();
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
@@ -7697,18 +8490,21 @@ class ProcessGPTBackend implements Backend {
     // resourceType: 'skill' | 'proc_def' | 'dmn'
     // ============================================================
 
-    async createResourcePrRecord(resourceType: 'skill' | 'bpmn' | 'dmn', data: {
-        resourceId: string;
-        branchName: string;
-        baseBranch: string;
-        title: string;
-        description?: string;
-        requesterId: string;
-        requesterName?: string;
-        gitPrNumber?: number;
-        gitPrUrl?: string;
-        gitRepoUrl?: string;
-    }): Promise<any> {
+    async createResourcePrRecord(
+        resourceType: 'skill' | 'bpmn' | 'dmn',
+        data: {
+            resourceId: string;
+            branchName: string;
+            baseBranch: string;
+            title: string;
+            description?: string;
+            requesterId: string;
+            requesterName?: string;
+            gitPrNumber?: number;
+            gitPrUrl?: string;
+            gitRepoUrl?: string;
+        }
+    ): Promise<any> {
         const tenantId = window.$tenantName;
         const record = {
             id: this.uuid(),
@@ -7743,14 +8539,19 @@ class ProcessGPTBackend implements Backend {
         return record;
     }
 
-    async getResourcePrRecords(resourceType: 'skill' | 'bpmn' | 'dmn', resourceId: string, status?: string, gitUrlPrefix?: string): Promise<any[]> {
+    async getResourcePrRecords(
+        resourceType: 'skill' | 'bpmn' | 'dmn',
+        resourceId: string,
+        status?: string,
+        gitUrlPrefix?: string
+    ): Promise<any[]> {
         const tenantId = window.$tenantName;
         const match: any = { tenant_id: tenantId, resource_type: resourceType, resource_id: resourceId };
         if (status) match.status = status;
         const result = await storage.list('resource_pull_requests', { match, orderBy: 'created_at' });
         const records: any[] = Array.isArray(result) ? result : [];
         if (!gitUrlPrefix) return records;
-        return records.filter(r => !r.git_pr_url || r.git_pr_url.startsWith(gitUrlPrefix));
+        return records.filter((r) => !r.git_pr_url || r.git_pr_url.startsWith(gitUrlPrefix));
     }
 
     async updateResourcePrStatus(pr: any, status: string, fields: { reviewerId?: string; mergedAt?: string } = {}): Promise<void> {
@@ -7786,7 +8587,13 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async addResourcePrReview(prId: string, action: 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENT', comment: string, reviewerId: string, reviewerName?: string): Promise<any> {
+    async addResourcePrReview(
+        prId: string,
+        action: 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENT',
+        comment: string,
+        reviewerId: string,
+        reviewerName?: string
+    ): Promise<any> {
         const tenantId = window.$tenantName;
         const record = {
             id: this.uuid(),
@@ -7809,7 +8616,7 @@ class ProcessGPTBackend implements Backend {
         return Array.isArray(result) ? result : [];
     }
 
-    async deleteSkillFile(skillName: string, fileName: string, commitMessage: string = 'chore: delete skill file', branch: string = 'main') {
+    async deleteSkillFile(skillName: string, fileName: string, commitMessage = 'chore: delete skill file', branch = 'main') {
         try {
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/files/${encodeURIComponent(fileName)}`;
             const data: any = {
@@ -9799,26 +10606,38 @@ class ProcessGPTBackend implements Backend {
         const input: any = { ...payload };
         if (!input.email) input.email = localStorage.getItem('email') || undefined;
         input.tenant_id = window.$tenantName;
-        const response = await axios.post('/completion/test/initiate', { input }, {
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const response = await axios.post(
+            '/completion/test/initiate',
+            { input },
+            {
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
         return response?.data || null;
     }
 
     async testComplete(payload: { task_id: string; form_values?: Record<string, any>; timeout_ms?: number }) {
         const input: any = { ...payload };
         input.tenant_id = window.$tenantName;
-        const response = await axios.post('/completion/test/complete', { input }, {
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const response = await axios.post(
+            '/completion/test/complete',
+            { input },
+            {
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
         return response?.data || null;
     }
 
     async testCleanup(procInstId: string) {
         if (!procInstId) return null;
-        const response = await axios.post(`/completion/test/cleanup/${encodeURIComponent(procInstId)}`, {}, {
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const response = await axios.post(
+            `/completion/test/cleanup/${encodeURIComponent(procInstId)}`,
+            {},
+            {
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
         return response?.data || null;
     }
 
@@ -9842,11 +10661,7 @@ class ProcessGPTBackend implements Backend {
         reason?: string;
         status?: string;
     }) {
-        const { data, error } = await window.$supabase
-            .from('delegation_history')
-            .insert(record)
-            .select()
-            .single();
+        const { data, error } = await window.$supabase.from('delegation_history').insert(record).select().single();
         if (error) throw new Error(error.message);
         return data;
     }

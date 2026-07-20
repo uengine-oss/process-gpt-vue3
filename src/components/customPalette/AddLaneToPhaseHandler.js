@@ -50,51 +50,50 @@ export default function AddLaneToPhaseHandler(commandStack, modeling, elementFac
         return phaseContainer.height > phaseContainer.width;
     }
 
-  function getShapeCenter(bounds) {
-    return {
-      x: bounds.x + bounds.width / 2,
-      y: bounds.y + bounds.height / 2
-    };
-  }
-
-  function getPhaseChildren(phaseContainer) {
-    return (phaseContainer.children || []).filter(child =>
-      child.type === 'phase:Phase' ||
-      child.businessObject?.$type === 'phase:Phase'
-    );
-  }
-
-  function getPhaseStripBounds(phaseContainer, isVertical) {
-    const phases = getPhaseChildren(phaseContainer);
-    if (!phases.length) {
-      return {
-        x: phaseContainer.x,
-        y: phaseContainer.y,
-        width: phaseContainer.width,
-        height: phaseContainer.height
-      };
+    function getShapeCenter(bounds) {
+        return {
+            x: bounds.x + bounds.width / 2,
+            y: bounds.y + bounds.height / 2
+        };
     }
 
-    if (isVertical) {
-      const minX = Math.min(...phases.map(phase => phase.x));
-      const maxX = Math.max(...phases.map(phase => phase.x + phase.width));
-      return {
-        x: minX,
-        y: phaseContainer.y,
-        width: maxX - minX,
-        height: phaseContainer.height
-      };
+    function getPhaseChildren(phaseContainer) {
+        return (phaseContainer.children || []).filter(
+            (child) => child.type === 'phase:Phase' || child.businessObject?.$type === 'phase:Phase'
+        );
     }
 
-    const minY = Math.min(...phases.map(phase => phase.y));
-    const maxY = Math.max(...phases.map(phase => phase.y + phase.height));
-    return {
-      x: phaseContainer.x,
-      y: minY,
-      width: phaseContainer.width,
-      height: maxY - minY
-    };
-  }
+    function getPhaseStripBounds(phaseContainer, isVertical) {
+        const phases = getPhaseChildren(phaseContainer);
+        if (!phases.length) {
+            return {
+                x: phaseContainer.x,
+                y: phaseContainer.y,
+                width: phaseContainer.width,
+                height: phaseContainer.height
+            };
+        }
+
+        if (isVertical) {
+            const minX = Math.min(...phases.map((phase) => phase.x));
+            const maxX = Math.max(...phases.map((phase) => phase.x + phase.width));
+            return {
+                x: minX,
+                y: phaseContainer.y,
+                width: maxX - minX,
+                height: phaseContainer.height
+            };
+        }
+
+        const minY = Math.min(...phases.map((phase) => phase.y));
+        const maxY = Math.max(...phases.map((phase) => phase.y + phase.height));
+        return {
+            x: phaseContainer.x,
+            y: minY,
+            width: phaseContainer.width,
+            height: maxY - minY
+        };
+    }
 
     function addPhaseAndSetNewLane(context) {
         const shape = context.shape;
@@ -128,12 +127,12 @@ export default function AddLaneToPhaseHandler(commandStack, modeling, elementFac
         // laneSet.lanes에 수동 추가하지 않음 → createShape 시 BpmnUpdater가 추가한 뒤, 원하는 인덱스로 재정렬
 
         const isVerticalContainer = isPhaseContainerVertical(phaseContainer);
-    const stripBounds = getPhaseStripBounds(phaseContainer, isVerticalContainer);
-    const pcX = stripBounds.x;
-    const pcY = stripBounds.y;
-    const pcW = stripBounds.width;
-    const pcH = stripBounds.height;
-    const newPhaseCount = laneSet.lanes.length + 1;
+        const stripBounds = getPhaseStripBounds(phaseContainer, isVerticalContainer);
+        const pcX = stripBounds.x;
+        const pcY = stripBounds.y;
+        const pcW = stripBounds.width;
+        const pcH = stripBounds.height;
+        const newPhaseCount = laneSet.lanes.length + 1;
 
         if (isVerticalContainer) {
             // 세로 PhaseContainer: 높이로 분할, isHorizontal: true

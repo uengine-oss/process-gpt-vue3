@@ -83,7 +83,13 @@ export default {
             if (noti && noti.new && noti.new.is_checked === false) {
                 this.fetchNotifications();
                 const _email = localStorage.getItem('email');
-                const _uuid = (() => { try { return JSON.parse(localStorage.getItem('sb-127-auth-token') || '{}')?.user?.id; } catch { return null; } })();
+                const _uuid = (() => {
+                    try {
+                        return JSON.parse(localStorage.getItem('sb-127-auth-token') || '{}')?.user?.id;
+                    } catch {
+                        return null;
+                    }
+                })();
                 if (_email && (noti.new.user_id === _email || noti.new.user_id === _uuid)) {
                     this.$emit('newNotification', noti.new.type);
                 }

@@ -24,73 +24,84 @@ function uengineJson(value) {
 }
 
 function extensionJson(value) {
-    return `<bpmn:extensionElements><uengine:properties><uengine:json>${uengineJson(value)}</uengine:json></uengine:properties></bpmn:extensionElements>`;
+    return `<bpmn:extensionElements><uengine:properties><uengine:json>${uengineJson(
+        value
+    )}</uengine:json></uengine:properties></bpmn:extensionElements>`;
 }
 
 function createExclusiveEightBranchBpmnXml() {
     const branchIds = Array.from({ length: 8 }, (_, index) => `branch_${index + 1}`);
-    const nodeRefs = [
-        'start',
-        'initial',
-        'split_xor',
-        ...branchIds,
-        'merge_task',
-        'end'
-    ];
+    const nodeRefs = ['start', 'initial', 'split_xor', ...branchIds, 'merge_task', 'end'];
 
-    const branchTasks = branchIds.map((id, index) => {
-        const flowIn = `flow_split_${id}`;
-        const flowOut = `flow_${id}_merge`;
-        return `
+    const branchTasks = branchIds
+        .map((id, index) => {
+            const flowIn = `flow_split_${id}`;
+            const flowOut = `flow_${id}_merge`;
+            return `
     <bpmn:userTask id="${id}" name="${id}">
       ${extensionJson({ role: { name: 'tester' }, tool: `formHandler:${id}` })}
       <bpmn:incoming>${flowIn}</bpmn:incoming>
       <bpmn:outgoing>${flowOut}</bpmn:outgoing>
     </bpmn:userTask>`;
-    }).join('');
+        })
+        .join('');
 
-    const splitFlows = branchIds.map((id, index) => `
+    const splitFlows = branchIds
+        .map(
+            (id, index) => `
     <bpmn:sequenceFlow id="flow_split_${id}" sourceRef="split_xor" targetRef="${id}">
       ${extensionJson({ condition: branchConditions[index + 1], conditionMode: 'text', priority: index + 1 })}
-    </bpmn:sequenceFlow>`).join('');
+    </bpmn:sequenceFlow>`
+        )
+        .join('');
 
-    const mergeFlows = branchIds.map((id) => `
+    const mergeFlows = branchIds
+        .map(
+            (id) => `
     <bpmn:sequenceFlow id="flow_${id}_merge" sourceRef="${id}" targetRef="merge_task">
       ${extensionJson({})}
-    </bpmn:sequenceFlow>`).join('');
+    </bpmn:sequenceFlow>`
+        )
+        .join('');
 
     const splitOutgoing = branchIds.map((id) => `<bpmn:outgoing>flow_split_${id}</bpmn:outgoing>`).join('\n      ');
     const mergeIncoming = branchIds.map((id) => `<bpmn:incoming>flow_${id}_merge</bpmn:incoming>`).join('\n      ');
 
-    const branchShapes = branchIds.map((id, index) => {
-        const y = 90 + index * 80;
-        return `
+    const branchShapes = branchIds
+        .map((id, index) => {
+            const y = 90 + index * 80;
+            return `
       <bpmndi:BPMNShape id="${id}_di" bpmnElement="${id}">
         <dc:Bounds x="470" y="${y}" width="110" height="64" />
       </bpmndi:BPMNShape>`;
-    }).join('');
+        })
+        .join('');
 
-    const splitEdges = branchIds.map((id, index) => {
-        const y = 122 + index * 80;
-        return `
+    const splitEdges = branchIds
+        .map((id, index) => {
+            const y = 122 + index * 80;
+            return `
       <bpmndi:BPMNEdge id="flow_split_${id}_di" bpmnElement="flow_split_${id}">
         <di:waypoint x="382" y="380" />
         <di:waypoint x="425" y="380" />
         <di:waypoint x="425" y="${y}" />
         <di:waypoint x="470" y="${y}" />
       </bpmndi:BPMNEdge>`;
-    }).join('');
+        })
+        .join('');
 
-    const mergeEdges = branchIds.map((id, index) => {
-        const y = 122 + index * 80;
-        return `
+    const mergeEdges = branchIds
+        .map((id, index) => {
+            const y = 122 + index * 80;
+            return `
       <bpmndi:BPMNEdge id="flow_${id}_merge_di" bpmnElement="flow_${id}_merge">
         <di:waypoint x="580" y="${y}" />
         <di:waypoint x="680" y="${y}" />
         <di:waypoint x="680" y="380" />
         <di:waypoint x="780" y="380" />
       </bpmndi:BPMNEdge>`;
-    }).join('');
+        })
+        .join('');
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_exclusive_eight_branch_merge_ai" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js" exporterVersion="17.9.1">

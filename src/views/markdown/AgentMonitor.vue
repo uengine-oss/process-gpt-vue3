@@ -1072,17 +1072,19 @@ export default {
                         console.log('[Realtime] final_report_merge 이벤트 수신:', row);
                     }
 
-                    const isValidEvent =
-                        !this.events.some((e) => e.id === id) && validEventTypes.includes(event_type) && todoId === taskId;
+                    const isValidEvent = !this.events.some((e) => e.id === id) && validEventTypes.includes(event_type) && todoId === taskId;
 
                     if (isValidEvent) {
                         if (event_type === 'task_completed' && (!row.data || Object.keys(row.data).length === 0)) {
-                            this.backend.getAgentEventById(id).then((full) => {
-                                console.log('[RealTime Failed] fallback DB');
-                                this.pushEventAndMaybeSubmit(full || row);
-                            }).catch(() => {
-                                this.pushEventAndMaybeSubmit(row);
-                            });
+                            this.backend
+                                .getAgentEventById(id)
+                                .then((full) => {
+                                    console.log('[RealTime Failed] fallback DB');
+                                    this.pushEventAndMaybeSubmit(full || row);
+                                })
+                                .catch(() => {
+                                    this.pushEventAndMaybeSubmit(row);
+                                });
                         } else {
                             this.pushEventAndMaybeSubmit(row);
                         }
@@ -1365,17 +1367,22 @@ export default {
                 if (!data) return;
                 if (data.output || data.output_url) {
                     const resultContent = data.output
-                        ? (typeof data.output === 'string' ? data.output : JSON.stringify(data.output, null, 2))
+                        ? typeof data.output === 'string'
+                            ? data.output
+                            : JSON.stringify(data.output, null, 2)
                         : data.output_url;
-                    this.events = [...this.events, {
-                        id: `output-fallback-${taskId}`,
-                        event_type: 'task_completed',
-                        crew_type: 'result',
-                        job_id: `output-fallback-${taskId}`,
-                        data: { message: resultContent },
-                        timestamp: new Date().toISOString(),
-                        todo_id: taskId
-                    }];
+                    this.events = [
+                        ...this.events,
+                        {
+                            id: `output-fallback-${taskId}`,
+                            event_type: 'task_completed',
+                            crew_type: 'result',
+                            job_id: `output-fallback-${taskId}`,
+                            data: { message: resultContent },
+                            timestamp: new Date().toISOString(),
+                            todo_id: taskId
+                        }
+                    ];
                 }
             } catch (e) {
                 console.error('fetchOutputIfEmpty 실패:', e);

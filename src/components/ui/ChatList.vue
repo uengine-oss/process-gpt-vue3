@@ -73,6 +73,9 @@
                             </v-avatar>
                         </template>
                         <v-list-item-title class="chat-room-title">
+                            <v-tooltip activator="parent" location="right">
+                                {{ room.name || $t('chatListing.newChat') }}
+                            </v-tooltip>
                             {{ room.name || '새 대화' }}
                         </v-list-item-title>
                         <v-list-item-subtitle class="chat-room-subtitle">

@@ -9,6 +9,18 @@
         <v-card-text class="add-marketplace-dialog-input-box pa-4 pb-0">
             <v-text-field v-model="newDefinition.id" :label="$t('ProcessDefinitionMarketPlaceDialog.processId')" disabled />
             <v-text-field v-model="newDefinition.name" :label="$t('ProcessDefinitionMarketPlaceDialog.processName')" disabled />
+            <v-select
+                v-model="selectedArcvId"
+                :items="versionOptions"
+                item-title="title"
+                item-value="value"
+                :label="$t('ProcessDefinitionMarketPlaceDialog.version') || '등록할 버전'"
+                :hint="versionHint"
+                persistent-hint
+                variant="outlined"
+                density="comfortable"
+                class="mb-2"
+            />
             <v-textarea v-model="newDefinition.description" :label="$t('ProcessDefinitionMarketPlaceDialog.description')" rows="3" />
             <div class="d-flex justify-space-between">
                 <v-text-field v-model="megaCategory" :label="$t('ProcessDefinitionMarketPlaceDialog.category1') + ' *'" class="mr-1" />
@@ -106,11 +118,23 @@ export default {
         generator: null,
         isDragOver: false,
         // 중복 체크
-        isDuplicateId: false
+        isDuplicateId: false,
+        // 버전 선택(등록 대상 proc_def_version)
+        versionOptions: [],
+        selectedArcvId: null
     }),
     computed: {
         isFormValid() {
             return this.megaCategory && this.majorCategory && this.tagsArray.length > 0;
+        },
+        versionHint() {
+            if (!this.versionOptions || this.versionOptions.length === 0) {
+                return (
+                    this.$t('ProcessDefinitionMarketPlaceDialog.noPublishedVersion') ||
+                    '발행(published) 버전이 없습니다. 현재 저장본으로 등록됩니다.'
+                );
+            }
+            return '';
         }
     },
     async mounted() {
@@ -132,6 +156,8 @@ export default {
 
             // 중복 ID 체크
             await this.checkDuplicateId();
+            // 등록 가능한 버전 로드
+            await this.loadVersionOptions();
         }
         this.generator = new ImageGenerator(this, {
             isStream: false,
@@ -184,15 +210,42 @@ export default {
                 this.isDuplicateId = false;
             }
         },
+        async loadVersionOptions() {
+            try {
+                const defId = this.newDefinition.id;
+                if (!defId) return;
+                const list = await backend.getDefinitionVersions(defId, {
+                    orderBy: 'timeStamp',
+                    sort: 'desc',
+                    type: 'bpmn'
+                });
+                if (!Array.isArray(list)) return;
+                // published → major → minor 순으로 우선 정렬해 기본값 선택.
+                const rank = (t) => (t === 'published' ? 0 : t === 'major' ? 1 : 2);
+                const sorted = [...list].sort((a, b) => rank(a.version_tag) - rank(b.version_tag));
+                this.versionOptions = sorted.map((v) => ({
+                    title: `v${v.version}${v.version_tag ? ` (${v.version_tag})` : ''}`,
+                    value: v.arcv_id
+                }));
+                if (this.versionOptions.length > 0) {
+                    this.selectedArcvId = this.versionOptions[0].value;
+                }
+            } catch (e) {
+                console.warn('[MarketPlaceDialog] 버전 목록 로드 실패:', e);
+            }
+        },
         async addDefinition() {
-            const definition = this.newDefinition.definition;
-            const filteredDef = this.filterDefinition(definition);
-            this.newDefinition.definition = filteredDef;
-
             this.$try({
                 context: this,
                 action: async () => {
-                    await backend.putTemplateDefinition(this.newDefinition);
+                    // 패키지 기반 등록: 선택 버전을 export → Storage 업로드 → 메타 등록.
+                    await backend.publishProcessComponent(this.newDefinition.id, this.selectedArcvId || undefined, {
+                        name: this.newDefinition.name,
+                        description: this.newDefinition.description,
+                        category: { mega: this.megaCategory, major: this.majorCategory },
+                        tags: this.tagsArray,
+                        image: this.newDefinition.image
+                    });
                     this.close();
                 },
                 successMsg: this.$t('successMsg.savedMarketplace')

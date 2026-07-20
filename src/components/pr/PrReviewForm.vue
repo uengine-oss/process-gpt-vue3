@@ -24,23 +24,14 @@
             </div>
         </div>
 
-        <textarea
-            class="prf-textarea"
-            v-model="localComment"
-            :placeholder="textareaPlaceholder"
-            rows="3"
-        ></textarea>
+        <textarea class="prf-textarea" v-model="localComment" :placeholder="textareaPlaceholder" rows="3"></textarea>
 
         <div v-if="error" class="prf-error">{{ error }}</div>
 
         <slot name="status-bar"></slot>
 
         <div class="prf-footer">
-            <button
-                :class="['prf-btn', btnClass]"
-                :disabled="isDisabled"
-                @click="handleSubmit"
-            >
+            <button :class="['prf-btn', btnClass]" :disabled="isDisabled" @click="handleSubmit">
                 <span v-if="loading">처리 중…</span>
                 <span v-else>{{ submitLabel }}</span>
             </button>
@@ -134,11 +125,27 @@ export default {
     transition: all 0.12s;
     user-select: none;
 }
-.prf-opt:hover { background: rgba(var(--v-theme-on-surface), 0.04); }
-.prf-opt.sel { font-weight: 600; }
-.prf-opt-cmt.sel { border-color: rgb(var(--v-theme-primary)); color: rgb(var(--v-theme-primary)); background: rgba(var(--v-theme-primary), 0.06); }
-.prf-opt-ok.sel { border-color: #3E9A3E; color: #2E6B16; background: #E7F4DF; }
-.prf-opt-chg.sel { border-color: #C7922B; color: #92610A; background: #FBF0DA; }
+.prf-opt:hover {
+    background: rgba(var(--v-theme-on-surface), 0.04);
+}
+.prf-opt.sel {
+    font-weight: 600;
+}
+.prf-opt-cmt.sel {
+    border-color: rgb(var(--v-theme-primary));
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.06);
+}
+.prf-opt-ok.sel {
+    border-color: #3e9a3e;
+    color: #2e6b16;
+    background: #e7f4df;
+}
+.prf-opt-chg.sel {
+    border-color: #c7922b;
+    color: #92610a;
+    background: #fbf0da;
+}
 
 .prf-radio {
     width: 10px;
@@ -147,7 +154,9 @@ export default {
     border: 2px solid currentColor;
     flex: none;
 }
-.prf-opt.sel .prf-radio { background: currentColor; }
+.prf-opt.sel .prf-radio {
+    background: currentColor;
+}
 
 .prf-textarea {
     width: 100%;
@@ -162,8 +171,12 @@ export default {
     color: rgba(var(--v-theme-on-surface), 0.87);
     transition: border-color 0.12s;
 }
-.prf-textarea:focus { border-color: rgb(var(--v-theme-primary)); }
-.prf-textarea::placeholder { color: rgba(var(--v-theme-on-surface), 0.35); }
+.prf-textarea:focus {
+    border-color: rgb(var(--v-theme-primary));
+}
+.prf-textarea::placeholder {
+    color: rgba(var(--v-theme-on-surface), 0.35);
+}
 
 .prf-error {
     margin-top: 6px;
@@ -188,8 +201,17 @@ export default {
     color: #fff;
     transition: opacity 0.12s;
 }
-.prf-btn:disabled { opacity: 0.5; cursor: default; }
-.prf-btn-ok { background: #3E9A3E; }
-.prf-btn-chg { background: #C7922B; }
-.prf-btn-cmt { background: rgb(var(--v-theme-primary)); }
+.prf-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.prf-btn-ok {
+    background: #3e9a3e;
+}
+.prf-btn-chg {
+    background: #c7922b;
+}
+.prf-btn-cmt {
+    background: rgb(var(--v-theme-primary));
+}
 </style>

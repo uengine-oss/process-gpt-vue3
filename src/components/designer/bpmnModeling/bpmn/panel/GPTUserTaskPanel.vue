@@ -42,7 +42,12 @@
                 </v-btn>
 
                 <!-- Instruction -->
-                <Instruction v-model="activity.instruction" :mention-candidates="mentionCandidates" :isViewMode="isViewMode" class="mb-4"></Instruction>
+                <Instruction
+                    v-model="activity.instruction"
+                    :mention-candidates="mentionCandidates"
+                    :isViewMode="isViewMode"
+                    class="mb-4"
+                ></Instruction>
 
                 <!-- Manual Links -->
                 <div class="mb-4">
@@ -139,7 +144,6 @@
                 />
             </v-window-item>
         </v-window>
-
     </div>
 </template>
 
@@ -414,8 +418,9 @@ export default {
                 };
             }
             if (!this.copyUengineProperties.eventSynchronization.mappingContext) {
-                this.copyUengineProperties.eventSynchronization.mappingContext =
-                    this.copyUengineProperties.mapperIn || { mappingElements: [] };
+                this.copyUengineProperties.eventSynchronization.mappingContext = this.copyUengineProperties.mapperIn || {
+                    mappingElements: []
+                };
             }
             if (!Array.isArray(this.copyUengineProperties.eventSynchronization.mappingContext.mappingElements)) {
                 this.copyUengineProperties.eventSynchronization.mappingContext.mappingElements = [];

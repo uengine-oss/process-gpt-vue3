@@ -10,7 +10,10 @@
                     @mouseleave="hoveredTabIndex = null"
                 >
                     <div class="tab-content-wrapper">
-                        <span class="tab-title">{{ tab.title }}</span>
+                        <span class="tab-title">
+                            <v-tooltip activator="parent" location="bottom">{{ getTabFullTitle(tab) }}</v-tooltip>
+                            {{ tab.title }}
+                        </span>
                         <v-btn
                             icon
                             variant="text"
@@ -668,6 +671,11 @@ export default {
             return t.length > max ? t.slice(0, max) + '...' : t;
         },
 
+        getTabFullTitle(tab) {
+            const room = tab?.roomId ? this.chatRooms.find((item) => item.id === tab.roomId) : null;
+            return room?.name || tab?.title || this.$t('chatListing.newChat');
+        },
+
         async putObject(path, obj, options) {
             await backend.putObject(`db://${path}`, obj, options);
         },
@@ -933,9 +941,17 @@ export default {
                 const currentName = (room.name || '').trim();
                 const isDefaultName = !currentName || currentName === '새 대화';
                 if (isDefaultName && text) {
-                    room.name = this.truncateText(text, 20);
-                    const t = this.tabs.find((x) => x.roomId === roomId);
-                    if (t) t.title = room.name;
+                    backend
+                        .generateSemanticName('chat', text)
+                        .then(async (generatedName) => {
+                            if (!generatedName) return;
+                            room.name = generatedName;
+                            const t = this.tabs.find((x) => x.roomId === roomId);
+                            if (t) t.title = this.truncateText(room.name, 20);
+                            await this.putObject('chat_rooms', room);
+                            this.EventBus.emit('chat-rooms-updated');
+                        })
+                        .catch(() => {});
                 }
                 await this.putObject('chat_rooms', room);
             }
@@ -1116,13 +1132,9 @@ export default {
     display: flex;
     align-items: center;
     gap: 6px;
-    max-width: 220px;
 }
 
 .tab-title {
-    max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
 

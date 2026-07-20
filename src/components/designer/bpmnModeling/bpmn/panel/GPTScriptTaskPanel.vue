@@ -6,94 +6,96 @@
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
-        <div class="mb-6">
-            <div class="mb-2">{{ $t('BpmnPropertyPanel.scriptType') + ' : ' + language }}</div>
-            <h6 class="text-caption mb-2">※ {{ $t('BpmnPropertyPanel.scriptVariable') }}</h6>
-            <v-card variant="outlined" class="pa-2" style="border-radius: 8px !important">
-                <v-textarea
-                    v-model="copyUengineProperties.script"
-                    :disabled="isViewMode"
-                    :label="language"
-                    style="width: 100%"
-                ></v-textarea>
+                <div class="mb-6">
+                    <div class="mb-2">{{ $t('BpmnPropertyPanel.scriptType') + ' : ' + language }}</div>
+                    <h6 class="text-caption mb-2">※ {{ $t('BpmnPropertyPanel.scriptVariable') }}</h6>
+                    <v-card variant="outlined" class="pa-2" style="border-radius: 8px !important">
+                        <v-textarea
+                            v-model="copyUengineProperties.script"
+                            :disabled="isViewMode"
+                            :label="language"
+                            style="width: 100%"
+                        ></v-textarea>
 
-                <GenerateScriptPanel
-                    v-model="copyUengineProperties.script"
-                    :language="language"
-                    :processDefinition="processDefinition"
-                    :organizationChart="organizationChart"
-                />
-            </v-card>
+                        <GenerateScriptPanel
+                            v-model="copyUengineProperties.script"
+                            :language="language"
+                            :processDefinition="processDefinition"
+                            :organizationChart="organizationChart"
+                        />
+                    </v-card>
 
-            <!-- Custom Properties -->
-            <KeyValueField
-                v-model="copyUengineProperties.customProperties"
-                :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
-                :readonly="isViewMode"
-                class="mt-4"
-            ></KeyValueField>
+                    <!-- Custom Properties -->
+                    <KeyValueField
+                        v-model="copyUengineProperties.customProperties"
+                        :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
+                        :readonly="isViewMode"
+                        class="mt-4"
+                    ></KeyValueField>
 
-            <!-- Task Color Picker -->
-            <div class="mt-4">
-                <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
-                <div class="d-flex flex-wrap gap-2 mb-3">
-                    <v-btn
-                        v-for="color in presetColors"
-                        :key="color.value"
-                        :style="{
-                            backgroundColor: color.value,
-                            border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
-                        }"
-                        size="small"
-                        icon
-                        :disabled="isViewMode"
-                        @click="setTaskColor(color.value)"
-                    >
-                        <v-icon v-if="copyUengineProperties.taskColor === color.value" size="small" color="white">mdi-check</v-icon>
-                    </v-btn>
-                </div>
-                <v-row class="ma-0 pa-0 align-center">
-                    <v-menu v-model="showColorPicker" :close-on-content-click="false" location="bottom">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" :disabled="isViewMode" variant="outlined" size="small" class="mr-2">
-                                <v-icon start size="small">mdi-palette</v-icon
-                                >{{ $t('BpmnPropertyPanel.customColor') || '사용자 정의 색상' }}
+                    <!-- Task Color Picker -->
+                    <div class="mt-4">
+                        <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <v-btn
+                                v-for="color in presetColors"
+                                :key="color.value"
+                                :style="{
+                                    backgroundColor: color.value,
+                                    border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
+                                }"
+                                size="small"
+                                icon
+                                :disabled="isViewMode"
+                                @click="setTaskColor(color.value)"
+                            >
+                                <v-icon v-if="copyUengineProperties.taskColor === color.value" size="small" color="white">mdi-check</v-icon>
                             </v-btn>
-                        </template>
-                        <v-card min-width="300">
-                            <v-color-picker v-model="customColor" mode="hexa" hide-inputs></v-color-picker>
-                            <v-card-actions>
-                                <v-btn size="small" @click="showColorPicker = false">{{ $t('common.cancel') || '취소' }}</v-btn>
-                                <v-btn size="small" color="primary" @click="applyCustomColor">{{ $t('common.confirm') || '적용' }}</v-btn>
-                            </v-card-actions>
-                        </v-card>
-                    </v-menu>
-                    <v-btn
-                        v-if="copyUengineProperties.taskColor"
-                        variant="text"
-                        size="small"
-                        color="error"
-                        :disabled="isViewMode"
-                        @click="resetTaskColor"
-                    >
-                        <v-icon size="small">mdi-close</v-icon>{{ $t('BpmnPropertyPanel.resetColor') || '초기화' }}
-                    </v-btn>
-                </v-row>
-                <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
-                    <div
-                        :style="{
-                            backgroundColor: copyUengineProperties.taskColor,
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '4px',
-                            border: '1px solid #ccc'
-                        }"
-                        class="mr-2"
-                    ></div>
-                    <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
+                        </div>
+                        <v-row class="ma-0 pa-0 align-center">
+                            <v-menu v-model="showColorPicker" :close-on-content-click="false" location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" :disabled="isViewMode" variant="outlined" size="small" class="mr-2">
+                                        <v-icon start size="small">mdi-palette</v-icon
+                                        >{{ $t('BpmnPropertyPanel.customColor') || '사용자 정의 색상' }}
+                                    </v-btn>
+                                </template>
+                                <v-card min-width="300">
+                                    <v-color-picker v-model="customColor" mode="hexa" hide-inputs></v-color-picker>
+                                    <v-card-actions>
+                                        <v-btn size="small" @click="showColorPicker = false">{{ $t('common.cancel') || '취소' }}</v-btn>
+                                        <v-btn size="small" color="primary" @click="applyCustomColor">{{
+                                            $t('common.confirm') || '적용'
+                                        }}</v-btn>
+                                    </v-card-actions>
+                                </v-card>
+                            </v-menu>
+                            <v-btn
+                                v-if="copyUengineProperties.taskColor"
+                                variant="text"
+                                size="small"
+                                color="error"
+                                :disabled="isViewMode"
+                                @click="resetTaskColor"
+                            >
+                                <v-icon size="small">mdi-close</v-icon>{{ $t('BpmnPropertyPanel.resetColor') || '초기화' }}
+                            </v-btn>
+                        </v-row>
+                        <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
+                            <div
+                                :style="{
+                                    backgroundColor: copyUengineProperties.taskColor,
+                                    width: '24px',
+                                    height: '24px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #ccc'
+                                }"
+                                class="mr-2"
+                            ></div>
+                            <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
             </v-window-item>
             <v-window-item value="inputData" class="pa-4">
                 <ProcessGptReferenceMapper

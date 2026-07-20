@@ -147,7 +147,9 @@ async def evaluate_conditions():
 `;
 
 function runExecutionScenario(definition: unknown, scenario: any, mode: Mode) {
-    const script = commonPython + String.raw`
+    const script =
+        commonPython +
+        String.raw`
 
 async def main():
     await evaluate_conditions()
@@ -210,7 +212,9 @@ asyncio.run(main())
 }
 
 function runCustomExecutionScenario(definition: unknown, scenario: any, mode: Mode) {
-    const script = commonPython + String.raw`
+    const script =
+        commonPython +
+        String.raw`
 
 async def main():
     await evaluate_conditions()
@@ -366,7 +370,9 @@ test.describe('gateway branch regression matrix', () => {
                 for (const entry of Object.values(payload.conditionEval) as Array<Record<string, unknown>>) {
                     expect(entry).toHaveProperty('conditionEval');
                 }
-                expect(payload.selectedNextActivityIds.sort()).toEqual([...(scenario.aiExpectedBranches || scenario.selectedBranches)].sort());
+                expect(payload.selectedNextActivityIds.sort()).toEqual(
+                    [...(scenario.aiExpectedBranches || scenario.selectedBranches)].sort()
+                );
                 expectBranchCanReachMerge(payload);
                 expectAfterMergeGateway(payload, scenario);
             });
@@ -388,15 +394,16 @@ test.describe('gateway branch regression matrix', () => {
                 for (const entry of Object.values(payload.conditionEval) as Array<Record<string, unknown>>) {
                     expect(entry).toHaveProperty('conditionEval');
                 }
-                expect(payload.selectedNextActivityIds.sort()).toEqual([...(scenario.aiExpectedBranches || scenario.selectedBranches)].sort());
+                expect(payload.selectedNextActivityIds.sort()).toEqual(
+                    [...(scenario.aiExpectedBranches || scenario.selectedBranches)].sort()
+                );
                 assertCustomPayload(payload, scenario);
             });
         }
     }
 
     for (const coverageCase of coverageCases) {
-        const modes = (coverageCase.modes || ['deterministic', 'ai'])
-            .filter((mode: Mode) => includeAiTests || mode === 'deterministic');
+        const modes = (coverageCase.modes || ['deterministic', 'ai']).filter((mode: Mode) => includeAiTests || mode === 'deterministic');
         const base = coverageCase.custom
             ? customScenariosById.get(coverageCase.baseScenarioId)
             : scenariosById.get(coverageCase.baseScenarioId);
@@ -405,9 +412,7 @@ test.describe('gateway branch regression matrix', () => {
 
         for (const mode of modes) {
             test(`${mode} coverage ${coverageCase.id}`, async () => {
-                const definition = coverageCase.custom
-                    ? await createCustomDefinition(base)
-                    : await createDefinition(scenario);
+                const definition = coverageCase.custom ? await createCustomDefinition(base) : await createDefinition(scenario);
                 const payload = coverageCase.custom
                     ? runCustomExecutionScenario(definition, scenario, mode)
                     : runExecutionScenario(definition, scenario, mode);
@@ -418,7 +423,9 @@ test.describe('gateway branch regression matrix', () => {
                     }
                 }
 
-                expect(payload.selectedNextActivityIds.sort()).toEqual([...(mode === 'ai' ? scenario.aiExpectedBranches : scenario.selectedBranches)].sort());
+                expect(payload.selectedNextActivityIds.sort()).toEqual(
+                    [...(mode === 'ai' ? scenario.aiExpectedBranches : scenario.selectedBranches)].sort()
+                );
                 if (coverageCase.custom) {
                     assertCustomPayload(payload, scenario);
                 } else {
@@ -433,9 +440,10 @@ test.describe('gateway branch regression matrix', () => {
 function assertCustomPayload(payload: any, scenario: any) {
     const scenarioKind = scenario.baseScenarioId || scenario.id;
     if (scenarioKind === 'nested-branch-inclusive-direct-merge') {
-        const expectedNested = payload.mode === 'ai' && scenario.aiNestedExpectedBranches
-            ? scenario.aiNestedExpectedBranches
-            : scenario.nestedSelectedBranches;
+        const expectedNested =
+            payload.mode === 'ai' && scenario.aiNestedExpectedBranches
+                ? scenario.aiNestedExpectedBranches
+                : scenario.nestedSelectedBranches;
         expect(payload.nestedNextActivityIds.sort()).toEqual([...expectedNested].sort());
         for (const branchId of payload.nestedNextActivityIds) {
             expect(payload.nestedAfterBranch[branchId].resolved).toContain('nested_merge_task');

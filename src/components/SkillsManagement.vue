@@ -162,9 +162,11 @@
                                                         v-else
                                                         class="name-cell"
                                                         :class="{ 'table-row-deleting': deletingSkillName === item.name }"
-                                                        :style="item.depth ? { paddingLeft: (item.depth * 20) + 'px' } : {}"
+                                                        :style="item.depth ? { paddingLeft: item.depth * 20 + 'px' } : {}"
                                                     >
-                                                        <v-icon v-if="item.depth" size="14" class="mr-1 child-indent-icon">mdi-subdirectory-arrow-right</v-icon>
+                                                        <v-icon v-if="item.depth" size="14" class="mr-1 child-indent-icon"
+                                                            >mdi-subdirectory-arrow-right</v-icon
+                                                        >
                                                         <v-icon size="20" class="mr-2 skill-icon">mdi-lightning-bolt-outline</v-icon>
                                                         <span class="skill-name-text">{{ item.name }}</span>
                                                         <v-icon v-if="deletingSkillName !== item.name" size="16" class="open-hint"
@@ -305,7 +307,9 @@
                                                                 variant="tonal"
                                                                 color="secondary"
                                                                 class="flex-shrink-0 card-inherit-chip"
-                                                                @click.stop="$router.push(`/skills/${encodeURIComponent(skill.parentName)}`)"
+                                                                @click.stop="
+                                                                    $router.push(`/skills/${encodeURIComponent(skill.parentName)}`)
+                                                                "
                                                             >
                                                                 <v-icon start size="10">mdi-arrow-up</v-icon>
                                                                 {{ skill.parentName }}
@@ -338,7 +342,9 @@
                                                                     @click.stop="createChildSkill(skill.name)"
                                                                 >
                                                                     <v-icon>mdi-source-fork</v-icon>
-                                                                    <v-tooltip activator="parent" location="top">상속 스킬 만들기</v-tooltip>
+                                                                    <v-tooltip activator="parent" location="top"
+                                                                        >상속 스킬 만들기</v-tooltip
+                                                                    >
                                                                 </v-btn>
                                                                 <v-btn
                                                                     icon
@@ -547,7 +553,6 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-
     </v-card>
 </template>
 
@@ -577,7 +582,7 @@ export default {
             searchUploaded: '',
             searchBuiltin: '',
             cardPageUploaded: 1,
-            cardPageBuiltin: 1,
+            cardPageBuiltin: 1
         };
     },
     watch: {
@@ -633,7 +638,19 @@ export default {
                     return { ...s, usedCount: count, used: count, depth: 0, parentName: this.parentMap[s.name] || null };
                 });
                 const withPlaceholder = this.isUploading
-                    ? [{ name: '__uploading__', description: '', children: [], usedCount: 0, used: 0, depth: 0, parentName: null, isPlaceholder: true }, ...flat]
+                    ? [
+                          {
+                              name: '__uploading__',
+                              description: '',
+                              children: [],
+                              usedCount: 0,
+                              used: 0,
+                              depth: 0,
+                              parentName: null,
+                              isPlaceholder: true
+                          },
+                          ...flat
+                      ]
                     : flat;
                 return this.filterTableRows(withPlaceholder, q);
             }
@@ -652,7 +669,16 @@ export default {
                 if (!childSet.has(s.name)) addSkill(s, 0);
             }
             if (this.isUploading) {
-                rows.unshift({ name: '__uploading__', description: '', children: [], usedCount: 0, used: 0, depth: 0, parentName: null, isPlaceholder: true });
+                rows.unshift({
+                    name: '__uploading__',
+                    description: '',
+                    children: [],
+                    usedCount: 0,
+                    used: 0,
+                    depth: 0,
+                    parentName: null,
+                    isPlaceholder: true
+                });
             }
             return rows;
         },
@@ -662,7 +688,18 @@ export default {
                 return { ...s, usedCount: count, used: count, parentName: this.parentMap[s.name] || null };
             });
             const withPlaceholder = this.isUploading
-                ? [{ name: '__uploading__', description: '', children: [], usedCount: 0, used: 0, parentName: null, isPlaceholder: true }, ...rows]
+                ? [
+                      {
+                          name: '__uploading__',
+                          description: '',
+                          children: [],
+                          usedCount: 0,
+                          used: 0,
+                          parentName: null,
+                          isPlaceholder: true
+                      },
+                      ...rows
+                  ]
                 : rows;
             return this.filterTableRows(withPlaceholder, this.searchUploaded);
         },

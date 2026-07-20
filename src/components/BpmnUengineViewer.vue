@@ -683,18 +683,20 @@ export default {
             if (!elementRegistry) return null;
 
             const participants = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
-            const elements = participants.length > 0
-                ? participants
-                : elementRegistry.filter((element) =>
-                    element &&
-                    !element.labelTarget &&
-                    element.width > 0 &&
-                    element.height > 0 &&
-                    element.type !== 'bpmn:SequenceFlow' &&
-                    element.type !== 'bpmn:MessageFlow' &&
-                    element.type !== 'bpmn:Collaboration' &&
-                    element.type !== 'bpmn:Process'
-                );
+            const elements =
+                participants.length > 0
+                    ? participants
+                    : elementRegistry.filter(
+                          (element) =>
+                              element &&
+                              !element.labelTarget &&
+                              element.width > 0 &&
+                              element.height > 0 &&
+                              element.type !== 'bpmn:SequenceFlow' &&
+                              element.type !== 'bpmn:MessageFlow' &&
+                              element.type !== 'bpmn:Collaboration' &&
+                              element.type !== 'bpmn:Process'
+                      );
 
             if (!elements.length) return null;
 
@@ -1247,10 +1249,7 @@ export default {
                     maxZoom,
                     Math.max(
                         minZoom,
-                        Math.min(
-                            containerWidth / (focusWidth + focusPadding * 2),
-                            containerHeight / (focusHeight + focusPadding * 2)
-                        )
+                        Math.min(containerWidth / (focusWidth + focusPadding * 2), containerHeight / (focusHeight + focusPadding * 2))
                     )
                 );
                 const viewboxWidth = containerWidth / scale;
@@ -1344,11 +1343,23 @@ export default {
             participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
                 if (isHorizontal && !horizontal) {
-                    palleteProvider.changeParticipantVerticalToHorizontal(undefined, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
+                    palleteProvider.changeParticipantVerticalToHorizontal(
+                        undefined,
+                        element,
+                        self.onLoadStart,
+                        self.onLoadEnd,
+                        rotateOptions
+                    );
                     self.isHorizontal = true;
                     element.di.isHorizontal = true;
                 } else if (!isHorizontal && horizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(undefined, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
+                    palleteProvider.changeParticipantHorizontalToVertical(
+                        undefined,
+                        element,
+                        self.onLoadStart,
+                        self.onLoadEnd,
+                        rotateOptions
+                    );
                     self.isHorizontal = false;
                     element.di.isHorizontal = false;
                 }
@@ -1364,24 +1375,23 @@ export default {
             const modeling = this.bpmnViewer?.get('modeling');
             if (!elementRegistry) return;
 
-            elementRegistry.filter((element) =>
-                element.type === 'bpmn:Participant' ||
-                element.type === 'bpmn:Lane'
-            ).forEach((element) => {
-                try {
-                    modeling?.updateProperties(element, {
-                        di: { isHorizontal }
-                    });
-                } catch (e) {
-                    // Keep direct DI sync even if the element cannot be updated through modeling.
-                }
-                if (element.di) {
-                    element.di.isHorizontal = isHorizontal;
-                }
-                if (element.businessObject) {
-                    element.businessObject.isHorizontal = isHorizontal;
-                }
-            });
+            elementRegistry
+                .filter((element) => element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane')
+                .forEach((element) => {
+                    try {
+                        modeling?.updateProperties(element, {
+                            di: { isHorizontal }
+                        });
+                    } catch (e) {
+                        // Keep direct DI sync even if the element cannot be updated through modeling.
+                    }
+                    if (element.di) {
+                        element.di.isHorizontal = isHorizontal;
+                    }
+                    if (element.businessObject) {
+                        element.businessObject.isHorizontal = isHorizontal;
+                    }
+                });
         },
         syncOrientationFlagsLater(isHorizontal) {
             this.syncOrientationFlags(isHorizontal);

@@ -103,7 +103,10 @@ export default {
             },
             deletedInstances: null,
             sortOption: 'updatedAt',
-            pageSize: 10
+            // 한 인스턴스(루트+콜/서브 프로세스 자식)가 만들어내는 워크아이템 수가 10개를 쉽게 넘기기 때문에
+            // pageSize가 작으면 실행 중인 인스턴스의 루트 액티비티가 자식 워크아이템에 밀려 첫 페이지에서 사라진다.
+            // 데모 안정성을 위해 페이지 크기를 넉넉히 확보한다.
+            pageSize: 50
         };
     },
     computed: {

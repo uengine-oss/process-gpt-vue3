@@ -555,7 +555,36 @@ create table if not exists public.proc_def_marketplace (
     author_uid text null,
     image text null,
     import_count integer not null default 0,
+    -- 프로세스 컴포넌트 패키지(zip) 기반 마켓플레이스
+    version text null,               -- 컴포넌트 버전(semver-ish). 무버전 레거시 행은 null.
+    package_path text null,          -- Supabase Storage 내 zip 경로({id}/{version}.zip). 레거시는 null.
+    source_arcv_id text null,        -- export 원본 proc_def_version.arcv_id
+    manifest jsonb null,             -- 패키지 manifest.json(의존성 표시 등)
+    created_at timestamptz null default now(),
     constraint proc_def_marketplace_pkey primary key (uuid)
+) tablespace pg_default;
+
+-- 같은 컴포넌트 id 에 대해 버전 중복 등록 방지(무버전 레거시 행은 제외).
+create unique index if not exists proc_def_marketplace_id_version_uq
+    on public.proc_def_marketplace (id, version)
+    where version is not null;
+
+-- 컴포넌트 id 별 최신 버전만 노출하는 리스팅 뷰.
+create or replace view public.proc_def_marketplace_latest as
+    select distinct on (id) *
+    from public.proc_def_marketplace
+    order by id, created_at desc nulls last;
+
+-- 테넌트별 마켓플레이스 컴포넌트 설치 추적(업데이트 알림용).
+create table if not exists public.installed_components (
+    tenant_id text not null,
+    component_id text not null,       -- 마켓플레이스 id / manifest.componentId
+    marketplace_uuid uuid null,
+    installed_version text not null,
+    local_proc_def_id text not null,  -- 테넌트 내 proc_def.id
+    installed_at timestamptz null default now(),
+    updated_at timestamptz null default now(),
+    constraint installed_components_pkey primary key (tenant_id, local_proc_def_id)
 ) tablespace pg_default;
 
 create table if not exists public.form_def_marketplace (
@@ -1199,142 +1228,11 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+-- [DEPRECATED / REMOVED] duplicate_definition_from_marketplace RPC
+-- 마켓플레이스 설치는 이제 표준 프로세스 컴포넌트 패키지(zip) import 경로
+-- (ProcessGPTBackend.installProcessComponent → importProcessComponent)로 대체되었다.
+-- 이 함수는 프로세스 정의 + 폼만 복사하고 에이전트/스킬은 복사하지 못했다.
 DROP FUNCTION IF EXISTS public.duplicate_definition_from_marketplace(text, text, text, text);
-
-CREATE OR REPLACE FUNCTION duplicate_definition_from_marketplace(
-    p_definition_id   TEXT,
-    p_definition_name TEXT,
-    p_author_uid      TEXT,
-    p_tenant_id       TEXT
-)
-RETURNS JSONB AS $$
-DECLARE
-    v_proc_def_record   RECORD;
-    v_form_def_record   RECORD;
-    v_result            JSONB := '{}';
-    v_proc_def_uuid     UUID;
-    v_form_def_uuid     UUID;
-    v_new_definition_id TEXT;
-    v_new_definition    JSONB;
-    v_activities        JSONB;
-    v_activity          JSONB;
-    v_tool              TEXT;
-    v_form_id           TEXT;
-BEGIN
-    -- 프로세스 정의 조회
-    SELECT *
-      INTO v_proc_def_record
-      FROM proc_def_marketplace
-     WHERE id = p_definition_id
-       AND name = p_definition_name;
-
-    IF NOT FOUND THEN
-        RETURN jsonb_build_object('error', 'Process definition not found in marketplace');
-    END IF;
-
-    -- 새로운 정의 ID 생성 (기존 ID + UUID)
-    v_new_definition_id := p_definition_id || '_' || gen_random_uuid()::TEXT;
-
-    -- definition JSON에서 processDefinitionId 업데이트
-    v_new_definition := v_proc_def_record.definition;
-    v_new_definition := jsonb_set(
-        v_new_definition,
-        '{processDefinitionId}',
-        to_jsonb(v_new_definition_id)
-    );
-
-    -- activities 배열 캐싱
-    v_activities := COALESCE(v_new_definition->'activities', '[]'::jsonb);
-
-    -- proc_def 에 복사
-    INSERT INTO proc_def (
-        id,
-        name,
-        definition,
-        bpmn,
-        tenant_id
-    ) VALUES (
-        v_new_definition_id,
-        v_proc_def_record.name,
-        v_new_definition,
-        v_proc_def_record.bpmn,
-        p_tenant_id
-    )
-    ON CONFLICT (id, tenant_id) DO UPDATE SET
-        name       = EXCLUDED.name,
-        definition = EXCLUDED.definition,
-        bpmn       = EXCLUDED.bpmn
-    RETURNING uuid INTO v_proc_def_uuid;
-
-    -- form_def_marketplace → form_def 복사
-    FOR v_form_def_record IN
-        SELECT *
-          FROM form_def_marketplace
-         WHERE proc_def_id = p_definition_id
-           AND author_uid  = p_author_uid
-    LOOP
-        -- definition JSON 에서 해당 activity 를 찾아 tool 기반으로 formId 계산
-        SELECT elem
-          INTO v_activity
-          FROM jsonb_array_elements(v_activities) AS elem
-         WHERE elem->>'id' = v_form_def_record.activity_id
-         LIMIT 1;
-
-        IF v_activity IS NOT NULL
-           AND v_activity ? 'tool'
-           AND v_activity->>'tool' LIKE 'formHandler:%' THEN
-            v_tool    := v_activity->>'tool';
-            v_form_id := split_part(v_tool, 'formHandler:', 2);
-        ELSE
-            -- tool 정보가 없으면 기존 id 사용 (fallback)
-            v_form_id := v_form_def_record.id;
-        END IF;
-
-        INSERT INTO form_def (
-            html,
-            proc_def_id,
-            activity_id,
-            tenant_id,
-            id,
-            fields_json
-        ) VALUES (
-            v_form_def_record.html,
-            v_new_definition_id,
-            v_form_def_record.activity_id,
-            p_tenant_id,
-            v_form_id,
-            NULL
-        )
-        ON CONFLICT (id, tenant_id) DO UPDATE SET
-            html        = EXCLUDED.html,
-            proc_def_id = EXCLUDED.proc_def_id,
-            activity_id = EXCLUDED.activity_id
-        RETURNING uuid INTO v_form_def_uuid;
-    END LOOP;
-
-    -- import_count 증가
-    UPDATE proc_def_marketplace
-       SET import_count = import_count + 1
-     WHERE id   = p_definition_id
-       AND name = p_definition_name;
-
-    v_result := jsonb_build_object(
-        'success',          true,
-        'proc_def_uuid',    v_proc_def_uuid,
-        'new_definition_id', v_new_definition_id,
-        'message',          'Definition duplicated successfully'
-    );
-
-    RETURN v_result;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN jsonb_build_object(
-            'error',   SQLERRM,
-            'success', false
-        );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- project updated_at 업데이트 
 CREATE OR REPLACE FUNCTION update_project_updated_at()
@@ -1581,6 +1479,22 @@ CREATE POLICY knowledge_folders_delete_policy ON knowledge_folders FOR DELETE TO
 
 -- Storage policies
 CREATE POLICY "Allow authenticated users to upload" ON storage.objects FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- 프로세스 컴포넌트 패키지 저장용 버킷(전역 카탈로그).
+INSERT INTO storage.buckets (id, name, public)
+    VALUES ('process-components', 'process-components', false)
+    ON CONFLICT (id) DO NOTHING;
+CREATE POLICY "process-components read" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'process-components');
+CREATE POLICY "process-components write" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'process-components');
+CREATE POLICY "process-components update" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'process-components');
+CREATE POLICY "process-components delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'process-components');
+
+-- installed_components policies (테넌트 단위 격리)
+ALTER TABLE public.installed_components ENABLE ROW LEVEL SECURITY;
+CREATE POLICY installed_components_select_policy ON installed_components FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY installed_components_insert_policy ON installed_components FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY installed_components_update_policy ON installed_components FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY installed_components_delete_policy ON installed_components FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
 
 -- Project policies
 CREATE POLICY project_insert_policy ON project FOR INSERT TO authenticated WITH CHECK ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));

@@ -35,21 +35,36 @@ class DeepAgentRouterService {
     }
 
     async sendMessageStream(agentId, params, callbacks = {}, options = {}) {
-        const { onToken, onToolStart, onToolEnd, onPlanTools, onPlanSkills, onPlanConnectors, onPlanTodos, onDone, onError, onMetadata, onAbort, onOpenUi, onProcessResult, onFileArtifact } = callbacks;
+        const {
+            onToken,
+            onToolStart,
+            onToolEnd,
+            onPlanTools,
+            onPlanSkills,
+            onPlanConnectors,
+            onPlanTodos,
+            onDone,
+            onError,
+            onMetadata,
+            onAbort,
+            onOpenUi,
+            onProcessResult,
+            onFileArtifact
+        } = callbacks;
 
         try {
             let meta = params.metadata;
             if (meta.agent_profile && meta.agent_profile.id !== 'process-gpt-agent') {
                 meta.agent_profile = {
-                    "id": "process-gpt-agent",
-                    "username": "Process GPT Agent",
-                    "alias": "",
-                    "role": "",
-                    "goal": "",
-                    "persona": "",
-                    "description": "",
-                    "tools": "",
-                    "skills": []
+                    id: 'process-gpt-agent',
+                    username: 'Process GPT Agent',
+                    alias: '',
+                    role: '',
+                    goal: '',
+                    persona: '',
+                    description: '',
+                    tools: '',
+                    skills: []
                 };
             }
             const response = await fetch(`${this.baseUrl}/chat/stream`, {
@@ -73,8 +88,8 @@ class DeepAgentRouterService {
                     file_count: Number.isFinite(params.file_count)
                         ? params.file_count
                         : Array.isArray(params.files)
-                            ? params.files.length
-                            : 0,
+                        ? params.files.length
+                        : 0,
                     stream: true,
                     metadata: params.metadata || {}
                 })
@@ -121,7 +136,8 @@ class DeepAgentRouterService {
                                     if (onPlanTodos) onPlanTodos(Array.isArray(parsed.todos) ? parsed.todos : [], parsed);
                                     break;
                                 case 'plan_connectors':
-                                    if (onPlanConnectors) onPlanConnectors(Array.isArray(parsed.connectors) ? parsed.connectors : [], parsed);
+                                    if (onPlanConnectors)
+                                        onPlanConnectors(Array.isArray(parsed.connectors) ? parsed.connectors : [], parsed);
                                     break;
                                 case 'tool_start': {
                                     const toolRef = parsed.tool ?? parsed.tool_name ?? parsed.name;
@@ -166,4 +182,3 @@ class DeepAgentRouterService {
 
 export default new DeepAgentRouterService();
 export { DeepAgentRouterService };
-

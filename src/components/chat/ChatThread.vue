@@ -97,12 +97,35 @@
                         </div>
                     </div>
 
-                    <div v-if="msg.toolCalls && msg.toolCalls.length > 0" class="tool-calls">
-                        <div v-for="(tool, idx) in msg.toolCalls" :key="idx" class="tool-call-item">
-                            <v-icon size="14" color="primary" class="mr-1">mdi-wrench</v-icon>
-                            <span class="tool-name">{{ formatToolName(tool.name) }}</span>
+                    <details v-if="hasExecutionDetails(msg)" class="tool-calls">
+                        <summary class="tool-calls__summary">
+                            <v-icon size="14" color="primary" class="mr-1">mdi-timeline-check-outline</v-icon>
+                            실행 상세 {{ executionDetailCount(msg) }}건
+                        </summary>
+                        <div v-for="skill in msg.executionSkills || []" :key="`skill-${skill}`" class="tool-call-item">
+                            <v-icon size="14" color="success" class="mr-1">mdi-lightning-bolt-outline</v-icon>
+                            <span class="tool-name">스킬 · {{ skill }}</span>
                         </div>
-                    </div>
+                        <div v-for="connector in msg.executionConnectors || []" :key="`mcp-${connector}`" class="tool-call-item">
+                            <v-icon size="14" color="primary" class="mr-1">mdi-server-network-outline</v-icon>
+                            <span class="tool-name">MCP · {{ connector }}</span>
+                        </div>
+                        <details v-for="(tool, idx) in msg.toolCalls || []" :key="idx" class="tool-call-detail">
+                            <summary class="tool-call-item">
+                                <v-icon size="14" color="primary" class="mr-1">mdi-wrench</v-icon>
+                                <span class="tool-name">{{ toolConnectorLabel(tool) }}{{ formatToolName(tool.name) }}</span>
+                                <span class="tool-call-status">{{ tool.status || 'done' }}</span>
+                            </summary>
+                            <pre
+                                v-if="tool.input != null"
+                                class="tool-call-output"
+                            ><strong>입력</strong>{{ '\n' }}{{ formatExecutionValue(tool.input) }}</pre>
+                            <pre
+                                v-if="tool.output != null"
+                                class="tool-call-output"
+                            ><strong>결과</strong>{{ '\n' }}{{ formatExecutionValue(tool.output) }}</pre>
+                        </details>
+                    </details>
 
                     <div v-if="hasPdf2bpmnResultSections(msg)" class="pdf2bpmn-result-container mt-3">
                         <div class="result-header">
@@ -439,6 +462,51 @@ export default {
             const toolKey = name.split('__').pop();
             return toolNameMap[toolKey] || toolKey;
         },
+        hasExecutionDetails(message) {
+            return !!(
+                (Array.isArray(message?.toolCalls) && message.toolCalls.length) ||
+                (Array.isArray(message?.executionSkills) && message.executionSkills.length) ||
+                (Array.isArray(message?.executionConnectors) && message.executionConnectors.length)
+            );
+        },
+        executionDetailCount(message) {
+            return (
+                (message?.toolCalls?.length || 0) + (message?.executionSkills?.length || 0) + (message?.executionConnectors?.length || 0)
+            );
+        },
+        toolConnectorLabel(tool) {
+            const names = Array.isArray(tool?.connectors) ? tool.connectors.filter(Boolean) : [];
+            return names.length ? `${names.join(', ')} · ` : '';
+        },
+        formatExecutionValue(raw) {
+            const sensitive = /(^|_)(authorization|password|passwd|secret|token|jwt|api_?key|access_?key)($|_)/i;
+            const redact = (value, depth = 0) => {
+                if (depth > 8) return '[생략]';
+                if (Array.isArray(value)) return value.slice(0, 50).map((v) => redact(v, depth + 1));
+                if (value && typeof value === 'object') {
+                    return Object.fromEntries(
+                        Object.entries(value)
+                            .slice(0, 100)
+                            .map(([key, val]) => [key, sensitive.test(key) ? '[보안상 숨김]' : redact(val, depth + 1)])
+                    );
+                }
+                return value;
+            };
+            try {
+                let value = raw;
+                if (typeof raw === 'string') {
+                    try {
+                        value = JSON.parse(raw);
+                    } catch {
+                        value = raw;
+                    }
+                }
+                const text = typeof value === 'string' ? value : JSON.stringify(redact(value), null, 2);
+                return text.length > 6000 ? `${text.slice(0, 6000)}\n…(이하 생략)` : text;
+            } catch {
+                return String(raw).slice(0, 6000);
+            }
+        },
         formatTime(timestamp) {
             if (!timestamp) return '';
             const date = new Date(timestamp);
@@ -660,9 +728,15 @@ export default {
 
 .tool-calls {
     margin-top: 8px;
+    font-size: 12px;
+}
+
+.tool-calls__summary {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.65);
+    padding: 4px 0;
 }
 
 .tool-call-item {
@@ -671,6 +745,35 @@ export default {
     gap: 6px;
     font-size: 12px;
     color: rgba(0, 0, 0, 0.55);
+    padding: 3px 0 3px 18px;
+}
+
+.tool-call-detail {
+    margin-left: 18px;
+}
+
+.tool-call-detail > summary {
+    cursor: pointer;
+    padding-left: 0;
+}
+
+.tool-call-status {
+    margin-left: auto;
+    font-size: 10px;
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.tool-call-output {
+    margin: 4px 0 8px;
+    padding: 8px;
+    max-height: 260px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.04);
+    color: rgba(0, 0, 0, 0.72);
+    font: 11px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
 .code-block,

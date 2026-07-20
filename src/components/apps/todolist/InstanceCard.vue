@@ -24,7 +24,13 @@
                         </span>
                     </div>
 
-                    <v-chip v-if="instance.status" size="x-small" variant="outlined" class="align-center">
+                    <v-chip
+                        v-if="instance.status"
+                        size="x-small"
+                        variant="outlined"
+                        class="align-center"
+                        data-testid="instance-status"
+                    >
                         {{ instance.is_deleted ? 'DELETED' : instance.status }}
                     </v-chip>
                     <div v-for="event in eventList" :key="event.tracingTag">
@@ -486,7 +492,7 @@ export default {
             return true;
         },
         async watchParentRedirect(instance) {
-            if (window.$mode !== 'ProcessGPT' || !instance?.parent_proc_inst_id) return;
+            if (window.$mode !== 'ProcessGPT') return;
             if (String(instance.status || '').toUpperCase() === 'COMPLETED') return;
             if (this.parentRedirectWatchRef) return;
 
@@ -497,6 +503,15 @@ export default {
                 this.instance = latest;
                 await this.redirectToParentIfCompleted(latest);
             });
+
+            // The status may change between the initial query and realtime subscription.
+            // Re-read once after subscribing so a root instance cannot remain visually NEW
+            // while the execution engine has already moved it to RUNNING.
+            const latest = await backend.getInstance(childInstId);
+            if (this.id === childInstId && latest) {
+                this.instance = latest;
+                await this.redirectToParentIfCompleted(latest);
+            }
         },
         async watchWorkListChanges() {
             if (!this.id || this.workListWatchRefs.length > 0) return;

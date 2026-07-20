@@ -163,9 +163,12 @@ test.describe('vendor CallActivity mapper live screenshots', () => {
                     }));
                 });
             await expect
-                .poll(async () => {
-                    return readMapperConnections();
-                }, { timeout: 15_000 })
+                .poll(
+                    async () => {
+                        return readMapperConnections();
+                    },
+                    { timeout: 15_000 }
+                )
                 .toHaveLength(1);
             const mapperConnections = await readMapperConnections();
             expect(mapperConnections[0].from).toContain('forms.vendor_onboarding_task_submit_vendor_need_form');

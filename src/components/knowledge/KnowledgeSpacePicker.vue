@@ -1,10 +1,5 @@
 <template>
-    <v-dialog
-        :modelValue="modelValue"
-        @update:modelValue="$emit('update:modelValue', $event)"
-        max-width="780"
-        class="ksp-dialog"
-    >
+    <v-dialog :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)" max-width="780" class="ksp-dialog">
         <v-card class="ksp-card">
             <div class="ksp-header">
                 <div class="ksp-title">
@@ -94,11 +89,14 @@
                     :disabled="visibleFiles.length === 0"
                 >
                     <template v-slot:label>
-                        <span class="text-caption">{{ search ? `검색 결과 ${visibleFiles.length}개 전체` : `이 탭 전체 ${tabFiles.length}개` }} 선택</span>
+                        <span class="text-caption"
+                            >{{ search ? `검색 결과 ${visibleFiles.length}개 전체` : `이 탭 전체 ${tabFiles.length}개` }} 선택</span
+                        >
                     </template>
                 </v-checkbox>
                 <span class="text-caption text-medium-emphasis ml-auto">
-                    선택됨 <strong class="text-primary">{{ selectedKeys.length }}</strong>개
+                    선택됨 <strong class="text-primary">{{ selectedKeys.length }}</strong
+                    >개
                 </span>
             </div>
 
@@ -122,9 +120,11 @@
                         {{ activeSource === 'drive' ? 'Drive에 인덱싱된 문서가 없습니다' : 'Storage에 업로드된 문서가 없습니다' }}
                     </div>
                     <div class="text-caption text-medium-emphasis mt-1">
-                        {{ activeSource === 'drive'
-                            ? "드라이브 설정의 '문서 처리' 후 여기에 표시됩니다"
-                            : '설정 → 지식 베이스 탭에서 Storage로 파일을 올릴 수 있습니다' }}
+                        {{
+                            activeSource === 'drive'
+                                ? "드라이브 설정의 '문서 처리' 후 여기에 표시됩니다"
+                                : '설정 → 지식 베이스 탭에서 Storage로 파일을 올릴 수 있습니다'
+                        }}
                     </div>
                 </div>
                 <div v-else-if="visibleFiles.length === 0 && search" class="ksp-state">
@@ -154,11 +154,7 @@
                         <div class="ksp-file-body">
                             <div class="ksp-file-name">
                                 {{ f.name }}
-                                <span
-                                    v-if="f.docRole && f.docRole !== 'content'"
-                                    class="ksp-role-badge"
-                                    :class="`is-${f.docRole}`"
-                                >
+                                <span v-if="f.docRole && f.docRole !== 'content'" class="ksp-role-badge" :class="`is-${f.docRole}`">
                                     {{ roleMeta(f.docRole).short }}
                                 </span>
                                 <span class="ksp-status-badge" :class="`is-${f.indexStatus}`" v-if="f.indexStatus">
@@ -177,14 +173,7 @@
                         </div>
                         <v-tooltip :text="f.sourceType === 'drive' ? 'Drive에서 보기' : '다운로드'" location="top">
                             <template v-slot:activator="{ props }">
-                                <v-btn
-                                    v-bind="props"
-                                    icon
-                                    variant="text"
-                                    size="small"
-                                    class="ksp-file-action"
-                                    @click.stop="openFile(f)"
-                                >
+                                <v-btn v-bind="props" icon variant="text" size="small" class="ksp-file-action" @click.stop="openFile(f)">
                                     <v-icon size="16">
                                         {{ f.sourceType === 'drive' ? 'mdi-open-in-new' : 'mdi-download-outline' }}
                                     </v-icon>
@@ -260,7 +249,10 @@ function buildTree(files) {
     const root = { type: 'folder', name: '(루트)', path: '__root__', children: {}, files: [] };
 
     for (const f of files) {
-        const segments = (f.folderPath || '').split('/').map((s) => s.trim()).filter(Boolean);
+        const segments = (f.folderPath || '')
+            .split('/')
+            .map((s) => s.trim())
+            .filter(Boolean);
         let cursor = root;
         let acc = '';
         for (const seg of segments) {
@@ -344,11 +336,11 @@ export default {
             // 역할(doc_role) 필터 — Storage 탭에서만 적용. 항상 단일 role 만 활성.
             currentRole: 'content',
             roleFilterOptions: [
-                { value: 'content',   label: '일반',     icon: 'mdi-file-document-outline',   short: '일반' },
-                { value: 'glossary',  label: '용어 사전', icon: 'mdi-book-alphabet',           short: '사전' },
-                { value: 'template',  label: '양식',     icon: 'mdi-file-document-edit-outline', short: '양식' },
-                { value: 'reference', label: '참조',     icon: 'mdi-bookmark-outline',        short: '참조' },
-                { value: 'dataset',   label: '데이터',    icon: 'mdi-table',                   short: '데이터' }
+                { value: 'content', label: '일반', icon: 'mdi-file-document-outline', short: '일반' },
+                { value: 'glossary', label: '용어 사전', icon: 'mdi-book-alphabet', short: '사전' },
+                { value: 'template', label: '양식', icon: 'mdi-file-document-edit-outline', short: '양식' },
+                { value: 'reference', label: '참조', icon: 'mdi-bookmark-outline', short: '참조' },
+                { value: 'dataset', label: '데이터', icon: 'mdi-table', short: '데이터' }
             ]
         };
     },
@@ -391,7 +383,12 @@ export default {
             }
             const out = [];
             if (hits.glossary > 0) {
-                out.push({ role: 'glossary', label: '용어 사전', count: hits.glossary, action: '→ 답변 작성 시 용어 매핑으로 자동 참조됩니다' });
+                out.push({
+                    role: 'glossary',
+                    label: '용어 사전',
+                    count: hits.glossary,
+                    action: '→ 답변 작성 시 용어 매핑으로 자동 참조됩니다'
+                });
             }
             if (hits.template > 0) {
                 out.push({ role: 'template', label: '양식', count: hits.template, action: '→ DOCX 생성 시 양식으로 활용됩니다' });
@@ -418,10 +415,7 @@ export default {
             const q = (this.search || '').trim().toLowerCase();
             if (!q) return this.tabFiles;
             return this.tabFiles.filter((f) => {
-                return (
-                    f.name.toLowerCase().includes(q) ||
-                    (f.folderPath || '').toLowerCase().includes(q)
-                );
+                return f.name.toLowerCase().includes(q) || (f.folderPath || '').toLowerCase().includes(q);
             });
         },
         allFilteredSelected() {
@@ -456,8 +450,7 @@ export default {
     methods: {
         roleMeta(role) {
             return (
-                this.roleFilterOptions.find((r) => r.value === role) ||
-                this.roleFilterOptions[1] // content
+                this.roleFilterOptions.find((r) => r.value === role) || this.roleFilterOptions[1] // content
             );
         },
         iconOf(name) {
@@ -484,13 +477,15 @@ export default {
             return d.toLocaleDateString('ko-KR');
         },
         statusLabel(s) {
-            return {
-                pending: '대기',
-                processing: '처리중',
-                indexed: '',
-                failed: '실패',
-                excluded: '제외'
-            }[s] || '';
+            return (
+                {
+                    pending: '대기',
+                    processing: '처리중',
+                    indexed: '',
+                    failed: '실패',
+                    excluded: '제외'
+                }[s] || ''
+            );
         },
         async fetchDocs() {
             const tenantId = (typeof window !== 'undefined' && window.$tenantName) || '';
@@ -507,7 +502,9 @@ export default {
                 const details = Array.isArray(data?.file_details) ? data.file_details : [];
                 this.allFiles = details.map((d) => ({
                     // 같은 파일명이 여러 폴더에 있을 수 있어 source_ref 우선, 없으면 폴더+파일명 조합
-                    key: d.source_ref ? `${d.source_type || 'drive'}:${d.source_ref}` : `${d.folder_path || d.drive_folder_name || ''}::${d.file_name}`,
+                    key: d.source_ref
+                        ? `${d.source_type || 'drive'}:${d.source_ref}`
+                        : `${d.folder_path || d.drive_folder_name || ''}::${d.file_name}`,
                     name: d.file_name,
                     folderPath: d.folder_path || d.drive_folder_name || '',
                     mimeType: d.mime_type || extToMime(d.file_name),
@@ -694,12 +691,36 @@ export default {
     background: rgba(0, 0, 0, 0.04);
 }
 
-.ksp-role-chip.is-active.is-all       { background: rgba(97, 97, 97, 0.12); border-color: rgba(97, 97, 97, 0.4); color: #424242; }
-.ksp-role-chip.is-active.is-content   { background: rgba(25, 118, 210, 0.12); border-color: rgba(25, 118, 210, 0.5); color: #1976d2; }
-.ksp-role-chip.is-active.is-glossary  { background: rgba(123, 31, 162, 0.12); border-color: rgba(123, 31, 162, 0.5); color: #7b1fa2; }
-.ksp-role-chip.is-active.is-template  { background: rgba(239, 108, 0, 0.12); border-color: rgba(239, 108, 0, 0.5); color: #ef6c00; }
-.ksp-role-chip.is-active.is-reference { background: rgba(56, 142, 60, 0.12); border-color: rgba(56, 142, 60, 0.5); color: #388e3c; }
-.ksp-role-chip.is-active.is-dataset   { background: rgba(0, 137, 123, 0.12); border-color: rgba(0, 137, 123, 0.5); color: #00897b; }
+.ksp-role-chip.is-active.is-all {
+    background: rgba(97, 97, 97, 0.12);
+    border-color: rgba(97, 97, 97, 0.4);
+    color: #424242;
+}
+.ksp-role-chip.is-active.is-content {
+    background: rgba(25, 118, 210, 0.12);
+    border-color: rgba(25, 118, 210, 0.5);
+    color: #1976d2;
+}
+.ksp-role-chip.is-active.is-glossary {
+    background: rgba(123, 31, 162, 0.12);
+    border-color: rgba(123, 31, 162, 0.5);
+    color: #7b1fa2;
+}
+.ksp-role-chip.is-active.is-template {
+    background: rgba(239, 108, 0, 0.12);
+    border-color: rgba(239, 108, 0, 0.5);
+    color: #ef6c00;
+}
+.ksp-role-chip.is-active.is-reference {
+    background: rgba(56, 142, 60, 0.12);
+    border-color: rgba(56, 142, 60, 0.5);
+    color: #388e3c;
+}
+.ksp-role-chip.is-active.is-dataset {
+    background: rgba(0, 137, 123, 0.12);
+    border-color: rgba(0, 137, 123, 0.5);
+    color: #00897b;
+}
 
 .ksp-role-chip-count {
     margin-left: 4px;
@@ -737,9 +758,18 @@ export default {
     vertical-align: middle;
 }
 
-.ksp-role-badge.is-glossary  { background: rgba(123, 31, 162, 0.12); color: #7b1fa2; }
-.ksp-role-badge.is-template  { background: rgba(239, 108, 0, 0.12);  color: #ef6c00; }
-.ksp-role-badge.is-reference { background: rgba(56, 142, 60, 0.12);  color: #388e3c; }
+.ksp-role-badge.is-glossary {
+    background: rgba(123, 31, 162, 0.12);
+    color: #7b1fa2;
+}
+.ksp-role-badge.is-template {
+    background: rgba(239, 108, 0, 0.12);
+    color: #ef6c00;
+}
+.ksp-role-badge.is-reference {
+    background: rgba(56, 142, 60, 0.12);
+    color: #388e3c;
+}
 
 .ksp-toolbar {
     display: flex;

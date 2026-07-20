@@ -1,27 +1,37 @@
 <template>
     <div class="form-text-area">
-        <!-- 읽기 전용 + 내용이 markdown/json 이면 원본 대신 보기 좋게 렌더한다. -->
-        <div v-if="isReadonlyView && formattedKind !== 'text'" class="form-text-area__readonly">
-            <div class="form-text-area__label">{{ displayLabel }}</div>
+        <!-- 내용이 markdown/json 이면 원본 대신 보기 좋게 렌더한다.
+             편집 가능한 폼에서는 미리보기 ⇄ 편집 토글을 제공한다(읽기전용은 항상 미리보기). -->
+        <div v-if="showFormatted" class="form-text-area__readonly">
+            <div class="form-text-area__labelrow">
+                <span class="form-text-area__label">{{ displayLabel }}</span>
+                <v-btn v-if="!isReadonlyView" size="x-small" variant="text" prepend-icon="mdi-pencil-outline" @click="previewMode = false"
+                    >편집</v-btn
+                >
+            </div>
             <pre v-if="formattedKind === 'json'" class="form-text-area__json">{{ prettyJson }}</pre>
             <div v-else class="form-text-area__md" v-html="renderedMarkdown"></div>
         </div>
-        <v-textarea
-            v-else
-            v-model="localModelValue"
-            :disabled="localDisabled"
-            :readonly="localReadonly"
-            :rows="rows"
-            :variant="localReadonly ? 'filled' : 'outlined'"
-            :hide-details="hideDetails"
-            :density="density"
-        >
-            <template v-slot:label>
-                <span style="color: black">
-                    {{ displayLabel }}
-                </span>
-            </template>
-        </v-textarea>
+        <div v-else>
+            <div v-if="canFormat && !isReadonlyView" class="form-text-area__togglerow">
+                <v-btn size="x-small" variant="text" prepend-icon="mdi-eye-outline" @click="previewMode = true">미리보기</v-btn>
+            </div>
+            <v-textarea
+                v-model="localModelValue"
+                :disabled="localDisabled"
+                :readonly="localReadonly"
+                :rows="rows"
+                :variant="localReadonly ? 'filled' : 'outlined'"
+                :hide-details="hideDetails"
+                :density="density"
+            >
+                <template v-slot:label>
+                    <span style="color: black">
+                        {{ displayLabel }}
+                    </span>
+                </template>
+            </v-textarea>
+        </div>
     </div>
 </template>
 
@@ -57,6 +67,9 @@ export default {
     data() {
         return {
             localModelValue: '',
+            // 편집 폼에서 markdown/json: 이미 채워진 채로 열리면 미리보기, 빈 칸에 직접 타이핑하면 편집 유지.
+            // (mounted 에서 초기 내용 유무로 결정 — 타이핑 중 자동 전환 방지)
+            previewMode: false,
 
             localName: '',
             localAlias: '',
@@ -90,8 +103,16 @@ export default {
         isReadonlyView() {
             return this.localReadonly || this.localDisabled;
         },
+        canFormat() {
+            // 내용이 markdown/json 이라 포맷 렌더가 의미있는 경우.
+            return this.formattedKind !== 'text';
+        },
+        showFormatted() {
+            // 읽기전용은 항상 포맷 렌더, 편집 폼은 previewMode 일 때 렌더(토글로 편집 전환).
+            return this.canFormat && (this.isReadonlyView || this.previewMode);
+        },
         formattedKind() {
-            // 읽기 전용일 때만 md/json 을 렌더 대상으로 판단(편집 중엔 원본 유지).
+            // 내용이 json/markdown/평문 중 무엇인지 판단(평문은 렌더 대상 아님).
             const raw = (this.localModelValue || '').toString().trim();
             if (!raw) return 'text';
             if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
@@ -135,8 +156,17 @@ export default {
 
     watch: {
         modelValue: {
-            handler() {
-                this.localModelValue = this.modelValue && this.modelValue.length > 0 ? this.modelValue : '';
+            handler(newVal) {
+                const incoming = newVal && newVal.length > 0 ? newVal : '';
+                // 외부(에이전트 생성 결과 등)에서 값이 들어온 경우에만 처리한다.
+                // 사용자가 textarea 로 타이핑한 값은 emit 되어 되돌아오므로 localModelValue 와 같아 무시된다.
+                if (incoming !== this.localModelValue) {
+                    this.localModelValue = incoming;
+                    // 생성이 완료되어 내용이 채워지면 항상 미리보기부터 보여준다(편집 클릭 시 원문).
+                    if (incoming.trim()) {
+                        this.previewMode = true;
+                    }
+                }
             },
             deep: true,
             immediate: true
@@ -152,6 +182,7 @@ export default {
     },
 
     async mounted() {
+        // (초기/생성 값에 따른 미리보기 전환은 modelValue watch 가 담당)
         // EventBus 이벤트 리스너 등록
         if (this.EventBus) {
             this.EventBus.on('parsed-content-generated', this.handleParsedContent);
@@ -198,8 +229,7 @@ export default {
     },
 
     created() {
-        this.localModelValue = this.modelValue ?? '';
-
+        // localModelValue 초기화는 modelValue watch(immediate)가 담당한다.
         this.localName = this.name ?? 'name';
         this.localAlias = this.alias ?? '';
         this.localRows = this.rows ?? 5;
@@ -223,6 +253,20 @@ export default {
     font-size: 12px;
     color: #6b7280;
     margin-bottom: 6px;
+}
+.form-text-area__labelrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+.form-text-area__labelrow .form-text-area__label {
+    margin-bottom: 0;
+}
+.form-text-area__togglerow {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 2px;
 }
 .form-text-area__json {
     margin: 0;

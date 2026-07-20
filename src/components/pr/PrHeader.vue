@@ -5,11 +5,19 @@
             <span :class="['prh-badge', prBadgeClass(pr.status)]">{{ statusLabelText }}</span>
         </div>
         <div class="prh-meta">
-            <span v-if="pr.requester_name" class="prh-ava" :style="{ background: (requesterProfile && !profileError) ? 'transparent' : getAvatarColor(pr.requester_name) }">
+            <span
+                v-if="pr.requester_name"
+                class="prh-ava"
+                :style="{ background: requesterProfile && !profileError ? 'transparent' : getAvatarColor(pr.requester_name) }"
+            >
                 <img v-if="requesterProfile && !profileError" :src="requesterProfile" class="prh-ava-img" @error="profileError = true" />
                 <template v-else>{{ getInitial(pr.requester_name) }}</template>
             </span>
-            <span><b>{{ pr.requester_name || '알 수 없음' }}</b>님이 <b>{{ pr.base_branch }}</b>으로 병합 요청</span>
+            <span
+                ><b>{{ pr.requester_name || '알 수 없음' }}</b
+                >님이 <b>{{ pr.base_branch }}</b
+                >으로 병합 요청</span
+            >
             <span class="prh-dot">&middot;</span>
             <span class="prh-branch">{{ shortBranch(pr.branch_name) }}</span>
             <span class="prh-arrow">&rarr;</span>
@@ -51,7 +59,9 @@ export default {
         }
     },
     watch: {
-        pr() { this.profileError = false; }
+        pr() {
+            this.profileError = false;
+        }
     },
     methods: {
         prBadgeClass,
@@ -90,11 +100,26 @@ export default {
     padding: 2px 7px;
     white-space: nowrap;
 }
-.st-open { background: rgba(var(--v-theme-primary), 0.1); color: rgb(var(--v-theme-primary)); }
-.st-chg { background: #FBF0DA; color: #92610A; }
-.st-app { background: #E7F4DF; color: #2E6B16; }
-.st-merged { background: #EFEAFB; color: #5b46b8; }
-.st-closed { background: rgba(var(--v-theme-on-surface), 0.08); color: rgba(var(--v-theme-on-surface), 0.5); }
+.st-open {
+    background: rgba(var(--v-theme-primary), 0.1);
+    color: rgb(var(--v-theme-primary));
+}
+.st-chg {
+    background: #fbf0da;
+    color: #92610a;
+}
+.st-app {
+    background: #e7f4df;
+    color: #2e6b16;
+}
+.st-merged {
+    background: #efeafb;
+    color: #5b46b8;
+}
+.st-closed {
+    background: rgba(var(--v-theme-on-surface), 0.08);
+    color: rgba(var(--v-theme-on-surface), 0.5);
+}
 
 .prh-meta {
     display: flex;
@@ -104,7 +129,9 @@ export default {
     color: rgba(var(--v-theme-on-surface), 0.6);
     flex-wrap: wrap;
 }
-.prh-meta b { color: rgba(var(--v-theme-on-surface), 0.87); }
+.prh-meta b {
+    color: rgba(var(--v-theme-on-surface), 0.87);
+}
 
 .prh-ava {
     width: 22px;
@@ -119,7 +146,11 @@ export default {
     flex: none;
     overflow: hidden;
 }
-.prh-ava-sm { width: 18px; height: 18px; font-size: 9px; }
+.prh-ava-sm {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+}
 .prh-ava-img {
     width: 100%;
     height: 100%;
@@ -128,9 +159,17 @@ export default {
     display: block;
 }
 
-.prh-dot { color: rgba(var(--v-theme-on-surface), 0.3); }
-.prh-arrow { color: rgba(var(--v-theme-on-surface), 0.35); font-size: 11px; }
-.prh-num { font-size: 11.5px; font-weight: 500; }
+.prh-dot {
+    color: rgba(var(--v-theme-on-surface), 0.3);
+}
+.prh-arrow {
+    color: rgba(var(--v-theme-on-surface), 0.35);
+    font-size: 11px;
+}
+.prh-num {
+    font-size: 11.5px;
+    font-weight: 500;
+}
 
 .prh-branch {
     font-family: ui-monospace, Menlo, monospace;

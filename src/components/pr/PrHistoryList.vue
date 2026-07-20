@@ -1,15 +1,9 @@
 <template>
     <div class="pr-history-list">
-        <div v-if="!history.length" class="text-center text-caption text-medium-emphasis pa-6">
-            병합 요청 이력이 없습니다
-        </div>
+        <div v-if="!history.length" class="text-center text-caption text-medium-emphasis pa-6">병합 요청 이력이 없습니다</div>
         <div v-for="pr in history" :key="pr.id" class="prh-row">
             <div class="prh-badge">
-                <v-chip
-                    size="x-small"
-                    :color="prStatusColor(pr.status)"
-                    variant="tonal"
-                >
+                <v-chip size="x-small" :color="prStatusColor(pr.status)" variant="tonal">
                     {{ prStatusLabel(pr.status) }}
                 </v-chip>
             </div>
@@ -48,11 +42,19 @@ export default {
     padding: 10px 16px;
     border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
-.prh-row:last-child { border-bottom: none; }
+.prh-row:last-child {
+    border-bottom: none;
+}
 
-.prh-badge { flex: none; padding-top: 2px; }
+.prh-badge {
+    flex: none;
+    padding-top: 2px;
+}
 
-.prh-meta { flex: 1; min-width: 0; }
+.prh-meta {
+    flex: 1;
+    min-width: 0;
+}
 
 .prh-title {
     font-size: 13px;

@@ -12,6 +12,7 @@ import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 import { getBpmnModelService } from '@/services/bpmnModelService';
 import { normalizeUengineBpmnXmlForBackend } from '@/utils/uengineXmlTransform';
 import { syncBpmnCallActivitiesIntoDefinition } from '@/utils/bpmnCallActivityDefinitionSync';
+import { buildChangeSignature } from '@/utils/xmlDiff';
 
 const backend = BackendFactory.createBackend();
 
@@ -39,7 +40,8 @@ export default {
         definitionOptimizer: null,
         useOptimize: false,
         lastSavedXML: '', // 마지막 저장된 XML (변경 감지용)
-        lastSavedXMLHash: '' // 마지막 저장된 XML 해시
+        lastSavedXMLHash: '', // 마지막 저장된 XML 해시
+        lastSavedSignature: '' // 마지막 저장된 복합 변경 시그니처(XML + XML 밖 편집 상태)
     }),
     computed: {
         lastPath() {
@@ -67,10 +69,7 @@ export default {
             }
             const processDefinition = await this.convertXMLToJSON(xmlString);
             if (processDefinition?.activities && this.processDefinition) {
-                processDefinition.activities = this.mergeActivitiesPreservingMetadata(
-                    processDefinition.activities,
-                    this.processDefinition
-                );
+                processDefinition.activities = this.mergeActivitiesPreservingMetadata(processDefinition.activities, this.processDefinition);
             }
             const syncedDefinition = syncBpmnCallActivitiesIntoDefinition(xmlString, processDefinition);
             if (callback && typeof callback === 'function') {
@@ -175,6 +174,45 @@ export default {
                 if (newActivity?.id) merged.id = newActivity.id;
                 return merged;
             });
+        },
+        /**
+         * XML 왕복 밖에 존재하는 편집 상태 스냅샷을 만든다.
+         * 편집 UI 에서 바꿀 수 있지만 BPMN XML 로는 직렬화되지 않는(혹은 저장 직전
+         * mergeActivitiesPreservingMetadata 로만 합쳐지는) 값들을 변경 감지 대상에 포함한다.
+         * - formDrafts : 폼 초안 (XML 미직렬화)
+         * - dmn_decisions / dmn_rules : DMN 규칙 (XML 미직렬화)
+         * - data : 프로세스 변수 (this.processVariables, XML 왕복 밖)
+         * - roles : 역할 목록
+         * - activities : 활동 메타데이터(지침/역할/설명/체크포인트/에이전트/툴 등)
+         */
+        buildDefinitionExtraState(def) {
+            const source = def || {};
+            const activities = this.collectActivitiesForMerge(source, [])
+                .filter((activity) => activity && activity.id)
+                .map((activity) => {
+                    // 좌표/레이아웃성 필드는 stableStringify 단계에서도 걸러지지만,
+                    // 여기서도 명시적으로 얕은 복사만 넘겨 순환/중복 노이즈를 줄인다.
+                    return { ...activity };
+                })
+                .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+
+            return {
+                formDrafts: source.formDrafts ?? null,
+                dmn_decisions: source.dmn_decisions ?? null,
+                dmn_rules: source.dmn_rules ?? null,
+                data: this.processVariables ?? source.data ?? null,
+                roles: source.roles ?? null,
+                activities
+            };
+        },
+        /**
+         * BPMN XML + XML 밖 편집 상태를 합친 복합 변경 시그니처를 계산한다.
+         * @param {string} xml 모델러가 내보낸 BPMN XML
+         * @param {object} def 대상 프로세스 정의 (기본값: 현재 processDefinition)
+         */
+        computeDefinitionSignature(xml, def) {
+            const targetDef = def || this.processDefinition;
+            return buildChangeSignature(xml || '', this.buildDefinitionExtraState(targetDef));
         },
         async checkedFormData() {
             console.log('[FORM_DEBUG] checkedFormData called', {
@@ -671,9 +709,7 @@ export default {
                     const savedDmnDecisions = Array.isArray(me.processDefinition?.dmn_decisions)
                         ? me.processDefinition.dmn_decisions
                         : null;
-                    const savedDmnRules = Array.isArray(me.processDefinition?.dmn_rules)
-                        ? me.processDefinition.dmn_rules
-                        : null;
+                    const savedDmnRules = Array.isArray(me.processDefinition?.dmn_rules) ? me.processDefinition.dmn_rules : null;
                     console.log('[FORM_DEBUG] saveDefinition start', {
                         savedFormDraftsCount: savedFormDrafts.length,
                         drafts: savedFormDrafts.map((d) => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length }))
@@ -928,7 +964,11 @@ export default {
                     let finalXml = xmlObj.xml;
                     if (window.$mode === 'uEngine') {
                         const resolvedDefinitionName =
-                            info.name || me.projectName || me.processDefinition?.processDefinitionName || me.processDefinition?.name || null;
+                            info.name ||
+                            me.projectName ||
+                            me.processDefinition?.processDefinitionName ||
+                            me.processDefinition?.name ||
+                            null;
                         finalXml = normalizeUengineBpmnXmlForBackend(xmlObj.xml, resolvedDefinitionName);
                     }
 
@@ -948,6 +988,9 @@ export default {
 
                     // 저장 성공 후 lastSavedXML 업데이트 (변경 감지용)
                     me.lastSavedXML = finalXml;
+                    // XML + XML 밖 편집 상태(폼/DMN/변수/활동 메타)를 합친 복합 시그니처를
+                    // 저장 기준선으로 기록한다. 다음 저장 시 이 기준선과 비교해 변경 여부를 판단.
+                    me.lastSavedSignature = me.computeDefinitionSignature(finalXml, me.processDefinition);
                     me.isChanged = false;
                     me.lastSavedTime = new Date();
 

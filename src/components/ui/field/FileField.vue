@@ -27,12 +27,7 @@
                 </div>
             </div>
             <div class="hwpx-actions">
-                <v-btn
-                    size="small"
-                    variant="tonal"
-                    prepend-icon="mdi-eye-outline"
-                    :disabled="!canPreview"
-                    @click.stop="openHwpx(true)"
+                <v-btn size="small" variant="tonal" prepend-icon="mdi-eye-outline" :disabled="!canPreview" @click.stop="openHwpx(true)"
                     >미리보기</v-btn
                 >
                 <v-btn

@@ -156,7 +156,7 @@ PaletteProvider.prototype.adjustParticipantBoundsByLanes = function (participant
     });
 };
 
-PaletteProvider.prototype.applyAutoLayout = function (onLoadStart = () => { }, onLoadEnd = () => { }) {
+PaletteProvider.prototype.applyAutoLayout = function (onLoadStart = () => {}, onLoadEnd = () => {}) {
     var injector = this._injector;
     var elementFactory = this._elementFactory;
     var eventBus = this._eventBus;
@@ -221,449 +221,439 @@ PaletteProvider.prototype.revertLayout = function () {
     }
 };
 
-
 function getElementBounds(element) {
-  if (!element) return null;
-  if (
-    typeof element.x === 'number' &&
-    typeof element.y === 'number' &&
-    typeof element.width === 'number' &&
-    typeof element.height === 'number'
-  ) {
-    return element;
-  }
-  return element.di && element.di.bounds ? element.di.bounds : null;
+    if (!element) return null;
+    if (
+        typeof element.x === 'number' &&
+        typeof element.y === 'number' &&
+        typeof element.width === 'number' &&
+        typeof element.height === 'number'
+    ) {
+        return element;
+    }
+    return element.di && element.di.bounds ? element.di.bounds : null;
 }
 
 function isBoundsInLane(bounds, laneBounds, isHorizontal) {
-  if (!bounds || !laneBounds) return false;
-  const center = isHorizontal
-    ? bounds.y + bounds.height / 2
-    : bounds.x + bounds.width / 2;
-  const laneStart = isHorizontal ? laneBounds.y : laneBounds.x;
-  const laneEnd = laneStart + (isHorizontal ? laneBounds.height : laneBounds.width);
-  return center >= laneStart - 1 && center <= laneEnd + 1;
+    if (!bounds || !laneBounds) return false;
+    const center = isHorizontal ? bounds.y + bounds.height / 2 : bounds.x + bounds.width / 2;
+    const laneStart = isHorizontal ? laneBounds.y : laneBounds.x;
+    const laneEnd = laneStart + (isHorizontal ? laneBounds.height : laneBounds.width);
+    return center >= laneStart - 1 && center <= laneEnd + 1;
 }
 
 function hasMovingAncestor(element, movingIds) {
-  let current = element && element.parent;
-  while (current) {
-    if (movingIds.has(current.id)) return true;
-    current = current.parent;
-  }
-  return false;
+    let current = element && element.parent;
+    while (current) {
+        if (movingIds.has(current.id)) return true;
+        current = current.parent;
+    }
+    return false;
 }
 
 function getLaneContentBounds(elementRegistry, lane, isHorizontal) {
-  if (!elementRegistry || !lane) return null;
-  const laneBounds = getElementBounds(lane);
-  if (!laneBounds) return null;
+    if (!elementRegistry || !lane) return null;
+    const laneBounds = getElementBounds(lane);
+    if (!laneBounds) return null;
 
-  const children = elementRegistry.getAll().filter(element => {
-    const bounds = getElementBounds(element);
-    return element &&
-      element.id !== lane.id &&
-      !element.labelTarget &&
-      element.type !== 'bpmn:SequenceFlow' &&
-      element.type !== 'bpmn:MessageFlow' &&
-      element.type !== 'bpmn:Lane' &&
-      element.type !== 'bpmn:LaneSet' &&
-      element.type !== 'bpmn:Participant' &&
-      element.type !== 'bpmn:SubProcess' &&
-      element.type !== 'bpmn:CallActivity' &&
-      bounds &&
-      (
-        element.parent && element.parent.id === lane.id ||
-        isBoundsInLane(bounds, laneBounds, isHorizontal)
-      );
-  });
+    const children = elementRegistry.getAll().filter((element) => {
+        const bounds = getElementBounds(element);
+        return (
+            element &&
+            element.id !== lane.id &&
+            !element.labelTarget &&
+            element.type !== 'bpmn:SequenceFlow' &&
+            element.type !== 'bpmn:MessageFlow' &&
+            element.type !== 'bpmn:Lane' &&
+            element.type !== 'bpmn:LaneSet' &&
+            element.type !== 'bpmn:Participant' &&
+            element.type !== 'bpmn:SubProcess' &&
+            element.type !== 'bpmn:CallActivity' &&
+            bounds &&
+            ((element.parent && element.parent.id === lane.id) || isBoundsInLane(bounds, laneBounds, isHorizontal))
+        );
+    });
 
-  if (!children.length) return null;
+    if (!children.length) return null;
 
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-  children.forEach(child => {
-    const bounds = getElementBounds(child);
-    minX = Math.min(minX, bounds.x);
-    maxX = Math.max(maxX, bounds.x + bounds.width);
-    minY = Math.min(minY, bounds.y);
-    maxY = Math.max(maxY, bounds.y + bounds.height);
-  });
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    children.forEach((child) => {
+        const bounds = getElementBounds(child);
+        minX = Math.min(minX, bounds.x);
+        maxX = Math.max(maxX, bounds.x + bounds.width);
+        minY = Math.min(minY, bounds.y);
+        maxY = Math.max(maxY, bounds.y + bounds.height);
+    });
 
-  if (!isFinite(minX) || !isFinite(maxX) || !isFinite(minY) || !isFinite(maxY)) return null;
-  return { minX, maxX, minY, maxY };
+    if (!isFinite(minX) || !isFinite(maxX) || !isFinite(minY) || !isFinite(maxY)) return null;
+    return { minX, maxX, minY, maxY };
 }
 
 function getLaneTopLevelContent(elementRegistry, lane, laneBounds, isHorizontal) {
-  if (!elementRegistry || !lane || !laneBounds) return [];
+    if (!elementRegistry || !lane || !laneBounds) return [];
 
-  const moving = elementRegistry.getAll().filter(element => {
-    const bounds = getElementBounds(element);
-    return element &&
-      element.id !== lane.id &&
-      !element.labelTarget &&
-      element.type !== 'bpmn:SequenceFlow' &&
-      element.type !== 'bpmn:MessageFlow' &&
-      element.type !== 'bpmn:Lane' &&
-      element.type !== 'bpmn:LaneSet' &&
-      element.type !== 'bpmn:Participant' &&
-      bounds &&
-      (
-        element.parent && element.parent.id === lane.id ||
-        isBoundsInLane(bounds, laneBounds, isHorizontal)
-      );
-  });
+    const moving = elementRegistry.getAll().filter((element) => {
+        const bounds = getElementBounds(element);
+        return (
+            element &&
+            element.id !== lane.id &&
+            !element.labelTarget &&
+            element.type !== 'bpmn:SequenceFlow' &&
+            element.type !== 'bpmn:MessageFlow' &&
+            element.type !== 'bpmn:Lane' &&
+            element.type !== 'bpmn:LaneSet' &&
+            element.type !== 'bpmn:Participant' &&
+            bounds &&
+            ((element.parent && element.parent.id === lane.id) || isBoundsInLane(bounds, laneBounds, isHorizontal))
+        );
+    });
 
-  const movingIds = new Set(moving.map(element => element.id));
-  return moving.filter(element => !hasMovingAncestor(element, movingIds));
+    const movingIds = new Set(moving.map((element) => element.id));
+    return moving.filter((element) => !hasMovingAncestor(element, movingIds));
 }
 
 function compactLanesAfterRotation(modeling, elementRegistry, participant, lanes, isHorizontal) {
-  if (!modeling || !elementRegistry || !participant || !lanes || !lanes.length) return;
+    if (!modeling || !elementRegistry || !participant || !lanes || !lanes.length) return;
 
-  const laneEntries = lanes
-    .map(lane => ({ lane, bounds: getElementBounds(lane) }))
-    .filter(entry =>
-      entry.bounds &&
-      Number.isFinite(entry.bounds.x) &&
-      Number.isFinite(entry.bounds.y) &&
-      Number.isFinite(entry.bounds.width) &&
-      Number.isFinite(entry.bounds.height)
-    )
-    .sort((a, b) => {
-      const aStart = isHorizontal ? a.bounds.y : a.bounds.x;
-      const bStart = isHorizontal ? b.bounds.y : b.bounds.x;
-      return aStart - bStart;
+    const laneEntries = lanes
+        .map((lane) => ({ lane, bounds: getElementBounds(lane) }))
+        .filter(
+            (entry) =>
+                entry.bounds &&
+                Number.isFinite(entry.bounds.x) &&
+                Number.isFinite(entry.bounds.y) &&
+                Number.isFinite(entry.bounds.width) &&
+                Number.isFinite(entry.bounds.height)
+        )
+        .sort((a, b) => {
+            const aStart = isHorizontal ? a.bounds.y : a.bounds.x;
+            const bStart = isHorizontal ? b.bounds.y : b.bounds.x;
+            return aStart - bStart;
+        });
+
+    if (!laneEntries.length) return;
+
+    const minLaneSize = 120;
+    let offset = 0;
+    const firstEntry = laneEntries[0];
+    const firstContentBounds = firstEntry ? getLaneContentBounds(elementRegistry, firstEntry.lane, isHorizontal) : null;
+    const firstTrim =
+        firstEntry && firstContentBounds
+            ? Math.max(
+                  0,
+                  isHorizontal
+                      ? firstContentBounds.minY - (firstEntry.bounds.y + LANE_BODY_PADDING)
+                      : firstContentBounds.minX - (firstEntry.bounds.x + LANE_BODY_PADDING)
+              )
+            : 0;
+
+    const plans = laneEntries.map((entry, index) => {
+        const laneBounds = entry.bounds;
+        const currentSize = isHorizontal ? laneBounds.height : laneBounds.width;
+        const contentBounds = getLaneContentBounds(elementRegistry, entry.lane, isHorizontal);
+        const desiredSize = contentBounds
+            ? isHorizontal
+                ? Math.max(minLaneSize, contentBounds.maxY - laneBounds.y + LANE_BODY_PADDING)
+                : Math.max(minLaneSize, contentBounds.maxX - laneBounds.x + LANE_BODY_PADDING)
+            : minLaneSize;
+        const newSize = Math.min(currentSize, desiredSize);
+        const currentOffset = offset;
+        const leadingTrim = index === 0 ? Math.min(firstTrim, Math.max(0, newSize - minLaneSize)) : 0;
+        const shiftedBounds = {
+            x: laneBounds.x + (isHorizontal ? 0 : currentOffset + leadingTrim),
+            y: laneBounds.y + (isHorizontal ? currentOffset + leadingTrim : 0),
+            width: isHorizontal ? laneBounds.width : newSize - leadingTrim,
+            height: isHorizontal ? newSize - leadingTrim : laneBounds.height
+        };
+        const delta = isHorizontal ? { x: 0, y: currentOffset } : { x: currentOffset, y: 0 };
+        const movingContent = getLaneTopLevelContent(elementRegistry, entry.lane, laneBounds, isHorizontal);
+
+        offset -= currentSize - newSize;
+
+        return { lane: entry.lane, oldBounds: laneBounds, newBounds: shiftedBounds, delta, movingContent };
     });
 
-  if (!laneEntries.length) return;
+    const updatedLaneBounds = plans.map((plan) => plan.newBounds);
 
-  const minLaneSize = 120;
-  let offset = 0;
-  const firstEntry = laneEntries[0];
-  const firstContentBounds = firstEntry
-    ? getLaneContentBounds(elementRegistry, firstEntry.lane, isHorizontal)
-    : null;
-  const firstTrim = firstEntry && firstContentBounds
-    ? Math.max(
-      0,
-      isHorizontal
-        ? firstContentBounds.minY - (firstEntry.bounds.y + LANE_BODY_PADDING)
-        : firstContentBounds.minX - (firstEntry.bounds.x + LANE_BODY_PADDING)
-    )
-    : 0;
+    plans.forEach((plan) => {
+        const laneBounds = plan.oldBounds;
+        const shiftedBounds = plan.newBounds;
+        const delta = plan.delta;
 
-  const plans = laneEntries.map((entry, index) => {
-    const laneBounds = entry.bounds;
-    const currentSize = isHorizontal ? laneBounds.height : laneBounds.width;
-    const contentBounds = getLaneContentBounds(elementRegistry, entry.lane, isHorizontal);
-    const desiredSize = contentBounds
-      ? (
-        isHorizontal
-          ? Math.max(minLaneSize, contentBounds.maxY - laneBounds.y + LANE_BODY_PADDING)
-          : Math.max(minLaneSize, contentBounds.maxX - laneBounds.x + LANE_BODY_PADDING)
-      )
-      : minLaneSize;
-    const newSize = Math.min(currentSize, desiredSize);
-    const currentOffset = offset;
-    const leadingTrim = index === 0 ? Math.min(firstTrim, Math.max(0, newSize - minLaneSize)) : 0;
-    const shiftedBounds = {
-      x: laneBounds.x + (isHorizontal ? 0 : currentOffset + leadingTrim),
-      y: laneBounds.y + (isHorizontal ? currentOffset + leadingTrim : 0),
-      width: isHorizontal ? laneBounds.width : newSize - leadingTrim,
-      height: isHorizontal ? newSize - leadingTrim : laneBounds.height
-    };
-    const delta = isHorizontal
-      ? { x: 0, y: currentOffset }
-      : { x: currentOffset, y: 0 };
-    const movingContent = getLaneTopLevelContent(elementRegistry, entry.lane, laneBounds, isHorizontal);
-
-    offset -= currentSize - newSize;
-
-    return { lane: entry.lane, oldBounds: laneBounds, newBounds: shiftedBounds, delta, movingContent };
-  });
-
-  const updatedLaneBounds = plans.map(plan => plan.newBounds);
-
-  plans.forEach(plan => {
-    const laneBounds = plan.oldBounds;
-    const shiftedBounds = plan.newBounds;
-    const delta = plan.delta;
-
-    if (Math.abs(delta.x) > 0.5 || Math.abs(delta.y) > 0.5) {
-      plan.movingContent.forEach(element => {
-        try {
-          modeling.moveShape(element, delta);
-        } catch (err) {
-          console.warn('[changeParticipantOrientation] Lane content compact move failed:', element.id, err);
+        if (Math.abs(delta.x) > 0.5 || Math.abs(delta.y) > 0.5) {
+            plan.movingContent.forEach((element) => {
+                try {
+                    modeling.moveShape(element, delta);
+                } catch (err) {
+                    console.warn('[changeParticipantOrientation] Lane content compact move failed:', element.id, err);
+                }
+            });
         }
-      });
-    }
 
-    if (
-      Math.abs(shiftedBounds.x - laneBounds.x) > 0.5 ||
-      Math.abs(shiftedBounds.y - laneBounds.y) > 0.5 ||
-      Math.abs(shiftedBounds.width - laneBounds.width) > 0.5 ||
-      Math.abs(shiftedBounds.height - laneBounds.height) > 0.5
-    ) {
-      modeling.resizeShape(plan.lane, shiftedBounds);
-    }
-  });
+        if (
+            Math.abs(shiftedBounds.x - laneBounds.x) > 0.5 ||
+            Math.abs(shiftedBounds.y - laneBounds.y) > 0.5 ||
+            Math.abs(shiftedBounds.width - laneBounds.width) > 0.5 ||
+            Math.abs(shiftedBounds.height - laneBounds.height) > 0.5
+        ) {
+            modeling.resizeShape(plan.lane, shiftedBounds);
+        }
+    });
 
-  if (!updatedLaneBounds.length || Math.abs(offset) <= 0.5) return;
+    if (!updatedLaneBounds.length || Math.abs(offset) <= 0.5) return;
 
-  const minX = Math.min(...updatedLaneBounds.map(bounds => bounds.x));
-  const maxX = Math.max(...updatedLaneBounds.map(bounds => bounds.x + bounds.width));
-  const minY = Math.min(...updatedLaneBounds.map(bounds => bounds.y));
-  const maxY = Math.max(...updatedLaneBounds.map(bounds => bounds.y + bounds.height));
+    const minX = Math.min(...updatedLaneBounds.map((bounds) => bounds.x));
+    const maxX = Math.max(...updatedLaneBounds.map((bounds) => bounds.x + bounds.width));
+    const minY = Math.min(...updatedLaneBounds.map((bounds) => bounds.y));
+    const maxY = Math.max(...updatedLaneBounds.map((bounds) => bounds.y + bounds.height));
 
-  modeling.resizeShape(participant, {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY
-  });
+    modeling.resizeShape(participant, {
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY
+    });
 }
 
 function isElementDescendantOf(element, ancestor) {
-  let current = element && element.parent;
-  while (current) {
-    if (current.id === ancestor.id) return true;
-    current = current.parent;
-  }
-  return false;
+    let current = element && element.parent;
+    while (current) {
+        if (current.id === ancestor.id) return true;
+        current = current.parent;
+    }
+    return false;
 }
 
 function isRealDiagramShape(element) {
-  return element &&
-    !element.labelTarget &&
-    element.type !== 'bpmn:SequenceFlow' &&
-    element.type !== 'bpmn:MessageFlow' &&
-    element.type !== 'bpmn:Collaboration' &&
-    element.type !== 'bpmn:Process' &&
-    element.type !== 'bpmn:Participant' &&
-    element.type !== 'bpmn:Lane' &&
-    element.type !== 'bpmn:LaneSet';
+    return (
+        element &&
+        !element.labelTarget &&
+        element.type !== 'bpmn:SequenceFlow' &&
+        element.type !== 'bpmn:MessageFlow' &&
+        element.type !== 'bpmn:Collaboration' &&
+        element.type !== 'bpmn:Process' &&
+        element.type !== 'bpmn:Participant' &&
+        element.type !== 'bpmn:Lane' &&
+        element.type !== 'bpmn:LaneSet'
+    );
 }
 
 function collectBounds(elements) {
-  const valid = elements
-    .map(getElementBounds)
-    .filter(bounds =>
-      bounds &&
-      Number.isFinite(bounds.x) &&
-      Number.isFinite(bounds.y) &&
-      Number.isFinite(bounds.width) &&
-      Number.isFinite(bounds.height)
-    );
+    const valid = elements
+        .map(getElementBounds)
+        .filter(
+            (bounds) =>
+                bounds &&
+                Number.isFinite(bounds.x) &&
+                Number.isFinite(bounds.y) &&
+                Number.isFinite(bounds.width) &&
+                Number.isFinite(bounds.height)
+        );
 
-  if (!valid.length) return null;
+    if (!valid.length) return null;
 
-  const minX = Math.min(...valid.map(bounds => bounds.x));
-  const minY = Math.min(...valid.map(bounds => bounds.y));
-  const maxX = Math.max(...valid.map(bounds => bounds.x + bounds.width));
-  const maxY = Math.max(...valid.map(bounds => bounds.y + bounds.height));
+    const minX = Math.min(...valid.map((bounds) => bounds.x));
+    const minY = Math.min(...valid.map((bounds) => bounds.y));
+    const maxX = Math.max(...valid.map((bounds) => bounds.x + bounds.width));
+    const maxY = Math.max(...valid.map((bounds) => bounds.y + bounds.height));
 
-  return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+    return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
 }
 
 function getSequenceFlowEndpoint(flow, endpoint) {
-  const businessObject = flow && flow.businessObject;
-  const ref = endpoint === 'source'
-    ? businessObject?.sourceRef || flow.source
-    : businessObject?.targetRef || flow.target;
+    const businessObject = flow && flow.businessObject;
+    const ref = endpoint === 'source' ? businessObject?.sourceRef || flow.source : businessObject?.targetRef || flow.target;
 
-  return ref && ref.id ? ref.id : null;
+    return ref && ref.id ? ref.id : null;
 }
 
 function isBoundsOverlapping(bounds, containerBounds) {
-  if (!bounds || !containerBounds) return false;
+    if (!bounds || !containerBounds) return false;
 
-  return bounds.x < containerBounds.x + containerBounds.width &&
-    bounds.x + bounds.width > containerBounds.x &&
-    bounds.y < containerBounds.y + containerBounds.height &&
-    bounds.y + bounds.height > containerBounds.y;
+    return (
+        bounds.x < containerBounds.x + containerBounds.width &&
+        bounds.x + bounds.width > containerBounds.x &&
+        bounds.y < containerBounds.y + containerBounds.height &&
+        bounds.y + bounds.height > containerBounds.y
+    );
 }
 
 function setDiagramHorizontal(element, isHorizontal) {
-  if (!element) return;
+    if (!element) return;
 
-  if (element.di) {
-    element.di.isHorizontal = isHorizontal;
-  }
+    if (element.di) {
+        element.di.isHorizontal = isHorizontal;
+    }
 
-  if (element.businessObject) {
-    element.businessObject.isHorizontal = isHorizontal;
-  }
+    if (element.businessObject) {
+        element.businessObject.isHorizontal = isHorizontal;
+    }
 }
 
 function collectLaneIdsFromLaneSets(laneSets, laneIds = new Set()) {
-  (laneSets || []).forEach(laneSet => {
-    (laneSet.lanes || []).forEach(lane => {
-      if (lane.id) laneIds.add(lane.id);
-      collectLaneIdsFromLaneSets(lane.childLaneSet ? [lane.childLaneSet] : [], laneIds);
+    (laneSets || []).forEach((laneSet) => {
+        (laneSet.lanes || []).forEach((lane) => {
+            if (lane.id) laneIds.add(lane.id);
+            collectLaneIdsFromLaneSets(lane.childLaneSet ? [lane.childLaneSet] : [], laneIds);
+        });
     });
-  });
 
-  return laneIds;
+    return laneIds;
 }
 
 function syncParticipantLaneOrientation(elementRegistry, participant, isHorizontal) {
-  setDiagramHorizontal(participant, isHorizontal);
+    setDiagramHorizontal(participant, isHorizontal);
 
-  if (!elementRegistry || !participant) return;
+    if (!elementRegistry || !participant) return;
 
-  const participantBounds = getElementBounds(participant);
-  const processLaneIds = collectLaneIdsFromLaneSets(participant.businessObject?.processRef?.laneSets);
-  const participants = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-  const shouldSyncAllLanes = participants.length === 1;
-  const lanes = elementRegistry.filter(element =>
-    element.type === 'bpmn:Lane' &&
-    (
-      shouldSyncAllLanes ||
-      processLaneIds.has(element.id) ||
-      isElementDescendantOf(element, participant) ||
-      isBoundsOverlapping(getElementBounds(element), participantBounds)
-    )
-  );
+    const participantBounds = getElementBounds(participant);
+    const processLaneIds = collectLaneIdsFromLaneSets(participant.businessObject?.processRef?.laneSets);
+    const participants = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+    const shouldSyncAllLanes = participants.length === 1;
+    const lanes = elementRegistry.filter(
+        (element) =>
+            element.type === 'bpmn:Lane' &&
+            (shouldSyncAllLanes ||
+                processLaneIds.has(element.id) ||
+                isElementDescendantOf(element, participant) ||
+                isBoundsOverlapping(getElementBounds(element), participantBounds))
+    );
 
-  lanes.forEach(lane => setDiagramHorizontal(lane, isHorizontal));
+    lanes.forEach((lane) => setDiagramHorizontal(lane, isHorizontal));
 }
 
 function collectParticipantRotationElements(elementRegistry, participant, lanes, participantBounds, isHorizontal) {
-  if (!elementRegistry || !participant || !participantBounds) {
-    return { shapes: [], sequenceFlows: [] };
-  }
+    if (!elementRegistry || !participant || !participantBounds) {
+        return { shapes: [], sequenceFlows: [] };
+    }
 
-  const laneBoundsList = (lanes || []).map(getElementBounds).filter(Boolean);
-  const isInsideRotatingArea = element => {
-    const bounds = getElementBounds(element);
-    return isElementDescendantOf(element, participant) ||
-      isBoundsInLane(bounds, participantBounds, isHorizontal) ||
-      laneBoundsList.some(laneBounds => isBoundsInLane(bounds, laneBounds, isHorizontal)) ||
-      isBoundsOverlapping(bounds, participantBounds);
-  };
+    const laneBoundsList = (lanes || []).map(getElementBounds).filter(Boolean);
+    const isInsideRotatingArea = (element) => {
+        const bounds = getElementBounds(element);
+        return (
+            isElementDescendantOf(element, participant) ||
+            isBoundsInLane(bounds, participantBounds, isHorizontal) ||
+            laneBoundsList.some((laneBounds) => isBoundsInLane(bounds, laneBounds, isHorizontal)) ||
+            isBoundsOverlapping(bounds, participantBounds)
+        );
+    };
 
-  const shapes = elementRegistry.getAll().filter(element =>
-    isRealDiagramShape(element) &&
-    element.type !== 'bpmn:BoundaryEvent' &&
-    isInsideRotatingArea(element)
-  );
-  const shapeIds = new Set(shapes.map(element => element.id));
+    const shapes = elementRegistry
+        .getAll()
+        .filter((element) => isRealDiagramShape(element) && element.type !== 'bpmn:BoundaryEvent' && isInsideRotatingArea(element));
+    const shapeIds = new Set(shapes.map((element) => element.id));
 
-  const sequenceFlows = elementRegistry.filter(element => {
-    if (!element || element.type !== 'bpmn:SequenceFlow') return false;
-    const sourceId = getSequenceFlowEndpoint(element, 'source');
-    const targetId = getSequenceFlowEndpoint(element, 'target');
-    const source = sourceId ? elementRegistry.get(sourceId) : null;
-    const target = targetId ? elementRegistry.get(targetId) : null;
-    return (
-      (sourceId && shapeIds.has(sourceId)) ||
-      (targetId && shapeIds.has(targetId)) ||
-      (source && isInsideRotatingArea(source) && target && isInsideRotatingArea(target))
-    );
-  });
+    const sequenceFlows = elementRegistry.filter((element) => {
+        if (!element || element.type !== 'bpmn:SequenceFlow') return false;
+        const sourceId = getSequenceFlowEndpoint(element, 'source');
+        const targetId = getSequenceFlowEndpoint(element, 'target');
+        const source = sourceId ? elementRegistry.get(sourceId) : null;
+        const target = targetId ? elementRegistry.get(targetId) : null;
+        return (
+            (sourceId && shapeIds.has(sourceId)) ||
+            (targetId && shapeIds.has(targetId)) ||
+            (source && isInsideRotatingArea(source) && target && isInsideRotatingArea(target))
+        );
+    });
 
-  return { shapes, sequenceFlows };
+    return { shapes, sequenceFlows };
 }
 
 PaletteProvider.prototype.syncAllLaneOrientationForView = function (isHorizontal) {
-  const elementRegistry = this._injector && this._injector.get('elementRegistry');
-  if (!elementRegistry) return;
+    const elementRegistry = this._injector && this._injector.get('elementRegistry');
+    if (!elementRegistry) return;
 
-  elementRegistry.filter(element =>
-    element.type === 'bpmn:Participant' ||
-    element.type === 'bpmn:Lane'
-  ).forEach(element => setDiagramHorizontal(element, isHorizontal));
+    elementRegistry
+        .filter((element) => element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane')
+        .forEach((element) => setDiagramHorizontal(element, isHorizontal));
 };
 
 PaletteProvider.prototype.normalizeDiagramBoundsForView = function () {
-  if (!this._isViewMode) return;
+    if (!this._isViewMode) return;
 
-  const modeling = this._modeling;
-  const elementRegistry = this._injector && this._injector.get('elementRegistry');
-  if (!modeling || !elementRegistry) return;
+    const modeling = this._modeling;
+    const elementRegistry = this._injector && this._injector.get('elementRegistry');
+    if (!modeling || !elementRegistry) return;
 
-  const participants = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-  participants.forEach(participant => {
-    const participantBounds = getElementBounds(participant);
-    if (!participantBounds) return;
+    const participants = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+    participants.forEach((participant) => {
+        const participantBounds = getElementBounds(participant);
+        if (!participantBounds) return;
 
-    const isHorizontal = participant.di?.isHorizontal !== false;
-    const lanes = elementRegistry.filter(element =>
-      element.type === 'bpmn:Lane' &&
-      (
-        isElementDescendantOf(element, participant) ||
-        isBoundsInLane(getElementBounds(element), participantBounds, isHorizontal)
-      )
-    );
-    const content = elementRegistry.filter(element =>
-      isRealDiagramShape(element) &&
-      (
-        isElementDescendantOf(element, participant) ||
-        isBoundsInLane(getElementBounds(element), participantBounds, isHorizontal)
-      )
-    );
+        const isHorizontal = participant.di?.isHorizontal !== false;
+        const lanes = elementRegistry.filter(
+            (element) =>
+                element.type === 'bpmn:Lane' &&
+                (isElementDescendantOf(element, participant) || isBoundsInLane(getElementBounds(element), participantBounds, isHorizontal))
+        );
+        const content = elementRegistry.filter(
+            (element) =>
+                isRealDiagramShape(element) &&
+                (isElementDescendantOf(element, participant) || isBoundsInLane(getElementBounds(element), participantBounds, isHorizontal))
+        );
 
-    const contentBounds = collectBounds(content);
-    if (!contentBounds) return;
+        const contentBounds = collectBounds(content);
+        if (!contentBounds) return;
 
-    const laneBounds = collectBounds(lanes);
-    const axisPadding = 80;
-    const outerPadding = 30;
-    const minAxisSize = 240;
+        const laneBounds = collectBounds(lanes);
+        const axisPadding = 80;
+        const outerPadding = 30;
+        const minAxisSize = 240;
 
-    if (isHorizontal) {
-      const nextX = Math.min(contentBounds.minX - axisPadding, laneBounds?.minX ?? participantBounds.x);
-      const nextWidth = Math.max(minAxisSize, contentBounds.width + axisPadding * 2);
+        if (isHorizontal) {
+            const nextX = Math.min(contentBounds.minX - axisPadding, laneBounds?.minX ?? participantBounds.x);
+            const nextWidth = Math.max(minAxisSize, contentBounds.width + axisPadding * 2);
 
-      lanes.forEach(lane => {
-        const bounds = getElementBounds(lane);
-        if (!bounds) return;
-        if (Math.abs(bounds.x - nextX) > 0.5 || Math.abs(bounds.width - nextWidth) > 0.5) {
-          modeling.resizeShape(lane, { ...bounds, x: nextX, width: nextWidth });
+            lanes.forEach((lane) => {
+                const bounds = getElementBounds(lane);
+                if (!bounds) return;
+                if (Math.abs(bounds.x - nextX) > 0.5 || Math.abs(bounds.width - nextWidth) > 0.5) {
+                    modeling.resizeShape(lane, { ...bounds, x: nextX, width: nextWidth });
+                }
+            });
+
+            const updatedLaneBounds = collectBounds(lanes);
+            const minY = updatedLaneBounds?.minY ?? Math.min(contentBounds.minY - outerPadding, participantBounds.y);
+            const maxY =
+                updatedLaneBounds?.maxY ?? Math.max(contentBounds.maxY + outerPadding, participantBounds.y + participantBounds.height);
+            modeling.resizeShape(participant, {
+                x: nextX - outerPadding,
+                y: minY,
+                width: nextWidth + outerPadding,
+                height: maxY - minY
+            });
+        } else {
+            const nextY = Math.min(contentBounds.minY - axisPadding, laneBounds?.minY ?? participantBounds.y);
+            const nextHeight = Math.max(minAxisSize, contentBounds.height + axisPadding * 2);
+
+            lanes.forEach((lane) => {
+                const bounds = getElementBounds(lane);
+                if (!bounds) return;
+                if (Math.abs(bounds.y - nextY) > 0.5 || Math.abs(bounds.height - nextHeight) > 0.5) {
+                    modeling.resizeShape(lane, { ...bounds, y: nextY, height: nextHeight });
+                }
+            });
+
+            const updatedLaneBounds = collectBounds(lanes);
+            const minX = updatedLaneBounds?.minX ?? Math.min(contentBounds.minX - outerPadding, participantBounds.x);
+            const maxX =
+                updatedLaneBounds?.maxX ?? Math.max(contentBounds.maxX + outerPadding, participantBounds.x + participantBounds.width);
+            modeling.resizeShape(participant, {
+                x: minX,
+                y: nextY - outerPadding,
+                width: maxX - minX,
+                height: nextHeight + outerPadding
+            });
         }
-      });
+    });
 
-      const updatedLaneBounds = collectBounds(lanes);
-      const minY = updatedLaneBounds?.minY ?? Math.min(contentBounds.minY - outerPadding, participantBounds.y);
-      const maxY = updatedLaneBounds?.maxY ?? Math.max(contentBounds.maxY + outerPadding, participantBounds.y + participantBounds.height);
-      modeling.resizeShape(participant, {
-        x: nextX - outerPadding,
-        y: minY,
-        width: nextWidth + outerPadding,
-        height: maxY - minY
-      });
-    } else {
-      const nextY = Math.min(contentBounds.minY - axisPadding, laneBounds?.minY ?? participantBounds.y);
-      const nextHeight = Math.max(minAxisSize, contentBounds.height + axisPadding * 2);
-
-      lanes.forEach(lane => {
-        const bounds = getElementBounds(lane);
-        if (!bounds) return;
-        if (Math.abs(bounds.y - nextY) > 0.5 || Math.abs(bounds.height - nextHeight) > 0.5) {
-          modeling.resizeShape(lane, { ...bounds, y: nextY, height: nextHeight });
-        }
-      });
-
-      const updatedLaneBounds = collectBounds(lanes);
-      const minX = updatedLaneBounds?.minX ?? Math.min(contentBounds.minX - outerPadding, participantBounds.x);
-      const maxX = updatedLaneBounds?.maxX ?? Math.max(contentBounds.maxX + outerPadding, participantBounds.x + participantBounds.width);
-      modeling.resizeShape(participant, {
-        x: minX,
-        y: nextY - outerPadding,
-        width: maxX - minX,
-        height: nextHeight + outerPadding
-      });
-    }
-  });
-
-  participants.forEach(participant => {
-    const isHorizontal = participant.di?.isHorizontal !== false;
-    syncParticipantLaneOrientation(elementRegistry, participant, isHorizontal);
-  });
+    participants.forEach((participant) => {
+        const isHorizontal = participant.di?.isHorizontal !== false;
+        syncParticipantLaneOrientation(elementRegistry, participant, isHorizontal);
+    });
 };
 
 PaletteProvider.prototype._rotateRelativePosition = function (relativeX, relativeY, scaleX, scaleY) {
@@ -674,7 +664,13 @@ PaletteProvider.prototype._rotateRelativePosition = function (relativeX, relativ
 };
 
 // 함수 정의를 getPaletteEntries 바깥으로 옮긴다
-PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (event, element, onLoadStart = () => { }, onLoadEnd = () => { }, options = {}) {
+PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (
+    event,
+    element,
+    onLoadStart = () => {},
+    onLoadEnd = () => {},
+    options = {}
+) {
     onLoadStart();
     const modeling = this._modeling;
     const logPrefix = '[changeParticipantOrientation]';
@@ -903,7 +899,13 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function (even
     }
 };
 
-PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (event, element, onLoadStart = () => { }, onLoadEnd = () => { }, options = {}) {
+PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function (
+    event,
+    element,
+    onLoadStart = () => {},
+    onLoadEnd = () => {},
+    options = {}
+) {
     onLoadStart();
     const modeling = this._modeling;
     const logPrefix = '[changeParticipantOrientation]';

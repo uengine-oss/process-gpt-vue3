@@ -10,7 +10,10 @@
                     @mouseleave="hoveredTabIndex = null"
                 >
                     <div class="tab-content-wrapper">
-                        <span class="tab-title">{{ tab.title }}</span>
+                        <span class="tab-title">
+                            <v-tooltip activator="parent" location="bottom">{{ getTabFullTitle(tab) }}</v-tooltip>
+                            {{ tab.title }}
+                        </span>
                         <v-btn
                             icon
                             variant="text"
@@ -463,6 +466,10 @@ export default {
             if (!text) return '';
             return text.length > maxLen ? text.substring(0, maxLen) + '…' : text;
         },
+        getTabFullTitle(tab) {
+            const room = tab?.roomId ? this.chatRooms.find((item) => item.id === tab.roomId) : null;
+            return room?.name || tab?.title || this.$t('chatListing.newChat');
+        },
         async putObject(path, obj) {
             await backend.putObject(`db://${path}`, obj);
         },
@@ -820,13 +827,9 @@ export default {
     display: flex;
     align-items: center;
     gap: 6px;
-    max-width: 220px;
 }
 
 .tab-title {
-    max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
 

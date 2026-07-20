@@ -31,9 +31,7 @@ const items = [
         id: 'parallel-explicit-join-4',
         title: 'Parallel explicit join, 4 branches',
         status: 'PASS',
-        results: [
-            ['deterministic', 'PASS', 'branch_1, branch_2, branch_3, branch_4', 'merge_task', 'merge_task']
-        ],
+        results: [['deterministic', 'PASS', 'branch_1, branch_2, branch_3, branch_4', 'merge_task', 'merge_task']],
         note: 'Explicit parallel join proceeds when all branches are done. AI condition evaluation is not applicable to parallel split.'
     },
     {
@@ -66,18 +64,14 @@ const items = [
         id: 'parallel-direct-merge-4',
         title: 'Parallel direct merge, 4 branches',
         status: 'PASS',
-        results: [
-            ['deterministic', 'PASS', 'branch_1, branch_2, branch_3, branch_4', 'merge_task', 'merge_task']
-        ],
+        results: [['deterministic', 'PASS', 'branch_1, branch_2, branch_3, branch_4', 'merge_task', 'merge_task']],
         note: 'Direct parallel merge proceeds when all branches are done. AI condition evaluation is not applicable to parallel split.'
     },
     {
         id: 'parallel-direct-merge-waits-4',
         title: 'Parallel direct merge waits, 4 branches',
         status: 'PASS',
-        results: [
-            ['deterministic negative', 'PASS', 'branch_1, branch_2, branch_3, branch_4', 'merge_task', 'empty']
-        ],
+        results: [['deterministic negative', 'PASS', 'branch_1, branch_2, branch_3, branch_4', 'merge_task', 'empty']],
         note: 'Direct parallel merge waits when only branch_1 is DONE and the other parallel branches are still TODO.'
     },
     {
@@ -135,22 +129,25 @@ const items = [
     }
 ];
 
-const sections = items.map((item, index) => {
-    const { id, title, status, results, note } = item;
-    const file = path.join(dir, `${id}.png`);
-    const b64 = fs.readFileSync(file).toString('base64');
-    const statusClass = status === 'PASS' ? 'pass' : 'fail';
-    const rows = results.map(([mode, rowStatus, selected, resolved, filtered]) => {
-        const rowClass = rowStatus === 'PASS' ? 'passText' : 'failText';
-        return `<tr>
+const sections = items
+    .map((item, index) => {
+        const { id, title, status, results, note } = item;
+        const file = path.join(dir, `${id}.png`);
+        const b64 = fs.readFileSync(file).toString('base64');
+        const statusClass = status === 'PASS' ? 'pass' : 'fail';
+        const rows = results
+            .map(([mode, rowStatus, selected, resolved, filtered]) => {
+                const rowClass = rowStatus === 'PASS' ? 'passText' : 'failText';
+                return `<tr>
       <td>${mode}</td>
       <td class="${rowClass}">${rowStatus}</td>
       <td>${selected}</td>
       <td>${resolved}</td>
       <td>${filtered}</td>
     </tr>`;
-    }).join('\n');
-    return `<section>
+            })
+            .join('\n');
+        return `<section>
   <h2>${index + 1}. ${title} <span class="badge ${statusClass}">${status}</span></h2>
   <table>
     <thead>
@@ -171,7 +168,8 @@ const sections = items.map((item, index) => {
   </table>
   <img src="data:image/png;base64,${b64}" alt="${title}" />
 </section>`;
-}).join('\n');
+    })
+    .join('\n');
 
 const html = `<!doctype html>
 <html>

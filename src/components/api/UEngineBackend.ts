@@ -2233,7 +2233,14 @@ class UEngineBackend implements Backend {
         return [];
     }
 
-    async saveGitConfig(config: { id?: string; provider: string; base_url?: string; username: string; token: string; is_default: boolean }): Promise<void> {
+    async saveGitConfig(config: {
+        id?: string;
+        provider: string;
+        base_url?: string;
+        username: string;
+        token: string;
+        is_default: boolean;
+    }): Promise<void> {
         console.warn('saveGitConfig is not implemented - only use Process-GPT Mode');
     }
 
@@ -2242,13 +2249,27 @@ class UEngineBackend implements Backend {
     }
 
     // Agent Monitor API - ProcessGPT 전용
-    async putEvent(_event: any) { return null; }
-    async getAgentEvents(_taskId: string) { return []; }
-    async getAgentEventById(_eventId: string) { return null; }
-    async getTodoStatus(_taskId: string) { return null; }
-    async getTodoOutput(_taskId: string) { return null; }
-    async watchAgentEvents(_taskId: string, _callback: (row: any) => void) { return null; }
-    async watchTodoStatus(_taskId: string, _callback: (newRow: any, oldRow: any) => void) { return null; }
+    async putEvent(_event: any) {
+        return null;
+    }
+    async getAgentEvents(_taskId: string) {
+        return [];
+    }
+    async getAgentEventById(_eventId: string) {
+        return null;
+    }
+    async getTodoStatus(_taskId: string) {
+        return null;
+    }
+    async getTodoOutput(_taskId: string) {
+        return null;
+    }
+    async watchAgentEvents(_taskId: string, _callback: (row: any) => void) {
+        return null;
+    }
+    async watchTodoStatus(_taskId: string, _callback: (newRow: any, oldRow: any) => void) {
+        return null;
+    }
     unwatchChannel(_ref: any) {}
 }
 

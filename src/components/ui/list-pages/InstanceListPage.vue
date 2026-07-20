@@ -105,7 +105,7 @@ export default {
                 sort: {
                     label: this.$t('filterConfigLabel.sort'),
                     options: [
-                        { text: this.$t('filterConfigOptions.latest'), value: 'updated_at' }, // desc
+                        { text: this.$t('filterConfigOptions.latest'), value: 'latest' }, // start_date desc
                         { text: this.$t('filterConfigOptions.startDate'), value: 'start_date' }, // asc
                         { text: this.$t('filterConfigOptions.endDate'), value: 'end_date' }, // desc
                         { text: this.$t('filterConfigOptions.dueDate'), value: 'due_date' } // desc
@@ -128,7 +128,7 @@ export default {
                     startDate: null,
                     endDate: null
                 },
-                sort: 'end_date',
+                sort: 'latest',
                 status: ['NEW', 'IN_PROGRESS', 'PENDING', 'COMPLETED', 'CANCELLED']
             },
             initLoading: false,
@@ -171,7 +171,10 @@ export default {
                         me.filter.status = JSON.parse(JSON.stringify(me.listType));
                     }
                     me.currentOptions = {
-                        orderBy: me.filter.sort,
+                        orderBy: me.resolveSortField(me.filter.sort),
+                        sort: me.resolveSortDirection(me.filter.sort),
+                        secondaryOrderBy: 'proc_inst_id',
+                        secondarySort: 'asc',
                         range: { from: 0, to: itemsPerPage - 1 }
                     };
                     if (me.filter.period.startDate) me.currentOptions.startAt = me.filter.period.startDate;
@@ -255,7 +258,10 @@ export default {
                     if (searchWord) {
                         let itemsPerPage = me.config.itemsPerPage ? me.config.itemsPerPage : 1;
                         me.currentOptions = {
-                            orderBy: me.filter.sort,
+                            orderBy: me.resolveSortField(me.filter.sort),
+                            sort: me.resolveSortDirection(me.filter.sort),
+                            secondaryOrderBy: 'proc_inst_id',
+                            secondarySort: 'asc',
                             range: { from: 0, to: itemsPerPage - 1 },
                             like: { key: 'proc_inst_name', value: `%${searchWord}%` }
                         };
@@ -301,8 +307,10 @@ export default {
                     let itemsPerPage = me.config.itemsPerPage ? me.config.itemsPerPage : 1;
 
                     me.currentOptions = {
-                        sort: filter.sort == 'start_date' ? 'asc' : 'desc',
-                        orderBy: filter.sort,
+                        sort: me.resolveSortDirection(filter.sort),
+                        orderBy: me.resolveSortField(filter.sort),
+                        secondaryOrderBy: 'proc_inst_id',
+                        secondarySort: 'asc',
                         range: { from: 0, to: itemsPerPage - 1 }
                     };
                     if (filter.period.startDate) me.currentOptions.startAt = filter.period.startDate;
@@ -313,6 +321,12 @@ export default {
                     me.loading = false;
                 }
             });
+        },
+        resolveSortField(sortKey) {
+            return sortKey === 'latest' || sortKey === 'updated_at' ? 'start_date' : sortKey;
+        },
+        resolveSortDirection(sortKey) {
+            return sortKey === 'start_date' ? 'asc' : 'desc';
         },
         formatDateTime(dateString) {
             const date = new Date(dateString);

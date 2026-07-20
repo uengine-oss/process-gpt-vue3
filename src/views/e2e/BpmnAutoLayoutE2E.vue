@@ -1,73 +1,67 @@
 ﻿<template>
-  <v-app>
-    <div class="bpmn-auto-layout-e2e-page">
-    <v-app-bar color="primary" density="compact">
-      <v-app-bar-title>BPMN Auto Layout E2E</v-app-bar-title>
-      <v-spacer />
-      <v-btn icon="mdi-folder-open" variant="text" @click="showCaseDialog = true" title="Load case">
-        <v-icon>mdi-folder-open</v-icon>
-      </v-btn>
-    </v-app-bar>
+    <v-app>
+        <div class="bpmn-auto-layout-e2e-page">
+            <v-app-bar color="primary" density="compact">
+                <v-app-bar-title>BPMN Auto Layout E2E</v-app-bar-title>
+                <v-spacer />
+                <v-btn icon="mdi-folder-open" variant="text" @click="showCaseDialog = true" title="Load case">
+                    <v-icon>mdi-folder-open</v-icon>
+                </v-btn>
+            </v-app-bar>
 
-    <v-dialog v-model="showCaseDialog" max-width="460" persistent>
-      <v-card>
-        <v-card-title>Load BPMN case</v-card-title>
-        <v-card-text>
-          <v-list density="compact">
-            <v-list-item
-              v-for="item in caseItems"
-              :key="item.path"
-              :title="item.title"
-              :subtitle="item.subtitle"
-              @click="loadCase(item)"
-              clickable
-            >
-              <template #prepend>
-                <v-icon>mdi-file-document-outline</v-icon>
-              </template>
-            </v-list-item>
-          </v-list>
-          <v-alert v-if="caseLoadError" type="error" density="compact" class="mt-2">
-            {{ caseLoadError }}
-          </v-alert>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="showCaseDialog = false">Close</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+            <v-dialog v-model="showCaseDialog" max-width="460" persistent>
+                <v-card>
+                    <v-card-title>Load BPMN case</v-card-title>
+                    <v-card-text>
+                        <v-list density="compact">
+                            <v-list-item
+                                v-for="item in caseItems"
+                                :key="item.path"
+                                :title="item.title"
+                                :subtitle="item.subtitle"
+                                @click="loadCase(item)"
+                                clickable
+                            >
+                                <template #prepend>
+                                    <v-icon>mdi-file-document-outline</v-icon>
+                                </template>
+                            </v-list-item>
+                        </v-list>
+                        <v-alert v-if="caseLoadError" type="error" density="compact" class="mt-2">
+                            {{ caseLoadError }}
+                        </v-alert>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer />
+                        <v-btn variant="text" @click="showCaseDialog = false">Close</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
 
-    <v-main class="bpmn-e2e-canvas-wrap">
-      <BpmnUengine
-        ref="bpmn"
-        :bpmn="diagramXML"
-        :is-view-mode="isViewMode"
-        :register-to-store="false"
-        @done="onDiagramLoaded"
-      >
-        <template #extra-controls>
-          <v-tooltip location="bottom">
-            <template #activator="{ props }">
-              <v-icon v-bind="props" class="e2e-auto-layout-button" size="small" @click="applyAutoLayout">
-                mdi-auto-fix
-              </v-icon>
-            </template>
-            <span>Auto layout</span>
-          </v-tooltip>
-          <v-tooltip location="bottom">
-            <template #activator="{ props }">
-              <v-icon v-bind="props" class="e2e-rotate-button" size="small" @click="rotateLayout">
-                mdi-crop-rotate
-              </v-icon>
-            </template>
-            <span>Rotate layout</span>
-          </v-tooltip>
-        </template>
-      </BpmnUengine>
-    </v-main>
-    </div>
-  </v-app>
+            <v-main class="bpmn-e2e-canvas-wrap">
+                <BpmnUengine ref="bpmn" :bpmn="diagramXML" :is-view-mode="isViewMode" :register-to-store="false" @done="onDiagramLoaded">
+                    <template #extra-controls>
+                        <v-tooltip location="bottom">
+                            <template #activator="{ props }">
+                                <v-icon v-bind="props" class="e2e-auto-layout-button" size="small" @click="applyAutoLayout">
+                                    mdi-auto-fix
+                                </v-icon>
+                            </template>
+                            <span>Auto layout</span>
+                        </v-tooltip>
+                        <v-tooltip location="bottom">
+                            <template #activator="{ props }">
+                                <v-icon v-bind="props" class="e2e-rotate-button" size="small" @click="rotateLayout">
+                                    mdi-crop-rotate
+                                </v-icon>
+                            </template>
+                            <span>Rotate layout</span>
+                        </v-tooltip>
+                    </template>
+                </BpmnUengine>
+            </v-main>
+        </div>
+    </v-app>
 </template>
 
 <script>
@@ -106,90 +100,130 @@ const defaultBpmn = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>`;
 
 export default {
-  name: 'BpmnAutoLayoutE2E',
-  components: { BpmnUengine },
-  data() {
-    return {
-      diagramXML: defaultBpmn,
-      showCaseDialog: false,
-      caseLoadError: '',
-      isViewMode: new URLSearchParams(window.location.search).get('viewMode') === 'true',
-      caseItems: [
-        { path: '/case/uengine6-definitions/01-purchase-request.bpmn', title: 'Purchase Request', subtitle: 'uEngine6 definitions #1' },
-        { path: '/case/uengine6-definitions/02-srms.bpmn', title: 'SRMS', subtitle: 'uEngine6 definitions #2' },
-        { path: '/case/uengine6-definitions/03-trouble-subprocess.bpmn', title: 'Trouble SubProcess', subtitle: 'uEngine6 definitions #3' },
-        { path: '/case/uengine6-definitions/04-credit-rating.bpmn', title: 'Credit Rating', subtitle: 'uEngine6 definitions #4' },
-        { path: '/case/uengine6-definitions/05-credit-rating-2.bpmn', title: 'Credit Rating 2', subtitle: 'uEngine6 definitions #5' },
-        { path: '/case/uengine6-definitions/06-trouble-branch.bpmn', title: 'Trouble Branch', subtitle: 'uEngine6 definitions #6' },
-        { path: '/case/uengine6-definitions/07-error-fix-process.bpmn', title: 'Error Fix Process', subtitle: 'uEngine6 definitions #7' },
-        { path: '/case/uengine6-definitions/08-incident-reception.bpmn', title: 'Incident Reception', subtitle: 'uEngine6 definitions #8' },
-        { path: '/case/uengine6-definitions/09-trouble-report-basic.bpmn', title: 'Trouble Report Basic', subtitle: 'uEngine6 definitions #9' },
-        { path: '/case/uengine6-definitions/10-trouble-report-mapping.bpmn', title: 'Trouble Report Mapping', subtitle: 'uEngine6 definitions #10' },
-        { path: '/case/uengine6-definitions/11-attached-contract-review.bpmn', title: 'Attached Contract Review', subtitle: 'uEngine6 definitions #11' },
-        { path: '/case/uengine6-definitions/12-vendor-onboarding-improvement.bpmn', title: '협력사 온보딩 개선 프로세스', subtitle: '자동 방향 전환, CallActivity, 매퍼, 동적 역할 매핑' },
-        { path: '/case/uengine6-definitions/13-vendor-security-review.bpmn', title: '협력사 보안 심사 프로세스', subtitle: 'CallActivity로 호출되는 보안 심사 프로세스' }
-      ]
-    };
-  },
-  mounted() {
-    window.$bpmnAutoLayoutE2E = this;
-  },
-  methods: {
-    onDiagramLoaded() {},
-    applyAutoLayout() {
-      this.$refs.bpmn?.applyAutoLayout?.();
+    name: 'BpmnAutoLayoutE2E',
+    components: { BpmnUengine },
+    data() {
+        return {
+            diagramXML: defaultBpmn,
+            showCaseDialog: false,
+            caseLoadError: '',
+            isViewMode: new URLSearchParams(window.location.search).get('viewMode') === 'true',
+            caseItems: [
+                {
+                    path: '/case/uengine6-definitions/01-purchase-request.bpmn',
+                    title: 'Purchase Request',
+                    subtitle: 'uEngine6 definitions #1'
+                },
+                { path: '/case/uengine6-definitions/02-srms.bpmn', title: 'SRMS', subtitle: 'uEngine6 definitions #2' },
+                {
+                    path: '/case/uengine6-definitions/03-trouble-subprocess.bpmn',
+                    title: 'Trouble SubProcess',
+                    subtitle: 'uEngine6 definitions #3'
+                },
+                { path: '/case/uengine6-definitions/04-credit-rating.bpmn', title: 'Credit Rating', subtitle: 'uEngine6 definitions #4' },
+                {
+                    path: '/case/uengine6-definitions/05-credit-rating-2.bpmn',
+                    title: 'Credit Rating 2',
+                    subtitle: 'uEngine6 definitions #5'
+                },
+                { path: '/case/uengine6-definitions/06-trouble-branch.bpmn', title: 'Trouble Branch', subtitle: 'uEngine6 definitions #6' },
+                {
+                    path: '/case/uengine6-definitions/07-error-fix-process.bpmn',
+                    title: 'Error Fix Process',
+                    subtitle: 'uEngine6 definitions #7'
+                },
+                {
+                    path: '/case/uengine6-definitions/08-incident-reception.bpmn',
+                    title: 'Incident Reception',
+                    subtitle: 'uEngine6 definitions #8'
+                },
+                {
+                    path: '/case/uengine6-definitions/09-trouble-report-basic.bpmn',
+                    title: 'Trouble Report Basic',
+                    subtitle: 'uEngine6 definitions #9'
+                },
+                {
+                    path: '/case/uengine6-definitions/10-trouble-report-mapping.bpmn',
+                    title: 'Trouble Report Mapping',
+                    subtitle: 'uEngine6 definitions #10'
+                },
+                {
+                    path: '/case/uengine6-definitions/11-attached-contract-review.bpmn',
+                    title: 'Attached Contract Review',
+                    subtitle: 'uEngine6 definitions #11'
+                },
+                {
+                    path: '/case/uengine6-definitions/12-vendor-onboarding-improvement.bpmn',
+                    title: '협력사 온보딩 개선 프로세스',
+                    subtitle: '자동 방향 전환, CallActivity, 매퍼, 동적 역할 매핑'
+                },
+                {
+                    path: '/case/uengine6-definitions/13-vendor-security-review.bpmn',
+                    title: '협력사 보안 심사 프로세스',
+                    subtitle: 'CallActivity로 호출되는 보안 심사 프로세스'
+                }
+            ]
+        };
     },
-    rotateLayout(event) {
-      window.event = event;
-      this.$refs.bpmn?.changeOrientation?.();
+    mounted() {
+        window.$bpmnAutoLayoutE2E = this;
     },
-    async loadCase(item) {
-      this.caseLoadError = '';
-      try {
-        const res = await fetch(item.path);
-        if (!res.ok) throw new Error(`Load failed: ${res.status}`);
-        const xml = await res.text();
-        if (!xml.includes('bpmn:definitions') && !xml.includes('bpmn2:definitions')) {
-          throw new Error('Invalid BPMN XML.');
+    methods: {
+        onDiagramLoaded() {},
+        applyAutoLayout() {
+            this.$refs.bpmn?.applyAutoLayout?.();
+        },
+        rotateLayout(event) {
+            window.event = event;
+            this.$refs.bpmn?.changeOrientation?.();
+        },
+        async loadCase(item) {
+            this.caseLoadError = '';
+            try {
+                const res = await fetch(item.path);
+                if (!res.ok) throw new Error(`Load failed: ${res.status}`);
+                const xml = await res.text();
+                if (!xml.includes('bpmn:definitions') && !xml.includes('bpmn2:definitions')) {
+                    throw new Error('Invalid BPMN XML.');
+                }
+                this.diagramXML = xml;
+                this.showCaseDialog = false;
+            } catch (e) {
+                this.caseLoadError = e.message || 'Failed to load BPMN case.';
+            }
         }
-        this.diagramXML = xml;
-        this.showCaseDialog = false;
-      } catch (e) {
-        this.caseLoadError = e.message || 'Failed to load BPMN case.';
-      }
     }
-  }
 };
 </script>
 
 <style scoped>
 .bpmn-auto-layout-e2e-page {
-  min-height: 100vh;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+    min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .bpmn-e2e-canvas-wrap {
-  flex: 1 1 auto;
-  min-height: 0;
-  position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
 }
 
 .bpmn-e2e-canvas-wrap :deep(.vue-bpmn-diagram-container) {
-  position: absolute;
-  inset: 0;
+    position: absolute;
+    inset: 0;
 }
 
 .e2e-auto-layout-button,
 .e2e-rotate-button {
-  color: #444;
-  cursor: pointer;
+    color: #444;
+    cursor: pointer;
 }
 
 .bpmn-e2e-canvas-wrap :deep(.font-size-controls) {
-  top: 56px !important;
-  z-index: 10 !important;
+    top: 56px !important;
+    z-index: 10 !important;
 }
 </style>

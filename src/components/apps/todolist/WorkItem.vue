@@ -364,7 +364,7 @@
                                         density="comfortable"
                                         rounded
                                         :disabled="isGeneratingExample"
-                                        style="background-color: #808080; color: white; min-width: 36px; padding: 0 6px;"
+                                        style="background-color: #808080; color: white; min-width: 36px; padding: 0 6px"
                                         @click="selectedTab = 'agent-monitor'"
                                     >
                                         <v-icon>mdi-auto-fix</v-icon>
@@ -379,7 +379,7 @@
                                         rounded
                                         :loading="isGeneratingExample"
                                         :disabled="isGeneratingExample"
-                                        style="background-color: #808080; color: white;"
+                                        style="background-color: #808080; color: white"
                                         @click="triggerBasicLlmAgentFromResearchMethod"
                                     >
                                         <Icons :icon="'sparkles'" :size="20" />
@@ -2341,9 +2341,7 @@ export default {
 
         triggerBasicLlmAgentFromResearchMethod() {
             const defaultSetting = useDefaultSetting();
-            const basicLlmAgent = defaultSetting.getAgentList.find(
-                (agent) => agent.alias === 'default' && agent.agent_type === 'pgagent'
-            );
+            const basicLlmAgent = defaultSetting.getAgentList.find((agent) => agent.alias === 'default' && agent.agent_type === 'pgagent');
             if (basicLlmAgent) {
                 this.updateWorkItem({
                     ...this.selectedAgent,

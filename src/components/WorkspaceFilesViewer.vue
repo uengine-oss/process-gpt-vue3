@@ -4,7 +4,7 @@
         <div class="ws-files__header">
             <v-icon size="16" class="mr-1">mdi-folder-outline</v-icon>
             <span class="ws-files__title">작업 폴더</span>
-            <span class="ws-files__count">{{ files.length }}</span>
+            <span class="ws-files__count">{{ displayFiles.length }}</span>
             <v-spacer />
             <!-- 실엔진 검증/자동개선 진행 표시 (제시 전 자동 수행) -->
             <v-chip v-if="saveState.validating" size="x-small" color="primary" variant="tonal" class="mr-2">
@@ -43,7 +43,7 @@
                 :class="{ 'is-active': f.path === selectedPath }"
                 @click="selectedPath = f.path"
             >
-                <v-icon size="15" class="ws-files__item-icon">{{ fileIcon(f.ext) }}</v-icon>
+                <v-icon size="15" class="ws-files__item-icon">{{ fileIcon(fileExtension(f)) }}</v-icon>
                 <span class="ws-files__item-name">{{ displayName(f) }}</span>
                 <span v-if="f.status === 'running'" class="ws-files__item-badge is-running">편집 중…</span>
                 <span v-else-if="f.op === 'edit'" class="ws-files__item-badge is-edit">수정</span>
@@ -63,7 +63,7 @@
                     :key="selected.path"
                     ref="viewer"
                     :content="selected.content"
-                    :ext="selected.ext"
+                    :ext="fileExtension(selected)"
                     :def-json="selected.json || ''"
                     :edit-target="editTarget"
                     :read-only="false"
@@ -93,6 +93,7 @@ const FILE_ICONS = {
     '.md': 'mdi-language-markdown-outline',
     '.html': 'mdi-language-html5',
     '.htm': 'mdi-language-html5',
+    '.form': 'mdi-form-select',
     '.xml': 'mdi-xml',
     '.bpmn': 'mdi-sitemap-outline',
     '.dmn': 'mdi-table-large',
@@ -101,6 +102,16 @@ const FILE_ICONS = {
     '.txt': 'mdi-text-box-outline',
     '.csv': 'mdi-table'
 };
+
+const PREVIEWABLE_EXTENSIONS = new Set(Object.keys(FILE_ICONS));
+
+function normalizedFileExtension(file) {
+    const explicit = (file?.ext || '').toString().trim().toLowerCase();
+    if (explicit) return explicit.startsWith('.') ? explicit : `.${explicit}`;
+    const name = (file?.name || file?.path || '').toString().split('/').pop() || '';
+    const dot = name.lastIndexOf('.');
+    return dot > 0 ? name.slice(dot).toLowerCase() : '';
+}
 
 export default {
     name: 'WorkspaceFilesViewer',
@@ -119,25 +130,25 @@ export default {
     },
     computed: {
         /**
-         * 목록에 표시할 파일 — 산출물에는 **bpmn / skill(SKILL.md) / agent(agents.json)** 만 표시한다.
-         * - "." 로 시작하는 파일(리눅스식 숨김)·폼(.form/.html)·process-definition.json·manifest.json 등은 숨김.
-         * - 폼은 프로세스 내부 편집기에서 다루고, 내부 파일은 표시하지 않는다.
+         * 목록에 표시할 파일 — 내부 메타데이터를 제외한 미리보기 가능한 산출물을 모두 표시한다.
+         * - "." 로 시작하는 파일·process-definition.json·manifest.json 은 숨김.
+         * - bpmn/md/json/html/form/xml/yaml/txt/csv 등은 각 형식 뷰어로 표시한다.
          */
         displayFiles() {
             return (this.files || []).filter((f) => {
                 const p = (f.path || '').replace(/\\/g, '/');
                 const lp = p.toLowerCase();
                 const base = (f.name || p.split('/').pop() || '').toString();
+                const normalizedBase = base.toLowerCase().replace(/^\.+/, '');
                 if (base.startsWith('.')) return false; // 숨김 파일
-                const ext = (f.ext || '').toLowerCase();
+                // DeepAgent may emit internal files with or without a leading dot.
+                if (normalizedBase === 'process-definition.json' || normalizedBase === 'manifest.json') return false;
+                const ext = normalizedFileExtension(f);
                 const isBpmn = ext === '.bpmn' || lp.endsWith('.bpmn');
                 const isSkill = lp.endsWith('/skill.md') || base.toLowerCase() === 'skill.md';
                 // 에이전트: 개별 파일 `agents/<id>.json` 또는 레거시 단일 `agents.json`.
-                const isAgent =
-                    lp.endsWith('/agents.json') ||
-                    base.toLowerCase() === 'agents.json' ||
-                    /\/agents\/[^/]+\.json$/.test(lp);
-                return isBpmn || isSkill || isAgent;
+                const isAgent = lp.endsWith('/agents.json') || base.toLowerCase() === 'agents.json' || /\/agents\/[^/]+\.json$/.test(lp);
+                return isBpmn || isSkill || isAgent || PREVIEWABLE_EXTENSIONS.has(ext);
             });
         },
         selected() {
@@ -153,7 +164,7 @@ export default {
             if (!f) return null;
             const p = (f.path || '').replace(/\\/g, '/');
             const lp = p.toLowerCase();
-            const ext = (f.ext || '').toLowerCase();
+            const ext = normalizedFileExtension(f);
             // 1) bpmn → process
             if (ext === '.bpmn' || lp.endsWith('.bpmn')) {
                 let id = '';
@@ -214,8 +225,12 @@ export default {
         }
     },
     methods: {
+        fileExtension(file) {
+            return normalizedFileExtension(file);
+        },
         fileIcon(ext) {
-            return FILE_ICONS[ext] || 'mdi-file-outline';
+            const normalized = (ext || '').toString().toLowerCase();
+            return FILE_ICONS[normalized.startsWith('.') ? normalized : `.${normalized}`] || 'mdi-file-outline';
         },
         /** 미리보기 뷰어에서 파일 내용을 편집하면 부모(ChatRoomPage)로 전달 → 패널 데이터 갱신·저장에 반영. */
         onContentEdit(newContent) {

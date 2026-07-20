@@ -720,7 +720,7 @@ export default {
                     fileName: name,
                     fileUrl: url,
                     fileType: f.fileType || f.type || '',
-                    fileSize: f.fileSize || f.size || 0,
+                    fileSize: f.fileSize || f.size || 0
                 };
             };
             for (const m of this.messages || []) {
@@ -753,6 +753,8 @@ export default {
                 // 스트리밍 응답 처리
                 let fullResponse = '';
                 const toolCalls = [];
+                const executionSkills = [];
+                const executionConnectors = [];
 
                 // Supabase 세션에서 JWT 가져오기 (자동 갱신 포함)
                 const userJwt = (await getValidToken()) || '';
@@ -779,22 +781,47 @@ export default {
                                 this.loadingStates[targetRoomId].message = fullResponse.length === 0 ? '생각 중...' : fullResponse;
                             }
                         },
-                        onToolStart: (toolName, input) => {
+                        onPlanSkills: (skills) => {
+                            for (const skill of Array.isArray(skills) ? skills : []) {
+                                const name = typeof skill === 'string' ? skill : (skill?.name || skill?.id || '').toString();
+                                if (name && !executionSkills.includes(name)) executionSkills.push(name);
+                            }
+                        },
+                        onPlanConnectors: (connectors) => {
+                            for (const connector of Array.isArray(connectors) ? connectors : []) {
+                                const name =
+                                    typeof connector === 'string' ? connector : (connector?.name || connector?.id || '').toString();
+                                if (name && !executionConnectors.includes(name)) executionConnectors.push(name);
+                            }
+                        },
+                        onToolStart: (toolName, input, rawEvent) => {
                             if (toolName === 'work-assistant__ask_user') {
                                 if (toolCalls.length > 0 && toolCalls[toolCalls.length - 1].name === 'work-assistant__ask_user') {
                                     return;
                                 }
                             }
-                            toolCalls.push({ name: toolName, input });
+                            toolCalls.push({
+                                name: toolName,
+                                input,
+                                connectors: Array.isArray(rawEvent?.connectors) ? rawEvent.connectors : [],
+                                status: 'running'
+                            });
                             // 해당 채팅방의 로딩 상태 업데이트
                             if (this.loadingStates[targetRoomId]) {
                                 this.loadingStates[targetRoomId].message = `🔧 ${this.formatToolName(toolName)} 실행 중...`;
                             }
                         },
-                        onToolEnd: (output) => {
+                        onToolEnd: (output, rawEvent) => {
                             // 마지막 도구 호출에 결과 저장
                             if (toolCalls.length > 0) {
-                                toolCalls[toolCalls.length - 1].output = output;
+                                const endedName = (rawEvent?.tool || rawEvent?.tool_name || rawEvent?.name || '').toString();
+                                const target =
+                                    [...toolCalls]
+                                        .reverse()
+                                        .find((call) => call.status === 'running' && (!endedName || call.name === endedName)) ||
+                                    toolCalls[toolCalls.length - 1];
+                                target.output = output;
+                                target.status = rawEvent?.error ? 'error' : 'done';
                             }
 
                             // list_reference_documents 등 human feedback 도구 결과 감지
@@ -848,6 +875,8 @@ export default {
                                 if (partial) {
                                     const assistantMsgObj = this.createMessageObj(partial, 'assistant');
                                     assistantMsgObj.toolCalls = toolCalls;
+                                    assistantMsgObj.executionSkills = executionSkills;
+                                    assistantMsgObj.executionConnectors = executionConnectors;
 
                                     if (this.currentRoomId === targetRoomId) {
                                         this.messages.push(assistantMsgObj);
@@ -869,6 +898,8 @@ export default {
                             // AI 응답 메시지 생성
                             const assistantMsgObj = this.createMessageObj(content, 'assistant');
                             assistantMsgObj.toolCalls = toolCalls;
+                            assistantMsgObj.executionSkills = executionSkills;
+                            assistantMsgObj.executionConnectors = executionConnectors;
 
                             // human feedback 도구 결과가 있으면 메시지에 첨부
                             const feedbackToolCall = toolCalls.find((tc) => tc.__humanFeedback);
@@ -1989,7 +2020,10 @@ export default {
                         progressState.message = messageData.error || message || '작업 실패';
 
                         // 에러 메시지를 채팅에 추가
-                        const errorMsg = me.createMessageObj(`BPMN 프로세스 생성 실패: ${messageData.error || '알 수 없는 오류'}`, 'assistant');
+                        const errorMsg = me.createMessageObj(
+                            `BPMN 프로세스 생성 실패: ${messageData.error || '알 수 없는 오류'}`,
+                            'assistant'
+                        );
                         if (me.currentRoomId === targetRoomId) {
                             me.messages.push(errorMsg);
                         }

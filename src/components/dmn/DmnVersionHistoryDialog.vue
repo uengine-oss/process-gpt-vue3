@@ -13,8 +13,14 @@
                     <span class="text-subtitle-1 font-weight-bold">{{ dmnName }}</span>
                 </div>
                 <div class="dvc-header-right">
-                    <v-btn v-if="isOwner && canMerge && selectedPr && selectedPr.status !== 'MERGED'"
-                        variant="flat" size="small" color="deep-purple" :loading="merging" @click="mergePr">
+                    <v-btn
+                        v-if="isOwner && canMerge && selectedPr && selectedPr.status !== 'MERGED'"
+                        variant="flat"
+                        size="small"
+                        color="deep-purple"
+                        :loading="merging"
+                        @click="mergePr"
+                    >
                         <v-icon start size="14">mdi-source-merge</v-icon> 병합
                     </v-btn>
                 </div>
@@ -28,9 +34,18 @@
                         <div class="dvc-vbar">
                             <div class="dvc-vbar-left">
                                 <span class="dvc-badge dvc-badge-new">버전 A (신규)</span>
-                                <v-select v-model="selectedA" :items="versionItems" item-title="title" item-value="value"
-                                    density="compact" variant="outlined" hide-details class="dvc-vselect ml-3"
-                                    :disabled="versions.length === 0" @update:model-value="loadVersionA" />
+                                <v-select
+                                    v-model="selectedA"
+                                    :items="versionItems"
+                                    item-title="title"
+                                    item-value="value"
+                                    density="compact"
+                                    variant="outlined"
+                                    hide-details
+                                    class="dvc-vselect ml-3"
+                                    :disabled="versions.length === 0"
+                                    @update:model-value="loadVersionA"
+                                />
                             </div>
                             <div class="dvc-vbar-right text-caption text-medium-emphasis">
                                 <template v-if="versionAData">
@@ -40,8 +55,7 @@
                             </div>
                         </div>
                         <div class="dvc-canvas">
-                            <DmnModeler v-if="versionAXml" :key="'ha-' + viewerKeyA"
-                                :dmn="versionAXml" :isViewMode="true" />
+                            <DmnModeler v-if="versionAXml" :key="'ha-' + viewerKeyA" :dmn="versionAXml" :isViewMode="true" />
                             <div v-else class="dvc-empty">
                                 <v-icon size="32" color="grey-lighten-1">mdi-file-document-outline</v-icon>
                                 <div class="text-caption text-medium-emphasis mt-2">저장된 버전이 없습니다</div>
@@ -56,9 +70,18 @@
                         <div class="dvc-vbar">
                             <div class="dvc-vbar-left">
                                 <span class="dvc-badge dvc-badge-old">버전 B (이전)</span>
-                                <v-select v-model="selectedB" :items="versionItems" item-title="title" item-value="value"
-                                    density="compact" variant="outlined" hide-details class="dvc-vselect ml-3"
-                                    :disabled="versions.length === 0" @update:model-value="loadVersionB" />
+                                <v-select
+                                    v-model="selectedB"
+                                    :items="versionItems"
+                                    item-title="title"
+                                    item-value="value"
+                                    density="compact"
+                                    variant="outlined"
+                                    hide-details
+                                    class="dvc-vselect ml-3"
+                                    :disabled="versions.length === 0"
+                                    @update:model-value="loadVersionB"
+                                />
                             </div>
                             <div class="dvc-vbar-right text-caption text-medium-emphasis">
                                 <template v-if="versionBData">
@@ -68,8 +91,7 @@
                             </div>
                         </div>
                         <div class="dvc-canvas">
-                            <DmnModeler v-if="versionBXml" :key="'hb-' + viewerKeyB"
-                                :dmn="versionBXml" :isViewMode="true" />
+                            <DmnModeler v-if="versionBXml" :key="'hb-' + viewerKeyB" :dmn="versionBXml" :isViewMode="true" />
                             <div v-else class="dvc-empty">
                                 <v-icon size="32" color="grey-lighten-1">mdi-file-document-outline</v-icon>
                                 <div class="text-caption text-medium-emphasis mt-2">저장된 버전이 없습니다</div>
@@ -86,7 +108,13 @@
                             변경
                             <span v-if="diffChanges.length > 0" class="dmn-history-tab-count">{{ diffChanges.length }}</span>
                         </button>
-                        <button :class="['dmn-history-tab', { 'dmn-history-tab--active': tab === 'pr' }]" @click="tab = 'pr'; selectedPr = null">
+                        <button
+                            :class="['dmn-history-tab', { 'dmn-history-tab--active': tab === 'pr' }]"
+                            @click="
+                                tab = 'pr';
+                                selectedPr = null;
+                            "
+                        >
                             <v-icon size="16">mdi-source-merge</v-icon>
                             병합 요청
                             <span v-if="openPrCount > 0" class="dmn-history-tab-count">{{ openPrCount }}</span>
@@ -110,9 +138,15 @@
                             </div>
                             <div v-if="diffChanges.length > 0" class="dmn-pr-section-head px-4">변경 항목 · {{ diffChanges.length }}건</div>
                             <div v-if="diffChanges.length > 0" class="dvc-diff-list">
-                                <div v-for="(c, i) in diffChanges" :key="i"
-                                    :class="['dvc-diff-card', { 'dvc-diff-card--expandable': c.hasDetail, 'dvc-diff-card--open': expandedDiffIndex === i }]"
-                                    @click="c.hasDetail && toggleDiffDetail(i)">
+                                <div
+                                    v-for="(c, i) in diffChanges"
+                                    :key="i"
+                                    :class="[
+                                        'dvc-diff-card',
+                                        { 'dvc-diff-card--expandable': c.hasDetail, 'dvc-diff-card--open': expandedDiffIndex === i }
+                                    ]"
+                                    @click="c.hasDetail && toggleDiffDetail(i)"
+                                >
                                     <span :class="['dvc-diff-bar', 'dvc-diff-bar-' + c.type]"></span>
                                     <div class="dvc-diff-content">
                                         <div class="dvc-diff-title">
@@ -130,8 +164,11 @@
                                         <div v-if="expandedDiffIndex === i && c.hasDetail" class="dvc-diff-detail" @click.stop>
                                             <!-- InputData diff -->
                                             <template v-if="c.category === 'input'">
-                                                <KeyValueDiffTable v-if="c.raw.diffs && c.raw.diffs.length > 0"
-                                                    :diffs="getInputDiffs(c.raw)" :labels="{ name: '이름', typeRef: '타입' }" />
+                                                <KeyValueDiffTable
+                                                    v-if="c.raw.diffs && c.raw.diffs.length > 0"
+                                                    :diffs="getInputDiffs(c.raw)"
+                                                    :labels="{ name: '이름', typeRef: '타입' }"
+                                                />
                                                 <div v-else class="text-caption text-medium-emphasis pa-2">
                                                     타입: {{ getInputType(c.raw.current || c.raw.previous) }}
                                                 </div>
@@ -142,7 +179,8 @@
                                                 <DecisionTableDiff
                                                     v-if="c.raw.current?.decisionTable || c.raw.previous?.decisionTable"
                                                     :previous="c.type === 'added' ? null : c.raw.previous?.decisionTable || null"
-                                                    :current="c.type === 'removed' ? null : c.raw.current?.decisionTable || null" />
+                                                    :current="c.type === 'removed' ? null : c.raw.current?.decisionTable || null"
+                                                />
                                             </template>
                                         </div>
                                     </div>
@@ -174,17 +212,38 @@
                                         </v-avatar>
                                         <span class="dmn-pr-reviewer-name">{{ ownerName }}</span>
                                         <span class="dmn-pr-role-chip">담당자</span>
-                                        <span :class="['dmn-pr-status-chip', latestOwnerAction === 'APPROVED' ? 'st-ok' : latestOwnerAction === 'CHANGES_REQUESTED' ? 'st-req' : 'st-pend']">
-                                            {{ latestOwnerAction === 'APPROVED' ? '승인함' : latestOwnerAction === 'CHANGES_REQUESTED' ? '변경요청' : '검토 중' }}
+                                        <span
+                                            :class="[
+                                                'dmn-pr-status-chip',
+                                                latestOwnerAction === 'APPROVED'
+                                                    ? 'st-ok'
+                                                    : latestOwnerAction === 'CHANGES_REQUESTED'
+                                                    ? 'st-req'
+                                                    : 'st-pend'
+                                            ]"
+                                        >
+                                            {{
+                                                latestOwnerAction === 'APPROVED'
+                                                    ? '승인함'
+                                                    : latestOwnerAction === 'CHANGES_REQUESTED'
+                                                    ? '변경요청'
+                                                    : '검토 중'
+                                            }}
                                         </span>
                                     </div>
                                 </div>
                                 <div class="dmn-pr-section-head px-4">코멘트 · {{ prReviews.length }}건</div>
                                 <PrReviewTimeline :reviews="prReviews" />
                                 <PrReviewForm
-                                    v-if="selectedPr.status === 'OPEN' || selectedPr.status === 'APPROVED' || selectedPr.status === 'CHANGES_REQUESTED'"
+                                    v-if="
+                                        selectedPr.status === 'OPEN' ||
+                                        selectedPr.status === 'APPROVED' ||
+                                        selectedPr.status === 'CHANGES_REQUESTED'
+                                    "
                                     :is-owner="isOwner && latestOwnerAction === 'PENDING'"
-                                    :loading="reviewSubmitting" @submit="handleReviewSubmit" />
+                                    :loading="reviewSubmitting"
+                                    @submit="handleReviewSubmit"
+                                />
                             </template>
                             <template v-else>
                                 <div v-if="prList.length === 0" class="pa-6 text-center">
@@ -196,23 +255,52 @@
                                         <div class="dmn-pr-list-head">활성 · {{ activePrList.length }}건</div>
                                         <div v-for="pr in activePrList" :key="pr.id" class="dmn-prc" @click="openPrDetail(pr)">
                                             <span :class="['dmn-pr-accent', prAccentClass(pr.status)]"></span>
-                                            <span class="dmn-pr-ava" :style="{ background: getAvatarColor(pr.requester_name) }">{{ getInitial(pr.requester_name) }}</span>
+                                            <span class="dmn-pr-ava" :style="{ background: getAvatarColor(pr.requester_name) }">{{
+                                                getInitial(pr.requester_name)
+                                            }}</span>
                                             <div class="dmn-prc-body">
-                                                <div class="dmn-prc-title">{{ pr.title }} <span :class="['dmn-st-badge', prBadgeClass(pr.status)]">{{ prStatusLabelFn(pr.status) }}</span></div>
-                                                <div class="dmn-prc-byline"><b>{{ pr.requester_name || '알 수 없음' }}</b><span class="dmn-dot-sep">·</span><span>{{ formatRelativeTime(pr.created_at) }}</span></div>
-                                                <div class="dmn-prc-branchline"><code class="dmn-branch-chip">{{ pr.branch_name }}</code><v-icon size="10" class="mx-1 text-grey">mdi-arrow-right</v-icon><code class="dmn-branch-chip">{{ pr.base_branch }}</code></div>
+                                                <div class="dmn-prc-title">
+                                                    {{ pr.title }}
+                                                    <span :class="['dmn-st-badge', prBadgeClass(pr.status)]">{{
+                                                        prStatusLabelFn(pr.status)
+                                                    }}</span>
+                                                </div>
+                                                <div class="dmn-prc-byline">
+                                                    <b>{{ pr.requester_name || '알 수 없음' }}</b
+                                                    ><span class="dmn-dot-sep">·</span><span>{{ formatRelativeTime(pr.created_at) }}</span>
+                                                </div>
+                                                <div class="dmn-prc-branchline">
+                                                    <code class="dmn-branch-chip">{{ pr.branch_name }}</code
+                                                    ><v-icon size="10" class="mx-1 text-grey">mdi-arrow-right</v-icon
+                                                    ><code class="dmn-branch-chip">{{ pr.base_branch }}</code>
+                                                </div>
                                             </div>
                                             <v-icon size="16" color="grey">mdi-chevron-right</v-icon>
                                         </div>
                                     </template>
                                     <template v-if="mergedPrList.length > 0">
                                         <div class="dmn-pr-list-head">병합됨 · {{ mergedPrList.length }}건</div>
-                                        <div v-for="pr in mergedPrList" :key="pr.id" class="dmn-prc dmn-prc-merged" @click="openPrDetail(pr)">
+                                        <div
+                                            v-for="pr in mergedPrList"
+                                            :key="pr.id"
+                                            class="dmn-prc dmn-prc-merged"
+                                            @click="openPrDetail(pr)"
+                                        >
                                             <span class="dmn-pr-accent ac-merged"></span>
-                                            <span class="dmn-pr-ava" :style="{ background: getAvatarColor(pr.requester_name), opacity: .7 }">{{ getInitial(pr.requester_name) }}</span>
+                                            <span
+                                                class="dmn-pr-ava"
+                                                :style="{ background: getAvatarColor(pr.requester_name), opacity: 0.7 }"
+                                                >{{ getInitial(pr.requester_name) }}</span
+                                            >
                                             <div class="dmn-prc-body">
-                                                <div class="dmn-prc-title">{{ pr.title }} <span class="dmn-st-badge st-merged">병합됨</span></div>
-                                                <div class="dmn-prc-byline"><b>{{ pr.requester_name || '알 수 없음' }}</b><span class="dmn-dot-sep">·</span><span>{{ formatRelativeTime(pr.merged_at || pr.updated_at || pr.created_at) }}</span></div>
+                                                <div class="dmn-prc-title">
+                                                    {{ pr.title }} <span class="dmn-st-badge st-merged">병합됨</span>
+                                                </div>
+                                                <div class="dmn-prc-byline">
+                                                    <b>{{ pr.requester_name || '알 수 없음' }}</b
+                                                    ><span class="dmn-dot-sep">·</span
+                                                    ><span>{{ formatRelativeTime(pr.merged_at || pr.updated_at || pr.created_at) }}</span>
+                                                </div>
                                             </div>
                                             <v-icon size="16" color="grey">mdi-chevron-right</v-icon>
                                         </div>
@@ -223,7 +311,12 @@
 
                         <!-- 이력 탭 -->
                         <div v-show="tab === 'history'">
-                            <div v-for="(ver, idx) in versions" :key="ver.version" class="dmn-history-row" :class="{ 'dmn-history-row--cur': idx === 0 }">
+                            <div
+                                v-for="(ver, idx) in versions"
+                                :key="ver.version"
+                                class="dmn-history-row"
+                                :class="{ 'dmn-history-row--cur': idx === 0 }"
+                            >
                                 <div class="dmn-history-badge">v{{ ver.version }}</div>
                                 <div class="dmn-history-meta">
                                     <div class="dmn-history-title">
@@ -308,24 +401,28 @@ export default {
     },
     computed: {
         dialogVisible: {
-            get() { return this.modelValue; },
-            set(val) { this.$emit('update:modelValue', val); }
+            get() {
+                return this.modelValue;
+            },
+            set(val) {
+                this.$emit('update:modelValue', val);
+            }
         },
         versionItems() {
             const items = [{ title: '현재 (최신)', value: '__current__' }];
-            this.versions.forEach(v => {
+            this.versions.forEach((v) => {
                 items.push({ title: `v${v.version}${v.version_tag === 'major' ? ' (major)' : ''}`, value: v.version });
             });
             return items;
         },
         openPrCount() {
-            return this.prList.filter(pr => pr.status !== 'MERGED' && pr.status !== 'CLOSED').length;
+            return this.prList.filter((pr) => pr.status !== 'MERGED' && pr.status !== 'CLOSED').length;
         },
         activePrList() {
-            return this.prList.filter(pr => pr.status !== 'MERGED' && pr.status !== 'CLOSED');
+            return this.prList.filter((pr) => pr.status !== 'MERGED' && pr.status !== 'CLOSED');
         },
         mergedPrList() {
-            return this.prList.filter(pr => pr.status === 'MERGED' || pr.status === 'CLOSED');
+            return this.prList.filter((pr) => pr.status === 'MERGED' || pr.status === 'CLOSED');
         },
         isOwner() {
             if (!this.currentUserInfo || !this.ownerId) return false;
@@ -352,18 +449,22 @@ export default {
             if (!this.parsedA || !this.parsedB) return [];
             const diff = diffDmn(this.parsedB, this.parsedA);
             const items = [];
-            const typeLabel = (t) => t === 'added' ? '추가' : t === 'modified' ? '변경' : '삭제';
+            const typeLabel = (t) => (t === 'added' ? '추가' : t === 'modified' ? '변경' : '삭제');
 
-            (diff.inputChanges || []).forEach(ch => {
+            (diff.inputChanges || []).forEach((ch) => {
                 const obj = ch.current || ch.previous || {};
                 items.push({
-                    type: ch.type, id: ch.key, name: obj.name || ch.key,
+                    type: ch.type,
+                    id: ch.key,
+                    name: obj.name || ch.key,
                     description: `InputData ${typeLabel(ch.type)}`,
-                    category: 'input', hasDetail: true, raw: ch
+                    category: 'input',
+                    hasDetail: true,
+                    raw: ch
                 });
             });
 
-            (diff.decisionChanges || []).forEach(ch => {
+            (diff.decisionChanges || []).forEach((ch) => {
                 const obj = ch.current || ch.previous || {};
                 const parts = [];
                 if (ch.tableDiff) {
@@ -382,9 +483,14 @@ export default {
                 }
 
                 items.push({
-                    type: ch.type, id: ch.key, name: obj.name || ch.key,
+                    type: ch.type,
+                    id: ch.key,
+                    name: obj.name || ch.key,
                     description: parts.join(', '),
-                    category: 'decision', hasDetail: true, raw: ch, metaDesc
+                    category: 'decision',
+                    hasDetail: true,
+                    raw: ch,
+                    metaDesc
                 });
             });
 
@@ -411,8 +517,16 @@ export default {
         formatTime(ts) {
             if (!ts) return '';
             try {
-                return new Date(ts).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-            } catch { return ts; }
+                return new Date(ts).toLocaleString('ko-KR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch {
+                return ts;
+            }
         },
 
         sortVersions(versionInfo) {
@@ -492,7 +606,7 @@ export default {
                     this.versionAXml = def?.bpmn || '';
                     this.versionAData = { version: 'current', timeStamp: def?.updated_at || '' };
                 } else {
-                    const v = this.versions.find(ver => String(ver.version) === String(this.selectedA));
+                    const v = this.versions.find((ver) => String(ver.version) === String(this.selectedA));
                     if (v) {
                         this.versionAXml = v.snapshot || '';
                         this.versionAData = v;
@@ -500,7 +614,9 @@ export default {
                 }
                 this.viewerKeyA++;
                 this.expandedDiffIndex = null;
-            } catch (e) { console.error('버전 A 로드 실패:', e); }
+            } catch (e) {
+                console.error('버전 A 로드 실패:', e);
+            }
         },
 
         async loadVersionB() {
@@ -511,7 +627,7 @@ export default {
                     this.versionBXml = def?.bpmn || '';
                     this.versionBData = { version: 'current', timeStamp: def?.updated_at || '' };
                 } else {
-                    const v = this.versions.find(ver => String(ver.version) === String(this.selectedB));
+                    const v = this.versions.find((ver) => String(ver.version) === String(this.selectedB));
                     if (v) {
                         this.versionBXml = v.snapshot || '';
                         this.versionBData = v;
@@ -519,7 +635,9 @@ export default {
                 }
                 this.viewerKeyB++;
                 this.expandedDiffIndex = null;
-            } catch (e) { console.error('버전 B 로드 실패:', e); }
+            } catch (e) {
+                console.error('버전 B 로드 실패:', e);
+            }
         },
 
         toggleDiffDetail(index) {
@@ -557,8 +675,13 @@ export default {
         },
 
         setVersionAs(side, version) {
-            if (side === 'A') { this.selectedA = version; this.loadVersionA(); }
-            else { this.selectedB = version; this.loadVersionB(); }
+            if (side === 'A') {
+                this.selectedA = version;
+                this.loadVersionA();
+            } else {
+                this.selectedB = version;
+                this.loadVersionB();
+            }
         },
 
         async openPrDetail(pr) {
@@ -576,7 +699,7 @@ export default {
 
             this.reviewSubmitting = true;
             try {
-                const u = this.currentUserInfo || await this.backend.getUserInfo();
+                const u = this.currentUserInfo || (await this.backend.getUserInfo());
                 const name = u?.name || localStorage.getItem('userName') || '';
 
                 await this.backend.addResourcePrReview(this.selectedPr.id, action, comment, u.uid, name);
@@ -601,7 +724,7 @@ export default {
             if (!this.selectedPr || !this.canMerge) return;
             this.merging = true;
             try {
-                const u = this.currentUserInfo || await this.backend.getUserInfo();
+                const u = this.currentUserInfo || (await this.backend.getUserInfo());
                 const defId = this.dmnId;
 
                 const latestVersion = this.versions.length > 0 ? this.versions[0].version : '0.0';
@@ -647,69 +770,275 @@ export default {
 
 <style scoped>
 /* ── 버전 비교 전체화면 ── */
-.dvc-page { display: flex; flex-direction: column; height: 100vh; background: #F4F6F9; overflow: hidden; }
+.dvc-page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: #f4f6f9;
+    overflow: hidden;
+}
 
-.dvc-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: #fff; border-bottom: 1px solid #E6E8EE; flex-shrink: 0; gap: 14px; }
-.dvc-header-left { display: flex; align-items: center; min-width: 0; flex: 1; }
-.dvc-header-divider { width: 1px; height: 22px; background: #D9DCE3; margin: 0 8px; }
-.dvc-header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.dvc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: #fff;
+    border-bottom: 1px solid #e6e8ee;
+    flex-shrink: 0;
+    gap: 14px;
+}
+.dvc-header-left {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1;
+}
+.dvc-header-divider {
+    width: 1px;
+    height: 22px;
+    background: #d9dce3;
+    margin: 0 8px;
+}
+.dvc-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
 
-.dvc-body { display: flex; flex: 1; overflow: hidden; }
+.dvc-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
 
-.dvc-center { flex: 1; display: flex; flex-direction: column; min-width: 400px; overflow: hidden; border-right: 1px solid #E6E8EE; }
-.dvc-vpanel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.dvc-vbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; gap: 12px; }
-.dvc-vbar-left { display: flex; align-items: center; min-width: 0; }
-.dvc-vbar-right { display: flex; align-items: center; flex-shrink: 0; }
-.dvc-badge { font-size: 12px; font-weight: 700; padding: 3px 11px; border-radius: 8px; white-space: nowrap; }
-.dvc-badge-new { background: #EAF1FF; color: #1B4FCB; }
-.dvc-badge-old { background: #F0EBFB; color: #5e45b8; }
-.dvc-vselect { max-width: 180px; font-size: 13px; }
-.dvc-vselect :deep(.v-field) { min-height: 32px !important; font-size: 13px; }
-.dvc-vselect :deep(.v-field__input) { padding-top: 4px; padding-bottom: 4px; }
-.dvc-canvas { flex: 1; position: relative; overflow: hidden; background: #fff; }
-.dvc-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+.dvc-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 400px;
+    overflow: hidden;
+    border-right: 1px solid #e6e8ee;
+}
+.dvc-vpanel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.dvc-vbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    flex-shrink: 0;
+    gap: 12px;
+}
+.dvc-vbar-left {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+.dvc-vbar-right {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+.dvc-badge {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 11px;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+.dvc-badge-new {
+    background: #eaf1ff;
+    color: #1b4fcb;
+}
+.dvc-badge-old {
+    background: #f0ebfb;
+    color: #5e45b8;
+}
+.dvc-vselect {
+    max-width: 180px;
+    font-size: 13px;
+}
+.dvc-vselect :deep(.v-field) {
+    min-height: 32px !important;
+    font-size: 13px;
+}
+.dvc-vselect :deep(.v-field__input) {
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+.dvc-canvas {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+}
+.dvc-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
 
-.dvc-right { width: 360px; flex-shrink: 0; background: #FBFCFD; display: flex; flex-direction: column; overflow: hidden; }
-.dvc-rail-pane { flex: 1; overflow-y: auto; }
+.dvc-right {
+    width: 360px;
+    flex-shrink: 0;
+    background: #fbfcfd;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.dvc-rail-pane {
+    flex: 1;
+    overflow-y: auto;
+}
 
 /* diff card list */
-.dvc-legend { display: flex; gap: 14px; font-size: 12px; }
-.dvc-legend-item { display: flex; align-items: center; gap: 6px; color: #697084; }
-.dvc-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
-.dvc-dot-added { background: #22A05B; }
-.dvc-dot-modified { background: #E0922B; }
-.dvc-dot-removed { background: #E04848; }
-.dvc-diff-list { flex: 1; overflow-y: auto; }
-.dvc-diff-card { display: flex; gap: 10px; padding: 11px 14px; margin: 0 10px 7px; border: 1px solid #E6E8EE; border-radius: 11px; background: #fff; }
-.dvc-diff-bar { width: 4px; border-radius: 3px; flex: none; }
-.dvc-diff-bar-added { background: #22A05B; }
-.dvc-diff-bar-modified { background: #E0922B; }
-.dvc-diff-bar-removed { background: #E04848; }
-.dvc-diff-content { flex: 1; min-width: 0; }
-.dvc-diff-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
-.dvc-diff-sub { font-size: 11.5px; color: #697084; margin-top: 2px; }
-.dvc-diff-tag { font-size: 9.5px; font-weight: 700; border-radius: 5px; padding: 1px 6px; color: #fff; white-space: nowrap; }
-.dvc-diff-tag-added { background: #22A05B; }
-.dvc-diff-tag-modified { background: #E0922B; }
-.dvc-diff-tag-removed { background: #E04848; }
-.dvc-diff-card--expandable { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
-.dvc-diff-card--expandable:hover { border-color: #BBCBE8; box-shadow: 0 2px 8px rgba(30, 50, 100, .06); }
-.dvc-diff-card--open { border-color: #BBCBE8; background: #FAFBFF; }
-.dvc-diff-detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid #E6E8EE; }
-.dvc-diff-meta { font-size: 12px; color: #697084; background: #F4F6F9; border-radius: 6px; padding: 6px 10px; }
+.dvc-legend {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+}
+.dvc-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #697084;
+}
+.dvc-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.dvc-dot-added {
+    background: #22a05b;
+}
+.dvc-dot-modified {
+    background: #e0922b;
+}
+.dvc-dot-removed {
+    background: #e04848;
+}
+.dvc-diff-list {
+    flex: 1;
+    overflow-y: auto;
+}
+.dvc-diff-card {
+    display: flex;
+    gap: 10px;
+    padding: 11px 14px;
+    margin: 0 10px 7px;
+    border: 1px solid #e6e8ee;
+    border-radius: 11px;
+    background: #fff;
+}
+.dvc-diff-bar {
+    width: 4px;
+    border-radius: 3px;
+    flex: none;
+}
+.dvc-diff-bar-added {
+    background: #22a05b;
+}
+.dvc-diff-bar-modified {
+    background: #e0922b;
+}
+.dvc-diff-bar-removed {
+    background: #e04848;
+}
+.dvc-diff-content {
+    flex: 1;
+    min-width: 0;
+}
+.dvc-diff-title {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.dvc-diff-sub {
+    font-size: 11.5px;
+    color: #697084;
+    margin-top: 2px;
+}
+.dvc-diff-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    border-radius: 5px;
+    padding: 1px 6px;
+    color: #fff;
+    white-space: nowrap;
+}
+.dvc-diff-tag-added {
+    background: #22a05b;
+}
+.dvc-diff-tag-modified {
+    background: #e0922b;
+}
+.dvc-diff-tag-removed {
+    background: #e04848;
+}
+.dvc-diff-card--expandable {
+    cursor: pointer;
+    transition: border-color 0.12s, box-shadow 0.12s;
+}
+.dvc-diff-card--expandable:hover {
+    border-color: #bbcbe8;
+    box-shadow: 0 2px 8px rgba(30, 50, 100, 0.06);
+}
+.dvc-diff-card--open {
+    border-color: #bbcbe8;
+    background: #fafbff;
+}
+.dvc-diff-detail {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e6e8ee;
+}
+.dvc-diff-meta {
+    font-size: 12px;
+    color: #697084;
+    background: #f4f6f9;
+    border-radius: 6px;
+    padding: 6px 10px;
+}
 
 /* history actions */
-.dvc-history-actions { display: flex; gap: 5px; flex: none; }
-.dvc-history-btn { border: 1px solid #D9DCE3; background: #fff; border-radius: 7px; padding: 5px 9px; font-size: 11px; color: #697084; font-weight: 600; cursor: pointer; transition: .12s; }
-.dvc-history-btn:hover { background: #F4F6F9; }
+.dvc-history-actions {
+    display: flex;
+    gap: 5px;
+    flex: none;
+}
+.dvc-history-btn {
+    border: 1px solid #d9dce3;
+    background: #fff;
+    border-radius: 7px;
+    padding: 5px 9px;
+    font-size: 11px;
+    color: #697084;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.12s;
+}
+.dvc-history-btn:hover {
+    background: #f4f6f9;
+}
 
 /* tabs */
 .dmn-history-tabs {
     display: flex;
     padding: 8px 14px 0;
     gap: 4px;
-    border-bottom: 1px solid #E6E8EE;
+    border-bottom: 1px solid #e6e8ee;
     background: #fff;
     flex-shrink: 0;
 }
@@ -727,13 +1056,18 @@ export default {
     justify-content: center;
     gap: 6px;
     cursor: pointer;
-    transition: .15s;
+    transition: 0.15s;
 }
-.dmn-history-tab:hover { color: #1E2330; }
-.dmn-history-tab--active { color: #1B4FCB; border-bottom-color: #2F6BFF; }
+.dmn-history-tab:hover {
+    color: #1e2330;
+}
+.dmn-history-tab--active {
+    color: #1b4fcb;
+    border-bottom-color: #2f6bff;
+}
 .dmn-history-tab-count {
-    background: #EAF1FF;
-    color: #1B4FCB;
+    background: #eaf1ff;
+    color: #1b4fcb;
     font-size: 10.5px;
     font-weight: 700;
     border-radius: 8px;
@@ -751,18 +1085,21 @@ export default {
     gap: 11px;
     padding: 12px 14px;
     margin: 8px 12px 0;
-    border: 1px solid #E6E8EE;
+    border: 1px solid #e6e8ee;
     border-radius: 11px;
     align-items: center;
     background: #fff;
 }
-.dmn-history-row--cur { border-color: #BBCBE8; background: #F7FAFF; }
+.dmn-history-row--cur {
+    border-color: #bbcbe8;
+    background: #f7faff;
+}
 .dmn-history-badge {
     width: 38px;
     height: 38px;
     border-radius: 9px;
-    background: #EAF1FF;
-    color: #1B4FCB;
+    background: #eaf1ff;
+    color: #1b4fcb;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -770,61 +1107,255 @@ export default {
     font-size: 11.5px;
     flex: none;
 }
-.dmn-history-meta { flex: 1; min-width: 0; }
-.dmn-history-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.dmn-history-sub { font-size: 11px; color: #697084; margin-top: 2px; }
-.dmn-history-cur-tag { font-size: 10px; font-weight: 700; color: #137a40; background: #E4F6EC; border-radius: 5px; padding: 1px 6px; }
-.dmn-history-major-chip { font-family: ui-monospace, Menlo, monospace; font-size: 11px; background: #EEF0F4; border-radius: 6px; padding: 1px 7px; color: #697084; }
+.dmn-history-meta {
+    flex: 1;
+    min-width: 0;
+}
+.dmn-history-title {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+}
+.dmn-history-sub {
+    font-size: 11px;
+    color: #697084;
+    margin-top: 2px;
+}
+.dmn-history-cur-tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: #137a40;
+    background: #e4f6ec;
+    border-radius: 5px;
+    padding: 1px 6px;
+}
+.dmn-history-major-chip {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 11px;
+    background: #eef0f4;
+    border-radius: 6px;
+    padding: 1px 7px;
+    color: #697084;
+}
 
 /* PR 목록 */
-.dmn-pr-list-head { font-size: 11px; font-weight: 700; color: #9AA0AD; text-transform: uppercase; letter-spacing: .04em; padding: 12px 14px 6px; }
+.dmn-pr-list-head {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9aa0ad;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 12px 14px 6px;
+}
 .dmn-prc {
     display: flex;
     gap: 10px;
     align-items: flex-start;
     padding: 12px;
     margin: 0 10px 7px;
-    border: 1px solid #E6E8EE;
+    border: 1px solid #e6e8ee;
     border-radius: 11px;
     background: #fff;
     position: relative;
     cursor: pointer;
-    transition: border-color .12s, box-shadow .12s;
+    transition: border-color 0.12s, box-shadow 0.12s;
 }
-.dmn-prc:hover { border-color: #BBCBE8; box-shadow: 0 2px 8px rgba(30, 50, 100, .06); }
-.dmn-prc-merged { opacity: .85; }
-.dmn-prc-merged:hover { opacity: 1; }
-.dmn-pr-accent { position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 3px; }
-.ac-open { background: #1B4FCB; }
-.ac-chg { background: #E0922B; }
-.ac-app { background: #22A05B; }
-.ac-merged { background: #7C6BD6; }
-.dmn-pr-ava { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex: none; margin-top: 1px; }
-.dmn-prc-body { flex: 1; min-width: 0; padding-left: 2px; }
-.dmn-prc-title { font-size: 13px; font-weight: 600; display: flex; gap: 7px; align-items: center; flex-wrap: wrap; line-height: 1.4; }
-.dmn-prc-byline { display: flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 11.5px; color: #697084; flex-wrap: wrap; }
-.dmn-prc-byline b { color: #1E2330; font-weight: 600; }
-.dmn-prc-branchline { display: flex; align-items: center; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
-.dmn-dot-sep { color: #9AA0AD; }
-.dmn-branch-chip { font-family: ui-monospace, Menlo, monospace; font-size: 11px; background: #EEF0F4; border-radius: 6px; padding: 1px 7px; color: #697084; }
-.dmn-st-badge { font-size: 10px; font-weight: 600; border-radius: 5px; padding: 1px 7px; white-space: nowrap; }
-.st-open { background: #EAF1FF; color: #1B4FCB; }
-.st-chg { background: #FCF1DD; color: #9a630f; }
-.st-app { background: #E4F6EC; color: #137a40; }
-.st-merged { background: #F0EBFB; color: #5e45b8; }
+.dmn-prc:hover {
+    border-color: #bbcbe8;
+    box-shadow: 0 2px 8px rgba(30, 50, 100, 0.06);
+}
+.dmn-prc-merged {
+    opacity: 0.85;
+}
+.dmn-prc-merged:hover {
+    opacity: 1;
+}
+.dmn-pr-accent {
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 3px;
+}
+.ac-open {
+    background: #1b4fcb;
+}
+.ac-chg {
+    background: #e0922b;
+}
+.ac-app {
+    background: #22a05b;
+}
+.ac-merged {
+    background: #7c6bd6;
+}
+.dmn-pr-ava {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    flex: none;
+    margin-top: 1px;
+}
+.dmn-prc-body {
+    flex: 1;
+    min-width: 0;
+    padding-left: 2px;
+}
+.dmn-prc-title {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    flex-wrap: wrap;
+    line-height: 1.4;
+}
+.dmn-prc-byline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 5px;
+    font-size: 11.5px;
+    color: #697084;
+    flex-wrap: wrap;
+}
+.dmn-prc-byline b {
+    color: #1e2330;
+    font-weight: 600;
+}
+.dmn-prc-branchline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+}
+.dmn-dot-sep {
+    color: #9aa0ad;
+}
+.dmn-branch-chip {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 11px;
+    background: #eef0f4;
+    border-radius: 6px;
+    padding: 1px 7px;
+    color: #697084;
+}
+.dmn-st-badge {
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 5px;
+    padding: 1px 7px;
+    white-space: nowrap;
+}
+.st-open {
+    background: #eaf1ff;
+    color: #1b4fcb;
+}
+.st-chg {
+    background: #fcf1dd;
+    color: #9a630f;
+}
+.st-app {
+    background: #e4f6ec;
+    color: #137a40;
+}
+.st-merged {
+    background: #f0ebfb;
+    color: #5e45b8;
+}
 
 /* PR 상세 */
-.dmn-pr-detail-back { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid #E6E8EE; background: #fff; flex-shrink: 0; }
-.dmn-pr-back-btn { border: none; background: none; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #697084; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: .12s; }
-.dmn-pr-back-btn:hover { background: #F4F6F9; color: #1E2330; }
-.dmn-pr-detail-title { font-size: 13px; font-weight: 600; color: #1E2330; min-width: 0; }
-.dmn-pr-approval-section { padding: 14px 16px; border-bottom: 1px solid #E6E8EE; }
-.dmn-pr-section-head { font-size: 11px; font-weight: 700; color: #9AA0AD; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 9px; }
-.dmn-pr-reviewer-row { display: flex; align-items: center; gap: 9px; padding: 6px 0; }
-.dmn-pr-reviewer-name { font-size: 13px; font-weight: 600; }
-.dmn-pr-role-chip { font-size: 10px; font-weight: 700; color: #1B4FCB; background: #EAF1FF; border-radius: 5px; padding: 1px 6px; }
-.dmn-pr-status-chip { margin-left: auto; font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 8px; }
-.st-ok { background: #E4F6EC; color: #137a40; }
-.st-pend { background: #EEF0F4; color: #697084; }
-.st-req { background: #FCF1DD; color: #9a630f; }
+.dmn-pr-detail-back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e6e8ee;
+    background: #fff;
+    flex-shrink: 0;
+}
+.dmn-pr-back-btn {
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #697084;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: 0.12s;
+}
+.dmn-pr-back-btn:hover {
+    background: #f4f6f9;
+    color: #1e2330;
+}
+.dmn-pr-detail-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e2330;
+    min-width: 0;
+}
+.dmn-pr-approval-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e6e8ee;
+}
+.dmn-pr-section-head {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9aa0ad;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 9px;
+}
+.dmn-pr-reviewer-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 0;
+}
+.dmn-pr-reviewer-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+.dmn-pr-role-chip {
+    font-size: 10px;
+    font-weight: 700;
+    color: #1b4fcb;
+    background: #eaf1ff;
+    border-radius: 5px;
+    padding: 1px 6px;
+}
+.dmn-pr-status-chip {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 2px 8px;
+}
+.st-ok {
+    background: #e4f6ec;
+    color: #137a40;
+}
+.st-pend {
+    background: #eef0f4;
+    color: #697084;
+}
+.st-req {
+    background: #fcf1dd;
+    color: #9a630f;
+}
 </style>

@@ -61,7 +61,10 @@ test('activity reference form selection has no recursive-update error', async ({
         if (await btn.count()) {
             await btn.click({ timeout: 5_000 }).catch(() => undefined);
         }
-        await page.locator('.pwdInput input').press('Enter').catch(() => undefined);
+        await page
+            .locator('.pwdInput input')
+            .press('Enter')
+            .catch(() => undefined);
         loggedIn = await page
             .waitForFunction(() => !/\/auth\/login/.test(location.pathname), { timeout: 10_000 })
             .then(() => true)
@@ -76,9 +79,7 @@ test('activity reference form selection has no recursive-update error', async ({
     await page.goto(`${BASE}/definitions/${DEF_ID}?edit=true`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
     step('definitions page goto done');
     // 캔버스의 실제 bpmn 노드들이 그려질 때까지 대기 (루트 요소는 hidden일 수 있어 개수로 판단)
-    await page
-        .waitForFunction(() => document.querySelectorAll('g.djs-element').length > 3, { timeout: 45_000 })
-        .catch(() => undefined);
+    await page.waitForFunction(() => document.querySelectorAll('g.djs-element').length > 3, { timeout: 45_000 }).catch(() => undefined);
     step('canvas nodes rendered');
     await page.waitForTimeout(2000);
     await page.screenshot({ path: 'playwright/test-results/ref-01-loaded.png', fullPage: true });
@@ -95,7 +96,10 @@ test('activity reference form selection has no recursive-update error', async ({
     console.log('=========================');
 
     const target = nodeTexts.find((n) => n.text.includes(ACTIVITY_NAME));
-    expect(target, `activity node "${ACTIVITY_NAME}" not found. available: ${JSON.stringify(nodeTexts.filter((n) => n.text))}`).toBeTruthy();
+    expect(
+        target,
+        `activity node "${ACTIVITY_NAME}" not found. available: ${JSON.stringify(nodeTexts.filter((n) => n.text))}`
+    ).toBeTruthy();
 
     const node = page.locator(`g.djs-element[data-element-id="${target!.id}"]`);
     await expect(node).toBeVisible({ timeout: 20_000 });
@@ -146,10 +150,9 @@ test('activity reference form selection has no recursive-update error', async ({
 
         const cardsAfter = await formCards.count();
         step(`selected form cards after field check=${cardsAfter}`);
-        expect(
-            cardsAfter,
-            `필드 체크 후 선택된 폼이 사라짐: before=${cardsBefore}, after=${cardsAfter}`
-        ).toBeGreaterThanOrEqual(cardsBefore);
+        expect(cardsAfter, `필드 체크 후 선택된 폼이 사라짐: before=${cardsBefore}, after=${cardsAfter}`).toBeGreaterThanOrEqual(
+            cardsBefore
+        );
     } else {
         step(`선택 가능한 폼이 ${cardsBefore}개뿐이라 다중폼 유지 검증은 스킵 (재귀 에러 검증만 수행)`);
     }
@@ -159,8 +162,5 @@ test('activity reference form selection has no recursive-update error', async ({
     allErrors.forEach((e) => console.log(e));
     console.log('----------------------------------------');
 
-    expect(
-        recursiveErrors,
-        `Recursive update error detected:\n${recursiveErrors.join('\n')}`
-    ).toHaveLength(0);
+    expect(recursiveErrors, `Recursive update error detected:\n${recursiveErrors.join('\n')}`).toHaveLength(0);
 });

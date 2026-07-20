@@ -35,7 +35,13 @@
                     <div class="form-title mb-3">{{ getFormTitle('parent', formId) }}</div>
                     <v-row dense>
                         <v-col v-for="field in getFormFields('parent', formId)" :key="`${formId}-${field.fieldId}`" cols="12" md="6">
-                            <v-checkbox v-model="field.selected" :label="field.fieldName" density="compact" hide-details :disabled="isViewMode" />
+                            <v-checkbox
+                                v-model="field.selected"
+                                :label="field.fieldName"
+                                density="compact"
+                                hide-details
+                                :disabled="isViewMode"
+                            />
                         </v-col>
                     </v-row>
                     <div v-if="getFormFields('parent', formId).length === 0" class="text-caption text-medium-emphasis">
@@ -82,7 +88,13 @@
                     <div class="form-title mb-3">{{ getFormTitle('child', formId) }}</div>
                     <v-row dense>
                         <v-col v-for="field in getFormFields('child', formId)" :key="`${formId}-${field.fieldId}`" cols="12" md="6">
-                            <v-checkbox v-model="field.selected" :label="field.fieldName" density="compact" hide-details :disabled="isViewMode" />
+                            <v-checkbox
+                                v-model="field.selected"
+                                :label="field.fieldName"
+                                density="compact"
+                                hide-details
+                                :disabled="isViewMode"
+                            />
                         </v-col>
                     </v-row>
                     <div v-if="getFormFields('child', formId).length === 0" class="text-caption text-medium-emphasis">
@@ -108,20 +120,10 @@
         <v-divider class="my-4" />
 
         <div class="mapping-actions">
-            <v-btn
-                variant="tonal"
-                color="primary"
-                :disabled="!canOpenMapper || isViewMode"
-                @click="openMapper('in')"
-            >
+            <v-btn variant="tonal" color="primary" :disabled="!canOpenMapper || isViewMode" @click="openMapper('in')">
                 부모 → 자식 매핑
             </v-btn>
-            <v-btn
-                variant="tonal"
-                color="primary"
-                :disabled="!canOpenMapper || isViewMode"
-                @click="openMapper('out')"
-            >
+            <v-btn variant="tonal" color="primary" :disabled="!canOpenMapper || isViewMode" @click="openMapper('out')">
                 자식 → 부모 매핑
             </v-btn>
         </div>
@@ -402,7 +404,7 @@ export default {
         },
         async resolveForms(definition, options = {}) {
             if (!definition) return [];
-            const normalizedOptions = typeof options === 'string' ? { beforeActivityId: options } : (options || {});
+            const normalizedOptions = typeof options === 'string' ? { beforeActivityId: options } : options || {};
             const beforeActivityId = normalizedOptions.beforeActivityId || '';
             const excludeActivityId = normalizedOptions.excludeActivityId || '';
             const includeAllActivities = Boolean(normalizedOptions.includeAllActivities);
@@ -424,7 +426,11 @@ export default {
             formDrafts.forEach((draft) => {
                 const draftActivityId = draft?.activity_id || draft?.activityId || '';
                 if (excludeActivityId && draftActivityId === excludeActivityId) return;
-                const formId = draft?.id || draft?.formId || draft?.form_id || (draft?.activity_id || draft?.activityId ? `${draft.activity_id || draft.activityId}_form` : '');
+                const formId =
+                    draft?.id ||
+                    draft?.formId ||
+                    draft?.form_id ||
+                    (draft?.activity_id || draft?.activityId ? `${draft.activity_id || draft.activityId}_form` : '');
                 if (!formId || seen.has(formId)) return;
                 seen.add(formId);
                 forms.push({
@@ -438,9 +444,7 @@ export default {
             if (forms.length === 0 && beforeActivityId && this.backend?.getPreviousForms) {
                 const previousForms = await this.backend.getPreviousForms(beforeActivityId, definition);
                 if (Array.isArray(previousForms) && previousForms.length > 0) {
-                    return previousForms
-                        .map((form) => this.normalizeForm(form))
-                        .filter((form) => form.formId);
+                    return previousForms.map((form) => this.normalizeForm(form)).filter((form) => form.formId);
                 }
             }
 
@@ -448,15 +452,14 @@ export default {
         },
         filterActivities(definition, { beforeActivityId = '', excludeActivityId = '', includeAllActivities = false } = {}) {
             const activities = Array.isArray(definition?.activities) ? definition.activities : [];
-            const filtered = excludeActivityId
-                ? activities.filter((activity) => activity?.id !== excludeActivityId)
-                : activities;
+            const filtered = excludeActivityId ? activities.filter((activity) => activity?.id !== excludeActivityId) : activities;
             if (includeAllActivities || !beforeActivityId) return filtered;
             const index = activities.findIndex((activity) => activity?.id === beforeActivityId);
             return index > 0 ? filtered.slice(0, index) : filtered;
         },
         getActivityFormId(activity) {
-            const directFormId = activity?.formId || activity?.form_id || activity?.form?.id || activity?.form?.formId || activity?.form?.form_id;
+            const directFormId =
+                activity?.formId || activity?.form_id || activity?.form?.id || activity?.form?.formId || activity?.form?.form_id;
             if (directFormId) return directFormId;
             const tool = activity?.tool || '';
             if (!tool.startsWith('formHandler:')) return '';
@@ -467,7 +470,8 @@ export default {
                 const draftFormId = item?.id || item?.formId || item?.form_id;
                 return item && (draftFormId === formId || item.activity_id === activity.id || item.activityId === activity.id);
             });
-            const resolvedFormId = draft?.id || draft?.formId || draft?.form_id || (formId === 'defaultform' ? `${activity.id}_form` : formId);
+            const resolvedFormId =
+                draft?.id || draft?.formId || draft?.form_id || (formId === 'defaultform' ? `${activity.id}_form` : formId);
             if (draft) {
                 return {
                     formId: resolvedFormId,

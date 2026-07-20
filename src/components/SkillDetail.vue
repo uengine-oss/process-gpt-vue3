@@ -11,18 +11,15 @@
                             <div class="d-flex align-center gap-1">
                                 <v-tooltip location="bottom" text="상속 스킬 만들기">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-bind="props"
-                                            :icon="true"
-                                            variant="text"
-                                            size="small"
-                                            @click="createChildSkill()"
-                                        >
+                                        <v-btn v-bind="props" :icon="true" variant="text" size="small" @click="createChildSkill()">
                                             <v-icon>mdi-source-fork</v-icon>
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-tooltip location="bottom" :text="showGitHistory ? $t('SkillDetail.showEditor') : $t('SkillDetail.showGitHistory')">
+                                <v-tooltip
+                                    location="bottom"
+                                    :text="showGitHistory ? $t('SkillDetail.showEditor') : $t('SkillDetail.showGitHistory')"
+                                >
                                     <template v-slot:activator="{ props }">
                                         <v-btn
                                             v-bind="props"
@@ -47,11 +44,15 @@
                                     :color="idx === inheritanceChain.length - 1 ? 'primary' : undefined"
                                     :variant="idx === inheritanceChain.length - 1 ? 'flat' : 'tonal'"
                                     :clickable="idx < inheritanceChain.length - 1"
-                                    @click="idx < inheritanceChain.length - 1 && $router.push('/skill-detail/' + encodeURIComponent(item.name))"
+                                    @click="
+                                        idx < inheritanceChain.length - 1 && $router.push('/skill-detail/' + encodeURIComponent(item.name))
+                                    "
                                 >
                                     {{ item.name }}
                                 </v-chip>
-                                <v-icon v-if="idx < inheritanceChain.length - 1" size="x-small" class="text-medium-emphasis">mdi-chevron-right</v-icon>
+                                <v-icon v-if="idx < inheritanceChain.length - 1" size="x-small" class="text-medium-emphasis"
+                                    >mdi-chevron-right</v-icon
+                                >
                             </template>
                         </div>
 
@@ -295,11 +296,7 @@
 
             <template v-slot:rightpart>
                 <div class="skill-detail-right d-flex flex-column">
-                    <SkillGitHistory
-                        v-if="showGitHistory"
-                        :skillName="skillDisplayName || skillId"
-                        :selected-branch="selectedBranch"
-                    />
+                    <SkillGitHistory v-if="showGitHistory" :skillName="skillDisplayName || skillId" :selected-branch="selectedBranch" />
                     <template v-else>
                         <AgentSkillEdit
                             v-if="skillFile"
@@ -414,7 +411,6 @@
             </template>
         </AppBaseCard>
     </v-card>
-
 </template>
 
 <script>
@@ -719,23 +715,23 @@ export default {
             const skillName = this.skillDisplayName || this.skillId;
             if (!skillName) return;
 
-            const prevFilePath = this.nodes[this.selectedNodeId]?.data?.type === 'file'
-                ? this.nodes[this.selectedNodeId].data.path
-                : null;
+            const prevFilePath = this.nodes[this.selectedNodeId]?.data?.type === 'file' ? this.nodes[this.selectedNodeId].data.path : null;
 
             // 브랜치 파일 목록으로 트리 재구성
             try {
                 const raw = await this.backend.getSkillBranchFiles(skillName, branch);
-                const files = Array.isArray(raw) ? raw : (raw?.files ?? []);
+                const files = Array.isArray(raw) ? raw : raw?.files ?? [];
                 this.buildFileTree(skillName, skillName, files);
             } catch (_) {}
 
             // 이전에 선택한 파일이 새 브랜치에도 있으면 해당 파일, 없으면 SKILL.md로 폴백
-            const nodeId = (prevFilePath
-                ? Object.keys(this.nodes).find(id =>
-                    this.nodes[id]?.data?.type === 'file' && this.nodes[id].data.path === prevFilePath)
-                : null)
-                ?? Object.keys(this.nodes).find(id => {
+            const nodeId =
+                (prevFilePath
+                    ? Object.keys(this.nodes).find(
+                          (id) => this.nodes[id]?.data?.type === 'file' && this.nodes[id].data.path === prevFilePath
+                      )
+                    : null) ??
+                Object.keys(this.nodes).find((id) => {
                     const n = this.nodes[id];
                     return n?.data?.type === 'file' && (n.data.path === 'SKILL.md' || n.data.path.endsWith('/SKILL.md'));
                 });

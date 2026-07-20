@@ -153,13 +153,7 @@ export default {
             default: () => []
         }
     },
-    emits: [
-        'sendMessage',
-        'recording-mode-change',
-        'stopMessage',
-        'desktop-voice-toggle',
-        'update:knowledgeDocs'
-    ],
+    emits: ['sendMessage', 'recording-mode-change', 'stopMessage', 'desktop-voice-toggle', 'update:knowledgeDocs'],
     computed: {
         containerVariantClass() {
             return this.variant === 'inline' ? 'main-chat-input-container--inline' : 'main-chat-input-container--panel';
@@ -258,7 +252,11 @@ export default {
             const messageFiles = Array.isArray(message?.files) ? message.files : Array.isArray(message?.file) ? message.file : [];
             const hasFiles = messageFiles.length > 0;
             const hasRawFiles = Array.isArray(message?.rawFiles) && message.rawFiles.length > 0;
-            if (!message || (!message.text && !message.file && !hasFiles && !hasRawFiles && (!message.images || message.images.length === 0))) return;
+            if (
+                !message ||
+                (!message.text && !message.file && !hasFiles && !hasRawFiles && (!message.images || message.images.length === 0))
+            )
+                return;
             this.$emit('sendMessage', {
                 text: (message.text || '').trim(),
                 timestamp: new Date().toISOString(),
@@ -267,8 +265,7 @@ export default {
                 rawFiles: hasRawFiles ? message.rawFiles : null,
                 images: message.images || null,
                 // orchestration pass-through (Chat.vue -> MainChatInput/ChatRoomPage)
-                orchestration:
-                    (message?.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
+                orchestration: (message?.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
                 // mention 메타데이터 pass-through (Chat.vue -> ChatRoomPage 라우팅)
                 mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],
                 // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)

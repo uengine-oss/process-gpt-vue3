@@ -69,8 +69,11 @@ export function normalizeXML(xml: string, ignorePositions = false): string {
         const serializer = new XMLSerializer();
         let normalized = serializer.serializeToString(doc);
 
-        // 공백 정규화
-        normalized = normalized.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
+        // 공백 정규화 (태그 사이의 들여쓰기/줄바꿈만 제거한다)
+        // 주의: 전역 `\s+ -> ' '` 치환은 uengine:Properties json 속성값처럼
+        // 여러 줄로 된 지침(instruction) 텍스트 내부 공백까지 뭉개어 실제 편집을
+        // "변경 없음"으로 오판하게 만들므로 사용하지 않는다.
+        normalized = normalized.replace(/>\s+</g, '><').trim();
 
         return normalized;
     } catch (error) {
@@ -101,6 +104,62 @@ export function hasSubstantialChanges(oldXml: string, newXml: string, ignorePosi
     const newHash = hashXML(newXml, ignorePositions);
 
     return oldHash !== newHash;
+}
+
+/**
+ * 해싱에서 제외할 휘발성/구조성 키
+ * - 위치/레이아웃 좌표: 실제 편집이 아니므로 무시
+ * - 타임스탬프류: 저장할 때마다 바뀌므로 무시
+ */
+const VOLATILE_STATE_KEYS = new Set(['x', 'y', 'width', 'height', 'bounds', 'date', 'savedAt', 'updatedAt', 'createdAt']);
+
+/**
+ * 키 순서에 무관한 안정적 직렬화 (해시 입력을 결정적으로 만들기 위함)
+ * - 객체 키를 정렬한다
+ * - 휘발성 키, `_`/`$` 접두 내부 키는 제외한다
+ * - 순환 참조는 안전하게 처리한다
+ */
+function stableStringify(value: any, seen: WeakSet<object> = new WeakSet()): string {
+    if (value === null || value === undefined) return 'null';
+    if (typeof value === 'function') return 'null';
+    if (typeof value !== 'object') return JSON.stringify(value);
+
+    if (seen.has(value)) return '"[circular]"';
+    seen.add(value);
+
+    if (Array.isArray(value)) {
+        return '[' + value.map((v) => stableStringify(v, seen)).join(',') + ']';
+    }
+
+    const keys = Object.keys(value)
+        .filter((k) => !VOLATILE_STATE_KEYS.has(k) && !k.startsWith('_') && !k.startsWith('$'))
+        .sort();
+    return '{' + keys.map((k) => JSON.stringify(k) + ':' + stableStringify(value[k], seen)).join(',') + '}';
+}
+
+/**
+ * 임의의 상태 객체를 해시로 변환 (XML 밖에 존재하는 편집 상태 비교용)
+ */
+export function hashState(state: any): string {
+    try {
+        return cyrb53(stableStringify(state));
+    } catch (e) {
+        console.warn('상태 해시 실패:', e);
+        return '';
+    }
+}
+
+/**
+ * 복합 변경 시그니처 생성
+ * BPMN XML(구조/도형/uengine:Properties)뿐 아니라, XML 왕복 밖에 존재하는
+ * 편집 상태(폼 초안, DMN 규칙, 프로세스 변수, 활동 메타데이터 등)까지 포함해
+ * "편집 UI에서 바꿀 수 있는 모든 것"을 변경 감지 대상으로 삼는다.
+ *
+ * @param xml        모델러가 내보낸 BPMN XML
+ * @param extraState XML 에 직렬화되지 않는 편집 상태 스냅샷
+ */
+export function buildChangeSignature(xml: string, extraState: any): string {
+    return hashXML(xml) + '|' + hashState(extraState);
 }
 
 /**

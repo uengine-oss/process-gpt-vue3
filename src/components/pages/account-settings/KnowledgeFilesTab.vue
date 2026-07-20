@@ -5,13 +5,9 @@
             <div class="kft-header">
                 <div>
                     <div class="kft-title">지식 베이스</div>
-                    <div class="text-caption text-medium-emphasis mt-1">
-                        Google Drive 동기화 파일과 Storage 업로드 파일을 관리합니다.
-                    </div>
+                    <div class="text-caption text-medium-emphasis mt-1">Google Drive 동기화 파일과 Storage 업로드 파일을 관리합니다.</div>
                 </div>
-                <v-btn variant="text" size="small" prepend-icon="mdi-refresh" :loading="loading" @click="fetchList">
-                    새로고침
-                </v-btn>
+                <v-btn variant="text" size="small" prepend-icon="mdi-refresh" :loading="loading" @click="fetchList"> 새로고침 </v-btn>
             </div>
 
             <!-- 출처 탭 -->
@@ -40,8 +36,8 @@
                 <!-- =============================== -->
                 <v-window-item value="drive">
                     <v-alert type="info" variant="tonal" density="compact" class="mb-3">
-                        Drive 인덱싱은 <strong>드라이브 설정 탭의 "문서 처리"</strong>에서 시작합니다.
-                        여기서는 인덱싱된 파일 목록 확인과 인덱스 제거만 가능합니다.
+                        Drive 인덱싱은 <strong>드라이브 설정 탭의 "문서 처리"</strong>에서 시작합니다. 여기서는 인덱싱된 파일 목록 확인과
+                        인덱스 제거만 가능합니다.
                     </v-alert>
 
                     <div class="kft-toolbar">
@@ -68,21 +64,19 @@
                     </div>
 
                     <div class="kft-stats mt-3">
-                        <span><strong>{{ filteredDrive.length }}</strong> / 전체 {{ driveFiles.length }}</span>
+                        <span
+                            ><strong>{{ filteredDrive.length }}</strong> / 전체 {{ driveFiles.length }}</span
+                        >
                         <span v-for="(c, k) in driveCountsByStatus" :key="k" class="kft-stat-chip" :class="`is-${k}`">
                             {{ statusLabel(k) }} {{ c }}
                         </span>
                         <v-spacer />
                         <div v-if="isAdmin" class="kft-bulk-inline" :class="{ 'is-active': driveSelected.length > 0 }">
                             <span class="kft-bulk-count">
-                                <strong>{{ driveSelected.length }}</strong>개 선택됨
+                                <strong>{{ driveSelected.length }}</strong
+                                >개 선택됨
                             </span>
-                            <v-btn
-                                variant="text"
-                                size="x-small"
-                                :disabled="driveSelected.length === 0"
-                                @click="driveSelected = []"
-                            >
+                            <v-btn variant="text" size="x-small" :disabled="driveSelected.length === 0" @click="driveSelected = []">
                                 해제
                             </v-btn>
                             <v-btn
@@ -193,22 +187,12 @@
                         <div class="kft-folder-sidebar">
                             <div class="kft-folder-header">
                                 <span class="text-caption font-weight-medium">폴더</span>
-                                <v-btn
-                                    icon
-                                    variant="text"
-                                    size="x-small"
-                                    @click="openNewFolderDialog"
-                                    title="새 폴더 만들기"
-                                >
+                                <v-btn icon variant="text" size="x-small" @click="openNewFolderDialog" title="새 폴더 만들기">
                                     <v-icon size="16">mdi-folder-plus-outline</v-icon>
                                 </v-btn>
                             </div>
                             <div class="kft-folder-list">
-                                <button
-                                    class="kft-folder-item"
-                                    :class="{ 'is-active': currentFolder === '' }"
-                                    @click="currentFolder = ''"
-                                >
+                                <button class="kft-folder-item" :class="{ 'is-active': currentFolder === '' }" @click="currentFolder = ''">
                                     <v-icon size="14">mdi-folder-outline</v-icon>
                                     <span class="kft-folder-name">전체</span>
                                     <span class="kft-folder-count">{{ roleScopedUpload.length }}</span>
@@ -267,14 +251,19 @@
                                 <span class="ml-1">{{ currentFolder || '전체' }}</span>
                                 <v-spacer />
                                 <span class="text-caption text-medium-emphasis">
-                                    이 폴더의 파일 <strong>{{ filteredUpload.length }}</strong>개
+                                    이 폴더의 파일 <strong>{{ filteredUpload.length }}</strong
+                                    >개
                                 </span>
                             </div>
 
                             <!-- 업로드 드롭존 -->
                             <div
                                 class="kft-dropzone"
-                                :class="{ 'is-drag-over': isDragOver, 'is-uploading': uploadQueue.length > 0, [`is-role-${uploadTargetRole}`]: true }"
+                                :class="{
+                                    'is-drag-over': isDragOver,
+                                    'is-uploading': uploadQueue.length > 0,
+                                    [`is-role-${uploadTargetRole}`]: true
+                                }"
                                 @dragover.prevent="isDragOver = true"
                                 @dragleave.prevent="isDragOver = false"
                                 @drop.prevent="onDrop"
@@ -287,12 +276,7 @@
                                         파일을 끌어다 놓거나 클릭하세요 — 자동으로 RAG 인덱싱됩니다
                                     </div>
                                 </div>
-                                <v-chip
-                                    size="small"
-                                    :color="uploadTargetRoleMeta.color"
-                                    variant="tonal"
-                                    class="kft-dropzone-role"
-                                >
+                                <v-chip size="small" :color="uploadTargetRoleMeta.color" variant="tonal" class="kft-dropzone-role">
                                     <v-icon start size="14">{{ uploadTargetRoleMeta.icon }}</v-icon>
                                     {{ uploadTargetRoleMeta.label }}로 분류
                                 </v-chip>
@@ -302,16 +286,20 @@
                             <!-- 업로드 진행 -->
                             <div v-if="uploadQueue.length > 0" class="kft-upload-list">
                                 <div v-for="u in uploadQueue" :key="u.id" class="kft-upload-row">
-                                    <v-icon size="16" :color="u.status === 'failed' ? 'error' : u.status === 'done' ? 'success' : 'primary'">
-                                        {{ u.status === 'failed' ? 'mdi-alert-circle' : u.status === 'done' ? 'mdi-check-circle' : 'mdi-progress-upload' }}
+                                    <v-icon
+                                        size="16"
+                                        :color="u.status === 'failed' ? 'error' : u.status === 'done' ? 'success' : 'primary'"
+                                    >
+                                        {{
+                                            u.status === 'failed'
+                                                ? 'mdi-alert-circle'
+                                                : u.status === 'done'
+                                                ? 'mdi-check-circle'
+                                                : 'mdi-progress-upload'
+                                        }}
                                     </v-icon>
                                     <span class="kft-upload-name">{{ u.name }}</span>
-                                    <v-chip
-                                        v-if="u.role"
-                                        size="x-small"
-                                        :color="roleMeta(u.role).color"
-                                        variant="tonal"
-                                    >
+                                    <v-chip v-if="u.role" size="x-small" :color="roleMeta(u.role).color" variant="tonal">
                                         <v-icon start size="11">{{ roleMeta(u.role).icon }}</v-icon>
                                         {{ roleMeta(u.role).label }}
                                     </v-chip>
@@ -359,7 +347,8 @@
                                 <v-spacer />
                                 <div class="kft-bulk-inline" :class="{ 'is-active': uploadSelected.length > 0 }">
                                     <span class="kft-bulk-count">
-                                        <strong>{{ uploadSelected.length }}</strong>개 선택됨
+                                        <strong>{{ uploadSelected.length }}</strong
+                                        >개 선택됨
                                     </span>
                                     <v-btn
                                         variant="text"
@@ -406,11 +395,7 @@
                                     <span class="text-caption">{{ item.folder_path || '(루트)' }}</span>
                                 </template>
                                 <template v-slot:[`item.doc_role`]="{ item }">
-                                    <v-chip
-                                        size="x-small"
-                                        :color="roleMeta(roleOf(item)).color"
-                                        variant="tonal"
-                                    >
+                                    <v-chip size="x-small" :color="roleMeta(roleOf(item)).color" variant="tonal">
                                         <v-icon start size="12">{{ roleMeta(roleOf(item)).icon }}</v-icon>
                                         {{ roleMeta(roleOf(item)).label }}
                                     </v-chip>
@@ -508,12 +493,10 @@
                 <v-card-text>
                     <strong>{{ deleteFolderTarget?.path }}</strong> 폴더를 삭제하시겠습니까?
                     <div class="text-caption text-medium-emphasis mt-2" v-if="deleteFolderTarget?.fileCount > 0">
-                        ⚠ 폴더 안의 <strong class="text-error">{{ deleteFolderTarget.fileCount }}개</strong> 파일이
-                        스토리지/인덱스에서 모두 영구 삭제됩니다.
+                        ⚠ 폴더 안의 <strong class="text-error">{{ deleteFolderTarget.fileCount }}개</strong> 파일이 스토리지/인덱스에서 모두
+                        영구 삭제됩니다.
                     </div>
-                    <div class="text-caption text-medium-emphasis mt-2" v-else>
-                        비어있는 폴더입니다.
-                    </div>
+                    <div class="text-caption text-medium-emphasis mt-2" v-else>비어있는 폴더입니다.</div>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
@@ -541,9 +524,7 @@
                     <div class="text-caption text-medium-emphasis mt-3">
                         부모 폴더: <strong>{{ currentFolder || '(루트)' }}</strong>
                     </div>
-                    <div class="text-caption text-medium-emphasis mt-1">
-                        ※ 폴더는 첫 파일 업로드 시점에 실제로 생성됩니다.
-                    </div>
+                    <div class="text-caption text-medium-emphasis mt-1">※ 폴더는 첫 파일 업로드 시점에 실제로 생성됩니다.</div>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
@@ -569,11 +550,7 @@
                         Drive의 원본은 그대로 유지됩니다. 다음에 "문서 처리"로 다시 인덱싱될 수 있습니다.
                     </div>
                     <v-list density="compact" max-height="200" class="mt-3 kft-bulk-list">
-                        <v-list-item
-                            v-for="item in bulkDeleteTargets"
-                            :key="rowKey(item)"
-                            density="compact"
-                        >
+                        <v-list-item v-for="item in bulkDeleteTargets" :key="rowKey(item)" density="compact">
                             <template v-slot:prepend>
                                 <v-icon size="16" :color="iconOf(item.file_name).color">
                                     {{ iconOf(item.file_name).icon }}
@@ -621,9 +598,7 @@
                         <div class="text-caption mt-1">
                             <v-icon size="14" class="mr-1">mdi-folder-outline</v-icon>
                             {{ duplicateInfo?.existing?.folder_path || '(루트)' }}
-                            <span class="ml-2" v-if="duplicateInfo?.existing?.source_type === 'drive'">
-                                · Google Drive
-                            </span>
+                            <span class="ml-2" v-if="duplicateInfo?.existing?.source_type === 'drive'"> · Google Drive </span>
                         </div>
                     </v-card>
                     <div class="text-caption text-medium-emphasis mt-3">
@@ -731,11 +706,35 @@ export default {
             // ─── 자료 역할(doc_role) — 각 role 이 독립 작업공간. '전체' 개념 없음. ───
             currentRole: 'content', // 'content' | 'glossary' | 'template' | 'reference' | 'dataset'
             roleOptions: [
-                { value: 'content',   label: '일반 자료', icon: 'mdi-file-document-outline',   color: 'primary',         desc: '검색·요약 대상이 되는 본문 자료 (기본값)' },
-                { value: 'glossary',  label: '용어 사전', icon: 'mdi-book-alphabet',           color: 'deep-purple',     desc: '한↔영 등 용어 매핑. 답변 작성 시 자동 참조' },
-                { value: 'template',  label: '양식',      icon: 'mdi-file-table-outline',      color: 'orange-darken-2', desc: '보고서/계약서 양식. 문서 생성 시 활용' },
-                { value: 'reference', label: '참조',      icon: 'mdi-bookmark-outline',        color: 'teal',            desc: '법령·규제·표준 등 인용용 참조' },
-                { value: 'dataset',   label: '데이터',    icon: 'mdi-table',                   color: 'cyan-darken-2',   desc: '엑셀/CSV 정량 데이터. 분석 질문 시 코드 실행으로 처리' }
+                {
+                    value: 'content',
+                    label: '일반 자료',
+                    icon: 'mdi-file-document-outline',
+                    color: 'primary',
+                    desc: '검색·요약 대상이 되는 본문 자료 (기본값)'
+                },
+                {
+                    value: 'glossary',
+                    label: '용어 사전',
+                    icon: 'mdi-book-alphabet',
+                    color: 'deep-purple',
+                    desc: '한↔영 등 용어 매핑. 답변 작성 시 자동 참조'
+                },
+                {
+                    value: 'template',
+                    label: '양식',
+                    icon: 'mdi-file-table-outline',
+                    color: 'orange-darken-2',
+                    desc: '보고서/계약서 양식. 문서 생성 시 활용'
+                },
+                { value: 'reference', label: '참조', icon: 'mdi-bookmark-outline', color: 'teal', desc: '법령·규제·표준 등 인용용 참조' },
+                {
+                    value: 'dataset',
+                    label: '데이터',
+                    icon: 'mdi-table',
+                    color: 'cyan-darken-2',
+                    desc: '엑셀/CSV 정량 데이터. 분석 질문 시 코드 실행으로 처리'
+                }
             ],
             driveHeaders: [
                 { title: '파일명', key: 'file_name', sortable: true },
@@ -768,10 +767,7 @@ export default {
             deleteFolderDialog: false,
             deleteFolderTarget: null,
             deleteFolderLoading: false,
-            folderNameRules: [
-                (v) => !!v || '이름을 입력하세요',
-                (v) => !/[\\/:*?"<>|]/.test(v || '') || '사용할 수 없는 문자가 있습니다'
-            ]
+            folderNameRules: [(v) => !!v || '이름을 입력하세요', (v) => !/[\\/:*?"<>|]/.test(v || '') || '사용할 수 없는 문자가 있습니다']
         };
     },
     computed: {
@@ -796,9 +792,7 @@ export default {
         },
         // 현재 role 안의 빈 폴더만 (knowledge_folders.doc_role 기준)
         roleScopedEmptyFolders() {
-            return this.emptyFolders
-                .filter((f) => (f.doc_role || 'content') === this.currentRole)
-                .map((f) => f.folder_path);
+            return this.emptyFolders.filter((f) => (f.doc_role || 'content') === this.currentRole).map((f) => f.folder_path);
         },
         filteredUpload() {
             const list = this.applyFilter(this.roleScopedUpload, this.uploadSearch, this.uploadStatusFilter);
@@ -890,10 +884,7 @@ export default {
             return list.filter((f) => {
                 if (status !== 'all' && f.index_status !== status) return false;
                 if (!q) return true;
-                return (
-                    (f.file_name || '').toLowerCase().includes(q) ||
-                    (f.folder_path || '').toLowerCase().includes(q)
-                );
+                return (f.file_name || '').toLowerCase().includes(q) || (f.folder_path || '').toLowerCase().includes(q);
             });
         },
         countByStatus(list) {
@@ -936,22 +927,26 @@ export default {
             }
         },
         statusLabel(s) {
-            return {
-                indexed: '인덱싱 완료',
-                processing: '처리중',
-                pending: '대기',
-                failed: '실패',
-                excluded: '제외'
-            }[s] || s;
+            return (
+                {
+                    indexed: '인덱싱 완료',
+                    processing: '처리중',
+                    pending: '대기',
+                    failed: '실패',
+                    excluded: '제외'
+                }[s] || s
+            );
         },
         statusColor(s) {
-            return {
-                indexed: 'success',
-                processing: 'info',
-                pending: 'grey',
-                failed: 'error',
-                excluded: 'grey-darken-1'
-            }[s] || 'grey';
+            return (
+                {
+                    indexed: 'success',
+                    processing: 'info',
+                    pending: 'grey',
+                    failed: 'error',
+                    excluded: 'grey-darken-1'
+                }[s] || 'grey'
+            );
         },
         async fetchList() {
             const tenantId = window.$tenantName || '';
@@ -965,11 +960,13 @@ export default {
                 this.files = Array.isArray(filesRes.data?.file_details) ? filesRes.data.file_details : [];
                 // 백엔드는 [{folder_path, doc_role}, ...] 반환. 문자열 배열도 backward-compat 으로 수용.
                 const rawFolders = Array.isArray(foldersRes.data?.folders) ? foldersRes.data.folders : [];
-                this.emptyFolders = rawFolders.map((f) =>
-                    typeof f === 'string'
-                        ? { folder_path: f, doc_role: 'content' }
-                        : { folder_path: f?.folder_path || '', doc_role: f?.doc_role || 'content' }
-                ).filter((f) => f.folder_path);
+                this.emptyFolders = rawFolders
+                    .map((f) =>
+                        typeof f === 'string'
+                            ? { folder_path: f, doc_role: 'content' }
+                            : { folder_path: f?.folder_path || '', doc_role: f?.doc_role || 'content' }
+                    )
+                    .filter((f) => f.folder_path);
             } catch (e) {
                 console.error('[KnowledgeFilesTab] fetch failed', e);
                 this.notify('파일 목록 조회 실패', 'error', e?.message);
@@ -1057,9 +1054,7 @@ export default {
             await Promise.allSettled(tasks);
             // 업로드 성공 시 emptyFolders 에서 (해당 role 의 동일 경로) 제거
             if (folder) {
-                this.emptyFolders = this.emptyFolders.filter(
-                    (f) => !(f.folder_path === folder && (f.doc_role || 'content') === docRole)
-                );
+                this.emptyFolders = this.emptyFolders.filter((f) => !(f.folder_path === folder && (f.doc_role || 'content') === docRole));
             }
             await this.fetchList();
             setTimeout(() => {
@@ -1120,9 +1115,7 @@ export default {
                 await axios.post('/memento/knowledge/folders', fd, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                const exists = this.emptyFolders.some(
-                    (f) => f.folder_path === fullPath && (f.doc_role || 'content') === this.currentRole
-                );
+                const exists = this.emptyFolders.some((f) => f.folder_path === fullPath && (f.doc_role || 'content') === this.currentRole);
                 if (!exists) this.emptyFolders.push({ folder_path: fullPath, doc_role: this.currentRole });
                 this.currentFolder = fullPath;
                 this.newFolderDialog = false;
@@ -1238,14 +1231,16 @@ export default {
             try {
                 const results = await Promise.allSettled(
                     targets.map((item) =>
-                        axios.delete('/memento/knowledge/files', {
-                            params: {
-                                tenant_id: window.$tenantName,
-                                source_type: item.source_type,
-                                source_ref: item.source_ref,
-                                requester_uid: this.myUid
-                            }
-                        }).then(() => this.rowKey(item))
+                        axios
+                            .delete('/memento/knowledge/files', {
+                                params: {
+                                    tenant_id: window.$tenantName,
+                                    source_type: item.source_type,
+                                    source_ref: item.source_ref,
+                                    requester_uid: this.myUid
+                                }
+                            })
+                            .then(() => this.rowKey(item))
                     )
                 );
                 results.forEach((r, i) => {
@@ -1266,11 +1261,7 @@ export default {
                 if (failed.length === 0) {
                     this.notify(`${succeededKeys.size}개 ${kind === 'drive' ? '인덱스에서 제거' : '삭제'}되었습니다`);
                 } else {
-                    this.notify(
-                        `${succeededKeys.size}개 처리됨, ${failed.length}개 실패`,
-                        'error',
-                        failed.slice(0, 5).join(', ')
-                    );
+                    this.notify(`${succeededKeys.size}개 처리됨, ${failed.length}개 실패`, 'error', failed.slice(0, 5).join(', '));
                 }
             } finally {
                 this.bulkDeleting = false;
@@ -1373,12 +1364,30 @@ export default {
     border-color: currentColor;
 }
 
-.kft-role-tab.is-active.is-all       { color: #616161; background: rgba(97, 97, 97, 0.08); }
-.kft-role-tab.is-active.is-content   { color: rgb(var(--v-theme-primary)); background: rgba(var(--v-theme-primary), 0.1); }
-.kft-role-tab.is-active.is-glossary  { color: #6741d9; background: rgba(103, 65, 217, 0.1); }
-.kft-role-tab.is-active.is-template  { color: #ef6c00; background: rgba(239, 108, 0, 0.1); }
-.kft-role-tab.is-active.is-reference { color: #00897b; background: rgba(0, 137, 123, 0.1); }
-.kft-role-tab.is-active.is-dataset   { color: #00838f; background: rgba(0, 131, 143, 0.1); }
+.kft-role-tab.is-active.is-all {
+    color: #616161;
+    background: rgba(97, 97, 97, 0.08);
+}
+.kft-role-tab.is-active.is-content {
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.1);
+}
+.kft-role-tab.is-active.is-glossary {
+    color: #6741d9;
+    background: rgba(103, 65, 217, 0.1);
+}
+.kft-role-tab.is-active.is-template {
+    color: #ef6c00;
+    background: rgba(239, 108, 0, 0.1);
+}
+.kft-role-tab.is-active.is-reference {
+    color: #00897b;
+    background: rgba(0, 137, 123, 0.1);
+}
+.kft-role-tab.is-active.is-dataset {
+    color: #00838f;
+    background: rgba(0, 131, 143, 0.1);
+}
 
 .kft-role-tab.is-active .kft-role-tab-count {
     background: rgba(255, 255, 255, 0.7);

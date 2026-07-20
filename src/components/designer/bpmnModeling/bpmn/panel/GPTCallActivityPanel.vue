@@ -237,7 +237,9 @@ export default {
         selectedVariable(value) {
             if (value) {
                 const variable = (this.processVariables || []).find((item) => item.name === value);
-                this.copyUengineProperties.forEachVariable = variable ? { ...variable, type: this.parseType(variable.type) } : { name: value };
+                this.copyUengineProperties.forEachVariable = variable
+                    ? { ...variable, type: this.parseType(variable.type) }
+                    : { name: value };
             } else {
                 delete this.copyUengineProperties.forEachVariable;
             }

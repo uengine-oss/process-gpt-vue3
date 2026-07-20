@@ -14,8 +14,15 @@
             <v-btn v-if="runAllProgress.running" size="small" color="error" variant="text" @click="abortRunAll">
                 {{ $t('ProcessUnitTest.abort') }}
             </v-btn>
-            <v-btn v-else size="small" color="success" variant="tonal" prepend-icon="mdi-play-box-multiple"
-                :disabled="totalCaseCount === 0 || runningCaseIds.size > 0" @click="runAll">
+            <v-btn
+                v-else
+                size="small"
+                color="success"
+                variant="tonal"
+                prepend-icon="mdi-play-box-multiple"
+                :disabled="totalCaseCount === 0 || runningCaseIds.size > 0"
+                @click="runAll"
+            >
                 {{ $t('ProcessUnitTest.runAll') }}
             </v-btn>
             <v-btn size="small" variant="text" icon="mdi-refresh" :loading="loading" @click="loadCases" />
@@ -75,10 +82,16 @@
                                 <v-icon start size="12">mdi-progress-clock</v-icon>
                                 {{ groupRunProgress.current }}/{{ groupRunProgress.total }}
                             </v-chip>
-                            <v-btn v-else size="x-small" variant="tonal" color="success" icon="mdi-play-box-multiple"
+                            <v-btn
+                                v-else
+                                size="x-small"
+                                variant="tonal"
+                                color="success"
+                                icon="mdi-play-box-multiple"
                                 density="comfortable"
                                 :disabled="runningCaseIds.size > 0 || group.cases.length === 0"
-                                @click.stop="runGroup(group.activityId)" />
+                                @click.stop="runGroup(group.activityId)"
+                            />
                         </template>
                     </div>
                 </v-expansion-panel-title>
@@ -88,20 +101,29 @@
                             <v-icon start size="14">mdi-progress-clock</v-icon>
                             {{ groupRunProgress.current }} / {{ groupRunProgress.total }}
                         </v-chip>
-                        <v-btn v-else size="x-small" variant="tonal" color="success" prepend-icon="mdi-play-box-multiple"
+                        <v-btn
+                            v-else
+                            size="x-small"
+                            variant="tonal"
+                            color="success"
+                            prepend-icon="mdi-play-box-multiple"
                             :disabled="runningCaseIds.size > 0 || group.cases.length === 0"
-                            @click="runGroup(group.activityId)">
+                            @click="runGroup(group.activityId)"
+                        >
                             {{ $t('ProcessUnitTest.runAll') }}
                         </v-btn>
-                        <v-btn size="x-small" variant="tonal" color="primary" prepend-icon="mdi-plus"
-                            @click="openEditor(group.activityId, null)">
+                        <v-btn
+                            size="x-small"
+                            variant="tonal"
+                            color="primary"
+                            prepend-icon="mdi-plus"
+                            @click="openEditor(group.activityId, null)"
+                        >
                             {{ $t('ProcessUnitTest.addCase') }}
                         </v-btn>
                     </div>
-                    <div v-for="(testCase, idx) in group.cases" :key="testCase.id"
-                        class="pa-2 mb-2 rounded-lg" :class="{ 'border': true }">
-                        <div class="d-flex align-center" style="gap: 6px; cursor: pointer"
-                            @click="toggleCaseExpand(testCase.id)">
+                    <div v-for="(testCase, idx) in group.cases" :key="testCase.id" class="pa-2 mb-2 rounded-lg" :class="{ border: true }">
+                        <div class="d-flex align-center" style="gap: 6px; cursor: pointer" @click="toggleCaseExpand(testCase.id)">
                             <v-icon size="18">{{ expandedCaseIds[testCase.id] ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                             <span class="text-caption font-weight-medium flex-grow-1 text-truncate">
                                 {{ testCase.name || `Case ${idx + 1}` }}
@@ -111,50 +133,79 @@
                             </v-chip>
                             <!-- 접힌 상태에서만 빠른 액션 버튼 노출. 펼치면 본문 아래 액션 바로 이동. -->
                             <template v-if="!expandedCaseIds[testCase.id]">
-                                <v-btn size="x-small" variant="tonal" color="success" icon="mdi-play"
-                                    density="comfortable" :loading="runningCaseIds.has(testCase.id)"
-                                    :disabled="runningCaseIds.size > 0" @click.stop="runCase(group.activityId, testCase)" />
-                                <v-btn size="x-small" variant="text" icon="mdi-pencil" density="comfortable"
-                                    @click.stop="openEditor(group.activityId, testCase)" />
-                                <v-btn size="x-small" variant="text" color="error" icon="mdi-delete" density="comfortable"
-                                    @click.stop="deleteCase(group.activityId, testCase)" />
+                                <v-btn
+                                    size="x-small"
+                                    variant="tonal"
+                                    color="success"
+                                    icon="mdi-play"
+                                    density="comfortable"
+                                    :loading="runningCaseIds.has(testCase.id)"
+                                    :disabled="runningCaseIds.size > 0"
+                                    @click.stop="runCase(group.activityId, testCase)"
+                                />
+                                <v-btn
+                                    size="x-small"
+                                    variant="text"
+                                    icon="mdi-pencil"
+                                    density="comfortable"
+                                    @click.stop="openEditor(group.activityId, testCase)"
+                                />
+                                <v-btn
+                                    size="x-small"
+                                    variant="text"
+                                    color="error"
+                                    icon="mdi-delete"
+                                    density="comfortable"
+                                    @click.stop="deleteCase(group.activityId, testCase)"
+                                />
                             </template>
                         </div>
                         <div v-if="expandedCaseIds[testCase.id]" class="mt-2">
-                                <div class="text-caption text-medium-emphasis">
-                                    <span v-if="hasEntries(testCase.when?.parameterValues)" class="mr-2">
-                                        {{ $t('ProcessUnitTest.input') }}: {{ formatObject(testCase.when.parameterValues) }}
-                                    </span>
-                                    <span v-if="hasExpected(testCase.expected)">{{ $t('ProcessUnitTest.expected') }}: {{ formatExpected(testCase.expected) }}</span>
+                            <div class="text-caption text-medium-emphasis">
+                                <span v-if="hasEntries(testCase.when?.parameterValues)" class="mr-2">
+                                    {{ $t('ProcessUnitTest.input') }}: {{ formatObject(testCase.when.parameterValues) }}
+                                </span>
+                                <span v-if="hasExpected(testCase.expected)"
+                                    >{{ $t('ProcessUnitTest.expected') }}: {{ formatExpected(testCase.expected) }}</span
+                                >
+                            </div>
+                            <div v-if="testCase.lastResult" class="text-caption mt-1">
+                                <div v-if="testCase.lastResult.actual" class="text-medium-emphasis">
+                                    {{ $t('ProcessUnitTest.actual') }}: {{ formatExpected(testCase.lastResult.actual) }}
                                 </div>
-                                <div v-if="testCase.lastResult" class="text-caption mt-1">
-                                    <div v-if="testCase.lastResult.actual" class="text-medium-emphasis">
-                                        {{ $t('ProcessUnitTest.actual') }}: {{ formatExpected(testCase.lastResult.actual) }}
-                                    </div>
-                                    <ul v-if="testCase.lastResult.mismatches && testCase.lastResult.mismatches.length"
-                                        class="pl-4 mb-0">
-                                        <li v-for="(msg, mi) in testCase.lastResult.mismatches" :key="mi" class="text-error">
-                                            {{ msg }}
-                                        </li>
-                                    </ul>
-                                    <div v-if="testCase.lastResult.message" class="text-error">
-                                        {{ testCase.lastResult.message }}
-                                    </div>
-                                    <div v-if="testCase.lastResult.ranAt" class="text-medium-emphasis">
-                                        {{ formatRanAt(testCase.lastResult.ranAt) }}
-                                    </div>
+                                <ul v-if="testCase.lastResult.mismatches && testCase.lastResult.mismatches.length" class="pl-4 mb-0">
+                                    <li v-for="(msg, mi) in testCase.lastResult.mismatches" :key="mi" class="text-error">
+                                        {{ msg }}
+                                    </li>
+                                </ul>
+                                <div v-if="testCase.lastResult.message" class="text-error">
+                                    {{ testCase.lastResult.message }}
                                 </div>
-                                <div class="d-flex justify-end mt-2" style="gap: 4px">
-                                    <v-btn size="x-small" variant="tonal" color="success" prepend-icon="mdi-play"
-                                        :loading="runningCaseIds.has(testCase.id)"
-                                        :disabled="runningCaseIds.size > 0"
-                                        @click="runCase(group.activityId, testCase)">{{ $t('ProcessUnitTest.run') }}</v-btn>
-                                    <v-btn size="x-small" variant="text" icon="mdi-pencil"
-                                        @click="openEditor(group.activityId, testCase)" />
-                                    <v-btn size="x-small" variant="text" color="error" icon="mdi-delete"
-                                        @click="deleteCase(group.activityId, testCase)" />
+                                <div v-if="testCase.lastResult.ranAt" class="text-medium-emphasis">
+                                    {{ formatRanAt(testCase.lastResult.ranAt) }}
                                 </div>
                             </div>
+                            <div class="d-flex justify-end mt-2" style="gap: 4px">
+                                <v-btn
+                                    size="x-small"
+                                    variant="tonal"
+                                    color="success"
+                                    prepend-icon="mdi-play"
+                                    :loading="runningCaseIds.has(testCase.id)"
+                                    :disabled="runningCaseIds.size > 0"
+                                    @click="runCase(group.activityId, testCase)"
+                                    >{{ $t('ProcessUnitTest.run') }}</v-btn
+                                >
+                                <v-btn size="x-small" variant="text" icon="mdi-pencil" @click="openEditor(group.activityId, testCase)" />
+                                <v-btn
+                                    size="x-small"
+                                    variant="text"
+                                    color="error"
+                                    icon="mdi-delete"
+                                    @click="deleteCase(group.activityId, testCase)"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </v-expansion-panel-text>
             </v-expansion-panel>
@@ -252,7 +303,9 @@ export default {
                     for (let i = 0; i < el.children.length; i++) walk(el.children[i]);
                 };
                 walk(doc.documentElement);
-            } catch (e) { /* ignore */ }
+            } catch (e) {
+                /* ignore */
+            }
             return map;
         },
         // BPMN XML 에서 flow 노드를 분류해서 { id, name, tag } 로. 에디터의 select 옵션에 쓴다.
@@ -288,7 +341,9 @@ export default {
                 };
                 walk(doc.documentElement);
                 return found;
-            } catch (e) { return []; }
+            } catch (e) {
+                return [];
+            }
         },
         userTaskOptions() {
             return this.bpmnFlowNodes
@@ -324,13 +379,19 @@ export default {
             const store = useBpmnStore();
             store.clearRunningActivityIds();
             store.clearCompletedActivityIds();
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+            /* ignore */
+        }
         // 진행 중이던 인스턴스 정리 시도.
         if (this._inflightProcInstIds && this._inflightProcInstIds.size > 0) {
             const ids = Array.from(this._inflightProcInstIds);
             this._inflightProcInstIds.clear();
             ids.forEach((id) => {
-                try { this.backend && this.backend.testCleanup(id); } catch (e) { /* ignore */ }
+                try {
+                    this.backend && this.backend.testCleanup(id);
+                } catch (e) {
+                    /* ignore */
+                }
             });
         }
     },
@@ -347,11 +408,7 @@ export default {
             }
         },
         async persist() {
-            await this.backend.putRawDefinition(
-                JSON.stringify(this.allCases),
-                `unitTests/${this.definitionId}.unit`,
-                { type: 'unit' }
-            );
+            await this.backend.putRawDefinition(JSON.stringify(this.allCases), `unitTests/${this.definitionId}.unit`, { type: 'unit' });
         },
         // 1순위: BPMN XML 에서 파싱한 id→name 맵, 2순위: viewer registry, 3순위: id 그대로.
         activityName(activityId) {
@@ -366,7 +423,9 @@ export default {
                     const name = el && el.businessObject && el.businessObject.name;
                     if (name) return name;
                 }
-            } catch (e) { /* ignore */ }
+            } catch (e) {
+                /* ignore */
+            }
             return activityId;
         },
         hasEntries(value) {
@@ -411,10 +470,12 @@ export default {
             if (Array.isArray(v)) {
                 if (v.length === 0) return this.$t('ProcessUnitTest.noneLabel');
                 if (v.every((item) => item == null || typeof item !== 'object')) {
-                    return v.map((item) => {
-                        if (item == null || item === '') return this.$t('ProcessUnitTest.noneLabel');
-                        return this.valueLabel(key, item) || String(item);
-                    }).join(', ');
+                    return v
+                        .map((item) => {
+                            if (item == null || item === '') return this.$t('ProcessUnitTest.noneLabel');
+                            return this.valueLabel(key, item) || String(item);
+                        })
+                        .join(', ');
                 }
                 return this.$t('ProcessUnitTest.itemCount', { count: v.length });
             }
@@ -435,12 +496,21 @@ export default {
                 if (!value || typeof value !== 'object') return '-';
                 const parts = [];
                 if (Array.isArray(value.activeActivityIds) && value.activeActivityIds.length) {
-                    parts.push(this.$t('ProcessUnitTest.formatNext', { names: value.activeActivityIds.map((id) => this.activityName(id)).join(', ') }));
+                    parts.push(
+                        this.$t('ProcessUnitTest.formatNext', {
+                            names: value.activeActivityIds.map((id) => this.activityName(id)).join(', ')
+                        })
+                    );
                 }
                 if (Array.isArray(value.passedActivityIds) && value.passedActivityIds.length) {
-                    parts.push(this.$t('ProcessUnitTest.formatPassed', { names: value.passedActivityIds.map((id) => this.activityName(id)).join(', ') }));
+                    parts.push(
+                        this.$t('ProcessUnitTest.formatPassed', {
+                            names: value.passedActivityIds.map((id) => this.activityName(id)).join(', ')
+                        })
+                    );
                 }
-                if (value.processStatus) parts.push(this.$t('ProcessUnitTest.formatStatus', { status: this.processStatusLabel(value.processStatus) }));
+                if (value.processStatus)
+                    parts.push(this.$t('ProcessUnitTest.formatStatus', { status: this.processStatusLabel(value.processStatus) }));
                 if (value.instanceCount !== undefined && value.instanceCount !== null) {
                     parts.push(this.$t('ProcessUnitTest.formatInstance', { count: value.instanceCount }));
                 }
@@ -464,10 +534,15 @@ export default {
             return this.$t('ProcessUnitTest.caseNotRun');
         },
         formatRanAt(iso) {
-            try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
+            try {
+                return new Date(iso).toLocaleString();
+            } catch (e) {
+                return iso;
+            }
         },
         groupSummary(group) {
-            let pass = 0, fail = 0;
+            let pass = 0,
+                fail = 0;
             (group.cases || []).forEach((c) => {
                 const s = c.lastResult?.status;
                 if (s === 'pass') pass++;
@@ -482,11 +557,14 @@ export default {
             const mismatches = [];
             const sortedActive = (actual.activeActivityIds || []).slice().sort();
             const actualPassed = actual.passedActivityIds || [];
-            const nameList = (ids) => (ids && ids.length ? ids.map((id) => `'${this.activityName(id)}'`).join(', ') : this.$t('ProcessUnitTest.noneLabel'));
+            const nameList = (ids) =>
+                ids && ids.length ? ids.map((id) => `'${this.activityName(id)}'`).join(', ') : this.$t('ProcessUnitTest.noneLabel');
             if (Array.isArray(ex.activeActivityIds) && ex.activeActivityIds.length) {
                 const wanted = [...ex.activeActivityIds].sort();
                 if (JSON.stringify(wanted) !== JSON.stringify(sortedActive)) {
-                    mismatches.push(this.$t('ProcessUnitTest.mismatchActive', { wanted: nameList(wanted), actual: nameList(sortedActive) }));
+                    mismatches.push(
+                        this.$t('ProcessUnitTest.mismatchActive', { wanted: nameList(wanted), actual: nameList(sortedActive) })
+                    );
                 }
             }
             if (Array.isArray(ex.passedActivityIds) && ex.passedActivityIds.length) {
@@ -496,10 +574,15 @@ export default {
                 }
             }
             if (ex.processStatus && ex.processStatus !== actual.processStatus) {
-                mismatches.push(this.$t('ProcessUnitTest.mismatchStatus', { expected: this.processStatusLabel(ex.processStatus), actual: this.processStatusLabel(actual.processStatus) }));
+                mismatches.push(
+                    this.$t('ProcessUnitTest.mismatchStatus', {
+                        expected: this.processStatusLabel(ex.processStatus),
+                        actual: this.processStatusLabel(actual.processStatus)
+                    })
+                );
             }
-            const expectedCount = (ex.instanceCount === undefined || ex.instanceCount === null) ? 1 : Number(ex.instanceCount);
-            const actualCount = (actual.instanceCount === undefined || actual.instanceCount === null) ? 1 : Number(actual.instanceCount);
+            const expectedCount = ex.instanceCount === undefined || ex.instanceCount === null ? 1 : Number(ex.instanceCount);
+            const actualCount = actual.instanceCount === undefined || actual.instanceCount === null ? 1 : Number(actual.instanceCount);
             if (Number.isFinite(expectedCount) && expectedCount !== actualCount) {
                 mismatches.push(this.$t('ProcessUnitTest.mismatchInstance', { expected: expectedCount, actual: actualCount }));
             }
@@ -511,9 +594,17 @@ export default {
             if (typeof e.detail === 'string') return e.detail;
             if (typeof e.message === 'string') return e.message;
             if (e.detail && typeof e.detail === 'object') {
-                try { return JSON.stringify(e.detail); } catch (err) { /* fallthrough */ }
+                try {
+                    return JSON.stringify(e.detail);
+                } catch (err) {
+                    /* fallthrough */
+                }
             }
-            try { return JSON.stringify(e); } catch (err) { return String(e); }
+            try {
+                return JSON.stringify(e);
+            } catch (err) {
+                return String(e);
+            }
         },
         async setLastResult(activityId, testCase, lastResult) {
             const list = (this.allCases[activityId] || []).slice();
@@ -521,15 +612,25 @@ export default {
             if (idx < 0) return;
             list.splice(idx, 1, { ...list[idx], lastResult });
             this.allCases = { ...this.allCases, [activityId]: list };
-            try { await this.persist(); } catch (e) { console.error('[ProcessUnitTestPanel] persist failed:', e); }
+            try {
+                await this.persist();
+            } catch (e) {
+                console.error('[ProcessUnitTestPanel] persist failed:', e);
+            }
         },
         async runCase(activityId, testCase) {
             if (!this.backend || !this.definitionId) return;
             if (this.runningCaseIds.has(testCase.id)) return;
             const store = useBpmnStore();
-            try { store.clearRunningActivityIds(); } catch (e) {}
-            try { store.clearCompletedActivityIds(); } catch (e) {}
-            try { store.setRunningActivityIds([activityId]); } catch (e) {}
+            try {
+                store.clearRunningActivityIds();
+            } catch (e) {}
+            try {
+                store.clearCompletedActivityIds();
+            } catch (e) {}
+            try {
+                store.setRunningActivityIds([activityId]);
+            } catch (e) {}
 
             this.runningCaseIds = new Set([...this.runningCaseIds, testCase.id]);
             let procInstId = null;
@@ -559,7 +660,7 @@ export default {
                     activeActivityIds: (result && result.active_activity_ids) || [],
                     passedActivityIds: (result && result.passed_activity_ids) || [],
                     processStatus: (result && result.process_status) || '',
-                    instanceCount: (result && (result.instance_count != null ? Number(result.instance_count) : null))
+                    instanceCount: result && (result.instance_count != null ? Number(result.instance_count) : null)
                 };
                 try {
                     (actual.passedActivityIds || []).forEach((id) => store.addCompletedActivityId(id));
@@ -585,7 +686,11 @@ export default {
                 return lastResult;
             } finally {
                 if (procInstId) {
-                    try { await this.backend.testCleanup(procInstId); } catch (e) { /* ignore */ }
+                    try {
+                        await this.backend.testCleanup(procInstId);
+                    } catch (e) {
+                        /* ignore */
+                    }
                     this._inflightProcInstIds.delete(procInstId);
                 }
                 const next = new Set(this.runningCaseIds);
@@ -609,7 +714,11 @@ export default {
             try {
                 for (const tc of [...group.cases]) {
                     this.groupRunProgress.current++;
-                    try { await this.runCase(activityId, tc); } catch (e) { /* runCase 내부 기록 */ }
+                    try {
+                        await this.runCase(activityId, tc);
+                    } catch (e) {
+                        /* runCase 내부 기록 */
+                    }
                 }
             } finally {
                 this.groupRunningId = null;
@@ -620,7 +729,9 @@ export default {
         onAddCaseTargetSelected(activityId) {
             if (!activityId) return;
             this.openEditor(activityId, null);
-            this.$nextTick(() => { this.addCaseTargetActivityId = null; });
+            this.$nextTick(() => {
+                this.addCaseTargetActivityId = null;
+            });
         },
         async openEditor(activityId, testCase) {
             this.editorActivityId = activityId;
@@ -641,25 +752,29 @@ export default {
                 return (forms || [])
                     .filter((f) => f && f.html)
                     .map((f) => ({ activityId: f.activityId || f.id, title: f.title || f.id, html: f.html }));
-            } catch (e) { return []; }
+            } catch (e) {
+                return [];
+            }
         },
         async fetchActivityForm(activityId) {
             if (!this.backend || !activityId) return null;
             try {
-                const procDefId = this.definitionId || (this.processDefinition && (this.processDefinition.id || this.processDefinition.processDefinitionId));
+                const procDefId =
+                    this.definitionId ||
+                    (this.processDefinition && (this.processDefinition.id || this.processDefinition.processDefinitionId));
                 const form = await this.backend.getFormFields(undefined, activityId, procDefId);
                 if (form && form.html) return { html: form.html };
                 return null;
-            } catch (e) { return null; }
+            } catch (e) {
+                return null;
+            }
         },
         // 프로세스 안 모든 UserTask 의 폼 필드를 합쳐 { title, value } 목록으로.
         // 각 액티비티별로 getPreviousForms 를 호출하고 fields_json 을 펼친 뒤 dedupe.
         async computeAllFormFieldOptions() {
             if (!this.backend) return [];
             try {
-                const activityIds = this.bpmnFlowNodes
-                    .filter((n) => /usertask$/i.test(n.tag))
-                    .map((n) => n.id);
+                const activityIds = this.bpmnFlowNodes.filter((n) => /usertask$/i.test(n.tag)).map((n) => n.id);
                 if (!activityIds.length) return [];
                 const collected = new Map(); // value → option
                 for (const aid of activityIds) {
@@ -682,7 +797,9 @@ export default {
                                 });
                             });
                         });
-                    } catch (e) { /* 한 활동 실패해도 계속 */ }
+                    } catch (e) {
+                        /* 한 활동 실패해도 계속 */
+                    }
                 }
                 return Array.from(collected.values());
             } catch (e) {
@@ -693,18 +810,20 @@ export default {
         async loadFieldMeta() {
             if (!this.backend) return;
             try {
-                const activityIds = this.bpmnFlowNodes
-                    .filter((n) => /usertask$/i.test(n.tag))
-                    .map((n) => n.id);
+                const activityIds = this.bpmnFlowNodes.filter((n) => /usertask$/i.test(n.tag)).map((n) => n.id);
                 const meta = {};
                 for (const aid of activityIds) {
                     try {
                         const forms = await this.backend.getPreviousForms(aid, this.processDefinition || undefined);
                         (forms || []).forEach((form) => this.parseFormHtmlMeta(form && form.html, meta));
-                    } catch (e) { /* 한 활동 실패해도 계속 */ }
+                    } catch (e) {
+                        /* 한 활동 실패해도 계속 */
+                    }
                 }
                 this.fieldMeta = meta;
-            } catch (e) { /* 라벨 못 받으면 키로 표시 */ }
+            } catch (e) {
+                /* 라벨 못 받으면 키로 표시 */
+            }
         },
         // 폼 HTML에서 필드 메타 추출 → meta[name] = { label, valueLabels }.
         // label/valueLabels 는 화면 표시 전용 — 성공/실패 판정에는 쓰지 않는다.
@@ -729,14 +848,20 @@ export default {
                                 if (it.value !== undefined && (it.text !== undefined || it.label !== undefined)) {
                                     valueLabels[it.value] = it.text != null ? it.text : it.label;
                                 } else {
-                                    Object.entries(it).forEach(([k, v]) => { valueLabels[k] = v; });
+                                    Object.entries(it).forEach(([k, v]) => {
+                                        valueLabels[k] = v;
+                                    });
                                 }
                             });
-                        } catch (e) { /* items 파싱 실패 시 값은 키 그대로 */ }
+                        } catch (e) {
+                            /* items 파싱 실패 시 값은 키 그대로 */
+                        }
                     }
                     meta[key] = { label: alias || key, valueLabels };
                 });
-            } catch (e) { /* HTML 파싱 실패 시 키 그대로 표시 */ }
+            } catch (e) {
+                /* HTML 파싱 실패 시 키 그대로 표시 */
+            }
         },
         async computeGivenOptions(activityId) {
             if (!this.backend || !activityId) return [];
@@ -771,7 +896,10 @@ export default {
                 const all = doc.getElementsByTagName('*');
                 let target = null;
                 for (let i = 0; i < all.length; i++) {
-                    if (all[i].getAttribute && all[i].getAttribute('id') === activityId) { target = all[i]; break; }
+                    if (all[i].getAttribute && all[i].getAttribute('id') === activityId) {
+                        target = all[i];
+                        break;
+                    }
                 }
                 if (!target) return [];
                 // uengine:eventSynchronization > attribute name
@@ -786,7 +914,9 @@ export default {
                     }
                 }
                 return options;
-            } catch (e) { return []; }
+            } catch (e) {
+                return [];
+            }
         },
         async onCaseSaved(nextCase) {
             const activityId = this.editorActivityId;

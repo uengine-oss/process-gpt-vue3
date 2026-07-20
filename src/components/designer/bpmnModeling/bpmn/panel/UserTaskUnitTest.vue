@@ -2,8 +2,15 @@
     <div class="user-task-unit-test">
         <div class="d-flex align-center justify-space-between mb-3" style="gap: 8px">
             <div class="text-subtitle-2 font-weight-medium flex-grow-1">{{ $t('ProcessUnitTest.unitTest') }}</div>
-            <v-btn size="small" color="success" variant="tonal" prepend-icon="mdi-play-box-multiple"
-                :disabled="cases.length === 0 || runningCaseIds.size > 0" :loading="runningAll" @click="runAll">
+            <v-btn
+                size="small"
+                color="success"
+                variant="tonal"
+                prepend-icon="mdi-play-box-multiple"
+                :disabled="cases.length === 0 || runningCaseIds.size > 0"
+                :loading="runningAll"
+                @click="runAll"
+            >
                 {{ $t('ProcessUnitTest.runAll') }}
             </v-btn>
             <v-btn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="openCaseEditor()">
@@ -17,10 +24,13 @@
         </div>
 
         <div v-else>
-            <div v-for="(testCase, index) in cases" :key="testCase.id"
-                class="pa-2 mb-2 rounded-lg" style="border: 1px solid rgba(0, 0, 0, 0.08)">
-                <div class="d-flex align-center" style="gap: 6px; cursor: pointer"
-                    @click="toggleCaseExpand(testCase.id)">
+            <div
+                v-for="(testCase, index) in cases"
+                :key="testCase.id"
+                class="pa-2 mb-2 rounded-lg"
+                style="border: 1px solid rgba(0, 0, 0, 0.08)"
+            >
+                <div class="d-flex align-center" style="gap: 6px; cursor: pointer" @click="toggleCaseExpand(testCase.id)">
                     <v-icon size="18">{{ expandedCaseIds[testCase.id] ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                     <span class="text-caption font-weight-medium flex-grow-1 text-truncate">
                         {{ testCase.name || `Case ${index + 1}` }}
@@ -30,13 +40,31 @@
                     </v-chip>
                     <!-- 접힌 상태에서만 빠른 액션 -->
                     <template v-if="!expandedCaseIds[testCase.id]">
-                        <v-btn size="x-small" variant="tonal" color="success" icon="mdi-play" density="comfortable"
-                            :loading="runningCaseIds.has(testCase.id)" :disabled="runningCaseIds.size > 0"
-                            @click.stop="runCase(testCase)" />
-                        <v-btn size="x-small" variant="text" icon="mdi-pencil" density="comfortable"
-                            @click.stop="openCaseEditor(testCase)" />
-                        <v-btn size="x-small" variant="text" color="error" icon="mdi-delete" density="comfortable"
-                            @click.stop="deleteCase(testCase)" />
+                        <v-btn
+                            size="x-small"
+                            variant="tonal"
+                            color="success"
+                            icon="mdi-play"
+                            density="comfortable"
+                            :loading="runningCaseIds.has(testCase.id)"
+                            :disabled="runningCaseIds.size > 0"
+                            @click.stop="runCase(testCase)"
+                        />
+                        <v-btn
+                            size="x-small"
+                            variant="text"
+                            icon="mdi-pencil"
+                            density="comfortable"
+                            @click.stop="openCaseEditor(testCase)"
+                        />
+                        <v-btn
+                            size="x-small"
+                            variant="text"
+                            color="error"
+                            icon="mdi-delete"
+                            density="comfortable"
+                            @click.stop="deleteCase(testCase)"
+                        />
                     </template>
                 </div>
                 <div v-if="expandedCaseIds[testCase.id]" class="mt-2">
@@ -64,22 +92,42 @@
                     <div v-if="testCase.lastResult" class="text-caption mb-2">
                         <strong>{{ $t('ProcessUnitTest.runResult') }}</strong>
                         <span v-if="testCase.lastResult.actual" class="ml-1">{{ formatExpected(testCase.lastResult.actual) }}</span>
-                        <v-chip v-if="testCase.lastResult.timedOut" size="x-small" color="warning" variant="tonal" class="ml-2">{{ $t('ProcessUnitTest.timedOut') }}</v-chip>
-                        <v-chip v-if="testCase.lastResult.status === 'error'" size="x-small" color="error" variant="tonal" class="ml-2">{{ $t('ProcessUnitTest.caseError') }}</v-chip>
+                        <v-chip v-if="testCase.lastResult.timedOut" size="x-small" color="warning" variant="tonal" class="ml-2">{{
+                            $t('ProcessUnitTest.timedOut')
+                        }}</v-chip>
+                        <v-chip v-if="testCase.lastResult.status === 'error'" size="x-small" color="error" variant="tonal" class="ml-2">{{
+                            $t('ProcessUnitTest.caseError')
+                        }}</v-chip>
                         <div v-if="testCase.lastResult.message" class="text-medium-emphasis ml-1">{{ testCase.lastResult.message }}</div>
                         <ul v-if="testCase.lastResult.mismatches && testCase.lastResult.mismatches.length" class="pl-4 mb-0">
                             <li v-for="(msg, mi) in testCase.lastResult.mismatches" :key="mi" class="text-error">{{ msg }}</li>
                         </ul>
-                        <div v-if="testCase.lastResult.ranAt" class="text-medium-emphasis ml-1">{{ formatRanAt(testCase.lastResult.ranAt) }}</div>
-                        <v-btn v-if="testCase.lastResult.actual" size="x-small" variant="tonal" color="primary" prepend-icon="mdi-content-copy"
-                            class="mt-1" @click="adoptActualAsExpected(testCase)">
+                        <div v-if="testCase.lastResult.ranAt" class="text-medium-emphasis ml-1">
+                            {{ formatRanAt(testCase.lastResult.ranAt) }}
+                        </div>
+                        <v-btn
+                            v-if="testCase.lastResult.actual"
+                            size="x-small"
+                            variant="tonal"
+                            color="primary"
+                            prepend-icon="mdi-content-copy"
+                            class="mt-1"
+                            @click="adoptActualAsExpected(testCase)"
+                        >
                             {{ $t('ProcessUnitTest.adoptAsExpected') }}
                         </v-btn>
                     </div>
                     <div class="d-flex justify-end mt-2" style="gap: 4px">
-                        <v-btn size="x-small" variant="tonal" color="success" prepend-icon="mdi-play"
-                            :loading="runningCaseIds.has(testCase.id)" :disabled="runningCaseIds.size > 0"
-                            @click="runCase(testCase)">{{ $t('ProcessUnitTest.run') }}</v-btn>
+                        <v-btn
+                            size="x-small"
+                            variant="tonal"
+                            color="success"
+                            prepend-icon="mdi-play"
+                            :loading="runningCaseIds.has(testCase.id)"
+                            :disabled="runningCaseIds.size > 0"
+                            @click="runCase(testCase)"
+                            >{{ $t('ProcessUnitTest.run') }}</v-btn
+                        >
                         <v-btn size="x-small" variant="text" icon="mdi-pencil" @click="openCaseEditor(testCase)" />
                         <v-btn size="x-small" variant="text" icon="mdi-delete" color="error" @click="deleteCase(testCase)" />
                     </div>
@@ -115,7 +163,6 @@ import UnitTestCaseEditor from './UnitTestCaseEditor.vue';
 const GIVEN_KEY_SEP = '';
 
 export default {
-
     name: 'UserTaskUnitTest',
     components: { UnitTestCaseEditor },
     props: {
@@ -191,7 +238,13 @@ export default {
         },
         // 기대 활성 작업 후보: 프로세스가 멈출 수 있는 사람 작업과 서브프로세스(멀티 인스턴스 포함).
         userTaskOptions() {
-            return this.bpmnFlowElements(['bpmn:UserTask', 'bpmn:SubProcess', 'bpmn:CallActivity', 'bpmn:Transaction', 'bpmn:AdHocSubProcess']);
+            return this.bpmnFlowElements([
+                'bpmn:UserTask',
+                'bpmn:SubProcess',
+                'bpmn:CallActivity',
+                'bpmn:Transaction',
+                'bpmn:AdHocSubProcess'
+            ]);
         },
         // 기대 거쳐간 활동 후보: 모든 flow 노드(작업·게이트웨이·이벤트).
         allActivityOptions() {
@@ -223,7 +276,9 @@ export default {
         },
         // activity prop 이 늦게 채워지는 경우(폼 변경/패널 첫 진입) 폼 html 재로드.
         'activity.tool': {
-            handler() { if (this.backend) this.loadCurrentForm(); }
+            handler() {
+                if (this.backend) this.loadCurrentForm();
+            }
         }
     },
     created() {
@@ -241,7 +296,9 @@ export default {
             const store = useBpmnStore();
             store.clearRunningActivityIds();
             store.clearCompletedActivityIds();
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+            /* ignore */
+        }
         // 화면 이동/창 닫힘으로 runCase 의 finally 가 못 돌면 RUNNING 인스턴스가 잔존한다.
         // 추적된 procInstId 들에 대해 best-effort cleanup.
         try {
@@ -249,10 +306,16 @@ export default {
                 const ids = Array.from(this._inflightProcInstIds);
                 this._inflightProcInstIds.clear();
                 ids.forEach((id) => {
-                    try { this.backend && this.backend.testCleanup(id); } catch (e) { /* ignore */ }
+                    try {
+                        this.backend && this.backend.testCleanup(id);
+                    } catch (e) {
+                        /* ignore */
+                    }
                 });
             }
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+            /* ignore */
+        }
     },
     methods: {
         toggleCaseExpand(caseId) {
@@ -276,9 +339,15 @@ export default {
             // 이 액티비티 자체의 폼 html. activity.tool 의 formHandler:formId 패턴으로 formId 추출 후 form_def 조회.
             // (form_def 는 항상 activity_id 가 채워져 있지 않아 getFormFields(activityId,...) 가 비어 돌아오는 경우가 있다.)
             try {
-                if (!this.backend || !this.activityId) { this.currentActivityForm = null; return; }
+                if (!this.backend || !this.activityId) {
+                    this.currentActivityForm = null;
+                    return;
+                }
                 const formId = this.extractFormIdForActivity(this.activityId);
-                if (!formId) { this.currentActivityForm = null; return; }
+                if (!formId) {
+                    this.currentActivityForm = null;
+                    return;
+                }
                 const form = await this.backend.getFormFields(formId);
                 this.currentActivityForm = form && form.html ? { html: form.html } : null;
             } catch (e) {
@@ -300,7 +369,11 @@ export default {
         async openCaseEditor(testCase) {
             this.editingCase = testCase || null;
             // 폼 데이터를 최신화한 뒤 다이얼로그 오픈 (loadCurrentForm 이 watch 로 못 잡힌 케이스 대비).
-            try { await this.loadCurrentForm(); } catch (e) { /* ignore */ }
+            try {
+                await this.loadCurrentForm();
+            } catch (e) {
+                /* ignore */
+            }
             this.editorOpen = true;
         },
         async onCaseSaved(nextCase) {
@@ -324,7 +397,9 @@ export default {
         hasGiven(given) {
             try {
                 if (!given || typeof given !== 'object') return false;
-                return Object.keys(given).some((activityId) => given[activityId] && typeof given[activityId] === 'object' && Object.keys(given[activityId]).length > 0);
+                return Object.keys(given).some(
+                    (activityId) => given[activityId] && typeof given[activityId] === 'object' && Object.keys(given[activityId]).length > 0
+                );
             } catch (e) {
                 return false;
             }
@@ -341,9 +416,11 @@ export default {
                         const name = el && el.businessObject && el.businessObject.name;
                         if (name) return name;
                     }
-                } catch (e) { /* ignore */ }
+                } catch (e) {
+                    /* ignore */
+                }
                 // 2) 저장된 정의의 activities[].name — 모델러가 아직 없거나 못 찾을 때 폴백.
-                const activities = (this.definition && Array.isArray(this.definition.activities)) ? this.definition.activities : [];
+                const activities = this.definition && Array.isArray(this.definition.activities) ? this.definition.activities : [];
                 const found = activities.find((a) => a && a.id === activityId);
                 if (found && found.name) return found.name;
                 // 3) availableForms 의 title — 폼이 붙은 사용자 작업 한정.
@@ -367,7 +444,8 @@ export default {
                     if (Array.isArray(types) && types.length) return types.includes(type);
                     return /Task$|Gateway$|Event$|SubProcess$|CallActivity$|Transaction$/.test(type);
                 };
-                return reg.getAll()
+                return reg
+                    .getAll()
                     .filter((el) => el && el.id && el.businessObject && filterType(el.type))
                     .map((el) => {
                         const name = el.businessObject.name;
@@ -381,7 +459,7 @@ export default {
         activityName(activityId) {
             try {
                 const label = this.activityLabel(activityId);
-                return typeof label === 'string' ? label.replace(/\s*\([^)]+\)\s*$/, '') : (activityId || '');
+                return typeof label === 'string' ? label.replace(/\s*\([^)]+\)\s*$/, '') : activityId || '';
             } catch (e) {
                 return activityId || '';
             }
@@ -414,14 +492,20 @@ export default {
                                 if (it.value !== undefined && (it.text !== undefined || it.label !== undefined)) {
                                     valueLabels[it.value] = it.text != null ? it.text : it.label;
                                 } else {
-                                    Object.entries(it).forEach(([k, v]) => { valueLabels[k] = v; });
+                                    Object.entries(it).forEach(([k, v]) => {
+                                        valueLabels[k] = v;
+                                    });
                                 }
                             });
-                        } catch (e) { /* items 파싱 실패 시 값은 키 그대로 */ }
+                        } catch (e) {
+                            /* items 파싱 실패 시 값은 키 그대로 */
+                        }
                     }
                     meta[key] = { label: alias || key, valueLabels };
                 });
-            } catch (e) { /* HTML 파싱 실패 시 키 그대로 표시 */ }
+            } catch (e) {
+                /* HTML 파싱 실패 시 키 그대로 표시 */
+            }
         },
         formatObject(value) {
             try {
@@ -454,10 +538,12 @@ export default {
             if (Array.isArray(v)) {
                 if (v.length === 0) return this.$t('ProcessUnitTest.noneLabel');
                 if (v.every((item) => item == null || typeof item !== 'object')) {
-                    return v.map((item) => {
-                        if (item == null || item === '') return this.$t('ProcessUnitTest.noneLabel');
-                        return this.valueLabel(key, item) || String(item);
-                    }).join(', ');
+                    return v
+                        .map((item) => {
+                            if (item == null || item === '') return this.$t('ProcessUnitTest.noneLabel');
+                            return this.valueLabel(key, item) || String(item);
+                        })
+                        .join(', ');
                 }
                 return this.$t('ProcessUnitTest.itemCount', { count: v.length });
             }
@@ -474,12 +560,21 @@ export default {
                 if (!value || typeof value !== 'object') return '-';
                 const parts = [];
                 if (Array.isArray(value.activeActivityIds) && value.activeActivityIds.length) {
-                    parts.push(this.$t('ProcessUnitTest.formatNextTask', { names: value.activeActivityIds.map((id) => this.activityName(id)).join(', ') }));
+                    parts.push(
+                        this.$t('ProcessUnitTest.formatNextTask', {
+                            names: value.activeActivityIds.map((id) => this.activityName(id)).join(', ')
+                        })
+                    );
                 }
                 if (Array.isArray(value.passedActivityIds) && value.passedActivityIds.length) {
-                    parts.push(this.$t('ProcessUnitTest.formatPassed', { names: value.passedActivityIds.map((id) => this.activityName(id)).join(', ') }));
+                    parts.push(
+                        this.$t('ProcessUnitTest.formatPassed', {
+                            names: value.passedActivityIds.map((id) => this.activityName(id)).join(', ')
+                        })
+                    );
                 }
-                if (value.processStatus) parts.push(this.$t('ProcessUnitTest.formatStatus', { status: this.processStatusLabel(value.processStatus) }));
+                if (value.processStatus)
+                    parts.push(this.$t('ProcessUnitTest.formatStatus', { status: this.processStatusLabel(value.processStatus) }));
                 if (value.instanceCount !== undefined && value.instanceCount !== null) {
                     parts.push(this.$t('ProcessUnitTest.formatInstance', { count: value.instanceCount }));
                 }
@@ -516,10 +611,16 @@ export default {
             if (this.runningCaseIds.has(testCase.id)) return;
             // 새 실행을 시작할 때 이전 실행의 마커는 초기화.
             const store = useBpmnStore();
-            try { store.clearRunningActivityIds(); } catch (e) {}
-            try { store.clearCompletedActivityIds(); } catch (e) {}
+            try {
+                store.clearRunningActivityIds();
+            } catch (e) {}
+            try {
+                store.clearCompletedActivityIds();
+            } catch (e) {}
             // 타깃 작업은 "진행 중"으로 표시.
-            try { store.setRunningActivityIds([this.activityId]); } catch (e) {}
+            try {
+                store.setRunningActivityIds([this.activityId]);
+            } catch (e) {}
 
             this.runningCaseIds = new Set([...this.runningCaseIds, testCase.id]);
             let procInstId = null;
@@ -530,7 +631,11 @@ export default {
                     given: testCase.given || {}
                 });
                 if (!init || !init.task_id) {
-                    this.setLastResult(testCase, { status: 'error', message: this.$t('ProcessUnitTest.noTaskId'), ranAt: new Date().toISOString() });
+                    this.setLastResult(testCase, {
+                        status: 'error',
+                        message: this.$t('ProcessUnitTest.noTaskId'),
+                        ranAt: new Date().toISOString()
+                    });
                     return;
                 }
                 procInstId = init.proc_inst_id;
@@ -548,7 +653,7 @@ export default {
                     activeActivityIds: (result && result.active_activity_ids) || [],
                     passedActivityIds: (result && result.passed_activity_ids) || [],
                     processStatus: (result && result.process_status) || '',
-                    instanceCount: (result && (result.instance_count != null ? Number(result.instance_count) : null))
+                    instanceCount: result && (result.instance_count != null ? Number(result.instance_count) : null)
                 };
                 // 캔버스 마커 갱신: 거쳐간 활동들 → 완료, 현재 활성 → 진행 중.
                 try {
@@ -601,11 +706,14 @@ export default {
             const mismatches = [];
             const sortedActive = (actual.activeActivityIds || []).slice().sort();
             const actualPassed = actual.passedActivityIds || [];
-            const nameList = (ids) => (ids && ids.length ? ids.map((id) => `'${this.activityName(id)}'`).join(', ') : this.$t('ProcessUnitTest.noneLabel'));
+            const nameList = (ids) =>
+                ids && ids.length ? ids.map((id) => `'${this.activityName(id)}'`).join(', ') : this.$t('ProcessUnitTest.noneLabel');
             if (Array.isArray(ex.activeActivityIds) && ex.activeActivityIds.length) {
                 const wanted = [...ex.activeActivityIds].sort();
                 if (JSON.stringify(wanted) !== JSON.stringify(sortedActive)) {
-                    mismatches.push(this.$t('ProcessUnitTest.mismatchActive', { wanted: nameList(wanted), actual: nameList(sortedActive) }));
+                    mismatches.push(
+                        this.$t('ProcessUnitTest.mismatchActive', { wanted: nameList(wanted), actual: nameList(sortedActive) })
+                    );
                 }
             }
             if (Array.isArray(ex.passedActivityIds) && ex.passedActivityIds.length) {
@@ -615,11 +723,16 @@ export default {
                 }
             }
             if (ex.processStatus && ex.processStatus !== actual.processStatus) {
-                mismatches.push(this.$t('ProcessUnitTest.mismatchStatus', { expected: this.processStatusLabel(ex.processStatus), actual: this.processStatusLabel(actual.processStatus) }));
+                mismatches.push(
+                    this.$t('ProcessUnitTest.mismatchStatus', {
+                        expected: this.processStatusLabel(ex.processStatus),
+                        actual: this.processStatusLabel(actual.processStatus)
+                    })
+                );
             }
             // 인스턴스 개수: 명시 안 했으면 1 로 가정. 서브프로세스 케이스 검증용.
-            const expectedCount = (ex.instanceCount === undefined || ex.instanceCount === null) ? 1 : Number(ex.instanceCount);
-            const actualCount = (actual.instanceCount === undefined || actual.instanceCount === null) ? 1 : Number(actual.instanceCount);
+            const expectedCount = ex.instanceCount === undefined || ex.instanceCount === null ? 1 : Number(ex.instanceCount);
+            const actualCount = actual.instanceCount === undefined || actual.instanceCount === null ? 1 : Number(actual.instanceCount);
             if (Number.isFinite(expectedCount) && expectedCount !== actualCount) {
                 mismatches.push(this.$t('ProcessUnitTest.mismatchInstance', { expected: expectedCount, actual: actualCount }));
             }
@@ -633,9 +746,17 @@ export default {
             if (typeof e.detail === 'string') return e.detail;
             if (typeof e.message === 'string') return e.message;
             if (e.detail && typeof e.detail === 'object') {
-                try { return JSON.stringify(e.detail); } catch (err) { /* fallthrough */ }
+                try {
+                    return JSON.stringify(e.detail);
+                } catch (err) {
+                    /* fallthrough */
+                }
             }
-            try { return JSON.stringify(e); } catch (err) { return String(e); }
+            try {
+                return JSON.stringify(e);
+            } catch (err) {
+                return String(e);
+            }
         },
         // 현재 실행 결과를 기대값으로 채택한 뒤, 같은 결과가 실제로 다시 나오는지 검증하기 위해 즉시 재실행.
         // (성공 마킹만 하고 끝내지 않는다 — 매 실행이 실제 엔진을 거쳐야 의미가 있다.)

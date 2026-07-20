@@ -22,7 +22,7 @@
                     <button :class="{ 'is-on': viewMode === 'xml' }" @click="viewMode = 'xml'">XML</button>
                     <button :class="{ 'is-on': viewMode === 'json' }" @click="viewMode = 'json'">JSON</button>
                 </div>
-                <!-- md/html: 미리보기 / 코드(원본) 토글 -->
+                <!-- md/json/html/form: 미리보기 / 코드(원본) 토글 -->
                 <div v-else-if="canToggleCode" class="hwpx-viewer__toggle mr-2">
                     <button :class="{ 'is-on': viewMode === 'preview' }" @click="viewMode = 'preview'">미리보기</button>
                     <button :class="{ 'is-on': viewMode === 'code' }" @click="viewMode = 'code'">코드</button>
@@ -41,7 +41,13 @@
                     AI 편집
                 </v-btn>
                 <!-- HWP(htmlUrl) 전용 WYSIWYG 편집 — 작업폴더 html 은 아래 '편집'(코드탭)으로 처리 -->
-                <v-btn v-if="mode === 'html' && htmlUrl && viewMode === 'preview' && isEditing && !readOnly" variant="text" density="comfortable" size="small" @click="cancelEdit">
+                <v-btn
+                    v-if="mode === 'html' && htmlUrl && viewMode === 'preview' && isEditing && !readOnly"
+                    variant="text"
+                    density="comfortable"
+                    size="small"
+                    @click="cancelEdit"
+                >
                     <v-icon size="16" class="mr-1">mdi-close</v-icon>
                     편집취소
                 </v-btn>
@@ -57,11 +63,14 @@
                 </v-btn>
                 <!-- 편집: 산출물(bpmn/skill/agent)은 내부 편집기로 이동(editTarget), 그 외(작업폴더 html 등)는 코드탭 직접수정. AI편집 없음. -->
                 <v-btn
-                    v-if="(editTarget || (mode !== 'html' && (canToggleCode || mode === 'bpmn')) || (mode === 'html' && !htmlUrl)) && !readOnly"
+                    v-if="
+                        (editTarget || (mode !== 'html' && (canToggleCode || mode === 'bpmn')) || (mode === 'html' && !htmlUrl)) &&
+                        !readOnly
+                    "
                     variant="text"
                     density="comfortable"
                     size="small"
-                    :color="(!editTarget && mode !== 'bpmn' && viewMode === 'code') ? 'primary' : undefined"
+                    :color="!editTarget && mode !== 'bpmn' && viewMode === 'code' ? 'primary' : undefined"
                     @click="onManualEdit"
                 >
                     <v-icon size="16" class="mr-1">{{ editTarget || mode === 'bpmn' ? 'mdi-open-in-new' : 'mdi-pencil-outline' }}</v-icon>
@@ -88,9 +97,11 @@
             <pre v-else-if="viewMode === 'code' && canToggleCode" class="hwpx-viewer__code"><code>{{ prettySource }}</code></pre>
             <!-- 확장자별 동적 뷰어 (공통). html/hwpx/docx 는 기존 HTML 렌더, 그 외는 ext 별 분기. -->
             <!-- Markdown -->
-            <div v-else-if="mode === 'markdown'" class="hwpx-viewer__content">
+            <div v-else-if="mode === 'markdown'" class="hwpx-viewer__content" data-viewer-kind="markdown">
                 <div class="hwpx-viewer__md" v-html="renderedMarkdown"></div>
             </div>
+            <!-- JSON: 기본은 구문 정렬된 읽기 뷰, 코드 탭에서 원본 편집 -->
+            <pre v-else-if="mode === 'json'" class="hwpx-viewer__code" data-viewer-kind="json"><code>{{ prettySource }}</code></pre>
             <!-- JSON / 코드 -->
             <textarea
                 v-else-if="mode === 'code' && codeEditable"
@@ -112,7 +123,7 @@
             <!-- BPMN: XML(읽기) -->
             <pre v-else-if="mode === 'bpmn' && viewMode === 'xml'" class="hwpx-viewer__code"><code>{{ effectiveContent }}</code></pre>
             <!-- BPMN 다이어그램(미리보기) -->
-            <div v-else-if="mode === 'bpmn'" class="hwpx-viewer__bpmn">
+            <div v-else-if="mode === 'bpmn'" class="hwpx-viewer__bpmn" data-viewer-kind="bpmn">
                 <!-- 저장 결과 다이얼로그와 동일 컴포넌트/옵션 → 동일한 autolayout 레이아웃 -->
                 <ProcessDefinition
                     v-if="effectiveContent"
@@ -135,6 +146,7 @@
             <div
                 v-else-if="mode === 'html' && isProcessGptForm"
                 class="hwpx-viewer__content hwpx-viewer__form"
+                data-viewer-kind="form"
             >
                 <DynamicForm :formHTML="effectiveContent" :readonly="true" />
             </div>
@@ -152,6 +164,7 @@
                     <div
                         ref="editor"
                         class="hwpx-viewer__html"
+                        data-viewer-kind="html"
                         :class="{ 'is-editing': isEditing, 'section-edit-mode': sectionEditMode }"
                         :contenteditable="isEditing"
                         v-html="bodyHtml"
@@ -323,11 +336,7 @@
                 <v-icon size="14" class="mr-1" color="success">mdi-book-open-variant</v-icon>
                 참고 출처 {{ sourceTooltip.sources.length }}개
             </div>
-            <div
-                v-for="(src, i) in sourceTooltip.sources"
-                :key="i"
-                class="hwpx-source-tooltip__item"
-            >
+            <div v-for="(src, i) in sourceTooltip.sources" :key="i" class="hwpx-source-tooltip__item">
                 <div class="hwpx-source-tooltip__file">
                     <span class="hwpx-source-tooltip__file-name">{{ src.file_name || src.title || '내부 문서' }}</span>
                     <span v-if="src.page != null" class="hwpx-source-tooltip__page">p.{{ src.page }}</span>
@@ -337,11 +346,7 @@
                     {{ src.section_title }}
                 </div>
                 <!-- PDF 하이라이트 썸네일 — 백엔드가 문서 생성 시 미리 렌더링한 URL을 그대로 사용 -->
-                <div
-                    v-if="src.preview_url"
-                    class="hwpx-source-tooltip__thumb-wrap"
-                    @click.stop="openHighlightModal(src)"
-                >
+                <div v-if="src.preview_url" class="hwpx-source-tooltip__thumb-wrap" @click.stop="openHighlightModal(src)">
                     <img
                         :src="src.preview_url"
                         class="hwpx-source-tooltip__thumb"
@@ -351,14 +356,9 @@
                     />
                 </div>
                 <div v-if="src.snippet" class="hwpx-source-tooltip__snippet">{{ src.snippet }}</div>
-                <a
-                    v-if="src.url"
-                    :href="src.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="hwpx-source-tooltip__link"
-                    @click.stop
-                >원본 열기 <v-icon size="11">mdi-open-in-new</v-icon></a>
+                <a v-if="src.url" :href="src.url" target="_blank" rel="noopener noreferrer" class="hwpx-source-tooltip__link" @click.stop
+                    >원본 열기 <v-icon size="11">mdi-open-in-new</v-icon></a
+                >
             </div>
         </div>
 
@@ -491,19 +491,19 @@ export default {
                 height: `${this.selectionRect.height}px`
             };
         },
-        /** 확장자 → 뷰어 모드. html/hwpx/docx=HTML, md=markdown, json/기타텍스트=code, bpmn/xml=BPMN. */
+        /** 확장자 → 뷰어 모드. html/form/hwpx/docx=HTML, md=markdown, json=JSON, bpmn=BPMN. */
         mode() {
             const e = (this.ext || '').toString().toLowerCase().replace(/^\./, '');
             if (e === 'md' || e === 'markdown') return 'markdown';
-            if (e === 'json') return 'code';
+            if (e === 'json') return 'json';
             if (e === 'bpmn') return 'bpmn';
-            if (e === 'html' || e === 'htm' || e === 'hwpx' || e === 'docx' || e === '') return 'html';
+            if (e === 'html' || e === 'htm' || e === 'form' || e === 'hwpx' || e === 'docx' || e === '') return 'html';
             // yaml/yml/txt/xml/csv/dmn 등 → 코드로
             return 'code';
         },
-        /** 미리보기↔원본 토글을 보여줄 모드(md/html/bpmn). json/코드는 이미 원본이라 토글 불필요. */
+        /** 미리보기↔원본 토글을 보여줄 모드(md/json/html/bpmn). */
         canToggleCode() {
-            return this.mode === 'markdown' || this.mode === 'html' || this.mode === 'bpmn';
+            return this.mode === 'markdown' || this.mode === 'json' || this.mode === 'html' || this.mode === 'bpmn';
         },
         /** 미리보기·렌더에 쓰는 본문 — 편집 중이면 편집본(localContent), 아니면 원본 content. */
         effectiveContent() {
@@ -516,7 +516,9 @@ export default {
         /** ProcessGPT 폼(<*-field> + row 레이아웃)인지 — 맞으면 DynamicForm 으로 렌더해야 함. */
         isProcessGptForm() {
             const h = (this.effectiveContent || '').toLowerCase();
-            return h.indexOf('-field') >= 0 && (h.indexOf("class='row'") >= 0 || h.indexOf('class="row"') >= 0 || h.indexOf('<section') >= 0);
+            return (
+                h.indexOf('-field') >= 0 && (h.indexOf("class='row'") >= 0 || h.indexOf('class="row"') >= 0 || h.indexOf('<section') >= 0)
+            );
         },
         /** 코드 영역을 편집 가능한 textarea 로 보여줄지(읽기전용 아니고 토글 가능 모드일 때). */
         codeEditable() {
@@ -1597,8 +1599,14 @@ export default {
 }
 
 @keyframes hwpxSourceTipIn {
-    from { opacity: 0; transform: translateY(-2px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .hwpx-source-tooltip__header {

@@ -52,7 +52,8 @@ function xmlUnescape(value: string) {
 }
 
 function extractCallActivityPropertiesFromBpmn(bpmn: string, activityId: string) {
-    const block = bpmn.match(new RegExp(`<[^>]*callActivity\\b[^>]*\\bid=["']${activityId}["'][\\s\\S]*?<\\/[^>]*callActivity>`))?.[0] || '';
+    const block =
+        bpmn.match(new RegExp(`<[^>]*callActivity\\b[^>]*\\bid=["']${activityId}["'][\\s\\S]*?<\\/[^>]*callActivity>`))?.[0] || '';
     const jsonText = block.match(/<[^>]*json[^>]*>([\s\S]*?)<\/[^>]*json>/)?.[1] || '';
     if (jsonText) return parseProperties(xmlUnescape(jsonText.trim()));
 
@@ -157,27 +158,30 @@ async function applyMappingThroughOpenPanel(page: any, nextProperties: Record<st
     await expect(page.getByTestId('callactivity-parent-form-select')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('callactivity-child-form-select')).toBeVisible({ timeout: 30_000 });
 
-    await page.evaluate(({ properties, activityId }) => {
-        const panelElement = document.querySelector('.gpt-call-activity-panel') as any;
-        let component = panelElement?.__vueParentComponent;
-        while (component && component.type?.name !== 'gpt-call-activity-panel') component = component.parent;
-        const panel = component?.ctx;
-        if (!panel?.onFormMappingUpdate) throw new Error('GPTCallActivityPanel component was not found.');
-        panel.onFormMappingUpdate(properties);
+    await page.evaluate(
+        ({ properties, activityId }) => {
+            const panelElement = document.querySelector('.gpt-call-activity-panel') as any;
+            let component = panelElement?.__vueParentComponent;
+            while (component && component.type?.name !== 'gpt-call-activity-panel') component = component.parent;
+            const panel = component?.ctx;
+            if (!panel?.onFormMappingUpdate) throw new Error('GPTCallActivityPanel component was not found.');
+            panel.onFormMappingUpdate(properties);
 
-        let parent = component?.parent;
-        while (parent) {
-            const ctx = parent.ctx;
-            if (ctx && Object.prototype.hasOwnProperty.call(ctx, 'uengineProperties') && ctx.element?.id === activityId) break;
-            parent = parent.parent;
-        }
-        if (parent?.ctx) {
-            parent.ctx.uengineProperties = {
-                ...(parent.ctx.uengineProperties || {}),
-                ...(properties || {})
-            };
-        }
-    }, { properties: nextProperties, activityId: callActivityId });
+            let parent = component?.parent;
+            while (parent) {
+                const ctx = parent.ctx;
+                if (ctx && Object.prototype.hasOwnProperty.call(ctx, 'uengineProperties') && ctx.element?.id === activityId) break;
+                parent = parent.parent;
+            }
+            if (parent?.ctx) {
+                parent.ctx.uengineProperties = {
+                    ...(parent.ctx.uengineProperties || {}),
+                    ...(properties || {})
+                };
+            }
+        },
+        { properties: nextProperties, activityId: callActivityId }
+    );
 
     await page.waitForTimeout(500);
     await expect(page.getByTestId('callactivity-parent-form-select')).toContainText('협력사 온보딩 요청 등록', { timeout: 10_000 });
@@ -185,29 +189,32 @@ async function applyMappingThroughOpenPanel(page: any, nextProperties: Record<st
 }
 
 async function saveDefinitionThroughApp(page: any) {
-    await page.evaluate(async ({ procDefId }) => {
-        const contexts: any[] = [];
-        document.querySelectorAll('*').forEach((el: any) => {
-            let component = el.__vueParentComponent;
-            while (component) {
-                const ctx = component.ctx;
-                if (ctx?.saveDefinition && ctx?.fullPath === procDefId) contexts.push(ctx);
-                component = component.parent;
-            }
-        });
-        const ctx = contexts[0];
-        if (!ctx?.saveDefinition) throw new Error('ProcessDefinitionChat saveDefinition context was not found.');
-        const processDefinition = ctx.processDefinition || {};
-        const name = ctx.projectName || processDefinition.processDefinitionName || processDefinition.name || procDefId;
-        ctx.saveDefinition({
-            id: procDefId,
-            proc_def_id: procDefId,
-            name,
-            version_tag: 'minor',
-            message: 'CallActivity form mapping E2E save',
-            definition: processDefinition
-        });
-    }, { procDefId: parentProcDefId });
+    await page.evaluate(
+        async ({ procDefId }) => {
+            const contexts: any[] = [];
+            document.querySelectorAll('*').forEach((el: any) => {
+                let component = el.__vueParentComponent;
+                while (component) {
+                    const ctx = component.ctx;
+                    if (ctx?.saveDefinition && ctx?.fullPath === procDefId) contexts.push(ctx);
+                    component = component.parent;
+                }
+            });
+            const ctx = contexts[0];
+            if (!ctx?.saveDefinition) throw new Error('ProcessDefinitionChat saveDefinition context was not found.');
+            const processDefinition = ctx.processDefinition || {};
+            const name = ctx.projectName || processDefinition.processDefinitionName || processDefinition.name || procDefId;
+            ctx.saveDefinition({
+                id: procDefId,
+                proc_def_id: procDefId,
+                name,
+                version_tag: 'minor',
+                message: 'CallActivity form mapping E2E save',
+                definition: processDefinition
+            });
+        },
+        { procDefId: parentProcDefId }
+    );
 }
 
 async function readSavedProperties(supabase: any) {

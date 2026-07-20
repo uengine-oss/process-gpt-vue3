@@ -42,8 +42,12 @@
                         </v-btn>
                     </v-row>
                     <div class="text-body-2 text-medium-emphasis">
-                        <div><strong>{{ $t('accountTab.username') }}:</strong> {{ config.username }}</div>
-                        <div v-if="config.base_url"><strong>{{ $t('accountTab.baseUrl') }}:</strong> {{ config.base_url }}</div>
+                        <div>
+                            <strong>{{ $t('accountTab.username') }}:</strong> {{ config.username }}
+                        </div>
+                        <div v-if="config.base_url">
+                            <strong>{{ $t('accountTab.baseUrl') }}:</strong> {{ config.base_url }}
+                        </div>
                     </div>
                 </v-card>
             </v-col>
@@ -53,7 +57,9 @@
         <v-dialog v-model="dialog" max-width="560" persistent>
             <v-card>
                 <v-row class="ma-0 pa-4 pb-0 align-center">
-                    <v-card-title class="pa-0">{{ editingId ? $t('accountTab.editGitConfig') : $t('accountTab.addGitConfig') }}</v-card-title>
+                    <v-card-title class="pa-0">{{
+                        editingId ? $t('accountTab.editGitConfig') : $t('accountTab.addGitConfig')
+                    }}</v-card-title>
                     <v-spacer></v-spacer>
                     <v-btn @click="closeDialog" variant="text" density="compact" icon>
                         <v-icon>mdi-close</v-icon>
@@ -89,13 +95,7 @@
 
                     <!-- Username -->
                     <v-label class="mb-2 font-weight-medium">{{ $t('accountTab.username') }}</v-label>
-                    <v-text-field
-                        v-model="form.username"
-                        color="primary"
-                        variant="outlined"
-                        hide-details
-                        class="mb-4"
-                    ></v-text-field>
+                    <v-text-field v-model="form.username" color="primary" variant="outlined" hide-details class="mb-4"></v-text-field>
 
                     <!-- Token -->
                     <v-label class="mb-2 font-weight-medium">{{ $t('accountTab.token') }}</v-label>
@@ -111,12 +111,7 @@
                     ></v-text-field>
 
                     <!-- 기본 설정 여부 -->
-                    <v-checkbox
-                        v-model="form.is_default"
-                        color="primary"
-                        :label="$t('accountTab.setAsDefault')"
-                        hide-details
-                    ></v-checkbox>
+                    <v-checkbox v-model="form.is_default" color="primary" :label="$t('accountTab.setAsDefault')" hide-details></v-checkbox>
 
                     <!-- 안내 문구 -->
                     <v-alert type="info" variant="tonal" class="mt-4" density="compact">
@@ -124,8 +119,12 @@
                     </v-alert>
                 </v-card-text>
                 <v-card-actions class="justify-end pa-4 pt-0">
-                    <v-btn @click="closeDialog" color="grey" variant="elevated" class="rounded-pill mr-2">{{ $t('accountTab.cancel') }}</v-btn>
-                    <v-btn @click="saveConfig" color="primary" variant="elevated" class="rounded-pill" :loading="saving">{{ $t('accountTab.save') }}</v-btn>
+                    <v-btn @click="closeDialog" color="grey" variant="elevated" class="rounded-pill mr-2">{{
+                        $t('accountTab.cancel')
+                    }}</v-btn>
+                    <v-btn @click="saveConfig" color="primary" variant="elevated" class="rounded-pill" :loading="saving">{{
+                        $t('accountTab.save')
+                    }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -134,10 +133,14 @@
         <v-dialog v-model="deleteDialog" max-width="400">
             <v-card>
                 <v-card-title>{{ $t('accountTab.deleteGitConfig') }}</v-card-title>
-                <v-card-text>{{ $t('accountTab.deleteGitConfigConfirm', { provider: providerLabel(deletingConfig?.provider) }) }}</v-card-text>
+                <v-card-text>{{
+                    $t('accountTab.deleteGitConfigConfirm', { provider: providerLabel(deletingConfig?.provider) })
+                }}</v-card-text>
                 <v-card-actions class="justify-end">
                     <v-btn @click="deleteDialog = false" color="grey" variant="text">{{ $t('accountTab.cancel') }}</v-btn>
-                    <v-btn @click="deleteConfig" color="error" variant="elevated" class="rounded-pill" :loading="deleting">{{ $t('accountTab.delete') }}</v-btn>
+                    <v-btn @click="deleteConfig" color="error" variant="elevated" class="rounded-pill" :loading="deleting">{{
+                        $t('accountTab.delete')
+                    }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

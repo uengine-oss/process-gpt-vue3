@@ -26,27 +26,23 @@ var sequenceLogEntries = [];
  * @param {string} message
  */
 export function pushSequenceLog(level, tag, message) {
-  var entry = {
-    level: level || 'info',
-    tag: tag || '',
-    message: message == null ? '' : String(message),
-  };
-  sequenceLogEntries.push(entry);
-  if (sequenceLogEntries.length > MAX_SEQUENCE_LOG_ENTRIES) {
-    sequenceLogEntries.splice(0, sequenceLogEntries.length - MAX_SEQUENCE_LOG_ENTRIES);
-  }
-  if (SEQUENCE_LOG_ECHO_TO_CONSOLE && typeof console !== 'undefined') {
-    var fn =
-      entry.level === 'error' && console.error
-        ? console.error
-        : entry.level === 'warn' && console.warn
-          ? console.warn
-          : console.log;
-    if (fn) {
-      fn.call(console, '[' + entry.tag + ']', entry.message);
+    var entry = {
+        level: level || 'info',
+        tag: tag || '',
+        message: message == null ? '' : String(message)
+    };
+    sequenceLogEntries.push(entry);
+    if (sequenceLogEntries.length > MAX_SEQUENCE_LOG_ENTRIES) {
+        sequenceLogEntries.splice(0, sequenceLogEntries.length - MAX_SEQUENCE_LOG_ENTRIES);
     }
-  }
-  return entry;
+    if (SEQUENCE_LOG_ECHO_TO_CONSOLE && typeof console !== 'undefined') {
+        var fn =
+            entry.level === 'error' && console.error ? console.error : entry.level === 'warn' && console.warn ? console.warn : console.log;
+        if (fn) {
+            fn.call(console, '[' + entry.tag + ']', entry.message);
+        }
+    }
+    return entry;
 }
 
 /**
@@ -54,14 +50,14 @@ export function pushSequenceLog(level, tag, message) {
  * @returns {Array<{level:string, tag:string, message:string}>}
  */
 export function readSequenceLog() {
-  return sequenceLogEntries.map(function (e) {
-    return { level: e.level, tag: e.tag, message: e.message };
-  });
+    return sequenceLogEntries.map(function (e) {
+        return { level: e.level, tag: e.tag, message: e.message };
+    });
 }
 
 /** 버퍼를 비운다. */
 export function clearSequenceLog() {
-  sequenceLogEntries.length = 0;
+    sequenceLogEntries.length = 0;
 }
 
 /**
@@ -69,5 +65,5 @@ export function clearSequenceLog() {
  * @param {boolean} v
  */
 export function setSequenceLogConsoleEcho(v) {
-  SEQUENCE_LOG_ECHO_TO_CONSOLE = !!v;
+    SEQUENCE_LOG_ECHO_TO_CONSOLE = !!v;
 }

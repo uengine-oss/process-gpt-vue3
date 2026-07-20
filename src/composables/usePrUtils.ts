@@ -30,10 +30,7 @@ const ACCENT_CLASSES: Record<string, string> = {
     CLOSED: 'ac-closed'
 };
 
-const AVATAR_COLORS = [
-    '#2F6BFF', '#E0822B', '#22A05B', '#8268D8',
-    '#E04848', '#0097A7', '#7B1FA2', '#C62828'
-];
+const AVATAR_COLORS = ['#2F6BFF', '#E0822B', '#22A05B', '#8268D8', '#E04848', '#0097A7', '#7B1FA2', '#C62828'];
 
 export function prStatusLabel(status: string): string {
     return STATUS_LABELS[status] || status;
@@ -55,9 +52,7 @@ export function getInitial(name: string | null | undefined): string {
     if (!name) return '?';
     if (/[가-힣]/.test(name)) return name[0];
     const parts = name.trim().split(/\s+/);
-    return parts.length >= 2
-        ? (parts[0][0] + parts[1][0]).toUpperCase()
-        : name.slice(0, 2).toUpperCase();
+    return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
 }
 
 export function getAvatarColor(name: string | null | undefined): string {

@@ -15,11 +15,7 @@
                 >
                     <span class="side-info__item-label activity-row">
                         <span v-if="a.depth > 0" class="activity-indent" aria-hidden="true">↳</span>
-                        <v-icon
-                            size="14"
-                            class="activity-icon"
-                            :color="a.kind === 'subagent' ? 'primary' : undefined"
-                        >
+                        <v-icon size="14" class="activity-icon" :color="a.kind === 'subagent' ? 'primary' : undefined">
                             {{ a.kind === 'subagent' ? 'mdi-robot-outline' : 'mdi-wrench-outline' }}
                         </v-icon>
                         <span class="activity-kind" :class="`is-${a.kind}`">
@@ -110,7 +106,6 @@
                 </details>
             </div>
         </details>
-
     </div>
 </template>
 
@@ -152,9 +147,7 @@ export default {
                     const rawDepth = Number(it?.depth);
                     const depth = Number.isFinite(rawDepth) && rawDepth > 0 ? rawDepth : 0;
                     const baseLabel =
-                        kind === 'subagent'
-                            ? subagentType || 'subagent'
-                            : (it?.displayName || it?.name || it?.tool || '').toString();
+                        kind === 'subagent' ? subagentType || 'subagent' : (it?.displayName || it?.name || it?.tool || '').toString();
                     return {
                         key: (it?.id || `act-${idx}`).toString(),
                         label: baseLabel,

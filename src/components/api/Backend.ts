@@ -214,7 +214,14 @@ export interface Backend {
 
     // Git 설정 API
     getGitConfigs(): Promise<any[]>;
-    saveGitConfig(config: { id?: string; provider: string; base_url?: string; username: string; token: string; is_default: boolean }): Promise<void>;
+    saveGitConfig(config: {
+        id?: string;
+        provider: string;
+        base_url?: string;
+        username: string;
+        token: string;
+        is_default: boolean;
+    }): Promise<void>;
     deleteGitConfig(id: string): Promise<void>;
 
     // Agent Monitor API

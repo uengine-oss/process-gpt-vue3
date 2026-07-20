@@ -2,16 +2,20 @@
     <div v-if="canMerge" class="pr-merge-section">
         <div class="prm-banner">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3E9A3E" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <path d="m9 11 3 3L22 4" />
             </svg>
-            승인됨 — <b>{{ baseBranch }}</b>{{ mergeDescription }}
+            승인됨 — <b>{{ baseBranch }}</b
+            >{{ mergeDescription }}
         </div>
         <div v-if="mergeError" class="prm-error">{{ mergeError }}</div>
         <div class="prm-footer">
             <button class="prm-btn" :disabled="mergeLoading" @click="$emit('merge')">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/>
-                    <path d="M6 8.5v7M8.4 7.4 15.6 7.6M18 11.5c0 3-3 4-6 4"/>
+                    <circle cx="6" cy="6" r="2.5" />
+                    <circle cx="6" cy="18" r="2.5" />
+                    <circle cx="18" cy="9" r="2.5" />
+                    <path d="M6 8.5v7M8.4 7.4 15.6 7.6M18 11.5c0 3-3 4-6 4" />
                 </svg>
                 <span v-if="mergeLoading">병합 중…</span>
                 <span v-else>{{ mergeLabel }}</span>
@@ -52,7 +56,9 @@ export default {
     padding: 10px 12px;
     line-height: 1.45;
 }
-.prm-banner b { color: rgba(var(--v-theme-on-surface), 0.87); }
+.prm-banner b {
+    color: rgba(var(--v-theme-on-surface), 0.87);
+}
 
 .prm-error {
     margin-top: 8px;
@@ -78,9 +84,14 @@ export default {
     border: none;
     cursor: pointer;
     color: #fff;
-    background: #6B46C1;
+    background: #6b46c1;
     transition: opacity 0.12s;
 }
-.prm-btn:disabled { opacity: 0.5; cursor: default; }
-.prm-btn:hover:not(:disabled) { opacity: 0.9; }
+.prm-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.prm-btn:hover:not(:disabled) {
+    opacity: 0.9;
+}
 </style>

@@ -189,7 +189,12 @@ function resolveChartProps(props: Record<string, any>, fallbackType = 'bar') {
         title = typeof third === 'string' ? third : '';
     } else {
         type = typeof second === 'string' && chartTypeNames.includes(second.toLowerCase() as any) ? second.toLowerCase() : fallbackType;
-        title = typeof third === 'string' ? third : typeof second === 'string' && !chartTypeNames.includes(second.toLowerCase() as any) ? second : '';
+        title =
+            typeof third === 'string'
+                ? third
+                : typeof second === 'string' && !chartTypeNames.includes(second.toLowerCase() as any)
+                ? second
+                : '';
     }
 
     if (!chartTypeNames.includes(type as any)) type = fallbackType;
@@ -298,10 +303,14 @@ const Section = defineOpenUiComponent({
                 const children = titleIsChildren ? compProps.props.title : compProps.props.children;
 
                 return h('section', { class: ['openui-section', `openui-section--${compProps.props.variant || 'default'}`] }, [
-                    title ? h('div', { class: 'openui-section__header' }, [
-                        h('div', { class: 'openui-section__title' }, renderPrimitiveOrNode(title, compProps.renderNode)),
-                        subtitle ? h('div', { class: 'openui-section__subtitle' }, renderPrimitiveOrNode(subtitle, compProps.renderNode)) : null
-                    ]) : null,
+                    title
+                        ? h('div', { class: 'openui-section__header' }, [
+                              h('div', { class: 'openui-section__title' }, renderPrimitiveOrNode(title, compProps.renderNode)),
+                              subtitle
+                                  ? h('div', { class: 'openui-section__subtitle' }, renderPrimitiveOrNode(subtitle, compProps.renderNode))
+                                  : null
+                          ])
+                        : null,
                     h('div', { class: 'openui-section__body' }, compProps.renderNode(normalizeChildren(children)))
                 ]);
             };
@@ -324,7 +333,11 @@ const CardHeader = defineOpenUiComponent({
                 h('div', { class: 'openui-card-header' }, [
                     h('div', { class: 'openui-card-header__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode)),
                     compProps.props.subtitle
-                        ? h('div', { class: 'openui-card-header__subtitle' }, renderPrimitiveOrNode(compProps.props.subtitle, compProps.renderNode))
+                        ? h(
+                              'div',
+                              { class: 'openui-card-header__subtitle' },
+                              renderPrimitiveOrNode(compProps.props.subtitle, compProps.renderNode)
+                          )
                         : null
                 ]);
         }
@@ -417,8 +430,12 @@ const Callout = defineOpenUiComponent({
                 if (compProps.props.visible === false) return null;
                 const type = compProps.props.type === 'danger' ? 'error' : compProps.props.type || 'info';
                 return h('div', { class: ['openui-callout', `openui-callout--${type}`] }, [
-                    compProps.props.title ? h('div', { class: 'openui-callout__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode)) : null,
-                    compProps.props.text ? h('div', { class: 'openui-callout__text' }, renderPrimitiveOrNode(compProps.props.text, compProps.renderNode)) : null
+                    compProps.props.title
+                        ? h('div', { class: 'openui-callout__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode))
+                        : null,
+                    compProps.props.text
+                        ? h('div', { class: 'openui-callout__text' }, renderPrimitiveOrNode(compProps.props.text, compProps.renderNode))
+                        : null
                 ]);
             };
         }
@@ -442,8 +459,12 @@ const Alert = defineOpenUiComponent({
                 if (compProps.props.visible === false) return null;
                 const type = compProps.props.type === 'danger' ? 'error' : compProps.props.type || 'info';
                 return h('div', { class: ['openui-alert', `openui-alert--${type}`] }, [
-                    compProps.props.title ? h('div', { class: 'openui-alert__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode)) : null,
-                    compProps.props.text ? h('div', { class: 'openui-alert__text' }, renderPrimitiveOrNode(compProps.props.text, compProps.renderNode)) : null
+                    compProps.props.title
+                        ? h('div', { class: 'openui-alert__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode))
+                        : null,
+                    compProps.props.text
+                        ? h('div', { class: 'openui-alert__text' }, renderPrimitiveOrNode(compProps.props.text, compProps.renderNode))
+                        : null
                 ]);
             };
         }
@@ -503,7 +524,9 @@ const Divider = defineOpenUiComponent({
             return () =>
                 h('div', { class: 'openui-divider' }, [
                     h('div', { class: 'openui-divider__line' }),
-                    compProps.props.label ? h('span', { class: 'openui-divider__label' }, renderPrimitiveOrNode(compProps.props.label, compProps.renderNode)) : null,
+                    compProps.props.label
+                        ? h('span', { class: 'openui-divider__label' }, renderPrimitiveOrNode(compProps.props.label, compProps.renderNode))
+                        : null,
                     compProps.props.label ? h('div', { class: 'openui-divider__line' }) : null
                 ]);
         }
@@ -526,7 +549,11 @@ const ListItem = defineOpenUiComponent({
                 h('li', { class: ['openui-list-item', `openui-list-item--${normalizeTone(compProps.props.tone)}`] }, [
                     h('div', { class: 'openui-list-item__label' }, renderPrimitiveOrNode(compProps.props.label, compProps.renderNode)),
                     compProps.props.description
-                        ? h('div', { class: 'openui-list-item__description' }, renderPrimitiveOrNode(compProps.props.description, compProps.renderNode))
+                        ? h(
+                              'div',
+                              { class: 'openui-list-item__description' },
+                              renderPrimitiveOrNode(compProps.props.description, compProps.renderNode)
+                          )
                         : null
                 ]);
         }
@@ -549,14 +576,20 @@ const List = defineOpenUiComponent({
                 const tag = compProps.props.ordered ? 'ol' : 'ul';
                 const items = normalizeChildren(compProps.props.items);
                 return h('div', { class: 'openui-list-wrap' }, [
-                    compProps.props.title ? h('div', { class: 'openui-list__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode)) : null,
+                    compProps.props.title
+                        ? h('div', { class: 'openui-list__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode))
+                        : null,
                     h(
                         tag,
                         { class: ['openui-list', compProps.props.ordered ? 'openui-list--ordered' : 'openui-list--unordered'] },
                         items.map((item) =>
                             item && typeof item === 'object' && item.type === 'element'
                                 ? compProps.renderNode(item)
-                                : h('li', { class: 'openui-list-item' }, h('div', { class: 'openui-list-item__label' }, toDisplayText(item)))
+                                : h(
+                                      'li',
+                                      { class: 'openui-list-item' },
+                                      h('div', { class: 'openui-list-item__label' }, toDisplayText(item))
+                                  )
                         )
                     )
                 ]);
@@ -601,7 +634,11 @@ const KeyValueList = defineOpenUiComponent({
 
                 return h('div', { class: 'openui-key-value-list' }, [
                     compProps.props.title
-                        ? h('div', { class: 'openui-key-value-list__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode))
+                        ? h(
+                              'div',
+                              { class: 'openui-key-value-list__title' },
+                              renderPrimitiveOrNode(compProps.props.title, compProps.renderNode)
+                          )
                         : null,
                     h(
                         'dl',
@@ -635,9 +672,19 @@ const MetricCard = defineOpenUiComponent({
                 h('div', { class: ['openui-metric-card', `openui-metric-card--${normalizeTone(compProps.props.tone)}`] }, [
                     h('div', { class: 'openui-metric-card__label' }, renderPrimitiveOrNode(compProps.props.label, compProps.renderNode)),
                     h('div', { class: 'openui-metric-card__value' }, renderPrimitiveOrNode(compProps.props.value, compProps.renderNode)),
-                    compProps.props.delta ? h('div', { class: 'openui-metric-card__delta' }, renderPrimitiveOrNode(compProps.props.delta, compProps.renderNode)) : null,
+                    compProps.props.delta
+                        ? h(
+                              'div',
+                              { class: 'openui-metric-card__delta' },
+                              renderPrimitiveOrNode(compProps.props.delta, compProps.renderNode)
+                          )
+                        : null,
                     compProps.props.description
-                        ? h('div', { class: 'openui-metric-card__description' }, renderPrimitiveOrNode(compProps.props.description, compProps.renderNode))
+                        ? h(
+                              'div',
+                              { class: 'openui-metric-card__description' },
+                              renderPrimitiveOrNode(compProps.props.description, compProps.renderNode)
+                          )
                         : null
                 ]);
         }
@@ -662,7 +709,12 @@ const MetricGrid = defineOpenUiComponent({
                         class: 'openui-metric-grid',
                         style:
                             compProps.props.columns && compProps.props.columns !== 'auto'
-                                ? { gridTemplateColumns: `repeat(${Math.max(1, normalizeNumber(compProps.props.columns, 3))}, minmax(0, 1fr))` }
+                                ? {
+                                      gridTemplateColumns: `repeat(${Math.max(
+                                          1,
+                                          normalizeNumber(compProps.props.columns, 3)
+                                      )}, minmax(0, 1fr))`
+                                  }
                                 : undefined
                     },
                     compProps.renderNode(normalizeChildren(compProps.props.children))
@@ -688,10 +740,24 @@ const TimelineItem = defineOpenUiComponent({
                 h('div', { class: ['openui-timeline-item', `openui-timeline-item--${normalizeTone(compProps.props.status)}`] }, [
                     h('div', { class: 'openui-timeline-item__marker' }),
                     h('div', { class: 'openui-timeline-item__content' }, [
-                        h('div', { class: 'openui-timeline-item__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode)),
-                        compProps.props.time ? h('div', { class: 'openui-timeline-item__time' }, renderPrimitiveOrNode(compProps.props.time, compProps.renderNode)) : null,
+                        h(
+                            'div',
+                            { class: 'openui-timeline-item__title' },
+                            renderPrimitiveOrNode(compProps.props.title, compProps.renderNode)
+                        ),
+                        compProps.props.time
+                            ? h(
+                                  'div',
+                                  { class: 'openui-timeline-item__time' },
+                                  renderPrimitiveOrNode(compProps.props.time, compProps.renderNode)
+                              )
+                            : null,
                         compProps.props.description
-                            ? h('div', { class: 'openui-timeline-item__description' }, renderPrimitiveOrNode(compProps.props.description, compProps.renderNode))
+                            ? h(
+                                  'div',
+                                  { class: 'openui-timeline-item__description' },
+                                  renderPrimitiveOrNode(compProps.props.description, compProps.renderNode)
+                              )
                             : null
                     ])
                 ]);
@@ -712,7 +778,9 @@ const Timeline = defineOpenUiComponent({
         setup(compProps) {
             return () =>
                 h('div', { class: 'openui-timeline' }, [
-                    compProps.props.title ? h('div', { class: 'openui-timeline__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode)) : null,
+                    compProps.props.title
+                        ? h('div', { class: 'openui-timeline__title' }, renderPrimitiveOrNode(compProps.props.title, compProps.renderNode))
+                        : null,
                     h('div', { class: 'openui-timeline__items' }, compProps.renderNode(normalizeChildren(compProps.props.items)))
                 ]);
         }
@@ -847,7 +915,13 @@ const Accordion = defineOpenUiComponent({
                                     h('span', { class: 'openui-accordion__icon' }, isOpen ? '-' : '+')
                                 ]
                             ),
-                            isOpen ? h('div', { class: 'openui-accordion__panel' }, compProps.renderNode(normalizeChildren(item?.props?.children))) : null
+                            isOpen
+                                ? h(
+                                      'div',
+                                      { class: 'openui-accordion__panel' },
+                                      compProps.renderNode(normalizeChildren(item?.props?.children))
+                                  )
+                                : null
                         ]);
                     })
                 );
@@ -881,7 +955,11 @@ const Progress = defineOpenUiComponent({
                         label ? h('span', { class: 'openui-progress__label' }, renderPrimitiveOrNode(label, compProps.renderNode)) : null,
                         h('span', { class: 'openui-progress__value' }, `${percent}%`)
                     ]),
-                    h('div', { class: 'openui-progress__track' }, h('div', { class: 'openui-progress__bar', style: { width: `${percent}%` } }))
+                    h(
+                        'div',
+                        { class: 'openui-progress__track' },
+                        h('div', { class: 'openui-progress__bar', style: { width: `${percent}%` } })
+                    )
                 ]);
             };
         }
@@ -944,9 +1022,7 @@ const Table = defineOpenUiComponent({
                                         const value = column.data[rowIndex];
                                         return h(
                                             'td',
-                                            typeof value === 'object' && value !== null
-                                                ? compProps.renderNode(value)
-                                                : String(value ?? '')
+                                            typeof value === 'object' && value !== null ? compProps.renderNode(value) : String(value ?? '')
                                         );
                                     })
                                 )
@@ -971,7 +1047,11 @@ const Tag = defineOpenUiComponent({
         props: renderProps,
         setup(compProps) {
             return () =>
-                h('span', { class: ['openui-tag', `openui-tag--${normalizeTone(compProps.props.tone)}`] }, String(compProps.props.label ?? ''));
+                h(
+                    'span',
+                    { class: ['openui-tag', `openui-tag--${normalizeTone(compProps.props.tone)}`] },
+                    String(compProps.props.label ?? '')
+                );
         }
     })
 });
@@ -988,7 +1068,11 @@ const Badge = defineOpenUiComponent({
         props: renderProps,
         setup(compProps) {
             return () =>
-                h('span', { class: ['openui-badge', `openui-badge--${normalizeTone(compProps.props.tone)}`] }, String(compProps.props.label ?? ''));
+                h(
+                    'span',
+                    { class: ['openui-badge', `openui-badge--${normalizeTone(compProps.props.tone)}`] },
+                    String(compProps.props.label ?? '')
+                );
         }
     })
 });
@@ -1294,7 +1378,11 @@ const Checkbox = defineOpenUiComponent({
                         }
                     }),
                     h('span', { class: 'openui-checkbox__box' }),
-                    h('span', { class: 'openui-checkbox__label' }, renderPrimitiveOrNode(compProps.props.label ?? compProps.props.value, compProps.renderNode))
+                    h(
+                        'span',
+                        { class: 'openui-checkbox__label' },
+                        renderPrimitiveOrNode(compProps.props.label ?? compProps.props.value, compProps.renderNode)
+                    )
                 ]);
         }
     })
@@ -1348,7 +1436,11 @@ const Radio = defineOpenUiComponent({
                         : null,
                     h(
                         'div',
-                        { class: 'openui-radio-group', role: 'radiogroup', 'aria-label': toDisplayText(compProps.props.label) || name.value },
+                        {
+                            class: 'openui-radio-group',
+                            role: 'radiogroup',
+                            'aria-label': toDisplayText(compProps.props.label) || name.value
+                        },
                         options.map((option) =>
                             h('label', { class: 'openui-radio-option' }, [
                                 h('input', {
@@ -1416,22 +1508,10 @@ const Textarea = defineOpenUiComponent({
                         placeholder: toDisplayText(compProps.props.placeholder),
                         disabled: isStreaming.value,
                         onInput: (event: Event) => {
-                            setFieldValue(
-                                formName?.value,
-                                'Textarea',
-                                name.value,
-                                (event.target as HTMLTextAreaElement).value,
-                                false
-                            );
+                            setFieldValue(formName?.value, 'Textarea', name.value, (event.target as HTMLTextAreaElement).value, false);
                         },
                         onBlur: (event: Event) => {
-                            setFieldValue(
-                                formName?.value,
-                                'Textarea',
-                                name.value,
-                                (event.target as HTMLTextAreaElement).value,
-                                true
-                            );
+                            setFieldValue(formName?.value, 'Textarea', name.value, (event.target as HTMLTextAreaElement).value, true);
                         }
                     })
                 ]);
@@ -1441,7 +1521,8 @@ const Textarea = defineOpenUiComponent({
 
 const Chart = defineOpenUiComponent({
     name: 'Chart',
-    description: 'Simple chart renderer. Use Chart(data, "bar", "Title"), Chart(data, "line"), Chart(data, "pie"), or Chart(data, "donut").',
+    description:
+        'Simple chart renderer. Use Chart(data, "bar", "Title"), Chart(data, "line"), Chart(data, "pie"), or Chart(data, "donut").',
     props: z.object({
         data: z.any().optional(),
         type: z.any().optional().default('bar'),

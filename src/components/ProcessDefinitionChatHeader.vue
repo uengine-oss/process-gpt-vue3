@@ -300,6 +300,24 @@
                                 </template>
                             </v-tooltip>
                         </div>
+
+                        <!-- 컴포넌트 내보내기(.zip) -->
+                        <div class="mr-4 d-flex" v-if="bpmn">
+                            <v-tooltip location="bottom" :text="$t('ProcessDefinitionChatHeader.exportComponent')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="exportComponent"
+                                    >
+                                        <v-icon>mdi-package-variant-closed</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </div>
                     </v-row>
                 </div>
             </div>
@@ -458,6 +476,9 @@ export default {
         },
         openMarketplaceDialog() {
             this.$emit('toggleMarketplaceDialog', true);
+        },
+        exportComponent() {
+            this.$emit('exportComponent');
         },
         getTruncatedText(text, maxLength) {
             if (!text || text.length <= maxLength) {

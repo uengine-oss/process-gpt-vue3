@@ -187,9 +187,7 @@ export default {
                 return jsonModel;
             }
 
-            const elements = Array.isArray(jsonModel.elements)
-                ? jsonModel.elements
-                : Object.values(jsonModel.elements);
+            const elements = Array.isArray(jsonModel.elements) ? jsonModel.elements : Object.values(jsonModel.elements);
 
             if (elements.length === 0) {
                 return jsonModel;
@@ -284,9 +282,7 @@ export default {
 
             // 6) 변경 없으면 no-op
             const currentOrder = jsonModel.roles.map((r) => r && r.name);
-            const isSame =
-                currentOrder.length === ordered.length &&
-                currentOrder.every((name, idx) => name === ordered[idx]);
+            const isSame = currentOrder.length === ordered.length && currentOrder.every((name, idx) => name === ordered[idx]);
             if (isSame) {
                 console.log('레인 순서 재정렬: 이미 시퀀스 흐름순 — 변경 없음');
                 return jsonModel;
@@ -294,13 +290,9 @@ export default {
 
             // 7) jsonModel.roles 재정렬
             const roleByName = new Map(jsonModel.roles.map((r) => [r && r.name, r]));
-            jsonModel.roles = ordered
-                .map((name) => roleByName.get(name))
-                .filter(Boolean);
+            jsonModel.roles = ordered.map((name) => roleByName.get(name)).filter(Boolean);
 
-            console.log(
-                `레인 순서 재정렬 (first-appearance): [${currentOrder.join(' → ')}] ⇒ [${ordered.join(' → ')}]`
-            );
+            console.log(`레인 순서 재정렬 (first-appearance): [${currentOrder.join(' → ')}] ⇒ [${ordered.join(' → ')}]`);
             return jsonModel;
         },
 

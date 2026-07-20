@@ -602,6 +602,12 @@
             <process-definition-market-place @closeMarketplaceDialog="closeMarketplaceDialog" />
         </v-dialog>
 
+        <!-- 프로세스 컴포넌트(.zip) 가져오기용 숨김 파일 입력 -->
+        <input ref="importComponentInput" type="file" accept=".zip" style="display: none" @change="onImportComponentFile" />
+
+        <!-- 컴포넌트 가져오기 미리보기 다이얼로그 -->
+        <ProcessComponentImportDialog v-model="importComponentDialog" :zipData="importComponentZip" @imported="onComponentImported" />
+
         <!-- 미분류 프로세스 관리 다이얼로그 -->
         <v-dialog v-model="orphanDialog.show" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '700px'" scrollable persistent>
             <v-card>
@@ -772,6 +778,7 @@ import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
+import ProcessComponentImportDialog from '@/components/ProcessComponentImportDialog.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import MetricsView from './MetricsView.vue';
 import MainChatInput from '@/components/MainChatInput.vue';
@@ -789,6 +796,7 @@ export default {
         DefinitionMapList,
         ProcessDefinitionChat,
         ProcessDefinitionMarketPlace,
+        ProcessComponentImportDialog,
         DetailComponent,
         MetricsView,
         MainChatInput
@@ -814,6 +822,9 @@ export default {
         copyValue: null,
         type: 'map',
         enableEdit: false,
+        // 프로세스 컴포넌트 가져오기
+        importComponentDialog: false,
+        importComponentZip: null,
         userName: null,
         lock: null,
         editUser: null,
@@ -1015,6 +1026,17 @@ export default {
                     description: this.$t('processDefinitionMap.marketplaceExplanation'),
                     action: () => {
                         this.openMarketplaceDialog = true;
+                    }
+                },
+                {
+                    show: this.componentName === 'DefinitionMapList' && this.mode === 'ProcessGPT' && this.isAdmin,
+                    icon: 'market',
+                    title: this.$t('processComponent.importTitle') || '컴포넌트 가져오기',
+                    description:
+                        this.$t('processComponent.importDescription') ||
+                        '프로세스 컴포넌트(.zip)를 업로드해 프로세스·에이전트·스킬을 한번에 설치합니다.',
+                    action: () => {
+                        this.triggerImportComponent();
                     }
                 }
                 // {
@@ -1382,7 +1404,9 @@ export default {
 
             const roomId = this.uuid();
             const nowIso = new Date().toISOString();
-            const roomName = (text ? text.substring(0, 50) : '').trim() || '새 대화';
+            const roomName = '새 대화';
+            // 채팅방 생성/이동을 지연시키지 않고, 첫 요청을 요약한 이름은 백그라운드에서 생성한다.
+            const generatedNamePromise = text ? backend.generateSemanticName('chat', text) : null;
 
             // raw File 객체가 있으면 ChatRoomPage에서 memento 업로드하도록 임시 전달
             // (File 객체는 sessionStorage에 직렬화 불가 → window 임시 변수 사용)
@@ -1406,6 +1430,7 @@ export default {
                 // chat_rooms.context에 orchestration 저장 (tools/skills/todos와 충돌 방지: 최상위 키로 둔다)
                 context: {
                     orchestration,
+                    auto_name_pending: !!generatedNamePromise,
                     updatedAt: nowIso
                 }
             };
@@ -1430,14 +1455,15 @@ export default {
             await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
 
             // 첨부 파일은 chat_attachments 테이블에 저장 (ChatRoomPage로 넘어가기 전에 선저장)
-            if (hasFile) {
+            // Raw files are uploaded and saved by ChatRoomPage. Saving placeholder
+            // metadata here creates a second attachment row after the upload finishes.
+            if (hasFile && rawFiles.length === 0) {
                 try {
                     const tenantId = window.$tenantName || localStorage.getItem('tenantId') || 'process-gpt';
                     const userName = userInfo?.name || userInfo?.username || userInfo?.email || '';
                     for (const f of messageFiles) {
                         const fileName = (f?.fileName || f?.name || '').toString().trim();
-                        const filePath =
-                            (f?.fileUrl || f?.url || f?.publicUrl || f?.fullPath || f?.path || '').toString() || '';
+                        const filePath = (f?.fileUrl || f?.url || f?.publicUrl || f?.fullPath || f?.path || '').toString() || '';
                         if (!fileName && !filePath) continue;
                         // eslint-disable-next-line no-await-in-loop
                         await backend.putObject('db://chat_attachments', {
@@ -1461,6 +1487,42 @@ export default {
                 (hasImages ? `이미지 ${(message?.images || []).length || 0}장` : '');
             room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
             await backend.putObject('db://chat_rooms', room);
+
+            if (generatedNamePromise) {
+                generatedNamePromise
+                    .then(async (generatedName) => {
+                        if (!generatedName) return;
+
+                        // 응답 스트리밍 중 변경된 방 데이터를 덮어쓰지 않도록 최신 context를 합쳐 필요한 필드만 갱신한다.
+                        const supabase = window.$supabase;
+                        if (supabase) {
+                            const { data: latestRoom } = await supabase.from('chat_rooms').select('context').eq('id', roomId).maybeSingle();
+                            const { error } = await supabase
+                                .from('chat_rooms')
+                                .update({
+                                    name: generatedName,
+                                    context: {
+                                        ...(latestRoom?.context || room.context || {}),
+                                        auto_name_pending: false
+                                    }
+                                })
+                                .eq('id', roomId);
+                            if (error) throw error;
+                        } else {
+                            const latestRoom = await backend.getObject(`db://chat_rooms/${roomId}`, { key: 'id' });
+                            await backend.putObject('db://chat_rooms', {
+                                ...(latestRoom || room),
+                                name: generatedName,
+                                context: {
+                                    ...(latestRoom?.context || room.context || {}),
+                                    auto_name_pending: false
+                                }
+                            });
+                        }
+                        this.EventBus.emit('chat-rooms-updated');
+                    })
+                    .catch(() => {});
+            }
 
             // ChatRoomPage에서 첫 메시지에 대한 에이전트 응답만 kick-off 하도록 sessionStorage에 전달
             try {
@@ -1872,6 +1934,49 @@ export default {
         },
         async closeMarketplaceDialog() {
             this.openMarketplaceDialog = false;
+            await this.getProcessMap();
+        },
+        notifyComponent(message, color = 'info') {
+            // 앱 전역 스낵바(App.vue) 사용. $toast 는 전역 등록되어 있지 않다.
+            if (window.$app_) {
+                window.$app_.snackbarMessage = message;
+                window.$app_.snackbarColor = color;
+                window.$app_.snackbar = true;
+            } else {
+                console.log(`[processComponent] ${message}`);
+            }
+        },
+        triggerImportComponent() {
+            const input = this.$refs.importComponentInput;
+            if (input) input.click();
+        },
+        async onImportComponentFile(event) {
+            const file = event?.target?.files?.[0];
+            if (event?.target) event.target.value = '';
+            if (!file) return;
+            try {
+                // 파싱/미리보기는 다이얼로그에서 수행 → 확인 시 설치.
+                this.importComponentZip = await file.arrayBuffer();
+                this.importComponentDialog = true;
+            } catch (error) {
+                console.error('[importProcessComponent] 파일 읽기 실패:', error);
+                this.notifyComponent(
+                    (this.$t('processComponent.importFailed') || '컴포넌트 설치에 실패했습니다.') + ' ' + (error?.message || ''),
+                    'error'
+                );
+            }
+        },
+        async onComponentImported(report) {
+            const summary =
+                `${report.name} v${report.version} — ` +
+                `폼 ${report.forms}, 에이전트 ${report.agents.length}, 스킬 ${report.skills.length}` +
+                (report.skillsSkipped.length ? ` (기존 스킬 ${report.skillsSkipped.length} 재사용)` : '');
+            this.notifyComponent((this.$t('processComponent.importSuccess') || '컴포넌트를 설치했습니다.') + ' ' + summary, 'success');
+            if (report.warnings && report.warnings.length) {
+                console.warn('[importProcessComponent] warnings:', report.warnings);
+            }
+            this.importComponentZip = null;
+            this.EventBus.emit('definitions-updated');
             await this.getProcessMap();
         },
         async addSampleProcess() {

@@ -346,7 +346,11 @@ export default {
             if (!this.userList || !this.task) return null;
             if (!this.task.endpoint) {
                 if (this.task.assignees && this.task.assignees.length > 0) {
-                    return this.task.assignees.map((a) => ({ username: a.username || a.email, name: a.username || a.email, id: a.uid || a.email }));
+                    return this.task.assignees.map((a) => ({
+                        username: a.username || a.email,
+                        name: a.username || a.email,
+                        id: a.uid || a.email
+                    }));
                 }
                 if (this.task.username) {
                     return { username: this.task.username, name: this.task.username };

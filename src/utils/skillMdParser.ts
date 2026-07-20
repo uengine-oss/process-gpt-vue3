@@ -3,13 +3,9 @@ const INHERITANCE_DIRECTIVE_LEGACY = '## 상속 지시문';
 
 export function generateInheritanceTemplate(parentSkills: string[], childName?: string): string {
     const isSingle = parentSkills.length === 1;
-    const extendsField = isSingle
-        ? `extends: ${parentSkills[0]}`
-        : `extends:\n${parentSkills.map((s) => `  - ${s}`).join('\n')}`;
+    const extendsField = isSingle ? `extends: ${parentSkills[0]}` : `extends:\n${parentSkills.map((s) => `  - ${s}`).join('\n')}`;
     const parentListFormatted = parentSkills.join(', ');
-    const description = isSingle
-        ? `${parentSkills[0]}을(를) 상속한 스킬입니다`
-        : `${parentListFormatted}을(를) 상속한 스킬입니다`;
+    const description = isSingle ? `${parentSkills[0]}을(를) 상속한 스킬입니다` : `${parentListFormatted}을(를) 상속한 스킬입니다`;
     const nameField = childName ? `name: ${childName}\n` : '';
     const title = childName || '자식 스킬 제목';
 

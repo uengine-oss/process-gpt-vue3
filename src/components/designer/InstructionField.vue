@@ -233,7 +233,10 @@ export default {
             let idx = 0;
             const nodes = Array.from(editor.childNodes);
             for (const node of nodes) {
-                if (node === range.startContainer || (node.nodeType === Node.ELEMENT_NODE && node.contains && node.contains(range.startContainer))) {
+                if (
+                    node === range.startContainer ||
+                    (node.nodeType === Node.ELEMENT_NODE && node.contains && node.contains(range.startContainer))
+                ) {
                     // 커서가 텍스트 노드 안에 있을 때
                     if (range.startContainer.nodeType === Node.TEXT_NODE) {
                         idx += range.startOffset;
@@ -280,7 +283,10 @@ export default {
                     acc += len;
                 } else if (node.nodeType === Node.ELEMENT_NODE) {
                     const el = node;
-                    const rawLen = el.classList && el.classList.contains('instruction-chip') ? ((el.dataset && el.dataset.raw ? el.dataset.raw : '').length) : (el.textContent || '').length;
+                    const rawLen =
+                        el.classList && el.classList.contains('instruction-chip')
+                            ? (el.dataset && el.dataset.raw ? el.dataset.raw : '').length
+                            : (el.textContent || '').length;
                     if (acc + rawLen >= idx) {
                         // 칩 내부로 커서를 넣지 않고 칩 뒤로 보낸다
                         range.setStartAfter(el);

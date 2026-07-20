@@ -73,12 +73,7 @@
                                     <div class="d-flex flex-column">
                                         <div class="d-flex align-center">
                                             <span class="font-weight-medium">{{ item?.titleKey ? $t(item.titleKey) : '' }}</span>
-                                            <v-chip
-                                                v-if="item.badge"
-                                                size="x-small"
-                                                class="ml-2"
-                                                :color="item.badgeColor || 'primary'"
-                                            >
+                                            <v-chip v-if="item.badge" size="x-small" class="ml-2" :color="item.badgeColor || 'primary'">
                                                 {{ item.badge }}
                                             </v-chip>
                                         </div>
@@ -505,7 +500,7 @@ export default {
                     ? this.modelValue.agentMode.toLowerCase()
                     : this.modelValue.agentMode;
             }
-            this.activity.orchestration = this.isSubAgentProfile ? 'deepagents' : (this.modelValue.orchestration || null);
+            this.activity.orchestration = this.isSubAgentProfile ? 'deepagents' : this.modelValue.orchestration || null;
             this.activity.agent = this.modelValue.agent || null;
             this.activity.usePresetAgent =
                 this.modelValue.usePresetAgent !== undefined ? !!this.modelValue.usePresetAgent : !!this.modelValue.agent;
@@ -652,9 +647,7 @@ export default {
                         ? this.backend.getTenantSkills(window.$tenantName)
                         : Promise.resolve([]);
                 const builtinPromise =
-                    typeof this.backend.getTenantBuiltinSkills === 'function'
-                        ? this.backend.getTenantBuiltinSkills()
-                        : Promise.resolve([]);
+                    typeof this.backend.getTenantBuiltinSkills === 'function' ? this.backend.getTenantBuiltinSkills() : Promise.resolve([]);
 
                 const [mcpRaw, uploadedResult, builtinResult] = await Promise.all([mcpPromise, uploadedPromise, builtinPromise]);
 

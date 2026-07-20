@@ -40,7 +40,11 @@
 
                 <!-- 비소유자 안내 메시지 -->
                 <v-alert v-if="!isOwner" type="info" variant="tonal" density="compact" class="mb-3">
-                    {{ showFeatureBranchModeSelector ? $t('SkillSaveDialog.notOwnerFeatureBranchNotice') : $t('SkillSaveDialog.notOwnerNotice') }}
+                    {{
+                        showFeatureBranchModeSelector
+                            ? $t('SkillSaveDialog.notOwnerFeatureBranchNotice')
+                            : $t('SkillSaveDialog.notOwnerNotice')
+                    }}
                 </v-alert>
 
                 <!-- 비소유자 + feature 브랜치: 저장 방식 선택 -->
@@ -142,7 +146,11 @@
                     density="compact"
                     class="mb-3"
                     autofocus
-                    @keyup.enter="(mode === 'direct' || (showFeatureBranchModeSelector && featureBranchSaveMode === 'direct-to-branch')) && isFormValid && submit()"
+                    @keyup.enter="
+                        (mode === 'direct' || (showFeatureBranchModeSelector && featureBranchSaveMode === 'direct-to-branch')) &&
+                            isFormValid &&
+                            submit()
+                    "
                 >
                     <template #append-inner>
                         <v-tooltip :text="$t('SkillSaveDialog.generateCommitMsg')" location="top">
@@ -193,23 +201,14 @@
                 <v-icon size="48" color="success" class="mb-3">mdi-check-circle</v-icon>
                 <p class="text-body-1 mb-1">{{ successMessage }}</p>
                 <p class="text-body-2 text-medium-emphasis mb-4">{{ successHint }}</p>
-                <a v-if="prResultUrl" :href="prResultUrl" target="_blank" class="text-caption text-primary">
-                    PR 보기 →
-                </a>
+                <a v-if="prResultUrl" :href="prResultUrl" target="_blank" class="text-caption text-primary"> PR 보기 → </a>
             </v-card-text>
 
             <v-card-actions class="d-flex justify-end align-center pa-4 pt-0">
                 <v-btn v-if="step !== 'checking'" variant="text" @click="close">
                     {{ step === 'success' ? $t('common.close') : $t('common.cancel') }}
                 </v-btn>
-                <v-btn
-                    v-if="step === 'no-repo'"
-                    color="primary"
-                    rounded
-                    variant="flat"
-                    :loading="loading"
-                    @click="createRepo"
-                >
+                <v-btn v-if="step === 'no-repo'" color="primary" rounded variant="flat" :loading="loading" @click="createRepo">
                     {{ $t('SkillSaveDialog.createRepo') }}
                 </v-btn>
                 <v-btn
@@ -264,9 +263,9 @@ export default {
     data() {
         return {
             backend: null,
-            step: 'checking',             // 'checking' | 'no-repo' | 'form' | 'success'
-            mode: 'pr',                   // 'pr' | 'direct'
-            prCommitMode: 'new',          // 'new' | 'existing'
+            step: 'checking', // 'checking' | 'no-repo' | 'form' | 'success'
+            mode: 'pr', // 'pr' | 'direct'
+            prCommitMode: 'new', // 'new' | 'existing'
             featureBranchSaveMode: 'direct-to-branch', // 'direct-to-branch' | 'new-branch'
             openPRs: [],
             selectedExistingPR: null,
@@ -323,9 +322,7 @@ export default {
         },
         submitLabel() {
             if (this.showFeatureBranchModeSelector) {
-                return this.featureBranchSaveMode === 'new-branch'
-                    ? this.$t('SkillSaveDialog.createPR')
-                    : this.$t('common.save');
+                return this.featureBranchSaveMode === 'new-branch' ? this.$t('SkillSaveDialog.createPR') : this.$t('common.save');
             }
             if (this.mode === 'direct') return this.$t('common.save');
             if (this.prCommitMode === 'existing') return this.$t('SkillSaveDialog.addCommitAndReview');
@@ -336,9 +333,10 @@ export default {
                 checking: this.$t('SkillSaveDialog.titleChecking'),
                 'no-repo': this.$t('SkillSaveDialog.titleNoRepo'),
                 form: this.$t('SkillSaveDialog.title'),
-                success: this.prCommitMode === 'existing'
-                    ? this.$t('SkillSaveDialog.addCommitSuccessTitle')
-                    : this.$t('SkillSaveDialog.prSuccessTitle')
+                success:
+                    this.prCommitMode === 'existing'
+                        ? this.$t('SkillSaveDialog.addCommitSuccessTitle')
+                        : this.$t('SkillSaveDialog.prSuccessTitle')
             };
             return map[this.step] || '';
         }
@@ -371,8 +369,11 @@ export default {
         selectedExistingPR(pr) {
             this.selectedPrReviews = [];
             if (pr?.id) {
-                this.backend.getResourcePrReviews(pr.id)
-                    .then(reviews => { this.selectedPrReviews = reviews || []; })
+                this.backend
+                    .getResourcePrReviews(pr.id)
+                    .then((reviews) => {
+                        this.selectedPrReviews = reviews || [];
+                    })
                     .catch(() => {});
             }
         }
@@ -427,7 +428,7 @@ export default {
                     try {
                         const configs = await this.backend.getGitConfigs();
                         if (configs && configs.length > 1) {
-                            const def = configs.find(c => c.is_default) || null;
+                            const def = configs.find((c) => c.is_default) || null;
                             if (def) {
                                 const base = (def.base_url || 'https://github.com').replace(/\/$/, '');
                                 this.repoUrl = `${base}/${def.username}/`;
@@ -437,16 +438,22 @@ export default {
 
                     // MERGED/CLOSED 제외한 열린 PR 전체 조회
                     try {
-                        const allPRs = await this.backend.getResourcePrRecords('skill', this.skillName, undefined, this.repoUrl || undefined);
-                        this.openPRs = allPRs.filter(pr => pr.status !== 'MERGED' && pr.status !== 'CLOSED');
+                        const allPRs = await this.backend.getResourcePrRecords(
+                            'skill',
+                            this.skillName,
+                            undefined,
+                            this.repoUrl || undefined
+                        );
+                        this.openPRs = allPRs.filter((pr) => pr.status !== 'MERGED' && pr.status !== 'CLOSED');
                         if (this.openPRs.length > 0 && !this.showFeatureBranchModeSelector) {
-                            const matchingPR = this.currentBranch
-                                ? this.openPRs.find(pr => pr.branch_name === this.currentBranch)
-                                : null;
+                            const matchingPR = this.currentBranch ? this.openPRs.find((pr) => pr.branch_name === this.currentBranch) : null;
                             this.prCommitMode = 'existing';
                             this.selectedExistingPR = matchingPR || this.openPRs[0];
-                            this.backend.getResourcePrReviews(this.selectedExistingPR.id)
-                                .then(reviews => { this.selectedPrReviews = reviews || []; })
+                            this.backend
+                                .getResourcePrReviews(this.selectedExistingPR.id)
+                                .then((reviews) => {
+                                    this.selectedPrReviews = reviews || [];
+                                })
                                 .catch(() => {});
                         } else if (this.currentBranch && this.currentBranch !== this.defaultBranch && this.isOwner) {
                             // 소유자가 feature 브랜치에서 편집 중이면 해당 브랜치명을 pre-fill
@@ -458,11 +465,16 @@ export default {
 
                     this.step = 'form';
 
-                    const branchForContent = (this.currentBranch && this.currentBranch !== this.defaultBranch)
-                        ? this.currentBranch : this.defaultBranch;
-                    this.backend.getSkillBranchFile(this.skillName, branchForContent, this.filePath)
-                        .then(result => { this.originalContent = result?.content ?? result ?? ''; })
-                        .catch(() => { this.originalContent = ''; });
+                    const branchForContent =
+                        this.currentBranch && this.currentBranch !== this.defaultBranch ? this.currentBranch : this.defaultBranch;
+                    this.backend
+                        .getSkillBranchFile(this.skillName, branchForContent, this.filePath)
+                        .then((result) => {
+                            this.originalContent = result?.content ?? result ?? '';
+                        })
+                        .catch(() => {
+                            this.originalContent = '';
+                        });
                 } else {
                     this.step = 'no-repo';
                 }
@@ -528,7 +540,9 @@ export default {
                         if (this.mode === 'pr' && this.prCommitMode === 'new' && !this.prTitle) this.prTitle = this.commitMessage;
                         this.generatingCommitMsg = false;
                     },
-                    onError: () => { this.generatingCommitMsg = false; }
+                    onError: () => {
+                        this.generatingCommitMsg = false;
+                    }
                 },
                 {
                     originalContent: this.originalContent,
@@ -540,29 +554,20 @@ export default {
             generator.generate();
         },
         async submitDirect() {
-            await this.backend.putSkillFile(
-                this.skillName, this.filePath, this.content,
-                this.commitMessage, this.defaultBranch
-            );
+            await this.backend.putSkillFile(this.skillName, this.filePath, this.content, this.commitMessage, this.defaultBranch);
             await this.backend.syncSkill(this.skillName).catch(() => {});
             this.$emit('saved', { mode: 'direct' });
             this.close();
         },
         async submitDirectToBranch(branch) {
-            await this.backend.putSkillFile(
-                this.skillName, this.filePath, this.content,
-                this.commitMessage, branch
-            );
+            await this.backend.putSkillFile(this.skillName, this.filePath, this.content, this.commitMessage, branch);
             await this.backend.syncSkill(this.skillName).catch(() => {});
             this.$emit('saved', { mode: 'direct' });
             this.close();
         },
         async submitAddCommit() {
             const pr = this.selectedExistingPR;
-            await this.backend.addCommitToSkillPrBranch(
-                this.skillName, pr.branch_name, this.filePath,
-                this.content, this.commitMessage
-            );
+            await this.backend.addCommitToSkillPrBranch(this.skillName, pr.branch_name, this.filePath, this.content, this.commitMessage);
             // PR 상태를 OPEN(재검토 요청)으로 복귀
             await this.backend.updateResourcePrStatus(pr, 'OPEN');
 
@@ -577,13 +582,13 @@ export default {
             if (this.prBranchName !== this.currentBranch) {
                 await this.backend.createSkillBranch(this.skillName, this.prBranchName, this.defaultBranch);
             }
-            await this.backend.putSkillFile(
-                this.skillName, this.filePath, this.content,
-                this.commitMessage, this.prBranchName
-            );
+            await this.backend.putSkillFile(this.skillName, this.filePath, this.content, this.commitMessage, this.prBranchName);
             const pr = await this.backend.createSkillPullRequest(
-                this.skillName, this.prTitle, this.prDescription,
-                this.prBranchName, this.defaultBranch
+                this.skillName,
+                this.prTitle,
+                this.prDescription,
+                this.prBranchName,
+                this.defaultBranch
             );
             this.prResultUrl = pr?.html_url || '';
 
@@ -593,9 +598,7 @@ export default {
                 const requesterId = userInfo?.uid || userInfo?.id || null;
                 const requesterName = localStorage.getItem('userName') || userInfo?.username || userInfo?.name || undefined;
                 if (requesterId) {
-                    const gitRepoUrl = pr?.html_url
-                        ? pr.html_url.replace(/\/pull\/\d+.*$/, '')
-                        : undefined;
+                    const gitRepoUrl = pr?.html_url ? pr.html_url.replace(/\/pull\/\d+.*$/, '') : undefined;
                     await this.backend.createResourcePrRecord('skill', {
                         resourceId: this.skillName,
                         branchName: this.prBranchName,
@@ -623,5 +626,7 @@ export default {
 </script>
 
 <style scoped>
-.mb-0-5 { margin-bottom: 2px; }
+.mb-0-5 {
+    margin-bottom: 2px;
+}
 </style>

@@ -884,6 +884,10 @@ export default class StorageBaseSupabase {
             if (options.orderBy) {
                 query = query.order(orderByField, { ascending: isAscending });
             }
+            if (options.secondaryOrderBy) {
+                const secondaryAscending = !options.secondarySort || !options.secondarySort.includes('desc');
+                query = query.order(options.secondaryOrderBy, { ascending: secondaryAscending });
+            }
 
             /* 
                 gt: >
