@@ -17,31 +17,30 @@
                                     hide-details
                                     class="pa-0 ma-0"
                                 ></v-text-field>
-                                <div v-else-if="!isMobile">
-                                    <v-tooltip location="bottom">
-                                        <template v-slot:activator="{ props }">
-                                            <h5
-                                                v-bind="props"
-                                                :class="['text-h5', 'mb-n1', { 'process-title-truncate': !expandedTexts.title }]"
-                                                style="white-space: normal; word-break: break-word"
+                                <v-tooltip v-else-if="!isMobile" location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <h5
+                                            v-bind="props"
+                                            :class="['text-h5', 'mb-n1', { 'process-title-truncate': !expandedTexts.title }]"
+                                            style="white-space: normal; word-break: break-word"
+                                        >
+                                            {{ getDisplayText(modelValue, 'title', 24) }}
+                                            <v-btn
+                                                v-if="shouldShowToggleButton(modelValue, 24)"
+                                                @click="toggleTextExpansion('title')"
+                                                variant="text"
+                                                size="small"
+                                                color="primary"
+                                                class="pa-0 text-caption ml-1"
+                                                style="min-width: auto; height: auto; vertical-align: baseline"
                                             >
-                                                {{ getDisplayText(modelValue, 'title', 24) }}
-                                                <v-btn
-                                                    v-if="shouldShowToggleButton(modelValue, 24)"
-                                                    @click="toggleTextExpansion('title')"
-                                                    variant="text"
-                                                    size="small"
-                                                    color="primary"
-                                                    class="pa-0 text-caption ml-1"
-                                                    style="min-width: auto; height: auto; vertical-align: baseline"
-                                                >
-                                                    {{ expandedTexts.title ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
-                                                </v-btn>
-                                            </h5>
-                                        </template>
-                                        <span>{{ modelValue }}</span>
-                                    </v-tooltip>
-                                </div>
+                                                {{ expandedTexts.title ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                                            </v-btn>
+                                        </h5>
+                                    </template>
+                                    <span>{{ modelValue }}</span>
+                                </v-tooltip>
+                                <SkillProposalBadge :pending-targets="pendingProposalTargets" size="small" @open-review="openProposalReview" />
                             </div>
                             <h5 v-else-if="modelValue" class="text-h5 mb-n1">{{ modelValue }}</h5>
                             <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
@@ -306,11 +305,32 @@
 
             <v-divider class="ma-0" />
         </div>
+
+        <SkillProposalReviewModal
+            v-if="reviewModalOpen"
+            v-model="reviewModalOpen"
+            :skill-name="modelValue"
+            target-type="PROCESS_DEFINITION"
+            :pending-targets="pendingProposalTargets"
+            :backend="backend"
+            :user-info="userInfo"
+        />
     </div>
 </template>
 
 <script>
+import BackendFactory from '@/components/api/BackendFactory';
+import SkillProposalBadge from '@/components/ui/SkillProposalBadge.vue';
+import SkillProposalReviewModal from '@/components/ui/SkillProposalReviewModal.vue';
+import { buildDefinitionProposalMap } from '@/composables/useDefinitionProposals';
+
+const backend = BackendFactory.createBackend();
+
 export default {
+    components: {
+        SkillProposalBadge,
+        SkillProposalReviewModal
+    },
     props: {
         modelValue: String,
         bpmn: String,
@@ -329,12 +349,25 @@ export default {
             expandedTexts: {
                 title: false
             },
-            hasVersionsToCompare: true
+            hasVersionsToCompare: true,
+            backend,
+            procDefOwnerId: null,
+            definitionProposalsMap: new Map(),
+            definitionProposalsWatchRef: null,
+            reviewModalOpen: false
         };
     },
     async created() {
         this.processName = this.modelValue;
         await this.checkVersionsAvailability();
+        await this.loadProcDefOwner();
+        this.loadDefinitionProposals();
+        this.subscribeDefinitionProposals();
+    },
+    beforeUnmount() {
+        if (this.definitionProposalsWatchRef && typeof this.definitionProposalsWatchRef.unsubscribe === 'function') {
+            this.definitionProposalsWatchRef.unsubscribe();
+        }
     },
     watch: {
         modelValue(newVal) {
@@ -345,6 +378,7 @@ export default {
         },
         fullPath() {
             this.checkVersionsAvailability();
+            this.loadProcDefOwner();
         }
     },
     computed: {
@@ -356,6 +390,13 @@ export default {
         },
         effectiveLock() {
             return this.lock && window.$mode !== 'uEngine';
+        },
+        isOwnedByCurrentUser() {
+            return !!this.procDefOwnerId && !!this.userInfo?.uid && this.procDefOwnerId === this.userInfo.uid;
+        },
+        pendingProposalTargets() {
+            if (!this.isOwnedByCurrentUser || !this.fullPath) return [];
+            return this.definitionProposalsMap.get(this.fullPath) || [];
         },
         modelValueStyle() {
             if (
@@ -414,6 +455,44 @@ export default {
         }
     },
     methods: {
+        async loadProcDefOwner() {
+            if (!this.fullPath || this.fullPath === 'chat' || this.fullPath === 'definition-map') {
+                this.procDefOwnerId = null;
+                return;
+            }
+            try {
+                this.procDefOwnerId = await backend.getResourceOwner('bpmn', this.fullPath);
+            } catch (e) {
+                this.procDefOwnerId = null;
+            }
+        },
+        async loadDefinitionProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                const batches = await backend.getPendingSkillProposalBatches(tenantId);
+                this.definitionProposalsMap = buildDefinitionProposalMap(batches, 'PROCESS_DEFINITION');
+            } catch (e) {
+                console.error('Failed to load process definition proposals:', e);
+            }
+        },
+        async subscribeDefinitionProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                this.definitionProposalsWatchRef = await backend.watchFeedbackProposals(
+                    () => {
+                        this.loadDefinitionProposals();
+                    },
+                    {
+                        filter: tenantId ? `tenant_id=eq.${tenantId}` : null
+                    }
+                );
+            } catch (e) {
+                console.error('Failed to subscribe feedback_proposals realtime:', e);
+            }
+        },
+        openProposalReview() {
+            this.reviewModalOpen = true;
+        },
         executeProcess() {
             this.$emit('executeProcess');
         },

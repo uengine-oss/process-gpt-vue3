@@ -1,9 +1,38 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, inject, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import SkillProposalBadge from '@/components/ui/SkillProposalBadge.vue';
+import SkillProposalReviewModal from '@/components/ui/SkillProposalReviewModal.vue';
 
 const props = defineProps({ item: Object, level: Number });
 const route = useRoute();
+
+const processProposalsMap = inject('processProposalsMap', computed(() => new Map()));
+const dmnProposalsMap = inject('dmnProposalsMap', computed(() => new Map()));
+const currentUserUid = inject('currentUserUid', computed(() => null));
+const sidebarBackend = inject('sidebarBackend', null);
+const sidebarUserInfo = inject('sidebarUserInfo', computed(() => null));
+
+const proposalTargetType = computed(() => {
+    if (props.item.type === 'dmn') return 'DMN_RULE';
+    if (props.item.type === 'bpmn') return 'PROCESS_DEFINITION';
+    return null;
+});
+
+const isOwnedByCurrentUser = computed(
+    () => !!props.item.owner && !!currentUserUid.value && props.item.owner === currentUserUid.value
+);
+
+const pendingProposalTargets = computed(() => {
+    if (!isOwnedByCurrentUser.value || !proposalTargetType.value || !props.item.id) return [];
+    const map = proposalTargetType.value === 'DMN_RULE' ? dmnProposalsMap.value : processProposalsMap.value;
+    return map.get(props.item.id) || [];
+});
+
+const reviewModalOpen = ref(false);
+function openProposalReview() {
+    reviewModalOpen.value = true;
+}
 
 const useI18n = computed(() => {
     if (props.level > 0) {
@@ -84,8 +113,9 @@ function isItemActive(item) {
             </v-list-item-subtitle>
 
             <!---If any chip or label-->
-            <template v-slot:append v-if="item.chip">
+            <template v-slot:append>
                 <v-chip
+                    v-if="item.chip"
                     :color="item.chipColor"
                     :class="'sidebarchip hide-menu bg-' + item.chipBgColor"
                     :size="item.chipIcon ? 'small' : 'small'"
@@ -94,8 +124,18 @@ function isItemActive(item) {
                 >
                     {{ item.chip }}
                 </v-chip>
+                <SkillProposalBadge :pending-targets="pendingProposalTargets" size="x-small" @open-review="openProposalReview" />
             </template>
         </v-list-item>
+        <SkillProposalReviewModal
+            v-if="reviewModalOpen"
+            v-model="reviewModalOpen"
+            :skill-name="item.title"
+            :target-type="proposalTargetType"
+            :pending-targets="pendingProposalTargets"
+            :backend="sidebarBackend"
+            :user-info="sidebarUserInfo"
+        />
     </div>
 </template>
 

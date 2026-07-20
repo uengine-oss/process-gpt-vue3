@@ -6188,7 +6188,7 @@ export default {
                                         goal: a.goal || a.description || '',
                                         persona: a.persona || '',
                                         description: a.description || '',
-                                        model: a.model || '',
+                                        model: a.model || null,
                                         isAgent: true,
                                         type: 'agent',
                                         is_draft: true
@@ -6438,9 +6438,9 @@ export default {
                                 goal: a.goal || a.description || '',
                                 persona: a.persona || '',
                                 description: a.description || '',
-                                model: a.model || '',
+                                model: a.model || null,
                                 isAgent: true,
-                                type: a.type || 'TaskAgent',
+                                type: 'agent',
                                 is_draft: false // 최종 저장 — draft 였으면 정식 등록으로 승격(목록 노출).
                             });
                             savedAgents.push({ id: agentId, name: a.name || '에이전트', role: a.role || '' });

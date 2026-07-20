@@ -3574,7 +3574,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    private async getResourceOwner(
+    async getResourceOwner(
         resourceType: 'skill' | 'bpmn' | 'dmn',
         resourceId: string
     ): Promise<string | null> {
@@ -3592,7 +3592,7 @@ class ProcessGPTBackend implements Backend {
     private getResourcePrUrl(resourceType: string, resourceId: string): string {
         if (resourceType === 'skill') return `/skills/${resourceId}`;
         if (resourceType === 'dmn') return `/dmn/${resourceId}`;
-        return `/process/${resourceId}`;
+        return `/definitions/${resourceId}`;
     }
 
     async search(keyword: string, callback?: (results: any[]) => void) {
@@ -7884,6 +7884,21 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getTenantSkillOwners(tenantId: string): Promise<Array<{ skill_name: string; owner_id: string | null }>> {
+        try {
+            const rows: any[] = await storage.list('tenant_skills', {
+                match: { tenant_id: tenantId }
+            });
+            return (Array.isArray(rows) ? rows : []).map((row: any) => ({
+                skill_name: row.skill_name,
+                owner_id: row.owner_id ?? null
+            }));
+        } catch (error) {
+            console.error('테넌트 스킬 소유자 목록 조회 실패:', error);
+            return [];
+        }
+    }
+
     // ============================================================
     // 범용 리소스 PR 워크플로우 (DB: resource_pull_requests / resource_pr_reviews)
     // resourceType: 'skill' | 'proc_def' | 'dmn'
@@ -7921,18 +7936,6 @@ class ProcessGPTBackend implements Backend {
         };
         await storage.putObject('resource_pull_requests', record, { onConflict: 'id' });
 
-        const ownerId = await this.getResourceOwner(resourceType, data.resourceId);
-        if (ownerId && !requesterIds.includes(ownerId)) {
-            await this.sendNotification({
-                userId: ownerId,
-                type: 'merge_request',
-                title: `[PR 요청] ${data.title}`,
-                description: `${resourceType} 병합 요청`,
-                url: this.getResourcePrUrl(resourceType, data.resourceId),
-                fromUserId: requesterIds[0]
-            });
-        }
-
         return record;
     }
 
@@ -7942,8 +7945,36 @@ class ProcessGPTBackend implements Backend {
         if (status) match.status = status;
         const result = await storage.list('resource_pull_requests', { match, orderBy: 'created_at' });
         const records: any[] = Array.isArray(result) ? result : [];
-        if (!gitUrlPrefix) return records;
-        return records.filter(r => !r.git_pr_url || r.git_pr_url.startsWith(gitUrlPrefix));
+        const filteredRecords = gitUrlPrefix
+            ? records.filter(r => !r.git_pr_url || r.git_pr_url.startsWith(gitUrlPrefix))
+            : records;
+
+        const requesterIds = [...new Set(filteredRecords
+            .filter(record => !record.requester_name)
+            .map(record => Array.isArray(record.requester_id) ? record.requester_id[0] : record.requester_id)
+            .filter(Boolean))];
+
+        if (!requesterIds.length) return filteredRecords;
+
+        const requesterNames = new Map<string, string>();
+        await Promise.all(requesterIds.map(async (requesterId: string) => {
+            try {
+                const user: any = await storage.getObject('users', {
+                    match: { id: requesterId, tenant_id: tenantId }
+                });
+                const name = user?.username || user?.name || user?.email;
+                if (name) requesterNames.set(requesterId, name);
+            } catch (error) {
+                console.warn(`[ProcessGPTBackend] 요청자 이름 조회 실패 (${requesterId}):`, error);
+            }
+        }));
+
+        return filteredRecords.map(record => {
+            if (record.requester_name) return record;
+            const requesterId = Array.isArray(record.requester_id) ? record.requester_id[0] : record.requester_id;
+            const requesterName = requesterNames.get(requesterId);
+            return requesterName ? { ...record, requester_name: requesterName } : record;
+        });
     }
 
     async updateResourcePrStatus(pr: any, status: string, fields: { reviewerId?: string; mergedAt?: string } = {}): Promise<void> {

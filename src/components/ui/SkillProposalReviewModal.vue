@@ -79,6 +79,10 @@ export default {
             type: String,
             default: ''
         },
+        targetType: {
+            type: String,
+            default: 'SKILL'
+        },
         pendingTargets: {
             type: Array,
             default: () => []
@@ -123,7 +127,7 @@ export default {
             try {
                 await this.backend.decideFeedbackProposalTarget({
                     batchId: item.batchId,
-                    targetType: 'SKILL',
+                    targetType: this.targetType,
                     status,
                     decidedBy: this.userInfo?.uid,
                     decidedByName: this.userInfo?.name,
@@ -147,7 +151,7 @@ export default {
                 if (updatedBatch) {
                     const targets = Array.isArray(updatedBatch.targets) ? updatedBatch.targets : [];
                     const decidedTarget = targets[item.targetIndex];
-                    const decidedThisOne = decidedTarget && decidedTarget.type === 'SKILL' && decidedTarget.status === status;
+                    const decidedThisOne = decidedTarget && decidedTarget.type === this.targetType && decidedTarget.status === status;
                     if (!decidedThisOne) {
                         this.mismatchKey = item.key;
                         return;

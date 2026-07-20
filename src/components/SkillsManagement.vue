@@ -202,7 +202,7 @@
                                                     </template>
                                                     <template v-else>
                                                         <SkillProposalBadge
-                                                            :pending-targets="skillProposalsMap.get(item.name) || []"
+                                                            :pending-targets="visibleSkillProposalsMap.get(item.name) || []"
                                                             class="mr-1"
                                                             @open-review="openProposalReview(item.name)"
                                                         />
@@ -337,7 +337,7 @@
                                                             </template>
                                                             <template v-else>
                                                                 <SkillProposalBadge
-                                                                    :pending-targets="skillProposalsMap.get(skill.name) || []"
+                                                                    :pending-targets="visibleSkillProposalsMap.get(skill.name) || []"
                                                                     size="x-small"
                                                                     @open-review="openProposalReview(skill.name)"
                                                                 />
@@ -561,6 +561,7 @@
         <SkillProposalReviewModal
             v-model="reviewModalOpen"
             :skill-name="reviewSkillName"
+            target-type="SKILL"
             :pending-targets="reviewTargets"
             :backend="backend"
             :user-info="currentUserInfo"
@@ -604,7 +605,8 @@ export default {
             currentUserInfo: null,
             reviewModalOpen: false,
             reviewSkillName: '',
-            reviewTargets: []
+            reviewTargets: [],
+            skillOwnersMap: new Map()
         };
     },
     watch: {
@@ -626,6 +628,16 @@ export default {
     computed: {
         searchByTab() {
             return this.skillTab === 'uploaded' ? this.searchUploaded : this.searchBuiltin;
+        },
+        visibleSkillProposalsMap() {
+            const map = new Map();
+            if (!this.currentUserInfo?.uid) return map;
+            for (const [skillName, entries] of this.skillProposalsMap.entries()) {
+                if (this.skillOwnersMap.get(skillName) === this.currentUserInfo.uid) {
+                    map.set(skillName, entries);
+                }
+            }
+            return map;
         },
         parentMap() {
             const map = {};
@@ -736,7 +748,17 @@ export default {
     },
     methods: {
         async refreshAll() {
-            await Promise.all([this.loadSkillList(), this.loadSkillUsageCounts()]);
+            await Promise.all([this.loadSkillList(), this.loadSkillUsageCounts(), this.loadSkillOwners()]);
+        },
+
+        async loadSkillOwners() {
+            try {
+                const tenantId = window.$tenantName;
+                const rows = await this.backend.getTenantSkillOwners(tenantId);
+                this.skillOwnersMap = new Map(rows.map((r) => [r.skill_name, r.owner_id]));
+            } catch (e) {
+                this.skillOwnersMap = new Map();
+            }
         },
 
         async loadCurrentUser() {
@@ -775,7 +797,7 @@ export default {
 
         openProposalReview(skillName) {
             this.reviewSkillName = skillName;
-            this.reviewTargets = this.skillProposalsMap.get(skillName) || [];
+            this.reviewTargets = this.visibleSkillProposalsMap.get(skillName) || [];
             this.reviewModalOpen = true;
         },
 

@@ -72,7 +72,7 @@ export default class AIGenerator {
 
         // Vite dev server에서는 /langchain-chat 프록시를 사용하고,
         // 빌드/배포(nginx)에서는 /completion prefix 경로를 사용한다.
-        this.backendUrl = import.meta.env.DEV ? '/langchain-chat' : '/completion/langchain-chat';
+        this.backendUrl = '/completion/langchain-chat';
         this.modelConfig = {
             temperature: 1,
             frequency_penalty: 0,

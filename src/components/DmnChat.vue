@@ -35,6 +35,7 @@
                             <!-- DMN Header -->
                             <div class="d-flex align-center bg-white border-b ga-2 pa-3 pt-0 pb-0">
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName || 'New DMN Decision' }}</h6>
+                                <SkillProposalBadge :pending-targets="pendingProposalTargets" size="x-small" @open-review="openProposalReview" />
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
                                     <v-btn icon size="small" variant="text" @click="openSaveDialog" :class="{ 'icon-heartbit': isChanged }">
@@ -87,6 +88,7 @@
                             <!-- DMN Header -->
                             <div class="d-flex align-center bg-white border-b ga-2">
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName || 'New DMN Decision' }}</h6>
+                                <SkillProposalBadge :pending-targets="pendingProposalTargets" size="x-small" @open-review="openProposalReview" />
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
                                     <v-btn icon size="small" variant="text" @click="openSaveDialog" :class="{ 'icon-heartbit': isChanged }">
@@ -144,6 +146,7 @@
                             <!-- DMN Header -->
                             <div class="d-flex align-center bg-white border-b ga-2 pa-3 pt-0 pb-0">
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName ? dmnName : 'New DMN Decision' }}</h6>
+                                <SkillProposalBadge :pending-targets="pendingProposalTargets" size="x-small" @open-review="openProposalReview" />
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
                                     <v-btn icon size="small" variant="text" @click="openSaveDialog" :class="{ 'icon-heartbit': isChanged }">
@@ -334,6 +337,16 @@
             :backend="backend"
             :userInfo="userInfo"
         />
+
+        <SkillProposalReviewModal
+            v-if="reviewModalOpen"
+            v-model="reviewModalOpen"
+            :skill-name="dmnName"
+            target-type="DMN_RULE"
+            :pending-targets="pendingProposalTargets"
+            :backend="backend"
+            :user-info="userInfo"
+        />
     </div>
 </template>
 
@@ -346,6 +359,9 @@ import DmnModeler from './DmnModeler.vue';
 import ChatGenerator from './ai/DmnGenerator.js';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import DmnVersionHistoryDialog from '@/components/dmn/DmnVersionHistoryDialog.vue';
+import SkillProposalBadge from './ui/SkillProposalBadge.vue';
+import SkillProposalReviewModal from './ui/SkillProposalReviewModal.vue';
+import { buildDefinitionProposalMap } from '@/composables/useDefinitionProposals';
 
 export default {
     mixins: [ChatModule],
@@ -354,7 +370,9 @@ export default {
         Chat,
         DmnModeler,
         AppBaseCard,
-        DmnVersionHistoryDialog
+        DmnVersionHistoryDialog,
+        SkillProposalBadge,
+        SkillProposalReviewModal
     },
     props: {
         ownerInfo: Object,
@@ -403,7 +421,12 @@ export default {
             savePrError: '',
 
             // 버전 이력 다이얼로그
-            isOpenHistoryDialog: false
+            isOpenHistoryDialog: false,
+
+            dmnOwnerId: null,
+            dmnProposalsMap: new Map(),
+            dmnProposalsWatchRef: null,
+            reviewModalOpen: false
         };
     },
     async created() {
@@ -424,6 +447,15 @@ export default {
         // 새 DMN 생성 모드
         else {
             this.isShowDmnModeler = true;
+        }
+    },
+    mounted() {
+        this.loadDmnProposals();
+        this.subscribeDmnProposals();
+    },
+    beforeUnmount() {
+        if (this.dmnProposalsWatchRef && typeof this.dmnProposalsWatchRef.unsubscribe === 'function') {
+            this.dmnProposalsWatchRef.unsubscribe();
         }
     },
     watch: {
@@ -499,6 +531,13 @@ export default {
         isStandaloneMode() {
             return this.$route.path.startsWith('/dmn/');
         },
+        isOwnedByCurrentUser() {
+            return !!this.dmnOwnerId && !!this.userInfo?.uid && this.dmnOwnerId === this.userInfo.uid;
+        },
+        pendingProposalTargets() {
+            if (!this.isOwnedByCurrentUser || !this.isLoadedDmn || !this.loadDmnId) return [];
+            return this.dmnProposalsMap.get(this.loadDmnId) || [];
+        },
         inferenceModeSelectStyle() {
             const currentLocale = this.$i18n?.locale || 'ko';
             return {
@@ -532,6 +571,44 @@ export default {
         },
     },
     methods: {
+        async loadDmnOwner() {
+            if (!this.isLoadedDmn || !this.loadDmnId) {
+                this.dmnOwnerId = null;
+                return;
+            }
+            try {
+                this.dmnOwnerId = await this.backend.getResourceOwner('dmn', this.loadDmnId);
+            } catch (e) {
+                this.dmnOwnerId = null;
+            }
+        },
+        async loadDmnProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                const batches = await this.backend.getPendingSkillProposalBatches(tenantId);
+                this.dmnProposalsMap = buildDefinitionProposalMap(batches, 'DMN_RULE');
+            } catch (e) {
+                console.error('Failed to load DMN proposals:', e);
+            }
+        },
+        async subscribeDmnProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                this.dmnProposalsWatchRef = await this.backend.watchFeedbackProposals(
+                    () => {
+                        this.loadDmnProposals();
+                    },
+                    {
+                        filter: tenantId ? `tenant_id=eq.${tenantId}` : null
+                    }
+                );
+            } catch (e) {
+                console.error('Failed to subscribe feedback_proposals realtime:', e);
+            }
+        },
+        openProposalReview() {
+            this.reviewModalOpen = true;
+        },
         async openSaveDialog() {
             this.dmnIdToSave = this.loadDmnId || '';
             this.dmnNameToSave = this.dmnName || '';
@@ -745,6 +822,8 @@ export default {
             if (this.ownerInfo && this.ownerInfo.id) {
                 this.agentId = this.ownerInfo.id;
             }
+
+            this.loadDmnOwner();
         },
 
         beforeSendMessage(newMessage) {

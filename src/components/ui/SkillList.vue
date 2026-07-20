@@ -17,7 +17,7 @@
                         :skill="skill"
                         :skills-by-name="skillsByName"
                         :selected-skill-name="selectedSkillName"
-                        :skill-proposals-map="skillProposalsMap"
+                        :skill-proposals-map="visibleSkillProposalsMap"
                         @select="goToSkillDetail"
                         @open-review="openReview"
                     />
@@ -28,6 +28,7 @@
         <SkillProposalReviewModal
             v-model="reviewModalOpen"
             :skill-name="reviewSkillName"
+            target-type="SKILL"
             :pending-targets="reviewTargets"
             :backend="backend"
             :user-info="currentUserInfo"
@@ -63,7 +64,8 @@ export default {
             currentUserInfo: null,
             reviewModalOpen: false,
             reviewSkillName: '',
-            reviewTargets: []
+            reviewTargets: [],
+            skillOwnersMap: new Map()
         };
     },
     computed: {
@@ -79,6 +81,16 @@ export default {
                 map[s.name] = s;
             }
             return map;
+        },
+        visibleSkillProposalsMap() {
+            const map = new Map();
+            if (!this.currentUserInfo?.uid) return map;
+            for (const [skillName, entries] of this.skillProposalsMap.entries()) {
+                if (this.skillOwnersMap.get(skillName) === this.currentUserInfo.uid) {
+                    map.set(skillName, entries);
+                }
+            }
+            return map;
         }
     },
     async mounted() {
@@ -88,6 +100,7 @@ export default {
         this.loadCurrentUser();
         this.loadSkillProposals();
         this.subscribeSkillProposals();
+        this.loadSkillOwners();
     },
     beforeUnmount() {
         if (this.skillsWatchRef && typeof this.skillsWatchRef.unsubscribe === 'function') {
@@ -109,6 +122,7 @@ export default {
                 this.skillsWatchRef = await backend.watchTenantSkills(
                     () => {
                         this.loadSkillList();
+                        this.loadSkillOwners();
                     },
                     {
                         filter: tenantId ? `tenant_id=eq.${tenantId}` : null
@@ -193,8 +207,18 @@ export default {
 
         openReview(skillName) {
             this.reviewSkillName = skillName;
-            this.reviewTargets = this.skillProposalsMap.get(skillName) || [];
+            this.reviewTargets = this.visibleSkillProposalsMap.get(skillName) || [];
             this.reviewModalOpen = true;
+        },
+
+        async loadSkillOwners() {
+            try {
+                const tenantId = window.$tenantName;
+                const rows = await backend.getTenantSkillOwners(tenantId);
+                this.skillOwnersMap = new Map(rows.map((r) => [r.skill_name, r.owner_id]));
+            } catch (e) {
+                this.skillOwnersMap = new Map();
+            }
         }
     }
 };
