@@ -2,6 +2,7 @@ const isGsMode = (window as any)._env_?.VITE_GS_MODE === 'true' || import.meta.e
 
 const gsExcludedRoutes = [
     'Analytics Dashboard',
+    'Ontology Explorer',
     'Heatmap',
     'Skills Management',
     'Skill Detail',
@@ -39,6 +40,11 @@ const allRoutes = [
         name: 'WorkItem',
         path: '/todolist/:taskId',
         component: () => import('@/components/apps/todolist/WorkItem.vue')
+    },
+    {
+        name: 'InstanceTopList',
+        path: '/instance-toplist',
+        component: () => import('@/components/apps/instance-classifier/InstanceTopList.vue')
     },
     {
         name: 'System',
@@ -476,6 +482,21 @@ const allRoutes = [
         name: 'PI Flag Board',
         path: '/analytics/pi-flags',
         component: () => import('@/views/analytics/PiFlagBoard.vue')
+    },
+    {
+        name: 'Strategy Board',
+        path: '/strategy-board',
+        component: () => import('@/views/strategy/StrategyBoard.vue')
+    },
+    {
+        name: 'Ontology Explorer',
+        path: '/analytics/ontology',
+        component: () => import('@/views/strategy/OntologyExplorer.vue')
+    },
+    {
+        name: 'Survey Response',
+        path: '/strategy/surveys/:requestId',
+        component: () => import('@/views/strategy/SurveyResponse.vue')
     },
     {
         name: 'Review Board',

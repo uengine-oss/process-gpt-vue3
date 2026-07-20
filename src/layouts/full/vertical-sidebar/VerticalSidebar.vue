@@ -406,6 +406,8 @@ import ChatList from '@/components/ui/ChatList.vue';
 import AgentCreateDialog from '@/components/ui/AgentCreateDialog.vue';
 
 import { useCustomizerStore } from '@/stores/customizer';
+import { computed } from 'vue';
+import { buildDefinitionProposalMap } from '@/composables/useDefinitionProposals';
 
 import Logo from '../logo/Logo.vue';
 import NavCollapse from './NavCollapse/NavCollapse.vue';
@@ -445,6 +447,15 @@ export default {
             customizer
         };
     },
+    provide() {
+        return {
+            processProposalsMap: computed(() => this.processProposalsMap),
+            dmnProposalsMap: computed(() => this.dmnProposalsMap),
+            currentUserUid: computed(() => this.currentUserInfo?.uid || null),
+            sidebarBackend: backend,
+            sidebarUserInfo: computed(() => this.currentUserInfo)
+        };
+    },
     data: () => ({
         sidebarItem: [],
         instanceItem: [],
@@ -469,7 +480,11 @@ export default {
         isNewProjectOpen: false,
         deletedDefinitionList: [],
         notiCount: 0,
-        isAgentCreateDialogOpen: false
+        isAgentCreateDialogOpen: false,
+        currentUserInfo: null,
+        processProposalsMap: new Map(),
+        dmnProposalsMap: new Map(),
+        definitionProposalsWatchRef: null
     }),
     computed: {
         mobileSideBarBtnStyle() {
@@ -521,8 +536,49 @@ export default {
                 this.loadSidebar(isAdmin);
             }
         });
+
+        this.loadCurrentUser();
+        this.loadDefinitionProposals();
+        this.subscribeDefinitionProposals();
+    },
+    beforeUnmount() {
+        if (this.definitionProposalsWatchRef && typeof this.definitionProposalsWatchRef.unsubscribe === 'function') {
+            this.definitionProposalsWatchRef.unsubscribe();
+        }
     },
     methods: {
+        async loadCurrentUser() {
+            try {
+                this.currentUserInfo = await backend.getUserInfo();
+            } catch (e) {
+                this.currentUserInfo = null;
+            }
+        },
+        async loadDefinitionProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                const batches = await backend.getPendingSkillProposalBatches(tenantId);
+                this.processProposalsMap = buildDefinitionProposalMap(batches, 'PROCESS_DEFINITION');
+                this.dmnProposalsMap = buildDefinitionProposalMap(batches, 'DMN_RULE');
+            } catch (error) {
+                console.error('Failed to load process/dmn proposals:', error);
+            }
+        },
+        async subscribeDefinitionProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                this.definitionProposalsWatchRef = await backend.watchFeedbackProposals(
+                    () => {
+                        this.loadDefinitionProposals();
+                    },
+                    {
+                        filter: tenantId ? `tenant_id=eq.${tenantId}` : null
+                    }
+                );
+            } catch (e) {
+                console.error('Failed to subscribe feedback_proposals realtime:', e);
+            }
+        },
         isAnalyticsItemActive(item) {
             if (!item || !item.to) return false;
             return this.$route?.path === item.to;
@@ -730,6 +786,13 @@ export default {
                     disable: false
                 },
                 {
+                    title: '요청 Top List',
+                    icon: 'chart-square-linear',
+                    BgColor: 'primary',
+                    to: '/instance-toplist',
+                    disable: false
+                },
+                {
                     title: 'analytics.heatmap',
                     icon: 'ibm-process-mining',
                     BgColor: 'primary',
@@ -741,6 +804,20 @@ export default {
                     icon: 'strategy',
                     BgColor: 'primary',
                     to: '/analytics/kpi',
+                    disable: false
+                },
+                {
+                    title: 'analytics.strategyBoard',
+                    icon: 'strategy-map',
+                    BgColor: 'primary',
+                    to: '/strategy-board',
+                    disable: false
+                },
+                {
+                    title: 'analytics.ontology',
+                    icon: 'ibm-process-mining',
+                    BgColor: 'primary',
+                    to: '/analytics/ontology',
                     disable: false
                 },
                 {
@@ -930,7 +1007,9 @@ export default {
                                     title: item.name,
                                     to: `/definitions/${item.path.split('.')[0]}`,
                                     BgColor: 'primary',
-                                    type: 'bpmn'
+                                    type: 'bpmn',
+                                    id: item.path.split('.')[0],
+                                    owner: item.owner || null
                                 };
                                 menu.children.push(obj);
                             } else if (item.path && item.path.includes('.form')) {
@@ -958,7 +1037,9 @@ export default {
                                     title: item.name,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
                                     BgColor: 'primary',
-                                    type: 'bpmn'
+                                    type: 'bpmn',
+                                    id: item.definition.processDefinitionId,
+                                    owner: item.owner || null
                                 };
                                 menu.children.push(obj);
                             } else if (item.type && item.type === 'dmn') {
@@ -966,7 +1047,9 @@ export default {
                                     title: item.name,
                                     to: `/dmn/${item.id}`,
                                     BgColor: 'primary',
-                                    type: 'dmn'
+                                    type: 'dmn',
+                                    id: item.id,
+                                    owner: item.owner || null
                                 };
                                 menu.children.push(obj);
                             }

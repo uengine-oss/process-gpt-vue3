@@ -6,6 +6,8 @@ import defaultProcessesData from './defaultProcesses.json';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { runValidation } from '@/utils/bpmnValidationRules';
 import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
+import { convertXMLToJSON as convertXMLToJSONShared } from '@/utils/bpmnXmlToDefinition';
+import { applySelectedChanges } from '@/utils/bpmnSelectiveMerge';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -148,11 +150,29 @@ class ProcessGPTBackend implements Backend {
                 }
                 const procDefs = await storage.list('proc_def', options);
                 return procDefs;
+            } else if (path === 'bpmn') {
+                if (!options) {
+                    options = { match: { type: 'bpmn' } };
+                } else if (!options.match) {
+                    options.match = { type: 'bpmn' };
+                } else {
+                    options.match['type'] = 'bpmn';
+                }
+                const procDefs = await storage.list('proc_def', options);
+                return procDefs;
             } else {
                 if (options) {
-                    options.match = { isdeleted: false };
-                    if (path) {
+                    if (!options.match || !options.match['isdeleted']) {
+                        options.match = { ...options.match, isdeleted: false };
+                    }
+                    if (path && !options.like) {
                         options.like = `${path}%`;
+                    }
+                } else {
+                    options = {
+                        match: {
+                            isdeleted: false,
+                        }
                     }
                 }
                 const procDefs = await storage.list('proc_def', options);
@@ -492,10 +512,6 @@ class ProcessGPTBackend implements Backend {
                 // 기존 행이 있으면 uuid를 포함하여 UPDATE로 동작하게 함
                 if (existingUuid) {
                     procDefVersion.uuid = existingUuid;
-                }
-                // agent_knowledge_history.id를 proc_def_version.uuid로 설정
-                if (options.history_id) {
-                    procDefVersion.uuid = options.history_id;
                 }
                 await storage.putObject('proc_def_version', procDefVersion);
             }
@@ -1079,6 +1095,10 @@ class ProcessGPTBackend implements Backend {
 
             if (definition && definition.definition) {
                 activityInfo = definition.definition.activities.find((activity: any) => activity.id === workitem.activity_id);
+                if (!activityInfo) {
+                    // activity_id가 (ad-hoc) 서브프로세스를 가리키는 경우도 폼 조회 대상에 포함
+                    activityInfo = this.findSubProcessById(definition.definition, workitem.activity_id);
+                }
                 if (activityInfo && activityInfo.properties) {
                     const properties = JSON.parse(activityInfo.properties);
                     if (properties.parameters && instance) {
@@ -1431,6 +1451,7 @@ class ProcessGPTBackend implements Backend {
 
         const sequences = definition.sequences;
         const activities = definition.activities;
+        const subProcesses = definition.subProcesses || [];
         const previousActivities = new Set<string>();
         const visited = new Set<string>();
 
@@ -1447,9 +1468,11 @@ class ProcessGPTBackend implements Backend {
             for (const sequence of incomingSequences) {
                 const sourceId = sequence.source;
 
-                // 소스가 액티비티인지 확인 (events, gateways 제외)
+                // 소스가 액티비티나 서브프로세스인지 확인 (events, gateways 제외)
+                // 서브프로세스도 자체 워크아이템/폼 산출물을 가지는 유효한 이전 단계이므로 포함한다.
                 const sourceActivity = activities.find((act: any) => act.id === sourceId);
-                if (sourceActivity) {
+                const sourceSubProcess = !sourceActivity && subProcesses.find((sp: any) => sp.id === sourceId);
+                if (sourceActivity || sourceSubProcess) {
                     previousActivities.add(sourceId);
                     // 재귀적으로 더 이전 액티비티들을 찾음
                     findPreviousActivities(sourceId);
@@ -1462,13 +1485,33 @@ class ProcessGPTBackend implements Backend {
 
         findPreviousActivities(activityId);
 
-        // Set을 배열로 변환하고 액티비티 객체들을 반환
+        // Set을 배열로 변환하고 액티비티/서브프로세스 객체들을 반환
         return Array.from(previousActivities)
-            .map((actId) => activities.find((act: any) => act.id === actId))
+            .map((actId) => activities.find((act: any) => act.id === actId) || subProcesses.find((sp: any) => sp.id === actId))
             .filter((act) => act !== undefined);
     }
 
     // 액티비티가 속한 서브프로세스를 찾는 헬퍼 함수
+    // id로 서브프로세스 자체를 재귀적으로 찾는 함수 (중첩된 서브프로세스 포함)
+    private findSubProcessById(definition: any, subProcessId: string): any {
+        if (!definition || !definition.subProcesses || definition.subProcesses.length === 0) {
+            return null;
+        }
+
+        for (const subProcess of definition.subProcesses) {
+            if (subProcess.id === subProcessId) {
+                return subProcess;
+            }
+            if (subProcess.children) {
+                const nestedSubProcess = this.findSubProcessById(subProcess.children, subProcessId);
+                if (nestedSubProcess) {
+                    return nestedSubProcess;
+                }
+            }
+        }
+        return null;
+    }
+
     private findSubProcessContainingActivity(activityId: string, definition: any): any {
         if (!definition.subProcesses || definition.subProcesses.length === 0) {
             return null;
@@ -1480,13 +1523,74 @@ class ProcessGPTBackend implements Backend {
                 if (foundActivity) {
                     return subProcess;
                 }
-                // 중첩된 서브프로세스도 확인
+            }
+            // activityId 자체가 (중첩된) 서브프로세스의 id인 경우, 그 부모 서브프로세스를 찾음
+            // (서브프로세스 경계 바깥으로 거슬러 올라갈 때 필요)
+            if (subProcess.children && Array.isArray(subProcess.children.subProcesses)) {
+                const foundChildSubProcess = subProcess.children.subProcesses.find((sp: any) => sp.id === activityId);
+                if (foundChildSubProcess) {
+                    return subProcess;
+                }
+            }
+            // 중첩된 서브프로세스도 확인
+            if (subProcess.children) {
                 const nestedSubProcess = this.findSubProcessContainingActivity(activityId, subProcess.children);
                 if (nestedSubProcess) {
                     return nestedSubProcess;
                 }
             }
         }
+        return null;
+    }
+
+    // 시퀀스 상 targetId 바로 이전(활동 또는 서브프로세스)의 id를 scope 내에서 찾음.
+    // scope는 루트 definition 또는 특정 서브프로세스의 children 일 수 있다.
+    private findNearestPredecessorInScope(targetId: string, scope: any): string | null {
+        if (!scope || !scope.sequences) {
+            return null;
+        }
+        const activities = scope.activities || [];
+        const subProcesses = scope.subProcesses || [];
+        const visited = new Set<string>();
+        const queue: string[] = [targetId];
+
+        while (queue.length > 0) {
+            const currentTarget = queue.shift() as string;
+            if (visited.has(currentTarget)) continue;
+            visited.add(currentTarget);
+
+            const incomingFlows = scope.sequences.filter((seq: any) => seq.target === currentTarget);
+            for (const flow of incomingFlows) {
+                const sourceId = flow.source;
+                const isActivity = activities.some((act: any) => act.id === sourceId);
+                const isSubProcess = subProcesses.some((sp: any) => sp.id === sourceId);
+                if (isActivity || isSubProcess) {
+                    return sourceId;
+                }
+                queue.push(sourceId);
+            }
+        }
+        return null;
+    }
+
+    // 런타임 워크아이템 화면에서 사용하는, 서브프로세스 경계를 인식하는 '바로 이전 단계' 조회.
+    // 현재 액티비티가 서브프로세스 내부에 있으면 그 내부에서 먼저 찾고, 없으면
+    // (서브프로세스의 첫 액티비티인 경우) 서브프로세스 자체의 이전 단계로 거슬러 올라간다.
+    async getPreviousStepId(activityId: string, definition: any): Promise<string | null> {
+        if (!definition) return null;
+
+        const containingSubProcess = this.findSubProcessContainingActivity(activityId, definition);
+        const scope = containingSubProcess ? containingSubProcess.children : definition;
+
+        const localResult = this.findNearestPredecessorInScope(activityId, scope);
+        if (localResult) {
+            return localResult;
+        }
+
+        if (containingSubProcess) {
+            return this.getPreviousStepId(containingSubProcess.id, definition);
+        }
+
         return null;
     }
 
@@ -2515,31 +2619,6 @@ class ProcessGPTBackend implements Backend {
     extractFields(html: string) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        const fields: any[] = [];
-
-        function extractFieldAttributes(elements: any) {
-            elements.forEach((element: any) => {
-                const alias = element.getAttribute('alias');
-                const nameAttr = element.getAttribute('name') || '';
-                const vModel = element.getAttribute('v-model') || '';
-                // v-model 바인딩에서 bracket 표기법으로 키를 추출, 없으면 name 속성을 기본으로 사용
-                const bracketMatch = vModel.match(/\[['"](.+?)['"]\]/);
-                const key = bracketMatch && bracketMatch[1] ? bracketMatch[1] : nameAttr;
-                const tagName = element.tagName.toLowerCase();
-                const disabled = element.getAttribute('disabled');
-                const readonly = element.getAttribute('readonly');
-                const type = element.getAttribute('type') || tagName.replace('-field', '');
-
-                const field: any = {
-                    text: alias || '',
-                    key: key,
-                    type: type,
-                    disabled: disabled ? disabled : false,
-                    readonly: readonly ? readonly : false
-                };
-                fields.push(field);
-            });
-        }
 
         const fieldTags = [
             'text-field',
@@ -2556,12 +2635,87 @@ class ProcessGPTBackend implements Backend {
             'bpmn-uengine-field'
         ];
 
-        fieldTags.forEach((tag) => {
-            const elements = doc.querySelectorAll(tag);
-            extractFieldAttributes(elements);
-        });
+        function parseItemsAttr(raw: string | null) {
+            if (!raw) return undefined;
+            try {
+                return JSON.parse(raw.replace(/'/g, '"'));
+            } catch (error) {
+                return undefined;
+            }
+        }
 
-        return fields;
+        function extractFieldAttributes(element: any) {
+            const alias = element.getAttribute('alias');
+            const nameAttr = element.getAttribute('name') || '';
+            const vModel = element.getAttribute('v-model') || '';
+            // v-model 바인딩에서 bracket 표기법으로 키를 추출, 없으면 name 속성을 기본으로 사용
+            const bracketMatch = vModel.match(/\[['"](.+?)['"]\]/);
+            const key = bracketMatch && bracketMatch[1] ? bracketMatch[1] : nameAttr;
+            const tagName = element.tagName.toLowerCase();
+            const disabled = element.getAttribute('disabled');
+            const readonly = element.getAttribute('readonly');
+            const type = element.getAttribute('type') || tagName.replace('-field', '');
+
+            const field: any = {
+                key: key,
+                text: alias || '',
+                type: type,
+                disabled: disabled ? disabled : false,
+                readonly: readonly ? readonly : false
+            };
+
+            const items = parseItemsAttr(element.getAttribute('items'));
+            if (items) field.items = items;
+
+            return field;
+        }
+
+        // row-layout은 여러 필드를 묶는 컨테이너로, is_multidata_mode='true'일 때만
+        // 내부 필드들이 배열(v-for) 형태로 반복되므로 group.fields 로 중첩시킴.
+        // false(단건 입력)인 경우는 기존 로직대로 하위 필드를 최상위로 그대로 펼쳐서 반환
+        function extractRowLayout(element: any) {
+            const isMultidataMode = element.getAttribute('is_multidata_mode') === 'true';
+            const innerFields = collectFields(element);
+
+            if (!isMultidataMode) {
+                return innerFields;
+            }
+
+            const alias = element.getAttribute('alias');
+            const nameAttr = element.getAttribute('name') || '';
+
+            return [
+                {
+                    key: nameAttr,
+                    text: alias || '',
+                    type: 'row-layout',
+                    is_multidata_mode: true,
+                    fields: innerFields
+                }
+            ];
+        }
+
+        // DOM 트리를 내려가면서 field 태그나 row-layout을 만나면 수집하고,
+        // row-layout 내부는 재귀 호출로 별도 처리하여 중복 수집을 막음
+        function collectFields(root: any) {
+            const fields: any[] = [];
+
+            Array.from(root.children as any[]).forEach((child: any) => {
+                const tagName = child.tagName.toLowerCase();
+
+                if (tagName === 'row-layout') {
+                    fields.push(...extractRowLayout(child));
+                } else if (fieldTags.includes(tagName)) {
+                    fields.push(extractFieldAttributes(child));
+                } else {
+                    fields.push(...collectFields(child));
+                }
+            });
+
+            return fields;
+        }
+
+        return collectFields(doc.body);
     }
 
     async getVariableWithTaskId(instId: string, taskId: string, formDefId: string) {
@@ -2594,7 +2748,11 @@ class ProcessGPTBackend implements Backend {
                 }
                 if (fields && fields.length > 0) {
                     fields.forEach((field: any) => {
-                        if (!varData[field.key]) {
+                        if (field.type === 'row-layout') {
+                            if (!varData[field.key]) {
+                                varData[field.key] = field.is_multidata_mode ? [] : {};
+                            }
+                        } else if (!varData[field.key]) {
                             varData[field.key] = '';
                         }
                     });
@@ -3034,7 +3192,15 @@ class ProcessGPTBackend implements Backend {
         // instance/{instanceId}/completed
         //TODO: 현재 프로세스 진행상태 추가
         try {
-            const list = await storage.list('todolist', { match: { proc_inst_id: instId } });
+            // 서브프로세스(특히 ad-hoc) 내부의 자식 액티비티는 proc_inst_id가 메인 인스턴스가 아니라
+            // 별도의 자식 인스턴스로 저장되고, root_proc_inst_id만 메인 인스턴스와 같다. proc_inst_id
+            // 단일 매치만 하면 서브프로세스 내부 노드의 상태가 통째로 빠지므로 root_proc_inst_id도 함께 조회한다.
+            const { data, error } = await window.$supabase
+                .from('todolist')
+                .select('*')
+                .or(`proc_inst_id.eq.${instId},root_proc_inst_id.eq.${instId}`);
+            if (error) throw error;
+            const list = data || [];
             const result: any = {};
             const procDefId = list.find((item: any) => item?.proc_def_id)?.proc_def_id;
             const callActivityIds = await this.getCallActivityIdsForDefinition(procDefId);
@@ -3071,6 +3237,27 @@ class ProcessGPTBackend implements Backend {
 
             return result;
         } catch (e) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // 다이어그램에서 완료된 노드를 더블클릭했을 때(process-feedback-whole-definition-review) 그 노드에
+    // 해당하는 workitem을 찾기 위한 조회. rework_count가 가장 큰(가장 최근 재수행된) 것을 우선한다.
+    async getWorkItemByActivity(instId: string, activityId: string) {
+        try {
+            // getActivitiesStatus와 동일한 이유로 root_proc_inst_id도 함께 조회해야
+            // 서브프로세스(특히 ad-hoc) 내부 액티비티의 workitem을 찾을 수 있다.
+            const { data, error } = await window.$supabase
+                .from('todolist')
+                .select('*')
+                .or(`proc_inst_id.eq.${instId},root_proc_inst_id.eq.${instId}`)
+                .eq('activity_id', activityId);
+            if (error) throw error;
+            if (!data || data.length === 0) return null;
+            const sorted = [...data].sort((a: any, b: any) => (b.rework_count || 0) - (a.rework_count || 0));
+            return this.convertKeysToCamelCase(sorted[0]);
+        } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -3429,7 +3616,10 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    private async getResourceOwner(resourceType: 'skill' | 'bpmn' | 'dmn', resourceId: string): Promise<string | null> {
+    async getResourceOwner(
+        resourceType: 'skill' | 'bpmn' | 'dmn',
+        resourceId: string
+    ): Promise<string | null> {
         try {
             if (resourceType === 'skill') return await this.getSkillOwner(resourceId);
             const row: any = await storage.getObject('proc_def', {
@@ -3444,7 +3634,7 @@ class ProcessGPTBackend implements Backend {
     private getResourcePrUrl(resourceType: string, resourceId: string): string {
         if (resourceType === 'skill') return `/skills/${resourceId}`;
         if (resourceType === 'dmn') return `/dmn/${resourceId}`;
-        return `/process/${resourceId}`;
+        return `/definitions/${resourceId}`;
     }
 
     async search(keyword: string, callback?: (results: any[]) => void) {
@@ -7386,133 +7576,94 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // output[formId]는 단일 실행이면 { [fieldId]: value }, 멀티 인스턴스면
+    // { [executionScope]: { [fieldId]: value }, ... } 형태일 수 있어 두 모양을 모두 지원한다.
+    private extractFieldFromOutput(output: any, formId: string, fieldId: string) {
+        if (!output || !output[formId]) return undefined;
+        const formOutput = output[formId];
+        if (formOutput[fieldId] !== undefined) {
+            return formOutput[fieldId];
+        }
+        for (const scopeKey of Object.keys(formOutput)) {
+            const scoped = formOutput[scopeKey];
+            if (scoped && typeof scoped === 'object' && scoped[fieldId] !== undefined) {
+                return scoped[fieldId];
+            }
+        }
+        return undefined;
+    }
+
     async getFieldValue(field: string, procDefId: string, instanceId: string) {
         try {
             if (!field || !procDefId || !instanceId) {
                 throw new Error('field, procDefId, instanceId is required');
             }
 
-            const fieldValue = {};
-            const procDef = await this.getRawDefinition(procDefId, null);
-            if (!procDef) {
-                throw new Error('procDef not found');
-            }
-            const definition = procDef.definition;
+            const fieldValue: any = {};
             const fieldInfo = field.split('.');
             const formId = fieldInfo[0];
             const fieldId = fieldInfo[1];
 
-            let activityId = null;
-            if (definition.activities.length > 0) {
-                definition.activities.forEach((activity: any) => {
-                    if (activity.tool && activity.tool.includes('formHandler:') && activity.tool.replace('formHandler:', '') === formId) {
-                        activityId = activity.id;
-                    }
-                });
-            } else {
-                activityId = null;
-            }
+            // BPMN 시퀀스/서브프로세스 위치와 무관하게, 같은 루트 프로세스 인스턴스 내
+            // 워크아이템의 산출물(output)에서 formId/fieldId로 직접 조회한다.
+            const instance = await this.getInstance(instanceId);
+            const rootInstanceId = (instance && instance.root_proc_inst_id) || instanceId;
 
-            let executionScope = null;
-
-            let workitem = null;
-            let workitems = null;
             const { data, error } = await window.$supabase
                 .from('todolist')
                 .select('*')
-                .eq('proc_inst_id', instanceId)
-                .ilike('activity_id', activityId)
-                .eq('status', 'DONE')
-                .order('updated_at', { ascending: false })
-                .limit(1);
+                .eq('root_proc_inst_id', rootInstanceId)
+                .eq('status', 'DONE');
 
-            if (!error) {
-                workitem = data[0];
-            }
-
-            if (!workitem) {
-                const instance = await this.getInstance(instanceId);
-                const rootInstanceId = instance.root_proc_inst_id;
-                executionScope = instance.execution_scope;
-                const { data, error } = await window.$supabase
-                    .from('todolist')
-                    .select('*')
-                    .eq('proc_inst_id', rootInstanceId)
-                    .ilike('activity_id', activityId)
-                    .eq('status', 'DONE')
-                    .order('updated_at', { ascending: false })
-                    .limit(1);
-
-                if (!error) {
-                    workitem = data[0];
-                }
-            }
-
-            if (!workitem) {
-                const { data, error } = await window.$supabase
-                    .from('todolist')
-                    .select('*')
-                    .eq('root_proc_inst_id', instanceId)
-                    .ilike('activity_id', activityId);
-                if (!error) {
-                    workitems = data;
-
-                    const sorted = (workitems ?? []).sort((a, b) => Number(a.execution_scope ?? 0) - Number(b.execution_scope ?? 0));
-
-                    workitems = sorted;
-                }
-            }
-
-            if (!workitem && !workitems) {
+            if (error) {
                 throw new Error('workitem not found');
             }
 
-            if (workitems) {
-                const fieldList = [];
-                workitems.forEach((item: any, index: number) => {
-                    workitem = item;
-                    const output = item.output;
-                    if (output && output[formId]) {
-                        const field = output[formId][fieldId];
-                        if (field) {
-                            fieldList.push(workitem.execution_scope + ':' + field);
-                        }
+            let candidates = (data || []).filter(
+                (item: any) => this.extractFieldFromOutput(item.output, formId, fieldId) !== undefined
+            );
+
+            if (candidates.length === 0) {
+                throw new Error('workitem not found');
+            }
+
+            // formId/fieldId만으로 둘 이상 후보가 매칭되면(예: 서로 다른 프로세스 정의가
+            // 우연히 같은 formId 번호를 재사용하는 경우), formId의 실제 소유 proc_def_id로
+            // 한 번 더 좁힌다.
+            if (candidates.length > 1) {
+                const form = await storage.getObject('form_def', {
+                    match: {
+                        id: formId,
+                        tenant_id: window.$tenantName
                     }
                 });
-
-                fieldValue[formId] = {
-                    [fieldId]: fieldList
-                };
-                return fieldValue;
-            }
-            if (workitem) {
-                const output = workitem.output;
-                if (output && output[formId]) {
-                    const filed = output[formId][fieldId];
-                    if (filed) {
-                        fieldValue[formId] = {
-                            [fieldId]: filed
-                        };
-                    } else {
-                        const group = Object.values(output[formId]);
-                        if (group) {
-                            group.forEach((item: any) => {
-                                if (executionScope) {
-                                    if (item[executionScope][fieldId]) {
-                                        fieldValue[formId] = {
-                                            [fieldId]: item[executionScope][fieldId]
-                                        };
-                                    }
-                                }
-                            });
-                        }
+                const ownerProcDefId = form && (form as any).proc_def_id;
+                if (ownerProcDefId) {
+                    const filtered = candidates.filter((item: any) => item.proc_def_id === ownerProcDefId);
+                    if (filtered.length > 0) {
+                        candidates = filtered;
                     }
-                    return fieldValue;
-                } else {
-                    return null;
                 }
             }
+
+            if (candidates.length > 1) {
+                const sorted = candidates.sort((a: any, b: any) => Number(a.execution_scope ?? 0) - Number(b.execution_scope ?? 0));
+                const fieldList: any[] = [];
+                sorted.forEach((item: any) => {
+                    const value = this.extractFieldFromOutput(item.output, formId, fieldId);
+                    if (value !== undefined) {
+                        fieldList.push(item.execution_scope + ':' + value);
+                    }
+                });
+                fieldValue[formId] = { [fieldId]: fieldList };
+                return fieldValue;
+            }
+
+            const value = this.extractFieldFromOutput(candidates[0].output, formId, fieldId);
+            fieldValue[formId] = { [fieldId]: value };
+            return fieldValue;
         } catch (error) {
+            //@ts-ignore
             throw new Error(error.message);
         }
     }
@@ -7579,8 +7730,24 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async applyFeedback(diff: any, taskId: string) {
+    // 전체 프로세스 개선안 노드 단위 선택 반영 — process-feedback-whole-definition-review.
+    // selectedIds가 changes 전체를 포함하면(전체 선택) afterXml을 그대로 새 snapshot으로 채택하고,
+    // 일부만 선택되면 applySelectedChanges로 beforeXml에 선택된 변경만 병합한 XML을 snapshot으로 쓴다.
+    // 어느 경우든 최종 snapshot(XML)을 convertXMLToJSON으로 재해석해 definition(JSON)을 재생성한다
+    // — 두 표현이 항상 일치하도록.
+    async applyFeedback(
+        diff: {
+            afterXml: string;
+            beforeXml?: string;
+            changes?: Array<{ type: 'added' | 'modified' | 'removed'; id: string }>;
+            selectedIds?: string[];
+        },
+        taskId: string
+    ) {
         try {
+            if (!diff || !diff.afterXml) {
+                throw new Error('afterXml not provided');
+            }
             const workItem = await storage.getObject('todolist', {
                 match: {
                     id: taskId
@@ -7604,35 +7771,14 @@ class ProcessGPTBackend implements Backend {
                 throw new Error('process not found');
             }
 
-            const definition = process.definition;
-            const activity = definition.activities.find((activity: any) => activity.id === activityId);
-            if (!activity) {
-                throw new Error('activity not found');
-            }
-            if (diff.inputData) {
-                activity.inputData = diff.inputData;
-            }
-            if (diff.checkpoints) {
-                activity.checkpoints = diff.checkpoints;
-            }
-            if (diff.description) {
-                activity.description = diff.description;
-            }
-            if (diff.instruction) {
-                activity.instruction = diff.instruction;
-            }
-
-            if (diff.conditionExamples && diff.conditionExamples.sequenceId) {
-                const sequence = process.definition.sequences.find((sequence: any) => sequence.id === diff.conditionExamples.sequenceId);
-                if (sequence) {
-                    const properties = JSON.parse(sequence.properties);
-                    properties.examples = {
-                        good_example: diff.conditionExamples.good_example,
-                        bad_example: diff.conditionExamples.bad_example
-                    };
-                    sequence.properties = JSON.stringify(properties);
+            let newSnapshot = diff.afterXml;
+            if (diff.selectedIds && diff.changes && diff.changes.length > 0 && diff.beforeXml) {
+                const allSelected = diff.changes.every((c) => diff.selectedIds!.includes(c.id));
+                if (!allSelected) {
+                    newSnapshot = applySelectedChanges(diff.beforeXml, diff.afterXml, diff.changes, diff.selectedIds);
                 }
             }
+            const definition = await convertXMLToJSONShared(newSnapshot, defId);
 
             let parentVersion: string = process.version || version;
             if (parentVersion.includes('-')) {
@@ -7643,7 +7789,7 @@ class ProcessGPTBackend implements Backend {
                 proc_def_id: defId,
                 version: newVersion,
                 version_tag: 'minor',
-                snapshot: process.snapshot,
+                snapshot: newSnapshot,
                 definition: definition,
                 arcv_id: defId + '_' + newVersion,
                 parent_version: parentVersion,
@@ -7654,24 +7800,22 @@ class ProcessGPTBackend implements Backend {
             // 병합 요청 생성
             const majorNum = (parseInt(String(parentVersion).split('.')[0]) || 0) + 1;
             const user = await this.getUserInfo();
+            const feedbackActivity = definition.activities?.find((a: any) => a.id === activityId);
             await this.createResourcePrRecord('bpmn', {
                 resourceId: defId,
                 branchName: `v${newVersion}`,
                 baseBranch: `v${majorNum}.0`,
-                title: `[피드백] ${activity.name || activityId} 정의 변경`,
+                title: `[피드백] ${feedbackActivity?.name || activityId}에서 시작된 프로세스 개선`,
                 description: `피드백 기반 자동 생성 (task: ${workItem.id})`,
                 requesterId: user.uid,
                 requesterName: user.name || localStorage.getItem('userName') || ''
             });
 
             // 임시 minor 버전으로 해당 워크아이템만 재실행
-            workItem.version = newVersion;
-            workItem.version_tag = 'minor';
-            workItem.status = 'SUBMITTED';
-            await storage.putObject('todolist', workItem);
-
-            const { arcv_id, parent_version, source_todolist_id, ...procDefData } = process;
-            await storage.putObject('proc_def', procDefData, { onConflict: 'id,tenant_id' });
+            // workItem.version = newVersion;
+            // workItem.version_tag = 'minor';
+            // workItem.status = 'SUBMITTED';
+            // await storage.putObject('todolist', workItem);
         } catch (error) {
             throw new Error(error.message);
         }
@@ -7890,24 +8034,6 @@ class ProcessGPTBackend implements Backend {
             return subscription;
         } catch (error) {
             throw new Error(error.message);
-        }
-    }
-
-    /**
-     * 에이전트 초기 지식 셋업 로그 조회 (agent_knowledge_setup_log).
-     * @returns 해당 agent_id의 로그 행 1개 또는 null
-     */
-    async getAgentKnowledgeSetupLog(agentId: string): Promise<any | null> {
-        try {
-            const list = await storage.list('agent_knowledge_setup_log', {
-                match: { agent_id: agentId }
-            });
-            if (list && list.length > 0) {
-                return list[0];
-            }
-            return null;
-        } catch (error) {
-            return null;
         }
     }
 
@@ -8230,6 +8356,75 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // ============================================================
+    // 스킬 피드백 제안 (DB: feedback_proposals)
+    // 워크아이템 피드백을 바탕으로 생성된 스킬 개선 제안을 조회/결정한다.
+    // ============================================================
+
+    async getPendingSkillProposalBatches(tenantId: string) {
+        try {
+            const response = await axios.get('/feedback-proposals', {
+                params: { tenant_id: tenantId }
+            });
+            const proposals = Array.isArray(response.data?.proposals) ? response.data.proposals : [];
+            // list_feedback_proposals only ever returns PROPOSED batches, but doesn't echo a
+            // status field back — buildSkillProposalMap (useSkillProposals.js) requires one.
+            return proposals.map((p: any) => ({ ...p, status: 'PROPOSED' }));
+        } catch (error) {
+            console.error('스킬 제안 배치 조회 실패:', error);
+            return [];
+        }
+    }
+
+    async watchFeedbackProposals(callback: (payload: any) => void, options: any = {}) {
+        try {
+            const channel = options?.channel || `feedback-proposals-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            return await storage._watch(
+                {
+                    channel,
+                    table: 'feedback_proposals',
+                    filter: options?.filter || null
+                },
+                (payload) => {
+                    callback(payload);
+                }
+            );
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async decideFeedbackProposalTarget(params: {
+        batchId: string;
+        targetType: string;
+        status: string;
+        decidedBy: string;
+        decidedByName?: string;
+        decidedByEmail?: string;
+        decisionNote?: string;
+    }) {
+        try {
+            // APPROVED SKILL targets trigger apply_approved_proposal (deep agent run) as a
+            // background task on the agent-feedback service — a direct DB write here would
+            // mark the decision but silently skip that application step.
+            const action = params.status === 'APPROVED' ? 'approve' : 'reject';
+            const response = await axios.post(
+                `/feedback-proposals/${encodeURIComponent(params.batchId)}/targets/${encodeURIComponent(params.targetType)}/${action}`,
+                {
+                    approver_id: params.decidedBy,
+                    approver_name: params.decidedByName || null,
+                    approver_email: params.decidedByEmail || null,
+                    decision_note: params.decisionNote || null
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error('스킬 제안 결정 처리 실패:', error);
+            throw error;
+        }
+    }
+
     async getSkillFile(skillName: string, fileName?: string) {
         try {
             let url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/files`;
@@ -8485,6 +8680,21 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getTenantSkillOwners(tenantId: string): Promise<Array<{ skill_name: string; owner_id: string | null }>> {
+        try {
+            const rows: any[] = await storage.list('tenant_skills', {
+                match: { tenant_id: tenantId }
+            });
+            return (Array.isArray(rows) ? rows : []).map((row: any) => ({
+                skill_name: row.skill_name,
+                owner_id: row.owner_id ?? null
+            }));
+        } catch (error) {
+            console.error('테넌트 스킬 소유자 목록 조회 실패:', error);
+            return [];
+        }
+    }
+
     // ============================================================
     // 범용 리소스 PR 워크플로우 (DB: resource_pull_requests / resource_pr_reviews)
     // resourceType: 'skill' | 'proc_def' | 'dmn'
@@ -8498,7 +8708,7 @@ class ProcessGPTBackend implements Backend {
             baseBranch: string;
             title: string;
             description?: string;
-            requesterId: string;
+            requesterId: string | string[];
             requesterName?: string;
             gitPrNumber?: number;
             gitPrUrl?: string;
@@ -8506,6 +8716,7 @@ class ProcessGPTBackend implements Backend {
         }
     ): Promise<any> {
         const tenantId = window.$tenantName;
+        const requesterIds = Array.isArray(data.requesterId) ? data.requesterId : [data.requesterId];
         const record = {
             id: this.uuid(),
             tenant_id: tenantId,
@@ -8516,25 +8727,13 @@ class ProcessGPTBackend implements Backend {
             title: data.title,
             description: data.description || null,
             status: 'OPEN',
-            requester_id: data.requesterId,
+            requester_id: requesterIds,
             requester_name: data.requesterName || null,
             git_pr_number: data.gitPrNumber ?? null,
             git_pr_url: data.gitPrUrl ?? null,
             git_repo_url: data.gitRepoUrl ?? null
         };
         await storage.putObject('resource_pull_requests', record, { onConflict: 'id' });
-
-        const ownerId = await this.getResourceOwner(resourceType, data.resourceId);
-        if (ownerId && ownerId !== data.requesterId) {
-            await this.sendNotification({
-                userId: ownerId,
-                type: 'merge_request',
-                title: `[PR 요청] ${data.title}`,
-                description: `${resourceType} 병합 요청`,
-                url: this.getResourcePrUrl(resourceType, data.resourceId),
-                fromUserId: data.requesterId
-            });
-        }
 
         return record;
     }
@@ -8550,8 +8749,36 @@ class ProcessGPTBackend implements Backend {
         if (status) match.status = status;
         const result = await storage.list('resource_pull_requests', { match, orderBy: 'created_at' });
         const records: any[] = Array.isArray(result) ? result : [];
-        if (!gitUrlPrefix) return records;
-        return records.filter((r) => !r.git_pr_url || r.git_pr_url.startsWith(gitUrlPrefix));
+        const filteredRecords = gitUrlPrefix
+            ? records.filter(r => !r.git_pr_url || r.git_pr_url.startsWith(gitUrlPrefix))
+            : records;
+
+        const requesterIds = [...new Set(filteredRecords
+            .filter(record => !record.requester_name)
+            .map(record => Array.isArray(record.requester_id) ? record.requester_id[0] : record.requester_id)
+            .filter(Boolean))];
+
+        if (!requesterIds.length) return filteredRecords;
+
+        const requesterNames = new Map<string, string>();
+        await Promise.all(requesterIds.map(async (requesterId: string) => {
+            try {
+                const user: any = await storage.getObject('users', {
+                    match: { id: requesterId, tenant_id: tenantId }
+                });
+                const name = user?.username || user?.name || user?.email;
+                if (name) requesterNames.set(requesterId, name);
+            } catch (error) {
+                console.warn(`[ProcessGPTBackend] 요청자 이름 조회 실패 (${requesterId}):`, error);
+            }
+        }));
+
+        return filteredRecords.map(record => {
+            if (record.requester_name) return record;
+            const requesterId = Array.isArray(record.requester_id) ? record.requester_id[0] : record.requester_id;
+            const requesterName = requesterNames.get(requesterId);
+            return requesterName ? { ...record, requester_name: requesterName } : record;
+        });
     }
 
     async updateResourcePrStatus(pr: any, status: string, fields: { reviewerId?: string; mergedAt?: string } = {}): Promise<void> {
@@ -8575,15 +8802,16 @@ class ProcessGPTBackend implements Backend {
             MERGED: '[PR 병합]',
             CHANGES_REQUESTED: '[수정 요청]'
         };
-        if (statusLabel[status] && pr.requester_id) {
-            await this.sendNotification({
-                userId: pr.requester_id,
+        const requesterIds: string[] = Array.isArray(pr.requester_id) ? pr.requester_id : (pr.requester_id ? [pr.requester_id] : []);
+        if (statusLabel[status] && requesterIds.length) {
+            await Promise.all(requesterIds.map(requesterId => this.sendNotification({
+                userId: requesterId,
                 type: 'merge_request',
                 title: `${statusLabel[status]} ${pr.title}`,
                 description: `${pr.resource_type} PR`,
                 url: this.getResourcePrUrl(pr.resource_type, pr.resource_id),
                 fromUserId: localStorage.getItem('email') || undefined
-            });
+            })));
         }
     }
 
@@ -8825,30 +9053,6 @@ class ProcessGPTBackend implements Backend {
         return data?.[0] || { id, is_enabled: isEnabled };
     }
 
-    async getSkillHistory(agentId: string, skillName?: string) {
-        try {
-            const options: any = {
-                match: {
-                    agent_id: agentId,
-                    tenant_id: window.$tenantName,
-                    knowledge_type: 'SKILL'
-                },
-                sort: 'desc',
-                orderBy: 'created_at'
-            };
-
-            if (skillName) {
-                options.match.knowledge_id = skillName;
-            }
-
-            const history = await storage.list('agent_knowledge_history', options);
-            return history || [];
-        } catch (error) {
-            console.error('스킬 히스토리 조회 실패:', error);
-            return [];
-        }
-    }
-
     // ============================================
     // Task Execution Properties API (분석용)
     // ============================================
@@ -8922,158 +9126,6 @@ class ProcessGPTBackend implements Backend {
         return result || [];
     }
 
-    // ============================================
-    // FTE Heatmap API
-    // ============================================
-
-    async getDmnHistory(agentId: string, ruleId?: string) {
-        try {
-            const options: any = {
-                match: {
-                    agent_id: agentId,
-                    tenant_id: window.$tenantName,
-                    knowledge_type: 'DMN_RULE'
-                },
-                sort: 'desc',
-                orderBy: 'created_at'
-            };
-
-            if (ruleId) {
-                options.match.knowledge_id = ruleId;
-            }
-
-            const history = await storage.list('agent_knowledge_history', options);
-            return history || [];
-        } catch (error) {
-            console.error('DMN 히스토리 조회 실패:', error);
-            return [];
-        }
-    }
-
-    /**
-     * DMN 버전 적용 공통 로직
-     * @param historyId 변경 이력 ID
-     * @param ruleId DMN 규칙 ID
-     * @param usePreviousContent true면 previous_content 사용 (되돌리기), false면 new_content 사용 (다시 적용)
-     * @param useParentVersion true면 parent_version 사용, false면 version 사용
-     * @param errorMessages 에러 메시지 객체
-     */
-    async applyDmnVersion(
-        historyId: string,
-        ruleId: string,
-        usePreviousContent: boolean,
-        useParentVersion: boolean,
-        errorMessages: { contentNotFound: string; operationNotAllowed: string; applyFailed: string }
-    ) {
-        // 변경 이력 조회
-        const history = await storage.getObject('agent_knowledge_history', {
-            match: {
-                id: historyId,
-                tenant_id: window.$tenantName
-            }
-        });
-
-        const contentKey = usePreviousContent ? 'previous_content' : 'new_content';
-        if (!history || !history[contentKey]) {
-            throw new Error(errorMessages.contentNotFound);
-        }
-
-        if (history.operation !== 'UPDATE') {
-            throw new Error(errorMessages.operationNotAllowed);
-        }
-
-        // 현재 DMN 조회
-        const currentDmn = await storage.getObject('proc_def', {
-            match: {
-                id: ruleId,
-                tenant_id: window.$tenantName
-            }
-        });
-
-        if (!currentDmn) {
-            throw new Error('DMN 규칙을 찾을 수 없습니다.');
-        }
-
-        // 적용할 내용 가져오기
-        const newContent = history[contentKey];
-
-        // historyId로 proc_def_version 조회하여 버전 번호 가져오기
-        let targetVersionNumber = currentDmn.prod_version;
-        try {
-            const targetVersion = await storage.getObject('proc_def_version', {
-                match: {
-                    uuid: historyId,
-                    tenant_id: window.$tenantName
-                }
-            });
-            if (targetVersion) {
-                const versionKey = useParentVersion ? 'parent_version' : 'version';
-                if (targetVersion[versionKey]) {
-                    targetVersionNumber = targetVersion[versionKey];
-                }
-            }
-        } catch (e) {
-            // 버전을 찾지 못해도 계속 진행 (prod_version은 현재 값 유지)
-        }
-
-        // proc_def 테이블만 업데이트 (proc_def_version과 agent_knowledge_history는 수정하지 않음)
-        currentDmn.bpmn = newContent;
-        currentDmn.prod_version = targetVersionNumber;
-        await storage.putObject('proc_def', currentDmn);
-
-        return {
-            success: true,
-            version: targetVersionNumber
-        };
-    }
-
-    async restoreDmnVersion(historyId: string, ruleId: string, agentId: string) {
-        try {
-            const result = await this.applyDmnVersion(
-                historyId,
-                ruleId,
-                true, // previous_content 사용
-                true, // parent_version 사용
-                {
-                    contentNotFound: '이전 버전 내용을 찾을 수 없습니다.',
-                    operationNotAllowed: '되돌리기는 UPDATE 작업에만 가능합니다.',
-                    applyFailed: 'DMN 버전 되돌리기에 실패했습니다.'
-                }
-            );
-
-            return {
-                ...result,
-                message: '이전 버전으로 성공적으로 되돌렸습니다.'
-            };
-        } catch (error) {
-            console.error('DMN 버전 되돌리기 실패:', error);
-            throw new Error(error instanceof Error ? error.message : 'DMN 버전 되돌리기에 실패했습니다.');
-        }
-    }
-
-    async reapplyDmnVersion(historyId: string, ruleId: string, agentId: string) {
-        try {
-            const result = await this.applyDmnVersion(
-                historyId,
-                ruleId,
-                false, // new_content 사용
-                false, // version 사용
-                {
-                    contentNotFound: '적용할 버전 내용을 찾을 수 없습니다.',
-                    operationNotAllowed: '다시 적용은 UPDATE 작업에만 가능합니다.',
-                    applyFailed: 'DMN 버전 적용에 실패했습니다.'
-                }
-            );
-
-            return {
-                ...result,
-                message: '변경 사항을 성공적으로 적용했습니다.'
-            };
-        } catch (error) {
-            console.error('DMN 버전 다시 적용 실패:', error);
-            throw new Error(error instanceof Error ? error.message : 'DMN 버전 적용에 실패했습니다.');
-        }
-    }
     // ============================================
     // Task Execution Properties API (분석용)
     // ============================================

@@ -2585,3 +2585,27 @@ CREATE POLICY delegation_history_update_policy ON public.delegation_history
 DROP POLICY IF EXISTS delegation_history_delete_policy ON public.delegation_history;
 CREATE POLICY delegation_history_delete_policy ON public.delegation_history
     FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+-- ===============================================
+-- resource_pull_requests.requester_id: uuid -> uuid[] (공동 요청자 지원) (2026-07-16)
+-- ===============================================
+DO $$
+DECLARE
+  col_type text;
+BEGIN
+  SELECT data_type INTO col_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'resource_pull_requests' AND column_name = 'requester_id';
+
+  IF col_type = 'uuid' THEN
+    ALTER TABLE public.resource_pull_requests ALTER COLUMN requester_id DROP DEFAULT;
+    ALTER TABLE public.resource_pull_requests
+      ALTER COLUMN requester_id TYPE uuid[] USING CASE WHEN requester_id IS NULL THEN '{}'::uuid[] ELSE ARRAY[requester_id] END;
+    ALTER TABLE public.resource_pull_requests ALTER COLUMN requester_id SET DEFAULT '{}'::uuid[];
+    ALTER TABLE public.resource_pull_requests ALTER COLUMN requester_id SET NOT NULL;
+  END IF;
+END $$;
+
+-- 배열 컬럼은 (requester_id, tenant_id) 복합 FK를 지원하지 않으므로 기존 requester FK가 있었다면 제거
+ALTER TABLE IF EXISTS public.resource_pull_requests
+  DROP CONSTRAINT IF EXISTS resource_pull_requests_requester_fkey;

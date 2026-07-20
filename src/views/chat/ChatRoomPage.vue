@@ -955,7 +955,6 @@ export default {
             roomWorkspaceFilesByGroup: {}, // 프로세스 폴더(process-<uuid>)별 산출물 파일 누적 — 프로세스마다 탭
             workspaceSaveStateByGroup: {}, // 프로세스별 DB 저장 상태 { [group]: {saving,saved,error} }
             selectedKnowledgeDocs: [], // 지식 베이스(Google Drive) RAG 컨텍스트로 선택된 문서
-            editingSkillFile: null, // 스킬 편집 화면에서 채팅으로 넘어온 경우, 편집 중이던 파일 정보 { skill_name, file_path, branch }
             activeArtifactId: null, // 현재 활성 탭 ID
             artifactSidebarVisible: false,
             artifactSidebarWidth: 820,
@@ -1410,8 +1409,9 @@ export default {
                 const isDifferentRoom = !!oldRoomId && oldRoomId !== newRoomId;
 
                 if (isDifferentRoom) {
-                    // 완전히 다른 방으로 이동: 음성 종료 후 정상 bootstrap
+                    // 완전히 다른 방으로 이동: 음성 종료 + 이전 방의 attach 재접속 정리 후 정상 bootstrap
                     this.stopDesktopVoice();
+                    this.abortAttachStream(oldRoomId);
                     await this.bootstrapRoom(newRoomId);
                 } else if (isVoiceDraftTransition) {
                     // 음성 중 드래프트→방 전환: 메시지 초기화 없이 구독·에이전트 워밍업만
@@ -2369,9 +2369,13 @@ export default {
                 this.isLoadingRoom = false;
             }
 
-            // 실시간 구독은 화면 렌더를 막지 않도록 백그라운드에서 시작
+            // 실시간 구독 + 진행 중인 스트림 재접속은 화면 렌더를 막지 않도록 백그라운드에서 시작
             if (bootstrapSucceeded) {
-                Promise.allSettled([this.subscribeToRoom(roomId), this.subscribeToAttachments(roomId)]).catch(() => {});
+                Promise.allSettled([
+                    this.subscribeToRoom(roomId),
+                    this.subscribeToAttachments(roomId),
+                    this.attachToActiveStream(roomId)
+                ]).catch(() => {});
             }
 
             // definition-map 메인 채팅에서 생성된 방:
@@ -2468,12 +2472,6 @@ export default {
                 if (Array.isArray(payload?.knowledgeDocs) && payload.knowledgeDocs.length > 0) {
                     this.selectedKnowledgeDocs = payload.knowledgeDocs;
                     this.upsertKnowledgePanel();
-                }
-
-                // 스킬 편집 화면에서 넘어온 경우, 편집 중이던 파일 정보를 패널로 표시
-                if (payload?.editingSkillFile && typeof payload.editingSkillFile === 'object') {
-                    this.editingSkillFile = payload.editingSkillFile;
-                    this.upsertEditingSkillFilePanel();
                 }
 
                 // 메인 화면에서 전달된 raw File이 있으면 memento 경유 업로드 (임베딩 + 벡터 저장)
@@ -2619,13 +2617,15 @@ export default {
                 const ctx = this.readChatRoomContext(this.currentChatRoom);
                 if (!ctx || typeof ctx !== 'object') return;
 
-                const enabled = ctx.enabled && typeof ctx.enabled === 'object' ? ctx.enabled : {};
-                const enabledSkills = enabled.skills === true || Array.isArray(ctx.skills);
-                const enabledTodos = enabled.todos === true || Array.isArray(ctx.todos);
-
                 const tools = Array.isArray(ctx.tools) ? ctx.tools : [];
                 const skills = Array.isArray(ctx.skills) ? ctx.skills : [];
                 const todos = Array.isArray(ctx.todos) ? ctx.todos : [];
+                const connectors = Array.isArray(ctx.connectors) ? ctx.connectors : [];
+
+                // enabled.* 플래그는 실사용 여부와 무관하게 세팅될 수 있으므로,
+                // 실제 항목이 존재할 때만 패널을 활성화한다.
+                const enabledSkills = skills.length > 0;
+                const enabledTodos = todos.length > 0;
 
                 // ctx.tools → 활동 패널 복원 (도구·서브에이전트 실행 내역)
                 if (tools.length > 0) {
@@ -2654,25 +2654,15 @@ export default {
                     this.upsertKnowledgePanel();
                 }
 
-                // ctx.editingSkillFile → 스킬 편집 화면에서 시작된 방이면 편집 파일 패널 복원
-                if (ctx.editingSkillFile && typeof ctx.editingSkillFile === 'object') {
-                    this.editingSkillFile = ctx.editingSkillFile;
-                    this.upsertEditingSkillFilePanel();
-                }
-
                 if (enabledSkills) {
                     this.planSideInfoEnabled.skills = true;
                     this.plannedSkills = skills;
                     this.upsertSkillsPanel();
                 }
 
-                const mcpTools = Array.isArray(ctx.mcpTools) ? ctx.mcpTools : [];
-                const connectorServers = [
-                    ...new Set(mcpTools.flatMap((m) => (Array.isArray(m?.servers) ? m.servers : [])).filter(Boolean))
-                ];
-                if (connectorServers.length > 0) {
+                if (connectors.length > 0) {
                     this.planSideInfoEnabled.connectors = true;
-                    this.plannedConnectors = connectorServers;
+                    this.plannedConnectors = connectors;
                     this.upsertConnectorsPanel();
                 }
 
@@ -2969,6 +2959,98 @@ export default {
                     this.planSideInfoEnabled.attachments = next.length > 0;
                     if (this.planSideInfoEnabled.attachments) this.upsertAttachmentsPanel();
                 } catch (e) {}
+            });
+        },
+        /**
+         * 방 진입 시 진행 중인 채팅 스트림(있다면)에 재접속해 catch-up 스냅샷과
+         * 실시간 토큰을 기존 activeStreams 렌더링 경로로 이어붙인다. 실패/활성
+         * 스트림 없음은 항상 조용히 무시하는 베스트 에포트 동작이다.
+         */
+        async attachToActiveStream(roomId) {
+            try {
+                if (!roomId) return;
+                // 단일 에이전트 방에서만 시도한다 — attach 응답에 agentId가 없어도
+                // activeStreams를 시드할 키를 결정할 수 있는 안전한 경우로 범위를 제한한다.
+                const agentParticipants = this.agentParticipants || [];
+                if (agentParticipants.length !== 1) return;
+                const agentTarget = agentParticipants[0];
+                const agentId = agentTarget?.id;
+                if (!agentId) return;
+                // 이미 스트리밍 중(예: 방금 내가 보낸 메시지의 sendMessageStream)이면 건너뜀
+                if (this.activeStreams[agentId]) return;
+
+                const userJwt = (await getValidToken()) || '';
+                const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+
+                const abortController = new AbortController();
+                const abortKey = `${roomId}:attach:${agentId}`;
+                this.agentAbortControllers[abortKey] = abortController;
+
+                let seeded = false;
+                let full = '';
+                const assistantUuid = this.uuid();
+
+                await deepAgentRouterService.attachToStream(
+                    roomId,
+                    {
+                        onToken: (content) => {
+                            // roomId가 바뀐 뒤 도착한 잔여 이벤트는 무시
+                            if ((this.currentChatRoom?.id || this.roomId) !== roomId) return;
+                            if (!seeded) {
+                                full = (content || '').toString();
+                                seeded = true;
+                                this.activeStreams[agentId] = {
+                                    uuid: assistantUuid,
+                                    role: 'assistant',
+                                    content: full || '생각 중...',
+                                    contentType: 'text',
+                                    isLoading: true,
+                                    toolCalls: [],
+                                    timeStamp: new Date().toISOString(),
+                                    email: agentTarget.email || `agent:${agentId}`,
+                                    name: agentTarget.username || agentId,
+                                    userName: agentTarget.username || agentId,
+                                    profile: agentTarget.profile || null,
+                                    agentId,
+                                    agentPlan: { summary: '', steps: [] }
+                                };
+                                this.setAgentStatus(agentId, { state: 'streaming', message: '' });
+                            } else {
+                                full += content;
+                                const msg = this.activeStreams[agentId];
+                                if (msg) msg.content = full;
+                            }
+                            this.$nextTick(() => this.scrollToBottomSafe());
+                        },
+                        onDone: () => {
+                            // 최종 메시지는 Realtime INSERT(handleRealtimeMessage)가 처리한다.
+                        },
+                        onError: (err) => {
+                            console.warn('[ChatRoomPage] attachToStream 오류(무시):', err?.message || err);
+                        },
+                        onAbort: () => {}
+                    },
+                    { tenantId, userJwt, signal: abortController.signal }
+                );
+
+                delete this.agentAbortControllers[abortKey];
+            } catch (e) {
+                // attach는 부가 기능이므로 실패해도 기존 흐름에 영향 없이 조용히 무시
+                console.warn('[ChatRoomPage] attachToActiveStream 실패(무시):', e?.message || e);
+            }
+        },
+        /** 방을 나가거나 전환할 때 그 방의 attach 재접속 연결만 정리한다(일반 에이전트 생성 스트림은 유지). */
+        abortAttachStream(roomId) {
+            const rid = (roomId || '').toString();
+            if (!rid) return;
+            const map = this.agentAbortControllers || {};
+            Object.keys(map).forEach((k) => {
+                if (k.startsWith(`${rid}:attach:`)) {
+                    try {
+                        map[k]?.abort?.();
+                    } catch (e) {}
+                    delete map[k];
+                }
             });
         },
         handleRealtimeMessage(payload) {
@@ -5979,25 +6061,6 @@ export default {
             this.artifactSidebarVisible = true;
         },
 
-        /** 우측 사이드바에 "편집 중인 스킬 파일" 컨텍스트 패널 생성/갱신 (스킬 편집 화면 → 채팅 진입 시) */
-        upsertEditingSkillFilePanel() {
-            const file = this.editingSkillFile;
-            if (!file) return;
-            const data = { enabled: true, items: [file] };
-
-            const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'editingFile');
-            if (existingIdx !== -1) {
-                const existing = this.artifactPanels[existingIdx];
-                this.artifactPanels[existingIdx] = { ...existing, label: '편집 중인 파일', data };
-            } else {
-                const id = `editing-file-${this.uuid()}`;
-                this.artifactPanels.push({ id, type: 'editingFile', label: '편집 중인 파일', data });
-            }
-            const hasRealArtifact = (this.artifactPanels || []).some((p) => p && !AGENT_CHAT_ROOM_CONTEXT_TYPES.has(p.type));
-            if (!hasRealArtifact) this.artifactSidebarWidth = this.artifactSidebarNarrowWidth;
-            this.artifactSidebarVisible = true;
-        },
-
         handleArtifactAction({ type, action, panelId, payload }) {
             if (type === 'hwpx') {
                 if (action === 'page-edit-request') {
@@ -6285,9 +6348,9 @@ export default {
                                         goal: a.goal || a.description || '',
                                         persona: a.persona || '',
                                         description: a.description || '',
-                                        model: a.model || '',
+                                        model: a.model || null,
                                         isAgent: true,
-                                        type: a.type || 'TaskAgent',
+                                        type: 'agent',
                                         is_draft: true
                                     });
                                 } catch (ae) {
@@ -6533,9 +6596,9 @@ export default {
                                 goal: a.goal || a.description || '',
                                 persona: a.persona || '',
                                 description: a.description || '',
-                                model: a.model || '',
+                                model: a.model || null,
                                 isAgent: true,
-                                type: a.type || 'TaskAgent',
+                                type: 'agent',
                                 is_draft: false // 최종 저장 — draft 였으면 정식 등록으로 승격(목록 노출).
                             });
                             savedAgents.push({ id: agentId, name: a.name || '에이전트', role: a.role || '' });
@@ -8444,8 +8507,46 @@ export default {
                 .reverse()
                 .find((tc) => typeof tc?.name === 'string' && tc.name.includes('edit_hwpx_page_html'));
 
-            // 프로세스 컨설팅/생성은 work-assistant-agent 강제 라우팅(컨설팅 흐름)이 직접 처리하므로
-            // 프론트의 레거시 start_process_consulting/generate_process 후처리는 제거되었다.
+            // 프로세스 생성 요청 → 클라이언트 컨설팅 모드로 전환 (WorkAssistantChatPanel과 동일 패턴).
+            // 배포된 base-agent(work-assistant-agent) 버전이 server-side 프로세스 생성을 하지 않으므로,
+            // 최신 프론트에서도 start_process_consulting 도구 호출 시 클라이언트가
+            // ConsultingGenerator(/completion/langchain-chat/messages)로 생성 → onModelCreated 에서 proc_def 저장한다.
+            const consultingToolCall = [...toolCalls]
+                .reverse()
+                .find((tc) => typeof tc?.name === 'string' && tc.name.includes('start_process_consulting'));
+            if (consultingToolCall?.name) {
+                let imageAnalysis = null;
+                try {
+                    const parsed = this.parseToolOutput(consultingToolCall.output);
+                    if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
+                        imageAnalysis = parsed.image_analysis_result;
+                    }
+                } catch (e) {}
+                let originalMessage;
+                if (imageAnalysis) {
+                    originalMessage = `${userText || ''}\n\n[이미지 분석 결과]\n${imageAnalysis}`;
+                } else {
+                    originalMessage = `${userText || ''}\n\n[전체 요청 및 첨부 이미지 분석 내용]: ${JSON.stringify(
+                        consultingToolCall.output ?? null
+                    )}`;
+                }
+                await this.switchToConsultingMode(originalMessage);
+                return;
+            }
+
+            // 컨설팅 후 생성 확정 → definitions 생성 화면으로 전환 (WorkAssistantChatPanel:952-957 과 동일).
+            // base-agent 가 generate_process 도구를 호출하면 지금까지의 대화를 store 에 실어
+            // /definitions/chat 로 넘겨 실제 proc_def 를 생성/저장하게 한다.
+            const generateToolCall = [...toolCalls]
+                .reverse()
+                .find((tc) => typeof tc?.name === 'string' && tc.name.includes('generate_process'));
+            if (generateToolCall?.name) {
+                const messagesForDefinition = this.buildMessagesForDefinitionGeneration();
+                this.$store.dispatch('updateMessages', messagesForDefinition);
+                this.$router.push('/definitions/chat');
+                return;
+            }
+
             if (!pageEditToolCall?.name) return;
 
             if (pageEditToolCall?.name) {

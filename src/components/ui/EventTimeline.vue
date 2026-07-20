@@ -464,13 +464,31 @@
                             <div
                                 v-for="(tool, idx) in getToolUsageList(item.payload.jobId)"
                                 :key="`${item.payload.jobId}-${tool.tool_name}-${idx}`"
-                                class="tool-usage-status-item"
                             >
-                                <div class="tool-status-indicator">
-                                    <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
-                                    <div v-else class="check-mark">✓</div>
+                                <div class="tool-usage-status-item">
+                                    <div class="tool-status-indicator">
+                                        <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
+                                        <div v-else class="check-mark">✓</div>
+                                    </div>
+                                    <span class="tool-usage-status-text">{{ getToolStatusText(tool) }}</span>
+                                    <button
+                                        v-if="tool.status === 'done' && tool.info"
+                                        class="tool-result-toggle-btn"
+                                        @click="toggleToolUsageExpansion(item.payload.jobId, idx)"
+                                    >
+                                        {{
+                                            isToolUsageExpanded(item.payload.jobId, idx)
+                                                ? $t('agentMonitor.collapse')
+                                                : $t('EventTimeline.viewResult')
+                                        }}
+                                    </button>
                                 </div>
-                                <span>{{ getToolStatusText(tool) }}</span>
+                                <div
+                                    v-if="tool.status === 'done' && tool.info && isToolUsageExpanded(item.payload.jobId, idx)"
+                                    class="tool-usage-result"
+                                >
+                                    {{ tool.info }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -597,7 +615,8 @@ export default {
                 files: null
             },
             images: [],
-            processedBrowserUseTasks: new Set() // 이미 처리된 browser-use 작업 추적
+            processedBrowserUseTasks: new Set(), // 이미 처리된 browser-use 작업 추적
+            expandedToolUsage: {}
         };
     },
     computed: {
@@ -659,17 +678,13 @@ export default {
                     fileData.parsed_at = parseResult.parsedAt;
                     fileData.parsing = false;
 
-                    if (parseResult.cached) {
-                        console.log(`✅ [EventTimeline] 캐시된 데이터 사용: ${fileName}`);
-                    } else {
+                    if (!parseResult.cached) {
                         this.isParseSuccess = true;
-                        console.log(`✅ [EventTimeline] 파싱 성공: ${fileName} (${parseResult.text?.length || 0} 문자)`);
                     }
                 } else {
                     // 파싱 실패
                     fileData.parsed_error = parseResult.error;
                     fileData.parsing = false;
-                    console.warn(`⚠️ [EventTimeline] 파싱 실패: ${fileName} - ${parseResult.error}`);
                 }
             } catch (error) {
                 console.error(`❌ [EventTimeline] 파싱 결과 세팅 실패: ${fileName}`, error);
@@ -697,11 +712,7 @@ export default {
                     data: eventItem.outputRaw // outputRaw에 generated_files가 포함되어 있고, 파싱 결과도 함께
                 };
 
-                console.log(`[EventTimeline] DB에 이벤트 저장 중... (ID: ${eventItem.id})`);
-
                 await backend.putEvent(eventData);
-
-                console.log(`✅ [EventTimeline] DB 저장 완료: ${eventItem.id}`);
             } catch (error) {
                 console.error('❌ [EventTimeline] DB 저장 실패:', error);
             }
@@ -833,8 +844,15 @@ export default {
         getToolStatusText(tool) {
             const status =
                 tool.status === 'done' ? this.$t('EventTimeline.toolUsageComplete') : this.$t('EventTimeline.toolUsageInProgress');
-            const detail = tool.query || tool.info;
+            const detail = tool.query;
             return `${tool.tool_name} ${this.$t('EventTimeline.tool')} ${status}${detail ? ': ' + detail : ''}`;
+        },
+        toggleToolUsageExpansion(jobId, idx) {
+            const key = `${jobId}-${idx}`;
+            this.expandedToolUsage[key] = !this.expandedToolUsage[key];
+        },
+        isToolUsageExpanded(jobId, idx) {
+            return !!this.expandedToolUsage[`${jobId}-${idx}`];
         },
         getHumanResultText(payload) {
             const status = String(payload?.humanResponse?.status || '').toUpperCase();
@@ -863,20 +881,10 @@ export default {
             return !name || name.toLowerCase() === 'unknown' ? task.role : task.name;
         },
         getTaskDescription(task) {
-            console.log('[EventTimeline] getTaskDescription 호출:', {
-                taskId: task.id,
-                taskDescription: task.taskDescription,
-                goal: task.goal,
-                crewType: task.crewType,
-                hasTaskDescription: !!task.taskDescription
-            });
             // task_description이 있으면 항상 표시
             if (task.taskDescription) {
-                console.log('[EventTimeline] task_description 반환:', task.taskDescription);
                 return task.taskDescription;
             }
-            console.log('[EventTimeline] goal 반환:', task.goal || 'Task');
-            return task.goal || 'Task';
         },
         getStatusText(task) {
             if (!task.isCompleted) return this.$t('EventTimeline.inProgress');
@@ -1214,9 +1222,6 @@ export default {
                     console.error('URL 데이터가 없습니다.');
                     return null;
                 }
-
-                console.log(`[EventTimeline] URL에서 파일 가져오기: ${fileName} from ${fileData.url}`);
-
                 // URL에서 파일 다운로드
                 const response = await fetch(fileData.url);
                 if (!response.ok) {
@@ -1234,9 +1239,6 @@ export default {
                     type: mimeType,
                     lastModified: Date.now()
                 });
-
-                console.log(`File 객체 생성 완료: ${fileName} (${file.size} bytes, ${file.type})`);
-
                 return file;
             } catch (error) {
                 console.error('File 객체 생성 중 오류 발생:', fileName, error);
@@ -1249,8 +1251,6 @@ export default {
                     console.error('URL 데이터가 없습니다.');
                     return;
                 }
-
-                console.log(`[EventTimeline] 파일 다운로드: ${fileName} from ${fileData.url}`);
 
                 // URL에서 파일 가져오기
                 const response = await fetch(fileData.url);
@@ -1271,8 +1271,6 @@ export default {
                 // 정리
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(url);
-
-                console.log(`파일 다운로드 완료: ${fileName}`);
             } catch (error) {
                 console.error('파일 다운로드 중 오류 발생:', error);
                 alert('파일 다운로드에 실패했습니다.');
@@ -1909,6 +1907,41 @@ export default {
     padding-left: 8px;
     letter-spacing: -0.2px;
     position: relative;
+}
+
+.tool-usage-status-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.tool-result-toggle-btn {
+    flex-shrink: 0;
+    margin-left: 8px;
+    padding: 2px 8px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #495057;
+    background-color: #f1f3f5;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.tool-result-toggle-btn:hover {
+    background-color: #e9ecef;
+}
+
+.tool-usage-result {
+    margin: 2px 0 8px 28px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #495057;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .tool-usage-status-item::before {

@@ -61,7 +61,6 @@ DECLARE
   deleted_dup   int;
   deleted_dup2  int;
   updated_perms int;
-  updated_ak   int;
   updated_users int;
 BEGIN
   -- Step 0: auth.users에는 id가 있는데 public.users.email이 null/빈 값인 경우 → auth.email로 갱신
@@ -110,17 +109,6 @@ BEGIN
     AND u.id NOT IN (SELECT id FROM auth.users);
   GET DIAGNOSTICS updated_perms = ROW_COUNT;
 
-  -- agent_knowledge_setup_log 선행 갱신
-  UPDATE public.agent_knowledge_setup_log ak
-  SET agent_id = au.id
-  FROM public.users u
-  JOIN auth.users au ON au.email = u.email
-  WHERE ak.agent_id = u.id
-    AND u.is_agent = false
-    AND u.id != au.id
-    AND u.id NOT IN (SELECT id FROM auth.users);
-  GET DIAGNOSTICS updated_ak = ROW_COUNT;
-
   -- public.users id 갱신
   UPDATE public.users u
   SET id = au.id
@@ -134,7 +122,6 @@ BEGIN
     'updated_email_from_auth', updated_email,
     'deleted_duplicate_rows', deleted_dup + deleted_dup2,
     'updated_user_permissions', updated_perms,
-    'updated_agent_knowledge_setup_log', updated_ak,
     'updated_users_id', updated_users
   );
 END;

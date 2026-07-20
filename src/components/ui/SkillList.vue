@@ -17,11 +17,22 @@
                         :skill="skill"
                         :skills-by-name="skillsByName"
                         :selected-skill-name="selectedSkillName"
+                        :skill-proposals-map="visibleSkillProposalsMap"
                         @select="goToSkillDetail"
+                        @open-review="openReview"
                     />
                 </div>
             </template>
         </ExpandableList>
+
+        <SkillProposalReviewModal
+            v-model="reviewModalOpen"
+            :skill-name="reviewSkillName"
+            target-type="SKILL"
+            :pending-targets="reviewTargets"
+            :backend="backend"
+            :user-info="currentUserInfo"
+        />
     </div>
 </template>
 
@@ -29,6 +40,8 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 import SkillTreeNode from '@/components/ui/SkillTreeNode.vue';
+import SkillProposalReviewModal from '@/components/ui/SkillProposalReviewModal.vue';
+import { buildSkillProposalMap } from '@/composables/useSkillProposals';
 
 const backend = BackendFactory.createBackend();
 
@@ -36,14 +49,23 @@ export default {
     name: 'SkillList',
     components: {
         ExpandableList,
-        SkillTreeNode
+        SkillTreeNode,
+        SkillProposalReviewModal
     },
     data() {
         return {
+            backend,
             skillList: [],
             isLoading: false,
             selectedSkillName: null,
-            skillsWatchRef: null
+            skillsWatchRef: null,
+            skillProposalsMap: new Map(),
+            proposalsWatchRef: null,
+            currentUserInfo: null,
+            reviewModalOpen: false,
+            reviewSkillName: '',
+            reviewTargets: [],
+            skillOwnersMap: new Map()
         };
     },
     computed: {
@@ -57,16 +79,33 @@ export default {
                 map[s.name] = s;
             }
             return map;
+        },
+        visibleSkillProposalsMap() {
+            const map = new Map();
+            if (!this.currentUserInfo?.uid) return map;
+            for (const [skillName, entries] of this.skillProposalsMap.entries()) {
+                if (this.skillOwnersMap.get(skillName) === this.currentUserInfo.uid) {
+                    map.set(skillName, entries);
+                }
+            }
+            return map;
         }
     },
     async mounted() {
         await this.loadSkillList();
         this.updateSelectedSkill();
         this.subscribeSkills();
+        this.loadCurrentUser();
+        this.loadSkillProposals();
+        this.subscribeSkillProposals();
+        this.loadSkillOwners();
     },
     beforeUnmount() {
         if (this.skillsWatchRef && typeof this.skillsWatchRef.unsubscribe === 'function') {
             this.skillsWatchRef.unsubscribe();
+        }
+        if (this.proposalsWatchRef && typeof this.proposalsWatchRef.unsubscribe === 'function') {
+            this.proposalsWatchRef.unsubscribe();
         }
     },
     watch: {
@@ -81,6 +120,7 @@ export default {
                 this.skillsWatchRef = await backend.watchTenantSkills(
                     () => {
                         this.loadSkillList();
+                        this.loadSkillOwners();
                     },
                     {
                         filter: tenantId ? `tenant_id=eq.${tenantId}` : null
@@ -127,7 +167,57 @@ export default {
         },
 
         onExpanded() {},
-        onCollapsed() {}
+        onCollapsed() {},
+
+        async loadCurrentUser() {
+            try {
+                this.currentUserInfo = await backend.getUserInfo();
+            } catch (e) {
+                this.currentUserInfo = null;
+            }
+        },
+
+        async loadSkillProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                const batches = await backend.getPendingSkillProposalBatches(tenantId);
+                this.skillProposalsMap = buildSkillProposalMap(batches);
+            } catch (error) {
+                console.error(this.$t('SkillProposal.loadFailed'), error);
+            }
+        },
+
+        async subscribeSkillProposals() {
+            try {
+                const tenantId = window.$tenantName;
+                this.proposalsWatchRef = await backend.watchFeedbackProposals(
+                    () => {
+                        this.loadSkillProposals();
+                    },
+                    {
+                        filter: tenantId ? `tenant_id=eq.${tenantId}` : null
+                    }
+                );
+            } catch (e) {
+                console.error('Failed to subscribe feedback_proposals realtime:', e);
+            }
+        },
+
+        openReview(skillName) {
+            this.reviewSkillName = skillName;
+            this.reviewTargets = this.visibleSkillProposalsMap.get(skillName) || [];
+            this.reviewModalOpen = true;
+        },
+
+        async loadSkillOwners() {
+            try {
+                const tenantId = window.$tenantName;
+                const rows = await backend.getTenantSkillOwners(tenantId);
+                this.skillOwnersMap = new Map(rows.map((r) => [r.skill_name, r.owner_id]));
+            } catch (e) {
+                this.skillOwnersMap = new Map();
+            }
+        }
     }
 };
 </script>

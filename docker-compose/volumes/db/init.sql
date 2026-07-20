@@ -3569,7 +3569,7 @@ create table if not exists public.resource_pull_requests (
   title          text                not null,
   description    text                null,
   status         resource_pr_status  not null default 'OPEN',
-  requester_id   uuid                not null,
+  requester_id   uuid[]              not null default '{}'::uuid[],
   reviewer_id    uuid                null,
   git_pr_number  integer             null,
   git_pr_url     text                null,
@@ -3581,8 +3581,6 @@ create table if not exists public.resource_pull_requests (
   constraint resource_pull_requests_resource_type_check check (
     resource_type in ('skill', 'bpmn', 'dmn')
   ),
-  constraint resource_pull_requests_requester_fkey foreign key (requester_id, tenant_id)
-    references public.users (id, tenant_id) on update cascade on delete cascade,
   constraint resource_pull_requests_reviewer_fkey foreign key (reviewer_id, tenant_id)
     references public.users (id, tenant_id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -3630,183 +3628,6 @@ create policy resource_pr_reviews_insert_policy on public.resource_pr_reviews fo
 create policy resource_pr_reviews_select_policy on public.resource_pr_reviews for select to authenticated using (tenant_id = public.tenant_id());
 create policy resource_pr_reviews_update_policy on public.resource_pr_reviews for update to authenticated using (tenant_id = public.tenant_id());
 create policy resource_pr_reviews_delete_policy on public.resource_pr_reviews for delete to authenticated using (tenant_id = public.tenant_id());
-
-
-create table
-  public.agent_knowledge_history (
-    id uuid not null default gen_random_uuid (),
-    knowledge_type text not null,
-    knowledge_id text not null,
-    knowledge_name text null,
-    agent_id uuid not null,
-    tenant_id text null,
-    operation text not null,
-    previous_content text null,
-    new_content text null,
-    moved_from_storage text null,
-    moved_to_storage text null,
-    feedback_content text null,
-    batch_job_id text null,
-    created_at timestamp with time zone not null default now(),
-    constraint agent_knowledge_history_pkey primary key (id),
-    constraint agent_knowledge_history_agent_id_fkey foreign key (agent_id, tenant_id) references users (id, tenant_id) on update cascade on delete cascade,
-    constraint agent_knowledge_history_knowledge_type_check check (
-      (
-        knowledge_type = any (
-          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
-        )
-      )
-    ),
-    constraint agent_knowledge_history_operation_check check (
-      (
-        operation = any (
-          array[
-            'CREATE'::text,
-            'UPDATE'::text,
-            'DELETE'::text,
-            'MOVE'::text
-          ]
-        )
-      )
-    ),
-    constraint agent_knowledge_history_moved_from_storage_check check (
-      (
-        moved_from_storage = any (
-          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
-        )
-      )
-    ),
-    constraint agent_knowledge_history_moved_to_storage_check check (
-      (
-        moved_to_storage = any (
-          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
-        )
-      )
-    )
-  ) tablespace pg_default;
-
-create index if not exists idx_agent_knowledge_history_agent_id on public.agent_knowledge_history using btree (agent_id) tablespace pg_default;
-
-create index if not exists idx_agent_knowledge_history_tenant_id on public.agent_knowledge_history using btree (tenant_id) tablespace pg_default;
-
-create index if not exists idx_agent_knowledge_history_operation on public.agent_knowledge_history using btree (operation) tablespace pg_default;
-
-create index if not exists idx_agent_knowledge_history_created_at on public.agent_knowledge_history using btree (created_at desc) tablespace pg_default;
-
-create index if not exists idx_agent_knowledge_history_batch_job_id on public.agent_knowledge_history using btree (batch_job_id) tablespace pg_default;
-
-create index if not exists idx_agent_knowledge_history_knowledge_type on public.agent_knowledge_history using btree (knowledge_type) tablespace pg_default;
-
-create index if not exists idx_agent_knowledge_history_knowledge_id on public.agent_knowledge_history using btree (knowledge_id) tablespace pg_default;
-
-
--- create table
---   public.agent_knowledge_history (
---     id uuid not null default gen_random_uuid (),
---     knowledge_type text not null,
---     knowledge_id text not null,
---     knowledge_name text null,
---     agent_id uuid not null,
---     tenant_id text null,
---     operation text not null,
---     previous_content text null,
---     new_content text null,
---     moved_from_storage text null,
---     moved_to_storage text null,
---     feedback_content text null,
---     batch_job_id text null,
---     created_at timestamp with time zone not null default now(),
---     constraint agent_knowledge_history_pkey primary key (id),
---     constraint agent_knowledge_history_agent_id_fkey foreign key (agent_id, tenant_id) references users (id, tenant_id) on update cascade on delete cascade,
---     constraint agent_knowledge_history_knowledge_type_check check (
---       (
---         knowledge_type = any (
---           array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
---         )
---       )
---     ),
---     constraint agent_knowledge_history_operation_check check (
---       (
---         operation = any (
---           array[
---             'CREATE'::text,
---             'UPDATE'::text,
---             'DELETE'::text,
---             'MOVE'::text
---           ]
---         )
---       )
---     ),
---     constraint agent_knowledge_history_moved_from_storage_check check (
---       (
---         moved_from_storage = any (
---           array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
---         )
---       )
---     ),
---     constraint agent_knowledge_history_moved_to_storage_check check (
---       (
---         moved_to_storage = any (
---           array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
---         )
---       )
---     )
---   ) tablespace pg_default;
-
--- create index if not exists idx_agent_knowledge_history_agent_id on public.agent_knowledge_history using btree (agent_id) tablespace pg_default;
-
--- create index if not exists idx_agent_knowledge_history_tenant_id on public.agent_knowledge_history using btree (tenant_id) tablespace pg_default;
-
--- create index if not exists idx_agent_knowledge_history_operation on public.agent_knowledge_history using btree (operation) tablespace pg_default;
-
--- create index if not exists idx_agent_knowledge_history_created_at on public.agent_knowledge_history using btree (created_at desc) tablespace pg_default;
-
--- create index if not exists idx_agent_knowledge_history_batch_job_id on public.agent_knowledge_history using btree (batch_job_id) tablespace pg_default;
-
--- create index if not exists idx_agent_knowledge_history_knowledge_type on public.agent_knowledge_history using btree (knowledge_type) tablespace pg_default;
-
--- create index if not exists idx_agent_knowledge_history_knowledge_id on public.agent_knowledge_history using btree (knowledge_id) tablespace pg_default;
-
-
-
--- ============================================================================
--- 에이전트 초기 지식 셋팅 로그 테이블
--- 셋팅 완료 여부 추적 (users 테이블 확장 없이 별도 관리)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS public.agent_knowledge_setup_log (
-  agent_id UUID NOT NULL,
-  tenant_id TEXT,
-  status TEXT NOT NULL DEFAULT 'DONE',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (agent_id),
-  CONSTRAINT agent_knowledge_setup_log_user_fkey
-    FOREIGN KEY (agent_id, tenant_id) REFERENCES public.users (id, tenant_id) ON DELETE CASCADE
-);
-
-GRANT SELECT, INSERT ON public.agent_knowledge_setup_log TO anon;
-CREATE INDEX IF NOT EXISTS idx_agent_knowledge_setup_log_agent_id ON public.agent_knowledge_setup_log(agent_id);
-
-
--- 에이전트 초기 지식 셋팅 대상 조회 (agent_knowledge_setup_log에 없는 에이전트)
-CREATE OR REPLACE FUNCTION public.agent_needing_knowledge_setup(p_limit integer DEFAULT 1)
-RETURNS SETOF users AS $$
-BEGIN
-  RETURN QUERY
-  SELECT u.*
-  FROM public.users u
-  LEFT JOIN public.agent_knowledge_setup_log s ON u.id = s.agent_id
-  WHERE u.is_agent = true
-    AND u.agent_type = 'agent'
-    AND u.goal IS NOT NULL
-    AND u.goal != ''
-    AND s.agent_id IS NULL
-  ORDER BY u.id ASC
-  LIMIT p_limit;
-END;
-$$ LANGUAGE plpgsql STABLE;
-
-GRANT EXECUTE ON FUNCTION public.agent_needing_knowledge_setup(integer) TO anon;
 
 
 -- =====================================================
@@ -3982,3 +3803,117 @@ CREATE POLICY tenant_git_config_insert_policy ON tenant_git_config FOR INSERT TO
 CREATE POLICY tenant_git_config_select_policy ON tenant_git_config FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY tenant_git_config_update_policy ON tenant_git_config FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY tenant_git_config_delete_policy ON tenant_git_config FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+
+
+create table public.feedback_proposals (
+  id uuid not null default gen_random_uuid (),
+  tenant_id text not null,
+  proc_def_id text not null,
+  activity_id text not null,
+  status text not null default 'COLLECTING'::text,
+  collected_items jsonb not null default '[]'::jsonb,
+  first_collected_at timestamp with time zone not null default now(),
+  extracted_rule text null,
+  proposed_at timestamp with time zone null,
+  decided_by uuid null,
+  decided_by_name text null,
+  decided_by_email text null,
+  decided_at timestamp with time zone null,
+  decision_note text null,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  candidate_skill_names text[] not null default '{}'::text[],
+  targets jsonb not null default '[]'::jsonb,
+  constraint feedback_proposals_pkey primary key (id),
+  constraint feedback_proposals_status_check check (
+    (
+      status = any (
+        array[
+          'COLLECTING'::text,
+          'PROPOSED'::text,
+          'APPROVED'::text,
+          'REJECTED'::text,
+          'DISCARDED'::text,
+          'RESOLVED'::text
+        ]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+create unique INDEX IF not exists feedback_proposals_collecting_key on public.feedback_proposals using btree (tenant_id, proc_def_id, activity_id) TABLESPACE pg_default
+where
+  (status = 'COLLECTING'::text);
+
+create index IF not exists feedback_proposals_status_idx on public.feedback_proposals using btree (status) TABLESPACE pg_default;
+
+create trigger feedback_proposals_updated_at BEFORE
+update on feedback_proposals for EACH row
+execute FUNCTION update_updated_at_column ();
+
+CREATE OR REPLACE FUNCTION public.decide_feedback_proposal_target(
+    p_batch_id          uuid,
+    p_target_type       text,
+    p_status            text,
+    p_decided_by        uuid,
+    p_decided_by_name   text,
+    p_decided_by_email  text,
+    p_decision_note     text
+) RETURNS public.feedback_proposals
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_row         public.feedback_proposals;
+    v_targets     jsonb;
+    v_elem        jsonb;
+    v_found       boolean := false;
+    v_all_decided boolean := true;
+    i             int;
+BEGIN
+    SELECT * INTO v_row
+    FROM public.feedback_proposals
+    WHERE id = p_batch_id AND status = 'PROPOSED'
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RETURN NULL;
+    END IF;
+
+    v_targets := v_row.targets;
+
+    FOR i IN 0 .. jsonb_array_length(v_targets) - 1 LOOP
+        v_elem := v_targets -> i;
+        IF (v_elem ->> 'type') = p_target_type AND (v_elem ->> 'status') = 'PENDING' THEN
+            v_elem := v_elem || jsonb_build_object(
+                'status', p_status,
+                'decided_by', p_decided_by,
+                'decided_by_name', p_decided_by_name,
+                'decided_by_email', p_decided_by_email,
+                'decision_note', p_decision_note,
+                'decided_at', to_jsonb(now())
+            );
+            v_targets := jsonb_set(v_targets, ARRAY[i::text], v_elem);
+            v_found := true;
+        END IF;
+    END LOOP;
+
+    IF NOT v_found THEN
+        RETURN NULL;
+    END IF;
+
+    FOR i IN 0 .. jsonb_array_length(v_targets) - 1 LOOP
+        IF (v_targets -> i ->> 'status') = 'PENDING' THEN
+            v_all_decided := false;
+        END IF;
+    END LOOP;
+
+    UPDATE public.feedback_proposals
+    SET targets = v_targets,
+        status = CASE WHEN v_all_decided THEN 'RESOLVED' ELSE status END
+    WHERE id = p_batch_id
+    RETURNING * INTO v_row;
+
+    RETURN v_row;
+END;
+$$;

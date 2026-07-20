@@ -62,6 +62,12 @@ export const router = createRouter({
             component: () => retryDynamicImport(() => import('@/views/markdown/MarkdownEditor.vue'))
         },
         {
+            // 공개 데모 라우트(인증 불필요) — 인스턴스 자동분류 · Top List · 유사 사례.
+            name: 'Instance Classifier Demo',
+            path: '/instance-classifier-demo',
+            component: () => retryDynamicImport(() => import('@/views/demo/InstanceClassifierDemo.vue'))
+        },
+        {
             name: 'Slide',
             path: '/slide-editor',
             component: () => retryDynamicImport(() => import('@/views/markdown/SlideEditor.vue'))

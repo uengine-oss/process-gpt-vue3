@@ -10,7 +10,8 @@
                 >
             </div>
             <pre v-if="formattedKind === 'json'" class="form-text-area__json">{{ prettyJson }}</pre>
-            <div v-else class="form-text-area__md" v-html="renderedMarkdown"></div>
+            <div v-else-if="hasContent" class="form-text-area__md" v-html="renderedMarkdown"></div>
+            <div v-else class="form-text-area__empty">-</div>
         </div>
         <div v-else>
             <div v-if="canFormat && !isReadonlyView" class="form-text-area__togglerow">
@@ -110,6 +111,9 @@ export default {
         showFormatted() {
             // 읽기전용은 항상 포맷 렌더, 편집 폼은 previewMode 일 때 렌더(토글로 편집 전환).
             return this.canFormat && (this.isReadonlyView || this.previewMode);
+        },
+        hasContent() {
+            return !!(this.localModelValue || '').toString().trim();
         },
         formattedKind() {
             // 내용이 json/markdown/평문 중 무엇인지 판단(평문은 렌더 대상 아님).
@@ -276,10 +280,19 @@ export default {
     font-size: 12.5px;
     color: #1f2937;
 }
+.form-text-area__empty {
+    font-size: 13.5px;
+    color: #9ca3af;
+}
 .form-text-area__md {
     font-size: 13.5px;
     color: #1f2937;
     line-height: 1.6;
+    white-space: normal;
+    word-break: break-word;
+}
+.form-text-area__md :deep(p) {
+    margin: 0 0 6px;
 }
 .form-text-area__md :deep(h1),
 .form-text-area__md :deep(h2),

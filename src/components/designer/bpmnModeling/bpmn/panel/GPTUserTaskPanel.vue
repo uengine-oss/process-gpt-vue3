@@ -94,6 +94,7 @@
 
             <v-window-item value="agent" class="pa-4">
                 <AgentSelectField
+                    ref="agentSelectField"
                     v-model="activity"
                     :backend="backend"
                     :is-sub-agent-profile="isSubAgentProfile"
@@ -206,6 +207,7 @@ export default {
                 agent: '',
                 agentMode: 'none',
                 orchestration: null,
+                agentAssignedFrom: null,
                 tool: '',
                 inputData: [],
                 customProperties: [],
@@ -266,6 +268,8 @@ export default {
             if (this.copyUengineProperties.agentMode !== undefined) this.activity.agentMode = this.copyUengineProperties.agentMode;
             if (this.copyUengineProperties.orchestration !== undefined && this.copyUengineProperties.orchestration !== 'none')
                 this.activity.orchestration = this.copyUengineProperties.orchestration;
+            if (this.copyUengineProperties.agentAssignedFrom !== undefined)
+                this.activity.agentAssignedFrom = this.copyUengineProperties.agentAssignedFrom;
             if (this.copyUengineProperties.attachments !== undefined) this.activity.attachments = this.copyUengineProperties.attachments;
             if (this.copyUengineProperties.inputData !== undefined) this.activity.inputData = this.copyUengineProperties.inputData;
             // tool의 기준은 processDefinition.activities이며, uengineProperties.tool은 보조값으로만 사용
@@ -300,6 +304,10 @@ export default {
         let me = this;
         await me.init();
         await me.loadMentionCandidates();
+        if (me.EventBus) me.EventBus.on('lane-agent-cascade-applied', me.onLaneAgentCascadeApplied);
+    },
+    beforeUnmount() {
+        if (this.EventBus) this.EventBus.off('lane-agent-cascade-applied', this.onLaneAgentCascadeApplied);
     },
     computed: {
         lastPath() {
@@ -645,6 +653,24 @@ export default {
 
             me.copyDefinition = me.definition;
         },
+        // 레인 에이전트 캐스케이드가 지금 열려있는 태스크에도 적용된 경우, 패널을 다시 열지 않아도
+        // 즉시 반영되도록 갱신한다. 사용자가 직접 고친 것으로 오인되지 않도록(agentAssignedFrom='manual')
+        // AgentSelectField의 억제 플래그를 통해 반영한다.
+        onLaneAgentCascadeApplied(payload) {
+            if (!payload || !Array.isArray(payload.activityIds)) return;
+            if (!this.element || !payload.activityIds.includes(this.element.id)) return;
+
+            if (this.$refs.agentSelectField && typeof this.$refs.agentSelectField.applyExternalCascade === 'function') {
+                this.$refs.agentSelectField.applyExternalCascade({
+                    orchestration: payload.orchestration,
+                    agent: payload.agent
+                });
+            } else {
+                this.activity.orchestration = payload.orchestration;
+                this.activity.agent = payload.agent;
+                this.activity.agentAssignedFrom = 'lane-cascade';
+            }
+        },
         // 깃발 아이콘 진입 신호를 읽어 PI Flag 탭으로 전환 + 묶음 대상 주입
         applyPiFlagFocus() {
             const sig = useBpmnStore().piFlagFocus;
@@ -707,6 +733,7 @@ export default {
                     targetActivity.agent = me.activity.agent || null;
                     targetActivity.agentMode = me.activity.agentMode || null;
                     targetActivity.orchestration = me.activity.orchestration || null;
+                    targetActivity.agentAssignedFrom = me.activity.agentAssignedFrom || null;
 
                     targetActivity.attachments = Array.isArray(me.activity.attachments) ? [...me.activity.attachments] : [];
                     targetActivity.inputData = Array.isArray(me.activity.inputData) ? [...me.activity.inputData] : [];
@@ -741,6 +768,7 @@ export default {
                 agent: me.activity.agent,
                 agentMode: me.activity.agentMode,
                 orchestration: me.activity.orchestration,
+                agentAssignedFrom: me.activity.agentAssignedFrom,
                 attachments: me.activity.attachments,
                 inputData: me.activity.inputData,
                 tool: me.activity.tool,

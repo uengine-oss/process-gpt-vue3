@@ -75,7 +75,7 @@
 
                 <!-- Expanded Row -->
                 <template #expanded-row="{ item }">
-                    <tr>
+                    <tr style="overflow-y: auto;">
                         <td :colspan="tableHeaders.length + 1" class="pa-0">
                             <div class="expanded-content">
                                 <!-- User Input Section -->
@@ -99,7 +99,7 @@
                                         </div>
 
                                         <!-- Feedback for this item -->
-                                        <div
+                                        <!-- <div
                                             class="mt-2 pt-2"
                                             style="border-top: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity))"
                                         >
@@ -144,7 +144,7 @@
                                                     @applyFeedback="applyRowFeedback"
                                                 />
                                             </div>
-                                        </div>
+                                        </div> -->
                                     </div>
                                 </div>
 

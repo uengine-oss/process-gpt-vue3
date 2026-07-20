@@ -166,15 +166,11 @@
                         <v-list-subheader v-if="item.raw?.isHeader" class="text-uppercase font-weight-medium">
                             {{ item.raw.title }}
                         </v-list-subheader>
-                        <v-tooltip v-else :text="item.raw?.subtitle" location="top" :disabled="!item.raw?.subtitle" max-width="250">
-                            <template #activator="{ props: tooltipProps }">
-                                <v-list-item v-bind="{ ...props, ...tooltipProps }" :title="item.raw?.title">
-                                    <v-list-item-subtitle v-if="item.raw?.subtitle" class="text-truncate" style="max-width: 250px">{{
-                                        item.raw.subtitle
-                                    }}</v-list-item-subtitle>
-                                </v-list-item>
-                            </template>
-                        </v-tooltip>
+                        <v-list-item v-else v-bind="{ props }" :title="item.raw?.title">
+                            <v-list-item-subtitle v-if="item.raw?.subtitle" class="text-truncate" style="max-width: 250px">{{
+                                item.raw.subtitle
+                            }}</v-list-item-subtitle>
+                        </v-list-item>
                     </template>
                 </v-select>
             </div>
@@ -343,7 +339,10 @@ export default {
 
             selectedAgent: null,
             agentType: null,
-            agentAlias: null
+            agentAlias: null,
+            // true 동안의 activity.orchestration/agent 변경은 사용자 조작이 아닌 것으로 간주한다
+            // (초기 props 로딩, 레인 캐스케이드로 인한 외부 갱신 등). created()에서 시작해 mounted() 이후 해제.
+            suppressManualMarker: true
         };
     },
     computed: {
@@ -417,7 +416,10 @@ export default {
             }
         },
         'activity.orchestration': {
-            handler(newVal) {
+            handler(newVal, oldVal) {
+                if (!this.suppressManualMarker && newVal !== oldVal) {
+                    this.activity.agentAssignedFrom = 'manual';
+                }
                 if (this.isSubAgentProfile) {
                     if (newVal === 'a2a') {
                         this.activity.usePresetAgent = true;
@@ -455,6 +457,9 @@ export default {
         selectedAgent: {
             deep: true,
             handler(newVal) {
+                if (!this.suppressManualMarker) {
+                    this.activity.agentAssignedFrom = 'manual';
+                }
                 if (newVal && newVal.length > 0) {
                     let agentIds = [];
                     newVal.forEach((agent) => {
@@ -565,8 +570,25 @@ export default {
         } else if (this.isSubAgentProfile && !this.activity.agentMode && !this.isSingleAgentType) {
             this.activity.agentMode = 'draft';
         }
+
+        // 초기 로딩(props로부터의 값 복원)이 끝난 뒤부터는 orchestration/agent 변경을
+        // 사용자의 직접 수정으로 간주해 agentAssignedFrom을 'manual'로 표시한다.
+        this.$nextTick(() => {
+            this.suppressManualMarker = false;
+        });
     },
     methods: {
+        // 레인 캐스케이드 등 외부(사용자 조작이 아닌)에서 orchestration/agent를 갱신할 때 사용.
+        // suppressManualMarker로 감싸서 이 갱신이 'manual' 마커를 붙이지 않도록 한다.
+        applyExternalCascade({ orchestration, agent }) {
+            this.suppressManualMarker = true;
+            this.activity.orchestration = orchestration;
+            this.activity.agent = agent;
+            this.activity.agentAssignedFrom = 'lane-cascade';
+            this.$nextTick(() => {
+                this.suppressManualMarker = false;
+            });
+        },
         getCostColor(costKey) {
             if (costKey === 'AgentSelectInfo.cost.low') {
                 return 'success';

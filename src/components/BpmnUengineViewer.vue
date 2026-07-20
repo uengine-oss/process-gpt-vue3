@@ -194,6 +194,13 @@ export default {
             type: Boolean,
             default: false
         },
+        // 컨테이너 크기 변화 시 자동으로 가로/세로 방향을 전환하는 기능을 끈다.
+        // 좁고 긴 컨테이너(예: 좌우 비교 뷰의 각 패널)에서는 이 자동 전환이 방금 적용한
+        // 오토레이아웃 결과(레인 위치 등)와 경쟁해 레인이 겹치는 문제를 일으킬 수 있다.
+        disableAutoOrientation: {
+            type: Boolean,
+            default: false
+        },
         onLoadStart: {
             type: Function,
             default: () => {
@@ -987,6 +994,13 @@ export default {
                             self.$emit('navigateToTask', { instanceId: self.instanceId, tracingTag });
                         }
                     }
+
+                    // 피드백 드로어 패널: 노드 타입과 무관하게, 현재 인스턴스에서 해당 노드가
+                    // 완료 상태인 workitem을 실제로 갖고 있는지로만 게이팅한다(process-feedback-whole-definition-review).
+                    const activityId = e.element.id || (e.element.businessObject && e.element.businessObject.id);
+                    if (activityId && self.instanceId && self.activityStatus && self.activityStatus[activityId] === 'Completed') {
+                        self.$emit('openFeedbackPanel', { instanceId: self.instanceId, activityId });
+                    }
                 });
 
                 if (!self.activityStatus) {
@@ -1415,7 +1429,7 @@ export default {
         },
         onContainerResizeFinished() {
             const container = this.$refs.container;
-            if (!container || this.isAIGenerated || !container.getBoundingClientRect) return;
+            if (!container || this.isAIGenerated || this.disableAutoOrientation || !container.getBoundingClientRect) return;
 
             const canvas = this.bpmnViewer?.get('canvas');
             if (canvas) canvas.resized();

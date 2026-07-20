@@ -102,6 +102,76 @@ export function isUengineMode() {
 
 const BPMN_NS = 'http://www.omg.org/spec/BPMN/20100524/MODEL';
 
+/**
+ * BPMN XML 안의 특정 요소(id로 식별)의 <uengine:properties> JSON 내용을 부분 병합(patch)한다.
+ * 요소의 다른 부분(레이아웃, 다른 속성, 다른 요소)은 건드리지 않는다.
+ * 기존에 json="" attribute 형식으로 저장돼 있으면 attribute를, <uengine:json> 요소 형식이면
+ * 요소를 그대로 유지하며 값만 갱신한다. 아직 uengine:properties가 없으면 요소 형식으로 새로 만든다.
+ *
+ * @param {string} xmlString
+ * @param {string} elementId
+ * @param {Record<string, any>} partialProps - 기존 JSON에 병합할 필드
+ * @returns {string} 갱신된 XML 문자열 (요소를 찾지 못하면 원본 그대로 반환)
+ */
+export function patchElementUengineProperties(xmlString, elementId, partialProps) {
+    if (!xmlString || !elementId) return xmlString;
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xmlString, 'text/xml');
+        if (doc.querySelector('parsererror')) return xmlString;
+
+        const target = doc.evaluate(`//*[@id="${elementId}"]`, doc, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+            .singleNodeValue;
+        if (!target) return xmlString;
+
+        let ext = target.getElementsByTagNameNS(BPMN_NS, 'extensionElements')[0];
+        if (!ext) {
+            ext = doc.createElementNS(BPMN_NS, 'bpmn:extensionElements');
+            target.insertBefore(ext, target.firstChild);
+        }
+
+        let uprops = ext.getElementsByTagNameNS(UENGINE_NS, 'properties')[0];
+        if (!uprops) {
+            uprops = doc.createElementNS(UENGINE_NS, 'uengine:properties');
+            ext.appendChild(uprops);
+        }
+
+        const attrJson = uprops.getAttribute('json');
+        const jsonEl = uprops.getElementsByTagNameNS(UENGINE_NS, 'json')[0];
+        let current = {};
+        if (attrJson != null) {
+            try {
+                current = JSON.parse(unescapeXmlAttr(attrJson));
+            } catch {
+                current = {};
+            }
+        } else if (jsonEl && (jsonEl.textContent || '').trim()) {
+            try {
+                current = JSON.parse(jsonEl.textContent.trim());
+            } catch {
+                current = {};
+            }
+        }
+
+        const merged = { ...current, ...partialProps };
+
+        if (attrJson != null) {
+            uprops.setAttribute('json', JSON.stringify(merged));
+        } else if (jsonEl) {
+            jsonEl.textContent = JSON.stringify(merged);
+        } else {
+            const newJsonEl = doc.createElementNS(UENGINE_NS, 'uengine:json');
+            newJsonEl.textContent = JSON.stringify(merged);
+            uprops.appendChild(newJsonEl);
+        }
+
+        return new XMLSerializer().serializeToString(doc);
+    } catch (e) {
+        console.warn('[uengineXmlTransform] patchElementUengineProperties failed:', e);
+        return xmlString;
+    }
+}
+
 function isValidJson(text) {
     if (text == null || typeof text !== 'string') return false;
     const trimmed = text.trim();

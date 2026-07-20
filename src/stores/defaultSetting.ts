@@ -70,26 +70,26 @@ export const useDefaultSetting = defineStore({
                 alias: 'browser-automation-agent',
                 is_default: true
             },
-            {
-                id: '97e74b9e-44c9-0451-762e-38c8055017c3',
-                usernameKey: 'defaultSetting.visionparse.username',
-                username: '',
-                profile: '/images/chat-icon.png',
-                email: null,
-                role: '',
-                goal: '',
-                persona: '',
-                descriptionKey: 'defaultSetting.visionparse.description',
-                description: '',
-                tools: '',
-                skills: null,
-                is_agent: true,
-                model: null,
-                endpoint: '',
-                agent_type: 'pgagent',
-                alias: 'visionparse',
-                is_default: true
-            }
+            // {
+            //     id: '97e74b9e-44c9-0451-762e-38c8055017c3',
+            //     usernameKey: 'defaultSetting.visionparse.username',
+            //     username: '',
+            //     profile: '/images/chat-icon.png',
+            //     email: null,
+            //     role: '',
+            //     goal: '',
+            //     persona: '',
+            //     descriptionKey: 'defaultSetting.visionparse.description',
+            //     description: '',
+            //     tools: '',
+            //     skills: null,
+            //     is_agent: true,
+            //     model: null,
+            //     endpoint: '',
+            //     agent_type: 'pgagent',
+            //     alias: 'visionparse',
+            //     is_default: true
+            // }
         ]
     }),
     actions: {
