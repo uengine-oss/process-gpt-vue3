@@ -5672,22 +5672,30 @@ export default {
 
         async handleHwpxDownload(panelId, payload) {
             if (this.artifactDownloadLoading) return;
-            const html = payload?.html || '';
-            if (!html) return;
             const panel = this.artifactPanels.find((p) => p.id === panelId);
             const hwpxUrl = panel?.data?.fileUrl || this.findLatestHwpxFileUrl();
             if (!hwpxUrl) return;
+            const html = payload?.html || '';
+            const fallbackName = panel?.data?.label || 'document.hwpx';
 
             this.artifactDownloadLoading = true;
             try {
-                const result = await this.requestHwpxSave({ hwpxUrl, html });
-                const fileUrl = result?.file_url || result?.fileUrl || '';
-                const fileName = result?.file_name || result?.fileName || 'output.hwpx';
-                if (fileUrl) {
-                    this.triggerFileDownload(fileUrl, fileName);
+                // 편집 저장(HTML→hwpx, HWPX MCP 서버 필요)을 먼저 시도하되, 서버가 없거나 실패하면
+                // *원본 hwpx* 를 그대로 다운로드한다(생성된 산출물은 이미 유효한 hwpx라 재변환 불필요).
+                if (html) {
+                    try {
+                        const result = await this.requestHwpxSave({ hwpxUrl, html });
+                        const fileUrl = result?.file_url || result?.fileUrl || '';
+                        if (fileUrl) {
+                            this.triggerFileDownload(fileUrl, result?.file_name || result?.fileName || fallbackName);
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn('[ChatRoomPage] HWPX 저장 실패 → 원본 다운로드로 폴백:', e);
+                    }
                 }
-            } catch (e) {
-                console.warn('[ChatRoomPage] HWPX 다운로드 실패:', e);
+                // 폴백: 원본 hwpx 직접 다운로드
+                this.triggerFileDownload(hwpxUrl, fallbackName);
             } finally {
                 this.artifactDownloadLoading = false;
             }
