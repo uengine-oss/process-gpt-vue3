@@ -2146,7 +2146,7 @@
                                                                                         size="small"
                                                                                         color="primary"
                                                                                         class="ma-1"
-                                                                                        @click="openSourceModal(source)"
+                                                                                        @click="openDocViewer(source)"
                                                                                     >
                                                                                         <v-icon start icon="mdi-text-box-search-outline" size="x-small"></v-icon>
                                                                                         {{ sourceChipLabel(source) }}
@@ -2783,7 +2783,7 @@
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage" />
             <input
                 type="file"
-                accept="image/*,.pdf,.hwp,.hwpx,.doc,.docx,.pptx,.txt,.xlsx"
+                accept=".pdf,.hwpx,.doc,.docx,.pptx,.txt"
                 ref="unifiedFileInput"
                 class="d-none"
                 multiple
@@ -2818,6 +2818,7 @@
                     <v-chip closable color="primary" variant="tonal" @click:close="clearSelectedPdf(fileIdx)">
                         <v-icon start size="16">mdi-file-outline</v-icon>
                         {{ docFile?.name || '첨부파일' }}
+                        <span v-if="docFile?.size" class="ml-1 text-medium-emphasis">({{ formatBytes(docFile.size) }})</span>
                     </v-chip>
                 </div>
             </div>
@@ -2929,7 +2930,7 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip> -->
-                                <v-tooltip :text="$t('chat.addFile')">
+                                <v-tooltip text="파일 첨부 · PDF, HWPX, DOC, DOCX, PPTX, TXT · 파일당 최대 10MB">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
                                             icon
@@ -3257,42 +3258,12 @@
         </v-card>
     </v-dialog>
 
-    <!-- navigator 출처 스니펫 모달 — AI가 참고한 문서의 해당 본문을 그대로 보여준다 -->
-    <v-dialog v-model="sourceModal.open" max-width="720" scrollable>
-        <v-card v-if="sourceModal.source">
-            <v-card-title class="d-flex align-center" style="gap: 6px">
-                <v-icon icon="mdi-text-box-search-outline" start></v-icon>
-                <span class="text-truncate">{{ sourceModal.source.file_name || '출처' }}</span>
-            </v-card-title>
-            <v-card-subtitle v-if="sourceModal.source.cite || sourceChipLabel(sourceModal.source)">
-                {{ sourceModal.source.cite || sourceChipLabel(sourceModal.source) }}
-            </v-card-subtitle>
-            <v-divider></v-divider>
-            <v-card-text>
-                <div
-                    v-if="sourceModal.source.path"
-                    class="text-caption text-medium-emphasis mb-2"
-                    style="word-break: break-all"
-                >
-                    경로: {{ sourceModal.source.path }}
-                </div>
-                <div class="source-snippet">{{ sourceModal.source.snippet || '(본문 미리보기가 제공되지 않았습니다.)' }}</div>
-            </v-card-text>
-            <v-card-actions>
-                <v-btn
-                    v-if="sourceModal.source.source_ref"
-                    variant="text"
-                    color="primary"
-                    prepend-icon="mdi-download"
-                    @click="downloadSourceFile(sourceModal.source)"
-                >
-                    원본 다운로드
-                </v-btn>
-                <v-spacer></v-spacer>
-                <v-btn variant="text" @click="sourceModal.open = false">닫기</v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
+    <!-- 출처 원문 뷰어 — 칩 클릭 시 원문(마크다운)을 열고 인용 위치를 하이라이트 -->
+    <SourceDocViewer
+        v-model="docViewer.open"
+        :source="docViewer.source"
+        @download="downloadSourceFile"
+    />
 </template>
 
 <script>
@@ -3316,6 +3287,7 @@ import DetailComponent from '@/components/ui-components/details/DetailComponent.
 import AgentMessagePanel from '@/components/ui/AgentMessagePanel.vue';
 import { marked } from 'marked';
 import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
+import SourceDocViewer from '@/components/ui/SourceDocViewer.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -3333,7 +3305,8 @@ export default {
         ProcessWorkResult,
         DetailComponent,
         AgentMessagePanel,
-        OpenUiRenderer
+        OpenUiRenderer,
+        SourceDocViewer
     },
     mixins: [ProgressAnimated, ScrollBottomHandle],
     props: {
@@ -3508,8 +3481,8 @@ export default {
             replyUser: null,
             isViewJSON: [],
             isviewJSONStatus: false,
-            // navigator 출처 스니펫 모달
-            sourceModal: { open: false, source: null },
+            // 출처 원문 뷰어(칩 클릭 → 원문 마크다운 + 인용 하이라이트)
+            docViewer: { open: false, source: null },
             attachedImages: [],
             delImgBtn: false,
             // PDF 업로드(정의체계도/패널 공통)
@@ -4544,15 +4517,25 @@ export default {
                 if (!url && !name) continue;
                 list.push(f);
             }
-            const uniq = [];
-            const seen = new Set();
+            // 같은 산출물이 여러 채널(내부 도구 tool_end + task 래퍼 tool_end + persist 등)로
+            // 중복 수집되므로 *url 단독* 으로 dedup 한다. (기존 url|name 키는 URL basename 으로 만든
+            // 폴백 이름이 실제 file_name 과 달라 dedup 을 빠져나가 같은 파일이 2~3개로 보이던 원인.)
+            // 표시 이름은 실제 file_name 우선 — URL basename 폴백 이름은 피한다.
+            const urlOf = (f) => f.url || f.fileUrl || f.publicUrl || f.signedUrl || '';
+            const nameOf = (f) => f.name || f.fileName || '';
+            const byUrl = new Map();
+            const noUrl = [];
             for (const f of list) {
-                const key = `${f.url || f.fileUrl || f.publicUrl || f.signedUrl || ''}|${f.name || f.fileName || ''}`;
-                if (seen.has(key)) continue;
-                seen.add(key);
-                uniq.push(f);
+                const url = urlOf(f);
+                if (!url) { noUrl.push(f); continue; }
+                const existing = byUrl.get(url);
+                if (!existing) { byUrl.set(url, f); continue; }
+                const base = this.getFilenameFromUrl(url);
+                const isFallbackName = (f2) => { const n = nameOf(f2); return !n || n === base; };
+                // 기존 항목의 이름이 폴백(빈값/URL basename)인데 새 항목이 실제 이름을 가지면 교체.
+                if (isFallbackName(existing) && !isFallbackName(f)) byUrl.set(url, f);
             }
-            return uniq;
+            return [...byUrl.values(), ...noUrl];
         },
         shouldRenderMessageBubble(message) {
             try {
@@ -4900,9 +4883,10 @@ export default {
             const pageLabel = source.page_label || (source.page != null ? String(source.page) : '');
             return pageLabel ? `${name} · p.${pageLabel}` : name;
         },
-        // 출처 칩 클릭 → AI가 참고한 본문 스니펫 모달
-        openSourceModal(source) {
-            this.sourceModal = { open: true, source: source || null };
+        // 출처 칩 클릭 → 원문 전체를 열고 인용 위치를 하이라이트해 보여주는 뷰어
+        openDocViewer(source) {
+            if (!source) return;
+            this.docViewer = { open: true, source };
         },
         // 출처 모달 → 원본 파일 다운로드 (drive: google file_id / upload: storage_path)
         async downloadSourceFile(source) {
@@ -5586,40 +5570,31 @@ export default {
             const selected = Array.from(e?.target?.files || []);
             if (!selected.length) return;
 
-            // Allow PDF + common Office + image formats (stored to Supabase, converted/OCR’d server-side).
-            const allowedExt = [
-                '.pdf',
-                '.doc',
-                '.docx',
-                '.hwp',
-                '.hwpx',
-                '.xls',
-                '.xlsx',
-                '.ppt',
-                '.pptx',
-                '.txt',
-                '.csv',
-                '.jpg',
-                '.jpeg',
-                '.png',
-                '.gif',
-                '.webp',
-                '.bmp',
-                '.tiff'
-            ];
-            const invalid = selected.find((f) => {
+            const allowedExt = ['.pdf', '.hwpx', '.doc', '.docx', '.pptx', '.txt'];
+            const maxBytes = 10 * 1024 * 1024;
+            const hasAllowedExtension = (f) => {
                 const name = (f?.name || '').toLowerCase();
-                return !allowedExt.some((ext) => name.endsWith(ext));
-            });
-            if (invalid) {
-                alert('지원되는 파일 형식이 아닙니다. (PDF/Office/Image/Text)');
-                if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
-                if (this.$refs.unifiedFileInput) this.$refs.unifiedFileInput.value = '';
-                return;
+                return allowedExt.some((ext) => name.endsWith(ext));
+            };
+            const invalidType = selected.filter((f) => !hasAllowedExtension(f));
+            const tooLarge = selected.filter((f) => hasAllowedExtension(f) && Number(f?.size || 0) > maxBytes);
+            const accepted = selected.filter((f) => hasAllowedExtension(f) && Number(f?.size || 0) <= maxBytes);
+
+            const errors = [];
+            if (invalidType.length) {
+                errors.push(`지원하지 않는 형식: ${invalidType.map((f) => f.name).join(', ')}`);
             }
+            if (tooLarge.length) {
+                errors.push(`10MB를 초과한 파일: ${tooLarge.map((f) => f.name).join(', ')}`);
+            }
+            if (errors.length) {
+                alert(`${errors.join('\n')}\n\n허용 형식: PDF, HWPX, DOC, DOCX, PPTX, TXT\n파일당 최대 용량: 10MB`);
+            }
+            if (!accepted.length) return;
+
             const current = Array.isArray(this.selectedPdfFiles) ? this.selectedPdfFiles : [];
             const merged = [...current];
-            for (const f of selected) {
+            for (const f of accepted) {
                 const key = `${f.name}|${f.size}|${f.lastModified}`;
                 const exists = merged.some((x) => `${x.name}|${x.size}|${x.lastModified}` === key);
                 if (!exists) merged.push(f);
@@ -5778,6 +5753,13 @@ export default {
             const me = this;
             const selectedFiles = Array.from(e?.target?.files || []);
             if (!selectedFiles.length) return;
+
+            // 업무 채팅의 문서 첨부는 handlePdfSelect 한 곳에서 확장자/10MB 제한을 적용한다.
+            // 이미지 붙여넣기·카메라 등 기존 이미지 전용 흐름은 아래 로직을 그대로 사용한다.
+            if (this.workAssistantAgentMode) {
+                this.handlePdfSelect({ target: { files: selectedFiles } });
+                return;
+            }
 
             // 채팅 첨부 허용 형식 — 지원 문서셋 + 이미지(비전). 그 외는 거부.
             const CHAT_ALLOWED_DOC_EXTS = ['pdf', 'hwp', 'hwpx', 'doc', 'docx', 'pptx', 'txt', 'xlsx'];
@@ -6215,19 +6197,6 @@ export default {
         margin-bottom: 4px;
     }
 }
-.source-snippet {
-    white-space: pre-wrap;
-    word-break: break-word;
-    font-size: 0.9rem;
-    line-height: 1.6;
-    background: rgba(var(--v-theme-on-surface), 0.04);
-    border-left: 3px solid rgba(var(--v-theme-primary), 0.5);
-    border-radius: 4px;
-    padding: 12px 14px;
-    max-height: 50vh;
-    overflow-y: auto;
-}
-
 @keyframes breathe {
     0%,
     100% {

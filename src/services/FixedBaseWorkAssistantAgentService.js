@@ -123,7 +123,10 @@ class FixedBaseWorkAssistantAgentService {
                                 if (onOpenUi) onOpenUi(parsed);
                                 break;
                             case 'done':
-                                if (onDone) onDone(parsed.content);
+                                // parsed 전체를 함께 넘긴다 — done 이벤트의 sources(참고 문서 출처) 등
+                                // content 외 필드를 onDone 핸들러가 받을 수 있게. (예전엔 content만 넘겨
+                                // doneEvent.sources 가 항상 undefined → 출처 칩이 안 떴다.)
+                                if (onDone) onDone(parsed.content, parsed);
                                 break;
                             case 'error':
                                 if (onError) onError(new Error(parsed.error || parsed.message || 'Agent error'));

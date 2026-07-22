@@ -5,9 +5,7 @@
             <div class="ppv__summary">
                 <span v-if="fileName" class="ppv__name" :title="fileName">{{ fileName }}</span>
                 <v-chip size="x-small" variant="tonal" color="primary">{{ pages.length }} 페이지</v-chip>
-                <v-chip v-if="chunks && chunks.length" size="x-small" variant="tonal" color="secondary">
-                    {{ chunks.length }} 청크
-                </v-chip>
+                <v-chip v-if="chunks && chunks.length" size="x-small" variant="tonal" color="secondary"> {{ chunks.length }} 청크 </v-chip>
                 <span class="ppv__count">{{ totalChars.toLocaleString() }} 자</span>
             </div>
             <div class="ppv__tools">
@@ -53,7 +51,9 @@
                     :class="{ 'ppv__rail-item--active': !showAll && i === current }"
                     @click="select(i)"
                 >
-                    <span class="ppv__rail-no">{{ mode === 'chunks' ? '#' + (it.index != null ? it.index : i) : (it.page_number != null ? it.page_number : i + 1) }}</span>
+                    <span class="ppv__rail-no">{{
+                        mode === 'chunks' ? '#' + (it.index != null ? it.index : i) : it.page_number != null ? it.page_number : i + 1
+                    }}</span>
                     <span class="ppv__rail-snip">{{ snippet(it.content) }}</span>
                     <span class="ppv__rail-len">{{ (it.content || '').length.toLocaleString() }}</span>
                 </div>
@@ -79,24 +79,20 @@
                 <div class="ppv__scroll" ref="scroll">
                     <!-- 한 장 -->
                     <template v-if="!showAll">
-                        <div
-                            v-if="mode === 'rendered'"
-                            class="markdown-body ppv__md"
-                            v-html="renderMd(cur && cur.content)"
-                        ></div>
+                        <div v-if="mode === 'rendered'" class="markdown-body ppv__md" v-html="renderMd(cur && cur.content)"></div>
                         <pre v-else class="ppv__raw">{{ cur && cur.content }}</pre>
                     </template>
                     <!-- 전체 -->
                     <template v-else>
                         <div v-for="(it, i) in items" :key="i" class="ppv__block">
                             <div class="ppv__block-head">
-                                {{ mode === 'chunks' ? '청크 #' + (it.index != null ? it.index : i) : '페이지 ' + (it.page_number != null ? it.page_number : i + 1) }}
+                                {{
+                                    mode === 'chunks'
+                                        ? '청크 #' + (it.index != null ? it.index : i)
+                                        : '페이지 ' + (it.page_number != null ? it.page_number : i + 1)
+                                }}
                             </div>
-                            <div
-                                v-if="mode === 'rendered'"
-                                class="markdown-body ppv__md"
-                                v-html="renderMd(it.content)"
-                            ></div>
+                            <div v-if="mode === 'rendered'" class="markdown-body ppv__md" v-html="renderMd(it.content)"></div>
                             <pre v-else class="ppv__raw">{{ it.content }}</pre>
                         </div>
                     </template>
@@ -116,7 +112,9 @@ export default {
         chunks: { type: Array, default: () => null },
         fileName: { type: String, default: '' },
         loading: { type: Boolean, default: false },
-        error: { type: String, default: '' }
+        error: { type: String, default: '' },
+        // 지정 시 해당 page_number 페이지로 자동 이동(출처 뷰어에서 인용 페이지로 점프). 미지정이면 기존 동작.
+        focusPage: { type: [Number, String], default: null }
     },
     data() {
         return { mode: 'rendered', showAll: false, current: 0 };
@@ -124,13 +122,13 @@ export default {
     computed: {
         // 현재 보기 대상 목록 — 청크 모드면 chunks, 아니면 pages
         items() {
-            return this.mode === 'chunks' ? (this.chunks || []) : this.pages;
+            return this.mode === 'chunks' ? this.chunks || [] : this.pages;
         },
         cur() {
             return this.items[this.current] || null;
         },
         totalChars() {
-            return this.pages.reduce((n, p) => n + ((p.content || '').length), 0);
+            return this.pages.reduce((n, p) => n + (p.content || '').length, 0);
         },
         combinedMd() {
             return this.pages
@@ -143,11 +141,32 @@ export default {
         mode() {
             this.current = 0;
             this.scrollTop();
+        },
+        // 페이지 로드/포커스 변경 시 인용 페이지로 이동
+        pages: {
+            handler() {
+                this.applyFocus();
+            },
+            immediate: true
+        },
+        focusPage() {
+            this.applyFocus();
         }
     },
     methods: {
+        // focusPage(page_number) 가 지정되면 해당 페이지로 이동. 없으면 기존 동작(첫 페이지) 유지.
+        applyFocus() {
+            if (this.focusPage == null || this.focusPage === '' || this.mode === 'chunks') return;
+            const target = Number(this.focusPage);
+            if (!Number.isFinite(target)) return;
+            const idx = this.pages.findIndex((p) => Number(p.page_number) === target);
+            if (idx >= 0) this.select(idx);
+        },
         snippet(text) {
-            const t = (text || '').replace(/[#*`>|\-\n\r]+/g, ' ').replace(/\s+/g, ' ').trim();
+            const t = (text || '')
+                .replace(/[#*`>|\-\n\r]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
             return t.slice(0, 40) || '(빈 내용)';
         },
         select(i) {
@@ -413,19 +432,38 @@ export default {
     font-weight: 600;
 }
 
-.markdown-body :deep(h1) { font-size: 18px; margin: 14px 0 8px; font-weight: 700; }
-.markdown-body :deep(h2) { font-size: 15px; margin: 14px 0 6px; font-weight: 600; }
-.markdown-body :deep(h3) { font-size: 13px; margin: 10px 0 4px; font-weight: 600; }
-.markdown-body :deep(p) { margin: 6px 0; }
+.markdown-body :deep(h1) {
+    font-size: 18px;
+    margin: 14px 0 8px;
+    font-weight: 700;
+}
+.markdown-body :deep(h2) {
+    font-size: 15px;
+    margin: 14px 0 6px;
+    font-weight: 600;
+}
+.markdown-body :deep(h3) {
+    font-size: 13px;
+    margin: 10px 0 4px;
+    font-weight: 600;
+}
+.markdown-body :deep(p) {
+    margin: 6px 0;
+}
 .markdown-body :deep(ul),
-.markdown-body :deep(ol) { margin: 6px 0; padding-left: 20px; }
+.markdown-body :deep(ol) {
+    margin: 6px 0;
+    padding-left: 20px;
+}
 .markdown-body :deep(code) {
     background: rgba(var(--v-theme-on-surface), 0.08);
     padding: 1px 4px;
     border-radius: 3px;
     font-size: 0.92em;
 }
-.markdown-body :deep(img) { max-width: 100%; }
+.markdown-body :deep(img) {
+    max-width: 100%;
+}
 .markdown-body :deep(hr) {
     border: none;
     border-top: 1px solid rgba(var(--v-theme-on-surface), 0.15);
