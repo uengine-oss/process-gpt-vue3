@@ -283,6 +283,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS output_url text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS rework_count integer DEFAULT 0;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS query text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback_status text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback_collected_count integer default 0;
 -- 기존 description 컬럼을 query 컬럼으로 변경
 -- UPDATE public.todolist 
 -- SET query = COALESCE(query, description) 

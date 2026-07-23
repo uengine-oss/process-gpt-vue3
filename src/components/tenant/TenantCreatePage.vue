@@ -78,7 +78,13 @@ export default {
         },
         async beforeCreateTenant() {
             this.isLoading = true;
-            // await this.$refs.tenantInfoField.validCheck();
+            try {
+                await this.$refs.tenantInfoField.validCheck();
+            } catch (error) {
+                alert(error.message);
+                this.isLoading = false;
+                return;
+            }
             this.tenantId = this.tenantInfo.id;
             const isExistTenant = await backend.getTenant(this.tenantId);
             if (!isExistTenant) {
