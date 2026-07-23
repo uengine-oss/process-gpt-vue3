@@ -107,15 +107,11 @@
                         <v-list-subheader v-if="item.raw?.isHeader" class="text-uppercase font-weight-medium">
                             {{ item.raw.title }}
                         </v-list-subheader>
-                        <v-tooltip v-else :text="item.raw?.subtitle" location="top" :disabled="!item.raw?.subtitle" max-width="250">
-                            <template #activator="{ props: tooltipProps }">
-                                <v-list-item v-bind="{ ...props, ...tooltipProps }" :title="item.raw?.title">
-                                    <v-list-item-subtitle v-if="item.raw?.subtitle" class="text-truncate" style="max-width: 250px">{{
-                                        item.raw.subtitle
-                                    }}</v-list-item-subtitle>
-                                </v-list-item>
-                            </template>
-                        </v-tooltip>
+                        <v-list-item v-else v-bind="props" :title="item.raw?.title">
+                            <v-list-item-subtitle v-if="item.raw?.subtitle" class="text-truncate" style="max-width: 250px">{{
+                                item.raw.subtitle
+                            }}</v-list-item-subtitle>
+                        </v-list-item>
                     </template>
                 </v-combobox>
                 <v-row dense class="ma-0 pa-0">
