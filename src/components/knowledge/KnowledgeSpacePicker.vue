@@ -84,20 +84,15 @@
             </div>
 
             <div class="ksp-bulk-row">
-                <v-checkbox
-                    :modelValue="search ? allFilteredSelected : allTabSelected"
-                    :indeterminate="search ? someFilteredSelected && !allFilteredSelected : someTabSelected && !allTabSelected"
-                    @update:modelValue="toggleBulkSelection"
-                    density="compact"
-                    hide-details
-                    color="primary"
-                    class="ksp-bulk-checkbox"
-                    :disabled="bulkSelecting || (search ? searchResults.length === 0 : roleIndexedTotal === 0)"
+                <v-btn
+                    variant="text"
+                    size="small"
+                    prepend-icon="mdi-checkbox-blank-off-outline"
+                    :disabled="!hasSelection"
+                    @click="clearSelection"
                 >
-                    <template v-slot:label>
-                        <span class="text-caption">{{ bulkSelectionLabel }}</span>
-                    </template>
-                </v-checkbox>
+                    선택 해제
+                </v-btn>
                 <span class="text-caption text-medium-emphasis ml-auto">
                     선택됨 {{ selectionLabel }}
                 </span>
@@ -360,9 +355,6 @@ export default {
             searchLoading: false,
             searchToken: 0,
             searchTimer: null,
-            bulkSelecting: false,
-            // 전체 선택 요청을 완료한 role. 전체 목록을 가진 경우에만 체크박스를 완전 선택으로 판정한다.
-            fullyLoadedRoles: new Set(),
             activeSource: 'upload', // 'drive' | 'upload' — Google Drive 탭 숨김으로 항상 upload
             currentRole: 'content',
             roleFilterOptions: [
@@ -439,17 +431,6 @@ export default {
                 return sum + (count || 0);
             }, 0);
         },
-        bulkSelectionLabel() {
-            if (this.bulkSelecting) return '전체 선택 처리 중...';
-            if (this.search) return `검색 결과 ${this.searchResults.length}개 전체 선택`;
-            return `이 탭 전체 ${this.roleIndexedTotal}개 선택`;
-        },
-        // lazy 누적 파일 중 현재 탭에서 선택 가능한(인덱싱 완료) 문서.
-        tabLoadedFiles() {
-            return this.allFiles.filter(
-                (f) => f.sourceType === this.activeSource && (f.docRole || 'content') === this.currentRole && f.indexStatus === 'indexed'
-            );
-        },
         // 선택된 자료 중 사전·양식이 있으면 사용자에게 자동 활용 의미 안내 (선택 doc 기준)
         autoUseHints() {
             const hits = { glossary: 0, template: 0, dataset: 0 };
@@ -499,20 +480,6 @@ export default {
             const all = collectAllFolderPaths(this.tree);
             if (all.length === 0) return false;
             return all.every((p) => this.expandedPaths.has(p));
-        },
-        allFilteredSelected() {
-            if (this.searchResults.length === 0) return false;
-            return this.searchResults.every((f) => this.selectedKeysSet.has(f.key));
-        },
-        someFilteredSelected() {
-            return this.searchResults.some((f) => this.selectedKeysSet.has(f.key));
-        },
-        allTabSelected() {
-            if (!this.fullyLoadedRoles.has(this.currentRole) || this.tabLoadedFiles.length === 0) return false;
-            return this.tabLoadedFiles.every((f) => this.selectedKeysSet.has(f.key));
-        },
-        someTabSelected() {
-            return this.tabLoadedFiles.some((f) => this.selectedKeysSet.has(f.key));
         }
     },
     watch: {
@@ -808,69 +775,11 @@ export default {
             }
             this.selectedFolderPaths = fset;
         },
-        toggleSelectAllFiltered(checked) {
-            const set = new Set(this.selectedKeysSet);
-            const map = { ...this.selectedDocsMap };
-            for (const f of this.searchResults) {
-                if (checked) {
-                    set.add(f.key);
-                    map[f.key] = this.toDoc(f);
-                } else {
-                    set.delete(f.key);
-                    delete map[f.key];
-                }
-            }
-            this.selectedKeysSet = set;
-            this.selectedDocsMap = map;
-        },
-        toggleBulkSelection(checked) {
-            if (this.search) this.toggleSelectAllFiltered(checked);
-            else this.toggleSelectAllTab(checked);
-        },
-        async toggleSelectAllTab(checked) {
-            const role = this.currentRole;
-            const source = this.activeSource;
-            this.bulkSelecting = true;
-            try {
-                let files = this.tabLoadedFiles;
-                if (checked && !this.fullyLoadedRoles.has(role)) {
-                    const tenantId = (typeof window !== 'undefined' && window.$tenantName) || '';
-                    if (!tenantId) return;
-                    const { data } = await axios.get('/memento/documents/list', {
-                        params: { tenant_id: tenantId }
-                    });
-                    files = (Array.isArray(data?.file_details) ? data.file_details : []).map(mapDetail);
-                    files = this.filterAllowed(files).filter(
-                        (f) => f.sourceType === source && (f.docRole || 'content') === role && f.indexStatus === 'indexed'
-                    );
-                    this.mergeFiles(files);
-                    const loaded = new Set(this.fullyLoadedRoles);
-                    loaded.add(role);
-                    this.fullyLoadedRoles = loaded;
-                } else {
-                    files = this.allFiles.filter(
-                        (f) => f.sourceType === source && (f.docRole || 'content') === role && f.indexStatus === 'indexed'
-                    );
-                }
-
-                const set = new Set(this.selectedKeysSet);
-                const map = { ...this.selectedDocsMap };
-                for (const f of files) {
-                    if (checked) {
-                        set.add(f.key);
-                        map[f.key] = this.toDoc(f);
-                    } else {
-                        set.delete(f.key);
-                        delete map[f.key];
-                    }
-                }
-                this.selectedKeysSet = set;
-                this.selectedDocsMap = map;
-            } catch (e) {
-                console.error('[KnowledgeSpacePicker] select all failed', e);
-            } finally {
-                this.bulkSelecting = false;
-            }
+        /** 이 모달의 선택(파일 + 폴더 스코프)을 전부 비운다. */
+        clearSelection() {
+            this.selectedKeysSet = new Set();
+            this.selectedDocsMap = {};
+            this.selectedFolderPaths = new Set();
         },
         runSearch(v) {
             const q = (v || '').trim();
@@ -1084,9 +993,6 @@ export default {
     padding: 4px 20px 8px;
 }
 
-.ksp-bulk-checkbox :deep(.v-selection-control) {
-    min-height: 24px;
-}
 
 .ksp-list {
     overflow-y: auto;

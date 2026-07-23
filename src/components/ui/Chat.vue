@@ -4517,25 +4517,28 @@ export default {
                 if (!url && !name) continue;
                 list.push(f);
             }
-            // 같은 산출물이 여러 채널(내부 도구 tool_end + task 래퍼 tool_end + persist 등)로
-            // 중복 수집되므로 *url 단독* 으로 dedup 한다. (기존 url|name 키는 URL basename 으로 만든
-            // 폴백 이름이 실제 file_name 과 달라 dedup 을 빠져나가 같은 파일이 2~3개로 보이던 원인.)
+            // 같은 파일이 여러 채널(pdfFile + pdfFiles, 내부 도구 tool_end + task 래퍼 tool_end +
+            // persist 등)로 중복 수집되므로 dedup 한다.
+            // 키는 url 우선, *url 이 없으면 이름+크기* — 드래그앤드롭 직후의 로컬 첨부는 업로드 전이라
+            // url 이 비어 있어서, url 만으로 dedup 하면 pdfFile 과 pdfFiles[0] 이 같은 파일인데도
+            // 둘 다 살아남아 업로드가 끝날 때까지 첨부가 2개로 보였다.
             // 표시 이름은 실제 file_name 우선 — URL basename 폴백 이름은 피한다.
             const urlOf = (f) => f.url || f.fileUrl || f.publicUrl || f.signedUrl || '';
             const nameOf = (f) => f.name || f.fileName || '';
-            const byUrl = new Map();
-            const noUrl = [];
+            const sizeOf = (f) => (Number.isFinite(f?.fileSize) ? f.fileSize : Number.isFinite(f?.size) ? f.size : '');
+            const byKey = new Map();
             for (const f of list) {
                 const url = urlOf(f);
-                if (!url) { noUrl.push(f); continue; }
-                const existing = byUrl.get(url);
-                if (!existing) { byUrl.set(url, f); continue; }
+                const key = url || `name:${nameOf(f)}|${sizeOf(f)}`;
+                const existing = byKey.get(key);
+                if (!existing) { byKey.set(key, f); continue; }
+                if (!url) continue; // url 없는 항목은 폴백 이름 판정이 불가 — 먼저 온 것을 유지
                 const base = this.getFilenameFromUrl(url);
                 const isFallbackName = (f2) => { const n = nameOf(f2); return !n || n === base; };
                 // 기존 항목의 이름이 폴백(빈값/URL basename)인데 새 항목이 실제 이름을 가지면 교체.
-                if (isFallbackName(existing) && !isFallbackName(f)) byUrl.set(url, f);
+                if (isFallbackName(existing) && !isFallbackName(f)) byKey.set(key, f);
             }
-            return [...byUrl.values(), ...noUrl];
+            return [...byKey.values()];
         },
         shouldRenderMessageBubble(message) {
             try {
