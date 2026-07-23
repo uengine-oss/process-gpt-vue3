@@ -815,6 +815,27 @@ import { processGptAgent } from '@/constants/processGptAgent';
 import { PROCESS_GPT_AGENT_ID } from '@/constants/processGptAgent';
 
 const backend = BackendFactory.createBackend();
+
+// 산출물 계약 — deepagents-lite ``app/agent/artifacts.py`` 의 CONTENT_TYPES 와 같은 집합.
+// 값은 ArtifactPanel 의 뷰어 선택 키이기도 하다(hwpx/docx/pdf/csv/markdown/slide).
+const ARTIFACT_KINDS = new Set(['hwpx', 'docx', 'pdf', 'csv', 'markdown', 'slide']);
+const ARTIFACT_FALLBACK_LABEL = {
+    hwpx: 'document.hwpx',
+    docx: 'document.docx',
+    pdf: 'PDF',
+    csv: 'CSV',
+    markdown: 'Markdown',
+    slide: '슬라이드'
+};
+// 모델이 최종 답변에 아티팩트 JSON 을 그대로 뱉었을 때 대신 보여줄 안내문.
+const ARTIFACT_DONE_MESSAGE = {
+    hwpx: 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.',
+    docx: 'DOCX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.',
+    pdf: '검토 의견서를 생성했습니다. 오른쪽 패널에서 확인해주세요.',
+    csv: 'CSV 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.',
+    markdown: '검토 비교표를 생성했습니다. 오른쪽 패널에서 확인해주세요.',
+    slide: '슬라이드를 생성했습니다. 오른쪽 패널에서 확인해주세요.'
+};
 const fixedLangchainMainAgentService = new FixedBaseWorkAssistantAgentService('/agent');
 const fixedDeepagentsMainAgentService = new FixedBaseWorkAssistantAgentService('/process-gpt-deepagents');
 
@@ -4888,8 +4909,11 @@ export default {
          * 새 URL이면 새 탭 추가.
          */
         pushArtifactPanel({ type, label, data }) {
+            // 같은 산출물이면 갱신, 다르면 새 탭. 예전엔 타입별로 키가 달라(csv 는 undefined 인
+            // htmlUrl 로 비교) 서로 다른 산출물이 한 탭으로 뭉개졌다.
+            const key = (d) => `${d?.htmlUrl || ''}|${d?.fileUrl || ''}|${d?.messageId || ''}`;
             const existingIdx = this.artifactPanels.findIndex(
-                (p) => p.type === type && ((type === 'slide' || type === 'markdown' || type === 'pdf') ? p.data?.messageId === data?.messageId : p.data?.htmlUrl === data?.htmlUrl)
+                (p) => p.type === type && key(p.data) === key(data)
             );
             if (existingIdx !== -1) {
                 this.artifactPanels[existingIdx] = { ...this.artifactPanels[existingIdx], label, data };
@@ -5263,25 +5287,177 @@ export default {
             }
         },
 
-        pushHwpxArtifact(parsed, msgIdx) {
-            const url = this.extractHwpxHtmlUrl(parsed);
-            if (!url) return;
-            const name = (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
-            const isFilled = name.startsWith('filled-') || url.includes('filled-');
-            if (!isFilled) return;
-            const msg = this.messages?.[msgIdx];
-            const fileUrl = parsed?.file_url || parsed?.fileUrl || msg?.hwpxFileUrl || '';
-            if (msg) {
-                msg.hwpxHtmlUrl = url;
-                msg.hwpxFileUrl = fileUrl;
-                msg.hwpxHtmlName = name;
+        /**
+         * 산출물(아티팩트) 렌더 — 서버 계약(deepagents-lite ``app/agent/artifacts.py``)의 유일한 소비자.
+         *
+         * 계약 규칙 (둘은 서로를 게이트하지 않는다):
+         *   1. ``file_url`` 이 있으면 무조건 다운로드 칩을 단다.
+         *   2. ``preview`` 가 있으면 무조건 패널을 연다. 없으면 *패널만* 생략된다.
+         *
+         * 예전엔 타입별 sniffer 6개 + 복붙된 if-else 체인 3벌이 각자 다른 게이트를 걸어서,
+         * 어떤 서브에이전트 산출물은 보이고 어떤 건 통째로 사라졌다(프리뷰 없는 hwpx 번역본).
+         * 타입은 이제 추측하지 않고 ``artifact_type`` 을 *읽는다*.
+         */
+        normalizeArtifact(raw) {
+            if (!raw || typeof raw !== 'object') return null;
+            // 슬라이드는 파일이 없는 인라인 산출물 — 별도 백엔드의 레거시 모양을 그대로 수용.
+            if (raw.slide_markdown) {
+                return {
+                    kind: 'slide',
+                    fileName: (raw.deck_title || '슬라이드').toString(),
+                    contentType: '',
+                    fileUrl: '',
+                    preview: {
+                        kind: 'inline',
+                        url: '',
+                        content: raw.slide_markdown.toString(),
+                        images: Array.isArray(raw.image_urls) ? raw.image_urls : []
+                    },
+                    extras: []
+                };
             }
-            this.pushArtifactPanel({
-                type: 'hwpx',
-                label: name || 'document.hwpx',
-                data: { htmlUrl: url, fileUrl, messageId: msg?.uuid || null }
-            });
-            this.attachMessageDownload(msgIdx, fileUrl, name || 'document.hwpx', 'application/vnd.hancom.hwpx');
+            const fileUrl = (raw.file_url || raw.fileUrl || '').toString();
+            const fileName = (raw.file_name || raw.fileName || '').toString();
+            const contentType = (raw.content_type || raw.contentType || '').toString();
+            const kind = this.artifactKind(raw, fileName, contentType);
+            if (!kind) return null;
+            const preview = this.normalizeArtifactPreview(raw, kind, fileUrl);
+            if (!fileUrl && !preview) return null;
+            const extras = (Array.isArray(raw.extras) ? raw.extras : [])
+                .map((e) => this.normalizeArtifact(e))
+                .filter(Boolean);
+            return { kind, fileName, contentType, fileUrl, preview, extras };
+        },
+
+        /** ``artifact_type`` 이 정본. 없는 구 payload 만 content_type/확장자로 추정한다. */
+        artifactKind(raw, fileName, contentType) {
+            const declared = (raw.artifact_type || raw.artifactType || '').toString();
+            if (ARTIFACT_KINDS.has(declared)) return declared;
+            const ct = contentType.toLowerCase();
+            const fn = fileName.toLowerCase();
+            if (ct.includes('wordprocessingml') || fn.endsWith('.docx')) return 'docx';
+            if (ct.includes('hwp') || fn.endsWith('.hwpx')) return 'hwpx';
+            if (ct.includes('application/pdf') || fn.endsWith('.pdf')) return 'pdf';
+            if (ct.includes('text/csv') || fn.endsWith('.csv')) return 'csv';
+            if (ct.includes('markdown') || fn.endsWith('.md') || raw.markdown) return 'markdown';
+            return '';
+        },
+
+        normalizeArtifactPreview(raw, kind, fileUrl) {
+            const p = raw.preview;
+            if (p && typeof p === 'object' && p.kind) {
+                return {
+                    kind: p.kind.toString(),
+                    url: (p.url || '').toString(),
+                    content: (p.content || '').toString(),
+                    images: Array.isArray(p.images) ? p.images : []
+                };
+            }
+            // ↓ 구 payload / DB 에 이미 저장된 메시지 호환. 신규 산출물은 위에서 끝난다.
+            const htmlUrl = this.extractHwpxHtmlUrl(raw);
+            if (htmlUrl) return { kind: 'html', url: htmlUrl, content: '', images: [] };
+            if (kind === 'markdown') {
+                const md = (raw.markdown || '').toString();
+                if (md || fileUrl) return { kind: 'markdown', url: fileUrl, content: md, images: [] };
+            }
+            // pdf/csv 는 뷰어가 파일을 직접 연다 — 별도 프리뷰 산출물이 필요 없다.
+            if ((kind === 'pdf' || kind === 'csv') && fileUrl) {
+                return { kind: 'file', url: '', content: '', images: [] };
+            }
+            return null;
+        },
+
+        /**
+         * 저장된 메시지의 복원 필드 → 아티팩트 payload (rememberArtifactOnMessage 의 역함수).
+         * 새로고침/재진입 시 패널을 되살리는 유일한 경로.
+         */
+        artifactFromMessage(msg) {
+            if (!msg) return null;
+            if (msg.slideMarkdown) {
+                return { slide_markdown: msg.slideMarkdown, image_urls: msg.slideImageUrls || [] };
+            }
+            if (msg.markdownContent || msg.markdownUrl) {
+                return {
+                    artifact_type: 'markdown', file_name: msg.markdownName || '',
+                    file_url: msg.markdownUrl || '',
+                    preview: { kind: 'markdown', url: msg.markdownUrl || '', content: msg.markdownContent || '' }
+                };
+            }
+            if (msg.pdfArtifactUrl) {
+                return {
+                    artifact_type: 'pdf', file_name: msg.pdfArtifactName || '',
+                    file_url: msg.pdfArtifactUrl, preview: { kind: 'file' }
+                };
+            }
+            if (msg.csvArtifactUrl) {
+                return {
+                    artifact_type: 'csv', file_name: msg.csvArtifactName || '',
+                    file_url: msg.csvArtifactUrl, preview: { kind: 'file' }
+                };
+            }
+            if (msg.hwpxHtmlUrl || msg.hwpxFileUrl) {
+                return {
+                    artifact_type: 'hwpx', file_name: msg.hwpxHtmlName || '',
+                    file_url: msg.hwpxFileUrl || '',
+                    preview: msg.hwpxHtmlUrl ? { kind: 'html', url: msg.hwpxHtmlUrl } : null
+                };
+            }
+            return null;
+        },
+
+        /** 아티팩트 payload 를 다운로드 칩 + 패널로 렌더. 렌더했으면 true. */
+        renderArtifact(raw, msgIdx) {
+            const art = this.normalizeArtifact(raw);
+            if (!art) return false;
+            const msg = this.messages?.[msgIdx];
+            const label = art.fileName || ARTIFACT_FALLBACK_LABEL[art.kind] || '산출물';
+
+            // ① 다운로드 — 프리뷰 유무와 무관 (규칙 1)
+            if (art.fileUrl) {
+                this.attachMessageDownload(msgIdx, art.fileUrl, label, art.contentType);
+            }
+            // ② 패널 — 프리뷰가 있을 때만 (규칙 2)
+            if (art.preview) {
+                const data = {
+                    fileUrl: art.fileUrl,
+                    fileName: label,
+                    htmlUrl: art.preview.kind === 'html' ? art.preview.url : '',
+                    markdownContent: art.preview.kind === 'markdown' ? art.preview.content : '',
+                    slideMarkdown: art.preview.kind === 'inline' ? art.preview.content : '',
+                    imageUrls: art.preview.images,
+                    messageId: msg?.uuid || null
+                };
+                this.pushArtifactPanel({ type: art.kind, label, data });
+                if (msg) this.rememberArtifactOnMessage(msg, art, label, data);
+            }
+            // 동반 산출물(검토 의견서 PDF 등) — 본 산출물과 완전히 같은 규칙으로 렌더.
+            for (const extra of art.extras) this.renderArtifact(extra, msgIdx);
+            return true;
+        },
+
+        /**
+         * 새로고침/재진입 복원용 필드를 메시지에 남긴다(checkExistingArtifactPanels 가 읽는다).
+         * 저장은 messages jsonb 통째 교체라, 여기서 얹어두지 않으면 복원 시 패널이 사라진다.
+         */
+        rememberArtifactOnMessage(msg, art, label, data) {
+            if (art.kind === 'hwpx') {
+                msg.hwpxHtmlUrl = data.htmlUrl;
+                msg.hwpxFileUrl = art.fileUrl;
+                msg.hwpxHtmlName = label;
+            } else if (art.kind === 'slide') {
+                msg.slideMarkdown = data.slideMarkdown;
+                msg.slideImageUrls = data.imageUrls;
+            } else if (art.kind === 'markdown') {
+                msg.markdownContent = data.markdownContent;
+                msg.markdownUrl = art.fileUrl;
+                msg.markdownName = label;
+            } else if (art.kind === 'pdf') {
+                msg.pdfArtifactUrl = art.fileUrl;
+                msg.pdfArtifactName = label;
+            } else if (art.kind === 'csv') {
+                msg.csvArtifactUrl = art.fileUrl;
+                msg.csvArtifactName = label;
+            }
         },
 
         /**
@@ -5289,8 +5465,7 @@ export default {
          *
          * 설계 원칙: 파일 URL 은 도구가 만든 구조화 데이터(tool_end)로만 흐르고, 다운로드는
          * UI 가 그 데이터에 바인딩해 렌더한다. 모델이 답변 텍스트에 베껴 쓴 URL(긴 uuid 를
-         * 망가뜨리기 쉬움)에 절대 의존하지 않는다. 모든 서브에이전트·아티팩트 공통 경로
-         * (pushDocx/Pdf/Hwpx)에서 호출되므로 특정 흐름에 종속되지 않는다.
+         * 망가뜨리기 쉬움)에 절대 의존하지 않는다.
          */
         attachMessageDownload(msgIdx, fileUrl, fileName, contentType) {
             const url = (fileUrl || '').toString();
@@ -5303,157 +5478,6 @@ export default {
                 ...list,
                 { url, fileUrl: url, name: fileName || '', fileName: fileName || '', contentType: contentType || '' }
             ];
-        },
-
-        pushDocxArtifact(parsed, msgIdx) {
-            const url = this.extractHwpxHtmlUrl(parsed);
-            if (!url) return;
-            const name = (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
-            const msg = this.messages?.[msgIdx];
-            const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
-            this.pushArtifactPanel({
-                type: 'docx',
-                label: name || 'document.docx',
-                data: { htmlUrl: url, fileUrl, messageId: msg?.uuid || null }
-            });
-            // 다운로드는 tool_end 의 file_url 로 메시지에 직접 첨부 (모델 텍스트 URL 무시)
-            this.attachMessageDownload(
-                msgIdx, fileUrl, name || 'document.docx',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            );
-            // 계약 초안/검토 시 동반되는 검토 의견서 PDF 를 별도 패널 + 다운로드로 추가 (있을 때만)
-            const reviewPdfUrl = parsed?.review_report_pdf_url || parsed?.reviewReportPdfUrl || '';
-            if (reviewPdfUrl) {
-                const reviewName = (parsed?.review_report_pdf_name || parsed?.reviewReportPdfName || '검토 의견서.pdf').toString();
-                if (msg) {
-                    msg.pdfArtifactUrl = reviewPdfUrl;
-                    msg.pdfArtifactName = reviewName;
-                }
-                this.pushArtifactPanel({
-                    type: 'pdf',
-                    label: reviewName,
-                    data: { fileUrl: reviewPdfUrl, fileName: reviewName, messageId: msg?.uuid || null }
-                });
-                this.attachMessageDownload(msgIdx, reviewPdfUrl, reviewName, 'application/pdf');
-            }
-        },
-
-        /** slide_markdown이 있는 JSON인지 판별 */
-        isSlidePayload(parsed) {
-            return !!(parsed && typeof parsed === 'object' && parsed.slide_markdown);
-        },
-
-        /** generate_slides 결과를 슬라이드 아티팩트 패널로 등록 */
-        pushSlideArtifact(parsed, msgIdx) {
-            const md = parsed?.slide_markdown;
-            if (!md) return;
-            const msg = this.messages?.[msgIdx];
-            const title = parsed?.deck_title || '슬라이드';
-            const imageUrls = parsed?.image_urls || [];
-            if (msg) {
-                msg.slideMarkdown = md;
-                msg.slideImageUrls = imageUrls;
-            }
-            this.pushArtifactPanel({
-                type: 'slide',
-                label: title,
-                data: { slideMarkdown: md, imageUrls, reportId: parsed?.report_id || '', messageId: msg?.uuid || null }
-            });
-        },
-
-        /** markdown 아티팩트 JSON 인지 판별 (review_nda 등) */
-        isMarkdownPayload(parsed) {
-            if (!parsed || typeof parsed !== 'object') return false;
-            const hasContent = !!(parsed.markdown || parsed.file_url || parsed.fileUrl);
-            if (!hasContent) return false;
-            if (parsed.artifact_type === 'markdown') return true;
-            const ct = (parsed.content_type || parsed.contentType || '').toString();
-            const fn = (parsed.file_name || parsed.fileName || '').toString();
-            return ct.includes('markdown') || fn.toLowerCase().endsWith('.md');
-        },
-
-        /** markdown 결과(NDA 검토 비교표 등)를 markdown 아티팩트 패널로 등록 */
-        pushMarkdownArtifact(parsed, msgIdx) {
-            const md = parsed?.markdown || '';
-            const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
-            if (!md && !fileUrl) return;
-            const msg = this.messages?.[msgIdx];
-            const title = (parsed?.file_name || parsed?.fileName || 'Markdown').toString();
-            if (msg) {
-                msg.markdownContent = md;
-                msg.markdownUrl = fileUrl;
-                msg.markdownName = title;
-            }
-            this.pushArtifactPanel({
-                type: 'markdown',
-                label: title,
-                data: { markdownContent: md, fileUrl, fileName: title, messageId: msg?.uuid || null }
-            });
-        },
-
-        isDocxPayload(parsed) {
-            if (!parsed || typeof parsed !== 'object') return false;
-            const ct = (parsed.content_type || parsed.contentType || '').toString();
-            const fn = (parsed.file_name || parsed.fileName || '').toString();
-            return ct.includes('wordprocessingml') || fn.toLowerCase().endsWith('.docx');
-        },
-
-        /** PDF 아티팩트 JSON 인지 판별 (NDA/MOU 검토 의견서 등) */
-        isPdfPayload(parsed) {
-            if (!parsed || typeof parsed !== 'object') return false;
-            const fileUrl = parsed.file_url || parsed.fileUrl || '';
-            if (!fileUrl) return false;
-            if (parsed.artifact_type === 'pdf') return true;
-            const ct = (parsed.content_type || parsed.contentType || '').toString();
-            const fn = (parsed.file_name || parsed.fileName || '').toString();
-            return ct.includes('application/pdf') || fn.toLowerCase().endsWith('.pdf');
-        },
-
-        /** CSV 아티팩트 JSON 인지 판별 (요구사항 추출 등) */
-        isCsvPayload(parsed) {
-            if (!parsed || typeof parsed !== 'object') return false;
-            const fileUrl = parsed.file_url || parsed.fileUrl || '';
-            if (!fileUrl) return false;
-            if (parsed.artifact_type === 'csv') return true;
-            const ct = (parsed.content_type || parsed.contentType || '').toString();
-            const fn = (parsed.file_name || parsed.fileName || '').toString();
-            return ct.includes('text/csv') || fn.toLowerCase().endsWith('.csv');
-        },
-
-        /** CSV 결과(요구사항 표 등)를 CSV 아티팩트 패널로 등록 */
-        pushCsvArtifact(parsed, msgIdx) {
-            const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
-            if (!fileUrl) return;
-            const msg = this.messages?.[msgIdx];
-            const title = (parsed?.file_name || parsed?.fileName || 'CSV').toString();
-            if (msg) {
-                msg.csvArtifactUrl = fileUrl;
-                msg.csvArtifactName = title;
-            }
-            this.pushArtifactPanel({
-                type: 'csv',
-                label: title,
-                data: { fileUrl, fileName: title, messageId: msg?.uuid || null }
-            });
-            this.attachMessageDownload(msgIdx, fileUrl, title, 'text/csv');
-        },
-
-        /** PDF 결과(검토 의견서 등)를 PDF 아티팩트 패널로 등록 */
-        pushPdfArtifact(parsed, msgIdx) {
-            const fileUrl = parsed?.file_url || parsed?.fileUrl || '';
-            if (!fileUrl) return;
-            const msg = this.messages?.[msgIdx];
-            const title = (parsed?.file_name || parsed?.fileName || 'PDF').toString();
-            if (msg) {
-                msg.pdfArtifactUrl = fileUrl;
-                msg.pdfArtifactName = title;
-            }
-            this.pushArtifactPanel({
-                type: 'pdf',
-                label: title,
-                data: { fileUrl, fileName: title, messageId: msg?.uuid || null }
-            });
-            this.attachMessageDownload(msgIdx, fileUrl, title, 'application/pdf');
         },
 
         startArtifactSidebarResize(event) {
@@ -5486,39 +5510,12 @@ export default {
             for (let i = toolCalls.length - 1; i >= 0; i--) {
                 const outputStr = toolCalls[i]?.output;
                 if (!outputStr) continue;
-                const parsed = this.parseToolOutput(outputStr);
-                // 슬라이드 아티팩트 감지
-                if (this.isSlidePayload(parsed)) {
-                    this.pushSlideArtifact(parsed, msgIdx);
-                    return;
-                }
-                // PDF 아티팩트 감지 (NDA/MOU 검토 의견서 등)
-                if (this.isPdfPayload(parsed)) {
-                    this.pushPdfArtifact(parsed, msgIdx);
-                    return;
-                }
-                // CSV 아티팩트 감지 (요구사항 추출 등)
-                if (this.isCsvPayload(parsed)) {
-                    this.pushCsvArtifact(parsed, msgIdx);
-                    return;
-                }
-                // markdown 아티팩트 감지 (NDA 검토 비교표 등)
-                if (this.isMarkdownPayload(parsed)) {
-                    this.pushMarkdownArtifact(parsed, msgIdx);
-                    return;
-                }
-                const url = this.extractHwpxHtmlUrl(parsed);
-                if (url) {
-                    if (this.isDocxPayload(parsed)) {
-                        this.pushDocxArtifact(parsed, msgIdx);
-                    } else {
-                        this.pushHwpxArtifact(parsed, msgIdx);
-                    }
-                    return;
-                }
+                this.renderArtifact(this.parseToolOutput(outputStr), msgIdx);
+                if (this.hasArtifactPanel) return;
+                // 폴백 — 도구 출력이 JSON 이 아니고 텍스트에 프리뷰 URL 만 있는 옛 케이스.
                 const textUrl = this.extractHwpxHtmlUrlFromText(outputStr);
                 if (textUrl) {
-                    this.pushHwpxArtifact({ html_url: textUrl }, msgIdx);
+                    this.renderArtifact({ artifact_type: 'hwpx', preview: { kind: 'html', url: textUrl } }, msgIdx);
                     return;
                 }
             }
@@ -5528,44 +5525,13 @@ export default {
             for (let i = this.messages.length - 1; i >= 0; i--) {
                 const msg = this.messages[i];
                 if (!msg) continue;
-                // 슬라이드 아티팩트 복원
-                if (msg?.slideMarkdown) {
-                    this.pushArtifactPanel({
-                        type: 'slide',
-                        label: '슬라이드',
-                        data: { slideMarkdown: msg.slideMarkdown, imageUrls: msg.slideImageUrls || [], messageId: msg?.uuid || null }
-                    });
-                    return;
-                }
-                // markdown 아티팩트 복원 (NDA 검토 비교표 등)
-                if (msg?.markdownContent || msg?.markdownUrl) {
-                    this.pushArtifactPanel({
-                        type: 'markdown',
-                        label: msg.markdownName || 'Markdown',
-                        data: { markdownContent: msg.markdownContent || '', fileUrl: msg.markdownUrl || '', fileName: msg.markdownName || 'Markdown', messageId: msg?.uuid || null }
-                    });
-                    return;
-                }
-                // PDF 아티팩트 복원 (NDA/MOU 검토 의견서 등)
-                if (msg?.pdfArtifactUrl) {
-                    this.pushArtifactPanel({
-                        type: 'pdf',
-                        label: msg.pdfArtifactName || 'PDF',
-                        data: { fileUrl: msg.pdfArtifactUrl, fileName: msg.pdfArtifactName || 'PDF', messageId: msg?.uuid || null }
-                    });
-                    return;
-                }
-                if (msg?.hwpxHtmlUrl) {
-                    this.pushArtifactPanel({
-                        type: 'hwpx',
-                        label: msg.hwpxHtmlName || 'document.hwpx',
-                        data: { htmlUrl: msg.hwpxHtmlUrl, fileUrl: msg.hwpxFileUrl || '', messageId: msg?.uuid || null }
-                    });
-                    return;
-                }
+                // 저장된 복원 필드(rememberArtifactOnMessage 가 남긴 것)를 아티팩트로 되살린다.
+                // 다운로드만 복원되고 패널이 안 열렸으면(프리뷰 없는 산출물) 계속 위로 훑는다.
+                this.renderArtifact(this.artifactFromMessage(msg), i);
+                if (this.hasArtifactPanel) return;
                 const urlFromText = this.extractHwpxHtmlUrlFromText(msg?.content);
                 if (urlFromText) {
-                    this.pushHwpxArtifact({ html_url: urlFromText }, i);
+                    this.renderArtifact({ artifact_type: 'hwpx', preview: { kind: 'html', url: urlFromText } }, i);
                     return;
                 }
                 const toolCalls = Array.isArray(msg?.toolCalls) ? msg.toolCalls : [];
@@ -6654,25 +6620,11 @@ export default {
                                 }
                             }
 
-                            const parsed = this.parseToolOutput(output);
-                            // 슬라이드 아티팩트 감지
-                            if (this.isSlidePayload(parsed)) {
-                                this.pushSlideArtifact(parsed, idx);
-                            } else if (this.isPdfPayload(parsed)) {
-                                this.pushPdfArtifact(parsed, idx);
-                            } else if (this.isCsvPayload(parsed)) {
-                                this.pushCsvArtifact(parsed, idx);
-                            } else if (this.isMarkdownPayload(parsed)) {
-                                this.pushMarkdownArtifact(parsed, idx);
-                            } else if (this.isDocxPayload(parsed)) {
-                                this.pushDocxArtifact(parsed, idx);
-                            } else {
-                                this.pushHwpxArtifact(parsed, idx);
-                                if (!this.hasArtifactPanel) {
-                                    const urlFromText = this.extractHwpxHtmlUrlFromText(output);
-                                    if (urlFromText) {
-                                        this.pushHwpxArtifact({ html_url: urlFromText }, idx);
-                                    }
+                            if (!this.renderArtifact(this.parseToolOutput(output), idx) && !this.hasArtifactPanel) {
+                                // 폴백 — 도구 출력이 아티팩트 JSON 이 아닌 옛 케이스
+                                const urlFromText = this.extractHwpxHtmlUrlFromText(output);
+                                if (urlFromText) {
+                                    this.renderArtifact({ artifact_type: 'hwpx', preview: { kind: 'html', url: urlFromText } }, idx);
                                 }
                             }
                             persistPartialAssistant(); // 툴 산출물(아티팩트 첨부 등) 포함 throttle 저장
@@ -6805,73 +6757,34 @@ export default {
                                 );
                             }
 
+                            // 모델이 최종 텍스트에 아티팩트 JSON 을 그대로 뱉는 경우(strong 프로파일 등).
+                            // weak 프로파일은 URL 을 본문에 쓰지 않으므로 보통 여기서 걸리지 않고,
+                            // tool_end / done.files 경로가 이미 렌더를 끝낸 상태다.
                             const hwpxPayload = this.extractHwpxPayload(safeFinal || full || '');
-                            if (hwpxPayload && this.isSlidePayload(hwpxPayload)) {
-                                // 슬라이드 아티팩트 처리
-                                this.pushSlideArtifact(hwpxPayload, idx);
-                                safeFinal = '슬라이드를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
-                            } else if (hwpxPayload && this.isPdfPayload(hwpxPayload)) {
-                                // PDF 아티팩트 처리 (NDA/MOU 검토 의견서 등) — 파일첨부로 오인 방지
-                                this.pushPdfArtifact(hwpxPayload, idx);
-                                safeFinal = '검토 의견서를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
-                            } else if (hwpxPayload && this.isMarkdownPayload(hwpxPayload)) {
-                                // markdown 아티팩트 처리 (NDA 검토 비교표 등) — 파일첨부로 오인 방지
-                                this.pushMarkdownArtifact(hwpxPayload, idx);
-                                safeFinal = 'NDA 검토 비교표를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
-                            } else if (hwpxPayload) {
-                                const pdfUrl = hwpxPayload.pdf_url || hwpxPayload.pdfUrl || '';
-                                const pdfName = (hwpxPayload.pdf_name || hwpxPayload.pdfName || '').toString();
-                                const fileUrl = hwpxPayload.file_url || hwpxPayload.fileUrl || '';
+                            if (this.renderArtifact(hwpxPayload, idx)) {
+                                // 원문 JSON 을 그대로 보여주지 않는다 — 산출물은 칩·패널로 렌더된다.
+                                safeFinal = ARTIFACT_DONE_MESSAGE[this.normalizeArtifact(hwpxPayload).kind]
+                                    || '산출물을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
+                            } else if (hwpxPayload && (hwpxPayload.pdf_url || hwpxPayload.pdfUrl)) {
+                                // 레거시 — 파일이 아니라 *PDF 미리보기* 만 주는 옛 도구 출력.
+                                const pdfUrl = hwpxPayload.pdf_url || hwpxPayload.pdfUrl;
+                                const pdfName = (hwpxPayload.pdf_name || hwpxPayload.pdfName || 'filled.pdf').toString();
+                                this.messages[idx].pdfFile = {
+                                    url: pdfUrl, fileUrl: pdfUrl, name: pdfName, fileName: pdfName,
+                                    contentType: hwpxPayload.pdf_content_type || 'application/pdf'
+                                };
+                                safeFinal = 'PDF 미리보기가 준비되었습니다. 아래 첨부 파일을 확인해주세요.';
+                            } else if (hwpxPayload && (hwpxPayload.base64_data || hwpxPayload.base64Data)) {
+                                // 레거시 — 스토리지 대신 base64 로 파일을 실어 보내던 경로.
+                                const contentType = (hwpxPayload.content_type || hwpxPayload.contentType || 'application/vnd.hancom.hwpx').toString();
                                 const fileName = (hwpxPayload.file_name || hwpxPayload.fileName || 'filled.hwpx').toString();
-                                const contentType = (
-                                    hwpxPayload.content_type ||
-                                    hwpxPayload.contentType ||
-                                    'application/vnd.hancom.hwpx'
-                                ).toString();
-                                const htmlUrl = this.extractHwpxHtmlUrl(hwpxPayload);
-
-                                if (pdfUrl) {
+                                const blobUrl = this.createBlobUrlFromBase64(hwpxPayload.base64_data || hwpxPayload.base64Data, contentType);
+                                if (blobUrl) {
                                     this.messages[idx].pdfFile = {
-                                        url: pdfUrl,
-                                        fileUrl: pdfUrl,
-                                        name: pdfName || 'filled.pdf',
-                                        fileName: pdfName || 'filled.pdf',
-                                        contentType: hwpxPayload.pdf_content_type || 'application/pdf'
+                                        url: blobUrl, fileUrl: blobUrl, name: fileName, fileName, contentType
                                     };
-                                    safeFinal = 'PDF 미리보기가 준비되었습니다. 아래 첨부 파일을 확인해주세요.';
-                                } else if (hwpxPayload.base64_data || hwpxPayload.base64Data) {
-                                    const base64 = hwpxPayload.base64_data || hwpxPayload.base64Data;
-                                    const blobUrl = this.createBlobUrlFromBase64(base64, contentType);
-                                    if (blobUrl) {
-                                        this.messages[idx].pdfFile = {
-                                            url: blobUrl,
-                                            fileUrl: blobUrl,
-                                            name: fileName,
-                                            fileName,
-                                            contentType
-                                        };
-                                    }
-                                    safeFinal = 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
-                                } else if (fileUrl) {
-                                    this.messages[idx].pdfFile = {
-                                        url: fileUrl,
-                                        fileUrl,
-                                        name: fileName,
-                                        fileName,
-                                        contentType
-                                    };
-                                    safeFinal = this.isDocxPayload(hwpxPayload)
-                                        ? 'DOCX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.'
-                                        : 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
                                 }
-
-                                if (htmlUrl) {
-                                    if (this.isDocxPayload(hwpxPayload)) {
-                                        this.pushDocxArtifact(hwpxPayload, idx);
-                                    } else {
-                                        this.pushHwpxArtifact(hwpxPayload, idx);
-                                    }
-                                }
+                                safeFinal = 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
                             }
 
                             this.messages[idx].content = safeFinal || full || '';
@@ -6887,6 +6800,16 @@ export default {
                             // 이전 턴 sources가 남는 일을 막을 수 있다.
                             this.messages[idx].sources = _sources;
 
+                            // 산출물 다운로드 — 서버가 tool_end 들에서 결정론적으로 수집한 배열.
+                            // 아래 onDone 저장이 messages jsonb 를 통째 교체하므로, 여기서 메시지에
+                            // 얹어두지 않으면 서버가 저장해둔 pdfFiles 가 지워진다.
+                            const _files = Array.isArray(doneEvent?.files) ? doneEvent.files : [];
+                            for (const f of _files) {
+                                const url = f?.url || f?.fileUrl || '';
+                                if (!url) continue;
+                                this.attachMessageDownload(idx, url, f?.name || f?.fileName || '', f?.contentType || '');
+                            }
+
                             // NOTE: 이전에는 0.5초 후 optimistic 메시지를 강제 splice 했지만,
                             // 그 사이에 __humanFeedback 같은 프런트엔드 전용 상태가 사라져
                             // HITL 패널(예: pdf2bpmn 강도 선택)이 잠깐 떴다 즉시 사라지는 문제가 있었다.
@@ -6898,7 +6821,7 @@ export default {
                             if (!this.hasArtifactPanel) {
                                 const urlFromText = this.extractHwpxHtmlUrlFromText(this.messages[idx].content);
                                 if (urlFromText) {
-                                    this.pushHwpxArtifact({ html_url: urlFromText }, idx);
+                                    this.renderArtifact({ artifact_type: 'hwpx', preview: { kind: 'html', url: urlFromText } }, idx);
                                 }
                             }
                             // 패널 열림 여부와 무관하게 content에 raw hwpx 링크가 있으면 항상 정리
