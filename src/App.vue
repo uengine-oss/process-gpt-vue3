@@ -46,6 +46,7 @@ import { RouterView } from 'vue-router';
 import BackendFactory from '@/components/api/BackendFactory';
 import partialParse from 'partial-json-parser';
 import { getMainDomainUrl } from '@/utils/domainUtils';
+import { setCachedJwtTenantId } from '@/utils/tenant';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 
 export default {
@@ -113,15 +114,24 @@ export default {
                 try {
                     if (!window.$supabase?.auth) return;
                     const tenantName = window.$tenantName;
-                    if (!tenantName) return;
 
                     const { data, error } = await window.$supabase.auth.getUser();
                     if (error || !data?.user) return;
 
                     const currentTenantId = data?.user?.app_metadata?.tenant_id;
+
+                    // 메인 도메인(www / process-gpt)에서는 서브도메인으로 테넌트를 알 수 없다.
+                    // 이 경우 JWT 클레임이 유일한 진실이므로 캐시에 담아 getTenantId() 가
+                    // 'uengine' 같은 하드코딩 값 대신 실제 테넌트를 반환하게 한다.
+                    if (!tenantName) {
+                        setCachedJwtTenantId(currentTenantId || '');
+                        return;
+                    }
+
                     if (!currentTenantId || currentTenantId !== tenantName) {
                         await this.backend.setTenant(tenantName);
                     }
+                    setCachedJwtTenantId(tenantName);
                 } catch (e) {
                     console.warn('[tenant] ensureTenantAppMetadata failed:', e);
                 }

@@ -6,6 +6,8 @@
  */
 const DEEP_AGENT_ROUTER_BASE_URL = '/process-gpt-deepagents';
 
+import { buildAgentHeaders } from './agentRequestHeaders';
+
 class DeepAgentRouterService {
     constructor() {
         this.baseUrl = DEEP_AGENT_ROUTER_BASE_URL;
@@ -54,9 +56,7 @@ class DeepAgentRouterService {
             }
             const response = await fetch(`${this.baseUrl}/chat/stream`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json; charset=utf-8'
-                },
+                headers: buildAgentHeaders(params),
                 signal: options.signal,
                 body: JSON.stringify({
                     message: params.message,
@@ -108,9 +108,7 @@ class DeepAgentRouterService {
         try {
             response = await fetch(`${this.baseUrl}/chat/stream/attach`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json; charset=utf-8'
-                },
+                headers: buildAgentHeaders({ user_jwt: options.userJwt || '', tenant_id: options.tenantId || '' }),
                 signal: options.signal,
                 body: JSON.stringify({
                     conversation_id: conversationId,

@@ -497,7 +497,7 @@ export default {
     beforeUnmount() {
         // 이벤트 구독 해제
         if (this.eventSubscription) {
-            this.eventSubscription.unsubscribe();
+            window.$supabase.removeChannel(this.eventSubscription);
         }
         if (this.taskLogSubscription) {
             window.$supabase.removeChannel(this.taskLogSubscription);
@@ -547,7 +547,9 @@ export default {
                 }
 
                 const channel = window.$supabase
-                    .channel(`task-${this.task.taskId}`)
+                    // 칸반 카드는 :key 변경으로 자주 재마운트된다. 고정 채널명을 쓰면
+                    // 이미 subscribe 된 캐시 채널에 .on() 을 다시 걸어 오류가 난다.
+                    .channel(`task-${this.task.taskId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
                     .on(
                         'postgres_changes',
                         {

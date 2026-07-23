@@ -1,4 +1,5 @@
 import { getBaseDomain, getMainDomainUrl } from './domainUtils.js';
+import { getTenantId } from './tenant';
 
 class StorageBaseError extends Error {
     constructor(message, cause, args) {
@@ -326,7 +327,10 @@ export default class StorageBaseSupabase {
     }
     async signUp(userInfo) {
         try {
-            const tenantId = window.$tenantName || 'process-gpt';
+            // 회원가입은 아직 테넌트에 소속되기 전이므로, 여기서의 'process-gpt' 는
+            // 테넌트 하드코딩이 아니라 users.tenant_id 의 DB 기본값(= 공용 가입 테넌트)이다.
+            // 중복 이메일 검사가 조용히 통과하지 않도록 이 기본값을 유지한다.
+            const tenantId = getTenantId() || 'process-gpt';
             const existUser = await this.getObject('users', { match: { email: userInfo.email, tenant_id: tenantId } });
             if (existUser && existUser.id) {
                 return {
@@ -543,7 +547,7 @@ export default class StorageBaseSupabase {
                 const { data, error } = await window.$supabase.from(obj.table).select().match(options.match).maybeSingle();
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getObject', error, arguments);
                 } else if (data) {
                     return data;
                 }
@@ -551,7 +555,7 @@ export default class StorageBaseSupabase {
                 const { data, error } = await window.$supabase.from(obj.table).select().eq(obj.searchKey, obj.searchVal).maybeSingle();
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getObject', error, arguments);
                 } else if (data) {
                     return data;
                 }
@@ -559,17 +563,20 @@ export default class StorageBaseSupabase {
                 const { data, error } = await window.$supabase.from(obj.table).select().maybeSingle();
 
                 if (error) {
-                    return error;
+                    throw new StorageBaseError('error in getObject', error, arguments);
                 } else if (data) {
                     return data;
                 }
             }
         } catch (error) {
-            if (error.code === 'PGRST116' || error.code === '42703') {
-                console.log(error.message);
+            // PostgREST 오류는 StorageBaseError 의 cause 로 감싸 던지므로 양쪽을 함께 본다.
+            // (행 없음 PGRST116 / 없는 컬럼 42703 은 기존처럼 관대하게 빈 객체로 처리)
+            const code = error?.code || error?.cause?.code;
+            if (code === 'PGRST116' || code === '42703') {
+                console.log(error?.cause?.message || error.message);
                 return {};
             } else {
-                throw new StorageBaseError('error in getObject', error.message);
+                throw error instanceof StorageBaseError ? error : new StorageBaseError('error in getObject', error);
             }
         }
     }
@@ -711,7 +718,13 @@ export default class StorageBaseSupabase {
     }
 
     async _watch_off(ref) {
-        return await ref.unsubscribe();
+        // unsubscribe 만으로는 클라이언트 캐시에서 topic 이 즉시 사라지지 않아,
+        // 같은 이름으로 곧바로 재구독하면 위의 'after subscribe()' 오류가 난다.
+        try {
+            return await window.$supabase.removeChannel(ref);
+        } catch (e) {
+            return await ref.unsubscribe();
+        }
     }
 
     async _watch(options, callback) {
@@ -727,6 +740,19 @@ export default class StorageBaseSupabase {
         let ref = window.$supabase;
         // 채널 설정
         const channelName = options.channel || 'custom-channel';
+        // supabase-js 는 같은 topic 을 요청하면 '이미 subscribe 된' 캐시 채널을 돌려준다.
+        // 그 채널에 다시 .on('postgres_changes') 를 걸면
+        //   cannot add `postgres_changes` callbacks ... after `subscribe()`
+        // 로 throw 된다. 고정 채널명을 쓰는 구독(events-<taskId> 등)이 재마운트될 때
+        // 실제로 발생하므로, 새로 만들기 전에 남아 있는 동명 채널을 먼저 제거한다.
+        try {
+            const stale = (window.$supabase.getChannels() || []).filter((c) => c && c.topic === `realtime:${channelName}`);
+            for (const c of stale) {
+                await window.$supabase.removeChannel(c);
+            }
+        } catch (e) {
+            console.warn('[realtime] 기존 채널 정리 실패:', channelName, e);
+        }
         ref = ref.channel(channelName);
 
         // 이벤트 타입 지정
@@ -964,10 +990,13 @@ export default class StorageBaseSupabase {
 
             const { data, error } = await query;
             if (error) {
-                return error;
-            } else {
-                return data;
+                // 에러 객체를 그대로 반환하면 호출부는 그것을 '결과 배열'로 오인한다.
+                // 진실된 truthy 객체라서 `|| []` 도 `if (data)` 도 막지 못하고,
+                // 결국 첫 배열 메서드에서 `x.sort is not a function` 으로 터진다.
+                // (운영에서 관측된 t.sort 오류의 근본 원인)
+                throw new StorageBaseError('error in list', error, arguments);
             }
+            return data || [];
         } catch (error) {
             throw new StorageBaseError('error in list', error, arguments);
         }
@@ -1223,11 +1252,15 @@ export default class StorageBaseSupabase {
 
     async searchProcDef(keyword) {
         try {
-            const { data, error } = await window.$supabase
+            // 전역 검색이 다른 테넌트의 프로세스 정의까지 노출하지 않도록 테넌트로 좁힌다.
+            let query = window.$supabase
                 .from('proc_def')
                 .select()
                 .eq('isdeleted', false)
                 .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%,bpmn.ilike.%${keyword}%`);
+            const tenantId = getTenantId();
+            if (tenantId) query = query.eq('tenant_id', tenantId);
+            const { data, error } = await query;
 
             if (error) throw new StorageBaseError('error in searchProcDef', error, arguments);
 
@@ -1304,7 +1337,11 @@ export default class StorageBaseSupabase {
     async searchChatRoom(keyword) {
         try {
             const email = window.localStorage.getItem('email');
-            const { data, error } = await window.$supabase.from('chat_rooms').select().or(`name.ilike.%${keyword}%`);
+            // 전역 검색이 다른 테넌트의 채팅방까지 노출하지 않도록 테넌트로 좁힌다.
+            let query = window.$supabase.from('chat_rooms').select().or(`name.ilike.%${keyword}%`);
+            const tenantId = getTenantId();
+            if (tenantId) query = query.eq('tenant_id', tenantId);
+            const { data, error } = await query;
 
             if (error) throw new StorageBaseError('error in searchChat', error, arguments);
 

@@ -214,6 +214,7 @@ import Chat from '@/components/ui/Chat.vue';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import agentRouterService from '@/services/AgentRouterService';
 import { getValidToken } from '@/utils/supabaseAuth';
+import { getTenantId } from '@/utils/tenant';
 
 const backend = BackendFactory.createBackend();
 
@@ -1012,7 +1013,7 @@ export default {
             if (!targets || targets.length === 0) return;
 
             const userJwt = (await getValidToken()) || '';
-            const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+            const tenantId = getTenantId();
 
             await Promise.all(
                 targets.map(async (t) => {

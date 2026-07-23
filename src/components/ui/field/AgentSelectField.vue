@@ -396,7 +396,15 @@ export default {
                     this.activity.agent = newVal.agent;
                     if (newVal.tools !== undefined) this.activity.tools = newVal.tools;
                     if (newVal.skills !== undefined) this.activity.skills = newVal.skills;
-                    this.activity.usePresetAgent = newVal.usePresetAgent !== undefined ? !!newVal.usePresetAgent : !!newVal.agent;
+                    // usePresetAgent 는 사용자가 명시적으로 켠 체크 상태다.
+                    // 들어온 값에 키가 없다고 해서 !!agent 로 되돌리면, 체크는 했지만
+                    // 아직 에이전트를 고르지 않은 구간(agent=null)에서 체크가 스스로 풀리고
+                    // 선택기가 사라져 '저장이 안 되는' 것처럼 보인다. 로컬이 이미 true 면 유지한다.
+                    if (newVal.usePresetAgent !== undefined) {
+                        this.activity.usePresetAgent = !!newVal.usePresetAgent;
+                    } else if (!this.activity.usePresetAgent) {
+                        this.activity.usePresetAgent = !!newVal.agent;
+                    }
                     if (newVal.orchestration === 'a2a') {
                         this.activity.usePresetAgent = true;
                     }

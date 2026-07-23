@@ -3919,6 +3919,24 @@ export default {
             }
             // NOTE: setRenderTime() 같은 reactive write 는 computed getter 안에서 호출하면 안 된다.
             // (computed 는 순수해야 하며, 부작용은 watch 'filteredMessages' 로 분리했다.)
+            // HITL 패널 중복 방지: 같은 assistant turn 이 두 개의 chats row 로 저장되면
+            // 동일한 컨설팅 초안 패널이 화면에 2번 뜬다. question + context 가 같은 패널은
+            // 처음 것만 남긴다. (이미 제출된 패널은 사용자의 응답 상태가 각각 다를 수 있으므로
+            // 제출 여부까지 시그니처에 포함해 안전하게 비교한다.)
+            const seenFeedbackKeys = new Set();
+            list = list.filter((m) => {
+                const fb = m && m.__humanFeedback;
+                if (!fb) return true;
+                const question = (fb.question || '').toString().trim();
+                const context = (fb.context || '').toString().trim();
+                // 식별 가능한 본문이 전혀 없으면 서로 다른 패널일 수 있으므로 건드리지 않는다.
+                if (!question && !context) return true;
+                const key = [question, context, (fb.feedback_type || '').toString().trim(), fb.__submitted ? '1' : '0'].join('|');
+                if (seenFeedbackKeys.has(key)) return false;
+                seenFeedbackKeys.add(key);
+                return true;
+            });
+
             const seenRecommendationKeys = new Set();
             list = list.filter((m) => {
                 if (!m || !m.__agentInviteRecommendation) return true;
