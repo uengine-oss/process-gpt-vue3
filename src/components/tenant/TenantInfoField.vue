@@ -399,7 +399,7 @@ export default {
 
                 if (this.isEdit === false) {
                     const checkTenantId = await backend.getTenant(this.value.id);
-                    if (checkTenantId !== undefined) {
+                    if (checkTenantId === this.value.id) {
                         try {
                             this.$refs.tenantId.focus();
                         } catch (e) {
