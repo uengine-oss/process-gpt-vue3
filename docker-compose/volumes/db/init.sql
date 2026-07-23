@@ -457,6 +457,7 @@ create table if not exists public.todolist (
     rework_count integer null default 0,
     query text null,
     feedback_status text null,
+    feedback_collected_count integer not null default 0,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

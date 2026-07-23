@@ -1,5 +1,19 @@
 <template>
-    <v-card elevation="10">
+    <v-card elevation="10" style="position: relative">
+        <v-tooltip :text="$t('accountTab.driveSetupGuideTooltip')" location="top">
+            <template v-slot:activator="{ props }">
+                <v-btn
+                    v-bind="props"
+                    icon
+                    size="small"
+                    variant="text"
+                    class="drive-setup-guide-btn"
+                    @click="showSetupGuide = true"
+                >
+                    <v-icon>mdi-information-outline</v-icon>
+                </v-btn>
+            </template>
+        </v-tooltip>
         <v-card-text class="pt-2">
             <v-alert v-if="driveFolderJobStatus === 'running'" type="info" variant="tonal" class="mb-4">
                 {{ $t('accountTab.driveIndexingInProgress') }}
@@ -76,15 +90,111 @@
             </div>
             <v-btn v-else @click="startEdit" color="primary" variant="elevated" class="rounded-pill">{{ $t('accountTab.edit') }}</v-btn>
         </v-card-actions>
+
+        <v-dialog v-model="showSetupGuide" max-width="620">
+            <v-card class="drive-setup-guide-card" rounded="lg">
+                <div class="drive-setup-guide-header">
+                    <div class="drive-setup-guide-header-icon">
+                        <v-icon size="22" color="white">mdi-cog-outline</v-icon>
+                    </div>
+                    <div class="drive-setup-guide-header-text">
+                        <div class="drive-setup-guide-header-title">{{ $t('accountTab.driveSetupGuideTitle') }}</div>
+                        <div class="drive-setup-guide-header-subtitle">{{ $t('accountTab.driveSetupGuideSubtitle') }}</div>
+                    </div>
+                    <v-btn @click="showSetupGuide = false" variant="text" density="compact" icon class="drive-setup-guide-close">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </div>
+
+                <v-card-text class="drive-setup-guide-body">
+                    <div class="drive-setup-guide-step">
+                        <span class="drive-setup-guide-badge">1</span>
+                        <div class="drive-setup-guide-step-text">
+                            {{ $t('accountTab.driveSetupGuideStep1') }}
+                            <a
+                                href="https://console.cloud.google.com/projectselector2/home/dashboard"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="drive-setup-guide-link"
+                            >
+                                <v-icon size="14">mdi-open-in-new</v-icon>
+                                {{ $t('accountTab.driveSetupGuideGcpLink') }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="drive-setup-guide-step">
+                        <span class="drive-setup-guide-badge">2</span>
+                        <div class="drive-setup-guide-step-text">{{ $t('accountTab.driveSetupGuideStep2') }}</div>
+                    </div>
+                    <div class="drive-setup-guide-step">
+                        <span class="drive-setup-guide-badge">3</span>
+                        <div class="drive-setup-guide-step-text">
+                            {{ $t('accountTab.driveSetupGuideStep3') }}
+                            <a
+                                href="https://console.cloud.google.com/apis/credentials"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="drive-setup-guide-link"
+                            >
+                                <v-icon size="14">mdi-open-in-new</v-icon>
+                                {{ $t('accountTab.driveSetupGuideCredentialsLink') }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="drive-setup-guide-step">
+                        <span class="drive-setup-guide-badge">4</span>
+                        <div class="drive-setup-guide-step-text">{{ $t('accountTab.driveSetupGuideStep4') }}</div>
+                    </div>
+                    <div class="drive-setup-guide-step">
+                        <span class="drive-setup-guide-badge">5</span>
+                        <div class="drive-setup-guide-step-text">
+                            {{ $t('accountTab.driveSetupGuideStep5') }}
+                            <div class="drive-setup-guide-uri-box">
+                                <code class="drive-setup-guide-uri">{{ setupGuideRedirectUri }}</code>
+                                <v-tooltip :text="$t('accountTab.copy')" location="top">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            v-bind="props"
+                                            @click="copySetupGuideRedirectUri"
+                                            icon
+                                            variant="text"
+                                            size="small"
+                                            density="compact"
+                                        >
+                                            <v-icon size="18">mdi-content-copy</v-icon>
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="drive-setup-guide-step">
+                        <span class="drive-setup-guide-badge">6</span>
+                        <div class="drive-setup-guide-step-text">{{ $t('accountTab.driveSetupGuideStep6') }}</div>
+                    </div>
+
+                    <v-alert type="warning" variant="tonal" density="compact" class="drive-setup-guide-note" icon="mdi-alert-outline">
+                        {{ $t('accountTab.driveSetupGuideNote') }}
+                    </v-alert>
+                </v-card-text>
+                <v-card-actions class="justify-end drive-setup-guide-actions">
+                    <v-btn @click="showSetupGuide = false" color="primary" variant="elevated" class="rounded-pill">{{
+                        $t('accountTab.close')
+                    }}</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </v-card>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { getTenantUrl } from '@/utils/domainUtils';
 const backend = BackendFactory.createBackend();
 
 export default {
     data: () => ({
+        showSetupGuide: false,
         isEditMode: false,
         isProcessingDriveFolder: false,
         isReauthorizing: false,
@@ -103,6 +213,9 @@ export default {
         savedDriveInfo: null
     }),
     computed: {
+        setupGuideRedirectUri() {
+            return getTenantUrl(window.$tenantName, '/definition-map');
+        },
         canProcessDriveFolder() {
             if (this.isEditMode || this.isProcessingDriveFolder) return false;
             if (this.driveFolderJobStatus === 'running') return false;
@@ -225,6 +338,14 @@ export default {
             this.driveFolderJobStatus = 'idle';
             this.driveFolderJobId = null;
         },
+        async copySetupGuideRedirectUri() {
+            try {
+                await navigator.clipboard.writeText(this.setupGuideRedirectUri);
+                this.notifySnackbar('클립보드에 복사되었습니다.', 'success');
+            } catch (error) {
+                console.error('클립보드 복사 실패:', error);
+            }
+        },
         startEdit() {
             this.isEditMode = true;
         },
@@ -320,3 +441,146 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.drive-setup-guide-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 1;
+}
+
+.drive-setup-guide-card {
+    overflow: hidden;
+}
+
+.drive-setup-guide-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 20px;
+    background: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, rgba(var(--v-theme-primary), 0.75) 100%);
+}
+
+.drive-setup-guide-header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.drive-setup-guide-header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.drive-setup-guide-header-title {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.drive-setup-guide-header-subtitle {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+
+.drive-setup-guide-close {
+    color: #fff !important;
+    flex-shrink: 0;
+}
+
+.drive-setup-guide-body {
+    padding: 24px 24px 8px;
+}
+
+.drive-setup-guide-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding-bottom: 18px;
+    position: relative;
+}
+
+.drive-setup-guide-step:not(:last-of-type)::before {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 28px;
+    bottom: 0;
+    width: 2px;
+    background-color: rgba(var(--v-theme-on-surface), var(--v-border-opacity, 0.12));
+}
+
+.drive-setup-guide-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background-color: rgba(var(--v-theme-primary), 0.12);
+    color: rgb(var(--v-theme-primary));
+    font-size: 0.8rem;
+    font-weight: 700;
+    z-index: 1;
+}
+
+.drive-setup-guide-step-text {
+    padding-top: 3px;
+    line-height: 1.55;
+    font-size: 0.9rem;
+}
+
+.drive-setup-guide-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: 6px;
+    color: rgb(var(--v-theme-primary));
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.drive-setup-guide-link:hover {
+    text-decoration: underline;
+}
+
+.drive-setup-guide-uri-box {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 10px;
+    padding: 6px 6px 6px 12px;
+    background-color: rgba(var(--v-theme-on-surface), 0.05);
+    border: 1px solid rgba(var(--v-theme-on-surface), var(--v-border-opacity, 0.12));
+    border-radius: 8px;
+}
+
+.drive-setup-guide-uri {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    word-break: break-all;
+    font-size: 0.82rem;
+    color: rgb(var(--v-theme-primary));
+}
+
+.drive-setup-guide-note {
+    margin-top: 4px;
+    margin-bottom: 16px;
+}
+
+.drive-setup-guide-actions {
+    padding: 8px 24px 20px;
+}
+</style>

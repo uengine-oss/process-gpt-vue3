@@ -39,13 +39,14 @@
                             </div>
                             <VTextField
                                 v-else
-                                v-model="value.id"
+                                :model-value="value.id"
+                                @update:model-value="setTenantId"
                                 :label="textField.label"
                                 :type="textField.type"
                                 :ref="textField.ref"
                                 :readonly="isEdit || textField.disabled"
                                 class="tenant-info-text-filed"
-                                hint="* 영어, 숫자, 하이픈(-)만 입력 가능합니다."
+                                hint="* 영어 소문자와 숫자만 입력 가능합니다."
                                 persistent-hint
                                 required
                             ></VTextField>
@@ -386,13 +387,14 @@ export default {
                 //     }
                 // }
 
-                if (!this.value.id || this.value.id === '' || this.value.id.match(/^[a-zA-Z0-9]+$/) === null) {
+                if (!this.value.id || this.value.id === '' || this.value.id.match(/^[a-z0-9]+$/) === null) {
                     try {
                         this.$refs.tenantId.focus();
                     } catch (e) {
-                        this.$emit('stopLoading');
-                        throw new Error('STEP1의 사용할 회사명 입력하기에서 회사 ID를 입력해주세요.');
+                        // ignore focus failure, still report the validation error below
                     }
+                    this.$emit('stopLoading');
+                    throw new Error('STEP1의 사용할 회사명 입력하기에서 회사 ID는 영어 소문자와 숫자만 사용하여 입력해주세요.');
                 }
 
                 if (this.isEdit === false) {
@@ -401,11 +403,12 @@ export default {
                         try {
                             this.$refs.tenantId.focus();
                         } catch (e) {
-                            this.$emit('stopLoading');
-                            throw new Error(
-                                `STEP1의 사용할 회사명 입력하기에서 '${this.value.id}'는 이미 존재하는 회사 ID입니다. 다른 ID를 사용해주세요.`
-                            );
+                            // ignore focus failure, still report the validation error below
                         }
+                        this.$emit('stopLoading');
+                        throw new Error(
+                            `STEP1의 사용할 회사명 입력하기에서 '${this.value.id}'는 이미 존재하는 회사 ID입니다. 다른 ID를 사용해주세요.`
+                        );
                     }
                 }
             } catch (error) {
@@ -426,10 +429,9 @@ export default {
                 });
         },
 
-        filterDomainInput(event) {
-            // 영어, 숫자, 하이픈(-)만 허용
-            const filtered = event.target.value.replace(/[^a-zA-Z0-9\-]/g, '');
-            this.value.id = filtered;
+        setTenantId(inputValue) {
+            // 영어 소문자와 숫자만 허용
+            this.value.id = (inputValue || '').toLowerCase().replace(/[^a-z0-9]/g, '');
         }
     }
 };

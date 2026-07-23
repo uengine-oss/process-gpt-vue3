@@ -1,5 +1,5 @@
 <template>
-    <div ref="container" class="vue-dmn-diagram-container"></div>
+    <div ref="container" class="vue-dmn-diagram-container" :class="{ 'view-mode': isViewMode }"></div>
 </template>
 
 <script>
@@ -13,7 +13,7 @@ import 'dmn-js-decision-table/assets/css/dmn-js-decision-table.css';
 import 'dmn-js-decision-table/assets/css/dmn-js-decision-table-controls.css';
 
 import DmnModeler from 'dmn-js/lib/Modeler';
-import DmnViewer from 'dmn-js/lib/Viewer';
+import DmnDrdMoveViewer, { disableEditingModule } from '@/utils/dmnDrdMoveViewer';
 
 export default {
     name: 'dmn-modeler',
@@ -92,7 +92,13 @@ export default {
             );
 
             if (this.isViewMode) {
-                this.dmnModeler = new DmnViewer(_options);
+                // 편집(라벨 변경, 연결선 생성/리라우팅, 리사이즈, 팔레트/컨텍스트 패드)은 막되
+                // 요소 이동과 화면 드래그/줌은 가능한 뷰어
+                _options.drd = Object.assign(
+                    { additionalModules: [disableEditingModule] },
+                    _options.drd
+                );
+                this.dmnModeler = new DmnDrdMoveViewer(_options);
             } else {
                 this.dmnModeler = new DmnModeler(_options);
             }
@@ -308,5 +314,17 @@ export default {
 /* 팔레트 스타일 강제 표시 */
 .vue-dmn-diagram-container :deep(.djs-palette) {
     display: block !important;
+}
+
+/* 읽기 전용 모드: 팔레트/컨텍스트 패드 숨김 (이동, 화면 드래그, 줌은 계속 동작) */
+.vue-dmn-diagram-container.view-mode :deep(.djs-palette),
+.vue-dmn-diagram-container.view-mode :deep(.djs-context-pad) {
+    display: none !important;
+}
+
+/* 읽기 전용 모드: 상단 정의 이름/ID 인라인 편집 커서 숨김 */
+.vue-dmn-diagram-container.view-mode :deep(.dmn-definitions-name),
+.vue-dmn-diagram-container.view-mode :deep(.dmn-definitions-id) {
+    cursor: default !important;
 }
 </style>
