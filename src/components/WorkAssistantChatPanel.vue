@@ -201,6 +201,7 @@ import workAssistantAgentService from '@/services/WorkAssistantAgentService.js';
 import BackendFactory from '@/components/api/BackendFactory';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import { getValidToken } from '@/utils/supabaseAuth.js';
+import { getTenantId } from '@/utils/tenant';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import Chat from '@/components/ui/Chat.vue';
@@ -285,7 +286,9 @@ export default {
     },
     computed: {
         tenantId() {
-            return window.$tenantName || 'uengine';
+            // 'uengine' 하드코딩 금지: 메인 도메인($tenantName 미설정)에서 이 값이 그대로
+            // 스트림 요청에 실려 남의 테넌트로 향하고 401 로 거절되던 원인이었다.
+            return getTenantId();
         },
         currentRoom() {
             return this.chatRooms.find((r) => r.id === this.currentRoomId);

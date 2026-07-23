@@ -822,6 +822,7 @@ import agentRouterService from '@/services/AgentRouterService';
 import deepAgentRouterService from '@/services/DeepAgentRouterService';
 import FixedBaseWorkAssistantAgentService from '@/services/FixedBaseWorkAssistantAgentService';
 import { getValidToken } from '@/utils/supabaseAuth';
+import { getTenantId, resolveTenantId } from '@/utils/tenant';
 import { isLegacyProcessDefinition, convertLegacyProcessDefinitionToElements } from '@/utils/legacyProcessDefinition';
 import { processGptAgent } from '@/constants/processGptAgent';
 import { PROCESS_GPT_AGENT_ID } from '@/constants/processGptAgent';
@@ -877,6 +878,9 @@ export default {
             activeStreams: {}, // 스트리밍 중인 assistant 메시지 { [agentId]: msgObject }
             // DeepAgent 파일/도구 이벤트를 chats.messages JSONB에 합쳐 저장하는 debounce timer.
             _frontendStatePersistTimers: {},
+            // 서버(SDK)가 chats row 를 INSERT 하기 전까지 프런트엔드 전용 상태 저장을 보류할 때 쓰는
+            // 마지막 안전망 timer. { [roomId:msgUuid]: timeoutId }
+            _serverRowPersistFallbackTimers: {},
             // deepagent HITL(request_human_input)로 멈춘 방의 run_state 보관.
             // 사용자가 패널 대신 일반 입력창으로 답해도 같은 그래프 세션으로 resume 되게 하는 안전망.
             // { [roomId]: run_state }
@@ -1011,7 +1015,21 @@ export default {
         displayMessages() {
             const streams = Object.values(this.activeStreams);
             if (streams.length === 0) return this.messages;
-            return [...this.messages, ...streams];
+            // 같은 메시지가 messages(확정) 와 activeStreams(스트리밍) 양쪽에 있으면 한 번만 렌더한다.
+            // (realtime INSERT 가 스트림 종료 전에 도착해 패널 메시지가 messages 로 먼저 들어간 경우 등)
+            const knownKeys = new Set();
+            for (const m of this.messages) {
+                if (!m) continue;
+                if (m.uuid) knownKeys.add(m.uuid);
+                if (m.clientUuid) knownKeys.add(m.clientUuid);
+                if (m.rowUuid) knownKeys.add(m.rowUuid);
+            }
+            const pending = streams.filter((s) => {
+                if (!s) return false;
+                return !(knownKeys.has(s.uuid) || knownKeys.has(s.clientUuid) || knownKeys.has(s.rowUuid));
+            });
+            if (pending.length === 0) return this.messages;
+            return [...this.messages, ...pending];
         },
         /**
          * 마지막 메시지에서 미제출 __humanFeedback 추출
@@ -1459,6 +1477,11 @@ export default {
             clearTimeout(timer);
         }
         this._frontendStatePersistTimers = {};
+
+        for (const timer of Object.values(this._serverRowPersistFallbackTimers || {})) {
+            clearTimeout(timer);
+        }
+        this._serverRowPersistFallbackTimers = {};
 
         // PDF2BPMN events 구독 해제
         this.unsubscribeAllPdf2bpmnEvents();
@@ -1933,7 +1956,7 @@ export default {
                 file_path: filePath,
                 chat_room_id: (roomId || '').toString(),
                 user_name: this.userInfo?.name || this.userInfo?.username || this.userInfo?.email || '',
-                tenant_id: window.$tenantName || localStorage.getItem('tenantId') || 'process-gpt'
+                tenant_id: getTenantId()
             };
         },
         async saveChatAttachments(roomId, rawFiles) {
@@ -2711,6 +2734,50 @@ export default {
             }
         },
 
+        /**
+         * 같은 assistant turn 이 두 개의 chats row 로 저장된 이력이 있는 방을 위한 안전망.
+         * (프런트가 client uuid 로, SDK 가 server uuid 로 각각 INSERT 하던 과거 버그의 잔여 데이터)
+         * 논리 uuid(messages.uuid) 가 같은 행들을 하나로 합친다.
+         * - 서버가 INSERT 한 row(rowUuid !== uuid) 를 기준 row 로 삼는다.
+         * - 프런트 전용 상태(__humanFeedback / toolCalls / 산출물 등)는 양쪽을 merge 해 유실을 막는다.
+         */
+        _dedupeMessagesByLogicalUuid(list) {
+            if (!Array.isArray(list) || list.length < 2) return Array.isArray(list) ? list : [];
+            const byUuid = new Map();
+            const result = [];
+            for (const m of list) {
+                const key = (m?.uuid || '').toString();
+                if (!key) {
+                    result.push(m);
+                    continue;
+                }
+                const prev = byUuid.get(key);
+                if (!prev) {
+                    byUuid.set(key, m);
+                    result.push(m);
+                    continue;
+                }
+                // 서버 row(rowUuid 가 논리 uuid 와 다른 쪽)를 기준으로 잡고 나머지 상태를 얹는다.
+                const prevIsServerRow = !!prev.rowUuid && prev.rowUuid !== prev.uuid;
+                const curIsServerRow = !!m.rowUuid && m.rowUuid !== m.uuid;
+                const base = prevIsServerRow || !curIsServerRow ? prev : m;
+                const extra = base === prev ? m : prev;
+                const merged = this.normalizeAssistantMessageForDisplay({ ...extra, ...base });
+                // 본문/패널은 "있는 쪽" 을 살린다.
+                if (!merged.__humanFeedback && extra.__humanFeedback) merged.__humanFeedback = extra.__humanFeedback;
+                if (!merged.pdf2bpmnResult && extra.pdf2bpmnResult) merged.pdf2bpmnResult = extra.pdf2bpmnResult;
+                if (!(merged.content || '').toString().trim() && !merged.__humanFeedback) {
+                    merged.content = extra.content || merged.content || '';
+                }
+                merged.rowUuid = base.rowUuid || extra.rowUuid || null;
+                byUuid.set(key, merged);
+                const idx = result.indexOf(prev);
+                if (idx !== -1) result[idx] = merged;
+                else result.push(merged);
+            }
+            return result;
+        },
+
         async loadMessages(roomId) {
             this.messages = [];
             this.resetHistoryPagination();
@@ -2736,7 +2803,7 @@ export default {
                     return this.normalizeAssistantMessageForDisplay(m);
                 });
                 // desc로 받아왔으니 asc로 정렬된 형태가 되도록 reverse
-                const asc = mapped.reverse();
+                const asc = this._dedupeMessagesByLogicalUuid(mapped.reverse());
                 // ===== 시간순 정렬 보강 =====
                 // chats 테이블은 created_at 컬럼이 없고 timeStamp 는 messages JSONB 내부에 저장된다.
                 // 과거 SDK 가 timeStamp 를 넣지 않은 메시지들(NULL timeStamp)이 섞여 있으면
@@ -2980,7 +3047,7 @@ export default {
                 if (this.activeStreams[agentId]) return;
 
                 const userJwt = (await getValidToken()) || '';
-                const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+                const tenantId = getTenantId();
 
                 const abortController = new AbortController();
                 const abortKey = `${roomId}:attach:${agentId}`;
@@ -4084,7 +4151,7 @@ export default {
             result.__saveError = '';
             try {
                 const { elementsToFlattenedDefinition } = await import('@/utils/elementsToFlattened.js');
-                const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+                const tenantId = getTenantId();
                 const pd = contract.processDefinition;
                 const procId = (pd.processDefinitionId || pd.id || '').toString().trim();
                 const procName = (pd.processDefinitionName || pd.name || procId || '새 프로세스').toString();
@@ -4377,12 +4444,18 @@ export default {
                 try {
                     const roomId = this.currentChatRoom?.id || null;
                     const canWrite = this.shouldClientWriteChatDb(this.getRoomOrchestration());
-                    const msgUuid = targetMessage.uuid;
+                    // 서버가 INSERT 한 실제 row 키(rowUuid)를 우선 사용한다.
+                    // client uuid 로 쓰면 같은 assistant turn 이 별도 row 로 하나 더 생겨
+                    // HITL 패널(컨설팅 초안)이 화면에 2번 렌더된다.
+                    const msgUuid = targetMessage.rowUuid || targetMessage.uuid;
                     if (canWrite && roomId && msgUuid) {
+                        const messagesToSave = { ...targetMessage };
+                        delete messagesToSave.rowUuid;
+                        delete messagesToSave.__serverPersisted;
                         await backend.putObject(`db://chats/${msgUuid}`, {
                             uuid: msgUuid,
                             id: roomId,
-                            messages: { ...targetMessage }
+                            messages: messagesToSave
                         });
                     }
                 } catch (persistErr) {
@@ -5338,7 +5411,7 @@ export default {
                     ? inRoomAgentsRaw[0].id
                     : null;
             try {
-                const tenant_id = window.$tenantName || localStorage.getItem('tenantId') || '';
+                const tenant_id = getTenantId();
                 const user_uid = this.userInfo?.uid || this.userInfo?.id || '';
                 const router = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
                 const routed = await router.routeAgents({
@@ -6255,7 +6328,7 @@ export default {
             } catch (e) {
                 return;
             }
-            const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+            const tenantId = getTenantId();
             // 이전 방 draft 정리(option A): 이번에 만들 draft id 집합을 모은 뒤, 추적된 옛 id 중 빠진 것 삭제.
             const prevDraftIds = Array.isArray(this._roomDraftIds) ? this._roomDraftIds.slice() : [];
             const newDraftIds = [];
@@ -6518,7 +6591,7 @@ export default {
                 if (pd && pd.processDefinition) pd = pd.processDefinition;
                 // elements[] 형식이면 flatten, 이미 flattened(activities[]) 면 그대로 저장.
                 const definition = Array.isArray(pd.elements) ? elementsToFlattenedDefinition(pd) : pd;
-                const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+                const tenantId = getTenantId();
                 const procId = (definition.processDefinitionId || pd.processDefinitionId || '').toString().trim();
                 const procName = (definition.processDefinitionName || pd.processDefinitionName || procId || '새 프로세스').toString();
                 if (!procId) throw new Error('processDefinitionId 가 없습니다.');
@@ -7589,7 +7662,9 @@ export default {
 
         async streamAgents(agentTargets, userText, payload) {
             const userJwt = (await getValidToken()) || '';
-            const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+            // 스트림 경로는 테넌트가 반드시 정확해야 한다(잘못된 테넌트 → 401/빈 결과).
+            // 서브도메인으로 확정되지 않으면 세션 JWT 의 app_metadata.tenant_id 까지 조회한다.
+            const tenantId = await resolveTenantId();
             const requestFiles = this.normalizePayloadFiles(payload);
             const requestPrimaryFile = requestFiles[0] || null;
             const orchestration = (payload?.orchestration || this.getRoomOrchestration() || '').toString().trim() || 'langchain-react';
@@ -7640,6 +7715,11 @@ export default {
                     content: '생각 중...',
                     contentType: 'text',
                     isLoading: true,
+                    // 이 assistant turn 의 chats row 는 서버(SDK persist_chat_to_db)가 INSERT 한다.
+                    // 프런트가 rowUuid 도착 전에 client uuid 로 upsert 하면 같은 turn 이 두 row 로
+                    // 갈라져 HITL 패널(컨설팅 초안)이 화면에 2번 렌더된다. persistMessageFrontendState
+                    // 가 이 플래그를 보고 rowUuid 가 생길 때까지 저장을 보류한다.
+                    __serverPersisted: true,
                     toolCalls: [],
                     executionSkills: [],
                     executionConnectors: [],
@@ -9627,7 +9707,7 @@ export default {
         },
         _getCurrentTenantId() {
             try {
-                return String(window?.$tenantName || localStorage.getItem('tenantId') || '').trim();
+                return String(getTenantId()).trim();
             } catch (e) {
                 return '';
             }
@@ -10226,6 +10306,25 @@ export default {
             }, delay);
         },
 
+        /**
+         * 서버가 chats row 를 INSERT 하기로 되어 있는데 realtime INSERT 가 끝내 오지 않는 경우
+         * (SDK 미저장 에이전트 / realtime 유실) 프런트엔드 전용 상태가 통째로 사라지지 않도록,
+         * 일정 시간 뒤에도 rowUuid 가 없으면 client uuid 로 한 번만 저장한다.
+         * 정상 흐름에서는 rowUuid 가 먼저 채워지므로 이 fallback 은 발동하지 않는다.
+         */
+        scheduleServerRowPersistFallback(msg, roomId, delay = 8000) {
+            if (!msg || typeof msg !== 'object') return;
+            const key = `${roomId}:${(msg.uuid || '').toString()}`;
+            if (!key.trim() || this._serverRowPersistFallbackTimers[key]) return;
+            this._serverRowPersistFallbackTimers[key] = setTimeout(() => {
+                delete this._serverRowPersistFallbackTimers[key];
+                // rowUuid 가 도착했다면 정규 경로에서 이미 저장됐다.
+                if (msg.rowUuid) return;
+                msg.__serverPersisted = false;
+                this.persistMessageFrontendState(msg, roomId, { force: true });
+            }, delay);
+        },
+
         async persistMessageFrontendState(msg, roomId, { force = false } = {}) {
             try {
                 if (!msg || typeof msg !== 'object') return;
@@ -10260,6 +10359,15 @@ export default {
                     return;
                 }
                 const targetRoomId = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+                // 서버가 chats row 를 INSERT 하는 assistant 스트리밍 메시지는, realtime INSERT 로
+                // rowUuid 가 도착하기 전에 client uuid 로 upsert 하면 "같은 turn = 두 row" 가 되어
+                // HITL 패널이 중복 렌더된다. rowUuid 가 생길 때까지 보류하고,
+                // (a) realtime INSERT 핸들러 (b) onDone force 저장 (c) 아래 fallback 타이머
+                // 중 먼저 오는 시점에 flush 한다.
+                if (msg.__serverPersisted && !msg.rowUuid) {
+                    this.scheduleServerRowPersistFallback(msg, targetRoomId);
+                    return;
+                }
                 const msgUuid = (msg.rowUuid || msg.uuid || '').toString();
                 if (!targetRoomId || !msgUuid) return;
                 const stateKey = JSON.stringify({
@@ -10293,6 +10401,7 @@ export default {
                 // 내부 멱등성 플래그는 DB jsonb 에 박힐 필요 없음
                 delete messagesToSave.__feStateKey;
                 delete messagesToSave.__humanFeedbackPersisted;
+                delete messagesToSave.__serverPersisted;
                 await backend.putObject(`db://chats/${msgUuid}`, {
                     uuid: msgUuid,
                     id: targetRoomId,

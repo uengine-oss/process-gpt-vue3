@@ -175,6 +175,9 @@ export default {
 
             events: [],
             channel: null,
+            // 현재 realtime 구독이 걸려 있는 taskId. workItem deep watcher 가
+            // 무관한 변경에도 재구독하지 않도록 비교용으로 쓴다.
+            subscribedTaskId: null,
             eventsPollingTimer: null,
             isPollingEvents: false,
             slideIndexes: {},
@@ -538,8 +541,13 @@ export default {
                 }
                 await this.loadData();
                 await this.fetchTodoStatus();
-                this.cleanup();
-                this.setupRealtimeSubscription(newVal.worklist.taskId);
+                // deep watcher 라 taskId 와 무관한 중첩 변경에도 매번 재구독하고 있었다.
+                // 같은 taskId 로 끊었다 붙이는 과정에서 realtime 채널이 중복 생성된다.
+                const nextTaskId = newVal?.worklist?.taskId;
+                if (nextTaskId && nextTaskId !== this.subscribedTaskId) {
+                    await this.cleanup();
+                    await this.setupRealtimeSubscription(nextTaskId);
+                }
 
                 if (newVal && !this.selectedAgentType) {
                     this.selectedAgent = {
@@ -1065,6 +1073,7 @@ export default {
                     'error'
                 ];
 
+                this.subscribedTaskId = taskId;
                 this.channel = await this.backend.watchAgentEvents(taskId, (row) => {
                     const { todo_id: todoId, event_type, job_id, id } = row;
 
@@ -1225,9 +1234,13 @@ export default {
             if (!row) return false;
             return String(row.status || '').toUpperCase() === 'ASKED';
         },
-        cleanup() {
-            this.backend.unwatchChannel(this.channel);
-            this.backend.unwatchChannel(this.todolistChannel);
+        async cleanup() {
+            // 해제를 await 해야 같은 topic 으로 즉시 재구독할 때 충돌하지 않는다.
+            await this.backend.unwatchChannel(this.channel);
+            await this.backend.unwatchChannel(this.todolistChannel);
+            this.channel = null;
+            this.todolistChannel = null;
+            this.subscribedTaskId = null;
             this.stopEventsPolling();
         },
 
@@ -1576,7 +1589,9 @@ export default {
         await this.fetchTodoStatus();
         const taskId = this.getTaskIdFromWorkItem();
         if (taskId) {
-            this.setupRealtimeSubscription(taskId);
+            // await 하지 않으면 this.channel 이 채워지기 전에 workItem watcher 가 cleanup() 을
+            // 호출해(= ref 가 undefined 라 no-op) 첫 채널이 해제되지 않은 채 남는다.
+            await this.setupRealtimeSubscription(taskId);
         }
     },
     async mounted() {

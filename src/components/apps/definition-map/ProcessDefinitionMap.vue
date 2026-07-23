@@ -787,6 +787,7 @@ import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 import { processGptAgent } from '@/constants/processGptAgent';
+import { getTenantId } from '@/utils/tenant';
 
 export default {
     mixins: [ChatModule],
@@ -906,7 +907,9 @@ export default {
             email: null,
             is_admin: false,
             role: '프로세스 생성과 실행, 질문 의도 분석 및 답변 제공을 통해 지원팀의 업무 효율을 높이는 에이전트',
-            tenant_id: 'uengine',
+            // 기본 에이전트는 테넌트에 종속되지 않는다. 'uengine' 을 박아두면 다른 테넌트에서
+            // 이 프로필로 나가는 요청이 남의 테넌트로 향해 401/빈 결과가 된다.
+            tenant_id: getTenantId(),
             device_token: null,
             goal: '지원팀 내 요청되는 프로세스의 90% 이상을 신속하게 생성 및 실행하고, 질문 의도를 정확히 분석하여 95% 이상의 정확도로 적합한 답변을 제공한다.',
             persona:
@@ -1459,7 +1462,7 @@ export default {
             // metadata here creates a second attachment row after the upload finishes.
             if (hasFile && rawFiles.length === 0) {
                 try {
-                    const tenantId = window.$tenantName || localStorage.getItem('tenantId') || 'process-gpt';
+                    const tenantId = getTenantId();
                     const userName = userInfo?.name || userInfo?.username || userInfo?.email || '';
                     for (const f of messageFiles) {
                         const fileName = (f?.fileName || f?.name || '').toString().trim();

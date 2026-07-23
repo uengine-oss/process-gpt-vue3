@@ -8,11 +8,33 @@ import { runValidation } from '@/utils/bpmnValidationRules';
 import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
 import { convertXMLToJSON as convertXMLToJSONShared } from '@/utils/bpmnXmlToDefinition';
 import { applySelectedChanges } from '@/utils/bpmnSelectiveMerge';
+import { getTenantId, setCachedJwtTenantId } from '@/utils/tenant';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
 enum ErrorCode {
     TableNotFound = '42P01'
+}
+
+/**
+ * storage.list()/getObject() 옵션에 현재 테넌트 필터를 주입한다.
+ *
+ * chats / chat_rooms / proc_def / bpm_proc_inst / todolist 는 shipped migration 에
+ * RLS 정책이 없어 테넌트 격리가 전적으로 이 프런트엔드 필터에 달려 있다.
+ * 필터가 빠지면 신규 테넌트에서도 다른 테넌트의 채팅·인스턴스·프로세스가 그대로 보인다.
+ *
+ * 호출부가 이미 tenant_id 를 지정했다면 존중한다(마켓플레이스/관리자 조회 등).
+ * 테넌트를 확정할 수 없으면 필터를 붙이지 않는다(로그인 전 화면 등에서 빈 결과를 만들지 않기 위함).
+ */
+function withTenantMatch(options?: any): any {
+    const tenantId = getTenantId();
+    if (!tenantId) return options ?? {};
+    const next = { ...(options || {}) };
+    next.match = { ...(next.match || {}) };
+    if (next.match.tenant_id === undefined) {
+        next.match.tenant_id = tenantId;
+    }
+    return next;
 }
 
 class ProcessGPTBackend implements Backend {
@@ -118,17 +140,13 @@ class ProcessGPTBackend implements Backend {
 
     async listDefinition(path: string, options?: any) {
         try {
+            // proc_def / form_def 는 (id, tenant_id) 로 유일하다. tenant 필터가 빠지면
+            // 다른 테넌트의 프로세스 정의가 그대로 목록에 섞여 나온다.
+            options = withTenantMatch(options);
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
             if (path == 'form_def') {
-                if (options && options.match) {
-                    options.match.tenant_id = window.$tenantName;
-                } else {
-                    options = {
-                        match: {
-                            tenant_id: window.$tenantName
-                        }
-                    };
-                }
+                // tenant 필터는 위 withTenantMatch 가 이미 주입했다.
+                // (테넌트 미확정일 때 tenant_id: '' 를 강제하면 결과가 통째로 비어버린다.)
                 const formDefs = await storage.list('form_def', options);
                 formDefs.map((item: any) => {
                     item.path = item.id;
@@ -951,7 +969,7 @@ class ProcessGPTBackend implements Backend {
 
     async getAllInstanceList(page: any, size: any) {
         try {
-            const list = await storage.list('bpm_proc_inst');
+            const list = await storage.list('bpm_proc_inst', withTenantMatch());
             return list.map((item: any) => {
                 return this.returnInstanceObject(item);
                 // return {
@@ -1042,7 +1060,7 @@ class ProcessGPTBackend implements Backend {
 
     async getInstanceByProjectId(projectId: number) {
         try {
-            const list = await storage.list('bpm_proc_inst', { match: { project_id: projectId } });
+            const list = await storage.list('bpm_proc_inst', withTenantMatch({ match: { project_id: projectId } }));
 
             return list.map((item: any) => {
                 return this.returnInstanceObject(item);
@@ -1224,9 +1242,9 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkList(options?: any) {
         try {
-            const filter: any = { match: {} };
+            const filter: any = withTenantMatch({ match: {} });
             if (options && options.match) {
-                filter.match = options.match;
+                filter.match = { ...filter.match, ...options.match };
             }
 
             if (options && options.status) {
@@ -2966,7 +2984,7 @@ class ProcessGPTBackend implements Backend {
 
     async fetchInstanceListByStatus(status: string): Promise<any[]> {
         const me = this;
-        const list = await storage.list('bpm_proc_inst', { match: { status: status } });
+        const list = await storage.list('bpm_proc_inst', withTenantMatch({ match: { status: status } }));
         const email = window.localStorage.getItem('email');
         const filteredData = list.filter((item: any) => item.participants.includes(email));
 
@@ -2991,7 +3009,7 @@ class ProcessGPTBackend implements Backend {
                 };
             }
 
-            const lists = await storage.list('bpm_proc_inst', options);
+            const lists = await storage.list('bpm_proc_inst', withTenantMatch(options));
             if (lists && lists.length > 0) {
                 return lists
                     .filter((item: any) => !item.parent_proc_inst_id)
@@ -3148,7 +3166,7 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkListByInstId(instId: number) {
         try {
-            const list = await storage.list('todolist', { match: { proc_inst_id: instId } });
+            const list = await storage.list('todolist', withTenantMatch({ match: { proc_inst_id: instId } }));
             const worklist: any[] = list
                 .filter((item: any) => !((!item.tool || item.tool === '') && item.description === 'start event'))
                 .map((item: any) => {
@@ -3163,7 +3181,7 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkListByRootInstId(rootInstId: number) {
         try {
-            const list = await storage.list('todolist', { match: { root_proc_inst_id: rootInstId } });
+            const list = await storage.list('todolist', withTenantMatch({ match: { root_proc_inst_id: rootInstId } }));
             const worklist: any[] = list
                 .filter((item: any) => !((!item.tool || item.tool === '') && item.description === 'start event'))
                 .map((item: any) => {
@@ -3410,7 +3428,7 @@ class ProcessGPTBackend implements Backend {
 
     async getDeletedInstances() {
         try {
-            return await storage.list('bpm_proc_inst', { match: { is_deleted: true } });
+            return await storage.list('bpm_proc_inst', withTenantMatch({ match: { is_deleted: true } }));
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -4373,6 +4391,17 @@ class ProcessGPTBackend implements Backend {
                 is_admin: true,
                 tenant_id: tenantId
             });
+
+            // 새 테넌트를 만든 직후에는 JWT 의 app_metadata.tenant_id 가 아직 '직전 테넌트' 를 가리킨다.
+            // 그 상태로 두면 RLS 의 public.tenant_id() 가 옛 테넌트를 반환해
+            // (1) 신규 테넌트 화면에 이전 테넌트의 채팅/인스턴스/프로세스가 보이고
+            // (2) 아래 기본 프로세스 복제본이 이전 테넌트에 저장된다.
+            // → 시드 데이터를 넣기 전에 반드시 클레임을 새 테넌트로 갱신한다.
+            await this.setTenant(tenantId);
+            setCachedJwtTenantId(tenantId);
+            try {
+                localStorage.setItem('tenantId', tenantId);
+            } catch (e) {}
 
             if (window.$tenantName !== 'localhost') {
                 for (const process of defaultProcessesData.defaultProcesses) {
@@ -7156,7 +7185,10 @@ class ProcessGPTBackend implements Backend {
     async watchAgentEvents(taskId: string, callback: (row: any) => void) {
         return await storage._watch(
             {
-                channel: `events-${taskId}`,
+                // 고정 채널명은 재마운트 시 supabase 의 캐시 채널을 재사용하게 만들어
+                // `cannot add postgres_changes callbacks ... after subscribe()` 를 유발한다.
+                // 다른 watcher 들과 동일하게 유니크 suffix 를 붙인다.
+                channel: `events-${taskId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
                 event: 'INSERT',
                 table: 'events',
                 filter: `todo_id=eq.${taskId}`
@@ -7170,7 +7202,7 @@ class ProcessGPTBackend implements Backend {
     async watchTodoStatus(taskId: string, callback: (newRow: any, oldRow: any) => void) {
         return await storage._watch(
             {
-                channel: `todolist-${taskId}`,
+                channel: `todolist-${taskId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
                 event: 'UPDATE',
                 table: 'todolist',
                 filter: `id=eq.${taskId}`
@@ -7181,9 +7213,11 @@ class ProcessGPTBackend implements Backend {
         );
     }
 
-    unwatchChannel(ref: any) {
+    async unwatchChannel(ref: any) {
         if (ref) {
-            storage._watch_off(ref);
+            // await 하지 않으면 leave 가 서버에 반영되기 전에 같은 이름으로 재구독되어
+            // 'after subscribe()' 오류가 난다.
+            await storage._watch_off(ref);
         }
     }
 
@@ -7227,6 +7261,10 @@ class ProcessGPTBackend implements Backend {
             if (options?.startAfter) listOptions.startAfter = options.startAfter;
             if (options?.range) listOptions.range = options.range;
 
+            // NOTE: chats 는 tenant_id 로 좁히지 않는다.
+            // 이미 room id 로 스코프되고, 방 목록 자체가 테넌트로 걸러진다(getChatRoomList).
+            // 반면 SDK 의 persist 재시도 경로는 tenant_id 없이 INSERT 할 수 있어(FK 실패 fallback),
+            // 여기서 tenant 를 강제하면 그렇게 저장된 과거 메시지가 통째로 사라진다.
             const messages = await storage.list('chats', listOptions);
             return messages;
         } catch (error) {
@@ -7244,7 +7282,8 @@ class ProcessGPTBackend implements Backend {
 
     async getChatRoomList(path: string) {
         try {
-            return await storage.list(path);
+            // 테넌트 필터가 없으면 신규 테넌트에서도 다른 테넌트의 채팅방이 그대로 보인다.
+            return await storage.list(path, withTenantMatch());
         } catch (error) {
             throw new Error(error.message);
         }

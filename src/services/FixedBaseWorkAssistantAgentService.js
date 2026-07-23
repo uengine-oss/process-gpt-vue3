@@ -3,6 +3,8 @@
  *
  * 지정된 baseUrl로 스트리밍 요청을 보낸다.
  */
+import { buildAgentHeaders } from './agentRequestHeaders';
+
 class FixedBaseWorkAssistantAgentService {
     constructor(baseUrl) {
         this.baseUrl = (baseUrl ?? '').toString().trim().replace(/\/$/, '') || '/agent';
@@ -34,9 +36,7 @@ class FixedBaseWorkAssistantAgentService {
         try {
             const response = await fetch(`${this.baseUrl}/chat/stream`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json; charset=utf-8'
-                },
+                headers: buildAgentHeaders(params),
                 signal: options.signal,
                 body: JSON.stringify({
                     message: params.message,

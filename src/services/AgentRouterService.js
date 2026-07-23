@@ -13,6 +13,8 @@ const normalizeBaseUrl = (value, fallback) => {
 
 const AGENT_ROUTER_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_AGENT_ROUTER_BASE_URL, '/agent-router');
 
+import { buildAgentHeaders } from './agentRequestHeaders';
+
 class AgentRouterService {
     constructor() {
         this.baseUrl = AGENT_ROUTER_BASE_URL;
@@ -26,7 +28,7 @@ class AgentRouterService {
     async routeAgents(payload) {
         const response = await fetch(`${this.baseUrl}/route`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+            headers: buildAgentHeaders(payload || {}),
             body: JSON.stringify(payload || {})
         });
         if (!response.ok) {
@@ -35,10 +37,10 @@ class AgentRouterService {
         return await response.json();
     }
 
-    async warmup(agentId) {
+    async warmup(agentId, auth = {}) {
         const response = await fetch(`${this.baseUrl}/${agentId}/warmup`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json; charset=utf-8' }
+            headers: buildAgentHeaders(auth)
         });
         if (!response.ok) {
             throw new Error(`AgentRouter warmup error: ${response.status}`);
@@ -52,9 +54,7 @@ class AgentRouterService {
         try {
             const response = await fetch(`${this.baseUrl}/${agentId}/chat/stream`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json; charset=utf-8'
-                },
+                headers: buildAgentHeaders(params),
                 signal: options.signal,
                 body: JSON.stringify({
                     message: params.message,

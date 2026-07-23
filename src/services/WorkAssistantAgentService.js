@@ -16,6 +16,8 @@ const normalizeBaseUrl = (value, fallback) => {
 
 const AGENT_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_AGENT_BASE_URL, '/agent');
 
+import { buildAgentHeaders } from './agentRequestHeaders';
+
 class WorkAssistantAgentService {
     constructor() {
         this.baseUrl = AGENT_BASE_URL;
@@ -36,9 +38,7 @@ class WorkAssistantAgentService {
     async sendMessage(params) {
         const response = await fetch(`${this.baseUrl}/chat`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json; charset=utf-8'
-            },
+            headers: buildAgentHeaders(params),
             body: JSON.stringify({
                 message: params.message,
                 tenant_id: params.tenant_id,
@@ -97,9 +97,7 @@ class WorkAssistantAgentService {
         try {
             const response = await fetch(`${this.baseUrl}/chat/stream`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json; charset=utf-8'
-                },
+                headers: buildAgentHeaders(params),
                 signal: options.signal,
                 body: JSON.stringify({
                     message: params.message,

@@ -106,6 +106,12 @@ openspec/specs/*
 !openspec/specs/deep-agent-chat-state/spec.md
 !openspec/specs/deep-agent-process-generation/
 !openspec/specs/deep-agent-process-generation/spec.md
+!openspec/specs/chat-hitl-single-render/
+!openspec/specs/chat-hitl-single-render/spec.md
+!openspec/specs/tenant-scoped-agent-streaming/
+!openspec/specs/tenant-scoped-agent-streaming/spec.md
+!openspec/specs/tenant-data-isolation/
+!openspec/specs/tenant-data-isolation/spec.md
 
 qa_report/
 

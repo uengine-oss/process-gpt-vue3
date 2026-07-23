@@ -208,6 +208,10 @@ export default {
                 agentMode: 'none',
                 orchestration: null,
                 agentAssignedFrom: null,
+                // '미리 설정된 에이전트 사용' 체크 상태. 저장/복원되지 않으면
+                // AgentSelectField 가 이 값을 !!agent 로 재유도하면서, 아직 에이전트를
+                // 고르기 전(agent=null)에 체크가 스스로 풀리고 선택이 지워진다.
+                usePresetAgent: false,
                 tool: '',
                 inputData: [],
                 customProperties: [],
@@ -265,6 +269,8 @@ export default {
             if (this.copyUengineProperties.instruction !== undefined) this.activity.instruction = this.copyUengineProperties.instruction;
             if (this.copyUengineProperties.checkpoints !== undefined) this.activity.checkpoints = this.copyUengineProperties.checkpoints;
             if (this.copyUengineProperties.agent !== undefined) this.activity.agent = this.copyUengineProperties.agent;
+            if (this.copyUengineProperties.usePresetAgent !== undefined)
+                this.activity.usePresetAgent = !!this.copyUengineProperties.usePresetAgent;
             if (this.copyUengineProperties.agentMode !== undefined) this.activity.agentMode = this.copyUengineProperties.agentMode;
             if (this.copyUengineProperties.orchestration !== undefined && this.copyUengineProperties.orchestration !== 'none')
                 this.activity.orchestration = this.copyUengineProperties.orchestration;
@@ -731,6 +737,7 @@ export default {
                     targetActivity.checkpoints = Array.isArray(me.activity.checkpoints) ? [...me.activity.checkpoints] : [];
 
                     targetActivity.agent = me.activity.agent || null;
+                    targetActivity.usePresetAgent = !!me.activity.usePresetAgent;
                     targetActivity.agentMode = me.activity.agentMode || null;
                     targetActivity.orchestration = me.activity.orchestration || null;
                     targetActivity.agentAssignedFrom = me.activity.agentAssignedFrom || null;
@@ -766,6 +773,7 @@ export default {
                 description: me.activity.description,
                 checkpoints: me.activity.checkpoints,
                 agent: me.activity.agent,
+                usePresetAgent: !!me.activity.usePresetAgent,
                 agentMode: me.activity.agentMode,
                 orchestration: me.activity.orchestration,
                 agentAssignedFrom: me.activity.agentAssignedFrom,
