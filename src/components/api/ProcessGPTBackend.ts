@@ -7663,7 +7663,8 @@ class ProcessGPTBackend implements Backend {
             );
 
             if (candidates.length === 0) {
-                throw new Error('workitem not found');
+                fieldValue[formId] = { [fieldId]: undefined };
+                return fieldValue;
             }
 
             // formId/fieldId만으로 둘 이상 후보가 매칭되면(예: 서로 다른 프로세스 정의가
