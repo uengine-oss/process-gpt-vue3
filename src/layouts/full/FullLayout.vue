@@ -4,7 +4,6 @@ import VerticalSidebarVue from './vertical-sidebar/VerticalSidebar.vue';
 import VerticalHeaderVue from './vertical-header/VerticalHeader.vue';
 import HorizontalHeader from './horizontal-header/HorizontalHeader.vue';
 import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
-import Customizer from './customizer/Customizer.vue';
 import Footer from './Footer.vue';
 import { useCustomizerStore } from '../../stores/customizer';
 import { pl, zhHans } from 'vuetify/locale';
@@ -53,18 +52,6 @@ const isModelingTab = computed(() => {
                 customizer.setBorderCard ? 'cardBordered' : ''
             ]"
         >
-            <!---Customizer location left side--->
-            <v-navigation-drawer
-                app
-                temporary
-                elevation="10"
-                location="left"
-                v-model="customizer.Customizer_drawer"
-                width="320"
-                class="left-customizer"
-            >
-                <Customizer />
-            </v-navigation-drawer>
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
@@ -82,10 +69,6 @@ const isModelingTab = computed(() => {
                         <div class="">
                             <div :class="customizer.boxed ? 'maxWidth' : ''">
                                 <RouterView />
-                                <!-- <v-btn class="customizer-btn" size="large" icon variant="flat" color="primary"
-                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                                <SettingsIcon />
-                            </v-btn> -->
                             </div>
                         </div>
                     </v-container>
@@ -106,10 +89,6 @@ const isModelingTab = computed(() => {
                 customizer.setBorderCard ? 'cardBordered' : ''
             ]"
         >
-            <!---Customizer location right side--->
-            <v-navigation-drawer app temporary elevation="10" location="right" v-model="customizer.Customizer_drawer" width="320">
-                <Customizer />
-            </v-navigation-drawer>
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
@@ -130,10 +109,6 @@ const isModelingTab = computed(() => {
                         <!-- 정의관련 maxWidth -->
                         <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">
                             <RouterView />
-                            <!-- <v-btn class="customizer-btn" size="small" icon text variant="flat" color="primary"
-                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                                <SettingsIcon />
-                            </v-btn> -->
                         </div>
                     </v-container>
                 </div>

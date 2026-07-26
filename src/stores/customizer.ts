@@ -5,7 +5,6 @@ export const useCustomizerStore = defineStore({
     id: 'customizer',
     state: () => ({
         Sidebar_drawer: config.Sidebar_drawer,
-        Customizer_drawer: config.Customizer_drawer,
         mini_sidebar: config.mini_sidebar,
         setHorizontalLayout: config.setHorizontalLayout, // Horizontal layout
         setRTLLayout: config.setRTLLayout, // RTL layout
@@ -21,9 +20,6 @@ export const useCustomizerStore = defineStore({
         },
         SET_MINI_SIDEBAR(payload: any) {
             this.mini_sidebar = payload;
-        },
-        SET_CUSTOMIZER_DRAWER(payload: any) {
-            this.Customizer_drawer = payload;
         },
 
         SET_LAYOUT(payload: any) {

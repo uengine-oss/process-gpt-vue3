@@ -4529,6 +4529,25 @@
         "surveyNotFound": "Survey not found",
         "backToTodolist": "Back to todolist",
         "dashboardTitle": "Strategy Achievement",
-        "overall": "Overall"
+        "overall": "Overall",
+        "importance": "Strategic importance",
+        "importanceHint": "1 (low) – 5 (high) — used as the weight for contribution aggregation",
+        "contribution": "Contribution",
+        "contributionHint": "Weighted contribution per performer within this objective (including sub-objectives), based on execution history actually reflected in KPI measurements.",
+        "performerHuman": "Human",
+        "performerAgent": "Agent",
+        "noContribution": "No traceable contribution history",
+        "skillGrowth": "Skill growth contribution",
+        "skillGrowthHint": "People who grew the skills linked to this strategy by creating, editing, or approving proposals.",
+        "contributionCount": " times",
+        "noSkillContributors": "No contributor history",
+        "kpiContribution": "Contribution",
+        "untraceableKpi": "Manual KPIs have no link to execution instances, so per-performer contribution is not computed.",
+        "totalWeightedScore": "Total weighted contribution",
+        "contributedKpis": "{count} contributed KPIs",
+        "objective": "Objective",
+        "share": "Share",
+        "weighted": "Weighted",
+        "close": "Close"
     }
 }

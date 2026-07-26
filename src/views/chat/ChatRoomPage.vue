@@ -2703,9 +2703,11 @@ export default {
             try {
                 const ctx = this.readChatRoomContext(this.currentChatRoom);
                 const value = (ctx?.orchestration || '').toString().trim();
-                return value || 'langchain-react';
+                // 명시적 값이 없는 새 대화는 deepagents를 기본으로 한다 — 커스텀 스킬(예:
+                // bsc-strategy-interview)은 deepagents 오케스트레이션에서만 로드된다.
+                return value || 'deepagents';
             } catch (e) {
-                return 'langchain-react';
+                return 'deepagents';
             }
         },
         getAgentRouterForOrchestration(orchestration) {
@@ -3888,7 +3890,9 @@ export default {
             if (!msg || msg.__humanFeedback) return;
             this._buildDeepagentHitlPanel(msg, {
                 question: (args?.question || '').toString(),
-                context: (args?.context || '').toString()
+                context: (args?.context || '').toString(),
+                options: Array.isArray(args?.options) ? args.options : null,
+                multiSelect: Boolean(args?.multi_select)
             });
         },
 
@@ -3943,7 +3947,7 @@ export default {
          * - 후보가 없으면(컨설팅 초안 승인 등) approve_reject_with_edit(승인/반려 + 자유 수정) 패널.
          * 두 경우 모두 같은 그래프 세션 resume 용 run_state 를 메시지와 방(pending)에 보관한다.
          */
-        _buildDeepagentHitlPanel(msg, { question, context, runState } = {}) {
+        _buildDeepagentHitlPanel(msg, { question, context, runState, options, multiSelect } = {}) {
             if (!msg) return;
             const convId = (this.currentChatRoom?.id || this.roomId || '').toString();
             const headerQ = (question || '').toString().trim();
@@ -3997,8 +4001,20 @@ export default {
                 __submitted: false,
                 __submittedText: ''
             };
-            // select_items 는 **2단계 후보(스킬/에이전트/DMN) 형식**일 때만.
-            // 컨설팅 초안처럼 카테고리 없는 불릿/번호는 선택지가 아니라 본문이므로 approve_reject 로 보여준다.
+            // request_human_input의 options 파라미터(구조화, 신규)가 있으면 프로즈 파싱보다
+            // 우선한다 — 모델이 `[카테고리]`+불릿 텍스트 컨벤션을 안 지켜도 항상 정확히 렌더링된다.
+            const structuredItems = Array.isArray(options) && options.length
+                ? options
+                      .map((o, idx) => ({
+                          id: `opt::${idx}::${(o?.label || '').toString()}`,
+                          label: (o?.label || '').toString(),
+                          description: (o?.description || '').toString()
+                      }))
+                      .filter((it) => it.label)
+                : [];
+            // select_items 는 (a) 구조화된 options 가 있거나, (b) **2단계 후보(스킬/에이전트/DMN) 형식**
+            // 프로즈일 때만. 컨설팅 초안처럼 카테고리 없는 불릿/번호는 선택지가 아니라 본문이므로
+            // approve_reject 로 보여준다.
             // ⚠️ 카테고리가 '있기만' 하면 체크박스로 렌더하던 과거 로직은, 컨설팅 초안이 임의의
             //   `[제목]` 머리글을 포함하면 승인/반려가 아닌 체크박스로 오인 렌더되는 간헐 버그의 원인이었다.
             //   → 알려진 후보 카테고리(스킬/에이전트/DMN)일 때만 select_items 로 확정한다.
@@ -4007,21 +4023,26 @@ export default {
                 const k = (c || '').toString().trim().toLowerCase();
                 return !!k && CANDIDATE_CATEGORIES.some((cc) => k === cc || k.includes(cc));
             };
-            const hasCategorizedItems = parsed.items.length > 0 && parsed.items.some((it) => isCandidateCategory(it.category));
+            const hasCategorizedItems =
+                structuredItems.length > 0 ||
+                (parsed.items.length > 0 && parsed.items.some((it) => isCandidateCategory(it.category)));
             if (hasCategorizedItems) {
+                const items = structuredItems.length
+                    ? structuredItems
+                    : parsed.items.map((it) => ({
+                          id: it.id,
+                          label: it.category ? `[${it.category}] ${it.label}` : it.label,
+                          description: it.description || ''
+                      }));
                 msg.__humanFeedback = {
                     ...baseFeedback,
                     // 후보가 question 전체에 들어온 경우 headerQ 는 후보까지 포함하므로,
                     // 패널 헤더는 첫 줄(제목)인 parsed.question 을 쓴다(후보는 items 로 표시).
-                    question: parsed.question || headerQ || '추가할 항목을 골라주세요',
+                    question: headerQ || parsed.question || '추가할 항목을 골라주세요',
                     feedback_type: 'select_items',
-                    items: parsed.items.map((it) => ({
-                        id: it.id,
-                        label: it.category ? `[${it.category}] ${it.label}` : it.label,
-                        description: it.description || ''
-                    })),
+                    items,
                     suggestions: [],
-                    allow_multiple: true,
+                    allow_multiple: structuredItems.length ? Boolean(multiSelect) : true,
                     min_select: 0,
                     allow_other: true
                 };
@@ -4259,10 +4280,12 @@ export default {
             const question = (hitl?.question || '').toString();
             const context = (hitl?.context || '').toString();
             const runState = hitl?.run_state && typeof hitl.run_state === 'object' ? hitl.run_state : null;
+            const options = Array.isArray(hitl?.options) ? hitl.options : null;
+            const multiSelect = Boolean(hitl?.multi_select);
 
             // done 마커의 question 이 전체 초안/질문(권위)이므로, plan_tools 로 미리 붙은
             // (부분적일 수 있는) 패널이 있어도 이 값으로 항상 (재)구성한다 — 초안 누락 방지.
-            this._buildDeepagentHitlPanel(msg, { question, context, runState });
+            this._buildDeepagentHitlPanel(msg, { question, context, runState, options, multiSelect });
             msg.isLoading = false;
 
             // interrupt 메시지는 DB 에 저장되지 않고(최종 artifact 아님), 다음 턴이 activeStreams 를
@@ -7667,7 +7690,7 @@ export default {
             const tenantId = await resolveTenantId();
             const requestFiles = this.normalizePayloadFiles(payload);
             const requestPrimaryFile = requestFiles[0] || null;
-            const orchestration = (payload?.orchestration || this.getRoomOrchestration() || '').toString().trim() || 'langchain-react';
+            const orchestration = (payload?.orchestration || this.getRoomOrchestration() || '').toString().trim() || 'deepagents';
             const canWrite = this.shouldClientWriteChatDb(orchestration);
             const router = this.getAgentRouterForOrchestration(orchestration);
             const mainAgentService = this.getMainAgentServiceForOrchestration(orchestration);

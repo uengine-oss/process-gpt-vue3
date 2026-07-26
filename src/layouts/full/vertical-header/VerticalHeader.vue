@@ -72,6 +72,13 @@ const sidebarItems = ref<SidebarItem[]>([
         disable: false,
         isVisible: true
     },
+    {
+        title: 'analytics.strategyBoard',
+        icon: 'strategy-map',
+        to: '/strategy-board',
+        disable: false,
+        isVisible: !(window as any).$pal
+    },
     // {
     //     title: 'headerMenu.schedule',
     //     icon: 'schedule',
@@ -301,7 +308,7 @@ function handleNotificationBadgeUpdate(event: Event) {
                                 v-bind="props"
                                 class="customizer-btn"
                                 icon
-                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)"
+                                @click.stop="router.push('/account-settings?tab=LayoutSettings')"
                             >
                                 <Icons :icon="'dashboard'" />
                             </v-btn>

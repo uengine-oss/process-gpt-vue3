@@ -77,12 +77,15 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api\/analytics\/?/, '/api/')
             },
-            // 인스턴스 실행 등 /completion/* 호출은 nginx 게이트웨이(:8088) 경유로.
-            // nginx 가 /completion prefix 를 strip 해서 completion 서비스로 라우팅한다.
+            // 인스턴스 실행 등 /completion/* 호출.
+            // docker-infra 구조(nginx 게이트웨이 없음)에서는 completion 서비스
+            // published 포트로 직접 프록시하고, nginx가 하던 prefix strip을
+            // 여기서 대신한다 (/completion/langchain-chat/x -> /langchain-chat/x).
             // (반드시 아래 '/complete' 보다 먼저 매칭되도록 최상단에 둔다.)
             '/completion/': {
-                target: 'http://127.0.0.1:8088',
-                changeOrigin: true
+                target: 'http://127.0.0.1:8099',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/completion/, '')
             },
             // 인스턴스 자동분류 · Top List · 유사 인스턴스 API.
             // dev 에서는 서비스 published 포트(:8013)로 직접 프록시(게이트웨이 재기동 불필요).
@@ -116,40 +119,40 @@ export default defineConfig({
             },
             '/complete': {
                 // Windows에서 localhost가 IPv6(::1)로 붙으면서 WSL/Docker 리스너로 가는 경우가 있어 IPv4로 고정
-                target: 'http://127.0.0.1:8000',
+                target: 'http://127.0.0.1:8099',
                 changeOrigin: true
             },
             // 임시저장(draft) 프로세스 실엔진 검증 + LLM 자동개선 (completion)
             '/validate-and-improve': {
-                target: 'http://127.0.0.1:8000',
+                target: 'http://127.0.0.1:8099',
                 changeOrigin: true,
                 timeout: 0,
                 proxyTimeout: 0
             },
             '/vision-complete': {
-                target: 'http://127.0.0.1:8000',
+                target: 'http://127.0.0.1:8099',
                 changeOrigin: true
             },
             '/process-db-schema': {
-                target: 'http://127.0.0.1:8000',
+                target: 'http://127.0.0.1:8099',
                 changeOrigin: true
             },
             '/drop-process-table': {
-                target: 'http://127.0.0.1:8000',
+                target: 'http://127.0.0.1:8099',
                 changeOrigin: true
             },
             '/process-search': {
-                target: 'http://127.0.0.1:8000',
+                target: 'http://127.0.0.1:8099',
                 changeOrigin: true
             },
             '/vision-process-search': {
-                target: 'http://127.0.0.1:8000',
+                target: 'http://127.0.0.1:8099',
                 changeOrigin: true
             },
             '/langchain-chat': {
-                // 호스트 :8000 이 다른 프로젝트(ontology-studio python 백엔드)와 충돌하므로
-                // nginx 게이트웨이(:8088)를 경유해 completion 으로 라우팅한다.
-                target: 'http://127.0.0.1:8088',
+                // completion 로컬 실행 포트. 호스트 :8000 은 다른 프로젝트가 쓰고
+                // 있어(troubleshooting #16) 이 저장소에서는 :8021 로 띄운다.
+                target: 'http://127.0.0.1:8099',
                 changeOrigin: true
             },
             // Work Assistant Agent API
