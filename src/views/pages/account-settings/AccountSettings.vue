@@ -8,6 +8,9 @@
                     <v-row class="ma-0 pa-0 align-center account-settings-header-row">
                         <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="primary" show-arrows>
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
+                            <v-tab value="LayoutSettings">
+                                <v-icon class="mr-2" size="20">mdi-view-dashboard-outline</v-icon>{{ $t('headerMenu.layoutSetting') }}
+                            </v-tab>
                             <template v-if="admin">
                                 <!-- 계정 설정 -->
                                 <v-tab value="ManageAccess">
@@ -102,6 +105,16 @@
                             :class="{ 'selected-tab': tab === 'Account' }"
                         >
                             <UserCircleIcon class="mr-2" size="16" />{{ $t('accountTab.accountSetting') }}
+                        </v-btn>
+
+                        <v-btn
+                            variant="text"
+                            color="default"
+                            size="small"
+                            @click="tab = 'LayoutSettings'"
+                            :class="{ 'selected-tab': tab === 'LayoutSettings' }"
+                        >
+                            <v-icon class="mr-2" size="16">mdi-view-dashboard-outline</v-icon>{{ $t('headerMenu.layoutSetting') }}
                         </v-btn>
 
                         <template v-if="admin">
@@ -235,6 +248,13 @@
                             </div>
                         </v-window-item>
 
+                        <!-- LayoutSettings: 레이아웃 설정 탭 (headerMenu.layoutSetting) -->
+                        <v-window-item value="LayoutSettings">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                                <Customizer />
+                            </div>
+                        </v-window-item>
+
                         <!-- ManageAccess: 사용자 관리 탭 (accountTab.manageAccess) -->
                         <v-window-item value="ManageAccess">
                             <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
@@ -345,6 +365,7 @@ import TaskCatalogAdmin from '@/components/admin/TaskCatalogAdmin.vue';
 import TaskCatalogList from '@/components/admin/TaskCatalogList.vue';
 import OrgChartGroupTab from '@/components/pages/account-settings/OrgChartGroupTab.vue';
 import GithubTab from '@/components/pages/account-settings/GitConfigTab.vue';
+import Customizer from '@/layouts/full/customizer/Customizer.vue';
 
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
@@ -368,7 +389,8 @@ export default {
         TaskCatalogAdmin,
         TaskCatalogList,
         OrgChartGroupTab,
-        GithubTab
+        GithubTab,
+        Customizer
     },
     data() {
         return {
@@ -392,6 +414,11 @@ export default {
     },
     mounted() {
         // this.admin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
+        // 메인 툴바의 설정 버튼 등, 특정 탭으로 바로 열고 싶을 때 ?tab= 쿼리로 지정한다.
+        const requestedTab = this.$route.query.tab;
+        if (typeof requestedTab === 'string') {
+            this.tab = requestedTab;
+        }
         // 초기 탭이 비어있거나(uEngine 모드에서 숨긴 탭으로 들어온 경우 포함) 안전하게 Account로 보정
         this.ensureVisibleTab();
     },

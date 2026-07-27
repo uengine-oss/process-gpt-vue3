@@ -139,6 +139,31 @@
                                               하나의 통합 "응답 제출" 버튼으로 모든 응답을 batch 전송 (사용자 개입 1회).
                                         -->
 
+                                        <!-- HITL 패널(멀티/싱글 질문 공통) 헤더 — 패널 내용과 별도 블록(아래쪽,
+                                             ~line 1210대)에서 렌더되던 아바타/이름/시각이 패널보다 뒤에 나와
+                                             순서가 뒤집혀 보이던 문제 수정. 패널 전용 헤더를 여기서 먼저 그리고,
+                                             뒤쪽 공통 블록은 __humanFeedback 이 있으면 중복 렌더하지 않게 막았다
+                                             (shouldDisplayUserInfo 호출부 참고). -->
+                                        <div
+                                            v-if="message && message.__humanFeedback && shouldDisplayUserInfo(message, index)"
+                                            class="d-flex align-center mb-1"
+                                        >
+                                            <v-avatar size="28" style="margin-right: 8px">
+                                                <v-img
+                                                    :src="getProfile(message)"
+                                                    :alt="message.name || message.userName || message.username || 'Agent'"
+                                                    height="28"
+                                                    width="28"
+                                                />
+                                            </v-avatar>
+                                            <div class="user-name">
+                                                {{ message.name || message.userName || message.username || message.email }}
+                                            </div>
+                                            <span v-if="message.timeStamp" class="chat-room-timestamp-text ml-2">
+                                                {{ formatTime(message.timeStamp) }}
+                                            </span>
+                                        </div>
+
                                         <!-- multi-question 모드: questions 배열을 stage(스킬/에이전트/DMN)별 페이지로 묶고,
                                              각 페이지 안에서 프로세스별 질문을 구분선과 함께 세로로 나열한다.
                                              다음/이전(페이지네이션)으로 stage 페이지를 이동한다. -->
@@ -1221,7 +1246,12 @@
                                                     </div>
                                                     <!-- chat 관련 UI가 위 아래 붙기때문에 적용했던 스타일 필요시 다시 삽입 :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'" -->
                                                     <div v-else-if="!message.disableMsg || message.isLoading">
-                                                        <v-row v-if="shouldDisplayUserInfo(message, index)" class="ma-0 pa-0">
+                                                        <!-- __humanFeedback 이 있으면 헤더는 위쪽 HITL 패널 전용 블록에서 이미
+                                                             그렸으므로 여기서 또 그리면 패널 "아래"에 중복 헤더가 나온다 — 억제. -->
+                                                        <v-row
+                                                            v-if="shouldDisplayUserInfo(message, index) && !message.__humanFeedback"
+                                                            class="ma-0 pa-0"
+                                                        >
                                                             <v-row class="ma-0 pa-0 d-flex align-center mb-2">
                                                                 <v-avatar size="28" style="margin-right: 8px">
                                                                     <img
@@ -3388,6 +3418,7 @@ import ProcessWorkResult from './ProcessWorkResult.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import AgentMessagePanel from '@/components/ui/AgentMessagePanel.vue';
 import { marked } from 'marked';
+import mermaid from 'mermaid';
 import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -3592,7 +3623,7 @@ export default {
             uploadedPdfInfos: [],
             isPdfUploading: false,
             // orchestration: which chat server/runtime to use
-            orchestration: 'langchain-react',
+            orchestration: 'deepagents',
             selectableOrchestration: false,
             isDragOverTextarea: false,
             showNewMessageNoti: false,
@@ -3618,6 +3649,12 @@ export default {
 
             //preview-message
             previewMessage: null,
+            // 스크롤이 맨 아래 근처인지 — data()에 선언되지 않으면 watch:{isAtBottom(){}}가
+            // 반응형으로 동작하지 않는다(Vue3 Options API 요구사항). 이게 빠져 있어서
+            // "새 메시지 미리보기 배너"가 전혀 뜨지 않고, handleScroll/scrollToBottom 이
+            // 실제로 정의돼 있지 않아(템플릿에서만 참조) 아래 방향 자동 스크롤도 항상
+            // 조용히 실패하고 있었다 — 둘 다 이 파일에서 새로 구현.
+            isAtBottom: true,
 
             agentPanelWidth: 380,
             isResizingAgentPanel: false,
@@ -3702,6 +3739,12 @@ export default {
     },
     mounted() {
         var me = this;
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose',
+            fontFamily: 'Arial'
+        });
         document.addEventListener('click', (event) => {
             if (event.target.matches('.request-file-link')) {
                 event.preventDefault();
@@ -3720,6 +3763,37 @@ export default {
         this.$nextTick(() => {
             this.scrollToBottom();
         });
+
+        // 채팅 내용 높이가 바뀔 때마다(스트리밍 텍스트, mermaid 비동기 렌더링, HITL 패널
+        // 등장, 이미지 로드 등) 하단에 있던 경우에만 다시 하단으로 붙인다. $nextTick 기반의
+        // 개별 scrollToBottomSafe() 호출들은 Vue의 DOM 패치 시점 기준이라, mermaid.run()처럼
+        // 그 이후 비동기로 컨텐츠 높이가 더 늘어나는 경우(다이어그램 렌더링 완료 시점)를
+        // 놓쳐서 스크롤이 실제 맨 아래보다 위에서 멈춘 것처럼 보이는 문제(오래 대화할수록
+        // 누적되어 두드러짐)의 근본 원인이었다 — ResizeObserver로 실제 컨텐츠 높이 변화를
+        // 직접 감시해 보정한다.
+        this.$nextTick(() => {
+            const contentEl = this.$refs.scrollContainer?.$el?.firstElementChild;
+            if (contentEl && typeof ResizeObserver !== 'undefined') {
+                this._contentResizeObserver = new ResizeObserver(() => {
+                    if (this.isAtBottom) this.scrollToBottom();
+                });
+                this._contentResizeObserver.observe(contentEl);
+            }
+        });
+    },
+    updated() {
+        // updated() 는 스트리밍 중 토큰 하나 올 때마다도 반복 호출될 수 있다 — 매번 바로
+        // renderMermaidDiagrams() 를 돌리면(전체 문서 스캔 포함) 같은 프레임 안에서 여러 번
+        // 중복 실행돼 대화가 길어질수록 메인 스레드가 바빠져 화면이 순간적으로 멈칫거리다
+        // 풀리는 현상의 원인이 된다. rAF로 한 프레임에 한 번만 실행되도록 합친다.
+        if (this._mermaidRenderScheduled) return;
+        this._mermaidRenderScheduled = true;
+        this.$nextTick(() => {
+            requestAnimationFrame(() => {
+                this._mermaidRenderScheduled = false;
+                this.renderMermaidDiagrams();
+            });
+        });
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.handleResize);
@@ -3728,6 +3802,10 @@ export default {
             if (this._highlightTimer) clearTimeout(this._highlightTimer);
         } catch (e) {}
         this._highlightTimer = null;
+        try {
+            this._contentResizeObserver?.disconnect();
+        } catch (e) {}
+        this._contentResizeObserver = null;
     },
     watch: {
         prompt(newVal, oldVal) {
@@ -3754,7 +3832,10 @@ export default {
                     } else {
                         this.selectableOrchestration = false;
                     }
-                    this.orchestration = v === 'deepagents' ? 'deepagents' : 'langchain-react';
+                    // 새 대화(방 컨텍스트에 명시적 값 없음)는 기본값을 deepagents로 한다 —
+                    // bsc-strategy-interview 같은 커스텀 스킬은 deepagents 오케스트레이션에서만 로드된다.
+                    // 기존 방에 명시적으로 'langchain-react'가 저장돼 있으면 그 선택은 그대로 존중한다.
+                    this.orchestration = v === 'langchain-react' ? 'langchain-react' : 'deepagents';
                 } catch (e) {}
             }
         },
@@ -4476,7 +4557,7 @@ export default {
                 return '<span style="color:rgba(0,0,0,0.55)">생각 중...</span>';
             }
             marked.setOptions({ breaks: true, gfm: true });
-            return marked(this.linkify(raw));
+            return this.withMermaidContainers(marked(this.linkify(raw)));
         },
         getRunningToolCall(message) {
             try {
@@ -5030,6 +5111,33 @@ export default {
                 this.$refs.scrollContainer.$el.scrollTop = 0;
             }
         },
+        // 템플릿(줄 49, 2642)과 scrollToBottomSafe()(ChatRoomPage.vue, 24곳 이상에서 호출)가
+        // 참조만 하고 실제 정의가 없던 메서드 — 그래서 스트리밍/새 메시지마다 시도되는
+        // 자동 하단 스크롤이 매번 조용히 아무 일도 안 하고 있었다.
+        scrollToBottom() {
+            const el = this.$refs.scrollContainer?.$el;
+            if (!el) return;
+            el.scrollTop = el.scrollHeight;
+            this.isAtBottom = true;
+        },
+        // perfect-scrollbar 의 @scroll 핸들러 — 템플릿에서만 참조되고 정의가 없어 스크롤
+        // 이벤트가 전혀 처리되지 않고 있었다. 사용자가 위로 스크롤해 과거 메시지를 보는
+        // 중인지(isAtBottom=false) 추적해, 그 동안은 새 메시지가 와도 강제로 하단으로
+        // 끌어내리지 않고(위 newMessageInfo watcher) 미리보기 배너만 보여주게 한다.
+        handleScroll(event) {
+            const el = event?.target;
+            if (!el) return;
+            const threshold = 80; // 완전히 바닥에 붙어있지 않아도 "거의 하단"이면 하단 취급
+            this.isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+
+            // 상단 근처 도달 시 과거 메시지 로드 — getMoreChat() 자체는 이미 정의돼 있었지만
+            // (부모의 loadMoreMessages() 로 이어짐) 어디서도 호출되지 않아서 위로 스크롤해도
+            // 예전 대화가 전혀 안 불러와지고 있었다. loadMoreMessages() 쪽에 이미
+            // isLoadingHistory/hasMoreHistory 가드가 있으므로 여기서는 위치만 감지해 호출한다.
+            if (el.scrollTop < 120) {
+                this.getMoreChat();
+            }
+        },
         renderedMarkdown(text) {
             if (!text) return '';
 
@@ -5043,7 +5151,53 @@ export default {
                 gfm: true
             });
 
-            return marked(text);
+            return this.withMermaidContainers(marked(text));
+        },
+        /**
+         * marked()가 만든 ```mermaid 코드펜스(<pre><code class="language-mermaid">...)를
+         * mermaid.js가 렌더링할 수 있는 .mermaid 컨테이너로 바꾼다.
+         * 실제 SVG 렌더링은 updated() 훅에서 renderMermaidDiagrams()가 수행한다
+         * (mermaid.render()는 비동기라 v-html 문자열을 만드는 이 시점엔 완료할 수 없다).
+         */
+        withMermaidContainers(html) {
+            if (!html) return html;
+            return html.replace(
+                /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g,
+                '<div class="mermaid-container"><div class="mermaid">$1</div></div>'
+            );
+        },
+        async renderMermaidDiagrams() {
+            // 메시지 목록이 있는 스크롤 컨테이너로 스캔 범위를 좁힌다 — document 전체를 스캔하면
+            // 대화가 길어질수록(사이드바 등 무관한 DOM까지 포함해) 매번 더 느려지고, 이게 스트리밍
+            // 중 반복 호출과 겹쳐 화면이 멈칫거리는 원인이 된다. ref를 못 찾는 예외 상황에서만
+            // document로 폴백한다.
+            const scanRoot = this.$refs.scrollContainer?.$el || document;
+            const mermaidElements = scanRoot.querySelectorAll('.mermaid:not([data-processed])');
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const element = mermaidElements[i];
+                const graphDefinition = (element.textContent || '').trim();
+                if (!graphDefinition || graphDefinition.length < 5) continue;
+                const hasValidType =
+                    /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gantt|pie|gitgraph|mindmap)/i.test(
+                        graphDefinition
+                    );
+                if (!hasValidType) continue; // 스트리밍 중 아직 문법이 덜 도착했을 수 있음 — 다음 updated()에서 재시도
+                try {
+                    const { svg } = await mermaid.render(`mermaid-${Date.now()}-${i}`, graphDefinition);
+                    element.innerHTML = svg;
+                    element.setAttribute('data-processed', 'true');
+                } catch (error) {
+                    // 스트리밍 중간 상태(닫히지 않은 다이어그램)일 수 있으니 몇 번은 다음 updated()에서
+                    // 재시도한다. 계속 실패하면(완성된 뒤에도 문법 오류) 원문을 보여주고 포기한다.
+                    const attempts = (parseInt(element.getAttribute('data-mermaid-attempts') || '0', 10) || 0) + 1;
+                    if (attempts >= 5) {
+                        element.innerHTML = `<pre style="white-space:pre-wrap;">${graphDefinition}</pre>`;
+                        element.setAttribute('data-processed', 'true');
+                    } else {
+                        element.setAttribute('data-mermaid-attempts', String(attempts));
+                    }
+                }
+            }
         },
         handleResize() {
             // 화면 크기 변경 시 즉시 높이 업데이트
@@ -5635,7 +5789,7 @@ export default {
                 }
 
                 marked.setOptions({ breaks: true, gfm: true });
-                return marked(this.linkify(displayContent));
+                return this.withMermaidContainers(marked(this.linkify(displayContent)));
             }
         },
         setTableName(content) {
@@ -7558,5 +7712,26 @@ pre {
 .orchestration-select .v-field__append-inner {
     padding-top: 0;
     padding-bottom: 0;
+}
+
+/* Mermaid 다이어그램(전략맵 등) */
+.mermaid-container {
+    margin: 12px 0;
+    text-align: center;
+    background: #f9f9f9;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+}
+
+.mermaid {
+    display: inline-block;
+    max-width: 100%;
+}
+
+.mermaid svg {
+    max-width: 100%;
+    height: auto;
 }
 </style>

@@ -77,7 +77,10 @@ const REL_LABEL: Record<string, string> = {
     INHERITS: '상속',
     REFERENCES: '참조',
     HAS_SUB_TEAM: '하위팀',
-    MEMBER_OF: '소속'
+    MEMBER_OF: '소속',
+    // 스킬 성장 기여 — agent-feedback 의 skill_contributions 를 온톨로지 동기화가
+    // (User)-[:CONTRIBUTED_TO]->(Skill) 엣지로 반영한다 (strategy-contribution-attribution).
+    CONTRIBUTED_TO: '기여'
 };
 
 // ---------------------------------------------------------------- 달성률/미달 계산

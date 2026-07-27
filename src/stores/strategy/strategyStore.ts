@@ -25,6 +25,12 @@ export const useStrategyStore = defineStore('strategy', () => {
         }
     }
 
+    async function resetMap() {
+        const { data } = await axios.delete(`${BASE}/map`, { params: { tenant_id: tenantId() } });
+        await loadMap();
+        return data;
+    }
+
     async function loadProcessDefinitions() {
         const { data } = await axios.get(`${BASE}/process-definitions`, { params: { tenant_id: tenantId() } });
         processDefinitions.value = data || [];
@@ -41,6 +47,10 @@ export const useStrategyStore = defineStore('strategy', () => {
     }
     async function deleteObjective(id: string) {
         await axios.delete(`${BASE}/objectives/${id}`, { params: { tenant_id: tenantId() } });
+        await loadMap();
+    }
+    async function deleteObjectives(ids: string[]) {
+        await Promise.all(ids.map((id) => axios.delete(`${BASE}/objectives/${id}`, { params: { tenant_id: tenantId() } })));
         await loadMap();
     }
 
@@ -84,6 +94,25 @@ export const useStrategyStore = defineStore('strategy', () => {
     async function suggestMapping(payload: { name: string; description?: string; measure_type?: string }) {
         const { data } = await axios.post(`${BASE}/ai/suggest`, payload, { params: { tenant_id: tenantId() } });
         return data;
+    }
+    async function lookupAlignment(payload: { description: string; proc_def_id?: string | null }) {
+        const { data } = await axios.post(`${BASE}/ai/alignment`, payload, { params: { tenant_id: tenantId() } });
+        return data;
+    }
+    async function linkKpisToProcess(kpiIds: string[], procDefId: string) {
+        const allKpis = objectives.value.flatMap((objective: any) => objective.kpis || []);
+        const targets = allKpis.filter((kpi: any) => kpiIds.includes(kpi.id));
+        await Promise.all(
+            targets.map((kpi: any) =>
+                axios.put(
+                    `${BASE}/kpis/${kpi.id}`,
+                    { ...kpi, proc_def_id: procDefId },
+                    { params: { tenant_id: tenantId() } }
+                )
+            )
+        );
+        await loadMap();
+        return targets.length;
     }
     async function runMeasurement() {
         const { data } = await axios.post(`${BASE}/measure/run`, null, { params: { tenant_id: tenantId() } });
@@ -139,6 +168,30 @@ export const useStrategyStore = defineStore('strategy', () => {
         });
         return data;
     }
+
+    // ---- 기여도 (strategy_contribution-attribution) --------------------
+    // KPI 측정에 실제 반영된 인스턴스·태스크 이력 기반 성과자(사람/에이전트) 기여도.
+    async function getContributionKpi(id: string) {
+        const { data } = await axios.get(`${BASE}/contribution/kpi/${encodeURIComponent(id)}`, {
+            params: { tenant_id: tenantId() }
+        });
+        return data;
+    }
+    async function getContributionPerformer(id: string) {
+        const { data } = await axios.get(`${BASE}/contribution/performer/${encodeURIComponent(id)}`, {
+            params: { tenant_id: tenantId() }
+        });
+        return data;
+    }
+    // 목표(+하위 전략) 범위의 성과 기여(성과자 순위) + 스킬 성장 기여(사람 기여자)를
+    // analytic 결합 API 한 번으로 받는다 — 프론트가 strategy/agent-feedback 두 서비스를
+    // 직접 오케스트레이션하지 않는다 (게이트웨이가 /api/analytics prefix 를 /api 로 rewrite).
+    async function getObjectiveContribution(objectiveId: string) {
+        const { data } = await axios.get('/api/analytics/dashboard/contribution', {
+            params: { tenant_id: tenantId(), strategy_id: objectiveId }
+        });
+        return data;
+    }
     async function runOntologySync() {
         const { data } = await axios.post(`${BASE}/ontology/sync`, null, {
             params: { tenant_id: tenantId() }
@@ -146,26 +199,17 @@ export const useStrategyStore = defineStore('strategy', () => {
         return data;
     }
 
-    // ---- 채팅 기반 전략맵 편집 ----------------------------------------
-    async function sendChatMessage(message: string, history: { role: string; content: string }[]) {
-        const { data } = await axios.post(
-            `${BASE}/strategy/chat`,
-            { message, history },
-            { params: { tenant_id: tenantId() } }
-        );
-        objectives.value = data.map?.objectives || [];
-        return data as { reply: string; actions: any[]; map: { objectives: any[] } };
-    }
-
     return {
         loading,
         objectives,
         processDefinitions,
         loadMap,
+        resetMap,
         loadProcessDefinitions,
         createObjective,
         updateObjective,
         deleteObjective,
+        deleteObjectives,
         createKpi,
         updateKpi,
         deleteKpi,
@@ -175,6 +219,8 @@ export const useStrategyStore = defineStore('strategy', () => {
         updateInitiative,
         deleteInitiative,
         suggestMapping,
+        lookupAlignment,
+        linkKpisToProcess,
         runMeasurement,
         getSurveys,
         getSurvey,
@@ -184,7 +230,9 @@ export const useStrategyStore = defineStore('strategy', () => {
         getNodeNeighbors,
         getImpactKpi,
         getImpactStrategy,
-        runOntologySync,
-        sendChatMessage
+        getContributionKpi,
+        getContributionPerformer,
+        getObjectiveContribution,
+        runOntologySync
     };
 });

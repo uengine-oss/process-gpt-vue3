@@ -31,15 +31,19 @@
                 :key="item.id"
                 class="human-feedback-panel__item"
                 :class="{ 'is-selected': isItemSelected(item.id), 'is-disabled': submitted }"
-                role="checkbox"
+                :role="allowMultiple ? 'checkbox' : 'radio'"
                 :aria-checked="isItemSelected(item.id)"
                 :tabindex="submitted ? -1 : 0"
                 @click="onItemRowActivate(item.id)"
                 @keydown.enter.prevent="onItemRowActivate(item.id)"
                 @keydown.space.prevent="onItemRowActivate(item.id)"
             >
+                <!-- 단일 선택(allowMultiple=false)이면 라디오 모양, 복수 선택 가능하면 체크박스 모양.
+                     선택 로직(toggleItem)은 동일 — 시각적 기표만 실제 선택 의미와 일치시킨다. -->
                 <v-checkbox
                     :model-value="isItemSelected(item.id)"
+                    :true-icon="allowMultiple ? '$checkboxOn' : '$radioOn'"
+                    :false-icon="allowMultiple ? '$checkboxOff' : '$radioOff'"
                     density="compact"
                     hide-details
                     :disabled="submitted"
