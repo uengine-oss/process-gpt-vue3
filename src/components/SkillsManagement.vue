@@ -82,7 +82,18 @@
                         <v-window v-model="skillTab" class="skills-tab-window">
                             <!-- 업로드된 스킬 탭 -->
                             <v-window-item value="uploaded">
-                                <div class="skill-section">
+                                <div
+                                    class="skill-section skill-dropzone"
+                                    :class="{ 'skill-dropzone-active': isDraggingZip }"
+                                    @dragenter.prevent="onSkillDragEnter"
+                                    @dragover.prevent="onSkillDragOver"
+                                    @dragleave.prevent="onSkillDragLeave"
+                                    @drop.prevent="onSkillDrop"
+                                >
+                                    <div v-if="isDraggingZip" class="skill-dropzone-overlay">
+                                        <v-icon size="48" color="primary">mdi-tray-arrow-down</v-icon>
+                                        <p class="text-body-1 mt-2 text-primary">{{ $t('SkillsManagement.dropZipHint') }}</p>
+                                    </div>
                                     <div v-if="skillList.length === 0 && !isUploading" class="body-state body-empty">
                                         <div v-if="builtinSkillList.length === 0" class="empty-illustration">
                                             <v-icon size="80" color="grey-lighten-1">mdi-lightning-bolt-outline</v-icon>
@@ -96,6 +107,9 @@
                                                     ? $t('SkillsManagement.empty')
                                                     : $t('SkillsManagement.uploadedEmpty')
                                             }}
+                                        </p>
+                                        <p v-if="builtinSkillList.length > 0" class="empty-desc-hint text-caption text-medium-emphasis">
+                                            {{ $t('SkillsManagement.dragDropHint') }}
                                         </p>
                                         <v-row v-if="builtinSkillList.length === 0" class="empty-actions-row ma-0" justify="center">
                                             <v-col cols="12" sm="6">
@@ -593,6 +607,8 @@ export default {
             builtinSkillList: [],
             isLoading: true,
             isUploading: false,
+            isDraggingZip: false,
+            dragCounter: 0,
             isUsageLoading: false,
             skillUsageCount: {},
             deletingSkillName: null,
@@ -938,6 +954,41 @@ export default {
             this.uploadFromZip(file);
         },
 
+        onSkillDragEnter(event) {
+            if (this.isUploading || !this.hasFilePayload(event)) return;
+            this.dragCounter++;
+            this.isDraggingZip = true;
+        },
+        onSkillDragOver(event) {
+            if (this.isUploading || !this.hasFilePayload(event)) return;
+            event.dataTransfer.dropEffect = 'copy';
+        },
+        onSkillDragLeave() {
+            if (this.dragCounter > 0) this.dragCounter--;
+            if (this.dragCounter === 0) this.isDraggingZip = false;
+        },
+        onSkillDrop(event) {
+            this.dragCounter = 0;
+            this.isDraggingZip = false;
+            if (this.isUploading) return;
+            const files = Array.from(event.dataTransfer?.files || []);
+            const file = files.find((f) => /\.(zip|skill)$/i.test(f.name));
+            if (!file) {
+                this.$try({
+                    context: this,
+                    action: () => {
+                        throw new Error('Invalid file type');
+                    },
+                    errorMsg: this.$t('SkillsManagement.invalidFileType')
+                });
+                return;
+            }
+            this.uploadFromZip(file);
+        },
+        hasFilePayload(event) {
+            return Array.from(event.dataTransfer?.types || []).includes('Files');
+        },
+
         async uploadFromZip(file) {
             this.isUploading = true;
             try {
@@ -1070,6 +1121,31 @@ export default {
 
 .skill-section {
     margin-bottom: 0;
+}
+
+.skill-dropzone {
+    position: relative;
+    min-height: 120px;
+}
+
+.skill-dropzone-active {
+    outline: 2px dashed rgb(var(--v-theme-primary));
+    outline-offset: -4px;
+    border-radius: 8px;
+    background: rgba(var(--v-theme-primary), 0.04);
+}
+
+.skill-dropzone-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: rgba(var(--v-theme-surface), 0.85);
+    border-radius: 8px;
 }
 
 .skill-section .section-title {
