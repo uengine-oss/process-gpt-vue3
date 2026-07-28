@@ -8430,13 +8430,31 @@ export default {
                                 safeFinal = msg.content;
                             }
 
-                            // realtime INSERT가 오지 않는 경우 대비: 10초 후 messages로 이관
+                            // realtime INSERT가 오지 않는 경우 대비: 10초 후 messages로 이관.
+                            // 단, 그 사이 realtime INSERT가 이미 도착했지만 agentId/email 불일치로
+                            // handleRealtimeMessage의 activeStreams 매칭에 실패해 별도 row로
+                            // this.messages에 먼저 push된 경우, 여기서 무조건 push하면 동일 내용이
+                            // 화면에 두 번(placeholder + realtime row) 보이게 된다. 그런 경우를
+                            // 내용/역할 기준으로 감지해 중복 push를 건너뛴다.
                             setTimeout(() => {
                                 if (this.activeStreams[agentId]) {
                                     const stale = this.activeStreams[agentId];
-                                    this.messages.push(this.normalizeAssistantMessageForDisplay(stale));
+                                    const staleContent = (stale.content || '').toString().trim();
+                                    const staleTs = new Date(stale.timeStamp || 0).getTime();
+                                    // 빈 본문(HITL 패널 등)은 서로 다른 turn 이어도 항상 일치하므로 매칭에서 제외.
+                                    const alreadyLanded =
+                                        !!staleContent &&
+                                        this.messages.some((m) => {
+                                            if (!m || (m.role || '').toString() !== 'assistant') return false;
+                                            if ((m.content || '').toString().trim() !== staleContent) return false;
+                                            const mts = new Date(m.timeStamp || 0).getTime();
+                                            return Math.abs(mts - staleTs) <= 20000;
+                                        });
                                     delete this.activeStreams[agentId];
-                                    this._stableSortMessages(this.messages);
+                                    if (!alreadyLanded) {
+                                        this.messages.push(this.normalizeAssistantMessageForDisplay(stale));
+                                        this._stableSortMessages(this.messages);
+                                    }
                                 }
                             }, 10000);
                         }
