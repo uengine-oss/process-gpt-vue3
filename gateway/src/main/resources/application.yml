@@ -72,6 +72,12 @@ spring:
                   filters:
                       - RewritePath=/agent/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
+                - id: wms-frontend
+                  uri: http://localhost:5273
+                  predicates:
+                      - Path=/wms/**
+                  filters:
+                      - RewritePath=/wms/?(?<segment>.*), /$\{segment}
                 - id: frontend
                   uri: http://localhost:5173
                   predicates:
@@ -413,6 +419,15 @@ spring:
                   filters:
                       - RewritePath=/api/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
                   order: 69
+
+                # WMS 샘플 앱 (process-gpt-sample-app-wms)
+                - id: wms-frontend
+                  uri: http://wms-frontend:5273
+                  predicates:
+                      - Path=/wms/**
+                  filters:
+                      - RewritePath=/wms/?(?<segment>.*), /$\{segment}
+                  order: 70
 
                 # Frontend 서비스 (catch-all)
                 - id: frontend
