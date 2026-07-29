@@ -412,7 +412,8 @@ export default {
         },
         toolUsageStatusByTask() {
             const usageMap = {};
-            // 이벤트를 시간 순으로 처리하고, 도구 시작-완료 매칭을 스택(LIFO) 방식으로 처리
+            const finishedEventsByJob = {};
+            // 이벤트를 시간 순으로 정렬해 시작 항목을 생성하고, 완료 이벤트는 job_id별로 별도 수집
             this.events
                 .slice()
                 .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
@@ -429,15 +430,12 @@ export default {
                             status: 'searching'
                         });
                     } else if (event_type === 'tool_usage_finished') {
-                        const list = usageMap[jobId];
-                        // LIFO 방식으로 마지막 시작 이벤트를 먼저 처리
-                        for (let i = list.length - 1; i >= 0; i--) {
-                            if (list[i].tool_name === data.tool_name && list[i].status === 'searching') {
-                                list[i].status = 'done';
-                                list[i].info = data.info || data.message || data.result || null;
-                                break;
-                            }
-                        }
+                        if (!finishedEventsByJob[jobId]) finishedEventsByJob[jobId] = [];
+                        finishedEventsByJob[jobId].push({
+                            tool_name: data.tool_name || crew_type,
+                            info: data.info || data.message || data.result || null,
+                            consumed: false
+                        });
                     } else if (event_type === 'task_working') {
                         usageMap[jobId].push({
                             tool_name: crew_type,
@@ -447,6 +445,40 @@ export default {
                         });
                     }
                 });
+
+            // 1차 매칭: job_id 내에서 도구명이 같은 시작 항목을 LIFO로 찾아 완료 처리 + 결과 반영
+            Object.keys(finishedEventsByJob).forEach((jobId) => {
+                const list = usageMap[jobId] || [];
+                finishedEventsByJob[jobId].forEach((fin) => {
+                    for (let i = list.length - 1; i >= 0; i--) {
+                        if (list[i].tool_name === fin.tool_name && list[i].status === 'searching') {
+                            list[i].status = 'done';
+                            list[i].info = fin.info;
+                            fin.consumed = true;
+                            break;
+                        }
+                    }
+                });
+            });
+
+            // 폴백 처리: tool_usage_started 이벤트가 tool_usage_finished 이벤트보다 늦게 기록되는 등
+            // 기록 순서 문제로 1차 매칭에 실패해 'searching' 상태로 남는 경우가 있다.
+            // 같은 job_id에 tool_usage_finished 이벤트가 존재한다면, 도구명이 완전히 일치하지 않더라도
+            // 결과(info)와 함께 무조건 완료로 표기한다 (finished 이벤트가 있다는 것은 결과도 있다는 뜻이므로).
+            Object.keys(usageMap).forEach((jobId) => {
+                const unconsumed = (finishedEventsByJob[jobId] || []).filter((f) => !f.consumed);
+                if (unconsumed.length === 0) return;
+                usageMap[jobId].forEach((tool) => {
+                    if (tool.status !== 'searching') return;
+                    if (unconsumed.length === 0) return;
+                    let idx = unconsumed.findIndex((f) => f.tool_name === tool.tool_name);
+                    if (idx === -1) idx = 0;
+                    tool.status = 'done';
+                    tool.info = unconsumed[idx].info;
+                    unconsumed.splice(idx, 1);
+                });
+            });
+
             return usageMap;
         },
         isQueued() {
