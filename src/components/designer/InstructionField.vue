@@ -344,7 +344,7 @@ export default {
 
             if (ctx) {
                 this.mentionStartIndex = ctx.startIndex;
-                // 저장된 포맷(@type:id)처럼 ':'가 포함된 경우에는 전체 목록을 보여주기 위해 필터를 비운다.
+                // 저장된 포맷(@type:label)처럼 ':'가 포함된 경우에는 전체 목록을 보여주기 위해 필터를 비운다.
                 this.mentionQuery = ctx.query && ctx.query.includes(':') ? '' : ctx.query;
                 this.showMentionMenu = true;
             } else {
@@ -403,9 +403,10 @@ export default {
         },
         buildMentionToken(item) {
             const type = item && item.type ? String(item.type) : 'agent';
-            const id = item && item.id != null ? String(item.id) : '';
-            // 토큰은 "@type:id" 형태로 저장한다. (예: @agent:123)
-            return `@${type}:${id}`;
+            const label = item && item.label != null ? String(item.label) : '';
+            // 토큰은 "@type:label" 형태로 저장한다. label의 띄어쓰기는 -로 치환한다. (예: @agent:김철수-담당자)
+            const key = label.replace(/\s+/g, '-');
+            return `@${type}:${key}`;
         },
         getMentionTypeMeta(type) {
             const key = (type || 'agent').toString();
@@ -442,26 +443,26 @@ export default {
                 let label = token;
 
                 if (token.includes(':')) {
-                    // 신규 포맷: type:id
+                    // 신규 포맷: type:label (공백은 -로 치환되어 저장됨, 예: @agent:김철수-담당자)
                     const parts = token.split(':', 2);
                     const rawType = parts[0] || 'agent';
                     const rawKey = parts[1] || '';
 
                     type = rawType;
 
-                    // 1순위: type + id 매칭
+                    // 1순위: type + (label의 공백을 -로 치환한 값) 매칭
                     let candidate = candidateList.find((c) => {
                         const cType = c && c.type != null ? String(c.type) : '';
-                        const cId = c && c.id != null ? String(c.id) : '';
-                        return cType === rawType && cId === rawKey;
+                        const cLabel = c && c.label != null ? String(c.label) : '';
+                        return cType === rawType && cLabel.replace(/\s+/g, '-') === rawKey;
                     });
 
-                    // 2순위: type + label 매칭 (혹시 id 대신 name을 저장했을 경우)
+                    // 2순위(구버전 호환): type + id 매칭
                     if (!candidate) {
                         candidate = candidateList.find((c) => {
                             const cType = c && c.type != null ? String(c.type) : '';
-                            const cLabel = c && c.label != null ? String(c.label) : '';
-                            return cType === rawType && cLabel === rawKey;
+                            const cId = c && c.id != null ? String(c.id) : '';
+                            return cType === rawType && cId === rawKey;
                         });
                     }
 
@@ -469,9 +470,9 @@ export default {
                         id = candidate.id != null ? String(candidate.id) : rawKey;
                         label = candidate.label != null ? String(candidate.label) : rawKey;
                     } else {
-                        // 후보 목록에 없어도 최소한 type/id는 유지
+                        // 후보 목록에 없어도 최소한 type/label은 유지
                         id = rawKey;
-                        label = rawKey;
+                        label = rawKey.replace(/-/g, ' ');
                     }
                 } else {
                     // 구버전 포맷: @label
