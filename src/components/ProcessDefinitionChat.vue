@@ -1092,6 +1092,7 @@ export default {
             }
         },
         async beforeSaveDefinition(info) {
+            this.toggleVersionDialog(false);
             if (this.chatMode == 'consulting') {
                 await this.$emit('createdBPMN', this.processDefinition);
                 info.skipSaveProcMap = true;

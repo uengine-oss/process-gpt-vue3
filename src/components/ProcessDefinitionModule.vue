@@ -1049,7 +1049,6 @@ export default {
                     me.definitionChangeCount++;
 
                     me.loading = false;
-                    await me.toggleVersionDialog(false);
                     me.$emit('closeConsultingDialog', true);
                 },
                 onFail: (e) => {
