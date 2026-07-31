@@ -2462,6 +2462,7 @@
                                             pdf2bpmnProgress.isActive
                                         "
                                         class="pdf2bpmn-progress-wrap mb-2"
+                                        style="margin-left: 10px; margin-right: 10px;"
                                     >
                                         <div class="d-flex align-center mb-1">
                                             <v-icon size="16" color="primary" class="mr-1">mdi-sitemap</v-icon>

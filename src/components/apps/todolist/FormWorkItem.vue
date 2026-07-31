@@ -650,10 +650,50 @@ export default {
             let outFormName = me.workItem?.activity?.outParameterContext?.variable?.name || me.formDefId;
 
             if (me.workItem && me.workItem.worklist.output && me.formDefId && me.isCompleted) {
-                if (me.formDefId == 'defaultform') {
-                    me.formData = me.workItem.worklist.output['defaultForm'] || {};
+                const out = me.workItem.worklist.output || {};
+                // 저장 측은 formId 를 그대로 쓰고(예: 'defaultform'), 읽기 측은 'defaultForm' 을
+                // 찾던 대소문자 불일치가 있었다. 기본폼을 쓰는 워크아이템은 제출 직후부터
+                // 항상 빈 폼으로 보였다. → 키를 대소문자 구분 없이 찾는다.
+                const findWrapped = (key) => {
+                    if (!key) return undefined;
+                    if (out[key] !== undefined) return out[key];
+                    const target = String(key).toLowerCase();
+                    const hit = Object.keys(out).find((k) => String(k).toLowerCase() === target);
+                    return hit ? out[hit] : undefined;
+                };
+                let wrapped = findWrapped(me.formDefId);
+                if (wrapped === undefined && me.formDefId === 'defaultform') {
+                    wrapped = findWrapped('defaultForm');
+                }
+
+                if (wrapped && typeof wrapped === 'object') {
+                    me.formData = wrapped;
                 } else {
-                    me.formData = me.workItem.worklist.output[me.formDefId] || {};
+                    // output 이 form_id 로 감싸이지 않고 필드 키가 최상위에 저장된 경우가 있다
+                    // (에이전트가 수행한 워크아이템에서 관측). 이때 out[formDefId] 는 undefined 라
+                    // 폼이 통째로 비어 보이고, 사용자에게는 "결과는 나왔는데 폼에 안 들어갔다" 로 보인다.
+                    // → 다른 폼의 값이나 내부 메타(__mapped 등)를 제외한 최상위 값들을 폼 값으로 사용한다.
+                    const flat = {};
+                    Object.keys(out).forEach((k) => {
+                        if (!k || k.startsWith('__')) return; // 내부 메타(__mapped, __mappedTrace ...)
+                        if (k === 'defaultForm') return;
+                        if (/_form$/.test(k)) return; // 다른 폼 묶음
+                        const v = out[k];
+                        if (v === null || typeof v === 'object') return; // 중첩 객체는 폼 값이 아님
+                        flat[k] = v;
+                    });
+                    if (Object.keys(flat).length > 0) {
+                        me.formData = flat;
+                    } else {
+                        // 저장 시 쓰인 폼 키가 현재 formDefId 와 다른 경우가 있다.
+                        // (관측: tool 은 ..._activity_0gqhqwp_form 인데 output 키는 'defaultform')
+                        // 폼 묶음이 하나뿐이면 이름이 달라도 그 값이 이 작업의 입력값이다.
+                        const groups = Object.keys(out)
+                            .filter((k) => k && !k.startsWith('__'))
+                            .map((k) => out[k])
+                            .filter((v) => v && typeof v === 'object' && !Array.isArray(v));
+                        me.formData = groups.length === 1 ? groups[0] : {};
+                    }
                 }
                 return;
             }
@@ -786,7 +826,23 @@ export default {
                     workItem['user_input_text'] = this.newMessage;
                 }
 
-                await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
+                // putWorkItemComplete 는 실패해도 예외를 던지지 않고 error 객체를 반환한다.
+                // 결과를 확인하지 않으면 서버가 4xx/5xx 로 거절해 입력값이 하나도 저장되지 않았는데도
+                // 화면은 정상 제출된 것처럼 목록으로 넘어가, 사용자에게는 "입력이 유지되지 않는" 것으로 보인다.
+                const completeResult = await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
+                const failed =
+                    completeResult instanceof Error ||
+                    (completeResult && typeof completeResult === 'object' && (completeResult.error || completeResult.isAxiosError));
+                if (failed) {
+                    const detail =
+                        completeResult?.response?.data?.detail ||
+                        completeResult?.message ||
+                        completeResult?.error?.message ||
+                        '';
+                    console.error('[FormWorkItem] 작업 제출 실패:', completeResult);
+                    alert(`작업 제출에 실패했습니다. 입력하신 내용은 저장되지 않았습니다.\n${detail}`.trim());
+                    return;
+                }
                 const routeInstId = await me.resolvePostCompleteInstanceId(me.workItem.worklist.instId);
                 me.$router.push(`/instancelist/${routeInstId.replace(/\./g, '_DOT_')}`);
             } else {
