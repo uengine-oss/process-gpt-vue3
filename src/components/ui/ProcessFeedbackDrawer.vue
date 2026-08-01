@@ -178,7 +178,12 @@ export default {
 
             const output = detail.worklist && detail.worklist.output;
             if (output) {
-                this.formData = this.formDefId === 'defaultform' ? output['defaultForm'] || {} : output[this.formDefId] || {};
+                // 저장 측은 formId 를 그대로 쓰므로('defaultform') 대소문자 구분 없이 찾는다.
+                // ('defaultForm' 만 보면 기본폼 워크아이템이 항상 빈 폼으로 보인다.)
+                const target = String(this.formDefId || '').toLowerCase();
+                const hit = Object.keys(output).find((k) => String(k).toLowerCase() === target);
+                const wrapped = hit ? output[hit] : undefined;
+                this.formData = wrapped && typeof wrapped === 'object' ? wrapped : {};
             } else {
                 this.formData = {};
             }

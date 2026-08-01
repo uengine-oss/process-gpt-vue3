@@ -7618,17 +7618,35 @@ class ProcessGPTBackend implements Backend {
     // output[formId]는 단일 실행이면 { [fieldId]: value }, 멀티 인스턴스면
     // { [executionScope]: { [fieldId]: value }, ... } 형태일 수 있어 두 모양을 모두 지원한다.
     private extractFieldFromOutput(output: any, formId: string, fieldId: string) {
-        if (!output || !output[formId]) return undefined;
-        const formOutput = output[formId];
-        if (formOutput[fieldId] !== undefined) {
-            return formOutput[fieldId];
+        if (!output || typeof output !== 'object') return undefined;
+
+        // 1) 정상: output[formId] 로 감싸인 형태
+        //    formId 는 대소문자가 어긋나는 경우가 있어(defaultform/defaultForm) 무시하고 찾는다.
+        let formOutput = output[formId];
+        if (formOutput === undefined && formId) {
+            const target = String(formId).toLowerCase();
+            const hit = Object.keys(output).find((k) => String(k).toLowerCase() === target);
+            if (hit) formOutput = output[hit];
         }
-        for (const scopeKey of Object.keys(formOutput)) {
-            const scoped = formOutput[scopeKey];
-            if (scoped && typeof scoped === 'object' && scoped[fieldId] !== undefined) {
-                return scoped[fieldId];
+
+        if (formOutput && typeof formOutput === 'object') {
+            if (formOutput[fieldId] !== undefined) {
+                return formOutput[fieldId];
+            }
+            for (const scopeKey of Object.keys(formOutput)) {
+                const scoped = formOutput[scopeKey];
+                if (scoped && typeof scoped === 'object' && scoped[fieldId] !== undefined) {
+                    return scoped[fieldId];
+                }
             }
         }
+
+        // 2) form_id 로 감싸이지 않고 필드 키가 최상위에 저장된 경우(에이전트 수행 워크아이템에서 관측).
+        //    이 경우 다음 단계의 '이전 작업 입력 내역'(참조정보)이 통째로 비어 보인다.
+        if (output[fieldId] !== undefined) {
+            return output[fieldId];
+        }
+
         return undefined;
     }
 

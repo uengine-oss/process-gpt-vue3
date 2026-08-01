@@ -346,76 +346,6 @@
                                             />
                                         </div>
 
-                                        <!-- PDF2BPMN 진행 카드 (마지막 메시지 하단) -->
-                                        <div
-                                            v-if="
-                                                chatRoomMode &&
-                                                pdf2bpmnProgress &&
-                                                pdf2bpmnProgress.isActive &&
-                                                index === userFilteredMessages.length - 1
-                                            "
-                                            class="pdf2bpmn-progress-wrap mb-2"
-                                        >
-                                            <div class="d-flex align-center mb-1">
-                                                <v-icon size="16" color="primary" class="mr-1">mdi-sitemap</v-icon>
-                                                <span class="text-caption font-weight-bold">BPMN 프로세스 생성</span>
-                                                <v-chip
-                                                    size="x-small"
-                                                    class="ml-2"
-                                                    :color="getProgressChipColor(pdf2bpmnProgress.status)"
-                                                    variant="tonal"
-                                                >
-                                                    {{ pdf2bpmnProgress.status }}
-                                                </v-chip>
-                                            </div>
-                                            <v-card class="pa-3" variant="tonal">
-                                                <v-progress-linear
-                                                    :model-value="pdf2bpmnProgress.progress || 0"
-                                                    height="8"
-                                                    rounded
-                                                    class="mb-2"
-                                                    :color="pdf2bpmnProgress.status === 'completed' ? 'success' : 'primary'"
-                                                />
-                                                <div class="d-flex align-center justify-space-between">
-                                                    <div class="text-caption text-medium-emphasis" style="max-width: 75%">
-                                                        {{ pdf2bpmnProgress.message || '' }}
-                                                    </div>
-                                                    <div class="text-caption font-weight-bold">
-                                                        {{ pdf2bpmnProgress.progress || 0 }}%
-                                                        <v-progress-circular
-                                                            v-if="pdf2bpmnProgress.status === 'processing'"
-                                                            style="margin-left: 3px; margin-bottom: 3px"
-                                                            indeterminate
-                                                            size="12"
-                                                            width="2"
-                                                            color="primary"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    v-if="pdf2bpmnProgress.generatedBpmns && pdf2bpmnProgress.generatedBpmns.length > 0"
-                                                    class="mt-2"
-                                                >
-                                                    <div class="text-caption font-weight-bold mb-1">
-                                                        생성된 프로세스 ({{ pdf2bpmnProgress.generatedBpmns.length }})
-                                                    </div>
-                                                    <div class="d-flex flex-wrap" style="gap: 8px">
-                                                        <v-chip
-                                                            v-for="(bpmn, bIdx) in pdf2bpmnProgress.generatedBpmns"
-                                                            :key="bIdx"
-                                                            size="small"
-                                                            variant="tonal"
-                                                            color="success"
-                                                            @click="emitPreviewBpmn(bpmn)"
-                                                            style="cursor: pointer"
-                                                        >
-                                                            <v-icon start size="14">mdi-sitemap</v-icon>
-                                                            {{ bpmn.process_name || bpmn.process_id }}
-                                                        </v-chip>
-                                                    </div>
-                                                </div>
-                                            </v-card>
-                                        </div>
 
                                         <!-- 라우팅(에이전트 선정) 로딩: 아바타/헤더 없이 '...' 버블만 표시(상대방 버블 색상과 동일) -->
                                         <div v-if="message && message.__routingLoading">
@@ -2522,6 +2452,77 @@
                                             :totalSize="userFilteredMessages.length"
                                             :currentIndex="-1"
                                         />
+                                    </div>
+
+                                    <!-- PDF2BPMN 진행 카드 (메시지 목록 최하단 고정) -->
+                                    <div
+                                        v-if="
+                                            chatRoomMode &&
+                                            pdf2bpmnProgress &&
+                                            pdf2bpmnProgress.isActive
+                                        "
+                                        class="pdf2bpmn-progress-wrap mb-2"
+                                        style="margin-left: 10px; margin-right: 10px;"
+                                    >
+                                        <div class="d-flex align-center mb-1">
+                                            <v-icon size="16" color="primary" class="mr-1">mdi-sitemap</v-icon>
+                                            <span class="text-caption font-weight-bold">BPMN 프로세스 생성</span>
+                                            <v-chip
+                                                size="x-small"
+                                                class="ml-2"
+                                                :color="getProgressChipColor(pdf2bpmnProgress.status)"
+                                                variant="tonal"
+                                            >
+                                                {{ pdf2bpmnProgress.status }}
+                                            </v-chip>
+                                        </div>
+                                        <v-card class="pa-3" variant="tonal">
+                                            <v-progress-linear
+                                                :model-value="pdf2bpmnProgress.progress || 0"
+                                                height="8"
+                                                rounded
+                                                class="mb-2"
+                                                :color="pdf2bpmnProgress.status === 'completed' ? 'success' : 'primary'"
+                                            />
+                                            <div class="d-flex align-center justify-space-between">
+                                                <div class="text-caption text-medium-emphasis" style="max-width: 75%">
+                                                    {{ pdf2bpmnProgress.message || '' }}
+                                                </div>
+                                                <div class="text-caption font-weight-bold">
+                                                    {{ pdf2bpmnProgress.progress || 0 }}%
+                                                    <v-progress-circular
+                                                        v-if="pdf2bpmnProgress.status === 'processing'"
+                                                        style="margin-left: 3px; margin-bottom: 3px"
+                                                        indeterminate
+                                                        size="12"
+                                                        width="2"
+                                                        color="primary"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div
+                                                v-if="pdf2bpmnProgress.generatedBpmns && pdf2bpmnProgress.generatedBpmns.length > 0"
+                                                class="mt-2"
+                                            >
+                                                <div class="text-caption font-weight-bold mb-1">
+                                                    생성된 프로세스 ({{ pdf2bpmnProgress.generatedBpmns.length }})
+                                                </div>
+                                                <div class="d-flex flex-wrap" style="gap: 8px">
+                                                    <v-chip
+                                                        v-for="(bpmn, bIdx) in pdf2bpmnProgress.generatedBpmns"
+                                                        :key="bIdx"
+                                                        size="small"
+                                                        variant="tonal"
+                                                        color="success"
+                                                        @click="emitPreviewBpmn(bpmn)"
+                                                        style="cursor: pointer"
+                                                    >
+                                                        <v-icon start size="14">mdi-sitemap</v-icon>
+                                                        {{ bpmn.process_name || bpmn.process_id }}
+                                                    </v-chip>
+                                                </div>
+                                            </div>
+                                        </v-card>
                                     </div>
                                     <slot name="custom-chat"></slot>
                                 </v-col>

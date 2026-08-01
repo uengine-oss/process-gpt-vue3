@@ -1817,11 +1817,37 @@ export default {
             const r = room !== undefined && room !== null ? room : this.currentChatRoom;
             if (!r || !r.id) return;
             try {
-                const { data: existing, error } = await window.$supabase.from('chat_rooms').select('context').eq('id', r.id).maybeSingle();
+                const { data: existing, error } = await window.$supabase
+                    .from('chat_rooms')
+                    .select('name, context')
+                    .eq('id', r.id)
+                    .maybeSingle();
                 if (!error) {
                     const existingCtx = this.normalizeRoomContext(existing?.context);
                     const incomingCtx = this.normalizeRoomContext(r.context);
                     const merged = this.deepMergeObjects(existingCtx, incomingCtx);
+
+                    // AI 가 지어준 이름이 되돌아가던 문제:
+                    // putObject 는 행 전체를 upsert 하므로 name 도 함께 쓰인다. 그런데 이 컴포넌트의
+                    // currentChatRoom 은 loadRoom 시점 스냅샷이라, 그 뒤 비동기로 확정된 이름을 모른 채
+                    // 기본값('새 대화')을 계속 들고 있다. 그래서 이후의 모든 저장(메시지 도착, 오케스트레이션
+                    // 설정 등)이 DB 의 정상 이름을 기본값으로 되돌려썼다.
+                    // → 로컬이 아직 기본 placeholder 면 DB 이름을 채택한다.
+                    //   (사용자가 직접 rename 한 이름은 placeholder 가 아니므로 그대로 유지된다.)
+                    const dbName = String(existing?.name || '').trim();
+                    const localName = String(r.name || '').trim();
+                    const placeholders = [
+                        String(this.$t('chatListing.newChat') || '').trim(),
+                        '새 대화',
+                        '새 채팅',
+                        'New Chat'
+                    ].filter(Boolean);
+                    if (dbName && dbName !== localName && (!localName || placeholders.includes(localName))) {
+                        r.name = existing.name;
+                        // 이름이 이미 확정됐다면 자동 네이밍 대기 플래그도 되살리지 않는다.
+                        if (merged && typeof merged === 'object') merged.auto_name_pending = false;
+                    }
+
                     this.writeChatRoomContext(merged, r);
                 }
             } catch (e) {
@@ -4404,6 +4430,38 @@ export default {
             }
         },
 
+        /**
+         * HITL 응답 내용을 사용자 메시지로 대화에 남긴다(에이전트 재호출 없음).
+         * 워커로 직접 응답을 보내는 HITL 경로에서, 사용자가 무엇을 선택했는지 대화에 보이도록 한다.
+         */
+        async _appendHitlAnswerAsUserMessage(text) {
+            try {
+                const content = (text || '').toString().trim();
+                if (!content) return;
+                const roomId = (this.currentChatRoom?.id || this.roomId || '').toString();
+                if (!roomId) return;
+                const msgUuid = this.uuid();
+                const msg = {
+                    uuid: msgUuid,
+                    clientUuid: msgUuid,
+                    role: 'user',
+                    content,
+                    contentType: 'text',
+                    timeStamp: new Date().toISOString(),
+                    email: this.userInfo?.email || null,
+                    name: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
+                    userName: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || ''
+                };
+                this.upsertMessageByKeys(msg);
+                if (this.shouldClientWriteChatDb(this.getRoomOrchestration())) {
+                    await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+                }
+                this.$nextTick(() => this.scrollToBottomSafe());
+            } catch (e) {
+                console.warn('[HumanFeedback] 응답 메시지 표시 실패:', e);
+            }
+        },
+
         async handleHumanFeedbackSubmit(messageOrFeedback, feedbackResult) {
             // Chat.vue에서 emit한 경우: (humanFeedback, feedbackResult)
             // 기존 호출(로컬 패널) 대비 호환: (message, feedbackResult)
@@ -4505,6 +4563,14 @@ export default {
             const hitl = feedback || {};
             const optMeta = hitl.option_meta && typeof hitl.option_meta === 'object' ? hitl.option_meta : null;
             const isWorkerHitl = !!hitl.task_id || (optMeta && optMeta.tool === 'pdf2bpmn' && optMeta.task_id);
+
+            // 워커(pdf2bpmn) HITL 분기들은 워커로 직접 응답을 보내고 곧바로 return 하므로,
+            // 컨설팅 경로(handleSendMessage)와 달리 "내가 무엇을 골랐는지"가 대화에 남지 않는다.
+            // 그래서 사용자가 답을 했는데도 같은 질문이 그대로 떠 있는 것처럼 보였다.
+            // → 에이전트 재호출 없이 선택 내용만 사용자 메시지로 남긴다.
+            if (isWorkerHitl || feedbackResult.type === 'multi') {
+                await this._appendHitlAnswerAsUserMessage(targetMessage?.__humanFeedback?.__submittedText);
+            }
 
             // multi 응답: 최종 제출 시에만 todolist.output.hitl_feedbacks 에 일괄 기록
             if (feedbackResult.type === 'multi') {
