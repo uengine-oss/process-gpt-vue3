@@ -685,7 +685,7 @@
         "agentEndpoint": "엔드포인트",
         "agentDescription": "설명",
         "agentTools": "도구",
-        "agentSkills": "기술",
+        "agentSkills": "스킬",
         "aiProvider": "AI 제공사",
         "aiModel": "AI 모델",
         "alias": "별칭",
