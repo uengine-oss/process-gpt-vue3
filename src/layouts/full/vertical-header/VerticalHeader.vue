@@ -302,18 +302,6 @@ function handleNotificationBadgeUpdate(event: Event) {
                             </template>
                         </v-tooltip>
                     </template>
-                    <v-tooltip :text="$t('headerMenu.layoutSetting')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn
-                                v-bind="props"
-                                class="customizer-btn"
-                                icon
-                                @click.stop="router.push('/account-settings?tab=LayoutSettings')"
-                            >
-                                <Icons :icon="'dashboard'" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
                     <v-tooltip v-if="showKnowledgeBase" :text="$t('headerMenu.knowledgeBase')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon @click="goToKnowledgeBase">

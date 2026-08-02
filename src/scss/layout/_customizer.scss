@@ -72,70 +72,7 @@
 
 
 
-.v-theme--AQUA_THEME{
-    .bg-background{
-        background-color: #e0eef7 !important;
-    }
-    .v-application__wrap,.v-app-bar.v-toolbar {
-        background-color: #e0eef7 !important;
-    }
-    &.horizontalLayout{
-        .v-app-bar.v-toolbar {
-            background-color: rgba(var(--v-theme-containerBg))!important;
-        }
-    }
-     
-}
-.v-theme--PURPLE_THEME{
-    .bg-background{
-        background-color: #eee7f7 !important;
-    }
-    .v-application__wrap,.v-app-bar.v-toolbar {
-        background-color: #eee7f7 !important;
-    }
-    &.horizontalLayout{
-        .v-app-bar.v-toolbar {
-            background-color: rgba(var(--v-theme-containerBg))!important;
-        }
-    }
-}
-.v-theme--GREEN_THEME{
-    .bg-background{
-        background-color: #e1eff4 !important;
-    }
-    .v-application__wrap,.v-app-bar.v-toolbar {
-        background-color: #e1eff4 !important;
-    }
-    &.horizontalLayout{
-        .v-app-bar.v-toolbar {
-            background-color: rgba(var(--v-theme-containerBg))!important;
-        }
-    }
-}
-.v-theme--CYAN_THEME{
-    .bg-background{
-        background-color: #e0f8f9 !important;
-    }
-    .v-application__wrap,.v-app-bar.v-toolbar {
-        background-color: #e0f8f9 !important;
-    }
-    &.horizontalLayout{
-        .v-app-bar.v-toolbar {
-            background-color: rgba(var(--v-theme-containerBg))!important;
-        }
-    }
-}
-.v-theme--ORANGE_THEME{
-    .bg-background{
-        background-color: #fff1ed !important;
-    }
-    .v-application__wrap,.v-app-bar.v-toolbar {
-        background-color: #fff1ed !important;
-    }
-    &.horizontalLayout{
-        .v-app-bar.v-toolbar {
-            background-color: rgba(var(--v-theme-containerBg))!important;
-        }
-    }
-}
-
+/* 색상 팔레트 6종 시절의 테마 이름별 배경 하드코딩(.v-theme--AQUA_THEME 등)을 제거했다.
+   배경은 이제 각 테마의 background 색(= 디자인 토큰)에서 나온다.
+   남겨두면 스카이가 AQUA_THEME 이름을 재사용하는 탓에 원본 #f0f5f9 대신
+   옛 아쿠아 팔레트의 #e0eef7 로 덮여 원본보다 어둡게 보였다. */

@@ -203,7 +203,7 @@
         "todoList": "My Task List",
         "schedule": "Scheduler",
         "calendar": "Calendar",
-        "layoutSetting": "Layout Setting",
+        "layoutSetting": "Appearance",
         "knowledgeBase": "Knowledge Base",
         "admin": "Admin Page",
         "setting": "Setting",
@@ -1740,7 +1740,7 @@
         "notification": "Notifications"
     },
     "Customizer": {
-        "settings": "Layout settings",
+        "settings": "Appearance",
         "themeColor": "Theme Color",
         "containerOption": "Container Option",
         "boxed": "Boxed",
