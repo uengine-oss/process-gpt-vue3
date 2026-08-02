@@ -96,7 +96,9 @@ export default {
         if (window.$mode == 'ProcessGPT') {
             if (
                 window.location.pathname.startsWith('/bpmn-auto-layout-e2e') ||
-                window.location.pathname.startsWith('/processgpt-mapper-ui-e2e')
+                window.location.pathname.startsWith('/processgpt-mapper-ui-e2e') ||
+                // 디자인 시스템 쇼케이스는 백엔드/테넌트 없이 단독으로 열려야 한다
+                window.location.pathname.startsWith('/design-system')
             ) {
                 this.loadScreen = true;
                 return;

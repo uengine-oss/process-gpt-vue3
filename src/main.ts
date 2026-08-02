@@ -15,6 +15,7 @@ import 'vue3-carousel/dist/carousel.css';
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar';
 import 'perfect-scrollbar/css/perfect-scrollbar.css';
 import App from './App.vue';
+import designSystem, { initMode as initDesignSystemMode } from '@/ds';
 import vuetify from './plugins/vuetify';
 import hammerDirective from '@/components/directive/hammerDirective';
 import i18nDirective from './plugins/i18nDirective';
@@ -421,6 +422,11 @@ async function initializeApp() {
     app.use(i18nDirective);
     app.use(Maska);
     app.use(VueApexCharts);
+
+    // 새 디자인 시스템 (Pg*). Vuetify 를 대체해 가는 중이라 당분간 공존한다.
+    initDesignSystemMode();
+    app.use(designSystem);
+
     app.use(vuetify).mount('#app');
     app.use(setLocale);
 

@@ -1,84 +1,128 @@
 <script setup lang="ts">
-import { Form } from 'vee-validate';
-import { ref, onMounted, onBeforeUnmount } from 'vue';
-
+import { computed, ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+
 const authStore = useAuthStore();
-const checkbox = ref(false);
+
+const username = ref(localStorage.getItem('email') || '');
 const password = ref('');
+const remember = ref(true);
 const showPassword = ref(false);
 const isCapsLockOn = ref(false);
+const submitting = ref(false);
+const touched = ref(false);
 
-// localStorage에서 이메일을 가져오고, 없으면 빈 문자열로 설정
-const storedEmail = localStorage.getItem('email') || '';
-const username = ref(storedEmail);
-
-const passwordRules = ref([(v: string) => !!v || 'Password is required']);
-const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid']);
-
-function validate(values: any, { setErrors }: any) {
-    return authStore.signIn(username.value.toLowerCase(), password.value);
-}
+const emailError = computed(() => {
+    if (!touched.value) return '';
+    if (!username.value) return 'E-mail is required';
+    if (!/.+@.+\..+/.test(username.value)) return 'E-mail must be valid';
+    return '';
+});
+const passwordError = computed(() => {
+    if (!touched.value) return '';
+    return password.value ? '' : 'Password is required';
+});
+const canSubmit = computed(() => !!username.value && !!password.value);
 
 function checkCapsLock(event: KeyboardEvent | FocusEvent) {
     if ('getModifierState' in event) {
-        isCapsLockOn.value = event.getModifierState('CapsLock');
+        isCapsLockOn.value = (event as KeyboardEvent).getModifierState('CapsLock');
     }
 }
 
-// 컴포넌트 마운트 시 전역 이벤트 리스너 추가
-onMounted(() => {});
+async function submit() {
+    touched.value = true;
+    if (!canSubmit.value || emailError.value) return;
 
-// 컴포넌트 언마운트 시 리스너 제거
-onBeforeUnmount(() => {});
+    submitting.value = true;
+    try {
+        if (remember.value) localStorage.setItem('email', username.value.toLowerCase());
+        else localStorage.removeItem('email');
+
+        // signIn 은 내부에서 에러 표시와 라우팅까지 처리한다
+        await authStore.signIn(username.value.toLowerCase(), password.value);
+    } finally {
+        submitting.value = false;
+    }
+}
 </script>
 
 <template>
-    <Form @submit="validate" v-slot="{ errors, isSubmitting }" class="mt-5">
-        <v-label class="text-subtitle-1 font-weight-semibold pb-2 text-grey200">{{ $t('loginPage.userName') }}</v-label>
-        <VTextField v-model="username" :rules="emailRules" class="mb-8 cp-id" required hide-details="auto"></VTextField>
-        <v-label class="text-subtitle-1 font-weight-semibold pb-2 text-grey200">{{ $t('loginPage.password') }}</v-label>
-        <div class="position-relative">
-            <VTextField
+    <form class="login-form" novalidate @submit.prevent="submit">
+        <PgTextField
+            v-model="username"
+            :label="$t('loginPage.userName')"
+            type="email"
+            autocomplete="username"
+            :error="emailError"
+            class="cp-id"
+        />
+
+        <div class="login-form__password">
+            <PgTextField
                 v-model="password"
-                :rules="passwordRules"
-                required
-                hide-details="auto"
+                :label="$t('loginPage.password')"
                 :type="showPassword ? 'text' : 'password'"
-                class="pwdInput cp-pwd"
-                :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
-                @click:append-inner="showPassword = !showPassword"
+                autocomplete="current-password"
+                :error="passwordError"
+                class="cp-pwd"
                 @keydown="checkCapsLock"
                 @keyup="checkCapsLock"
                 @focus="checkCapsLock"
-                style="background: #e8f0fe"
-            ></VTextField>
-            <div v-if="isCapsLockOn" class="caps-lock-warning">
-                <v-chip size="small" color="warning" class="mt-1">
-                    <v-icon size="small" class="mr-1">mdi-lock-alert</v-icon>
-                    Caps Lock이 켜져있습니다
-                </v-chip>
-            </div>
+            >
+                <template #append>
+                    <button
+                        class="login-form__reveal"
+                        type="button"
+                        :aria-label="showPassword ? '비밀번호 숨기기' : '비밀번호 표시'"
+                        @click="showPassword = !showPassword"
+                    >
+                        <PgIcon :name="showPassword ? 'mdi-eye-off' : 'mdi-eye'" :size="16" />
+                    </button>
+                </template>
+            </PgTextField>
+
+            <PgChip v-if="isCapsLockOn" tone="warning" size="sm" class="login-form__caps">
+                <PgIcon name="mdi-lock-alert" :size="12" />
+                Caps Lock이 켜져있습니다
+            </PgChip>
         </div>
-        <div :class="['d-flex', 'flex-wrap', 'align-center', 'my-3', 'ml-n2', { 'mt-6': isCapsLockOn }]">
-            <v-checkbox v-model="checkbox" :rules="[(v:any) => !!v || 'You must agree to continue!']" required hide-details color="primary">
-                <template v-slot:label>{{ $t('loginPage.remeber') }}</template>
-            </v-checkbox>
-        </div>
-        <v-btn class="cp-login" size="large" rounded="pill" :loading="isSubmitting" color="primary" block type="submit" flat>{{
-            $t('loginPage.login')
-        }}</v-btn>
-        <div v-if="errors.apiError" class="mt-2">
-            <v-alert color="error">{{ errors.apiError }}</v-alert>
-        </div>
-    </Form>
+
+        <PgCheckbox v-model="remember" :label="$t('loginPage.remeber')" />
+
+        <PgButton type="submit" variant="primary" size="lg" block :loading="submitting" :disabled="!canSubmit" class="cp-login">
+            {{ $t('loginPage.login') }}
+        </PgButton>
+    </form>
 </template>
 
 <style scoped>
-.caps-lock-warning {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 1;
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 24px;
+}
+
+.login-form__password {
+    position: relative;
+}
+
+.login-form__reveal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--cds-text-muted);
+    cursor: pointer;
+}
+.login-form__reveal:hover {
+    color: var(--cds-text-secondary);
+}
+
+.login-form__caps {
+    margin-top: 6px;
 }
 </style>
