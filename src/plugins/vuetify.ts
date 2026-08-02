@@ -83,10 +83,6 @@ export default createVuetify({
             rounded: 'md',
             flat: true
         },
-        VBtn: {
-            variant: 'text',
-            rounded: 'md'
-        },
         VTextField: {
             variant: 'outlined',
             density: 'compact',
