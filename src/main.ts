@@ -21,11 +21,12 @@ import i18nDirective from './plugins/i18nDirective';
 import { router } from './router';
 import store from './store';
 import axios from 'axios';
-//Mock Api data
 import Maska from 'maska';
 import VCalendar from 'v-calendar';
 import VueRecaptcha from 'vue3-recaptcha-v2';
-import './_mockApis';
+// spikeadmin 템플릿 데모용 axios mock(`./_mockApis`)은 더 이상 등록하지 않는다.
+// 라우트가 모두 주석 처리된 데모 화면 전용이었고, 엔트리 청크에 mock 데이터를
+// 통째로 끌어들이고 있었다. 살아있는 정적 데이터 모듈은 각자 직접 import 한다.
 // print
 // import print from 'vue3-print-nb';
 // Table
@@ -72,6 +73,12 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import ganttastic from '@infectoone/vue-ganttastic';
 import { ref } from 'vue';
+
+// 브라우저 언어로 즉시 판정 (네트워크 없음)
+function detectLanguageFromBrowser(): 'ko' | 'en' {
+    const browserLang = navigator.language || navigator.languages[0] || '';
+    return browserLang.startsWith('ko') ? 'ko' : 'en';
+}
 
 // 동적 언어 설정 함수
 async function detectLanguage(): Promise<'ko' | 'en'> {
@@ -128,8 +135,29 @@ async function detectLanguage(): Promise<'ko' | 'en'> {
     }
 
     // 모든 IP 감지 서비스 실패시 브라우저 언어로 폴백
-    const browserLang = navigator.language || navigator.languages[0];
-    return browserLang.startsWith('ko') ? 'ko' : 'en';
+    return detectLanguageFromBrowser();
+}
+
+/**
+ * 지오IP 기반 언어 판정을 백그라운드로 수행한다.
+ * 예전에는 이 조회를 mount 전에 await 해서, IP 조회가 차단된 환경에서
+ * 서비스 3곳 × 5초 타임아웃 = 최대 15초 동안 백지 화면이 노출됐다.
+ * 이제는 브라우저 언어로 즉시 렌더한 뒤, 결과가 다를 때만 살짝 갱신한다.
+ */
+function refineLocaleInBackground() {
+    detectLanguage()
+        .then((detectedLocale) => {
+            // 조회 도중 사용자가 직접 언어를 골랐다면 그 선택을 존중한다.
+            if (localStorage.getItem('locale')) return;
+
+            localStorage.setItem('locale', detectedLocale);
+            if ((i18n.global as any).locale !== detectedLocale) {
+                (i18n.global as any).locale = detectedLocale;
+            }
+        })
+        .catch(() => {
+            /* 언어 자동 감지는 실패해도 앱 동작에 영향이 없다 */
+        });
 }
 
 // i18n 설정을 기본값으로 초기화
@@ -279,15 +307,10 @@ async function initializeApp() {
     await setupSupabase();
     await setupTenant();
 
-    // 동적 언어 설정 (localStorage에 저장된 언어 우선, 없으면 자동 감지)
+    // 동적 언어 설정 (localStorage에 저장된 언어 우선, 없으면 브라우저 언어로 즉시 판정)
+    // 지오IP 조회는 렌더를 막지 않도록 mount 이후 백그라운드로 돌린다.
     const savedLocale = localStorage.getItem('locale');
-    if (!savedLocale) {
-        const detectedLocale = await detectLanguage();
-        (i18n.global as any).locale = detectedLocale;
-        localStorage.setItem('locale', detectedLocale);
-    } else {
-        (i18n.global as any).locale = savedLocale;
-    }
+    (i18n.global as any).locale = savedLocale || detectLanguageFromBrowser();
 
     const app = createApp(App);
 
@@ -400,6 +423,9 @@ async function initializeApp() {
     app.use(VueApexCharts);
     app.use(vuetify).mount('#app');
     app.use(setLocale);
+
+    // mount 이후에 지오IP 기반 언어 판정을 이어서 수행 (렌더를 막지 않음)
+    if (!savedLocale) refineLocaleInBackground();
     //ScrollTop Use
     // app.use(VueScrollTo);
     app.use(VueScrollTo, {

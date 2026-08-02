@@ -93,6 +93,7 @@
                 <div class="mb-3" v-if="!panelName.includes('sequence-flow')">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
             </div>
             <component
+                v-if="modelerComponentsReady"
                 :is="panelName"
                 :isViewMode="isViewMode"
                 :isPreviewMode="isPreviewMode"
@@ -157,6 +158,7 @@ import ZeebePropertiesPanel from '@/components/designer/bpmnModeling/bpmn/panel/
 import { useTerminology } from '@/composables/useTerminology';
 import { getLaneTaskShapes, writeUengineProperties } from '@/utils/bpmnUengineProperties';
 
+import { ensureModelerComponents } from '@/plugins/modelerComponents';
 import BusinessRuleTaskPanel from '@/components/designer/bpmnModeling/bpmn/panel/BusinessRuleTaskPanel.vue';
 
 export default {
@@ -174,6 +176,11 @@ export default {
         validationList: Object
     },
     created() {
+        // 모델러 전역 컴포넌트(속성 패널 + OpenGraph 도형) 등록을 보장한다.
+        ensureModelerComponents().then(() => {
+            this.modelerComponentsReady = true;
+        });
+
         // if (!this.element.extensionElements.values[0].json) {
         //     this.$emit('close');
         //     return;
@@ -228,6 +235,9 @@ export default {
     },
     data() {
         return {
+            // 하위 패널들은 `<component :is="panelName">` 로 문자열 해석되므로
+            // 전역 등록이 끝난 뒤에 렌더링해야 한다. (지연 등록 - modelerComponents.js)
+            modelerComponentsReady: false,
             // requiredKeyLists: {
             //     "description": "",
             //     "role": { "name": "" },
