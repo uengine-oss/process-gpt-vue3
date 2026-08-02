@@ -1,5 +1,5 @@
 /**
- * 색상 테마 = 모드(라이트/다크) + 강조색.
+ * 색상 테마 — 라이트 · 스카이 · 다크 세 가지.
  *
  * 앱에는 색을 읽는 층이 셋이라, 어느 하나만 바꾸면 화면이 어긋난다.
  *   1) 토큰 레이어  — `--cds-*` / `--accent-brand` (Pg* 컴포넌트, tokenize 된 .vue 스타일)
@@ -9,104 +9,68 @@
  */
 import { resetDsPaletteCache } from '@/components/customBpmn/dsPalette';
 
-export type AppearanceMode = 'light' | 'dark';
+export type Appearance = 'light' | 'sky' | 'dark';
 
-const MODE_KEY = 'pg-color-mode';
-const ACCENT_KEY = 'pg-accent-color';
+const STORAGE_KEY = 'pg-appearance';
 
-/** Vuetify 테마 이름 — 기존 이름을 그대로 쓴다 (UpdateColors.ts 가 이름으로 분기) */
-export const THEME_BY_MODE: Record<AppearanceMode, string> = {
+/**
+ * Vuetify 테마 '이름' 은 기존 것을 그대로 쓴다.
+ * `src/utils/UpdateColors.ts` 가 actTheme 문자열을 99곳에서 이름으로 분기하고 있어
+ * 새 이름을 만들면 그 분기들이 전부 폴백으로 떨어진다.
+ */
+export const THEME_BY_APPEARANCE: Record<Appearance, string> = {
     light: 'BLUE_THEME',
+    sky: 'AQUA_THEME',
     dark: 'DARK_BLUE_THEME'
 };
 
-export function modeFromTheme(themeName: string): AppearanceMode {
-    return themeName?.startsWith('DARK') ? 'dark' : 'light';
-}
+const APPEARANCE_BY_THEME: Record<string, Appearance> = {
+    BLUE_THEME: 'light',
+    AQUA_THEME: 'sky',
+    DARK_BLUE_THEME: 'dark'
+};
 
-/** `#rrggbb` → `H S% L%` (토큰이 채널 문자열을 쓰기 때문에 필요) */
-export function hexToHslChannels(hex: string): string | null {
-    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
-    if (!m) return null;
-
-    const r = parseInt(m[1], 16) / 255;
-    const g = parseInt(m[2], 16) / 255;
-    const b = parseInt(m[3], 16) / 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const l = (max + min) / 2;
-    const d = max - min;
-
-    let h = 0;
-    let s = 0;
-    if (d !== 0) {
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
-        else if (max === g) h = ((b - r) / d + 2) * 60;
-        else h = ((r - g) / d + 4) * 60;
-    }
-
-    return `${h.toFixed(1)} ${(s * 100).toFixed(1)}% ${(l * 100).toFixed(1)}%`;
+export function appearanceFromTheme(themeName: string): Appearance {
+    return APPEARANCE_BY_THEME[themeName] || (themeName?.startsWith('DARK') ? 'dark' : 'light');
 }
 
 /**
- * 라이트/다크 적용.
+ * 적용.
  *
  * 토큰 레이어와 Vuetify 테마를 **여기서 함께** 바꾼다. 둘 중 하나만 바꾸면
- * 사이드바·상단바 같은 `<v-*>` 영역만 밝은 채로 남아 화면이 갈라진다.
+ * 사이드바·상단바 같은 `<v-*>` 영역만 남아 화면이 갈라진다.
  */
-export function applyMode(mode: AppearanceMode, persist = true) {
+export function applyAppearance(appearance: Appearance, persist = true) {
     const root = document.documentElement;
     root.setAttribute('data-theme', 'claude');
+    root.setAttribute('data-appearance', appearance);
+
     // OS 가 다크여도 라이트를 고를 수 있어야 하므로 값을 비워두지 않는다
     // (tokens.css 의 prefers-color-scheme 블록이 :root:not([data-mode=light]) 조건).
-    root.setAttribute('data-mode', mode);
-    if (persist) localStorage.setItem(MODE_KEY, mode);
+    root.setAttribute('data-mode', appearance === 'dark' ? 'dark' : 'light');
 
-    syncVuetifyTheme(mode);
+    if (persist) localStorage.setItem(STORAGE_KEY, appearance);
+
+    syncVuetifyTheme(appearance);
     notifyAppearanceChanged();
 }
 
-/** Vuetify 테마 이름을 모드에 맞춘다. Pinia 초기화 전에는 조용히 건너뛴다. */
-function syncVuetifyTheme(mode: AppearanceMode) {
+/** Vuetify 테마 이름을 맞춘다. Pinia 초기화 전에는 조용히 건너뛴다. */
+function syncVuetifyTheme(appearance: Appearance) {
     // 순환 import 를 피하려고 지연 로드한다
     import('@/stores/customizer')
         .then(({ useCustomizerStore }) => {
-            useCustomizerStore().actTheme = THEME_BY_MODE[mode];
+            useCustomizerStore().actTheme = THEME_BY_APPEARANCE[appearance];
         })
         .catch(() => {
             /* 부팅 초기 등 Pinia 가 아직 없으면 Customizer 가 직접 세팅한다 */
         });
 }
 
-/** 자율선택 강조색 적용. 비우면 토큰 기본값(Claude 오렌지)으로 되돌린다. */
-export function applyAccent(hex: string | null, persist = true) {
-    const root = document.documentElement;
-
-    if (!hex) {
-        root.style.removeProperty('--accent-brand');
-        if (persist) localStorage.removeItem(ACCENT_KEY);
-        notifyAppearanceChanged();
-        return;
-    }
-
-    const channels = hexToHslChannels(hex);
-    if (!channels) return;
-
-    root.style.setProperty('--accent-brand', channels);
-    if (persist) localStorage.setItem(ACCENT_KEY, hex);
-    notifyAppearanceChanged();
-}
-
-export function getMode(): AppearanceMode {
-    const attr = document.documentElement.getAttribute('data-mode');
-    if (attr === 'light' || attr === 'dark') return attr;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-export function getAccent(): string | null {
-    return localStorage.getItem(ACCENT_KEY);
+export function getAppearance(): Appearance {
+    const attr = document.documentElement.getAttribute('data-appearance');
+    if (attr === 'light' || attr === 'sky' || attr === 'dark') return attr;
+    return 'light';
 }
 
 /**
@@ -120,9 +84,6 @@ function notifyAppearanceChanged() {
 
 /** 앱 부팅 시 1회. 저장된 선택을 복원한다. */
 export function initAppearance() {
-    const savedMode = localStorage.getItem(MODE_KEY);
-    applyMode(savedMode === 'dark' ? 'dark' : 'light', false);
-
-    const savedAccent = localStorage.getItem(ACCENT_KEY);
-    if (savedAccent) applyAccent(savedAccent, false);
+    const saved = localStorage.getItem(STORAGE_KEY) as Appearance | null;
+    applyAppearance(saved === 'sky' || saved === 'dark' ? saved : 'light', false);
 }

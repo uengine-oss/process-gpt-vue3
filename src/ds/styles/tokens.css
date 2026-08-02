@@ -242,3 +242,63 @@
   }
 }
 
+
+/* --------------------------------------------------------------------------
+   스카이 — 디자인 시스템 교체 이전의 원래 팔레트.
+   Vuetify 쪽 대응은 `ds/vuetify-bridge/theme.ts` 의 SKY_THEME 이 담당하고,
+   여기서는 토큰 레이어(Pg* · 토큰화된 .vue 스타일 · BPMN 캔버스)를 맞춘다.
+   -------------------------------------------------------------------------- */
+/* `:root` 를 붙여 특이도를 올린다. 기본 블록의 `[data-theme][data-mode]` 가
+   (0,2,0) 이라 그냥 `[data-appearance]` (0,1,0) 로는 덮이지 않는다. */
+:root[data-appearance='sky'] {
+  color-scheme: light;
+
+  --accent-brand: 202 100% 43%;      /* #0085db */
+
+  --bg-000: 0 0% 100%;
+  --bg-100: 206 41% 97%;
+  --bg-200: 206 38% 95%;
+  --bg-300: 206 33% 93%;             /* 사용자 말풍선 */
+  --bg-400: 206 30% 89%;
+  --bg-500: 206 30% 89%;
+
+  --text-000: 218 26% 22%;
+  --text-100: 218 26% 22%;
+  --text-200: 218 26% 22%;           /* #2A3547 */
+  --text-300: 218 26% 22%;
+  --text-400: 206 6% 47%;            /* #707a82 */
+  --text-500: 206 6% 47%;
+
+  --border-100: 210 25% 92%;
+  --border-200: 210 25% 92%;
+  --border-300: 210 25% 92%;         /* #e5eaef */
+  --border-400: 210 25% 92%;
+
+  --cds-surface-0: #f0f5f9;          /* 앱 배경 */
+  --cds-surface-1: #f5f8fb;
+  --cds-surface-2: #ffffff;
+  --cds-surface-3: #ffffff;
+  --cds-surface-panel: #ffffff;
+  --cds-surface-popover: #ffffff;
+
+  --cds-text-primary: #2a3547;
+  --cds-text-secondary: #707a82;
+  --cds-text-muted: #95a1ad;
+  --cds-text-accent: #0085db;
+  --cds-text-danger: #d9534f;
+  --cds-text-success: #2e9e6b;
+  --cds-text-warning: #b1791f;
+
+  --cds-border: #e5eaef;
+  --cds-border-strong: #dfe5ef;
+  --cds-border-stronger: #c3ccd8;
+  --cds-border-accent: #7ec4ec;
+  --cds-border-danger: #f3b9ad;
+
+  --cds-bg-neutral: #f6f9fc;
+  --cds-bg-neutral-hover: #e7ecf0;
+  --cds-bg-accent: #e5f3fb;
+  --cds-bg-danger: #ffede9;
+  --cds-bg-success: #dffff3;
+  --cds-bg-warning: #fff6ea;
+}

@@ -32,7 +32,7 @@ async function snapshot(label) {
         const task = document.querySelector('.djs-element .djs-visual rect');
         const ev = document.querySelector('.djs-element .djs-visual circle');
         return {
-            mode: document.documentElement.getAttribute('data-mode'),
+            appearance: document.documentElement.getAttribute('data-appearance'),
             accentBrand: cs.getPropertyValue('--accent-brand').trim(),
             appBg: getComputedStyle(document.body).backgroundColor,
             bpmnTaskFill: task ? task.getAttribute('fill') || getComputedStyle(task).fill : 'n/a',
@@ -42,28 +42,13 @@ async function snapshot(label) {
     console.log(label.padEnd(16), JSON.stringify(probe));
 }
 
-await snapshot('01-light');
-
-// 다크로 전환 (Customizer 를 열지 않고 API 로 직접 — 렌더 결과만 확인)
-await p.evaluate(async () => {
-    const m = await import('/src/ds/appearance.ts');
-    m.applyMode('dark');
-});
-await snapshot('02-dark');
-
-// 자율선택 강조색
-await p.evaluate(async () => {
-    const m = await import('/src/ds/appearance.ts');
-    m.applyMode('light');
-    m.applyAccent('#1789cf');
-});
-await snapshot('03-custom-accent');
-
-// 기본으로 복귀
-await p.evaluate(async () => {
-    const m = await import('/src/ds/appearance.ts');
-    m.applyAccent(null);
-});
+for (const [label, appearance] of [['01-light', 'light'], ['02-sky', 'sky'], ['03-dark', 'dark']]) {
+    await p.evaluate(async (a) => {
+        const m = await import('/src/ds/appearance.ts');
+        m.applyAppearance(a);
+    }, appearance);
+    await snapshot(label);
+}
 
 console.log('pageerrors:', errs.length);
 errs.slice(0, 3).forEach((e) => console.log(' -', e.slice(0, 140)));

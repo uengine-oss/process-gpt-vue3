@@ -1745,10 +1745,9 @@
         "containerOption": "화면 크기",
         "boxed": "박스형",
         "full": "가득찬",
-        "customColor": "직접 선택",
-        "light": "라이트모드",
-        "dark": "다크모드",
-        "reset": "초기화"
+        "light": "라이트",
+        "dark": "다크",
+        "sky": "스카이"
     },
     "Mashup": {
         "hoverText": "여기에 레이아웃(Container)을 드래그해서 폼 편집을 시작하십시오."

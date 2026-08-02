@@ -1745,10 +1745,9 @@
         "containerOption": "Container Option",
         "boxed": "Boxed",
         "full": "Full",
-        "customColor": "Custom Color",
         "light": "Light",
         "dark": "Dark",
-        "reset": "Reset"
+        "sky": "Sky"
     },
     "Mashup": {
         "hoverText": "Drag a layout (Container) here to start editing the form."
