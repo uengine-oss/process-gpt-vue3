@@ -15,7 +15,9 @@ const touched = ref(false);
 const emailError = computed(() => {
     if (!touched.value) return '';
     if (!username.value) return 'E-mail is required';
-    if (!/.+@.+\..+/.test(username.value)) return 'E-mail must be valid';
+    // 도메인에 점을 강제하지 않는다. `demo@localhost` 같은 인트라넷 주소도 유효하고,
+    // 실제로 로컬/사내 설치본이 그런 계정을 쓴다.
+    if (!/^[^@\s]+@[^@\s]+$/.test(username.value)) return 'E-mail must be valid';
     return '';
 });
 const passwordError = computed(() => {
