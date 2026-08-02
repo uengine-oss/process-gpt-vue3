@@ -30,7 +30,7 @@
                                         class="text-medium-emphasis"
                                         @click="setPrimaryKey(attribute)"
                                     >
-                                        <v-icon :style="attribute.isKey ? 'color: #0085db;' : ''">mdi-key</v-icon>
+                                        <v-icon :style="attribute.isKey ? 'color: hsl(var(--accent-brand));' : ''">mdi-key</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>{{ $t('EventSynchronizationForm.primaryKey') }}</span>
@@ -46,7 +46,7 @@
                                         class="text-medium-emphasis"
                                         @click="setCorrKey(attribute)"
                                     >
-                                        <v-icon :style="attribute.isCorrKey ? 'color: #0085db;' : ''">mdi-link-variant</v-icon>
+                                        <v-icon :style="attribute.isCorrKey ? 'color: hsl(var(--accent-brand));' : ''">mdi-link-variant</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>{{ $t('EventSynchronizationForm.correlationKey') }}</span>
@@ -92,10 +92,10 @@
                             <v-spacer></v-spacer>
                             <div style="display: flex; align-items: center; width: 20%">
                                 <div style="width: 30px; height: 30px; place-content: center; text-align: center">
-                                    <v-icon v-if="attribute.isKey" disabled large style="color: #0085db">mdi-key</v-icon>
+                                    <v-icon v-if="attribute.isKey" disabled large style="color: hsl(var(--accent-brand))">mdi-key</v-icon>
                                 </div>
                                 <div style="width: 30px; height: 30px; place-content: center; text-align: center">
-                                    <v-icon v-if="attribute.isCorrKey" disabled large style="color: #0085db">mdi-link-variant</v-icon>
+                                    <v-icon v-if="attribute.isCorrKey" disabled large style="color: hsl(var(--accent-brand))">mdi-link-variant</v-icon>
                                 </div>
                                 <v-tooltip :text="$t('EventSynchronizationForm.edit')">
                                     <template v-slot:activator="{ props }">
@@ -136,7 +136,7 @@
                                     class="text-medium-emphasis"
                                     @click="setPrimaryKey()"
                                 >
-                                    <v-icon :style="newAttribute.isKey ? 'color: #0085db;' : ''">mdi-key</v-icon>
+                                    <v-icon :style="newAttribute.isKey ? 'color: hsl(var(--accent-brand));' : ''">mdi-key</v-icon>
                                 </v-btn>
                             </template>
                             <span>{{ $t('EventSynchronizationForm.primaryKey') }}</span>
@@ -152,7 +152,7 @@
                                     class="text-medium-emphasis"
                                     @click="setCorrKey()"
                                 >
-                                    <v-icon :style="newAttribute.isCorrKey ? 'color: #0085db;' : ''">mdi-link-variant</v-icon>
+                                    <v-icon :style="newAttribute.isCorrKey ? 'color: hsl(var(--accent-brand));' : ''">mdi-link-variant</v-icon>
                                 </v-btn>
                             </template>
                             <span>{{ $t('EventSynchronizationForm.correlationKey') }}</span>

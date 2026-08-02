@@ -268,7 +268,7 @@ $e^{i\\pi} + 1 = 0$
 .editor {
     flex: 1;
     padding: 1rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
     font-family: monospace;
     resize: none;

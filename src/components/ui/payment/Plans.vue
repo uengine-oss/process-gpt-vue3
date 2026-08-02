@@ -140,8 +140,8 @@ export default {
 
 <style scoped>
 .plan-card {
-    background: #fff;
-    border: 2px solid #eee;
+    background: var(--cds-surface-2);
+    border: 2px solid var(--cds-border);
     border-radius: 12px;
     padding: 28px 24px;
     width: 250px;
@@ -151,7 +151,7 @@ export default {
     align-items: center;
 }
 .plan-card.highlight {
-    border-color: #3b82f6;
+    border-color: hsl(var(--accent-brand));
     box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08);
 }
 .plan-header {
@@ -165,14 +165,14 @@ export default {
     font-weight: bold;
 }
 .popular-badge {
-    background: #3b82f6;
+    background: hsl(var(--accent-brand));
     color: #fff;
     border-radius: 8px;
     padding: 2px 8px;
     font-size: 0.9rem;
 }
 .recommand-badge {
-    background: #3b82f6;
+    background: hsl(var(--accent-brand));
     color: #fff;
     border-radius: 8px;
     padding: 2px 8px;
@@ -190,14 +190,14 @@ export default {
     font-size: 0.98rem;
 }
 .upgrade-btn {
-    background: #3b82f6;
+    background: hsl(var(--accent-brand));
     color: #fff;
     cursor: pointer;
     font-size: 1rem;
 }
 .current-plan {
-    background: #3b82f6;
-    color: #888;
+    background: hsl(var(--accent-brand));
+    color: var(--cds-text-muted);
     cursor: pointer;
     font-size: 1rem;
 }

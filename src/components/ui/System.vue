@@ -17,7 +17,7 @@
                             density="comfortable"
                             @click="showDeleteDialog = true"
                         >
-                            <TrashIcon size="24" style="color: #fb977d" />
+                            <TrashIcon size="24" style="color: var(--cds-text-danger)" />
                         </v-btn>
                     </template>
                     <span>{{ $t('processDefinition.deleteProcess') }}</span>

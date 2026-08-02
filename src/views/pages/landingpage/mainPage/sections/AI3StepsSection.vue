@@ -155,15 +155,15 @@ export default {
 }
 
 .tbl-default tr {
-    border-bottom: 1px solid #aaa;
+    border-bottom: 1px solid var(--cds-text-muted);
 }
 
 .tbl-default tr:not(:first-child) {
-    background-color: #ffffff;
+    background-color: var(--cds-surface-2);
 }
 
 .tbl-default td {
-    border-left: 1px solid #aaa;
+    border-left: 1px solid var(--cds-text-muted);
     padding: 5px;
     padding-left: 10px;
 }

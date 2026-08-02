@@ -263,11 +263,11 @@ export default defineComponent({
 }
 
 .preset-color:hover {
-    border-color: #1976d2;
+    border-color: hsl(var(--accent-brand));
 }
 
 .preset-color.selected {
-    border-color: #1976d2;
+    border-color: hsl(var(--accent-brand));
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.3);
 }
 
@@ -275,6 +275,6 @@ export default defineComponent({
     width: 16px;
     height: 16px;
     border-radius: 3px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--cds-text-muted);
 }
 </style>

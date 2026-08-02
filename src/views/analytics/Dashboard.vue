@@ -1229,7 +1229,7 @@ async function syncDepartments() {
 }
 
 .bg-primary {
-    background-color: #0085db;
+    background-color: hsl(var(--accent-brand));
 }
 
 .bg-indigo {
@@ -1255,7 +1255,7 @@ async function syncDepartments() {
 .heatmap-header {
     font-size: 12px;
     font-weight: 500;
-    color: #707a82;
+    color: var(--cds-text-secondary);
     text-align: center;
     padding: 8px 4px;
     white-space: nowrap;
@@ -1264,7 +1264,7 @@ async function syncDepartments() {
 .heatmap-row-label {
     font-size: 13px;
     font-weight: 500;
-    color: #2a3547;
+    color: var(--cds-text-primary);
     text-align: left;
     padding: 8px 12px 8px 0;
     white-space: nowrap;
@@ -1313,12 +1313,12 @@ async function syncDepartments() {
 
 .month-table th {
     background: rgb(var(--v-theme-background)) !important;
-    color: #2a3547 !important;
-    border-bottom: 1px solid #e5eaef !important;
+    color: var(--cds-text-primary) !important;
+    border-bottom: 1px solid var(--cds-border) !important;
 }
 
 .month-table td {
-    border-bottom: 1px solid #e5eaef !important;
+    border-bottom: 1px solid var(--cds-border) !important;
 }
 
 .month-item td {
@@ -1351,7 +1351,7 @@ async function syncDepartments() {
 
 .agent-col .comparison-header {
     background: rgba(0, 133, 219, 0.1);
-    color: #0085db;
+    color: hsl(var(--accent-brand));
 }
 
 .human-col .comparison-header {
@@ -1376,7 +1376,7 @@ async function syncDepartments() {
 
 .stat-label {
     font-size: 11px;
-    color: #707a82;
+    color: var(--cds-text-secondary);
     margin-top: 2px;
 }
 
@@ -1391,9 +1391,9 @@ async function syncDepartments() {
 .vs-text {
     font-size: 12px;
     font-weight: 700;
-    color: #adb5bd;
+    color: var(--cds-text-muted);
     padding: 8px;
-    background: #f8f9fa;
+    background: var(--cds-bg-neutral);
     border-radius: 50%;
 }
 
@@ -1437,7 +1437,7 @@ async function syncDepartments() {
     height: 8px;
     border-radius: 4px;
     overflow: hidden;
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
 }
 
 .bottleneck-bar-wait {
@@ -1446,7 +1446,7 @@ async function syncDepartments() {
 }
 
 .bottleneck-bar-process {
-    background: linear-gradient(90deg, #0085db, #42a5f5);
+    background: linear-gradient(90deg, hsl(var(--accent-brand)), hsl(var(--accent-brand)));
     transition: width 0.3s ease;
 }
 </style>

@@ -492,7 +492,7 @@ watch(
 }
 
 .panel-header {
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
     flex-shrink: 0;
 }
 
@@ -503,13 +503,13 @@ watch(
 
 .panel-footer {
     flex-shrink: 0;
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
 }
 
 .filter-section-label {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #757575;
+    color: var(--cds-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }

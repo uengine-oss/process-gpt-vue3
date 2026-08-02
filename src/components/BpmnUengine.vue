@@ -13,11 +13,11 @@
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
         <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
-                <v-icon @click="resetZoom" style="color: #444; cursor: pointer">mdi-crosshairs-gps</v-icon>
-                <v-icon @click="zoomIn" style="color: #444; cursor: pointer">mdi-plus</v-icon>
+                <v-icon @click="resetZoom" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crosshairs-gps</v-icon>
+                <v-icon @click="zoomIn" style="color: var(--cds-text-secondary); cursor: pointer">mdi-plus</v-icon>
                 <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
-                <v-icon @click="zoomOut" style="color: #444; cursor: pointer">mdi-minus</v-icon>
-                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer">mdi-crop-rotate</v-icon>
+                <v-icon @click="zoomOut" style="color: var(--cds-text-secondary); cursor: pointer">mdi-minus</v-icon>
+                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- Font size and zoom controls (edit mode only) -->
@@ -28,7 +28,7 @@
                 <!-- Color Ruleset button -->
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: #444; cursor: pointer" size="small"
+                        <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: var(--cds-text-secondary); cursor: pointer" size="small"
                             >mdi-palette</v-icon
                         >
                     </template>
@@ -39,7 +39,7 @@
             <div class="controls-row">
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer" size="small"
+                        <v-icon v-bind="props" @click="decreaseFontSize" style="color: var(--cds-text-secondary); cursor: pointer" size="small"
                             >mdi-format-font-size-decrease</v-icon
                         >
                     </template>
@@ -48,7 +48,7 @@
                 <span class="font-size-value">{{ labelFontSize }}px</span>
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer" size="small"
+                        <v-icon v-bind="props" @click="increaseFontSize" style="color: var(--cds-text-secondary); cursor: pointer" size="small"
                             >mdi-format-font-size-increase</v-icon
                         >
                     </template>
@@ -1504,7 +1504,7 @@ export default {
                                         html.style.cssText =
                                             'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
                                         html.innerHTML =
-                                            '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: #333;"></i>';
+                                            '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: var(--cds-text-primary);"></i>';
 
                                         html.addEventListener('click', function (e) {
                                             e.stopPropagation(); // Prevent element selection
@@ -2976,13 +2976,13 @@ export default {
 .djs-element.validation-error .djs-visual rect,
 .djs-element.validation-error .djs-visual circle,
 .djs-element.validation-error .djs-visual polygon {
-    stroke: #f44336 !important;
+    stroke: var(--cds-text-danger) !important;
     stroke-width: 2px !important;
 }
 .djs-element.validation-warning .djs-visual rect,
 .djs-element.validation-warning .djs-visual circle,
 .djs-element.validation-warning .djs-visual polygon {
-    stroke: #ff9800 !important;
+    stroke: var(--cds-text-warning) !important;
     stroke-width: 2px !important;
 }
 
@@ -3044,20 +3044,20 @@ export default {
 
 .font-size-value {
     font-size: 12px;
-    color: #666;
+    color: var(--cds-text-secondary);
     min-width: 36px;
     text-align: center;
 }
 
 .zoom-level-value {
     font-size: 12px;
-    color: #666;
+    color: var(--cds-text-secondary);
     min-width: 40px;
     text-align: center;
 }
 
 .controls-divider {
-    color: #ccc;
+    color: var(--cds-text-muted);
     margin: 0 4px;
 }
 
@@ -3071,12 +3071,12 @@ export default {
 /* Dynamic text color for dark backgrounds */
 .djs-element[data-dark-bg='true'] text,
 .djs-element[data-dark-bg='true'] text tspan {
-    fill: #ffffff !important;
+    fill: var(--cds-surface-2) !important;
 }
 
 .djs-element[data-dark-bg='false'] text,
 .djs-element[data-dark-bg='false'] text tspan {
-    fill: #000000 !important;
+    fill: var(--cds-text-primary) !important;
 }
 
 /* Minimap card styling */
@@ -3085,7 +3085,7 @@ export default {
     top: auto !important;
     left: 12px !important;
     right: auto !important;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border-radius: 12px;
     padding: 6px;
 }

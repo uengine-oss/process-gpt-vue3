@@ -594,7 +594,7 @@ export default {
 }
 
 .bubble {
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
     border-radius: 12px;
     padding: 10px 12px;
     width: fit-content;
@@ -805,7 +805,7 @@ export default {
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 12px;
     padding: 12px;
-    background: #fff;
+    background: var(--cds-surface-2);
 }
 
 .progress-info {

@@ -1021,7 +1021,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
       left: ${event.clientX || event.x}px;
       top: ${event.clientY || event.y}px;
       background: white;
-      border: 1px solid #ccc;
+      border: 1px solid var(--cds-border);
       border-radius: 4px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
       z-index: 10000;
@@ -1033,7 +1033,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
 
         // 헤더
         const header = document.createElement('div');
-        header.style.cssText = 'padding: 8px 12px; font-weight: bold; border-bottom: 1px solid #eee; color: #333;';
+        header.style.cssText = 'padding: 8px 12px; font-weight: bold; border-bottom: 1px solid var(--cds-border); color: var(--cds-text-primary);';
         header.textContent = `타입 변경 (${selectedTasks.length}개 Task)`;
         menu.appendChild(header);
 
@@ -1050,7 +1050,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
             item.innerHTML = `<span>${taskType.icon}</span><span>${taskType.label}</span>`;
 
             item.addEventListener('mouseenter', () => {
-                item.style.backgroundColor = '#f0f0f0';
+                item.style.backgroundColor = 'var(--cds-bg-neutral)';
             });
             item.addEventListener('mouseleave', () => {
                 item.style.backgroundColor = 'white';
@@ -1238,7 +1238,7 @@ function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, 
     left: ${event.clientX || event.x || 100}px;
     top: ${event.clientY || event.y || 100}px;
     background: white;
-    border: 1px solid #ccc;
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     z-index: 10000;
@@ -1250,7 +1250,7 @@ function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, 
 
     // 헤더
     const header = document.createElement('div');
-    header.style.cssText = 'padding: 8px 12px; font-weight: bold; border-bottom: 1px solid #eee; color: #333;';
+    header.style.cssText = 'padding: 8px 12px; font-weight: bold; border-bottom: 1px solid var(--cds-border); color: var(--cds-text-primary);';
     header.textContent = `타입 변경 (${selectedTasks.length}개 Task)`;
     menu.appendChild(header);
 
@@ -1267,7 +1267,7 @@ function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, 
         item.innerHTML = `<span>${taskType.icon}</span><span>${taskType.label}</span>`;
 
         item.addEventListener('mouseenter', () => {
-            item.style.backgroundColor = '#f0f0f0';
+            item.style.backgroundColor = 'var(--cds-bg-neutral)';
         });
         item.addEventListener('mouseleave', () => {
             item.style.backgroundColor = 'white';

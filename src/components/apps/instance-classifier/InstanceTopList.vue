@@ -182,14 +182,14 @@ export default {
                         const it = items[dataPointIndex];
                         if (!it) return '';
                         const kw = it.keywords
-                            ? `<div style="margin-top:5px;color:#546e7a;font-size:11px;max-width:260px;white-space:normal;line-height:1.4">🏷 ${it.keywords}</div>`
+                            ? `<div style="margin-top:5px;color: #546e7a;font-size:11px;max-width:260px;white-space:normal;line-height:1.4">🏷 ${it.keywords}</div>`
                             : '';
                         const last = it.last_seen
-                            ? `<div style="margin-top:4px;color:#90a4ae;font-size:11px">🕒 최근 발생 ${fmt(it.last_seen)}</div>`
+                            ? `<div style="margin-top:4px;color: #90a4ae;font-size:11px">🕒 최근 발생 ${fmt(it.last_seen)}</div>`
                             : '';
                         return `<div style="padding:9px 12px;font-family:inherit">
-                            <div style="font-weight:700;color:#263238;font-size:13px">${it.topic_name}</div>
-                            <div style="margin-top:3px;color:#37474f;font-size:12px">건수 <b>${it.count}건</b> · 비율 <b>${it.pct}%</b></div>
+                            <div style="font-weight:700;color: #263238;font-size:13px">${it.topic_name}</div>
+                            <div style="margin-top:3px;color: #37474f;font-size:12px">건수 <b>${it.count}건</b> · 비율 <b>${it.pct}%</b></div>
                             ${kw}${last}</div>`;
                     }
                 }

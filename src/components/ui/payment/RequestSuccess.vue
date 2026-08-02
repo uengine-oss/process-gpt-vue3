@@ -121,13 +121,13 @@ export default {
     max-width: 600px;
     margin: 60px auto;
     padding: 32px;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     text-align: center;
 }
 .error {
-    color: #d32f2f;
+    color: var(--cds-text-danger);
     margin-top: 16px;
 }
 </style>

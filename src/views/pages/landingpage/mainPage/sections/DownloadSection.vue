@@ -113,7 +113,7 @@ export default {
 .download {
     padding: 80px 0 0;
     /* background-color: var(--bg-color); */
-    background-color: #1976d2;
+    background-color: hsl(var(--accent-brand));
 }
 
 .section-title {
@@ -145,7 +145,7 @@ export default {
     font-size: 1.1rem;
     line-height: 1.6;
     color: white;
-    /* color: #555; */
+    /* color: var(--cds-text-secondary); */
 }
 
 .download-buttons {
@@ -198,8 +198,8 @@ export default {
 
 .download-btn.disabled {
     background: transparent;
-    border: 2px solid #94a3b8;
-    color: #94a3b8;
+    border: 2px solid var(--cds-text-muted);
+    color: var(--cds-text-muted);
     cursor: not-allowed;
     opacity: 0.7;
 }
@@ -226,7 +226,7 @@ export default {
 }
 
 .download-btn.apk:hover {
-    background: #333;
+    background: var(--cds-text-primary);
     transform: translateY(-5px);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }

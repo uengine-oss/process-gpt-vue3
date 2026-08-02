@@ -1173,7 +1173,7 @@ export default {
 
 .task-assignee-icon i {
     font-size: 16px;
-    color: #666;
+    color: var(--cds-text-secondary);
 }
 
 /* 담당자가 있는 작업 바 스타일 */
@@ -1188,7 +1188,7 @@ export default {
 /* 줌 컨트롤 스타일링 */
 .gantt_zoom_bar {
     padding: 10px;
-    background-color: #f5f5f5;
+    background-color: var(--cds-bg-neutral);
     border-top: 1px solid #cecece;
 }
 
@@ -1212,11 +1212,11 @@ export default {
 }
 /* 상태별 스타일 */
 .status-todo .gantt_task_progress {
-    background-color: #1976d2;
+    background-color: hsl(var(--accent-brand));
 }
 
 .status-IN_PROGRESS .gantt_task_progress {
-    background-color: #388e3c;
+    background-color: var(--cds-text-success);
 }
 
 .status-DONE .gantt_task_progress {
@@ -1232,7 +1232,7 @@ export default {
 }
 
 .status-done .gantt_task_content {
-    color: #000000;
+    color: var(--cds-text-primary);
 }
 
 /* 작업 바 스타일 */
@@ -1256,42 +1256,42 @@ export default {
 
 /* DONE 상태 */
 .status-DONE .gantt_task_progress {
-    background-color: #2e7d32 !important;
+    background-color: var(--cds-text-success) !important;
 }
 .status-DONE.gantt_task_line {
-    background-color: #4caf50 !important;
+    background-color: var(--cds-text-success) !important;
 }
 
 /* IN_PROGRESS 상태 */
 .status-IN_PROGRESS .gantt_task_progress {
-    background-color: #1565c0 !important;
+    background-color: hsl(var(--accent-brand)) !important;
 }
 .status-IN_PROGRESS.gantt_task_line {
-    background-color: #2196f3 !important;
+    background-color: hsl(var(--accent-brand)) !important;
 }
 
 /* NEW 상태 */
 .status-NEW .gantt_task_progress {
-    background-color: #616161 !important;
+    background-color: var(--cds-text-secondary) !important;
 }
 .status-NEW.gantt_task_line {
-    background-color: #9e9e9e !important;
+    background-color: var(--cds-text-muted) !important;
 }
 
 /* PENDING 상태 */
 .status-PENDING .gantt_task_progress {
-    background-color: #c62828 !important;
+    background-color: var(--cds-text-danger) !important;
 }
 .status-PENDING.gantt_task_line {
-    background-color: #f44336 !important;
+    background-color: var(--cds-text-danger) !important;
 }
 
 /* 기본 상태 */
 .gantt_task_line:not(.status-DONE):not(.status-IN_PROGRESS):not(.status-NEW):not(.status-PENDING) {
-    background-color: #9e9e9e !important;
+    background-color: var(--cds-text-muted) !important;
 }
 .gantt_task_line:not(.status-DONE):not(.status-IN_PROGRESS):not(.status-NEW):not(.status-PENDING) .gantt_task_progress {
-    background-color: #616161 !important;
+    background-color: var(--cds-text-secondary) !important;
 }
 
 /* 작업 텍스트 스타일 */
@@ -1313,7 +1313,7 @@ export default {
     transform: translate(-50%, -50%) !important;
     z-index: 10001 !important;
     /* Vuetify3 카드 스타일 적용 */
-    background: #ffffff !important;
+    background: var(--cds-surface-2) !important;
     border-radius: 12px !important;
     box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12) !important;
     border: none !important;
@@ -1333,19 +1333,19 @@ export default {
     display: flex !important;
     align-items: center !important;
     gap: 0px !important;
-    border: 1px solid #e0e0e0 !important;
+    border: 1px solid var(--cds-border) !important;
     border-radius: 8px !important;
     overflow: hidden !important;
     transition: all 0.2s ease !important;
 }
 
 .calendar-input-wrapper:hover {
-    border-color: #1976d2 !important;
+    border-color: hsl(var(--accent-brand)) !important;
     box-shadow: 0 2px 4px rgba(25, 118, 210, 0.1) !important;
 }
 
 .calendar-input-wrapper:focus-within {
-    border-color: #1976d2 !important;
+    border-color: hsl(var(--accent-brand)) !important;
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;
 }
 
@@ -1378,7 +1378,7 @@ export default {
 }
 
 .gantt_calendar_btn:hover {
-    background: #e0e0e0 !important;
+    background: var(--cds-border) !important;
 }
 
 .gantt_calendar_btn:active {
@@ -1390,7 +1390,7 @@ export default {
     position: fixed !important;
     z-index: 10001 !important;
     background-color: white !important;
-    border: 2px solid #1976d2 !important;
+    border: 2px solid hsl(var(--accent-brand)) !important;
     border-radius: 8px !important;
     padding: 8px !important;
     font-size: 14px !important;
@@ -1400,7 +1400,7 @@ export default {
 
 .gantt-date-picker-overlay:focus {
     outline: none !important;
-    border-color: #1976d2 !important;
+    border-color: hsl(var(--accent-brand)) !important;
     box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.2) !important;
 }
 .custom-gantt-lightbox-text-input,
@@ -1434,7 +1434,7 @@ export default {
 
 /* 간트차트 그리드 삭제 버튼 스타일 */
 .gantt-delete-btn {
-    color: #808080 !important;
+    color: var(--cds-text-muted) !important;
     border: none !important;
     border-radius: 4px !important;
     padding: 4px 6px !important;
@@ -1448,12 +1448,12 @@ export default {
 }
 
 .gantt_add {
-    color: #808080 !important;
+    color: var(--cds-text-muted) !important;
     opacity: 1 !important;
 }
 
 .gantt_grid_head_add {
-    color: #808080 !important;
+    color: var(--cds-text-muted) !important;
     opacity: 1 !important;
 }
 

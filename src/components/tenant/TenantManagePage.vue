@@ -187,10 +187,10 @@
                 </div>
 
                 <div class="mb-4 pa-3" style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px">
-                    <p class="mb-2" style="color: #721c24"><strong>⚠️ 경고</strong></p>
-                    <p class="mb-2" style="color: #721c24">• 삭제 요청은 7일 이내 취소할 수 있습니다.</p>
-                    <p class="mb-2" style="color: #721c24">• 삭제 요청 7일 이후 관련 데이터는 완전히 삭제되며 복구는 불가능합니다.</p>
-                    <p class="mb-0" style="color: #721c24">• 당사는 삭제된 데이터에 대해 어떠한 책임도 지지 않습니다.</p>
+                    <p class="mb-2" style="color: var(--cds-text-danger)"><strong>⚠️ 경고</strong></p>
+                    <p class="mb-2" style="color: var(--cds-text-danger)">• 삭제 요청은 7일 이내 취소할 수 있습니다.</p>
+                    <p class="mb-2" style="color: var(--cds-text-danger)">• 삭제 요청 7일 이후 관련 데이터는 완전히 삭제되며 복구는 불가능합니다.</p>
+                    <p class="mb-0" style="color: var(--cds-text-danger)">• 당사는 삭제된 데이터에 대해 어떠한 책임도 지지 않습니다.</p>
                 </div>
 
                 <p class="mb-2 text-body-2">계속하려면 아래에 <strong>삭제할 회사명</strong>을 정확히 입력하세요:</p>
@@ -234,7 +234,7 @@
                 </v-btn>
             </v-row>
             <v-card-text class="pa-4 pb-0">
-                <div class="mb-4 pa-3" style="background-color: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px">
+                <div class="mb-4 pa-3" style="background-color: var(--cds-bg-accent); border: 1px solid var(--cds-bg-accent); border-radius: 8px">
                     <p class="mb-0" style="color: #0d47a1">
                         • <strong>{{ tenantIdToRestore }}</strong> 회사에 대한 삭제 요청이 취소됩니다.
                     </p>

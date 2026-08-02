@@ -2520,11 +2520,11 @@ export default {
     z-index: 1000;
     position: absolute;
     overflow: hidden;
-    border: 1px solid #ccc;
+    border: 1px solid var(--cds-text-muted);
     white-space: nowrap;
     font-family: sans-serif;
-    background: #fff;
-    color: #333;
+    background: var(--cds-surface-2);
+    color: var(--cds-text-primary);
     border-radius: 5px;
     padding: 0;
 }

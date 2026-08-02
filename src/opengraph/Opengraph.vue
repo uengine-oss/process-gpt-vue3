@@ -1311,6 +1311,6 @@ export default {
     position: relative;
     width: 2000px;
     height: 2000px;
-    background: #f7f7f7;
+    background: var(--cds-bg-neutral);
 }
 </style>

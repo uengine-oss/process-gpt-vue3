@@ -423,7 +423,7 @@ onMounted(loadData);
 <style scoped>
 .kpi-dashboard-page {
     padding: 24px;
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
 }
 
 .doughnut-center-text {

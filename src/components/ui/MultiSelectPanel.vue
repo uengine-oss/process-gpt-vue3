@@ -203,8 +203,8 @@ export default {
     z-index: 10;
 }
 .multi-select-header {
-    background: #f5f5f5;
-    border-bottom: 1px solid #e0e0e0;
+    background: var(--cds-bg-neutral);
+    border-bottom: 1px solid var(--cds-border);
     border-radius: 8px 8px 0 0;
     min-height: 36px;
 }

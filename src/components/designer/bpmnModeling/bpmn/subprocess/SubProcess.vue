@@ -37,8 +37,7 @@
                     fill: '#FFFFFF',
                     'fill-opacity': 0.7,
                     'vertical-align': 'top',
-                    'text-anchor': 'start'
-                }"
+                    'text-anchor': 'start'}"
             ></geometry-rect>
 
             <sub-elements>

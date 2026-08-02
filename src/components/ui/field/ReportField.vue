@@ -26,7 +26,7 @@
                 <div
                     v-else
                     @click.stop="previewMenu = !previewMenu"
-                    style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px; margin-right: 8px; cursor: pointer"
+                    style="border-radius: 8px; border: 1px solid var(--cds-border); width: 30px; height: 30px; margin-right: 8px; cursor: pointer"
                     class="d-flex align-center justify-center"
                 >
                     <v-icon
@@ -279,7 +279,7 @@ $e^{i\\pi} + 1 = 0$
 .editor {
     flex: 1;
     padding: 1rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
     font-family: monospace;
     resize: none;
@@ -291,7 +291,7 @@ $e^{i\\pi} + 1 = 0$
 .expanded-content {
     width: 100%;
     height: 100%;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;

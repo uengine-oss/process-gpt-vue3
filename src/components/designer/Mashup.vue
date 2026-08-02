@@ -583,7 +583,7 @@ export default {
     right: 0; /* 우측에서부터 시작 */
     width: 30%; /* 너비는 화면의 30% */
     height: 100vh; /* 높이는 화면 전체 */
-    background-color: #f5f5f5; /* 배경색 설정 */
+    background-color: var(--cds-bg-neutral); /* 배경색 설정 */
     padding: 20px; /* 내용과 경계 사이의 여백 */
     box-sizing: border-box; /* 패딩을 포함한 너비 계산 */
     overflow-y: auto; /* 내용이 넘칠 경우 스크롤바 표시 */

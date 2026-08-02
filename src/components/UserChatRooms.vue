@@ -819,7 +819,7 @@ export default {
     align-items: center;
     padding: 8px 12px;
     background: white;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--cds-border);
     flex-shrink: 0;
 }
 
@@ -836,13 +836,13 @@ export default {
 .chat-body {
     flex: 1;
     overflow: hidden;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
     min-height: 0;
 }
 
 .input-area {
     padding: 12px;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--cds-border);
     background: white;
     flex-shrink: 0;
 }

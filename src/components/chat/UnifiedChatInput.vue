@@ -311,15 +311,15 @@ export default {
     background: white;
     border-radius: 20px;
     font-size: 13px;
-    color: #808080;
+    color: var(--cds-text-muted);
     cursor: pointer;
     white-space: nowrap;
 }
 
 .example-chip:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-    color: #808080;
+    background: var(--cds-bg-neutral);
+    border-color: var(--cds-border);
+    color: var(--cds-text-muted);
 }
 
 /* 지식 베이스 선택 칩 (textarea 위) */
@@ -343,7 +343,7 @@ export default {
 
 /* 입력 툴바의 지식 베이스 버튼 (Chat custom-input-tools 슬롯) */
 .knowledge-tool-btn {
-    border-color: #e0e0e0 !important;
+    border-color: var(--cds-border) !important;
     text-transform: none;
     letter-spacing: 0;
     font-weight: 500;

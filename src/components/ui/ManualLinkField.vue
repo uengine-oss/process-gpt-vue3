@@ -252,7 +252,7 @@ export default defineComponent({
     gap: 6px;
     font-size: 12px;
     line-height: 1.6;
-    color: #212121;
+    color: var(--cds-text-primary);
 }
 
 .manual-link-row__text {

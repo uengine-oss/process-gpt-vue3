@@ -323,7 +323,7 @@ export default {
 .no-image-placeholder {
     width: 100%;
     height: 150px;
-    border: 2px dashed #ccc;
+    border: 2px dashed var(--cds-text-muted);
     border-radius: 12px;
     overflow: hidden;
     position: relative;
@@ -347,8 +347,8 @@ export default {
 }
 
 .drag-over {
-    border-color: #4caf50 !important;
-    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%) !important;
+    border-color: var(--cds-text-success) !important;
+    background: linear-gradient(135deg, #e8f5e8 0%, var(--cds-bg-success) 100%) !important;
     box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3);
 }
 

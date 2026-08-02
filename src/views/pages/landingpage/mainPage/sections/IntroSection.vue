@@ -93,13 +93,13 @@ export default {
 .section-header h2 {
     font-size: 2.2rem;
     font-weight: 700;
-    color: #333;
+    color: var(--cds-text-primary);
     margin-bottom: 15px;
 }
 
 .section-header p {
     font-size: 1.1rem;
-    color: #555;
+    color: var(--cds-text-secondary);
     max-width: 700px;
     margin: 0 auto;
 }
@@ -119,7 +119,7 @@ export default {
 .intro-text p {
     font-size: 1.1rem;
     line-height: 1.6;
-    color: #555;
+    color: var(--cds-text-secondary);
 }
 
 .value-cards {
@@ -132,7 +132,7 @@ export default {
 }
 
 .value-card {
-    /* background-color: #fafafa; */
+    /* background-color: var(--cds-bg-neutral); */
     /* background-color: #f8f9ff; */
     /* border-radius: 10px;
   padding: 30px;
@@ -152,7 +152,7 @@ export default {
 .value-card div {
     width: 15rem; /* 작은 아이콘 하나일땐 3rem */
     /* font-size: 2rem; */
-    color: #1976d2;
+    color: hsl(var(--accent-brand));
     margin: 0 auto;
     margin-bottom: 20px;
 }
@@ -160,14 +160,14 @@ export default {
 .value-card h3 {
     font-size: 1.3rem;
     font-weight: 600;
-    color: #333;
+    color: var(--cds-text-primary);
     margin-bottom: 15px;
 }
 
 .value-card p {
     font-size: 1rem;
     line-height: 1.5;
-    color: #555;
+    color: var(--cds-text-secondary);
 }
 
 @media (max-width: 768px) {

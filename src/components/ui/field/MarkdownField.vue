@@ -20,7 +20,7 @@
                 <v-spacer></v-spacer>
                 <!-- Vuetify의 flex 유틸리티를 사용하여 아이콘을 정중앙 정렬 -->
                 <div
-                    style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px"
+                    style="border-radius: 8px; border: 1px solid var(--cds-border); width: 30px; height: 30px"
                     class="d-flex align-center justify-center"
                 >
                     <v-icon icon="mdi-eye-outline" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
@@ -284,7 +284,7 @@ $e^{i\\pi} + 1 = 0$
 .editor {
     flex: 1;
     padding: 1rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
     font-family: monospace;
     resize: none;

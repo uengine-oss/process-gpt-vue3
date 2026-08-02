@@ -130,7 +130,7 @@ export default {
 
 <style scoped>
 .tutorial-content {
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
     margin-left: 300px;
     min-height: 100vh;
 }
@@ -143,55 +143,55 @@ export default {
 
 .content-header {
     margin-bottom: 32px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--cds-border);
     padding-bottom: 16px;
 }
 
 .content-header h1 {
     font-size: 2rem;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     margin: 0 0 12px 0;
 }
 
 .breadcrumb {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--cds-text-secondary);
 }
 
 .breadcrumb .separator {
     margin: 0 8px;
-    color: #d1d5db;
+    color: var(--cds-border);
 }
 
 .breadcrumb .current {
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
     font-weight: 500;
 }
 
 .markdown-content {
     line-height: 1.5;
-    color: #374151;
+    color: var(--cds-text-secondary);
 }
 
 .markdown-content :deep(h1) {
     font-size: 1.875rem;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     margin: 32px 0 16px 0;
     font-weight: 600;
 }
 
 .markdown-content :deep(h2) {
     font-size: 1.5rem;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     /* margin: 24px 0 12px 0; */
     font-weight: 600;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--cds-border);
     padding: 24px 0 4px 0;
 }
 
 .markdown-content :deep(h3) {
     font-size: 1.25rem;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     /* margin: 20px 0 12px 0; */
     font-weight: 600;
     padding: 20px 0 4px 0;
@@ -225,14 +225,14 @@ export default {
 }
 
 .markdown-content :deep(.tutorial-link) {
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
     text-decoration: underline;
     cursor: pointer;
     transition: color 0.2s ease;
 }
 
 .markdown-content :deep(.tutorial-link:hover) {
-    color: #1d4ed8;
+    color: hsl(var(--accent-brand));
     text-decoration: none;
 }
 
@@ -247,7 +247,7 @@ export default {
 }
 
 .markdown-content :deep(code) {
-    background: #f3f4f6;
+    background: var(--cds-bg-neutral);
     padding: 2px 6px;
     border-radius: 4px;
     font-family: 'Monaco', 'Menlo', monospace;
@@ -255,11 +255,11 @@ export default {
 }
 
 .markdown-content :deep(pre) {
-    background: #2d3748 !important;
+    background: var(--cds-text-primary) !important;
     color: #ffffff !important;
     padding: 16px !important;
     border-radius: 4px !important;
-    border: 1px solid #4a5568 !important;
+    border: 1px solid var(--cds-text-secondary) !important;
     overflow-x: auto !important;
     overflow-y: auto !important;
     margin: 16px 0 !important;
@@ -284,15 +284,15 @@ export default {
     justify-content: space-between;
     margin-top: 48px;
     padding-top: 24px;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--cds-border);
 }
 
 .nav-btn {
     display: flex;
     align-items: center;
     padding: 16px 20px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -302,7 +302,7 @@ export default {
 
 .nav-btn:hover {
     background: #f9fafb;
-    border-color: #3b82f6;
+    border-color: hsl(var(--accent-brand));
     transform: translateY(-2px);
 }
 
@@ -316,7 +316,7 @@ export default {
 
 .nav-arrow {
     font-size: 1.25rem;
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
     margin: 0 8px;
 }
 
@@ -332,7 +332,7 @@ export default {
 
 .nav-label {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--cds-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 2px;
@@ -340,7 +340,7 @@ export default {
 
 .nav-title {
     font-size: 0.875rem;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     font-weight: 500;
 }
 

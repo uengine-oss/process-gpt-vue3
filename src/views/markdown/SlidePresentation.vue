@@ -134,7 +134,7 @@ export default {
 }
 
 .slide-presentation.print-mode {
-    background-color: #fff;
+    background-color: var(--cds-surface-2);
 }
 
 .slide-presentation:hover .presentation-controls {

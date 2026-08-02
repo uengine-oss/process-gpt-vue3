@@ -906,14 +906,14 @@ export default defineComponent({
     border-radius: 20px;
 }
 .asp-version-badge--major {
-    background: #d1fae5;
+    background: var(--cds-bg-success);
     color: #065f46;
-    border: 1px solid #a7f3d0;
+    border: 1px solid var(--cds-bg-success);
 }
 .asp-version-badge--minor {
-    background: #f1f5f9;
-    color: #475569;
-    border: 1px solid #e2e8f0;
+    background: var(--cds-bg-neutral);
+    color: var(--cds-text-secondary);
+    border: 1px solid var(--cds-border);
 }
 
 /* To-Be derive button */

@@ -498,14 +498,14 @@ async function confirmMove() {
 
 <style scoped>
 .tree-list {
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     overflow: hidden;
 }
 
 .tree-row {
     padding: 8px 12px;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--cds-bg-neutral);
     min-height: 40px;
     transition: background-color 0.15s ease;
 }
@@ -515,7 +515,7 @@ async function confirmMove() {
 }
 
 .tree-row:hover {
-    background-color: #fafafa;
+    background-color: var(--cds-bg-neutral);
 }
 
 .tree-row-clickable {
@@ -523,11 +523,11 @@ async function confirmMove() {
 }
 
 .tree-row-clickable:hover {
-    background-color: #e3f2fd;
+    background-color: var(--cds-bg-accent);
 }
 
 .tree-level-0 {
-    background-color: #f8f9fa;
+    background-color: var(--cds-bg-neutral);
 }
 
 .tree-name {
@@ -570,8 +570,8 @@ async function confirmMove() {
 }
 
 .dnd-over {
-    background-color: #e8f5e9 !important;
-    border: 2px dashed #4caf50 !important;
+    background-color: var(--cds-bg-success) !important;
+    border: 2px dashed var(--cds-text-success) !important;
     border-radius: 4px;
 }
 
@@ -593,6 +593,6 @@ async function confirmMove() {
 
 .sunset-row {
     opacity: 0.7;
-    border-left: 3px solid #c62828 !important;
+    border-left: 3px solid var(--cds-text-danger) !important;
 }
 </style>

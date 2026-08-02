@@ -107,7 +107,7 @@ export default {
 /* 성공 카드 스타일 */
 .success-card {
     border-radius: 20px !important;
-    border: 3px solid #4caf50 !important;
+    border: 3px solid var(--cds-text-success) !important;
     background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%) !important;
 }
 

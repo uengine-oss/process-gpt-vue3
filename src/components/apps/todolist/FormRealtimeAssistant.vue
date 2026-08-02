@@ -1021,10 +1021,10 @@ const base64ToArrayBuffer = (base64) => {
 
 .ai-chat-status {
     font-size: 12px;
-    color: #666;
+    color: var(--cds-text-secondary);
     padding: 2px 6px;
     border-radius: 8px;
-    background: #f0f0f0;
+    background: var(--cds-border);
 }
 
 .ai-chat-status.success {
@@ -1043,7 +1043,7 @@ const base64ToArrayBuffer = (base64) => {
     max-height: 400px;
     overflow-y: auto;
     padding: 12px;
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
 }
 
 .ai-chat-message {
@@ -1075,7 +1075,7 @@ const base64ToArrayBuffer = (base64) => {
 
 .ai-chat-message--assistant .ai-chat-bubble {
     background: white;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--cds-border);
 }
 
 .ai-chat-typing {

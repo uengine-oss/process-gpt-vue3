@@ -76,7 +76,7 @@
 
                                     <!-- 참여자 현황 UI -->
                                     <div v-if="participantUsers.length > 0" class="pa-4 chat-participants-box">
-                                        <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: #333">
+                                        <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: var(--cds-text-primary)">
                                             {{ $t('chat.participants') }}
                                         </h6>
                                         <v-row class="ma-0 pa-0">
@@ -91,17 +91,17 @@
                                                             <template v-slot:error>
                                                                 <v-img src="/images/defaultUser.png" cover>
                                                                     <template v-slot:error>
-                                                                        <v-icon size="small" style="color: #666">mdi-account</v-icon>
+                                                                        <v-icon size="small" style="color: var(--cds-text-secondary)">mdi-account</v-icon>
                                                                     </template>
                                                                 </v-img>
                                                             </template>
                                                         </v-img>
                                                     </v-avatar>
                                                     <div class="flex-grow-1">
-                                                        <div class="text-body-2 font-weight-medium" style="color: #444">
+                                                        <div class="text-body-2 font-weight-medium" style="color: var(--cds-text-secondary)">
                                                             {{ participant.username || '이름 없음' }}
                                                         </div>
-                                                        <div class="text-caption" style="color: #666">
+                                                        <div class="text-caption" style="color: var(--cds-text-secondary)">
                                                             {{ participant.email || 'ID: ' + participant.id }}
                                                         </div>
                                                     </div>
@@ -1995,7 +1995,7 @@
                                                                             >
                                                                                 <v-btn
                                                                                     style="
-                                                                                        border: 1px solid #e0e0e0;
+                                                                                        border: 1px solid var(--cds-border);
                                                                                         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                                                                                     "
                                                                                     :style="
@@ -2027,7 +2027,7 @@
                                                                                 <v-btn
                                                                                     v-if="message.added"
                                                                                     style="
-                                                                                        border: 1px solid #e0e0e0;
+                                                                                        border: 1px solid var(--cds-border);
                                                                                         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                                                                                     "
                                                                                     color="white"
@@ -2727,7 +2727,7 @@
                 <div style="z-index: 9999" class="d-flex flex-wrap">
                     <!-- 이미지 미리보기 -->
                     <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
-                        <img :src="image.url" width="56" height="56" style="border: 1px solid #ccc; border-radius: 10px; margin: 8px" />
+                        <img :src="image.url" width="56" height="56" style="border: 1px solid var(--cds-text-muted); border-radius: 10px; margin: 8px" />
                         <v-btn
                             @click="deleteImage(index)"
                             density="compact"
@@ -2824,7 +2824,7 @@
                                 icon
                                 variant="outlined"
                                 size="small"
-                                style="border-color: #e0e0e0 !important"
+                                style="border-color: var(--cds-border) !important"
                             >
                                 <v-icon v-if="!isOpenedChatMenu">mdi-plus</v-icon>
                                 <v-icon v-else>mdi-close</v-icon>
@@ -2841,7 +2841,7 @@
                                 icon
                                 variant="outlined"
                                 size="small"
-                                style="border-color: #e0e0e0 !important"
+                                style="border-color: var(--cds-border) !important"
                             >
                                 <Icons :icon="'sharp-mic'" :size="'16'" />
                             </v-btn>
@@ -2853,7 +2853,7 @@
                                 icon
                                 variant="outlined"
                                 size="small"
-                                style="border-color: #e0e0e0 !important"
+                                style="border-color: var(--cds-border) !important"
                             >
                                 <Icons :icon="'stop'" :size="'16'" />
                             </v-btn>
@@ -2873,7 +2873,7 @@
                                         :style="
                                             desktopVoiceActive
                                                 ? 'border-color: rgb(var(--v-theme-primary)) !important;'
-                                                : 'border-color: #e0e0e0 !important;'
+                                                : 'border-color: var(--cds-border) !important;'
                                         "
                                     >
                                         <Icons :icon="'voice'" :size="16" />
@@ -2934,7 +2934,7 @@
             <input type="file" ref="unifiedFolderInput" class="d-none" webkitdirectory directory multiple @change="changeImage" />
             <div style="z-index: 9999" class="d-flex flex-wrap">
                 <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
-                    <img :src="image.url" width="56" height="56" style="border: 1px solid #ccc; border-radius: 10px; margin: 8px" />
+                    <img :src="image.url" width="56" height="56" style="border: 1px solid var(--cds-text-muted); border-radius: 10px; margin: 8px" />
                     <v-btn
                         @click="deleteImage(index)"
                         density="compact"
@@ -3232,7 +3232,7 @@
                                 icon
                                 variant="outlined"
                                 size="small"
-                                style="border-color: #e0e0e0 !important"
+                                style="border-color: var(--cds-border) !important"
                                 :disabled="isGenerationFinished || isMicRecorderLoading"
                                 @click="isMicRecording ? stopVoiceRecording() : startVoiceRecording()"
                             >
@@ -3256,7 +3256,7 @@
                                         :style="
                                             desktopVoiceActive
                                                 ? 'border-color: rgb(var(--v-theme-primary)) !important;'
-                                                : 'border-color: #e0e0e0 !important;'
+                                                : 'border-color: var(--cds-border) !important;'
                                         "
                                     >
                                         <Icons :icon="'voice'" :size="'16'" />
@@ -6825,7 +6825,7 @@ pre {
 }
 
 .user-list {
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     max-height: 300px;
     overflow-y: auto;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -7123,7 +7123,7 @@ pre {
 .other-message {
     margin-right: auto;
     border-radius: 8px !important;
-    background-color: #f5f5f5 !important;
+    background-color: var(--cds-bg-neutral) !important;
     max-width: min(720px, 80vw);
 }
 
@@ -7134,7 +7134,7 @@ pre {
 .agent-message {
     width: 100%;
     margin-right: auto;
-    background-color: #f5f5f5 !important;
+    background-color: var(--cds-bg-neutral) !important;
     border-radius: 8px !important;
     padding: 10px 12px;
     display: inline-block;
@@ -7638,10 +7638,10 @@ pre {
 }
 
 .chat-participants-box {
-    background-color: #f8f9fa;
+    background-color: var(--cds-bg-neutral);
     border-radius: 8px;
     margin: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--cds-border);
 }
 
 // PDF2BPMN (ChatRoomPage)
@@ -7718,7 +7718,7 @@ pre {
 .mermaid-container {
     margin: 12px 0;
     text-align: center;
-    background: #f9f9f9;
+    background: var(--cds-bg-neutral);
     border: 1px solid #e1e5e9;
     border-radius: 8px;
     padding: 16px;

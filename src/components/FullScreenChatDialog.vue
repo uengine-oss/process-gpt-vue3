@@ -282,7 +282,7 @@ export default {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
 }
 
 .chat-header {
@@ -291,7 +291,7 @@ export default {
     align-items: center;
     padding: 12px 20px;
     background: white;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--cds-border);
     flex-shrink: 0;
 }
 
@@ -308,7 +308,7 @@ export default {
 .header-title {
     font-size: 18px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--cds-text-primary);
     margin: 0;
 }
 
@@ -323,7 +323,7 @@ export default {
 .intent-result-section {
     padding: 16px;
     background: white;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--cds-border);
 }
 
 .process-form-card,
@@ -341,21 +341,21 @@ export default {
 }
 
 .create-card-title {
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, hsl(var(--accent-brand)) 0%, hsl(var(--accent-brand)) 100%);
     color: white;
     font-size: 16px;
     font-weight: 600;
 }
 
 .create-mode-info {
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
     border-radius: 8px;
     padding: 16px;
 }
 
 .intent-message {
     font-style: italic;
-    color: #1e293b;
+    color: var(--cds-text-primary);
     font-size: 15px;
     background: white;
     padding: 12px 16px;

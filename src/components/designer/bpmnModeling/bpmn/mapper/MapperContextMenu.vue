@@ -30,7 +30,7 @@ $light-grey: #ecf0f1;
 $grey: darken($light-grey, 15%);
 $blue: #007aff;
 $white: #fff;
-$black: #333;
+$black: var(--cds-text-primary);
 
 .v-application ul,
 .v-application ol {

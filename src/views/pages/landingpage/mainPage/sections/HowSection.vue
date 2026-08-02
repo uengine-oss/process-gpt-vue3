@@ -366,7 +366,7 @@ export default {
     display: block;
     width: 98%;
     padding-top: 15px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--cds-text-primary);
 }
 
 .tab-text ul {

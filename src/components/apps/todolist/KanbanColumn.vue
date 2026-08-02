@@ -42,7 +42,7 @@
 
                 <!-- 마지막 페이지 표시 (스크롤을 통해 추가 로딩이 발생한 경우에만) -->
                 <div v-if="!hasMore && currentPage > 0 && column.tasks.length > 0">
-                    <div class="d-flex align-center justify-center pa-2" style="color: #999; font-size: 12px">
+                    <div class="d-flex align-center justify-center pa-2" style="color: var(--cds-text-muted); font-size: 12px">
                         <v-icon size="small" color="grey-lighten-1" class="mr-1">mdi-checkbox-marked-circle-outline</v-icon>
                         <span>{{ $t('todoList.endOfList') }}</span>
                     </div>

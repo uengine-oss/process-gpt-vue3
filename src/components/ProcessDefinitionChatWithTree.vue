@@ -897,7 +897,7 @@ export default {
 .tree-view-card {
     height: 100%;
     overflow-y: auto;
-    border-right: 1px solid #e0e0e0;
+    border-right: 1px solid var(--cds-border);
 }
 
 /* 채팅 컨테이너 스타일 */
@@ -927,7 +927,7 @@ export default {
 
 .tree-node-text.is-sub:hover {
     background-color: rgba(25, 118, 210, 0.08);
-    color: #1976d2;
+    color: hsl(var(--accent-brand));
 }
 
 /* 스크롤바 스타일 */
@@ -950,7 +950,7 @@ export default {
 
 /* 도메인 필터 탭 스타일 */
 .domain-filter-tabs {
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--cds-border);
     padding-bottom: 8px;
 }
 

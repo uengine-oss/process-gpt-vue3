@@ -71,7 +71,7 @@
                                             <v-icon
                                                 v-bind="props"
                                                 @click="openProcessVariables"
-                                                style="color: #444; cursor: pointer"
+                                                style="color: var(--cds-text-secondary); cursor: pointer"
                                                 size="small"
                                                 class="cp-process-variables"
                                                 >mdi-variable</v-icon
@@ -85,7 +85,7 @@
                                             <v-icon
                                                 v-bind="props"
                                                 @click="showPiFlag = !showPiFlag"
-                                                :style="{ color: showPiFlag ? '#1976d2' : '#444', cursor: 'pointer' }"
+                                                :style="{ color: showPiFlag ? 'hsl(var(--accent-brand))' : 'var(--cds-text-secondary)', cursor: 'pointer'}"
                                                 size="small"
                                                 class="cp-pi-flag-toggle"
                                                 >{{ showPiFlag ? 'mdi-flag' : 'mdi-flag-outline' }}</v-icon
@@ -103,7 +103,7 @@
                                             <v-icon
                                                 v-bind="props"
                                                 @click="$globalState.methods.toggleChatHidden()"
-                                                style="color: #444; cursor: pointer"
+                                                style="color: var(--cds-text-secondary); cursor: pointer"
                                                 size="small"
                                                 >{{
                                                     $globalState.state.isChatHidden ? 'mdi-message-text' : 'mdi-message-text-outline'
@@ -1741,7 +1741,7 @@ export default {
 .bpmn-empty-canvas {
     height: 100%;
     width: 100%;
-    background-color: #fff;
+    background-color: var(--cds-surface-2);
 }
 
 /* Slide Panel Animation */

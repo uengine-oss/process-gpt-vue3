@@ -535,7 +535,7 @@ onBeforeUnmount(cleanupRealtime);
                                 <div v-else class="audit-entry">
                                     <div
                                         class="audit-entry-dot"
-                                        :style="{ background: getActionColor(entry.action) === 'grey' ? '#9ca3af' : '' }"
+                                        :style="{ background: getActionColor(entry.action) === 'grey' ? 'var(--cds-text-muted)' : ''}"
                                     >
                                         <v-icon size="10" color="white">mdi-circle-small</v-icon>
                                     </div>
@@ -601,7 +601,7 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     justify-content: space-between;
     padding: 16px 24px 14px;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-bottom: 1px solid #e8ecf0;
     border-radius: 16px 16px 0 0;
     flex-shrink: 0;
@@ -614,13 +614,13 @@ onBeforeUnmount(cleanupRealtime);
 .page-title {
     font-size: 18px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--cds-text-primary);
     line-height: 1.3;
     margin: 0;
 }
 .page-subtitle {
     font-size: 12px;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     margin: 0;
 }
 .page-header-right {
@@ -636,7 +636,7 @@ onBeforeUnmount(cleanupRealtime);
     font-weight: 600;
     padding: 4px 12px;
     border-radius: 20px;
-    background: #fef3c7;
+    background: var(--cds-bg-warning);
     color: #92400e;
     border: 1px solid #fde68a;
     white-space: nowrap;
@@ -648,7 +648,7 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     justify-content: space-between;
     padding: 12px 24px;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 16px;
     margin: 12px 16px 0;
     flex-shrink: 0;
@@ -679,7 +679,7 @@ onBeforeUnmount(cleanupRealtime);
 }
 .pipeline-label {
     font-size: 11px;
-    color: #666;
+    color: var(--cds-text-secondary);
     margin-top: 2px;
     white-space: nowrap;
 }
@@ -706,7 +706,7 @@ onBeforeUnmount(cleanupRealtime);
 .alert-bar-text {
     font-size: 12px;
     font-weight: 600;
-    color: #dc2626;
+    color: var(--cds-text-danger);
     white-space: nowrap;
 }
 .alert-chips {
@@ -760,7 +760,7 @@ onBeforeUnmount(cleanupRealtime);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #fff;
+    background: var(--cds-surface-2);
     flex-shrink: 0;
 }
 .kanban-col-title {
@@ -789,7 +789,7 @@ onBeforeUnmount(cleanupRealtime);
 .audit-sidebar {
     width: 320px;
     flex-shrink: 0;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-left: 1px solid #e8ecf0;
     border-radius: 16px;
     margin: 12px 12px 12px 0;
@@ -822,12 +822,12 @@ onBeforeUnmount(cleanupRealtime);
 }
 .audit-comment {
     font-size: 11px;
-    color: #555;
-    background: #f8fafb;
+    color: var(--cds-text-secondary);
+    background: var(--cds-bg-neutral);
     border-radius: 6px;
     padding: 4px 8px;
     margin: 4px 0;
-    border-left: 2px solid #e0e0e0;
+    border-left: 2px solid var(--cds-border);
 }
 
 /* 2.3: Cross-version timeline styles */
@@ -845,7 +845,7 @@ onBeforeUnmount(cleanupRealtime);
 }
 .audit-cycle-line {
     height: 1px;
-    background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+    background: linear-gradient(90deg, transparent, var(--cds-border), transparent);
     margin-bottom: 8px;
 }
 .audit-cycle-divider:first-child .audit-cycle-line {
@@ -867,7 +867,7 @@ onBeforeUnmount(cleanupRealtime);
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #94a3b8;
+    background: var(--cds-text-muted);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -883,7 +883,7 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     gap: 3px;
     margin-top: 2px;
-    color: #059669;
+    color: var(--cds-text-success);
 }
 
 /* ── Sidebar Transition ── */
@@ -913,7 +913,7 @@ onBeforeUnmount(cleanupRealtime);
 .kanban-board::-webkit-scrollbar-thumb,
 .kanban-col-body::-webkit-scrollbar-thumb,
 .audit-timeline-section::-webkit-scrollbar-thumb {
-    background: #d0d7de;
+    background: var(--cds-border);
     border-radius: 4px;
 }
 
@@ -935,17 +935,17 @@ onBeforeUnmount(cleanupRealtime);
     max-width: 90vw;
 }
 .global-toast--success {
-    background: #d1fae5;
+    background: var(--cds-bg-success);
     color: #065f46;
-    border: 1px solid #a7f3d0;
+    border: 1px solid var(--cds-bg-success);
 }
 .global-toast--error {
-    background: #fee2e2;
+    background: var(--cds-bg-danger);
     color: #991b1b;
     border: 1px solid #fecaca;
 }
 .global-toast--info {
-    background: #eff6ff;
+    background: var(--cds-bg-accent);
     color: #1e40af;
     border: 1px solid #bfdbfe;
 }

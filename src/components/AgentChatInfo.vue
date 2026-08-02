@@ -18,7 +18,7 @@
                         <!-- 기본 이미지 (프로필 이미지가 없거나 로딩 실패 시) -->
                         <v-img v-else src="/images/chat-icon.png" :alt="agentInfo?.username || $t('AgentChatInfo.defaultAgentName')" cover>
                             <template v-slot:error>
-                                <v-icon size="large" style="color: #666">mdi-account</v-icon>
+                                <v-icon size="large" style="color: var(--cds-text-secondary)">mdi-account</v-icon>
                             </template>
                         </v-img>
                     </v-avatar>

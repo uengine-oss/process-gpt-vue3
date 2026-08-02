@@ -12,12 +12,12 @@ export default {
 
 <style>
 .basic-bg {
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
 }
 
 .basic-close {
     background: red;
-    color: #e53935;
+    color: var(--cds-text-danger);
 }
 
 .basic-center {

@@ -176,8 +176,8 @@ export default {
     left: 0;
     width: 300px;
     height: calc(100vh - 70px);
-    background: #ffffff;
-    border-right: 1px solid #e5e7eb;
+    background: var(--cds-surface-2);
+    border-right: 1px solid var(--cds-border);
     display: flex;
     flex-direction: column;
     z-index: 100;
@@ -185,7 +185,7 @@ export default {
 
 .sidebar-header {
     padding: 20px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--cds-border);
     background: #f9fafb;
 }
 
@@ -193,7 +193,7 @@ export default {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--cds-text-primary);
 }
 
 .sidebar-content {
@@ -209,13 +209,13 @@ export default {
 }
 
 .section-group.border-bottom {
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--cds-bg-neutral);
 }
 
 .section-title {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #374151;
+    color: var(--cds-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin: 0 0 12px 0;
@@ -244,12 +244,12 @@ export default {
 .page-item.inactive:hover {
     background-color: #f9fafb;
     transform: translateX(4px);
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
 }
 
 .page-item.active {
-    background-color: #eff6ff;
-    color: #3b82f6;
+    background-color: var(--cds-bg-accent);
+    color: hsl(var(--accent-brand));
     font-weight: 500;
 }
 
@@ -264,7 +264,7 @@ export default {
 }
 
 .active-indicator.active {
-    background: #3b82f6;
+    background: hsl(var(--accent-brand));
     transform: scale(1);
 }
 
@@ -279,16 +279,16 @@ export default {
 }
 
 .sidebar-content::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: var(--cds-bg-neutral);
 }
 
 .sidebar-content::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--cds-border);
     border-radius: 3px;
 }
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--cds-text-muted);
 }
 
 /* 모바일 햄버거 버튼 */

@@ -49,14 +49,13 @@
                 ]"
                 :_style="{
                     'stroke-width': 0.8,
-                    fill: '#000000',
-                    'fill-opacity': 1
-                }"
+                    fill: 'var(--cds-text-primary)',
+                    'fill-opacity': 1}"
             ></geometry-polygon>
 
-            <geometry-line :from="[20, 32]" :to="[50, 50]" :_style="{ stroke: '#ffffff' }"></geometry-line>
+            <geometry-line :from="[20, 32]" :to="[50, 50]" :_style="{ stroke: 'var(--cds-surface-2)'}"></geometry-line>
 
-            <geometry-line :from="[80, 32]" :to="[50, 50]" :_style="{ stroke: '#ffffff' }"></geometry-line>
+            <geometry-line :from="[80, 32]" :to="[50, 50]" :_style="{ stroke: 'var(--cds-surface-2)'}"></geometry-line>
 
             <sub-elements>
                 <bpmn-state-animation :status="status" :type="type"></bpmn-state-animation>

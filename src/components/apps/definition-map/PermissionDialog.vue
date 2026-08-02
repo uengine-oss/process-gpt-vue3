@@ -585,28 +585,28 @@ export default {
 .permission-dialog {
     --accent: #6366f1;
     --accent-light: #818cf8;
-    --accent-dark: #4f46e5;
+    --accent-dark: hsl(var(--accent-brand));
     --accent-subtle: rgba(99, 102, 241, 0.1);
 
-    --success: #10b981;
+    --success: var(--cds-text-success);
     --success-subtle: rgba(16, 185, 129, 0.1);
 
-    --warning: #f59e0b;
+    --warning: var(--cds-text-warning);
     --warning-subtle: rgba(245, 158, 11, 0.1);
 
-    --danger: #ef4444;
+    --danger: var(--cds-text-danger);
     --danger-subtle: rgba(239, 68, 68, 0.1);
 
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
+    --text-primary: var(--cds-text-primary);
+    --text-secondary: var(--cds-text-secondary);
+    --text-muted: var(--cds-text-muted);
 
     --bg-primary: #ffffff;
-    --bg-secondary: #f8fafc;
-    --bg-tertiary: #f1f5f9;
+    --bg-secondary: var(--cds-bg-neutral);
+    --bg-tertiary: var(--cds-bg-neutral);
 
-    --border: #e2e8f0;
-    --border-light: #f1f5f9;
+    --border: var(--cds-border);
+    --border-light: var(--cds-bg-neutral);
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -1032,7 +1032,7 @@ export default {
 }
 
 .avatar.organization {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, hsl(var(--accent-brand)) 0%, hsl(var(--accent-brand)) 100%);
 }
 
 .avatar.org_group {
@@ -1071,7 +1071,7 @@ export default {
 
 .card-type.organization {
     background: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
 }
 
 .card-type.org_group {

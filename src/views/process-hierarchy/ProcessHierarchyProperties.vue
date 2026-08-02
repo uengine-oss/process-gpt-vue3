@@ -1220,13 +1220,13 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
-    background: #fff;
+    background: var(--cds-surface-2);
 }
 
 .properties-header {
     flex-shrink: 0;
-    border-bottom: 1px solid #e8e8e8;
-    background: #fafafa;
+    border-bottom: 1px solid var(--cds-border);
+    background: var(--cds-bg-neutral);
 }
 
 .properties-tabs {
@@ -1250,13 +1250,13 @@ export default {
     padding: 12px 16px;
     font-size: 15px;
     font-weight: 600;
-    border-bottom: 1px solid #e8e8e8;
-    background: #fff;
+    border-bottom: 1px solid var(--cds-border);
+    background: var(--cds-surface-2);
 }
 
 /* Section Groups */
 .section-group {
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     margin-bottom: 12px;
     overflow: hidden;
@@ -1268,16 +1268,16 @@ export default {
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
     user-select: none;
     transition: background-color 0.15s;
 }
 .section-title:hover {
-    background: #f0f0f0;
+    background: var(--cds-border);
 }
 .section-body {
     padding: 12px;
-    border-top: 1px solid #e8e8e8;
+    border-top: 1px solid var(--cds-border);
 }
 
 /* Field Labels */
@@ -1285,7 +1285,7 @@ export default {
     display: block;
     font-size: 11px;
     font-weight: 500;
-    color: #666;
+    color: var(--cds-text-secondary);
     margin-bottom: 4px;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -1302,14 +1302,14 @@ export default {
     letter-spacing: 0;
 }
 .fte-result-card {
-    background: #e8f5e9;
+    background: var(--cds-bg-success);
     border-radius: 8px;
     padding: 12px;
 }
 .fte-result-label {
     font-size: 11px;
     font-weight: 600;
-    color: #2e7d32;
+    color: var(--cds-text-success);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -1321,13 +1321,13 @@ export default {
 }
 .fte-formula {
     font-size: 11px;
-    color: #4caf50;
+    color: var(--cds-text-success);
     font-family: monospace;
 }
 
 /* Formula display */
 .formula-display {
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
     border-radius: 6px;
     padding: 8px 12px;
     display: flex;
@@ -1353,7 +1353,7 @@ export default {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
     display: flex;
     align-items: center;
     justify-content: center;

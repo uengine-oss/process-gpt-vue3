@@ -178,7 +178,7 @@ h1 {
 h2 {
     margin-top: 30px;
     margin-bottom: 15px;
-    color: #333;
+    color: var(--cds-text-primary);
 }
 
 ul {

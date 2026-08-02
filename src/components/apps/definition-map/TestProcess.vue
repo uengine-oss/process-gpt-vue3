@@ -19,7 +19,7 @@
                             "
                         >
                             <div class="pa-0" style="height: 100%" :key="updatedDefKey">
-                                <div v-if="bpmn" style="border-bottom: 1px solid #e0e0e0">
+                                <div v-if="bpmn" style="border-bottom: 1px solid var(--cds-border)">
                                     {{ $t('TestProcess.mainInstanceId') }}{{ instanceId }}
                                     <BpmnUengine
                                         ref="bpmnVue"
@@ -36,7 +36,7 @@
                                     ></BpmnUengine>
                                 </div>
                                 <div v-if="subBpmn">
-                                    <div v-for="(sub, key) in subBpmn" :key="key" style="border-bottom: 1px solid #e0e0e0">
+                                    <div v-for="(sub, key) in subBpmn" :key="key" style="border-bottom: 1px solid var(--cds-border)">
                                         {{ $t('TestProcess.subInstanceId') }}{{ key }}
                                         <BpmnUengine
                                             ref="bpmnVue"

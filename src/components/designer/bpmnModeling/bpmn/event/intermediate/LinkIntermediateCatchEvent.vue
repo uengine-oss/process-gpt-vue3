@@ -60,9 +60,8 @@
                     :sub-left="'55%'"
                     :sub-style="{
                         'stroke-width': 0,
-                        fill: '#f9f9f9',
-                        'fill-opacity': 1
-                    }"
+                        fill: 'var(--cds-bg-neutral)',
+                        'fill-opacity': 1}"
                 ></rectangle-element>
 
                 <geometry-polygon

@@ -28,7 +28,7 @@
                         :key="item.value"
                         :variant="tab === item.value ? 'flat' : 'text'"
                         :color="tab === item.value ? '' : 'default'"
-                        :style="tab === item.value ? 'background: #808080; color: white;' : ''"
+                        :style="tab === item.value ? 'background: var(--cds-text-muted); color: white;' : ''"
                         size="small"
                         @click="tab = item.value"
                     >

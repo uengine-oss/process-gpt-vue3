@@ -208,7 +208,7 @@ export default {
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    color: #999;
+    color: var(--cds-text-muted);
 }
 
 .pptx-export-helper .modal-body {
@@ -235,7 +235,7 @@ export default {
 .pptx-export-helper .text-input {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
 }
 
@@ -258,7 +258,7 @@ export default {
 
 .pptx-export-helper .cancel-btn {
     background-color: #f1f1f1;
-    color: #333;
+    color: var(--cds-text-primary);
     border: none;
     padding: 0.5rem 1rem;
     border-radius: 4px;

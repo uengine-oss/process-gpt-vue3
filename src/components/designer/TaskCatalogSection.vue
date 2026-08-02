@@ -282,7 +282,7 @@ export default defineComponent({
 <style scoped>
 .task-catalog-panel {
     width: 220px;
-    border: 1px solid #e8e8e8;
+    border: 1px solid var(--cds-border);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -356,7 +356,7 @@ export default defineComponent({
     align-items: center;
     gap: 4px;
     padding: 10px 10px 6px;
-    background: #fff;
+    background: var(--cds-surface-2);
 }
 
 .search-input {
@@ -379,8 +379,8 @@ export default defineComponent({
 /* Filters */
 .filters-container {
     padding: 8px 10px;
-    background: #fafafa;
-    border-bottom: 1px solid #f0f0f0;
+    background: var(--cds-bg-neutral);
+    border-bottom: 1px solid var(--cds-border);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -417,7 +417,7 @@ export default defineComponent({
 }
 
 .catalog-items::-webkit-scrollbar-thumb {
-    background: #ddd;
+    background: var(--cds-border);
     border-radius: 4px;
 }
 
@@ -428,7 +428,7 @@ export default defineComponent({
     padding: 8px;
     margin-bottom: 6px;
     background: white;
-    border: 1px solid #eee;
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     cursor: grab;
     transition: all 0.2s ease;
@@ -436,7 +436,7 @@ export default defineComponent({
 }
 
 .catalog-card:hover {
-    border-color: #667eea;
+    border-color: hsl(var(--accent-brand));
     box-shadow: 0 3px 8px rgba(102, 126, 234, 0.15);
     transform: translateY(-1px);
 }
@@ -484,7 +484,7 @@ export default defineComponent({
 .card-name {
     font-size: 12px;
     font-weight: 500;
-    color: #333;
+    color: var(--cds-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -502,13 +502,13 @@ export default defineComponent({
     font-size: 9px;
     padding: 1px 4px;
     border-radius: 3px;
-    background: #f0f0f0;
-    color: #666;
+    background: var(--cds-border);
+    color: var(--cds-text-secondary);
 }
 
 .meta-level {
-    background: #e3f2fd;
-    color: #1976d2;
+    background: var(--cds-bg-accent);
+    color: hsl(var(--accent-brand));
 }
 
 .card-fte {
@@ -516,7 +516,7 @@ export default defineComponent({
     flex-direction: column;
     align-items: center;
     padding: 2px 6px;
-    background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);
+    background: linear-gradient(135deg, var(--cds-bg-neutral) 0%, #eeeeee 100%);
     border-radius: 4px;
     margin-left: 4px;
 }
@@ -524,13 +524,13 @@ export default defineComponent({
 .fte-value {
     font-size: 11px;
     font-weight: 600;
-    color: #333;
+    color: var(--cds-text-primary);
     line-height: 1;
 }
 
 .fte-label {
     font-size: 8px;
-    color: #999;
+    color: var(--cds-text-muted);
     text-transform: uppercase;
 }
 
@@ -543,7 +543,7 @@ export default defineComponent({
     justify-content: center;
     padding: 30px 20px;
     gap: 10px;
-    color: #999;
+    color: var(--cds-text-muted);
     font-size: 12px;
 }
 </style>

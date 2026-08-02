@@ -19,6 +19,20 @@ export function setMode(mode: Mode | 'system') {
 
     root.setAttribute('data-mode', mode);
     localStorage.setItem(STORAGE_KEY, mode);
+    notifyModeChanged();
+}
+
+/**
+ * CSS 변수를 읽어 실제 색으로 캐시해 둔 곳들(BPMN 캔버스 등)에 테마 변경을 알린다.
+ * SVG 속성값은 `var()` 를 해석하지 못해 토큰을 미리 해석해 두기 때문에 필요하다.
+ */
+function notifyModeChanged() {
+    import('@/components/customBpmn/dsPalette')
+        .then((m) => m.resetDsPaletteCache())
+        .catch(() => {
+            /* BPMN 모듈이 로드되지 않은 화면에서는 무시 */
+        });
+    window.dispatchEvent(new CustomEvent('pg:color-mode-changed'));
 }
 
 export function getMode(): Mode {

@@ -414,7 +414,7 @@ export default {
 <style scoped>
 .pi-flag-group-hint {
     font-size: 12px;
-    color: #1976d2;
+    color: hsl(var(--accent-brand));
     display: flex;
     align-items: center;
     gap: 4px;
@@ -433,14 +433,14 @@ export default {
 .pi-flag-list-header__title {
     font-size: 12px;
     font-weight: 600;
-    color: #212121;
+    color: var(--cds-text-primary);
 }
 
 .pi-flag-list-header__count {
     margin-left: auto;
     font-size: 11px;
     font-weight: 700;
-    color: #616161;
+    color: var(--cds-text-secondary);
     background: #eceff1;
     border-radius: 9px;
     min-width: 18px;
@@ -472,7 +472,7 @@ export default {
     gap: 6px;
     font-size: 12px;
     line-height: 1.5;
-    color: #212121;
+    color: var(--cds-text-primary);
 }
 
 .pi-flag-card__item-row + .pi-flag-card__item-row {
@@ -481,7 +481,7 @@ export default {
 
 .pi-flag-card__item-label {
     flex: 0 0 36px;
-    color: #757575;
+    color: var(--cds-text-muted);
     font-weight: 600;
 }
 

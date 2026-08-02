@@ -834,7 +834,7 @@ export default {
    View Mode Panel Styles - Compact
    ============================================ */
 .view-mode-panel-content {
-    background: #ffffff;
+    background: var(--cds-surface-2);
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -865,7 +865,7 @@ export default {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 0.85rem !important;
     font-weight: 600 !important;
-    color: #1e293b;
+    color: var(--cds-text-primary);
     line-height: 1.2;
     padding: 0 !important;
     margin: 0 !important;
@@ -934,8 +934,8 @@ export default {
 
 .view-mode-panel-content .v-field__input,
 .view-mode-panel-content .v-field textarea {
-    color: #1e293b !important;
-    -webkit-text-fill-color: #1e293b !important;
+    color: var(--cds-text-primary) !important;
+    -webkit-text-fill-color: var(--cds-text-primary) !important;
 }
 
 /* Hide interactive UI elements in view mode */
@@ -947,8 +947,8 @@ export default {
 /* View mode cards */
 .view-mode-panel-content .v-card {
     box-shadow: none !important;
-    border: 1px solid #e2e8f0 !important;
-    background: #f8fafc;
+    border: 1px solid var(--cds-border) !important;
+    background: var(--cds-bg-neutral);
 }
 
 /* Compact spacing */
