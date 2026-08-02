@@ -79,6 +79,14 @@ function toHex(cssColor) {
 function build() {
     const out = {};
     for (const [key, spec] of Object.entries(TOKENS)) {
+        // 테마가 캔버스 색을 직접 지정했으면 그 값을 우선한다.
+        // (스카이는 디자인 시스템 교체 이전의 BPMN 팔레트를 그대로 쓴다)
+        const override = readVar(`--bpmn-${key}`);
+        if (override) {
+            out[key] = toHex(override) || spec.fallback;
+            continue;
+        }
+
         let raw = '';
         if (spec.channels) {
             // "H S% L%" 채널 문자열이라 hsl() 로 조립해야 한다
