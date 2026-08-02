@@ -721,7 +721,7 @@ export default defineComponent({
 .mock-input,
 .mock-select,
 .mock-textarea {
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
     border-radius: 4px;
     padding: 8px 12px;
@@ -748,7 +748,7 @@ export default defineComponent({
     position: absolute;
     width: 16px;
     height: 16px;
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 50%;
     top: 2px;
     left: 2px;

@@ -1074,7 +1074,7 @@ const base64ToArrayBuffer = (base64) => {
 }
 
 .ai-chat-message--assistant .ai-chat-bubble {
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
 }
 

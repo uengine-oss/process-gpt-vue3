@@ -78,7 +78,7 @@ export default {
     left: 0;
     right: 0;
     max-height: 200px;
-    background: white;
+    background: var(--cds-surface-2);
     border-top: 1px solid var(--cds-border);
     z-index: 10;
     display: flex;

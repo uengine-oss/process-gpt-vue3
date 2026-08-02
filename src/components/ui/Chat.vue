@@ -545,7 +545,7 @@
                                                                         icon
                                                                         variant="text"
                                                                         size="x-small"
-                                                                        style="background-color: white !important; margin-right: 5px"
+                                                                        style="background-color: var(--cds-surface-2) !important; margin-right: 5px"
                                                                     >
                                                                         <SendIcon size="20" />
                                                                     </v-btn>
@@ -555,7 +555,7 @@
                                                                         icon
                                                                         variant="text"
                                                                         size="x-small"
-                                                                        style="background-color: white !important"
+                                                                        style="background-color: var(--cds-surface-2) !important"
                                                                     >
                                                                         <Icons :icon="'backspace-bold'" :size="20" />
                                                                     </v-btn>
@@ -712,7 +712,7 @@
                                                                                             gap: 10px;
                                                                                             cursor: pointer;
                                                                                             border: 1px solid rgba(0, 0, 0, 0.08);
-                                                                                            background: white;
+                                                                                            background: var(--cds-surface-2);
                                                                                             max-width: min(520px, 80vw);
                                                                                         "
                                                                                         @click="
@@ -1080,7 +1080,7 @@
                                                                                     variant="text"
                                                                                     size="x-small"
                                                                                     class="float-left edit-btn action-btn"
-                                                                                    style="background-color: white"
+                                                                                    style="background-color: var(--cds-surface-2)"
                                                                                 >
                                                                                     <icons :icon="'pencil'" :size="20" />
                                                                                 </v-btn>
@@ -6770,7 +6770,7 @@ export default {
     bottom: -5px;
     right: 0px;
     z-index: 1;
-    background-color: white;
+    background-color: var(--cds-surface-2);
 }
 
 .w-90 {
@@ -6829,7 +6829,7 @@ pre {
     max-height: 300px;
     overflow-y: auto;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    background-color: white;
+    background-color: var(--cds-surface-2);
     z-index: 1000;
 }
 
@@ -6872,7 +6872,7 @@ pre {
     border-radius: 12px;
     padding: 6px 0;
     z-index: 20000;
-    background: white;
+    background: var(--cds-surface-2);
     width: max-content;
     min-width: 220px;
     max-width: min(320px, 90vw);
@@ -7234,7 +7234,7 @@ pre {
 .chat-room-action-btn {
     width: 26px;
     height: 26px;
-    background-color: white !important;
+    background-color: var(--cds-surface-2) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
@@ -7443,7 +7443,7 @@ pre {
 }
 
 .action-btn {
-    background-color: white !important;
+    background-color: var(--cds-surface-2) !important;
     margin: 0 2px !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }

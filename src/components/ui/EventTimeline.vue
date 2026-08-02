@@ -1304,7 +1304,7 @@ export default {
 }
 
 .task-card {
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 12px;
     border: 1px solid #e1e8ed;
     padding: 20px;
@@ -2210,7 +2210,7 @@ export default {
 }
 
 .summary-text {
-    background: white;
+    background: var(--cds-surface-2);
     padding: 12px;
     border-radius: 6px;
     border: 1px solid var(--cds-border);
@@ -2317,7 +2317,7 @@ export default {
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     object-fit: contain;
-    background: white;
+    background: var(--cds-surface-2);
     padding: 8px;
     animation: slideIn 0.4s ease-out;
 }
@@ -2438,7 +2438,7 @@ export default {
 }
 
 .dialog-nav-btn:hover:not(:disabled) {
-    background: white;
+    background: var(--cds-surface-2);
     transform: translateY(-50%) scale(1.1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
@@ -2486,7 +2486,7 @@ export default {
 }
 
 .file-item {
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
     border-radius: 8px;
     padding: 16px;
@@ -2762,7 +2762,7 @@ export default {
     width: 100%;
     height: 500px; /* 높이 대폭 줄임 */
     border: none;
-    background: white;
+    background: var(--cds-surface-2);
     transform: scale(0.3); /* 30% 축소 */
     transform-origin: top left;
     width: 333%; /* 축소된 만큼 너비 조정 */
@@ -2824,7 +2824,7 @@ export default {
     width: 100%;
     height: 100%;
     border: none;
-    background: white;
+    background: var(--cds-surface-2);
 }
 
 /* 슬라이드 이미지 캐러셀 (16:9) */

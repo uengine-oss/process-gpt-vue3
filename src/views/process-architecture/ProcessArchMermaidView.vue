@@ -358,7 +358,7 @@ onBeforeUnmount(() => {
 }
 
 .domain-diagram-block {
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 8px;
     padding: 16px;
     border: 1px solid #eeeeee;

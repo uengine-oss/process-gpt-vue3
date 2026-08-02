@@ -1161,7 +1161,7 @@ export default {
     right: -20px;
     top: 50%;
     transform: translateY(-50%);
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -1197,7 +1197,7 @@ export default {
     padding: 5px 10px;
     border: 1px solid #cecece;
     border-radius: 4px;
-    background: white;
+    background: var(--cds-surface-2);
     cursor: pointer;
 }
 
@@ -1389,7 +1389,7 @@ export default {
 .gantt-date-picker-overlay {
     position: fixed !important;
     z-index: 10001 !important;
-    background-color: white !important;
+    background-color: var(--cds-surface-2) !important;
     border: 2px solid hsl(var(--accent-brand)) !important;
     border-radius: 8px !important;
     padding: 8px !important;

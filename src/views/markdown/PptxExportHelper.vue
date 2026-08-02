@@ -185,7 +185,7 @@ export default {
 }
 
 .pptx-export-helper .modal-content {
-    background-color: white;
+    background-color: var(--cds-surface-2);
     width: 90%;
     max-width: 500px;
     border-radius: 8px;

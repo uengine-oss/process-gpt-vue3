@@ -212,6 +212,6 @@ export default {
 
 <style>
 .mega-proc-btn button {
-    color: black;
+    color: var(--cds-text-primary);
 }
 </style>

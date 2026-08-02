@@ -23,7 +23,7 @@
         <!-- v-if="!loadScreen" -->
         <div
             v-if="!loadScreen"
-            style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: white"
+            style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: var(--cds-surface-2)"
             class="main-page-skeleton"
         >
             <v-row class="ma-0 pa-0" style="height: 100%">

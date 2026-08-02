@@ -27,7 +27,7 @@
                 :density="density"
             >
                 <template v-slot:label>
-                    <span style="color: black">
+                    <span style="color: var(--cds-text-primary)">
                         {{ displayLabel }}
                     </span>
                 </template>

@@ -45,7 +45,7 @@
         </v-card>
         <AppBaseCard v-else :customMenuName="$t('processDefinition.title')">
             <template v-slot:leftpart>
-                <h5 v-if="!canEdit" class="text-h5 font-weight-semibold pa-3" style="background-color: white">
+                <h5 v-if="!canEdit" class="text-h5 font-weight-semibold pa-3" style="background-color: var(--cds-surface-2)">
                     {{ projectName }}
                 </h5>
                 <!-- 프로세스 정의 내부에 있는 ProcessDefinition.vue 컴포넌트 -->

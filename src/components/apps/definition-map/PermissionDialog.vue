@@ -883,7 +883,7 @@ export default {
     width: 20px;
     left: 3px;
     bottom: 3px;
-    background: white;
+    background: var(--cds-surface-2);
     transition: 0.3s;
     border-radius: 50%;
     box-shadow: var(--shadow-sm);
@@ -1281,7 +1281,7 @@ export default {
     width: 16px;
     height: 16px;
     border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
+    border-top-color: var(--cds-surface-2);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }

@@ -46,8 +46,7 @@
                 ]"
                 :_style="{
                     fill: 'black',
-                    'fill-opacity': 1
-                }"
+                    'fill-opacity': 1}"
             ></geometry-polygon>
             <geometry-polygon
                 :vertices="[
@@ -57,8 +56,7 @@
                 ]"
                 :_style="{
                     fill: 'black',
-                    'fill-opacity': 1
-                }"
+                    'fill-opacity': 1}"
             ></geometry-polygon>
 
             <sub-elements>

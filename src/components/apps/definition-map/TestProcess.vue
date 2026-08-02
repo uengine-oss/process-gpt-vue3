@@ -15,7 +15,7 @@
                             :style="
                                 $globalState.state.isZoomed
                                     ? 'height: calc(100vh - 130px); overflow: auto'
-                                    : 'height: calc(100vh - 240px); color: black; overflow: auto'
+                                    : 'height: calc(100vh - 240px); color: var(--cds-text-primary); overflow: auto'
                             "
                         >
                             <div class="pa-0" style="height: 100%" :key="updatedDefKey">
@@ -95,7 +95,7 @@
                     </div>
                     <div class="d-flex gap-3" style="max-height: calc(-270px + 100vh); min-height: 0">
                         <!-- 작업 목록 + 프로세스 기록 -->
-                        <div class="flex-grow-1 min-width-0" style="color: black; overflow-y: auto">
+                        <div class="flex-grow-1 min-width-0" style="color: var(--cds-text-primary); overflow-y: auto">
                             <div v-if="eventList">
                                 <div v-for="event in eventList" :key="event">
                                     <v-btn

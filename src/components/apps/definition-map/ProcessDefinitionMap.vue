@@ -15,7 +15,7 @@
             <div
                 v-if="componentName != 'SubProcessDetail'"
                 class="header-section"
-                style="position: sticky; top: 0; z-index: 2; background-color: white; border-bottom: 1px solid rgba(0, 0, 0, 0.08)"
+                style="position: sticky; top: 0; z-index: 2; background-color: var(--cds-surface-2); border-bottom: 1px solid rgba(0, 0, 0, 0.08)"
             >
                 <div
                     class="d-flex pa-4 pl-6 pr-6"
@@ -3026,7 +3026,7 @@ export default {
 .color-option.color-selected {
     border-color: var(--cds-text-primary);
     transform: scale(1.05);
-    box-shadow: 0 0 0 2px white, 0 0 0 4px var(--cds-text-primary);
+    box-shadow: 0 0 0 2px var(--cds-surface-2), 0 0 0 4px var(--cds-text-primary);
 }
 
 .domain-actions {
@@ -3081,7 +3081,7 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background: white;
+    background: var(--cds-surface-2);
     border-bottom: 1px solid var(--cds-border);
     flex-shrink: 0;
 }

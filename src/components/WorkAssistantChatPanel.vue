@@ -2518,7 +2518,7 @@ export default {
 .chat-tabs-container {
     display: flex;
     align-items: center;
-    background: white;
+    background: var(--cds-surface-2);
     border-bottom: 1px solid var(--cds-border);
     padding: 8px 12px;
     gap: 8px;
@@ -2681,7 +2681,7 @@ export default {
 /* 입력 영역 */
 .chat-input-container {
     padding: 8px 16px 12px;
-    background: white;
+    background: var(--cds-surface-2);
     border-top: 1px solid var(--cds-border);
 }
 
@@ -2765,7 +2765,7 @@ export default {
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
     border-radius: 8px;
     margin-bottom: 6px;
@@ -2824,7 +2824,7 @@ export default {
 .bpmn-card {
     display: flex;
     align-items: center;
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
     border-radius: 10px;
     padding: 12px;
@@ -2946,7 +2946,7 @@ export default {
 .bpmn-card-mini {
     display: flex;
     align-items: center;
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
     border-radius: 8px;
     padding: 10px 12px;

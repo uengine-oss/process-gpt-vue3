@@ -113,7 +113,7 @@ export default {
 }
 
 .close-btn:hover {
-    background: white;
+    background: var(--cds-surface-2);
     transform: scale(1.1);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
@@ -155,7 +155,7 @@ export default {
 }
 
 .tutorial-card {
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 16px;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);

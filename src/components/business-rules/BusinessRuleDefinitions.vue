@@ -1548,7 +1548,7 @@ export default {
     position: sticky;
     top: 0;
     z-index: 4;
-    background: white;
+    background: var(--cds-surface-2);
     padding: 12px 14px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     display: flex;

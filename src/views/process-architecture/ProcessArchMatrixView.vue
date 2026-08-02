@@ -178,7 +178,7 @@ function toggleCell(key: string) {
     overflow-x: auto;
     border: 2px solid var(--cds-text-muted);
     border-radius: 12px;
-    background: white;
+    background: var(--cds-surface-2);
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
 }
 
@@ -290,7 +290,7 @@ function toggleCell(key: string) {
     z-index: 2;
     width: 160px;
     min-width: 160px;
-    background: white;
+    background: var(--cds-surface-2);
     padding: 0 !important;
     border-bottom: 2px solid var(--cds-border);
     border-right: 2px solid var(--cds-text-muted);
@@ -356,7 +356,7 @@ function toggleCell(key: string) {
 
 /* ── Process card inside cell ── */
 .process-card {
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
     border-radius: 8px;
     padding: 10px 12px;
@@ -365,7 +365,7 @@ function toggleCell(key: string) {
 }
 
 .row-alt .process-card {
-    background: white;
+    background: var(--cds-surface-2);
 }
 
 .process-card:hover {

@@ -711,7 +711,7 @@ export default {
 }
 
 .profile-wrapper {
-    background: white !important;
+    background: var(--cds-surface-2) !important;
     border-radius: 15px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.2);
     overflow: hidden;
@@ -740,7 +740,7 @@ export default {
 }
 
 .mobile-content {
-    background: white;
+    background: var(--cds-surface-2);
     height: 94vh;
     overflow-y: auto;
     padding: 16px;
@@ -811,7 +811,7 @@ export default {
 }
 
 .content-item {
-    background: white;
+    background: var(--cds-surface-2);
     padding: 8px 12px;
     border-radius: 6px;
     margin-bottom: 5px;
@@ -826,7 +826,7 @@ export default {
 
 .profile-header {
     align-items: center;
-    background: white;
+    background: var(--cds-surface-2);
 }
 
 .profile-title {
@@ -935,7 +935,7 @@ export default {
 
 /* D3.js 스타일 */
 .profile-svg :deep(.callout-box) {
-    fill: white;
+    fill: var(--cds-surface-2);
     stroke: var(--cds-border);
     stroke-width: 1;
     filter: drop-shadow(1px 1px 3px rgba(0, 0, 0, 0.1));
@@ -979,7 +979,7 @@ export default {
 
 .profile-svg :deep(.center-profile) {
     fill: hsl(var(--accent-brand));
-    stroke: white;
+    stroke: var(--cds-surface-2);
     stroke-width: 3;
     filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
     cursor: default;

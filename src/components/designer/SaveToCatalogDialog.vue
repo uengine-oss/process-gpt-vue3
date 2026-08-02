@@ -446,7 +446,7 @@ export default defineComponent({
 .fte-stepper {
     display: flex;
     align-items: center;
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 8px;
     overflow: hidden;
@@ -518,7 +518,7 @@ export default defineComponent({
     display: flex;
     align-items: baseline;
     padding: 8px 16px;
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

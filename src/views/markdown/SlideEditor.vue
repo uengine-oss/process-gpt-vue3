@@ -235,7 +235,7 @@ export default {
 }
 
 .preview-section {
-    background: white;
+    background: var(--cds-surface-2);
     border-left: 1px solid var(--cds-border);
     height: 100%;
     overflow: auto;

@@ -190,7 +190,7 @@ export default {
     bottom: -5px;
     right: 0px;
     z-index: 1;
-    background-color: white;
+    background-color: var(--cds-surface-2);
 }
 
 .w-90 {

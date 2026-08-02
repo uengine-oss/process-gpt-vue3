@@ -12,7 +12,7 @@
                             top: 24px;
                             font-size: 11px;
                             z-index: 1;
-                            background-color: white;
+                            background-color: var(--cds-surface-2);
                             opacity: 0.7;
                         "
                     >
@@ -1548,7 +1548,7 @@ export default {
     bottom: 40px;
     width: 280px;
     z-index: 10;
-    background: white;
+    background: var(--cds-surface-2);
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
     border-radius: 8px 8px 0 0;
 }
@@ -1561,7 +1561,7 @@ export default {
     width: 350px;
     max-height: calc(100% - 100px);
     z-index: 99;
-    background: white;
+    background: var(--cds-surface-2);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     border-radius: 8px;
     overflow: hidden;
@@ -1574,7 +1574,7 @@ export default {
     top: 50px;
     width: 350px;
     z-index: 98;
-    background: white;
+    background: var(--cds-surface-2);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     border-radius: 8px;
     overflow: hidden;
@@ -1676,7 +1676,7 @@ export default {
     bottom: 40px;
     width: 280px;
     z-index: 10;
-    background: white;
+    background: var(--cds-surface-2);
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
     border-radius: 8px 8px 0 0;
 }

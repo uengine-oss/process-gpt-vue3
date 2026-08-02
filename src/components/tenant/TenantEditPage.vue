@@ -1,5 +1,5 @@
 <template>
-    <div style="height: 100%; width: 100%; background-color: white">
+    <div style="height: 100%; width: 100%; background-color: var(--cds-surface-2)">
         <v-icon @click="$router.push('/tenant/manage')" size="24" class="tenant-back-btn">mdi-arrow-left </v-icon>
 
         <v-row no-gutters justify="center">

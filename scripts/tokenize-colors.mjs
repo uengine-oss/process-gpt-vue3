@@ -83,8 +83,19 @@ const WHITE = new Set(['fff', 'ffffff']);
 // 선언 전체(prop: value)를 잡아 value 안의 모든 색을 속성 문맥으로 치환한다.
 // 색 하나만 바꾸면 `linear-gradient(.., var(--x) 0%, #dc2626 100%)` 처럼
 // 토큰과 리터럴이 섞여 다크에서 한쪽만 뒤집힌다.
-const DECL = /([-a-zA-Z]+)\s*:\s*([^;{}]+)/g;
+// 반드시 '선언 시작'(블록 시작 `{` 또는 이전 선언 끝 `;`)에 붙은 것만 잡는다.
+// 그러지 않으면 `.a.text-black :deep(...)` 같은 '선택자' 안의 `black :` 을
+// 속성으로 오인해 선택자를 망가뜨린다.
+const DECL = /([{;]\s*)([-a-zA-Z]+)\s*:\s*([^;{}]+)/g;
 const HEX = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g;
+
+// CSS 키워드 색. hex 만 훑으면 `background: white` 같은 선언이 그대로 남아
+// 다크 모드에서 흰 패널로 튄다. rgba(...) 안의 값은 건드리지 않는다.
+const KEYWORD = /(?<![\w$@-])(white|black)(?![\w-])/g;
+const KEYWORD_TOKEN = {
+    white: { bg: 'var(--cds-surface-2)', fg: null },
+    black: { bg: null, fg: 'var(--cds-text-primary)' }
+};
 
 function mapColor(hex, prop) {
     const raw = hex.slice(1).toLowerCase();
@@ -97,13 +108,31 @@ function mapColor(hex, prop) {
     return COLOR_TO_TOKEN.get(raw) || null;
 }
 
+/**
+ * 의도적으로 리터럴을 유지해야 하는 선언에 붙이는 표식.
+ * 테마 표면이 아니라 '다른 요소의 색'에 대한 대비로 정해진 값들이 있다
+ * (예: BPMN 도형 채움색 위의 글자색). 토큰으로 바꾸면 다크에서 대비가 뒤집힌다.
+ */
+const IGNORE_MARK = 'tokenize-colors: ignore';
+
 /** CSS 텍스트 안의 색을 속성 문맥을 보며 치환 */
 function tokenizeCss(css, stats) {
-    return css.replace(DECL, (whole, prop, value) => {
-        if (!HEX.test(value)) return whole;
+    return css.replace(DECL, (whole, lead, prop, value) => {
+        if (value.includes(IGNORE_MARK)) return whole;
+        KEYWORD.lastIndex = 0;
+        if (!HEX.test(value) && !KEYWORD.test(value)) return whole;
         HEX.lastIndex = 0;
+        KEYWORD.lastIndex = 0;
 
-        const nextValue = value.replace(HEX, (hex) => {
+        let nextValue = value.replace(KEYWORD, (kw, name) => {
+            const spec = KEYWORD_TOKEN[name];
+            const token = BG_PROPS.test(prop.toLowerCase()) ? spec.bg : spec.fg;
+            if (!token) return kw;
+            stats.replaced += 1;
+            return token;
+        });
+
+        nextValue = nextValue.replace(HEX, (hex) => {
             const token = mapColor(hex, prop.toLowerCase());
             if (!token) {
                 stats.skipped.set(hex.toLowerCase(), (stats.skipped.get(hex.toLowerCase()) || 0) + 1);
@@ -113,7 +142,7 @@ function tokenizeCss(css, stats) {
             return token;
         });
 
-        return `${prop}: ${nextValue.trim()}`;
+        return `${lead}${prop}: ${nextValue.trim()}`;
     });
 }
 
@@ -126,8 +155,14 @@ function processFile(file, stats) {
 
     // 2) 인라인 style="..." (템플릿 영역만 — script/style 블록은 위에서 처리됨)
     out = out.replace(/style\s*=\s*"([^"]*)"/g, (m, body) => {
-        if (!/#[0-9a-fA-F]{3,6}/.test(body)) return m;
-        return `style="${tokenizeCss(body, stats)}"`;
+        if (!/#[0-9a-fA-F]{3,6}/.test(body) && !KEYWORD.test(body)) {
+            KEYWORD.lastIndex = 0;
+            return m;
+        }
+        KEYWORD.lastIndex = 0;
+        // DECL 은 선언이 `{` 또는 `;` 뒤에 오는 것만 인정한다(선택자 오인 방지).
+        // 인라인 스타일은 그 앞에 아무것도 없으므로 임시 `;` 를 붙였다가 떼어낸다.
+        return `style="${tokenizeCss(';' + body, stats).slice(1)}"`;
     });
 
     if (out !== src) {

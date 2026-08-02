@@ -818,7 +818,7 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background: white;
+    background: var(--cds-surface-2);
     border-bottom: 1px solid var(--cds-border);
     flex-shrink: 0;
 }
@@ -843,7 +843,7 @@ export default {
 .input-area {
     padding: 12px;
     border-top: 1px solid var(--cds-border);
-    background: white;
+    background: var(--cds-surface-2);
     flex-shrink: 0;
 }
 

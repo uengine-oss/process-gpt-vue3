@@ -10792,7 +10792,7 @@ export default {
 .input-area {
     padding: 12px 16px 16px 16px;
     border-top: 1px solid var(--cds-border);
-    background: white;
+    background: var(--cds-surface-2);
     flex-shrink: 0;
 }
 

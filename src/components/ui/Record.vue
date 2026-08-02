@@ -272,7 +272,7 @@ export default {
 
 .audio-bar {
     width: 50px;
-    background-color: white;
+    background-color: var(--cds-surface-2);
     margin: 0 0 10px 0;
     border-radius: 50px;
     transform-origin: bottom; /* 변환의 기준점을 하단으로 설정 */
@@ -350,7 +350,7 @@ export default {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background-color: white;
+    background-color: var(--cds-surface-2);
     width: 235px;
     height: 235px;
     position: absolute;
@@ -362,7 +362,7 @@ export default {
     position: absolute;
     width: 155px;
     height: 155px;
-    background-color: white;
+    background-color: var(--cds-surface-2);
     border-radius: 50%;
 }
 
@@ -410,7 +410,7 @@ export default {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background-color: white;
+    background-color: var(--cds-surface-2);
     position: absolute;
     top: 120px;
     animation: breathe 2s infinite ease-in-out;
@@ -432,7 +432,7 @@ export default {
 
 .bar {
     width: 20px;
-    background-color: white;
+    background-color: var(--cds-surface-2);
     margin: 0 0 10px 0;
     align-self: flex-end;
     border-radius: 10px;

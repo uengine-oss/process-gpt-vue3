@@ -4900,7 +4900,7 @@ export default {
 /*    margin: 0 auto;*/
 /*    font-weight: 100;*/
 /*    letter-spacing: 1px;*/
-/*    background: white;*/
+/*    background: var(--cds-surface-2);*/
 /*}*/
 
 .video-list {
@@ -4925,15 +4925,15 @@ export default {
     }
 
     .buttonHover {
-        background-color: white;
+        background-color: var(--cds-surface-2);
     }
 
     .content {
-        background-color: white;
+        background-color: var(--cds-surface-2);
     }
 
     .titlebar {
-        background-color: white;
+        background-color: var(--cds-surface-2);
     }
 }
 </style>

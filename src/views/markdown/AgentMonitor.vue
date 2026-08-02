@@ -1667,7 +1667,7 @@ export default {
     flex-direction: column;
     padding: 0;
     flex-shrink: 0;
-    background: white;
+    background: var(--cds-surface-2);
     border-top: 1px solid #e1e8ed;
 }
 
@@ -1720,7 +1720,7 @@ export default {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
     border-radius: 20px;
     padding: 6px 12px;
@@ -1747,7 +1747,7 @@ export default {
     position: absolute;
     bottom: 100%;
     left: 0;
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -1857,7 +1857,7 @@ export default {
     width: 100%;
     height: 500px; /* 높이 대폭 줄임 */
     border: none;
-    background: white;
+    background: var(--cds-surface-2);
     transform: scale(0.3); /* 30% 축소 */
     transform-origin: top left;
     width: 333%; /* 축소된 만큼 너비 조정 */
@@ -1919,13 +1919,13 @@ export default {
     width: 100%;
     height: 100%;
     border: none;
-    background: white;
+    background: var(--cds-surface-2);
 }
 
 .empty-state {
     text-align: center;
     padding: 0px;
-    background: white;
+    background: var(--cds-surface-2);
     margin-top: 12px;
     overflow: auto;
 }

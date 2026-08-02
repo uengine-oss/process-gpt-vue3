@@ -6,7 +6,7 @@
                 <Icons :icon="'plus'" />
             </v-btn>
         </v-row>
-        <div style="max-height: calc(100vh - 380px); color: black; overflow: auto">
+        <div style="max-height: calc(100vh - 380px); color: var(--cds-text-primary); overflow: auto">
             <v-table v-if="headers">
                 <thead>
                     <tr>

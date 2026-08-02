@@ -148,7 +148,7 @@ export default {
     padding: 0.4rem;
     border: 1px solid var(--cds-border);
     border-radius: 4px;
-    background-color: white;
+    background-color: var(--cds-surface-2);
 }
 
 .slider-container {

@@ -427,7 +427,7 @@ export default defineComponent({
     align-items: center;
     padding: 8px;
     margin-bottom: 6px;
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
     border-radius: 8px;
     cursor: grab;

@@ -308,7 +308,7 @@ export default {
     display: flex;
     align-items: center;
     padding: 8px 14px;
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 20px;
     font-size: 13px;
     color: var(--cds-text-muted);

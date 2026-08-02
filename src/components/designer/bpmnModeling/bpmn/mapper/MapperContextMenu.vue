@@ -30,7 +30,7 @@ $light-grey: #ecf0f1;
 $grey: darken($light-grey, 15%);
 $blue: #007aff;
 $white: #fff;
-$black: var(--cds-text-primary);
+$black: #0b0b0b; // rgba($black, .2) 에서 쓰여 CSS var() 를 담을 수 없다
 
 .v-application ul,
 .v-application ol {

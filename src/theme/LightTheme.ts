@@ -1,14 +1,18 @@
 import { CLAUDE_THEME } from '@/ds/vuetify-bridge/theme';
 
 /**
- * 디자인 시스템 교체 이후 라이트 테마는 하나다.
+ * 디자인 시스템 교체 이후 라이트 팔레트는 하나다.
+ * 색상 테마 선택지는 라이트 · 다크 · 자율선택(강조색 직접 지정) 세 가지이고,
+ * 자율선택은 별도 테마가 아니라 이 팔레트의 강조색만 바꾼다.
  *
- * 예전에는 BLUE/AQUA/PURPLE/GREEN/CYAN/ORANGE 6종의 Material 팔레트를 두고
- * Customizer 에서 고르게 했지만, 새 디자인 시스템은 단일 언어(라이트/다크)라
- * 여섯 이름 모두 같은 팔레트를 가리킨다.
+ * Vuetify 테마 '이름' 은 기존 것을 그대로 쓴다. `src/utils/UpdateColors.ts` 가
+ * actTheme 문자열을 99곳에서 이름으로 분기하고 있어서, 새 이름을 만들면
+ * 그 분기들이 전부 폴백으로 떨어진다.
  *
- * 이름을 남겨둔 이유는 `src/utils/UpdateColors.ts`, `Customizer.vue`,
- * `stores/customizer.ts` 등이 이 상수들을 이름으로 참조하기 때문이다.
+ *   BLUE_THEME      → 라이트모드(기본)
+ *   DARK_BLUE_THEME → 다크모드 (DarkTheme.ts)
+ *
+ * 나머지 이름은 예전 설정이 localStorage 에 남아 있어도 깨지지 않도록 기본값을 가리킨다.
  * 색 값의 출처는 `src/ds/styles/tokens.css` 이며 `ds/vuetify-bridge/theme.ts` 가 옮겨 담는다.
  */
 const BLUE_THEME = { ...CLAUDE_THEME, name: 'BLUE_THEME' };

@@ -160,7 +160,7 @@ export default {
 .empty-state {
     text-align: center;
     padding: 0px;
-    background: white;
+    background: var(--cds-surface-2);
     margin-top: 12px;
     overflow: auto;
 }

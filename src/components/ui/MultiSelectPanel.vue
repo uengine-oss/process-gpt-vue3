@@ -197,7 +197,7 @@ export default {
     top: 60px;
     right: 10px;
     width: 300px;
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 10;

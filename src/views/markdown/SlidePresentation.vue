@@ -164,7 +164,7 @@ export default {
     align-items: center;
     justify-content: center;
     text-align: center;
-    background-color: white;
+    background-color: var(--cds-surface-2);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     width: 90vw;
     height: 80vh;
@@ -196,7 +196,7 @@ body.print-pdf .presentation-controls {
     }
 
     .slide-presentation {
-        background-color: white !important;
+        background-color: var(--cds-surface-2) !important;
     }
 }
 </style>

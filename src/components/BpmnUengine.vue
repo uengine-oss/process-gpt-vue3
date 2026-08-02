@@ -262,6 +262,11 @@ export default {
 
         this.initializeViewer();
         this.setDiagramEvent();
+
+        // 색상 테마가 바뀌면 캔버스를 다시 그린다.
+        // 도형 색은 SVG '속성'이라 CSS 변수처럼 저절로 따라오지 않는다.
+        this._appearanceHandler = () => this.repaintForAppearance();
+        window.addEventListener('pg:appearance-changed', this._appearanceHandler);
         if (typeof this.bpmn === 'string' && this.bpmn.trim().length > 0) {
             this.diagramXML = this.bpmn;
         } else {
@@ -321,6 +326,10 @@ export default {
         document.addEventListener('keydown', this._keyboardHandler);
     },
     beforeUnmount() {
+        if (this._appearanceHandler) {
+            window.removeEventListener('pg:appearance-changed', this._appearanceHandler);
+            this._appearanceHandler = null;
+        }
         // Remove keyboard event listener
         if (this._keyboardHandler) {
             document.removeEventListener('keydown', this._keyboardHandler);
@@ -461,6 +470,26 @@ export default {
         }
     },
     methods: {
+        /**
+         * 색상 테마 변경 시 캔버스 도형을 다시 그린다.
+         *
+         * 커스텀 렌더러가 토큰을 hex 로 해석해 SVG 속성(fill/stroke)에 써 넣기 때문에
+         * CSS 변수가 바뀌어도 이미 그려진 도형은 그대로다. 캐시를 비운 뒤
+         * `elements.changed` 를 발생시켜 전체를 다시 그리게 한다.
+         * (캐시 비우기는 `ds/appearance.ts` 가 이 이벤트 직전에 수행한다)
+         */
+        repaintForAppearance() {
+            if (!this.bpmnViewer) return;
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const eventBus = this.bpmnViewer.get('eventBus');
+                const elements = elementRegistry.getAll();
+                if (elements.length) eventBus.fire('elements.changed', { elements });
+            } catch (e) {
+                console.warn('[BpmnUengine] 테마 변경 후 재렌더 실패:', e);
+            }
+        },
+
         // ===== PI Flag 캔버스 오버레이 (개별 깃발 배지 + 묶음 점선 박스) =====
         refreshPiFlagOverlays() {
             if (!this.bpmnViewer) return;
@@ -3068,15 +3097,27 @@ export default {
     display: none !important;
 }
 
-/* Dynamic text color for dark backgrounds */
+/* 도형 채움색 대비용 글자색.
+   테마 표면이 아니라 '그 도형의 채움색'에 대한 대비라서 토큰을 쓰면 안 된다.
+   (--cds-surface-2 를 쓰면 다크에서 어두운 도형 위에 어두운 글자가 찍힌다) */
 .djs-element[data-dark-bg='true'] text,
 .djs-element[data-dark-bg='true'] text tspan {
-    fill: var(--cds-surface-2) !important;
+    fill: #ffffff /* tokenize-colors: ignore */ !important;
 }
 
 .djs-element[data-dark-bg='false'] text,
 .djs-element[data-dark-bg='false'] text tspan {
-    fill: var(--cds-text-primary) !important;
+    fill: #0b0b0b /* tokenize-colors: ignore */ !important;
+}
+
+/* 레인·풀 제목과 시퀀스 플로우 라벨은 커스텀 렌더러를 타지 않아
+   data-dark-bg 가 붙지 않는다. bpmn-js 기본 검정으로 남아 다크에서 안 보이므로
+   테마 글자색을 따르게 한다. (!important 없이 — 위 대비 규칙이 우선) */
+.djs-element:not([data-dark-bg]) text,
+.djs-element:not([data-dark-bg]) text tspan,
+.djs-label text,
+.djs-label tspan {
+    fill: var(--cds-text-primary);
 }
 
 /* Minimap card styling */

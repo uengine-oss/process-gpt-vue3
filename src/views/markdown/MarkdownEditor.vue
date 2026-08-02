@@ -683,7 +683,7 @@ export default {
 .bubble-menu {
     display: flex;
     gap: 4px;
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid var(--cds-border);
     padding: 6px;
     border-radius: 6px;

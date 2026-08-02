@@ -246,7 +246,7 @@ export default {
     transform: translateX(-50%);
     width: 100%;
     max-width: 1200px;
-    background-color: white;
+    background-color: var(--cds-surface-2);
     z-index: 10;
     border-radius: 8px;
 }
@@ -271,7 +271,7 @@ export default {
 }
 
 .privacy-modal-content {
-    background-color: white;
+    background-color: var(--cds-surface-2);
     border-radius: 8px;
     width: 31.5rem; /* 21rem * 1.5 */
     max-width: 90%;

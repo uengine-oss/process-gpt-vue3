@@ -108,7 +108,7 @@ export default {
 
 .btn-primary-cta {
     /* background-color: hsl(var(--accent-brand)); */
-    background-color: white;
+    background-color: var(--cds-surface-2);
     color: hsl(var(--accent-brand));
     /* color: white; */
 }

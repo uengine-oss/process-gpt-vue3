@@ -208,11 +208,11 @@ export default {
 }
 
 .reveal-container .reveal .controls button {
-    color: black !important;
+    color: var(--cds-text-primary) !important;
 }
 
 .reveal-container .progress {
-    color: black !important;
+    color: var(--cds-text-primary) !important;
 }
 
 .reveal {

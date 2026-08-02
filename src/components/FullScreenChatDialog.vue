@@ -290,7 +290,7 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 12px 20px;
-    background: white;
+    background: var(--cds-surface-2);
     border-bottom: 1px solid var(--cds-border);
     flex-shrink: 0;
 }
@@ -322,7 +322,7 @@ export default {
 /* 의도 결과 섹션 */
 .intent-result-section {
     padding: 16px;
-    background: white;
+    background: var(--cds-surface-2);
     border-top: 1px solid var(--cds-border);
 }
 
@@ -357,7 +357,7 @@ export default {
     font-style: italic;
     color: var(--cds-text-primary);
     font-size: 15px;
-    background: white;
+    background: var(--cds-surface-2);
     padding: 12px 16px;
     border-radius: 8px;
     border-left: 4px solid rgb(var(--v-theme-primary));

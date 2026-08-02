@@ -212,7 +212,7 @@
 </div> -->
 
         <div class="tools">
-            <v-card v-if="!monitor" variant="outlined" style="background-color: white">
+            <v-card v-if="!monitor" variant="outlined" style="background-color: var(--cds-surface-2)">
                 <v-tooltip location="top">
                     <template v-slot:activator="{ props }">
                         <span
