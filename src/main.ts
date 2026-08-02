@@ -428,6 +428,9 @@ async function initializeApp() {
     app.use(designSystem);
 
     app.use(vuetify).mount('#app');
+    // Vuetify 컴포넌트를 새 디자인 언어로 덮는 레이어.
+    // Vuetify 스타일이 주입된 뒤에 와야 하므로 mount 이후에 적용한다.
+    await import('@/ds/vuetify-bridge/overrides.css');
     app.use(setLocale);
 
     // mount 이후에 지오IP 기반 언어 판정을 이어서 수행 (렌더를 막지 않음)

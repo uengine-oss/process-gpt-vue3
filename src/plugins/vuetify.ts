@@ -72,32 +72,48 @@ export default createVuetify({
             DARK_CYAN_THEME: addMaterialColors(DARK_CYAN_THEME)
         }
     },
+    // 새 디자인 시스템의 형태 언어에 맞춘 기본값.
+    // (색·타이포·그림자는 theme.ts + ds/vuetify-bridge/overrides.css 가 덮는다)
     defaults: {
+        global: {
+            // Material 의 단계별 그림자를 쓰지 않는다 — 경계는 0.5px 헤어라인으로 표현
+            elevation: 0
+        },
         VCard: {
-            rounded: 'xl'
+            rounded: 'md',
+            flat: true
+        },
+        VBtn: {
+            variant: 'text',
+            rounded: 'md'
         },
         VTextField: {
             variant: 'outlined',
-            density: 'comfortable',
+            density: 'compact',
             color: 'primary'
         },
         VStepper: {
             variant: 'outlined',
-            density: 'comfortable',
+            density: 'compact',
             color: 'primary'
         },
         VTextarea: {
             variant: 'outlined',
-            density: 'comfortable',
+            density: 'compact',
             color: 'primary'
         },
         VSelect: {
             variant: 'outlined',
-            density: 'comfortable',
+            density: 'compact',
+            color: 'primary'
+        },
+        VAutocomplete: {
+            variant: 'outlined',
+            density: 'compact',
             color: 'primary'
         },
         VListItem: {
-            minHeight: '45px'
+            minHeight: '32px'
         },
         VTooltip: {
             location: 'top'
