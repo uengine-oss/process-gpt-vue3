@@ -2455,6 +2455,17 @@ export default {
         async maybeStartAssistantRecoveryPoll(roomId) {
             const targetRoomId = (roomId || this.currentChatRoom?.id || '').toString();
             if (!targetRoomId) return;
+            // definition-map에서 넘어온 kickoff가 대기 중이면 이 방은 "중단된 턴"이 아니라
+            // "이 페이지에서 곧 직접 스트리밍을 시작할 방"이다. 그런데도 복구 폴링을 같이 돌리면
+            // kickoff 스트림과 경쟁하게 된다: 스트리밍 중 프론트가 진행 상황을 DB에 임시
+            // 저장(content 아직 빈 문자열)하는데, 폴링이 이걸 "assistant row 발견"으로 오판해
+            // loadMessages()로 this.messages를 그 미완성 스냅샷으로 덮어쓴다. 그러면 실시간
+            // 스트리밍 중이던 항목이 dedup 로직에 의해 화면에서 통째로 사라졌다가, 나중에 별도
+            // 경로로 다시 붙으며 중복 노출되는 문제로 이어진다. kickoff가 있으면 그 흐름이
+            // 책임지므로 복구 폴링은 건너뛴다.
+            try {
+                if (sessionStorage.getItem(`chatKickoff:${targetRoomId}`)) return;
+            } catch (e) {}
             if (!this._roomLooksInFlight(this.messages)) return;
             await this.pollForAssistantRow(targetRoomId, { timeoutMs: 60_000, intervalMs: 1_200, pageSize: 20 });
         },
@@ -8196,13 +8207,18 @@ export default {
                             // call. Do not leave the visible chat body claiming
                             // that the tool is still running while the agent is
                             // preparing its next action or final response.
+                            // NOTE: content must stay non-empty here — Chat.vue's
+                            // filteredMessages drops any message with no content/
+                            // image/file/panel, so setting '' made the whole bubble
+                            // (avatar + name) briefly vanish between tool_end and the
+                            // next token/done event.
                             if (
                                 lastRunningTool &&
                                 !toolCalls.some((toolCall) => toolCall?.status === 'running') &&
                                 (msg.content || '').toString().startsWith('🔧') &&
                                 (msg.content || '').toString().includes('실행 중')
                             ) {
-                                msg.content = '';
+                                msg.content = '생각 중...';
                             }
                             // file_artifact can persist the message just before tool_end.
                             // Persist the terminal state as well so reopening the room does

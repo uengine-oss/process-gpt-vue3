@@ -40,20 +40,12 @@ class DeepAgentRouterService {
         const { onAbort, onError } = callbacks;
 
         try {
-            let meta = params.metadata;
-            if (meta.agent_profile && meta.agent_profile.id !== 'process-gpt-agent') {
-                meta.agent_profile = {
-                    id: 'process-gpt-agent',
-                    username: 'Process GPT Agent',
-                    alias: '',
-                    role: '',
-                    goal: '',
-                    persona: '',
-                    description: '',
-                    tools: '',
-                    skills: []
-                };
-            }
+            // 실제 응답 에이전트의 agent_profile(id/username 등)을 그대로 백엔드에 전달한다.
+            // 예전에는 여기서 'process-gpt-agent'가 아닌 모든 agent_profile을 범용 프로필로
+            // 덮어썼는데, 그 결과 백엔드가 chats row를 항상 agentId="process-gpt-agent"로
+            // 저장하게 되어 프론트의 activeStreams placeholder(실제 agentId)와 realtime INSERT가
+            // 매칭되지 않고, 스트리밍 중이던 말풍선이 사라졌다가 별도 정체성의 메시지로
+            // "툭" 나타나는 원인이 되었다.
             const response = await fetch(`${this.baseUrl}/chat/stream`, {
                 method: 'POST',
                 headers: buildAgentHeaders(params),
@@ -124,6 +116,12 @@ class DeepAgentRouterService {
 
         // 활성 스트림 없음(백엔드 계약: 실패 상태코드 또는 204/빈 바디) → 조용히 종료
         if (!response.ok || response.status === 204 || !response.body) {
+            return;
+        }
+        // 활성 스트림 없음은 200 + JSON({active:false})으로 응답한다(SSE 아님).
+        // text/event-stream이 아니면 파싱을 시도하지 않고 조용히 종료한다.
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('text/event-stream')) {
             return;
         }
 
