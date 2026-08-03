@@ -2852,7 +2852,31 @@ export default {
                 // 2) 그 후 (timeStamp, rowUuid) 기준으로 안정 정렬해 결정성을 보장한다.
                 this._backfillMissingTimeStamps(asc);
                 this._stableSortMessages(asc);
-                this.messages = asc;
+                // 느린 서브에이전트 호출 등에서 백엔드가 같은 턴에 대해 로컬 fallback row 와
+                // 서버 확정 row 를 서로 다른 uuid 로 각각 남기는 경우가 있다(_dedupeMessagesByLogicalUuid
+                // 는 uuid 가 다르면 걸러내지 못한다). 같은 agentId/email 의 assistant 메시지가
+                // 사이에 user 메시지 없이 짧은 시간 안에 연속되면 같은 턴의 응답으로 보고,
+                // 가장 나중(=가장 완결된) 것만 남긴다.
+                const collapsed = [];
+                for (let i = 0; i < asc.length; i++) {
+                    const m = asc[i];
+                    if (m && (m.role || '').toString() === 'assistant' && !m.__humanFeedback) {
+                        const n = asc[i + 1];
+                        const mts = new Date(m.timeStamp || 0).getTime();
+                        const mAgentId = (m.agentId || '').toString();
+                        const mEmail = (m.email || '').toString();
+                        const nIsSameTurn =
+                            n &&
+                            (n.role || '').toString() === 'assistant' &&
+                            !n.__humanFeedback &&
+                            Math.abs(new Date(n.timeStamp || 0).getTime() - mts) <= 60000 &&
+                            ((mAgentId && (n.agentId || '').toString() === mAgentId) ||
+                                (!mAgentId && mEmail && (n.email || '').toString() === mEmail));
+                        if (nIsSameTurn) continue;
+                    }
+                    collapsed.push(m);
+                }
+                this.messages = collapsed;
 
                 // 채팅 메시지에 박혀있는 pdf2bpmn 그래프 payload 를 캐시로 hydrate.
                 // 새로고침/방 재진입 시 외부 API 호출 없이 그래프 미리보기가 가능해진다.
@@ -3302,6 +3326,50 @@ export default {
                         if (!panelMsg.timeStamp && incoming.timeStamp) panelMsg.timeStamp = incoming.timeStamp;
                         // 본문은 비운 채 유지(초안은 패널 context 로만 표시) — DB 의 초안 평문을 덮어쓰지 않는다.
                         this.persistMessageFrontendState(panelMsg, roomId);
+                        return;
+                    }
+                }
+                // 느린 서브에이전트 호출(task 툴 등) 대비: activeStreams 매칭 윈도우(10초)가 지나면
+                // onDone 의 10초 fallback(:8521-8541)이 스트리밍 placeholder를 로컬 uuid로 이미
+                // this.messages 에 push 해 버린다. 그 뒤(예: 수십 초 뒤) 서버가 실제 chats row 를
+                // INSERT 하면 uuid/시간이 달라 위의 매칭들이 모두 실패하고 여기(push-new)로 빠져
+                // 같은 답변이 두 번 보인다.
+                // rowUuid 유무만으로는 판별할 수 없다: activeStreams 매칭 브랜치(위 :3218-3244)가
+                // 자기 자신의 fallback INSERT 를 realtime 으로 되돌려받아 rowUuid 를 자기 uuid로
+                // "자가 확정"시켜 버리는 경우가 있어(진짜 서버 row 와는 무관), rowUuid 가 있어도
+                // 그 uuid 자체가 여전히 프런트 로컬 생성 포맷(대시 포함 36자)이면 아직 서버의
+                // 최종 row 로 대체된 적이 없는 것으로 간주한다.
+                if (typeof incoming === 'object' && (incoming.role || '').toString() === 'assistant') {
+                    const inAgentId = (incoming.agentId || '').toString();
+                    const inEmail = (incoming.email || '').toString();
+                    const inKeyUuid = (incoming.uuid || incoming.rowUuid || '').toString();
+                    const isLocalClientUuid = (v) =>
+                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test((v || '').toString());
+                    let orphanIdx = -1;
+                    for (let i = this.messages.length - 1; i >= 0; i--) {
+                        const m = this.messages[i];
+                        if (!m) continue;
+                        if ((m.role || '').toString() !== 'assistant') continue;
+                        if (m.__humanFeedback) continue; // HITL 패널은 위에서 별도 처리(영구히 rowUuid 없음)
+                        const mKeyUuid = (m.rowUuid || m.uuid || '').toString();
+                        if (mKeyUuid && mKeyUuid === inKeyUuid) continue; // 이미 이 row 자신
+                        if (!isLocalClientUuid(mKeyUuid)) continue; // 이미 서버의 다른 row 로 확정됨
+                        const mAgentId = (m.agentId || '').toString();
+                        const mEmail = (m.email || '').toString();
+                        if (inAgentId && mAgentId && mAgentId !== inAgentId) continue;
+                        if (!inAgentId && inEmail && mEmail && mEmail !== inEmail) continue;
+                        if (!inAgentId && !inEmail) continue;
+                        orphanIdx = i;
+                        break;
+                    }
+                    if (orphanIdx !== -1) {
+                        const orphanMsg = this.messages[orphanIdx];
+                        this.messages[orphanIdx] = this.normalizeAssistantMessageForDisplay({
+                            ...orphanMsg,
+                            ...incoming,
+                            rowUuid: incoming.rowUuid || incoming.uuid || orphanMsg.rowUuid || null
+                        });
+                        this.persistMessageFrontendState(this.messages[orphanIdx], roomId);
                         return;
                     }
                 }
@@ -8518,24 +8586,38 @@ export default {
                             // this.messages에 먼저 push된 경우, 여기서 무조건 push하면 동일 내용이
                             // 화면에 두 번(placeholder + realtime row) 보이게 된다. 그런 경우를
                             // 내용/역할 기준으로 감지해 중복 push를 건너뛴다.
+                            // 내용이 완전히 같지 않아도(예: 서브에이전트 task 결과와 최종 supervisor
+                            // 응답처럼 텍스트가 다른 경우) 같은 agentId/email 의 assistant 메시지가
+                            // 이미 도착해 있으면 "다른 턴의 답변"이 아니라 "같은 턴의 서버 확정본"으로
+                            // 간주해 push 대신 병합한다(그렇지 않으면 같은 답변이 두 번 보인다).
                             setTimeout(() => {
                                 if (this.activeStreams[agentId]) {
                                     const stale = this.activeStreams[agentId];
                                     const staleContent = (stale.content || '').toString().trim();
                                     const staleTs = new Date(stale.timeStamp || 0).getTime();
+                                    const staleEmail = (stale.email || '').toString();
                                     // 빈 본문(HITL 패널 등)은 서로 다른 turn 이어도 항상 일치하므로 매칭에서 제외.
-                                    const alreadyLanded =
-                                        !!staleContent &&
-                                        this.messages.some((m) => {
-                                            if (!m || (m.role || '').toString() !== 'assistant') return false;
-                                            if ((m.content || '').toString().trim() !== staleContent) return false;
-                                            const mts = new Date(m.timeStamp || 0).getTime();
-                                            return Math.abs(mts - staleTs) <= 20000;
-                                        });
+                                    const landedIdx = this.messages.findIndex((m) => {
+                                        if (!m || (m.role || '').toString() !== 'assistant') return false;
+                                        const mts = new Date(m.timeStamp || 0).getTime();
+                                        if (Math.abs(mts - staleTs) > 20000) return false;
+                                        if (!!staleContent && (m.content || '').toString().trim() === staleContent) return true;
+                                        const mAgentId = (m.agentId || '').toString();
+                                        const mEmail = (m.email || '').toString();
+                                        if (agentId && mAgentId && mAgentId === agentId.toString()) return true;
+                                        if (!agentId && staleEmail && mEmail && mEmail === staleEmail) return true;
+                                        return false;
+                                    });
                                     delete this.activeStreams[agentId];
-                                    if (!alreadyLanded) {
+                                    if (landedIdx === -1) {
                                         this.messages.push(this.normalizeAssistantMessageForDisplay(stale));
                                         this._stableSortMessages(this.messages);
+                                    } else {
+                                        this.carryOptimisticOnlyFields(stale, this.messages[landedIdx]);
+                                        this.persistMessageFrontendState(
+                                            this.messages[landedIdx],
+                                            this.currentChatRoom?.id || this.roomId || null
+                                        );
                                     }
                                 }
                             }, 10000);
