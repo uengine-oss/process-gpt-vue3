@@ -55,7 +55,7 @@
                             class="text-medium-emphasis"
                             density="comfortable"
                         >
-                            <TrashIcon size="16" style="color: #fb977d" />
+                            <TrashIcon size="16" style="color: var(--cds-text-danger)" />
                         </v-btn>
                     </div>
                 </div>

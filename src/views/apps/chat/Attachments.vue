@@ -45,7 +45,7 @@ export default {
 
 <style scoped>
 .attachments-box {
-    background-color: white;
+    background-color: var(--cds-surface-2);
     padding-top: 12px;
     padding-bottom: 15px;
     border-radius: 12px;

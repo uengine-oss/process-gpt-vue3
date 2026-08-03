@@ -879,7 +879,7 @@ onBeforeUnmount(() => {
     left: 10px;
     bottom: 10px;
     background: rgba(255, 255, 255, 0.92);
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     padding: 6px 10px;
     display: flex;
@@ -887,7 +887,7 @@ onBeforeUnmount(() => {
     gap: 6px 12px;
     max-width: 70%;
     font-size: 11px;
-    color: #475569;
+    color: var(--cds-text-secondary);
 }
 .legend-item {
     display: flex;
@@ -901,8 +901,8 @@ onBeforeUnmount(() => {
     display: inline-block;
 }
 .lagging-dot {
-    background: #fff;
-    border: 3px solid #ef4444;
+    background: var(--cds-surface-2);
+    border: 3px solid var(--cds-text-danger);
 }
 .prop-table td {
     padding: 2px 6px !important;
@@ -910,8 +910,8 @@ onBeforeUnmount(() => {
     word-break: break-all;
 }
 .rel-tag {
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--cds-bg-accent);
+    color: hsl(var(--accent-brand));
     border-radius: 4px;
     padding: 0 5px;
     font-weight: 600;
@@ -926,12 +926,12 @@ onBeforeUnmount(() => {
     white-space: nowrap;
 }
 .chain-rel {
-    color: #94a3b8;
+    color: var(--cds-text-muted);
     font-size: 11px;
     padding: 0 2px;
 }
 .chain-node {
-    background: #fff !important;
+    background: var(--cds-surface-2) !important;
 }
 .kpi-mini {
     min-width: 200px;

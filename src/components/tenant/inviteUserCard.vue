@@ -51,7 +51,7 @@
                                 <!-- 에러 메시지를 별도 행으로 표시 -->
                                 <v-row v-if="!isValidEmail(user.email) && user.email !== ''" no-gutters>
                                     <v-col cols="12" sm="8" class="pr-sm-3">
-                                        <div class="text-caption mt-1 ml-3" style="color: #f44336 !important">
+                                        <div class="text-caption mt-1 ml-3" style="color: var(--cds-text-danger) !important">
                                             {{ getEmailErrorMessage(user.email) }}
                                         </div>
                                     </v-col>

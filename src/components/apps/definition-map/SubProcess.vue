@@ -367,6 +367,6 @@ export default {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 연한 그림자 추가 */
 }
 .sub-process-hover:hover {
-    background-color: #e7ecf0 !important;
+    background-color: var(--cds-border) !important;
 }
 </style>

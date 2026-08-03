@@ -753,7 +753,7 @@ export default {
 <style scoped>
 .br-preview-rule-card {
     /* 회색 톤(tornal) 대신, 다른 카드들과 어울리는 밝은 톤 */
-    background: #fff;
+    background: var(--cds-surface-2);
     border-color: rgba(0, 0, 0, 0.08);
     border-radius: 12px;
 }

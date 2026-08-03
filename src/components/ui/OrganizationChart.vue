@@ -741,7 +741,7 @@ export default {
 
 <style scoped>
 .header-search {
-    background-color: white !important;
+    background-color: var(--cds-surface-2) !important;
     min-height: 36px !important;
     height: 36px !important;
 }

@@ -36,10 +36,9 @@
                     'fill-cx': 0.1,
                     'fill-cy': 0.1,
                     'stroke-width': 3,
-                    fill: '#FFFFFF',
+                    fill: 'var(--cds-surface-2)',
                     'fill-opacity': 0,
-                    r: '10'
-                }"
+                    r: '10'}"
             ></geometry-rect>
 
             <sub-elements>

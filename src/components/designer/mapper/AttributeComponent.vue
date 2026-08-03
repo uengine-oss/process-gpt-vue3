@@ -6,7 +6,7 @@
             </body>
         </foreignObject>
         <g v-if="isAppend() == true && func == 'NumberFormatInput'">
-            <text x="-15" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
+            <text x="-15" y="10" style="fill: var(--cds-surface-2); font-size: 11px; user-select: none; text-anchor: start">{{
                 name.replace('in ', '')
             }}</text>
             <foreignObject x="50" y="-10" width="70" height="25">
@@ -19,7 +19,7 @@
             </foreignObject>
         </g>
         <g v-if="isAppend() == true && func == 'SQLFormatInput'">
-            <text x="-10" y="3" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
+            <text x="-10" y="3" style="fill: var(--cds-surface-2); font-size: 11px; user-select: none; text-anchor: start">{{
                 name.replace('in ', '')
             }}</text>
             <foreignObject x="30" y="-10" width="90" height="25">
@@ -34,7 +34,7 @@
             </foreignObject>
         </g>
         <g v-if="isAppend() == true && func == 'NumberFormatTo'">
-            <text x="-15" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
+            <text x="-15" y="10" style="fill: var(--cds-surface-2); font-size: 11px; user-select: none; text-anchor: start">{{
                 name.replace('in ', '')
             }}</text>
             <foreignObject x="40" y="-10" width="80" height="25">
@@ -49,7 +49,7 @@
             </foreignObject>
         </g>
         <g v-if="isAppend() == true && func == 'checkbox'">
-            <text x="10" y="10" style="fill: #fff; font-size: 11px; user-select: none; text-anchor: start">{{
+            <text x="10" y="10" style="fill: var(--cds-surface-2); font-size: 11px; user-select: none; text-anchor: start">{{
                 name.replace('in ', '')
             }}</text>
             <foreignObject x="-20" y="0" width="30" height="25">
@@ -108,7 +108,7 @@ export default {
 </script>
 <style>
 .attribute {
-    background-color: #f0f0f0;
+    background-color: var(--cds-border);
     width: 100%;
     height: 100%;
     font-size: 12px;

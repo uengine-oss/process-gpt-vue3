@@ -517,14 +517,14 @@ export default {
 .file-link-card {
     gap: 10px;
     padding: 10px 12px;
-    border: 1px solid #e4e6ea;
+    border: 1px solid var(--cds-border);
     border-radius: 10px;
-    background: #fafbfc;
+    background: var(--cds-bg-neutral);
     cursor: pointer;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 .file-link-card:hover {
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border-color: #c7d2fe;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
@@ -532,8 +532,8 @@ export default {
     width: 34px;
     height: 34px;
     border-radius: 8px;
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--cds-bg-accent);
+    color: hsl(var(--accent-brand));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -545,12 +545,12 @@ export default {
 .file-link-name {
     font-size: 13px;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     word-break: break-all;
 }
 .file-link-sub {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--cds-text-secondary);
     margin-top: 2px;
 }
 </style>

@@ -68,7 +68,7 @@
                                 class="mr-2"
                                 rounded
                                 density="comfortable"
-                                style="background-color: #808080; color: white"
+                                style="background-color: var(--cds-text-muted); color: white"
                             >
                                 {{ $t('subProcessDetail.simulation') }}
                             </v-btn>
@@ -78,7 +78,7 @@
                                 class="mr-2"
                                 rounded
                                 density="comfortable"
-                                style="background-color: #808080; color: white"
+                                style="background-color: var(--cds-text-muted); color: white"
                             >
                                 {{ isViewMode ? $t('subProcessDetail.edit') : $t('subProcessDetail.save') }}
                             </v-btn>

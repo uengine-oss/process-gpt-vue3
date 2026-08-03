@@ -1,0 +1,326 @@
+/* ==========================================================================
+   claude-tokens.css
+   claude.ai 의 라이브 DOM 에서 추출한 디자인 토큰 (2026-08-02 캡처 기준)
+   원본: [data-theme=claude] / [data-mode=light|dark] 스코프의 CSS custom property
+   ========================================================================== */
+
+:root,
+[data-theme="claude"],
+[data-theme="claude"][data-mode="light"] {
+  color-scheme: light;
+
+  /* --- 원시 HSL 채널 (원본이 "H S% L%" 문자열로 보관 → hsl() 로 조합) ------ */
+  --bg-000: 0 0% 100%;
+  --bg-100: 60 14.2857% 97.2549%;
+  --bg-200: 60 11.1111% 94.7059%;
+  --bg-300: 45 11.7647% 93.3333%;
+  --bg-400: 50 11.1111% 89.4118%;
+  --bg-500: 50 11.1111% 89.4118%;
+
+  --text-000: 0 0% 7.451%;
+  --text-100: 0 0% 7.451%;
+  --text-200: 60 2.7523% 21.3725%;
+  --text-300: 60 2.7523% 21.3725%;
+  --text-400: 42.8571 2.9289% 46.8627%;
+  --text-500: 42.8571 2.9289% 46.8627%;
+
+  --border-100: 60 1.6949% 11.5686%;
+  --border-200: 60 1.6949% 11.5686%;
+  --border-300: 60 1.6949% 11.5686%;
+  --border-400: 60 1.6949% 11.5686%;
+
+  --accent-brand: 14.7692 63.1068% 59.6078%;   /* Claude 오렌지 ≈ #d97757 */
+  --accent-000: 213.6 72.2543% 33.9216%;
+  --accent-100: 213.117 67.5439% 44.7059%;
+  --accent-900: 212.609 85.1852% 89.4118%;
+  --danger-000: 0 57.7778% 35.2941%;
+  --danger-100: 0 61.3169% 52.3529%;
+  --danger-900: 0 78.2609% 90.9804%;
+
+  /* --- 시맨틱 표면/텍스트 (원본 --cds-* 계열) --------------------------- */
+  --cds-black: #000;
+  --cds-surface-0: #f9f9f7;      /* 앱 배경 (body) */
+  --cds-surface-1: #fcfcfb;      /* 살짝 올라온 면 */
+  --cds-surface-2: #fff;         /* 카드 / 컴포저 */
+  --cds-surface-3: #fff;
+  --cds-surface-panel: #fff;
+  --cds-surface-popover: #fff;
+
+  --cds-text-primary: #0b0b0b;
+  --cds-text-secondary: #52514e;
+  --cds-text-muted: #898781;
+  --cds-text-disabled: hsl(0 0% 4.3% / 35%);
+  --cds-text-accent: #184f95;
+  --cds-text-danger: #8e2626;    /* 인라인 코드 색 */
+  --cds-text-success: #006300;
+  --cds-text-warning: #734500;
+
+  --cds-border: hsl(0 0% 4.3% / 10%);
+  --cds-border-strong: hsl(0 0% 4.3% / 20%);
+  --cds-border-stronger: hsl(0 0% 4.3% / 40%);
+  --cds-border-accent: #86b6ef;
+  --cds-border-danger: #f09595;
+
+  --cds-bg-neutral: hsl(0 0% 4.3% / 5%);
+  --cds-bg-neutral-hover: hsl(0 0% 4.3% / 10%);
+  --cds-bg-accent: #cde2fb;
+  --cds-bg-danger: #fad6d6;
+  --cds-bg-success: #caeac7;
+  --cds-bg-warning: #f9dca4;
+
+  /* 코드 하이라이트 (측정된 페인트 색상) */
+  --cds-code-fg: #14181f;
+  --cds-code-keyword: #bd0f1e;
+  --cds-code-attr: #b80a18;
+  --cds-code-number: #8100c2;
+  --cds-code-string: #008080;
+  --cds-code-func: #256abf;
+}
+
+/* --------------------------------------------------------------------------
+   타이포그래피 · 형태 · 모션 (모드 무관)
+   -------------------------------------------------------------------------- */
+:root {
+  /* Anthropic 사내 폰트는 비공개이므로 원본이 쓰는 폴백 체인을 그대로 유지 */
+  --cds-font-sans: "Anthropic Sans", system-ui, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  --cds-font-voice: "Anthropic Serif", Georgia, "Apple SD Gothic Neo",
+    "Malgun Gothic", "Noto Sans CJK KR", "Times New Roman", Times, serif;
+  --cds-font-mono: "Anthropic Mono", "SF Mono", ui-monospace, Menlo, Consolas,
+    monospace;
+
+  --cds-font-size-title: 22px;      --cds-leading-title: 28px;
+  --cds-font-size-heading: 15px;    --cds-leading-heading: 20px;
+  --cds-font-size-body: 14px;       --cds-leading-body: 20px;
+  --cds-font-size-body--lg: 15px;
+  --cds-font-size-body--xs: 13px;
+  --cds-font-size-footnote: 13px;   --cds-leading-footnote: 17px;
+  --cds-font-size-caption: 12px;    --cds-leading-caption: 17px;
+  --cds-font-size-code: 13px;       --cds-leading-code: 19px;
+
+  --cds-font-weight-regular: 400;
+  --cds-font-weight-medium: 500;
+  --cds-font-weight-semibold: 580;
+  --cds-font-weight-bold: 600;
+
+  --cds-radius--xs: 6px;
+  --cds-radius--sm: 7px;
+  --cds-radius: 8px;
+  --cds-radius--lg: 10px;
+  --cds-radius-bubble: 12px;        /* 사용자 말풍선 */
+  --cds-radius-composer: 20px;      /* 입력창 */
+
+  --cds-shadow-color: hsl(0 0% 4.3% / 8%);
+  --cds-shadow-sm: 0 1px 2px 0 hsl(0 0% 4.3% / 6%), 0 2px 8px 0 hsl(0 0% 4.3% / 8%);
+  --cds-shadow-md: 0 2px 4px 0 hsl(0 0% 4.3% / 7%), 0 6px 16px 0 hsl(0 0% 4.3% / 8%);
+  --cds-shadow-lg: 0 4px 8px 0 hsl(0 0% 4.3% / 8%), 0 12px 28px -2px hsl(0 0% 4.3% / 8%);
+  --cds-shadow-popover: 0 8px 24px rgb(0 0 0 / 12%), 0 2px 6px rgb(0 0 0 / 8%);
+  /* 컴포저 전용: 아주 옅은 확산 그림자 + 0.5px 헤어라인 */
+  --cds-shadow-composer: 0 4px 20px rgb(0 0 0 / 3.8%), 0 0 0 0.5px rgb(30 30 29 / 16.5%);
+
+  --cds-ease-out: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --cds-ease-snap: cubic-bezier(0.32, 0.72, 0, 1);
+  --cds-ease-overshoot: cubic-bezier(0.34, 1.3, 0.64, 1);
+
+  /* 레이아웃 상수 (실측) */
+  --app-sidebar-w: 272px;
+  --app-content-max: 768px;
+  --row-h: 32px;
+  --row-gap: 8px;
+  --row-px: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   다크 모드 — 원본 [data-theme=claude][data-mode=dark] 값 그대로
+   -------------------------------------------------------------------------- */
+[data-mode="dark"] {
+  color-scheme: dark;
+
+  --bg-000: 60 2.1% 18.4%;
+  --bg-100: 60 2.7% 14.5%;
+  --bg-200: 30 3.3% 11.8%;
+  --bg-300: 60 2.6% 7.6%;
+  --bg-400: 0 0% 0%;
+  --bg-500: 0 0% 0%;
+
+  --text-000: 48 33.3% 97.1%;
+  --text-100: 48 33.3% 97.1%;
+  --text-200: 50 9% 73.7%;
+  --text-300: 50 9% 73.7%;
+  --text-400: 48 4.8% 59.2%;
+  --text-500: 48 4.8% 59.2%;
+
+  --border-100: 51 16.5% 84.5%;
+  --border-200: 51 16.5% 84.5%;
+  --border-300: 51 16.5% 84.5%;
+  --border-400: 51 16.5% 84.5%;
+
+  --accent-brand: 15 63.1% 59.6%;
+  --accent-000: 210 65.5% 67.1%;
+  --accent-100: 210 70.9% 51.6%;
+  --accent-900: 210 55.9% 24.6%;
+  --danger-000: 0 98.4% 75.1%;
+  --danger-100: 0 67% 59.6%;
+  --danger-900: 0 46.5% 27.8%;
+
+  --cds-surface-0: #262624;
+  --cds-surface-1: #30302e;
+  --cds-surface-2: #1f1e1d;
+  --cds-surface-3: #1f1e1d;
+  --cds-surface-panel: #262624;
+  --cds-surface-popover: #30302e;
+
+  --cds-text-primary: #faf9f5;
+  --cds-text-secondary: #c2c0b6;
+  --cds-text-muted: #9a9890;
+  --cds-text-disabled: hsl(48 33% 97% / 35%);
+  --cds-text-accent: #8fbdf0;
+  --cds-text-danger: #fd8080;
+
+  --cds-border: hsl(51 16.5% 84.5% / 12%);
+  --cds-border-strong: hsl(51 16.5% 84.5% / 22%);
+  --cds-border-stronger: hsl(51 16.5% 84.5% / 40%);
+
+  --cds-bg-neutral: hsl(51 16.5% 84.5% / 6%);
+  --cds-bg-neutral-hover: hsl(51 16.5% 84.5% / 12%);
+
+  /* 상태색 다크 대응 — 원본 캡처에는 다크값이 없어 여기서 보강했다.
+     라이트값(파스텔 배경 + 어두운 글자)을 그대로 두면 다크에서 대비가 무너진다. */
+  --cds-text-success: #7ec97a;
+  --cds-text-warning: #e0b054;
+  --cds-bg-accent: hsl(var(--accent-900));
+  --cds-bg-danger: hsl(var(--danger-900));
+  --cds-bg-success: hsl(122 26% 22%);
+  --cds-bg-warning: hsl(38 40% 24%);
+  --cds-border-accent: hsl(210 55.9% 40%);
+  --cds-border-danger: hsl(0 46.5% 45%);
+
+  --cds-code-fg: #e8e6df;
+  --cds-code-keyword: #ff8f8f;
+  --cds-code-attr: #ff9a9a;
+  --cds-code-number: #d1a2f5;
+  --cds-code-string: #6fc4c4;
+  --cds-code-func: #7fb0ea;
+
+  --cds-shadow-composer: 0 4px 20px rgb(0 0 0 / 30%), 0 0 0 0.5px hsl(51 16.5% 84.5% / 14%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode="light"]) {
+    color-scheme: dark;
+    --bg-000: 60 2.1% 18.4%;   --bg-100: 60 2.7% 14.5%;
+    --bg-200: 30 3.3% 11.8%;   --bg-300: 60 2.6% 7.6%;
+    --bg-400: 0 0% 0%;         --bg-500: 0 0% 0%;
+    --text-000: 48 33.3% 97.1%; --text-100: 48 33.3% 97.1%;
+    --text-200: 50 9% 73.7%;   --text-300: 50 9% 73.7%;
+    --text-400: 48 4.8% 59.2%; --text-500: 48 4.8% 59.2%;
+    --border-100: 51 16.5% 84.5%; --border-200: 51 16.5% 84.5%;
+    --border-300: 51 16.5% 84.5%; --border-400: 51 16.5% 84.5%;
+    --accent-000: 210 65.5% 67.1%; --accent-100: 210 70.9% 51.6%;
+    --danger-000: 0 98.4% 75.1%;
+    --cds-surface-0: #262624;  --cds-surface-1: #30302e;
+    --cds-surface-2: #1f1e1d;  --cds-surface-3: #1f1e1d;
+    --cds-surface-panel: #262624; --cds-surface-popover: #30302e;
+    --cds-text-primary: #faf9f5; --cds-text-secondary: #c2c0b6;
+    --cds-text-muted: #9a9890;  --cds-text-danger: #fd8080;
+    --cds-border: hsl(51 16.5% 84.5% / 12%);
+    --cds-border-strong: hsl(51 16.5% 84.5% / 22%);
+    --cds-border-stronger: hsl(51 16.5% 84.5% / 40%);
+    --cds-bg-neutral: hsl(51 16.5% 84.5% / 6%);
+    --cds-bg-neutral-hover: hsl(51 16.5% 84.5% / 12%);
+    --cds-text-success: #7ec97a; --cds-text-warning: #e0b054;
+    --cds-bg-accent: hsl(210 55.9% 24.6%);
+    --cds-bg-danger: hsl(0 46.5% 27.8%);
+    --cds-bg-success: hsl(122 26% 22%);
+    --cds-bg-warning: hsl(38 40% 24%);
+    --cds-border-accent: hsl(210 55.9% 40%);
+    --cds-border-danger: hsl(0 46.5% 45%);
+    --cds-code-fg: #e8e6df;    --cds-code-keyword: #ff8f8f;
+    --cds-code-attr: #ff9a9a;  --cds-code-number: #d1a2f5;
+    --cds-code-string: #6fc4c4; --cds-code-func: #7fb0ea;
+    --cds-shadow-composer: 0 4px 20px rgb(0 0 0 / 30%), 0 0 0 0.5px hsl(51 16.5% 84.5% / 14%);
+  }
+}
+
+
+/* --------------------------------------------------------------------------
+   스카이 — 디자인 시스템 교체 이전의 원래 팔레트.
+   Vuetify 쪽 대응은 `ds/vuetify-bridge/theme.ts` 의 SKY_THEME 이 담당하고,
+   여기서는 토큰 레이어(Pg* · 토큰화된 .vue 스타일 · BPMN 캔버스)를 맞춘다.
+   -------------------------------------------------------------------------- */
+/* `:root` 를 붙여 특이도를 올린다. 기본 블록의 `[data-theme][data-mode]` 가
+   (0,2,0) 이라 그냥 `[data-appearance]` (0,1,0) 로는 덮이지 않는다. */
+:root[data-appearance='sky'] {
+  color-scheme: light;
+
+  --accent-brand: 202 100% 43%;      /* #0085db */
+
+  --bg-000: 0 0% 100%;
+  --bg-100: 206 41% 97%;
+  --bg-200: 206 38% 95%;
+  --bg-300: 206 33% 93%;             /* 사용자 말풍선 */
+  --bg-400: 206 30% 89%;
+  --bg-500: 206 30% 89%;
+
+  --text-000: 218 26% 22%;
+  --text-100: 218 26% 22%;
+  --text-200: 218 26% 22%;           /* #2A3547 */
+  --text-300: 218 26% 22%;
+  --text-400: 206 6% 47%;            /* #707a82 */
+  --text-500: 206 6% 47%;
+
+  --border-100: 210 25% 92%;
+  --border-200: 210 25% 92%;
+  --border-300: 210 25% 92%;         /* #e5eaef */
+  --border-400: 210 25% 92%;
+
+  --cds-surface-0: #f0f5f9;          /* 앱 배경 */
+  --cds-surface-1: #f5f8fb;
+  --cds-surface-2: #ffffff;
+  --cds-surface-3: #ffffff;
+  --cds-surface-panel: #ffffff;
+  --cds-surface-popover: #ffffff;
+
+  --cds-text-primary: #2a3547;
+  --cds-text-secondary: #707a82;
+  --cds-text-muted: #95a1ad;
+  --cds-text-accent: #0085db;
+  --cds-text-danger: #d9534f;
+  --cds-text-success: #2e9e6b;
+  --cds-text-warning: #b1791f;
+
+  --cds-border: #e5eaef;
+  --cds-border-strong: #dfe5ef;
+  --cds-border-stronger: #c3ccd8;
+  --cds-border-accent: #7ec4ec;
+  --cds-border-danger: #f3b9ad;
+
+  --cds-bg-neutral: #f6f9fc;
+  --cds-bg-neutral-hover: #e7ecf0;
+  --cds-bg-accent: #e5f3fb;
+  --cds-bg-danger: #ffede9;
+  --cds-bg-success: #dffff3;
+  --cds-bg-warning: #fff6ea;
+}
+
+/* --------------------------------------------------------------------------
+   스카이 — BPMN 캔버스 팔레트도 교체 이전 값을 그대로 쓴다.
+   캔버스는 SVG '속성'에 색을 써 넣어 var() 를 해석하지 못하므로,
+   `customBpmn/dsPalette.js` 가 이 값을 읽어 hex 로 바꿔 렌더러에 넘긴다.
+   라이트·다크에는 이 변수를 두지 않아 기존의 토큰 파생 로직이 그대로 쓰인다.
+   -------------------------------------------------------------------------- */
+:root[data-appearance='sky'] {
+  --bpmn-surface: #f4f8fc;        /* 태스크 본체 */
+  --bpmn-surfaceMuted: #fdf2d0;   /* 기본 태스크 채움 */
+  --bpmn-stroke: #4e72be;         /* 도형 외곽선 */
+  --bpmn-strokeSoft: #4e72be;
+  --bpmn-text: #333333;
+  --bpmn-textSecondary: #666666;
+  --bpmn-textMuted: #888888;
+  --bpmn-onBrand: #ffffff;
+  --bpmn-brand: #1565c0;
+  --bpmn-danger: #e53935;
+  --bpmn-accent: #1565c0;
+  --bpmn-warning: #f57c00;
+  --bpmn-warningBg: #f6c745;
+}

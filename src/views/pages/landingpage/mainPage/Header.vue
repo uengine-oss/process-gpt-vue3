@@ -162,7 +162,7 @@ export default {
     top: 0;
     left: 0;
     width: 100%;
-    background-color: white;
+    background-color: var(--cds-surface-2);
     z-index: 1000;
     transition: all 0.3s ease;
     padding: 15px 0;

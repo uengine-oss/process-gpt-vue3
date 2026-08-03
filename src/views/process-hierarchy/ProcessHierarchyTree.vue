@@ -375,12 +375,12 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
-    background: #fff;
+    background: var(--cds-surface-2);
 }
 
 .tree-header {
     flex-shrink: 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--cds-border);
 }
 
 .tree-row-menu-btn {
@@ -409,11 +409,11 @@ export default {
 }
 
 .tree-node:hover {
-    background-color: #f5f5f5;
+    background-color: var(--cds-bg-neutral);
 }
 
 .tree-node-selected {
-    background-color: #e3f2fd !important;
+    background-color: var(--cds-bg-accent) !important;
     font-weight: 500;
 }
 

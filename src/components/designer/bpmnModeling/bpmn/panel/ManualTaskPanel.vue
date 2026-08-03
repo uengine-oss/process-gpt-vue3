@@ -200,8 +200,7 @@
                     :key="color.value"
                     :style="{
                         backgroundColor: color.value,
-                        border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
-                    }"
+                        border: copyUengineProperties.taskColor === color.value ? '3px solid hsl(var(--accent-brand))' : '1px solid var(--cds-text-muted)'}"
                     size="small"
                     icon
                     :disabled="isViewMode"
@@ -250,8 +249,7 @@
                         width: '24px',
                         height: '24px',
                         borderRadius: '4px',
-                        border: '1px solid #ccc'
-                    }"
+                        border: '1px solid var(--cds-text-muted)'}"
                     class="mr-2"
                 ></div>
                 <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
@@ -484,7 +482,7 @@ export default {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 0.6875rem !important;
     font-weight: 700 !important;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 14px !important;
@@ -505,7 +503,7 @@ export default {
 :deep(.v-chip.text-body-2) {
     background: rgba(248, 250, 252, 0.8) !important;
     border: 1px solid rgba(226, 232, 240, 0.8) !important;
-    color: #475569 !important;
+    color: var(--cds-text-secondary) !important;
 }
 
 :deep(.v-chip.text-body-2:hover) {
@@ -536,7 +534,7 @@ export default {
 :deep(.v-table th) {
     font-size: 0.6875rem !important;
     font-weight: 700 !important;
-    color: #64748b !important;
+    color: var(--cds-text-secondary) !important;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 12px 16px !important;
@@ -578,7 +576,7 @@ div[style*='margin-bottom: -8px'] {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 0.6875rem !important;
     font-weight: 700;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 10px !important;

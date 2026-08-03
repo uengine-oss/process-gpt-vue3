@@ -84,16 +84,16 @@
                             </div>
                         </div>
                         <div v-if="isDueTodayOrTomorrow" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert" style="color: #ff9800" />
-                            <span class="text-caption ml-1" style="color: #ff9800">{{ $t('kanbanColumnCard.overdue') }}</span>
+                            <v-icon size="16" icon="mdi-alert" style="color: var(--cds-text-warning)" />
+                            <span class="text-caption ml-1" style="color: var(--cds-text-warning)">{{ $t('kanbanColumnCard.overdue') }}</span>
                         </div>
                         <div v-else-if="isPastDue" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert-circle" style="color: #f44336; padding-top: 3px" />
-                            <span class="text-caption ml-1" style="color: #f44336">{{ $t('kanbanColumnCard.pastDue') }}</span>
+                            <v-icon size="16" icon="mdi-alert-circle" style="color: var(--cds-text-danger); padding-top: 3px" />
+                            <span class="text-caption ml-1" style="color: var(--cds-text-danger)">{{ $t('kanbanColumnCard.pastDue') }}</span>
                         </div>
                         <div v-if="isPending" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert-circle" style="color: #f44336" />
-                            <span class="text-caption ml-1" style="color: #f44336">{{ errorMessage }}</span>
+                            <v-icon size="16" icon="mdi-alert-circle" style="color: var(--cds-text-danger)" />
+                            <span class="text-caption ml-1" style="color: var(--cds-text-danger)">{{ errorMessage }}</span>
                         </div>
                     </div>
                 </div>
@@ -116,8 +116,8 @@
                         <v-tooltip v-if="isPending" location="right">
                             <template v-slot:activator="{ props }">
                                 <div class="d-flex align-center ml-2" v-bind="props">
-                                    <v-icon size="16" icon="mdi-alert-circle" style="color: #f44336" />
-                                    <span class="text-caption ml-1" style="color: #f44336">{{ $t('kanbanColumnCard.error') }}</span>
+                                    <v-icon size="16" icon="mdi-alert-circle" style="color: var(--cds-text-danger)" />
+                                    <span class="text-caption ml-1" style="color: var(--cds-text-danger)">{{ $t('kanbanColumnCard.error') }}</span>
                                 </div>
                             </template>
                             <div class="text-caption text-wrap" style="max-width: 200px">{{ errorMessage }}</div>

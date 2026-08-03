@@ -47,8 +47,7 @@
                 ]"
                 :_style="{
                     fill: 'black',
-                    'fill-opacity': 1
-                }"
+                    'fill-opacity': 1}"
             ></geometry-polygon>
 
             <sub-elements>

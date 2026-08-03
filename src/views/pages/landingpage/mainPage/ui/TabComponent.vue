@@ -112,7 +112,7 @@ export default {
     display: flex;
     flex-wrap: wrap;
     margin-bottom: 20px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--cds-border);
     justify-content: center;
     overflow: visible;
 }
@@ -124,17 +124,17 @@ export default {
     border-bottom: 2px solid transparent;
     cursor: pointer;
     font-weight: 500;
-    color: #555;
+    color: var(--cds-text-secondary);
     transition: color 0.3s;
     margin-right: 10px;
 }
 
 .tab-btn:hover {
-    color: #1976d2;
+    color: hsl(var(--accent-brand));
 }
 
 .tab-btn.active {
-    border-bottom: 2px solid #1976d2;
+    border-bottom: 2px solid hsl(var(--accent-brand));
 }
 
 .tab-content {

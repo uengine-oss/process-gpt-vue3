@@ -117,8 +117,8 @@ export default {
 
 <style>
 .slide-styler {
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
+    background-color: var(--cds-bg-neutral);
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
     padding: 1rem;
     margin-top: 1rem;
@@ -128,7 +128,7 @@ export default {
     margin-top: 0;
     margin-bottom: 0.75rem;
     font-size: 1rem;
-    color: #555;
+    color: var(--cds-text-secondary);
 }
 
 .style-section {
@@ -139,16 +139,16 @@ export default {
     display: block;
     margin-bottom: 0.25rem;
     font-size: 0.9rem;
-    color: #666;
+    color: var(--cds-text-secondary);
 }
 
 .style-section select,
 .style-section input[type='range'] {
     width: 100%;
     padding: 0.4rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
-    background-color: white;
+    background-color: var(--cds-surface-2);
 }
 
 .slider-container {
@@ -161,7 +161,7 @@ export default {
     min-width: 3rem;
     text-align: right;
     font-size: 0.8rem;
-    color: #666;
+    color: var(--cds-text-secondary);
 }
 
 .checkbox-section label {
@@ -174,13 +174,13 @@ export default {
 /* Theme definitions */
 .theme-default {
     --slide-bg: white;
-    --slide-text: #333;
+    --slide-text: var(--cds-text-primary);
     --slide-heading: #42b883;
 }
 
 .theme-dark {
-    --slide-bg: #222;
-    --slide-text: #eee;
+    --slide-bg: var(--cds-text-primary);
+    --slide-text: var(--cds-border);
     --slide-heading: #5ccea9;
 }
 
@@ -192,7 +192,7 @@ export default {
 
 .theme-minimal {
     --slide-bg: white;
-    --slide-text: #111;
-    --slide-heading: #111;
+    --slide-text: var(--cds-text-primary);
+    --slide-heading: var(--cds-text-primary);
 }
 </style>

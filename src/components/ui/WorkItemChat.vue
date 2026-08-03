@@ -190,7 +190,7 @@ export default {
     bottom: -5px;
     right: 0px;
     z-index: 1;
-    background-color: white;
+    background-color: var(--cds-surface-2);
 }
 
 .w-90 {
@@ -245,7 +245,7 @@ pre {
 }
 
 .user-list {
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     max-height: 300px;
     overflow-y: auto;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);

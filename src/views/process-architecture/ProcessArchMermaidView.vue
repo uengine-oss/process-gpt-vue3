@@ -43,7 +43,7 @@
             >
                 <!-- Render each domain as a separate Mermaid diagram -->
                 <div v-for="domain in visibleDomains" :key="domain.id" class="domain-diagram-block mb-6">
-                    <div class="domain-label mb-2" :style="{ color: domain.color || '#555' }">
+                    <div class="domain-label mb-2" :style="{ color: domain.color || 'var(--cds-text-secondary)'}">
                         <v-icon size="16" :color="domain.color || 'grey'" class="mr-1">mdi-domain</v-icon>
                         <strong>{{ domain.name }}</strong>
                     </div>
@@ -59,11 +59,11 @@
                 <span class="text-caption">Mega Process</span>
             </div>
             <div class="d-flex align-center ga-2">
-                <div class="legend-box" style="background: #2e7d32"></div>
+                <div class="legend-box" style="background: var(--cds-text-success)"></div>
                 <span class="text-caption">Major Process</span>
             </div>
             <div class="d-flex align-center ga-2">
-                <div class="legend-box" style="background: #e3f2fd; border: 1px solid #1976d2"></div>
+                <div class="legend-box" style="background: var(--cds-bg-accent); border: 1px solid hsl(var(--accent-brand))"></div>
                 <span class="text-caption">Sub Process (click to open)</span>
             </div>
             <v-divider vertical class="mx-2" style="height: 16px" />
@@ -338,8 +338,8 @@ onBeforeUnmount(() => {
     min-height: 500px;
     max-height: 70vh;
     overflow: hidden;
-    background: #fafafa;
-    border: 1px solid #e0e0e0;
+    background: var(--cds-bg-neutral);
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     cursor: grab;
     user-select: none;
@@ -358,7 +358,7 @@ onBeforeUnmount(() => {
 }
 
 .domain-diagram-block {
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 8px;
     padding: 16px;
     border: 1px solid #eeeeee;
@@ -380,7 +380,7 @@ onBeforeUnmount(() => {
 }
 
 .mermaid-legend {
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
     border-radius: 8px;
 }
 

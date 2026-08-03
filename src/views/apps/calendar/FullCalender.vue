@@ -60,7 +60,7 @@
                             >
                                 <template v-slot:append>
                                     <v-btn icon @click="showColorPicker = !showColorPicker">
-                                        <v-icon :style="showColorPicker ? 'color: #2196F3' : ''">mdi-palette</v-icon>
+                                        <v-icon :style="showColorPicker ? 'color: hsl(var(--accent-brand))' : ''">mdi-palette</v-icon>
                                     </v-btn>
                                 </template>
                             </v-select>

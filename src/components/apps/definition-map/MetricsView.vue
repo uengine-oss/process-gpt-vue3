@@ -1006,7 +1006,7 @@ export default {
 }
 
 .color-option.color-selected {
-    border-color: #333;
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
+    border-color: var(--cds-text-primary);
+    box-shadow: 0 0 0 2px var(--cds-surface-2), 0 0 0 4px var(--cds-text-primary);
 }
 </style>

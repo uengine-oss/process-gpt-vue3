@@ -218,7 +218,7 @@ export default {
 
 .e2e-auto-layout-button,
 .e2e-rotate-button {
-    color: #444;
+    color: var(--cds-text-secondary);
     cursor: pointer;
 }
 

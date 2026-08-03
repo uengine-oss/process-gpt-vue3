@@ -62,7 +62,7 @@ export default {
     height: 140px;
     border-radius: 8px;
     transform: rotate(5deg);
-    background-color: white;
+    background-color: var(--cds-surface-2);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
     padding: 0px;

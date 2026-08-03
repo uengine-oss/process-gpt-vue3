@@ -78,15 +78,15 @@ export default {
     left: 0;
     right: 0;
     max-height: 200px;
-    background: white;
-    border-top: 1px solid #e0e0e0;
+    background: var(--cds-surface-2);
+    border-top: 1px solid var(--cds-border);
     z-index: 10;
     display: flex;
     flex-direction: column;
 }
 .validation-console-header {
-    background: #f5f5f5;
-    border-bottom: 1px solid #e0e0e0;
+    background: var(--cds-bg-neutral);
+    border-bottom: 1px solid var(--cds-border);
     min-height: 36px;
 }
 .validation-console-body {
@@ -97,6 +97,6 @@ export default {
     cursor: pointer;
 }
 .validation-item.clickable:hover {
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
 }
 </style>

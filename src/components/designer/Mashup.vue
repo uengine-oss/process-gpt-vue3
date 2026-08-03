@@ -36,6 +36,7 @@ import ChatModule from '@/components/ChatModule.vue';
 import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPanel.vue';
 import ContainerSettingPanel from '@/components/designer/modeling/ContainerSettingPanel.vue';
 import DynamicComponent from './DynamicComponent.vue';
+import { ensureFormDesigner } from '@/utils/legacyAssets';
 
 export default {
     name: 'mash-up',
@@ -114,7 +115,9 @@ export default {
          * KEditor를 조작한 모든 내용을 초기화시키기 위해서
          */
         clearStat() {
-            window.mashup.kEditor[0].children[0].innerHTML = '';
+            // KEditor 초기화 전에 호출될 수 있다.
+            const root = window.mashup.kEditor?.[0]?.children?.[0];
+            if (root) root.innerHTML = '';
             window.mashup.kEditorContent = '';
 
             window.mashup.$emit('onChangeKEditorContent', {
@@ -127,7 +130,11 @@ export default {
          * KEditor의 content에 대해서 저장되는 HTML 내용을 얻기 위해서
          */
         getKEditorContentHtml() {
-            return window.mashup.kEditorContentToHtml(window.mashup.kEditor[0].children[0].innerHTML);
+            // KEditor 초기화(레거시 스크립트 로드 포함)가 끝나기 전에 호출될 수 있다.
+            const root = window.mashup.kEditor?.[0]?.children?.[0];
+            if (!root) return window.mashup.modelValue || '';
+
+            return window.mashup.kEditorContentToHtml(root.innerHTML);
         },
 
         /**
@@ -324,8 +331,15 @@ export default {
             });
         }
     },
-    mounted() {
+    async mounted() {
+        // 부모가 $refs.mashup 을 통해 곧바로 호출할 수 있으므로
+        // 전역 핸들은 await 이전에 동기적으로 걸어둔다.
         window.mashup = this;
+
+        // KEditor 스택(jQuery/CKEditor4/Bootstrap3/KEditor)은 index.html 에서
+        // 전역 로드하지 않으므로, 폼 디자이너를 열 때 여기서 확보한다.
+        await ensureFormDesigner();
+
         window.mashup.completeClearKEditor();
 
         window.mashup.loadStylesForKEditor();
@@ -569,7 +583,7 @@ export default {
     right: 0; /* 우측에서부터 시작 */
     width: 30%; /* 너비는 화면의 30% */
     height: 100vh; /* 높이는 화면 전체 */
-    background-color: #f5f5f5; /* 배경색 설정 */
+    background-color: var(--cds-bg-neutral); /* 배경색 설정 */
     padding: 20px; /* 내용과 경계 사이의 여백 */
     box-sizing: border-box; /* 패딩을 포함한 너비 계산 */
     overflow-y: auto; /* 내용이 넘칠 경우 스크롤바 표시 */

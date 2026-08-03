@@ -1565,7 +1565,7 @@ export default {
     width: 100%;
     height: 360px;
     min-height: 240px;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
     border-radius: 8px;
 }
 
@@ -1595,7 +1595,7 @@ export default {
     position: fixed;
     inset: 24px;
     z-index: 2001;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     padding: 16px;
     border-radius: 12px;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);

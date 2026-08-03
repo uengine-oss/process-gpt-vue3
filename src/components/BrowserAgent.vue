@@ -676,9 +676,9 @@ export default {
     flex-direction: column;
     height: 600px;
     max-height: 80vh;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--cds-border);
     border-radius: 12px;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
@@ -688,8 +688,8 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    border-bottom: 1px solid #e5e7eb;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-bottom: 1px solid var(--cds-border);
+    background: linear-gradient(135deg, hsl(var(--accent-brand)) 0%, #764ba2 100%);
     border-radius: 12px 12px 0 0;
 }
 
@@ -741,39 +741,39 @@ export default {
 }
 
 .status.connected {
-    background: #10b981;
+    background: var(--cds-text-success);
     color: #ffffff;
 }
 .status.connecting {
-    background: #f59e0b;
+    background: var(--cds-text-warning);
     color: #ffffff;
 }
 .status.disconnected {
-    background: #ef4444;
+    background: var(--cds-text-danger);
     color: #ffffff;
 }
 .status.error {
-    background: #ef4444;
+    background: var(--cds-text-danger);
     color: #ffffff;
 }
 .status.failed {
-    background: #ef4444;
+    background: var(--cds-text-danger);
     color: #ffffff;
 }
 .status.ready {
-    background: #10b981;
+    background: var(--cds-text-success);
     color: #ffffff;
 }
 .status.running {
-    background: #3b82f6;
+    background: hsl(var(--accent-brand));
     color: #ffffff;
 }
 .status.completed {
-    background: #10b981;
+    background: var(--cds-text-success);
     color: #ffffff;
 }
 .status.waiting {
-    background: #6b7280;
+    background: var(--cds-text-secondary);
     color: #ffffff;
 }
 
@@ -781,7 +781,7 @@ export default {
     flex: 1;
     overflow-y: auto;
     padding: 0;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
 }
 
 .log-entry {
@@ -789,7 +789,7 @@ export default {
     align-items: flex-start;
     margin: 0;
     padding: 12px 20px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--cds-border);
     font-size: 14px;
     line-height: 1.5;
     transition: background-color 0.2s ease;
@@ -797,7 +797,7 @@ export default {
 }
 
 .log-entry:hover {
-    background: #f1f5f9;
+    background: var(--cds-bg-neutral);
 }
 
 .log-entry:last-child {
@@ -819,7 +819,7 @@ export default {
 }
 
 .log-entry.command::before {
-    background: #3b82f6;
+    background: hsl(var(--accent-brand));
 }
 
 .log-entry.info {
@@ -835,7 +835,7 @@ export default {
 }
 
 .log-entry.result::before {
-    background: #10b981;
+    background: var(--cds-text-success);
 }
 
 .log-entry.error {
@@ -843,7 +843,7 @@ export default {
 }
 
 .log-entry.error::before {
-    background: #ef4444;
+    background: var(--cds-text-danger);
 }
 
 .log-entry.log {
@@ -853,12 +853,12 @@ export default {
 }
 
 .log-entry.log::before {
-    background: #6b7280;
+    background: var(--cds-text-secondary);
 }
 
 .timestamp {
     min-width: 70px;
-    color: #6b7280;
+    color: var(--cds-text-secondary);
     font-size: 11px;
     font-weight: 500;
     margin-right: 16px;
@@ -869,7 +869,7 @@ export default {
 .content {
     flex: 1;
     word-break: break-word;
-    color: #374151;
+    color: var(--cds-text-secondary);
 }
 
 .log-entry.command .content {
@@ -878,25 +878,25 @@ export default {
 }
 
 .log-entry.error .content {
-    color: #dc2626;
+    color: var(--cds-text-danger);
 }
 
 .log-entry.result .content {
-    color: #059669;
+    color: var(--cds-text-success);
 }
 
 .no-logs {
     text-align: center;
-    color: #9ca3af;
+    color: var(--cds-text-muted);
     font-style: italic;
     padding: 60px 20px;
     font-size: 16px;
 }
 
 .input-area {
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--cds-border);
     padding: 20px;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border-radius: 0 0 12px 12px;
 }
 
@@ -909,7 +909,7 @@ export default {
 .command-input {
     flex: 1;
     padding: 16px;
-    border: 2px solid #e5e7eb;
+    border: 2px solid var(--cds-border);
     border-radius: 8px;
     font-size: 14px;
     outline: none;
@@ -918,20 +918,20 @@ export default {
 }
 
 .command-input:focus {
-    border-color: #3b82f6;
+    border-color: hsl(var(--accent-brand));
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    background: #ffffff;
+    background: var(--cds-surface-2);
 }
 
 .command-input:disabled {
-    background: #f3f4f6;
+    background: var(--cds-bg-neutral);
     cursor: not-allowed;
     opacity: 0.7;
 }
 
 .send-button {
     padding: 16px 28px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, hsl(var(--accent-brand)) 0%, #764ba2 100%);
     color: white;
     border: none;
     border-radius: 8px;
@@ -952,7 +952,7 @@ export default {
 }
 
 .send-button:disabled {
-    background: #d1d5db;
+    background: var(--cds-border);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -960,7 +960,7 @@ export default {
 
 .stop-button {
     padding: 16px 28px;
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    background: linear-gradient(135deg, var(--cds-text-danger) 0%, var(--cds-text-danger) 100%);
     color: white;
     border: none;
     border-radius: 8px;
@@ -981,7 +981,7 @@ export default {
 }
 
 .stop-button:disabled {
-    background: #d1d5db;
+    background: var(--cds-border);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -1004,13 +1004,13 @@ export default {
 
 .loading-text {
     font-size: 14px;
-    color: #6b7280;
+    color: var(--cds-text-secondary);
     font-weight: 500;
 }
 
 .start-agent-button {
     padding: 12px 24px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--cds-text-success) 0%, var(--cds-text-success) 100%);
     color: white;
     border: none;
     border-radius: 8px;
@@ -1031,7 +1031,7 @@ export default {
 }
 
 .start-agent-button:disabled {
-    background: #d1d5db;
+    background: var(--cds-border);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -1039,7 +1039,7 @@ export default {
 
 .retry-button {
     padding: 12px 24px;
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, var(--cds-text-warning) 0%, var(--cds-text-warning) 100%);
     color: white;
     border: none;
     border-radius: 8px;
@@ -1060,7 +1060,7 @@ export default {
 }
 
 .retry-button:disabled {
-    background: #d1d5db;
+    background: var(--cds-border);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -1068,7 +1068,7 @@ export default {
 
 /* 설정 다이얼로그 스타일 */
 .config-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, hsl(var(--accent-brand)) 0%, #764ba2 100%);
     color: white !important;
     padding: 20px 24px;
 }
@@ -1102,13 +1102,13 @@ export default {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
-    color: #374151;
+    color: var(--cds-text-secondary);
     flex: 1;
 }
 
 .section-subtitle {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--cds-text-secondary);
     font-style: italic;
     margin-left: auto;
 }
@@ -1139,7 +1139,7 @@ export default {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    background: linear-gradient(135deg, var(--cds-text-danger) 0%, var(--cds-text-danger) 100%);
     border-radius: 12px 12px 0 0;
 }
 
@@ -1159,7 +1159,7 @@ export default {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, var(--cds-text-warning) 0%, var(--cds-text-warning) 100%);
     border-radius: 12px 12px 0 0;
 }
 
@@ -1173,17 +1173,17 @@ export default {
 }
 
 .log-container::-webkit-scrollbar-thumb {
-    background: #d1d5db;
+    background: var(--cds-border);
     border-radius: 3px;
 }
 
 .log-container::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
+    background: var(--cds-text-muted);
 }
 
 /* 링크 스타일 */
 .content a {
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
     text-decoration: none;
     font-weight: 500;
 }

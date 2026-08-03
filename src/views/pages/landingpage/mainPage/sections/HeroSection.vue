@@ -33,7 +33,7 @@
                         href="/3_steps_to_building_agentic_ai&a2a_and_mcp.pdf"
                         target="_blank"
                         rel="noopener"
-                        style="width: fit-content; display: block; color: #1976d2"
+                        style="width: fit-content; display: block; color: hsl(var(--accent-brand))"
                     >
                         <v-row class="ma-0 pa-0 align-center">
                             <div>{{ $t('HeroSection.technicalReportLink') }}</div>

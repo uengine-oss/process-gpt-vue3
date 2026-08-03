@@ -63,7 +63,7 @@ export default {
 .prm-error {
     margin-top: 8px;
     font-size: 12px;
-    color: #d32f2f;
+    color: var(--cds-text-danger);
 }
 
 .prm-footer {

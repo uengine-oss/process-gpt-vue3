@@ -1079,7 +1079,7 @@ function onProcessCreated(newProc: { id: string; name: string }) {
 
 <style scoped>
 .process-architecture {
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
 }
 
 .view-toggle :deep(.v-btn) {
@@ -1104,13 +1104,13 @@ function onProcessCreated(newProc: { id: string; name: string }) {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 .color-option.color-selected {
-    border-color: #333;
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
+    border-color: var(--cds-text-primary);
+    box-shadow: 0 0 0 2px var(--cds-surface-2), 0 0 0 4px var(--cds-text-primary);
 }
 
 .stats-bar {
     padding: 8px 16px;
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
     border-radius: 8px;
 }
 
@@ -1122,7 +1122,7 @@ function onProcessCreated(newProc: { id: string; name: string }) {
 
 .stat-label {
     font-size: 0.8rem;
-    color: #757575;
+    color: var(--cds-text-muted);
 }
 
 .stat-value {
@@ -1147,7 +1147,7 @@ function onProcessCreated(newProc: { id: string; name: string }) {
     top: calc(100% + 4px);
     left: 0;
     min-width: 320px;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 8px;
     z-index: 200;
     overflow: hidden;
@@ -1156,7 +1156,7 @@ function onProcessCreated(newProc: { id: string; name: string }) {
 .search-dropdown-header {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #757575;
+    color: var(--cds-text-muted);
     padding: 8px 16px 4px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -1167,7 +1167,7 @@ function onProcessCreated(newProc: { id: string; name: string }) {
 }
 
 .search-dropdown-item:hover {
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
 }
 
 .empty-state {
@@ -1188,7 +1188,7 @@ function onProcessCreated(newProc: { id: string; name: string }) {
 
 .empty-state-message {
     font-size: 0.95rem;
-    color: #757575;
+    color: var(--cds-text-muted);
     margin: 0;
 }
 

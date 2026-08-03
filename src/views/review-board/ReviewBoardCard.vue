@@ -203,8 +203,8 @@ function handleSidebar(e: MouseEvent) {
 /* ── Card ── */
 .rbc {
     position: relative;
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     border-radius: 10px;
     padding: 14px 14px 12px;
     margin-bottom: 8px;
@@ -215,7 +215,7 @@ function handleSidebar(e: MouseEvent) {
 .rbc:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.09);
     transform: translateY(-1px);
-    border-color: #cbd5e1;
+    border-color: var(--cds-border);
 }
 .rbc--stalled {
     border-color: #fbbf24;
@@ -228,7 +228,7 @@ function handleSidebar(e: MouseEvent) {
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, #f59e0b, #ef4444);
+    background: linear-gradient(90deg, var(--cds-text-warning), var(--cds-text-danger));
 }
 
 /* ── Title row ── */
@@ -242,7 +242,7 @@ function handleSidebar(e: MouseEvent) {
 .rbc-name {
     font-size: 14px;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--cds-text-primary);
     line-height: 1.4;
     flex: 1;
     min-width: 0;
@@ -267,7 +267,7 @@ function handleSidebar(e: MouseEvent) {
 /* ── Version ── */
 .rbc-version {
     font-size: 12px;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     font-weight: 500;
     margin-bottom: 4px;
 }
@@ -275,7 +275,7 @@ function handleSidebar(e: MouseEvent) {
 /* ── Description ── */
 .rbc-desc {
     font-size: 12px;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     line-height: 1.5;
     margin-bottom: 10px;
     overflow: hidden;
@@ -309,7 +309,7 @@ function handleSidebar(e: MouseEvent) {
 
 .rbc-owner {
     font-size: 12px;
-    color: #475569;
+    color: var(--cds-text-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -319,7 +319,7 @@ function handleSidebar(e: MouseEvent) {
 
 .rbc-time {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--cds-text-muted);
     white-space: nowrap;
     margin-left: auto;
     padding-left: 8px;
@@ -332,14 +332,14 @@ function handleSidebar(e: MouseEvent) {
     gap: 12px;
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--cds-bg-neutral);
 }
 .rbc-stat {
     display: flex;
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: #64748b;
+    color: var(--cds-text-secondary);
 }
 
 /* ── Reviewer row ── */
@@ -349,7 +349,7 @@ function handleSidebar(e: MouseEvent) {
     gap: 4px;
     margin-top: 6px;
     font-size: 11px;
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
     font-weight: 500;
 }
 
@@ -361,7 +361,7 @@ function handleSidebar(e: MouseEvent) {
     margin-top: 6px;
     font-size: 11px;
     font-weight: 500;
-    color: #d97706;
+    color: var(--cds-text-warning);
 }
 
 /* ── Sidebar hover button ── */
@@ -374,7 +374,7 @@ function handleSidebar(e: MouseEvent) {
     border: none;
     border-radius: 6px;
     background: transparent;
-    color: #94a3b8;
+    color: var(--cds-text-muted);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -387,7 +387,7 @@ function handleSidebar(e: MouseEvent) {
     opacity: 1;
 }
 .rbc-sidebar-btn:hover {
-    background: #f1f5f9;
-    color: #475569;
+    background: var(--cds-bg-neutral);
+    color: var(--cds-text-secondary);
 }
 </style>

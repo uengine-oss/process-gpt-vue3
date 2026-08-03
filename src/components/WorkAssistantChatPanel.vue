@@ -2511,15 +2511,15 @@ export default {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
 }
 
 /* 채팅방 탭 */
 .chat-tabs-container {
     display: flex;
     align-items: center;
-    background: white;
-    border-bottom: 1px solid #e2e8f0;
+    background: var(--cds-surface-2);
+    border-bottom: 1px solid var(--cds-border);
     padding: 8px 12px;
     gap: 8px;
 }
@@ -2535,17 +2535,17 @@ export default {
     display: flex;
     align-items: center;
     padding: 6px 12px;
-    background: #f1f5f9;
+    background: var(--cds-bg-neutral);
     border-radius: 8px;
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.2s ease;
     font-size: 13px;
-    color: #64748b;
+    color: var(--cds-text-secondary);
 }
 
 .chat-tab:hover {
-    background: #e2e8f0;
+    background: var(--cds-border);
 }
 
 .chat-tab.active {
@@ -2589,7 +2589,7 @@ export default {
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #94a3b8;
+    color: var(--cds-text-muted);
 }
 
 .message-item {
@@ -2616,12 +2616,12 @@ export default {
 .message-sender {
     font-weight: 600;
     font-size: 13px;
-    color: #1e293b;
+    color: var(--cds-text-primary);
 }
 
 .message-time {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--cds-text-muted);
 }
 
 .message-text {
@@ -2632,20 +2632,20 @@ export default {
 }
 
 .message-text :deep(.message-link) {
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
     text-decoration: underline;
     cursor: pointer;
     word-break: break-all;
 }
 
 .message-text :deep(.message-link:hover) {
-    color: #1d4ed8;
+    color: hsl(var(--accent-brand));
 }
 
 .message-text :deep(.json-block),
 .message-text :deep(.code-block) {
-    background: #1e293b;
-    color: #e2e8f0;
+    background: var(--cds-text-primary);
+    color: var(--cds-border);
     padding: 12px;
     border-radius: 8px;
     font-family: 'Fira Code', monospace;
@@ -2674,15 +2674,15 @@ export default {
 .loading-indicator {
     display: flex;
     align-items: center;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     font-size: 13px;
 }
 
 /* 입력 영역 */
 .chat-input-container {
     padding: 8px 16px 12px;
-    background: white;
-    border-top: 1px solid #e2e8f0;
+    background: var(--cds-surface-2);
+    border-top: 1px solid var(--cds-border);
 }
 
 /* Chat 컴포넌트 내부 스타일 오버라이드 (패널 모드) */
@@ -2726,8 +2726,8 @@ export default {
 
 /* PDF2BPMN 진행 상황 */
 .pdf2bpmn-progress-container {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, var(--cds-bg-neutral) 0%, var(--cds-bg-neutral) 100%);
+    border: 1px solid var(--cds-border);
     border-radius: 12px;
     padding: 16px;
     margin: 0 16px 12px 16px;
@@ -2742,7 +2742,7 @@ export default {
 .progress-title {
     font-weight: 600;
     font-size: 14px;
-    color: #1e293b;
+    color: var(--cds-text-primary);
 }
 
 .progress-message {
@@ -2750,14 +2750,14 @@ export default {
 }
 
 .generated-bpmns {
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--cds-border);
     padding-top: 12px;
 }
 
 .bpmn-list-header {
     display: flex;
     align-items: center;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     font-weight: 500;
 }
 
@@ -2765,8 +2765,8 @@ export default {
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    background: white;
-    border: 1px solid #e2e8f0;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     margin-bottom: 6px;
     cursor: pointer;
@@ -2774,8 +2774,8 @@ export default {
 }
 
 .bpmn-item:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
+    background: var(--cds-bg-neutral);
+    border-color: var(--cds-border);
     transform: translateX(2px);
 }
 
@@ -2797,7 +2797,7 @@ export default {
 
 /* 메시지 하단 BPMN 결과 */
 .pdf2bpmn-result-container {
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    background: linear-gradient(135deg, var(--cds-bg-success) 0%, var(--cds-bg-success) 100%);
     border: 1px solid #86efac;
     border-radius: 12px;
     padding: 16px;
@@ -2824,8 +2824,8 @@ export default {
 .bpmn-card {
     display: flex;
     align-items: center;
-    background: white;
-    border: 1px solid #e2e8f0;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     border-radius: 10px;
     padding: 12px;
     cursor: pointer;
@@ -2833,7 +2833,7 @@ export default {
 }
 
 .bpmn-card:hover {
-    border-color: #3b82f6;
+    border-color: hsl(var(--accent-brand));
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
     transform: translateY(-2px);
 }
@@ -2841,7 +2841,7 @@ export default {
 .bpmn-card-icon {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    background: linear-gradient(135deg, var(--cds-bg-accent) 0%, var(--cds-bg-accent) 100%);
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -2858,7 +2858,7 @@ export default {
 .bpmn-card-title {
     font-weight: 600;
     font-size: 13px;
-    color: #1e293b;
+    color: var(--cds-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2866,7 +2866,7 @@ export default {
 
 .bpmn-card-subtitle {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--cds-text-muted);
     margin-top: 2px;
     white-space: nowrap;
     overflow: hidden;
@@ -2884,7 +2884,7 @@ export default {
 
 /* 진행상황 카드 (메시지 내부) */
 .pdf2bpmn-progress-card {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    background: linear-gradient(135deg, var(--cds-bg-accent) 0%, var(--cds-bg-accent) 100%);
     border: 1px solid #93c5fd;
     border-radius: 12px;
     padding: 16px;
@@ -2899,12 +2899,12 @@ export default {
 }
 
 .progress-info .progress-message {
-    color: #475569;
+    color: var(--cds-text-secondary);
     flex: 1;
 }
 
 .progress-info .progress-percent {
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
     font-weight: 600;
     margin-left: 12px;
 }
@@ -2946,8 +2946,8 @@ export default {
 .bpmn-card-mini {
     display: flex;
     align-items: center;
-    background: white;
-    border: 1px solid #e2e8f0;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     padding: 10px 12px;
     margin-bottom: 8px;
@@ -2956,8 +2956,8 @@ export default {
 }
 
 .bpmn-card-mini:hover {
-    background: #f8fafc;
-    border-color: #3b82f6;
+    background: var(--cds-bg-neutral);
+    border-color: hsl(var(--accent-brand));
     transform: translateX(4px);
 }
 
@@ -2978,7 +2978,7 @@ export default {
 .bpmn-card-mini-title {
     font-size: 13px;
     font-weight: 500;
-    color: #1e293b;
+    color: var(--cds-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2993,14 +2993,14 @@ export default {
 
 .bpmn-diagram-container {
     height: 450px;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
     position: relative;
 }
 
 .bpmn-preview-container {
     height: 450px;
     overflow: auto;
-    background: #1e293b;
+    background: var(--cds-text-primary);
 }
 
 .bpmn-ontology-container {
@@ -3014,7 +3014,7 @@ export default {
     font-family: 'Fira Code', 'Consolas', monospace;
     font-size: 12px;
     line-height: 1.5;
-    color: #e2e8f0;
+    color: var(--cds-border);
     white-space: pre-wrap;
     word-break: break-all;
 }
@@ -3034,7 +3034,7 @@ export default {
     max-width: 200px;
     max-height: 150px;
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--cds-border);
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }

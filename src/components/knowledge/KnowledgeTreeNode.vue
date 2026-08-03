@@ -238,17 +238,17 @@ export default {
 
 .ktn-status-badge.is-processing {
     background: rgba(33, 150, 243, 0.12);
-    color: #1976d2;
+    color: hsl(var(--accent-brand));
 }
 
 .ktn-status-badge.is-failed {
     background: rgba(244, 67, 54, 0.12);
-    color: #c62828;
+    color: var(--cds-text-danger);
 }
 
 .ktn-status-badge.is-excluded {
     background: rgba(158, 158, 158, 0.18);
-    color: #616161;
+    color: var(--cds-text-secondary);
 }
 
 /* doc_role badge — 트리 모드 파일 행에서 역할 시각화 */
@@ -266,11 +266,11 @@ export default {
 }
 .ktn-role-badge.is-template {
     background: rgba(239, 108, 0, 0.12);
-    color: #ef6c00;
+    color: var(--cds-text-warning);
 }
 .ktn-role-badge.is-reference {
     background: rgba(56, 142, 60, 0.12);
-    color: #388e3c;
+    color: var(--cds-text-success);
 }
 .ktn-role-badge.is-dataset {
     background: rgba(0, 137, 123, 0.12);

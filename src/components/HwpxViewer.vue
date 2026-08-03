@@ -1405,7 +1405,7 @@ export default {
 .hwpx-viewer__content {
     height: 100%;
     overflow: auto;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
 }
 
 .hwpx-viewer__html {
@@ -1419,7 +1419,7 @@ export default {
     width: 100%;
     min-height: 0;
     position: relative;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
 }
 /* 미리보기에서는 미니맵 숨김(요청) */
 .hwpx-viewer__bpmn :deep(.djs-minimap) {
@@ -1469,7 +1469,7 @@ export default {
 :deep(.hwpx-viewer__html .hwpx-doc form) {
     display: inline-block;
     min-width: min(560px, 100%);
-    background: #fff;
+    background: var(--cds-surface-2);
     border: 1px solid rgba(15, 23, 42, 0.1);
     border-radius: 10px;
     padding: 22px 24px;
@@ -1479,7 +1479,7 @@ export default {
     font-size: 18px;
     font-weight: 700;
     margin: 0 0 16px;
-    color: #0f172a;
+    color: var(--cds-text-primary);
 }
 :deep(.hwpx-viewer__html .hwpx-doc label) {
     display: block;
@@ -1497,8 +1497,8 @@ export default {
     font-size: 13px;
     border: 1px solid rgba(15, 23, 42, 0.18);
     border-radius: 6px;
-    background: #fff;
-    color: #0f172a;
+    background: var(--cds-surface-2);
+    color: var(--cds-text-primary);
     outline: none;
 }
 :deep(.hwpx-viewer__html .hwpx-doc input[type='checkbox']),
@@ -1546,7 +1546,7 @@ export default {
 
 .hwpx-viewer__html.is-editing {
     outline: 2px solid rgba(0, 133, 219, 0.4);
-    background: #ffffff;
+    background: var(--cds-surface-2);
     cursor: text;
 }
 
@@ -1586,14 +1586,14 @@ export default {
     z-index: 3000;
     max-width: 360px;
     min-width: 240px;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border: 1px solid rgba(56, 176, 100, 0.4);
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     padding: 10px 12px;
     font-size: 12px;
     line-height: 1.45;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     animation: hwpxSourceTipIn 0.12s ease;
     pointer-events: auto;
 }
@@ -1637,7 +1637,7 @@ export default {
 
 .hwpx-source-tooltip__file-name {
     font-weight: 600;
-    color: #111827;
+    color: var(--cds-text-primary);
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1658,12 +1658,12 @@ export default {
     display: flex;
     align-items: center;
     font-size: 11px;
-    color: #4b5563;
+    color: var(--cds-text-secondary);
     margin-bottom: 3px;
 }
 
 .hwpx-source-tooltip__snippet {
-    color: #374151;
+    color: var(--cds-text-secondary);
     font-size: 11px;
     line-height: 1.5;
     display: -webkit-box;
@@ -1692,7 +1692,7 @@ export default {
     border-radius: 4px;
     overflow: hidden;
     cursor: zoom-in;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
     transition: border-color 0.15s ease, transform 0.08s ease;
 }
 .hwpx-source-tooltip__thumb-wrap:hover {
@@ -1704,7 +1704,7 @@ export default {
     width: 100%;
     max-height: 160px;
     object-fit: contain;
-    background: #fff;
+    background: var(--cds-surface-2);
 }
 .hwpx-highlight-modal__img {
     max-width: 100%;
@@ -1778,7 +1778,7 @@ export default {
     top: 0;
     bottom: 0;
     width: 2px;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     transform: translateX(-50%);
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
     pointer-events: none;
@@ -1792,7 +1792,7 @@ export default {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
     display: flex;
     align-items: center;

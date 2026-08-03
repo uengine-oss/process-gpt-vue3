@@ -158,10 +158,10 @@ export default defineComponent({
 }
 .diff-old {
     background-color: #fce4ec;
-    color: #c62828;
+    color: var(--cds-text-danger);
 }
 .diff-new {
-    background-color: #e8f5e9;
-    color: #2e7d32;
+    background-color: var(--cds-bg-success);
+    color: var(--cds-text-success);
 }
 </style>

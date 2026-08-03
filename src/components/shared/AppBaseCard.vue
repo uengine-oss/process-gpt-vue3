@@ -267,13 +267,13 @@ const rightPartStyle = computed(() => {
     transition: width 0.1s ease-out;
     flex-shrink: 0;
     overflow: visible;
-    background-color: white;
+    background-color: var(--cds-surface-2);
     position: relative;
 }
 
 .v-theme--light {
     .left-part {
-        background: white;
+        background: var(--cds-surface-2);
     }
 }
 
@@ -303,7 +303,7 @@ const rightPartStyle = computed(() => {
 
 .right-part {
     overflow: auto;
-    background: white;
+    background: var(--cds-surface-2);
     display: flex;
     flex-direction: column;
     height: 100%;

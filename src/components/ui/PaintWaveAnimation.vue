@@ -126,7 +126,7 @@ export default {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(180deg, #ffffff 0%, #f0f8ff 25%, #87ceeb 50%, #4682b4 75%, #1e90ff 100%);
+    background: linear-gradient(180deg, var(--cds-surface-2) 0%, #f0f8ff 25%, #87ceeb 50%, #4682b4 75%, #1e90ff 100%);
     border-radius: 50%;
 }
 

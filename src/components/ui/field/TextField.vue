@@ -13,7 +13,7 @@
             ref="textField"
         >
             <template v-slot:label>
-                <span style="color: black">
+                <span style="color: var(--cds-text-primary)">
                     {{ localAlias && localAlias.length > 0 ? localAlias : localName }}
                 </span>
             </template>

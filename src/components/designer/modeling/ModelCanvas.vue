@@ -4707,7 +4707,7 @@ export default {
 
 <style scoped lang="scss" rel="stylesheet/scss">
 .input-name {
-    background-color: #ffffff;
+    background-color: var(--cds-surface-2);
     full-width: 10px;
 }
 
@@ -4862,11 +4862,11 @@ export default {
     z-index: 1000;
     position: absolute;
     overflow: hidden;
-    border: 1px solid #ccc;
+    border: 1px solid var(--cds-text-muted);
     white-space: nowrap;
     font-family: sans-serif;
-    background: #fff;
-    color: #333;
+    background: var(--cds-surface-2);
+    color: var(--cds-text-primary);
     border-radius: 5px;
     padding: 0;
 }
@@ -4900,7 +4900,7 @@ export default {
 /*    margin: 0 auto;*/
 /*    font-weight: 100;*/
 /*    letter-spacing: 1px;*/
-/*    background: white;*/
+/*    background: var(--cds-surface-2);*/
 /*}*/
 
 .video-list {
@@ -4925,15 +4925,15 @@ export default {
     }
 
     .buttonHover {
-        background-color: white;
+        background-color: var(--cds-surface-2);
     }
 
     .content {
-        background-color: white;
+        background-color: var(--cds-surface-2);
     }
 
     .titlebar {
-        background-color: white;
+        background-color: var(--cds-surface-2);
     }
 }
 </style>

@@ -11,7 +11,7 @@
                     variant="elevated"
                     class="rounded-pill mr-2"
                     density="compact"
-                    style="background-color: #808080; color: white"
+                    style="background-color: var(--cds-text-muted); color: white"
                     >{{ $t('FormWorkItem.previousStep') }}</v-btn
                 >
                 <v-btn v-if="!isDryRun && !gs" @click="saveTask" density="compact" class="mr-2 default-gray-btn" rounded variant="flat">{{
@@ -149,7 +149,7 @@
                                 variant="elevated"
                                 class="rounded-pill mr-2"
                                 density="compact"
-                                style="background-color: #808080; color: white"
+                                style="background-color: var(--cds-text-muted); color: white"
                                 >{{ $t('FormWorkItem.previousStep') }}</v-btn
                             >
                             <v-btn
@@ -1148,7 +1148,7 @@ export default {
 
                         // chip group을 text-field 아래에 추가
                         // data 속성으로 값을 저장하고, 나중에 JavaScript로 렌더링
-                        const chipGroupHtml = `<div style="font-size: 12px; color: #666; margin-top: 4px;">선택 옵션: </div><div class="text-field-chip-group" data-field-name="${escapedKey}" data-chip-values='${chipValuesJson.replace(
+                        const chipGroupHtml = `<div style="font-size: 12px; color: var(--cds-text-secondary); margin-top: 4px;">선택 옵션: </div><div class="text-field-chip-group" data-field-name="${escapedKey}" data-chip-values='${chipValuesJson.replace(
                             /'/g,
                             '&#39;'
                         )}' style="margin-bottom: 16px;"></div>`;
@@ -1341,7 +1341,7 @@ export default {
 }
 
 .form-tabs {
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--cds-border);
     flex-shrink: 0;
 }
 

@@ -508,7 +508,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #cbd5e1;
+    color: var(--cds-border);
     font-size: 13px;
     padding: 16px;
     text-align: center;
@@ -530,7 +530,7 @@ export default {
     border: 1px solid rgba(148, 163, 184, 0.35);
     border-radius: 10px;
     padding: 10px 12px;
-    color: #e2e8f0;
+    color: var(--cds-border);
 }
 
 .detail-title {
@@ -541,7 +541,7 @@ export default {
 
 .detail-sub {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--cds-text-muted);
     margin-bottom: 10px;
 }
 
@@ -567,7 +567,7 @@ export default {
 .detail-text {
     font-size: 12px;
     line-height: 1.4;
-    color: #e2e8f0;
+    color: var(--cds-border);
     word-break: break-word;
 }
 </style>

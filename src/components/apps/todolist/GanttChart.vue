@@ -223,7 +223,7 @@ export default {
     z-index: 1000;
 }
 .dialog-box {
-    background: #fff;
+    background: var(--cds-surface-2);
     padding: 24px;
     border-radius: 8px;
     min-width: 320px;
@@ -250,6 +250,6 @@ export default {
     font-weight: 600;
 }
 .issue-desc {
-    color: #444;
+    color: var(--cds-text-secondary);
 }
 </style>

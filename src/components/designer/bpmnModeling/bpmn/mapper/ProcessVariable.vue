@@ -279,16 +279,16 @@ export default {
 
 .table-responsive th,
 .table-responsive td {
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     padding: 8px;
     text-align: left;
 }
 
 .table-responsive th {
-    background-color: #f2f2f2;
+    background-color: var(--cds-bg-neutral);
 }
 
 .table-responsive tr:nth-child(even) {
-    background-color: #f9f9f9;
+    background-color: var(--cds-bg-neutral);
 }
 </style>

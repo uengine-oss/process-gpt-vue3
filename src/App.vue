@@ -23,7 +23,7 @@
         <!-- v-if="!loadScreen" -->
         <div
             v-if="!loadScreen"
-            style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: white"
+            style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: var(--cds-surface-2)"
             class="main-page-skeleton"
         >
             <v-row class="ma-0 pa-0" style="height: 100%">
@@ -96,7 +96,9 @@ export default {
         if (window.$mode == 'ProcessGPT') {
             if (
                 window.location.pathname.startsWith('/bpmn-auto-layout-e2e') ||
-                window.location.pathname.startsWith('/processgpt-mapper-ui-e2e')
+                window.location.pathname.startsWith('/processgpt-mapper-ui-e2e') ||
+                // 디자인 시스템 쇼케이스는 백엔드/테넌트 없이 단독으로 열려야 한다
+                window.location.pathname.startsWith('/design-system')
             ) {
                 this.loadScreen = true;
                 return;
@@ -471,10 +473,10 @@ export default {
 
 /* Footer Styles */
 .footer {
-    background-color: #f8f9fa;
+    background-color: var(--cds-bg-neutral);
     padding: 40px 0 20px 0;
     margin-top: auto;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--cds-border);
 }
 
 .footer-content {
@@ -490,14 +492,14 @@ export default {
 }
 
 .copyright {
-    color: #495057;
+    color: var(--cds-text-secondary);
     font-size: 14px;
     font-weight: 500;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .company-info {
-    color: #6c757d;
+    color: var(--cds-text-muted);
     font-size: 12px;
     line-height: 1.6;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -508,7 +510,7 @@ export default {
 }
 
 .terms-header {
-    color: #495057;
+    color: var(--cds-text-secondary);
     font-size: 14px;
     font-weight: 600;
     display: flex;
@@ -523,7 +525,7 @@ export default {
 }
 
 .terms-link {
-    color: #6c757d;
+    color: var(--cds-text-muted);
     font-size: 12px;
     text-decoration: none;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -531,7 +533,7 @@ export default {
 }
 
 .terms-link:hover {
-    color: #495057;
+    color: var(--cds-text-secondary);
     text-decoration: underline;
 }
 
@@ -545,7 +547,7 @@ export default {
     width: 40px !important;
     height: 40px !important;
     border-radius: 50% !important;
-    background-color: #e9ecef !important;
+    background-color: var(--cds-border) !important;
     border: none !important;
     padding: 0 !important;
     min-width: unset !important;
@@ -561,14 +563,14 @@ export default {
 }
 
 .social-text {
-    color: #495057;
+    color: var(--cds-text-secondary);
     font-size: 10px;
     font-weight: 600;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .social-icon .v-icon {
-    color: #495057 !important;
+    color: var(--cds-text-secondary) !important;
 }
 
 /* 반응형 디자인 */

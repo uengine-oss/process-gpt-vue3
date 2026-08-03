@@ -564,7 +564,7 @@ export default {
                     // 빈 텍스트나 너무 짧은 텍스트는 건너뛰기
                     if (!graphDefinition || graphDefinition.length < 5) {
                         console.warn('Mermaid: 빈 다이어그램 건너뛰기');
-                        element.innerHTML = `<div style="color: #666; font-style: italic;">빈 다이어그램</div>`;
+                        element.innerHTML = `<div style="color: var(--cds-text-secondary); font-style: italic;">빈 다이어그램</div>`;
                         element.setAttribute('data-processed', 'true');
                         continue;
                     }
@@ -605,7 +605,7 @@ export default {
     width: 100%;
     height: 100%;
     margin: 0 auto;
-    background-color: #fff;
+    background-color: var(--cds-surface-2);
     border-radius: 12px;
     min-height: 600px;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -615,11 +615,11 @@ export default {
     width: 100%;
     height: 100%;
     margin: 0 auto;
-    background-color: #fff;
+    background-color: var(--cds-surface-2);
     padding: 16px;
     font-size: 14px;
     line-height: 1.6;
-    color: #333;
+    color: var(--cds-text-primary);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -631,20 +631,20 @@ export default {
 
 .form-markdown-preview table {
     border-collapse: collapse !important;
-    border: 1px solid #000000 !important;
+    border: 1px solid var(--cds-text-primary) !important;
     margin: 16px 0 !important;
     width: 100% !important;
 }
 
 .form-markdown-preview table td,
 .form-markdown-preview table th {
-    border: 0.75px solid #000000 !important;
+    border: 0.75px solid var(--cds-text-primary) !important;
     padding: 8px 12px !important;
     text-align: left !important;
 }
 
 .form-markdown-preview table th {
-    background-color: #f0f0f0 !important;
+    background-color: var(--cds-border) !important;
     font-weight: 600 !important;
 }
 
@@ -663,7 +663,7 @@ export default {
 }
 
 .editor-border {
-    border: 1px solid #ccc;
+    border: 1px solid var(--cds-text-muted);
     border-radius: 8px;
 }
 
@@ -683,8 +683,8 @@ export default {
 .bubble-menu {
     display: flex;
     gap: 4px;
-    background: white;
-    border: 1px solid #ddd;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     padding: 6px;
     border-radius: 6px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -693,8 +693,8 @@ export default {
 }
 
 .bubble-ai-menu {
-    background: #fff;
-    border: 1px solid #ddd;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     padding: 12px;
     border-radius: 8px;
     min-width: 280px;
@@ -747,7 +747,7 @@ export default {
 
 ::v-deep(.ProseMirror table td),
 ::v-deep(.ProseMirror table th) {
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     box-sizing: border-box;
     min-width: 1em;
     padding: 8px;
@@ -756,7 +756,7 @@ export default {
 }
 
 ::v-deep(.ProseMirror table th) {
-    background-color: #f5f5f5;
+    background-color: var(--cds-bg-neutral);
     font-weight: bold;
     text-align: left;
 }
@@ -796,7 +796,7 @@ export default {
     font-size: 2em;
     font-weight: 600;
     margin: 24px 0 16px 0;
-    border-bottom: 1px solid #d0d7de;
+    border-bottom: 1px solid var(--cds-border);
     padding-bottom: 8px;
 }
 
@@ -804,7 +804,7 @@ export default {
     font-size: 1.5em;
     font-weight: 600;
     margin: 24px 0 16px 0;
-    border-bottom: 1px solid #d0d7de;
+    border-bottom: 1px solid var(--cds-border);
     padding-bottom: 8px;
 }
 
@@ -916,7 +916,7 @@ export default {
 
 /* 미리보기 모드에서의 블록쿼트 스타일 */
 .form-markdown-preview blockquote {
-    border-left: 4px solid #d0d7de;
+    border-left: 4px solid var(--cds-border);
     padding: 0 16px;
     color: #656d76;
     margin: 16px 0;
@@ -926,7 +926,7 @@ export default {
 .mermaid-container {
     margin: 16px 0;
     text-align: center;
-    background: #f9f9f9;
+    background: var(--cds-bg-neutral);
     border: 1px solid #e1e5e9;
     border-radius: 8px;
     padding: 16px;
@@ -942,7 +942,7 @@ export default {
 .form-markdown-preview .mermaid-container {
     margin: 16px 0;
     padding: 16px;
-    background: #f9f9f9;
+    background: var(--cds-bg-neutral);
     border: 1px solid #e1e5e9;
     border-radius: 8px;
     text-align: center;

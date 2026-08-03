@@ -45,7 +45,7 @@
         </v-card>
         <AppBaseCard v-else :customMenuName="$t('processDefinition.title')">
             <template v-slot:leftpart>
-                <h5 v-if="!canEdit" class="text-h5 font-weight-semibold pa-3" style="background-color: white">
+                <h5 v-if="!canEdit" class="text-h5 font-weight-semibold pa-3" style="background-color: var(--cds-surface-2)">
                     {{ projectName }}
                 </h5>
                 <!-- 프로세스 정의 내부에 있는 ProcessDefinition.vue 컴포넌트 -->
@@ -3274,22 +3274,22 @@ export default {
 
 /* Review Mode Governance Panel */
 .pdc-url-input-bar {
-    background: #f5f5f5;
-    border-bottom: 1px solid #e0e0e0;
+    background: var(--cds-bg-neutral);
+    border-bottom: 1px solid var(--cds-border);
 }
 .pdc-review-panel {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
     overflow: hidden;
 }
 .pdc-review-panel__header {
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    background: #fff;
-    border-bottom: 1px solid #e0e0e0;
+    background: var(--cds-surface-2);
+    border-bottom: 1px solid var(--cds-border);
     font-size: 13px;
     gap: 4px;
     min-height: 40px;
@@ -3297,8 +3297,8 @@ export default {
 }
 .pdc-review-tabs {
     flex-shrink: 0;
-    border-bottom: 1px solid #e0e0e0;
-    background: #fff;
+    border-bottom: 1px solid var(--cds-border);
+    background: var(--cds-surface-2);
 }
 .pdc-review-window {
     flex: 1;

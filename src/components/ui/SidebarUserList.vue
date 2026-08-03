@@ -170,11 +170,11 @@ export default {
     justify-content: center;
     padding: 16px 8px;
     text-align: center;
-    color: #666;
+    color: var(--cds-text-secondary);
 }
 
 .empty-state {
-    color: #666;
+    color: var(--cds-text-secondary);
 }
 
 .user-items {
@@ -198,7 +198,7 @@ export default {
     height: 32px;
     border-radius: 50%;
     overflow: hidden;
-    background: #f0f0f0;
+    background: var(--cds-border);
     display: flex;
     align-items: center;
     justify-content: center;

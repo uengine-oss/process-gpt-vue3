@@ -116,7 +116,7 @@
                             :key="item.value"
                             :variant="tab === item.value ? 'flat' : 'text'"
                             :color="tab === item.value ? '' : 'default'"
-                            :style="tab === item.value ? 'background: #808080; color: white;' : ''"
+                            :style="tab === item.value ? 'background: var(--cds-text-muted); color: white;' : ''"
                             size="small"
                             @click="tab = item.value"
                         >
@@ -221,12 +221,12 @@
                     <strong>{{ instanceName }}</strong> {{ $t('InstanceCard.deleteInstanceMessage') }}
                 </div>
                 <div class="mb-2 pa-3" style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px">
-                    <p class="mb-2" style="color: #721c24">
+                    <p class="mb-2" style="color: var(--cds-text-danger)">
                         <strong>⚠️ {{ $t('InstanceCard.warning') }}</strong>
                     </p>
-                    <p class="mb-2" style="color: #721c24">• {{ $t('InstanceCard.warningMessage1') }}</p>
-                    <p class="mb-2" style="color: #721c24">• {{ $t('InstanceCard.warningMessage2') }}</p>
-                    <p class="mb-0" style="color: #721c24">• {{ $t('InstanceCard.warningMessage3') }}</p>
+                    <p class="mb-2" style="color: var(--cds-text-danger)">• {{ $t('InstanceCard.warningMessage1') }}</p>
+                    <p class="mb-2" style="color: var(--cds-text-danger)">• {{ $t('InstanceCard.warningMessage2') }}</p>
+                    <p class="mb-0" style="color: var(--cds-text-danger)">• {{ $t('InstanceCard.warningMessage3') }}</p>
                 </div>
             </v-card-text>
             <v-row class="ma-0 pa-4">

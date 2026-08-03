@@ -32,7 +32,7 @@
             ></v-autocomplete>
         </div>
 
-        <div class="px-0 pb-2" style="border-bottom: 1px solid #e0e0e0">
+        <div class="px-0 pb-2" style="border-bottom: 1px solid var(--cds-border)">
             <div class="d-flex flex-wrap">
                 <v-btn
                     v-for="item in filteredAgentSubTabItems"
@@ -220,13 +220,13 @@ export default {
 
 <style scoped>
 .selected-sub-tab {
-    background: #b0b0b0 !important;
+    background: var(--cds-text-muted) !important;
     color: white !important;
 }
 .agent-create-dialog-body {
     height: calc(100vh - 320px);
     overflow: auto;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--cds-border);
 }
 .agent-create-dialog-body--mobile {
     height: calc(100vh - 150px);

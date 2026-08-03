@@ -41,7 +41,7 @@
                                 <v-list-item-title class="font-weight-bold"
                                     >{{ $t('ProcessWorkResult.activity') }}: {{ activity.completedActivityName }}</v-list-item-title
                                 >
-                                <div style="color: #808080">{{ activity.description }}</div>
+                                <div style="color: var(--cds-text-muted)">{{ activity.description }}</div>
                             </v-list-item>
                             <v-list-item v-if="completedActivities.length === 0" class="px-0">
                                 <v-list-item-subtitle class="text-grey">{{
@@ -92,7 +92,7 @@
                                 <v-list-item-title class="font-weight-bold"
                                     >{{ $t('ProcessWorkResult.activity') }}: {{ activity.completedActivityName }}</v-list-item-title
                                 >
-                                <div style="color: #808080">{{ activity.description }}</div>
+                                <div style="color: var(--cds-text-muted)">{{ activity.description }}</div>
                             </v-list-item>
                         </v-list>
                     </v-card-text>
@@ -136,7 +136,7 @@
                                 <v-list-item-title class="font-weight-bold"
                                     >{{ $t('ProcessWorkResult.activity') }}: {{ activity.nextActivityName }}</v-list-item-title
                                 >
-                                <v-list-item-subtitle style="color: #808080">{{ activity.description }}</v-list-item-subtitle>
+                                <v-list-item-subtitle style="color: var(--cds-text-muted)">{{ activity.description }}</v-list-item-subtitle>
                             </v-list-item>
                             <v-list-item v-if="nextActivities.length === 0" class="px-0">
                                 <v-list-item-subtitle class="text-grey">{{

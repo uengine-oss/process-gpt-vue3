@@ -103,14 +103,14 @@ export default {
 }
 
 .detail-item-image {
-    border: solid 1px #e0e0e0;
+    border: solid 1px var(--cds-border);
     border-radius: 8px;
 }
 
 .detail-link {
     font-size: 14px;
     font-weight: 600;
-    color: #1976d2;
+    color: hsl(var(--accent-brand));
     text-decoration: none;
     display: inline-flex;
     align-items: center;

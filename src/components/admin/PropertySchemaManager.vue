@@ -258,7 +258,7 @@
                             <span
                                 v-if="item.config"
                                 class="text-caption"
-                                style="font-family: monospace; background: #f5f5f5; padding: 2px 8px; border-radius: 4px"
+                                style="font-family: monospace; background: var(--cds-bg-neutral); padding: 2px 8px; border-radius: 4px"
                             >
                                 <template v-if="item.property_type === 'db-select'">DB: {{ item.config.table || '' }}</template>
                                 <template v-else-if="item.property_type === 'formula'">{{ item.config.expression || '' }}</template>
@@ -693,7 +693,7 @@ export default defineComponent({
     color: rgb(var(--v-theme-primary));
     margin: 16px 0 12px 0;
     padding-bottom: 4px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--cds-border);
 }
 
 .preview-row {
@@ -710,7 +710,7 @@ export default defineComponent({
     font-weight: 500;
 }
 .mandatory-indicator {
-    color: #ef4444;
+    color: var(--cds-text-danger);
     margin-left: 2px;
 }
 
@@ -721,12 +721,12 @@ export default defineComponent({
 .mock-input,
 .mock-select,
 .mock-textarea {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
     padding: 8px 12px;
     font-size: 13px;
-    color: #9ca3af;
+    color: var(--cds-text-muted);
 }
 .mock-textarea {
     min-height: 60px;
@@ -739,7 +739,7 @@ export default defineComponent({
 .mock-switch {
     width: 40px;
     height: 20px;
-    background: #e5e7eb;
+    background: var(--cds-border);
     border-radius: 10px;
     position: relative;
 }
@@ -748,7 +748,7 @@ export default defineComponent({
     position: absolute;
     width: 16px;
     height: 16px;
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 50%;
     top: 2px;
     left: 2px;

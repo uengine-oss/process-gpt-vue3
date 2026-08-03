@@ -24,7 +24,7 @@
                                 density="comfortable"
                                 @click="deleteCheckpoint(idx)"
                             >
-                                <TrashIcon size="24" style="color: #fb977d" />
+                                <TrashIcon size="24" style="color: var(--cds-text-danger)" />
                             </v-btn>
                         </template>
                     </v-text-field>

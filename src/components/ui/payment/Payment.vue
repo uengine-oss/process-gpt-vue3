@@ -160,7 +160,7 @@ export default {
     max-width: 1200px;
     width: 100%;
     margin: 40px auto;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 16px;
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
     overflow: hidden;
@@ -168,8 +168,8 @@ export default {
 .payment-summary {
     flex: 4.5;
     padding: 32px 32px 32px 40px;
-    border-right: 1px solid #eee;
-    background: #fafbfc;
+    border-right: 1px solid var(--cds-border);
+    background: var(--cds-bg-neutral);
 }
 .payment-form {
     flex: 5.5;
@@ -187,7 +187,7 @@ export default {
 .back {
     font-size: 1.2rem;
     cursor: pointer;
-    color: #888;
+    color: var(--cds-text-muted);
 }
 .title {
     font-weight: bold;
@@ -209,17 +209,17 @@ export default {
 }
 .tax-price {
     font-size: 1rem;
-    color: #888;
+    color: var(--cds-text-muted);
     margin-left: 6px;
 }
 .period {
     font-size: 1.1rem;
-    color: #888;
+    color: var(--cds-text-muted);
     margin-left: 6px;
 }
 
 .sub-info {
-    color: #888;
+    color: var(--cds-text-muted);
     font-size: 1rem;
     margin-bottom: 18px;
 }
@@ -228,7 +228,7 @@ export default {
     margin-right: 8px;
 }
 .summary-card {
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 10px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
     padding: 16px 18px;
@@ -252,22 +252,22 @@ export default {
     font-size: 0.98rem;
 }
 .per-month {
-    color: #888;
+    color: var(--cds-text-muted);
     font-size: 0.98rem;
 }
 .promo-btn {
-    background: #f3f4f6;
+    background: var(--cds-bg-neutral);
     border: none;
     border-radius: 6px;
     padding: 6px 14px;
     font-size: 1rem;
-    color: #222;
+    color: var(--cds-text-primary);
     margin-bottom: 10px;
     cursor: pointer;
 }
 .info-icon {
     font-size: 0.95rem;
-    color: #888;
+    color: var(--cds-text-muted);
     margin-left: 2px;
 }
 .total-row {
@@ -277,12 +277,12 @@ export default {
     font-weight: bold;
     font-size: 1.1rem;
     margin-top: 18px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--cds-border);
     padding-top: 12px;
 }
 .total-amount {
     font-size: 1.3rem;
-    color: #222;
+    color: var(--cds-text-primary);
 }
 .payment-form .form-group {
     margin-bottom: 18px;
@@ -296,7 +296,7 @@ export default {
 .payment-form input[type='email'] {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     border-radius: 6px;
     font-size: 1rem;
     margin-top: 4px;
@@ -323,7 +323,7 @@ export default {
 }
 .pay-btn {
     width: 100%;
-    background: #222;
+    background: var(--cds-text-primary);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -336,12 +336,12 @@ export default {
     transition: background 0.2s;
 }
 .pay-btn:disabled {
-    background: #bbb;
+    background: var(--cds-text-muted);
     cursor: not-allowed;
 }
 .terms {
     font-size: 0.92rem;
-    color: #888;
+    color: var(--cds-text-muted);
     margin-top: 8px;
     margin-bottom: 12px;
 }
@@ -350,14 +350,14 @@ export default {
     align-items: center;
     gap: 8px;
     font-size: 0.95rem;
-    color: #bbb;
+    color: var(--cds-text-muted);
     margin-top: 10px;
 }
 .divider {
-    color: #ccc;
+    color: var(--cds-text-muted);
 }
 a {
-    color: #888;
+    color: var(--cds-text-muted);
     text-decoration: underline;
     font-size: 0.95rem;
 }

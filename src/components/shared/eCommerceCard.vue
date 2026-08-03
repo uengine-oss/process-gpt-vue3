@@ -44,7 +44,7 @@ const sDrawer = ref(false);
 }
 .v-theme--light {
     .left-part {
-        background: white;
+        background: var(--cds-surface-2);
     }
 }
 .v-theme--dark {

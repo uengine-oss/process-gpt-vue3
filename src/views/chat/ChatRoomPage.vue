@@ -10779,7 +10779,7 @@ export default {
 /* ===== BPMN Preview (diagram/xml/ontology) ===== */
 .bpmn-diagram-container {
     height: 450px;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
     position: relative;
 }
 /* 미리보기 다이얼로그에서는 미니맵 숨김(요청) */
@@ -10790,7 +10790,7 @@ export default {
 .bpmn-preview-container {
     height: 450px;
     overflow: auto;
-    background: #1e293b;
+    background: var(--cds-text-primary);
 }
 
 .bpmn-xml-content {
@@ -10799,7 +10799,7 @@ export default {
     font-family: 'Fira Code', 'Consolas', monospace;
     font-size: 12px;
     line-height: 1.5;
-    color: #e2e8f0;
+    color: var(--cds-border);
     white-space: pre-wrap;
     word-break: break-all;
 }
@@ -10817,7 +10817,7 @@ export default {
     justify-content: center;
     gap: 8px;
     padding: 16px;
-    color: #cbd5e1;
+    color: var(--cds-border);
     font-size: 13px;
     text-align: center;
 }
@@ -10875,8 +10875,8 @@ export default {
 
 .input-area {
     padding: 12px 16px 16px 16px;
-    border-top: 1px solid #e2e8f0;
-    background: white;
+    border-top: 1px solid var(--cds-border);
+    background: var(--cds-surface-2);
     flex-shrink: 0;
 }
 
@@ -10896,7 +10896,7 @@ export default {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: #94a3b8;
+    background-color: var(--cds-text-muted);
     flex-shrink: 0;
     transition: background-color 0.3s;
 }
@@ -10907,22 +10907,22 @@ export default {
 }
 
 .voice-pulse-dot.is-responding {
-    background-color: #f59e0b;
+    background-color: var(--cds-text-warning);
     animation: voice-pulse 0.6s ease-in-out infinite;
 }
 
 .voice-pulse-dot.is-playing {
-    background-color: #10b981;
+    background-color: var(--cds-text-success);
     animation: voice-pulse 0.5s ease-in-out infinite;
 }
 
 .voice-pulse-dot.is-connecting {
-    background-color: #94a3b8;
+    background-color: var(--cds-text-muted);
     animation: voice-pulse 1.2s ease-in-out infinite;
 }
 
 .voice-pulse-dot.is-error {
-    background-color: #ef4444;
+    background-color: var(--cds-text-danger);
 }
 
 .voice-mode-bar.is-error {
@@ -10931,7 +10931,7 @@ export default {
 }
 
 .voice-status-label.is-error-text {
-    color: #ef4444;
+    color: var(--cds-text-danger);
 }
 
 @keyframes voice-pulse {

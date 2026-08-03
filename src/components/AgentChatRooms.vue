@@ -1142,7 +1142,7 @@ export default {
 .input-area {
     padding: 12px;
     border-top: 1px solid rgba(0, 0, 0, 0.08);
-    background: white;
+    background: var(--cds-surface-2);
     flex-shrink: 0;
 }
 

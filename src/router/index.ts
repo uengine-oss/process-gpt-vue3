@@ -39,6 +39,18 @@ export const router = createRouter({
             component: () => retryDynamicImport(() => import('@/components/ui/ExternalForms.vue'))
         },
         {
+            name: 'Design System',
+            path: '/design-system',
+            component: () => retryDynamicImport(() => import('@/views/ds/DesignSystem.vue'))
+        },
+        {
+            // 로그인 화면은 App.vue 의 테넌트 게이트 뒤에 있어 백엔드 없이는 렌더되지 않는다.
+            // 디자인 확인용으로 게이트가 열려 있는 /design-system 경로 아래에 미리보기를 둔다.
+            name: 'Design System Login Preview',
+            path: '/design-system/login',
+            component: () => retryDynamicImport(() => import('@/views/authentication/SideLogin.vue'))
+        },
+        {
             name: 'BPMN Auto Layout E2E',
             path: '/bpmn-auto-layout-e2e',
             component: () => retryDynamicImport(() => import('@/views/e2e/BpmnAutoLayoutE2E.vue'))

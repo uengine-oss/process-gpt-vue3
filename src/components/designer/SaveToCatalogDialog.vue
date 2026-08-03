@@ -413,12 +413,12 @@ export default defineComponent({
 }
 
 .fte-panel-title {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, var(--cds-bg-neutral) 0%, var(--cds-border) 100%);
     min-height: 48px !important;
 }
 
 .fte-panel-content {
-    background-color: #fafafa;
+    background-color: var(--cds-bg-neutral);
 }
 
 .fte-number-input {
@@ -446,7 +446,7 @@ export default defineComponent({
 .fte-stepper {
     display: flex;
     align-items: center;
-    background: white;
+    background: var(--cds-surface-2);
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 8px;
     overflow: hidden;
@@ -460,14 +460,14 @@ export default defineComponent({
     width: 36px;
     height: 100%;
     border: none;
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
     cursor: pointer;
     transition: background-color 0.15s;
     flex-shrink: 0;
 }
 
 .fte-stepper-btn:hover {
-    background: #e0e0e0;
+    background: var(--cds-border);
 }
 
 .fte-stepper-btn:active {
@@ -502,7 +502,7 @@ export default defineComponent({
     flex-wrap: wrap;
     gap: 12px;
     padding: 12px 16px;
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    background: linear-gradient(135deg, var(--cds-bg-accent) 0%, var(--cds-bg-accent) 100%);
     border-radius: 8px;
 }
 
@@ -518,7 +518,7 @@ export default defineComponent({
     display: flex;
     align-items: baseline;
     padding: 8px 16px;
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
