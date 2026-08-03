@@ -221,11 +221,19 @@
     font-size: var(--cds-font-size-body);
     background: var(--cds-surface-2);
 }
+/* Vuetify는 outline 세그먼트(start/notch/end)의 "안쪽" 면(예: start의 오른쪽,
+   end의 왼쪽, notch의 좌우/아래)은 border-*-width 를 개별적으로 0으로 비워
+   두고 --v-field-border-width 변수만 특정 면에 적용한다(포커스 시 라벨이
+   떠 있는 노치 틈을 만들기 위함). 여기서 border-width 를 shorthand 로 주면
+   4면 모두에 두께가 생겨 Vuetify가 비워둔 안쪽 면까지 선이 그려지고, 그 결과
+   포커스된 입력 필드에서 라벨 옆에 세로선이 튀어나오는 것처럼 보인다.
+   반드시 --v-field-border-width 변수로만 두께를 지정해 Vuetify 자체 규칙이
+   올바른 면에만 적용하도록 한다. */
 .v-field--variant-outlined .v-field__outline__start,
 .v-field--variant-outlined .v-field__outline__notch::before,
 .v-field--variant-outlined .v-field__outline__notch::after,
 .v-field--variant-outlined .v-field__outline__end {
-    border-width: 0.5px;
+    --v-field-border-width: 0.5px;
     border-color: var(--cds-border-strong);
     opacity: 1;
 }
@@ -239,7 +247,7 @@
 .v-field--focused.v-field--variant-outlined .v-field__outline__notch::before,
 .v-field--focused.v-field--variant-outlined .v-field__outline__notch::after,
 .v-field--focused.v-field--variant-outlined .v-field__outline__end {
-    border-width: 1.5px;
+    --v-field-border-width: 1.5px;
     border-color: hsl(var(--accent-100));
 }
 .v-field__input {
