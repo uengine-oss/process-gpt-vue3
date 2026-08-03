@@ -52,6 +52,42 @@ function dedupe<T>(key: string, run: () => Promise<T>): Promise<T> {
     return p;
 }
 
+/**
+ * proc_def 목록에서 가져올 컬럼.
+ *
+ * 정의 본문(definition·bpmn)만 빼면 되지만 PostgREST 는 "이 컬럼만 빼고" 를 지원하지
+ * 않아 가져올 컬럼을 나열해야 한다. 문제는 배포 환경마다 스키마가 다르다는 것이다 —
+ * 운영에는 `is_draft` 가 없어서 이 컬럼을 넣으면 쿼리가 42703 으로 통째로 실패한다.
+ * (실제로 그렇게 만들었다가 "응답 1KB" 를 성능 개선으로 오독할 뻔했다)
+ *
+ * 그래서 공통 컬럼만 기본으로 쓰고, 선택 컬럼은 한 번 시도해 보고 없으면 기억한다.
+ */
+const PROC_DEF_BASE_COLUMNS = 'uuid,id,name,type,isdeleted,tenant_id,owner,agent_id,prod_version';
+const PROC_DEF_OPTIONAL_COLUMNS = ['is_draft'];
+let _procDefOptionalOk: boolean | null = null;
+
+function procDefListColumns(): string {
+    if (_procDefOptionalOk === false) return PROC_DEF_BASE_COLUMNS;
+    return `${PROC_DEF_BASE_COLUMNS},${PROC_DEF_OPTIONAL_COLUMNS.join(',')}`;
+}
+
+/** 없는 컬럼(42703) 때문에 실패한 것이면 선택 컬럼을 빼고 한 번만 재시도한다. */
+async function listProcDefWithFallback(options: any): Promise<any[]> {
+    try {
+        const rows = await storage.list('proc_def', { ...options, key: procDefListColumns() });
+        if (_procDefOptionalOk === null) _procDefOptionalOk = true;
+        return rows;
+    } catch (e: any) {
+        const msg = String(e?.message || '');
+        if (_procDefOptionalOk !== false && /does not exist|42703/.test(msg)) {
+            console.warn('[proc_def] 선택 컬럼이 없는 스키마 — 기본 컬럼으로 재시도합니다:', msg);
+            _procDefOptionalOk = false;
+            return await storage.list('proc_def', { ...options, key: PROC_DEF_BASE_COLUMNS });
+        }
+        throw e;
+    }
+}
+
 function withTenantMatch(options?: any): any {
     const tenantId = getTenantId();
     if (!tenantId) return options ?? {};
@@ -166,10 +202,10 @@ class ProcessGPTBackend implements Backend {
 
     async listDefinition(path: string, options?: any) {
         try {
-            // 목록에는 정의 본문(definition·bpmn)이 필요 없다. 두 컬럼이 응답의 대부분이라
-            // 운영 uengine 테넌트에서 이 목록 조회들이 합계 10.7MB / 14.5초를 먹었다.
+            // 목록에는 정의 본문(definition·bpmn)이 필요 없다. 운영 한 행을 재보면
+            // bpmn 34KB + definition 10KB 로 두 컬럼이 응답의 99.8% 다.
             // 상세 화면은 getRawDefinition 등으로 따로 본문을 가져온다.
-            const PROC_DEF_LIST_COLUMNS = 'uuid,id,name,type,isdeleted,is_draft,tenant_id,owner,agent_id,prod_version';
+            // (컬럼 목록은 listProcDefWithFallback 이 스키마 차이까지 처리한다)
             // proc_def / form_def 는 (id, tenant_id) 로 유일하다. tenant 필터가 빠지면
             // 다른 테넌트의 프로세스 정의가 그대로 목록에 섞여 나온다.
             options = withTenantMatch(options);
@@ -196,7 +232,7 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     options.match.type = 'dmn';
                 }
-                const procDefs = await storage.list('proc_def', { ...options, key: PROC_DEF_LIST_COLUMNS });
+                const procDefs = await listProcDefWithFallback(options);
                 return procDefs;
             } else if (path === 'bpmn') {
                 if (!options) {
@@ -206,7 +242,7 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     options.match['type'] = 'bpmn';
                 }
-                const procDefs = await storage.list('proc_def', { ...options, key: PROC_DEF_LIST_COLUMNS });
+                const procDefs = await listProcDefWithFallback(options);
                 return procDefs;
             } else {
                 if (options) {
@@ -223,7 +259,7 @@ class ProcessGPTBackend implements Backend {
                         }
                     }
                 }
-                const procDefs = await storage.list('proc_def', { ...options, key: PROC_DEF_LIST_COLUMNS });
+                const procDefs = await listProcDefWithFallback(options);
                 // 임시저장(draft, is_draft=true) 프로세스는 목록에서 제외 (기존 null/false 는 유지).
                 const visibleDefs = (procDefs || []).filter((item: any) => item && item.is_draft !== true);
                 visibleDefs.map((item: any) => {
