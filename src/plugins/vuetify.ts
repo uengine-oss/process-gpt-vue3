@@ -56,7 +56,7 @@ export default createVuetify({
     directives,
 
     theme: {
-        defaultTheme: 'BLUE_THEME',
+        defaultTheme: 'AQUA_THEME',
         themes: {
             BLUE_THEME: addMaterialColors(BLUE_THEME),
             AQUA_THEME: addMaterialColors(AQUA_THEME),

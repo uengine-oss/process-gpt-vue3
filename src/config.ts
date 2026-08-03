@@ -13,7 +13,7 @@ const config: ConfigProps = {
     mini_sidebar: false,
     setHorizontalLayout: false, // Horizontal layout
     setRTLLayout: false, // RTL layout
-    actTheme: 'BLUE_THEME',
+    actTheme: 'AQUA_THEME',
     // boxed=true 는 본문/헤더에 .maxWidth(max-width:1300px; margin:0 auto)를 씌운다.
     // 화면이 1300px 를 넘으면 남는 폭이 전부 좌우 여백이 되어(1920px 에서 한쪽 ~300px)
     // 사이드바와 본문 사이가 과도하게 벌어진다.

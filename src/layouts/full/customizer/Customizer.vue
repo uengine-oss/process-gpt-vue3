@@ -16,7 +16,7 @@ const themes: Array<{ value: Appearance; labelKey: string; swatch: string; dot: 
     { value: 'dark', labelKey: 'Customizer.dark', swatch: '#262624', dot: '#d97757' }
 ];
 
-const active = ref<Appearance>('light');
+const active = ref<Appearance>('sky');
 
 function select(appearance: Appearance) {
     active.value = appearance;
@@ -40,7 +40,7 @@ onMounted(() => {
     const saved = JSON.parse(localStorage.getItem('userSettings') ?? '{}');
     customizer.boxed = false;
     customizer.mini_sidebar = saved.mini_sidebar ?? false;
-    customizer.actTheme = saved.actTheme ?? THEME_BY_APPEARANCE.light;
+    customizer.actTheme = saved.actTheme ?? THEME_BY_APPEARANCE.sky;
     active.value = appearanceFromTheme(customizer.actTheme);
 });
 </script>

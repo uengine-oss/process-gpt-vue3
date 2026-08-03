@@ -70,7 +70,7 @@ function syncVuetifyTheme(appearance: Appearance) {
 export function getAppearance(): Appearance {
     const attr = document.documentElement.getAttribute('data-appearance');
     if (attr === 'light' || attr === 'sky' || attr === 'dark') return attr;
-    return 'light';
+    return 'sky';
 }
 
 /**
@@ -85,5 +85,5 @@ function notifyAppearanceChanged() {
 /** 앱 부팅 시 1회. 저장된 선택을 복원한다. */
 export function initAppearance() {
     const saved = localStorage.getItem(STORAGE_KEY) as Appearance | null;
-    applyAppearance(saved === 'sky' || saved === 'dark' ? saved : 'light', false);
+    applyAppearance(saved === 'light' || saved === 'dark' ? saved : 'sky', false);
 }
