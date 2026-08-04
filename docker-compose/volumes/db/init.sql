@@ -1389,10 +1389,10 @@ CREATE POLICY proc_def_version_update_policy ON proc_def_version FOR UPDATE TO a
 CREATE POLICY proc_def_version_delete_policy ON proc_def_version FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
 
 -- Form def policies
-CREATE POLICY form_def_insert_policy ON form_def FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
-CREATE POLICY form_def_select_policy ON form_def FOR SELECT TO authenticated USING (true);
-CREATE POLICY form_def_update_policy ON form_def FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
-CREATE POLICY form_def_delete_policy ON form_def FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
+CREATE POLICY form_def_insert_policy ON form_def FOR INSERT TO authenticated WITH CHECK ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+CREATE POLICY form_def_select_policy ON form_def FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY form_def_update_policy ON form_def FOR UPDATE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+CREATE POLICY form_def_delete_policy ON form_def FOR DELETE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
 
 -- Notifications policies
 CREATE POLICY notifications_insert_policy ON notifications FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
@@ -3326,11 +3326,11 @@ CREATE POLICY "work-assistant-proc_def_select_policy" ON proc_def
     USING (tenant_id = public.tenant_id());
 
 -- form_def (폼 정의) - SELECT
+-- 이미 상단 form_def_select_policy가 tenant_id = public.tenant_id()를 검사하므로
+-- 별도의 work-assistant 전용 정책은 불필요하다(중복 permissive 정책은 OR로 합쳐져
+-- 오히려 더 넓은 정책이 있을 때 격리를 무력화시킬 위험이 있다).
 ALTER TABLE form_def ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "work-assistant-form_def_select_policy" ON form_def;
-CREATE POLICY "work-assistant-form_def_select_policy" ON form_def 
-    FOR SELECT TO authenticated 
-    USING (tenant_id = public.tenant_id());
 
 -- bpm_proc_inst (프로세스 인스턴스) - SELECT
 ALTER TABLE bpm_proc_inst ENABLE ROW LEVEL SECURITY;

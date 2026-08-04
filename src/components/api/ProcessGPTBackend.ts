@@ -266,23 +266,26 @@ class ProcessGPTBackend implements Backend {
             if (defId.includes('.bpmn')) defId = defId.replace('.bpmn', '');
 
             if (options && options.type === 'form') {
-                return await storage.delete(`form_def/${defId.replace(/\//g, '#')}`, { key: 'id' });
+                // form_def 는 (id, tenant_id) 로 유일하다. tenant 필터가 빠지면 같은 id를
+                // 쓰는 다른 테넌트의 폼까지 삭제될 수 있다(마켓플레이스로 설치된 프로세스는
+                // 여러 테넌트가 동일한 componentId/폼 id를 그대로 공유하기 때문).
+                return await storage.delete('form_def', withTenantMatch({ match: { id: defId.replace(/\//g, '#') } }));
             } else {
-                const form = await storage.list('form_def', {
+                const form = await storage.list('form_def', withTenantMatch({
                     sort: 'desc',
                     match: { proc_def_id: defId }
-                });
+                }));
                 if (form && form.length > 0) {
-                    await storage.delete(`form_def/${defId}`, { key: 'proc_def_id' });
+                    await storage.delete('form_def', withTenantMatch({ match: { proc_def_id: defId } }));
                 }
 
-                const arcv = await storage.list('proc_def_version', {
+                const arcv = await storage.list('proc_def_version', withTenantMatch({
                     sort: 'desc',
                     orderBy: 'timeStamp',
                     match: { proc_def_id: defId }
-                });
+                }));
                 if (arcv && arcv.length > 0) {
-                    await storage.delete(`proc_def_version/${defId}`, { key: 'proc_def_id' });
+                    await storage.delete('proc_def_version', withTenantMatch({ match: { proc_def_id: defId } }));
                 }
 
                 const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
@@ -290,12 +293,15 @@ class ProcessGPTBackend implements Backend {
                     await storage.delete(`lock/${defId}`, { key: 'id' });
                 }
 
+                // todolist / bpm_proc_inst 는 RLS가 없어 테넌트 격리가 전적으로 이 필터에 달려 있다
+                // (withTenantMatch 상단 주석 참고). tenant 필터가 빠지면 같은 proc_def_id를 공유하는
+                // 다른 테넌트의 진행 중인 업무/인스턴스까지 삭제된다.
                 await Promise.all([
-                    await storage.delete('todolist', { match: { proc_def_id: defId } }),
-                    await storage.delete('bpm_proc_inst', { match: { proc_def_id: defId } })
+                    await storage.delete('todolist', withTenantMatch({ match: { proc_def_id: defId } })),
+                    await storage.delete('bpm_proc_inst', withTenantMatch({ match: { proc_def_id: defId } }))
                 ]);
 
-                return await storage.delete(`proc_def/${defId}`, { key: 'id' });
+                return await storage.delete('proc_def', withTenantMatch({ match: { id: defId } }));
 
                 // var procDef: any = await storage.getObject('proc_def', {
                 //     match: {
@@ -435,11 +441,11 @@ class ProcessGPTBackend implements Backend {
                 return;
             }
 
-            let procDef: any = await storage.getObject('proc_def', {
+            let procDef: any = await storage.getObject('proc_def', withTenantMatch({
                 match: {
                     id: defId
                 }
-            });
+            }));
 
             if (procDef) {
                 procDef.bpmn = xml;
@@ -5916,7 +5922,7 @@ class ProcessGPTBackend implements Backend {
         } else {
             let collides = false;
             try {
-                const existing = await storage.getObject('proc_def', { match: { id: manifest.componentId } });
+                const existing = await storage.getObject('proc_def', withTenantMatch({ match: { id: manifest.componentId } }));
                 collides = !!existing;
             } catch (e) {
                 collides = false;
