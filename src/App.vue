@@ -7,7 +7,16 @@
             indeterminate
             class="my-progress-linear"
         ></v-progress-linear>
-        <v-overlay v-model="loading" :scrim="true" :persistent="true"></v-overlay>
+        <!--
+            첫 화면 로딩 동안에는 화면을 잠그지 않는다.
+            $try 는 저장뿐 아니라 배경 조회에도 쓰이는데(호출부 179곳), 부팅 직후에는 그것들이
+            여러 건 겹쳐서 돈다. 예전에는 그 동안 오버레이가 화면 전체를 덮어, 콘텐츠가 이미
+            그려졌는데도 사용자가 아무것도 못 하고 기다려야 했다. 진행 중이라는 표시는
+            위 progress-linear 로 충분하다.
+            부팅이 끝나면(initialLoadSettled) 이후 화면은 원래대로 오버레이가 동작한다.
+        -->
+        <v-overlay :model-value="blockingLoading" :scrim="true" :persistent="true"></v-overlay>
+
         <v-snackbar v-model="snackbar" class="custom-snackbar" :timeout="5000" :color="snackbarColor" elevation="24" location="top"
             ><span v-html="snackbarMessage"></span>
             <v-btn v-if="snackbarMessageDetail" variant="plain" @click="show = !show">
@@ -55,7 +64,11 @@ export default {
     },
     data: () => ({
         show: false,
-        loading: false,
+        // 겹쳐 도는 $try 를 세어야 한다. boolean 이던 시절에는 동시에 뜬 것 중
+        // 하나만 끝나도 표시가 꺼졌다.
+        loadingCount: 0,
+        // 부팅 직후의 $try 무리가 다 빠졌는지. 그 전까지는 오버레이로 화면을 잠그지 않는다.
+        initialLoadSettled: false,
         snackbarSuccessStatus: false,
         snackbarMessage: '',
         snackbarMessageDetail: null,
@@ -70,7 +83,22 @@ export default {
         defaultSetting: useDefaultSetting()
     }),
     watch: {
+        // 부팅 중 $try 가 한 건도 없으면 finally 훅이 안 돌아 플래그가 영영 안 켜진다.
+        // 스켈레톤이 걷히는 시점에도 한 번 확인해 준다.
+        loadScreen(v) {
+            if (v) this.markInitialLoadSettled();
+        },
         $route(to, from) {
+            // 로그인 화면에서 앱으로 들어오는 순간이 진짜 '첫 화면 로딩'이다.
+            // App.vue 는 로그인 화면과 같은 인스턴스라 부팅 플래그가 로그인 화면에서
+            // 이미 켜져 버린다. 그대로 두면 정작 무거운 첫 화면이 잠긴 채 로딩된다.
+            const fromAuth = String(from?.path || '').startsWith('/auth');
+            const toAuth = String(to?.path || '').startsWith('/auth');
+            if (fromAuth && !toAuth) {
+                this.initialLoadSettled = false;
+                this.markInitialLoadSettled();
+            }
+
             if (to.query.code && to.query.state && to.query.scope && this.backend) {
                 this.backend.callbackOAuth();
             }
@@ -218,6 +246,14 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        // 진행 표시(상단 바)는 부팅 중에도 그대로 보여준다.
+        loading() {
+            return this.loadingCount > 0;
+        },
+        // 화면을 잠그는 오버레이는 부팅이 끝난 뒤부터만 뜬다.
+        blockingLoading() {
+            return this.loadingCount > 0 && this.initialLoadSettled;
         }
     },
     methods: {
@@ -385,7 +421,7 @@ export default {
             const useGlobalLoading = !options?.noLoading;
             try {
                 if (useGlobalLoading) {
-                    window.$app_.loading = true;
+                    window.$app_.loadingCount++;
                 }
                 await options.action(options.parameters);
                 if (options.successMsg) {
@@ -435,9 +471,28 @@ export default {
                 console.log(e);
             } finally {
                 if (useGlobalLoading) {
-                    window.$app_.loading = false;
+                    window.$app_.loadingCount = Math.max(0, window.$app_.loadingCount - 1);
+                    window.$app_.markInitialLoadSettled();
                 }
             }
+        },
+
+        /**
+         * 부팅 직후의 $try 무리가 다 빠졌는지 판단한다.
+         *
+         * 호출들 사이에 잠깐 틈이 생기는 것만으로 "끝났다"고 보면 남은 부팅 호출이
+         * 다시 화면을 잠그므로, 카운터가 0 인 상태가 잠시 유지될 때만 확정한다.
+         * 한 번 확정되면 되돌리지 않는다 — 이후 화면은 원래대로 오버레이가 동작한다.
+         */
+        markInitialLoadSettled() {
+            if (this.initialLoadSettled) return;
+            clearTimeout(this._initialSettleTimer);
+            if (this.loadingCount > 0) return;
+            this._initialSettleTimer = setTimeout(() => {
+                if (this.loadingCount === 0 && this.loadScreen) {
+                    this.initialLoadSettled = true;
+                }
+            }, 700);
         }
     },
     beforeUnmount() {
