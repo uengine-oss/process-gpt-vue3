@@ -367,6 +367,8 @@ class ProcessGPTBackend implements Backend {
 
             // 폼 정보를 저장하기 위해서
             if (options && options.type === 'form') {
+                // AI가 row-layout 없이 div.row만 내보낸 경우를 대비해 저장 전 무조건 감싼다.
+                xml = this.normalizeFormRowLayout(xml);
                 const fieldsJson = this.extractFields(xml);
                 if (!fieldsJson) {
                     throw new Error('An error occurred while analyzing the form fields.');
@@ -2637,6 +2639,45 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    // AI(채팅/딥에이전트 등)가 생성한 폼 HTML이 row-layout으로 감싸지 않은 채
+    // <div class='row' ...> 만 내보내는 경우가 있어, 저장 전에 무조건 row-layout으로 감싸서
+    // 렌더링(RowLayout.vue)과 fields_json 추출(row-layout 기반 is_multidata_mode 그룹핑)이
+    // 항상 동작하도록 보정한다. 이미 row-layout으로 감싸져 있으면 그대로 둔다.
+    normalizeFormRowLayout(html: string): string {
+        if (!html || typeof html !== 'string' || !/<div[^>]*class=(["'])[^"']*\brow\b[^"']*\1/i.test(html)) {
+            return html;
+        }
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const rows = Array.from(doc.querySelectorAll('div.row'));
+
+            rows.forEach((row) => {
+                const parent = row.parentElement;
+                if (!parent || parent.tagName.toLowerCase() === 'row-layout') return;
+
+                const rowLayout = doc.createElement('row-layout');
+                ['name', 'alias', 'is_multidata_mode'].forEach((attr) => {
+                    const value = row.getAttribute(attr);
+                    if (value !== null) {
+                        rowLayout.setAttribute(attr, value);
+                        row.removeAttribute(attr);
+                    }
+                });
+                rowLayout.setAttribute('v-model', 'formValues');
+                rowLayout.setAttribute('v-slot', 'slotProps');
+
+                parent.insertBefore(rowLayout, row);
+                rowLayout.appendChild(row);
+            });
+
+            return doc.body.innerHTML;
+        } catch (error) {
+            console.warn('[ProcessGPTBackend] row-layout 정규화 실패, 원본 HTML 유지:', error);
+            return html;
         }
     }
 
