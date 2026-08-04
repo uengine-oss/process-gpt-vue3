@@ -105,21 +105,23 @@ First, create a layout to contain components.
 Layout examples:
 \`\`\`html
 <section>
-  <div class='row' name='<unique_layout_name>' alias='<layout_display_name>' is_multidata_mode='<true|false>'>
+  <row-layout name='<unique_layout_name>' alias='<layout_display_name>' is_multidata_mode='<true|false>' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-6'>
       </div>
       <div class='col-sm-6'>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>
 \`\`\`
 
-A section must contain exactly one div with class='row'.
-Inside a div with class='row', you must include divs with class='col-sm-{number}'.
+A section must contain exactly one row-layout element, and each row-layout must wrap exactly one div with class='row'.
+Inside the div with class='row', you must include divs with class='col-sm-{number}'.
 The sum of all {number} values in a row must equal 12.
 You must use one of these column combinations: [${this.containerSpaceSetsPromptStr}]
 
-The div with class='row' can have the is_multidata_mode attribute.
+The row-layout element (not the div with class='row') carries the name, alias, and is_multidata_mode attributes, plus the constant attributes v-model="formValues" and v-slot="slotProps".
 When is_multidata_mode='true', components within can be used to add rows like in a table.
 When is_multidata_mode='false', the layout behaves like a standard layout.
 
@@ -127,18 +129,22 @@ Layouts can be nested. To nest layouts, place a new section tag inside a 'col-sm
 Example of nested layout:
 \`\`\`html
 <section>
-  <div class='row' name='<unique_layout_name>' alias='<layout_display_name>' is_multidata_mode='<true|false>'>
-    <div class='col-sm-12'>
-      <section>
-        <div class='row' name='<unique_layout_name>' alias='<layout_display_name>' is_multidata_mode='<true|false>'>
-          <div class='col-sm-6'>
-          </div>
-          <div class='col-sm-6'>
-          </div>
-        </div>
-      </section>
+  <row-layout name='<unique_layout_name>' alias='<layout_display_name>' is_multidata_mode='<true|false>' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
+      <div class='col-sm-12'>
+        <section>
+          <row-layout name='<unique_layout_name>' alias='<layout_display_name>' is_multidata_mode='<true|false>' v-model="formValues" v-slot="slotProps">
+            <div class='row'>
+              <div class='col-sm-6'>
+              </div>
+              <div class='col-sm-6'>
+              </div>
+            </div>
+          </row-layout>
+        </section>
+      </div>
     </div>
-  </div>
+  </row-layout>
 </section>
 \`\`\`
 
@@ -153,7 +159,7 @@ After creating the layout, add components following these rules:
 7. Each key in 'items' must be unique.
 8. All components must be placed inside a div with class='col-sm-{number}'.
 9. Include all specified attributes for each tag.
-10. Every name attribute (including in div tags with class='row') must be unique.
+10. Every name attribute (including in row-layout tags) must be unique.
 11. Note that 'readonly' and 'disabled' attributes serve different purposes: readonly makes a field read-only while disabled makes it inactive.
 12. When creating a form, if there is no suitable result to create, a text area with a default label of "Free Input" should be created. All forms must exist, and if no form is created, they should be filled with the default values ​​mentioned above, not empty values. The form must exist.
 
@@ -313,13 +319,13 @@ ${note}
   Please create an appropriate form based on the provided image. 
 
   # Image Analysis Instructions
-- Analyze the visual layout: Identify sections, rows, and columns based on alignment and spacing to determine the grid structure (\`section\`, \`div.row\`, \`div.col-sm-*\`). Ensure the sum of column numbers in each row equals 12, using only the allowed combinations: [${
+- Analyze the visual layout: Identify sections, rows, and columns based on alignment and spacing to determine the grid structure (\`section\`, \`row-layout\` wrapping \`div.row\`, \`div.col-sm-*\`). Ensure the sum of column numbers in each row equals 12, using only the allowed combinations: [${
                     this.containerSpaceSetsPromptStr
                 }].
 - Identify components: Match visual elements (input boxes, dropdowns, checkboxes, radio buttons, etc.) to the allowed component tags provided in the documentation. Pay close attention to visual cues.
 - Extract labels: Accurately transcribe the text label associated with each identified component. Associate labels correctly with their corresponding form elements.
 - Detect placeholders/defaults: Note any placeholder text within input fields or pre-selected values (e.g., in dropdowns, radio buttons) and represent them using appropriate attributes like 'placeholder' or default 'value'.
-- Analyze grouping: Use layout elements (\`section\`, \`div.row\`) logically to group related fields based on proximity, visual dividers, or contextual clues in the image.
+- Analyze grouping: Use layout elements (\`section\`, \`row-layout\`) logically to group related fields based on proximity, visual dividers, or contextual clues in the image.
 - Infer attributes: Generate unique and meaningful English \`name\` attributes for all components and layouts. Generate descriptive \`alias\` attributes in ${
                     this.preferredLanguage
                 } based on the labels or purpose. Determine if \`is_multidata_mode='true'\` is appropriate for sections representing repeatable data rows. Ensure ALL name attributes are unique across the entire form.
