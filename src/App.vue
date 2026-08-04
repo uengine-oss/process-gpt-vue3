@@ -44,6 +44,7 @@
 // import { createClient } from '@supabase/supabase-js';
 import { RouterView } from 'vue-router';
 import BackendFactory from '@/components/api/BackendFactory';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import partialParse from 'partial-json-parser';
 import { getMainDomainUrl } from '@/utils/domainUtils';
 import { setCachedJwtTenantId } from '@/utils/tenant';
@@ -112,26 +113,59 @@ export default {
             this.loadScreen = false;
             this.backend = BackendFactory.createBackend();
 
+            // RLS(public.tenant_id())와 게이트웨이는 auth.users 의 "현재값"이 아니라
+            // 실제로 발급되어 지금 세션에 붙어있는 access_token 안에 굳어있는 app_metadata.tenant_id 클레임을 본다.
+            // getUser()는 auth.users 를 라이브로 조회하므로, 서브도메인이 바뀌기 전에 이미 값이 일치해버리면
+            // (예: 공유 쿠키로 다른 테넌트에서 발급된 옛 토큰이 복구된 경우) 아래 비교가 "일치"로 오판해
+            // setTenant/refreshSession 자체가 스킵되고 낡은 토큰이 계속 쓰인다 — proc_def/bpm_proc_inst 목록이
+            // 조용히 텅 비는 원인. 그래서 라이브 값이 아니라 토큰 자체를 까서 비교해야 한다.
+            const decodeAccessTokenTenantId = (accessToken) => {
+                try {
+                    const payload = accessToken.split('.')[1];
+                    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+                    return JSON.parse(json)?.app_metadata?.tenant_id || '';
+                } catch (e) {
+                    return '';
+                }
+            };
+
             const ensureTenantAppMetadata = async () => {
                 try {
                     if (!window.$supabase?.auth) return;
                     const tenantName = window.$tenantName;
 
-                    const { data, error } = await window.$supabase.auth.getUser();
-                    if (error || !data?.user) return;
-
-                    const currentTenantId = data?.user?.app_metadata?.tenant_id;
+                    const { data: sessionData, error: sessionError } = await window.$supabase.auth.getSession();
+                    const accessToken = sessionData?.session?.access_token;
+                    if (sessionError || !accessToken) return;
 
                     // 메인 도메인(www / process-gpt)에서는 서브도메인으로 테넌트를 알 수 없다.
                     // 이 경우 JWT 클레임이 유일한 진실이므로 캐시에 담아 getTenantId() 가
                     // 'uengine' 같은 하드코딩 값 대신 실제 테넌트를 반환하게 한다.
                     if (!tenantName) {
-                        setCachedJwtTenantId(currentTenantId || '');
+                        setCachedJwtTenantId(decodeAccessTokenTenantId(accessToken));
                         return;
                     }
 
-                    if (!currentTenantId || currentTenantId !== tenantName) {
-                        await this.backend.setTenant(tenantName);
+                    let tokenTenantId = decodeAccessTokenTenantId(accessToken);
+
+                    if (tokenTenantId !== tenantName) {
+                        const res = await this.backend.setTenant(tenantName);
+                        if (!res) {
+                            console.error('[tenant] setTenant 실패: 세션을 현재 서브도메인으로 갱신하지 못했습니다. 재로그인을 유도합니다.');
+                            await this.forceReloginForTenantMismatch();
+                            return;
+                        }
+
+                        const { data: refreshedSessionData } = await window.$supabase.auth.getSession();
+                        tokenTenantId = decodeAccessTokenTenantId(refreshedSessionData?.session?.access_token || '');
+
+                        if (tokenTenantId !== tenantName) {
+                            console.error(
+                                `[tenant] 세션 갱신 후에도 테넌트 불일치: 토큰=${tokenTenantId || '(none)'}, 기대값=${tenantName}. 재로그인을 유도합니다.`
+                            );
+                            await this.forceReloginForTenantMismatch();
+                            return;
+                        }
                     }
                     setCachedJwtTenantId(tenantName);
                 } catch (e) {
@@ -221,6 +255,19 @@ export default {
         }
     },
     methods: {
+        // 세션의 access_token 이 현재 서브도메인 테넌트로 갱신되지 않을 때(공유 쿠키로 다른 테넌트의
+        // 옛 토큰이 복구된 경우 등) 낡은 토큰으로 조용히 빈 화면을 보여주는 대신 강제로 재로그인시킨다.
+        // storage.signOut()을 써야 서브도메인 간 공유 쿠키(access_token/refresh_token)까지 함께 지워진다 —
+        // supabase.auth.signOut()만 하면 공유 쿠키가 남아 다음 로드에서 같은 낡은 세션이 또 복구된다.
+        async forceReloginForTenantMismatch() {
+            try {
+                await StorageBaseFactory.getStorage()?.signOut();
+            } catch (e) {
+                console.warn('[tenant] forceReloginForTenantMismatch signOut failed:', e);
+            }
+            localStorage.removeItem('tenantId');
+            window.location.href = '/auth/login';
+        },
         getChatRoomIdFromUrl(url) {
             if (!url || typeof url !== 'string') return null;
             try {
