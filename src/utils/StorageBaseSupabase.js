@@ -1053,6 +1053,9 @@ export default class StorageBaseSupabase {
                 const data = isMainDomain ? (Array.isArray(rawData) && rawData.length > 0 ? rawData[0] : null) : rawData;
 
                 if (data && !error) {
+                    // 덮어쓰기 전의 값을 잡아둔다. 아래에서 실제로 바뀌었을 때만 이벤트를 쏘기 위함이다.
+                    // 값이 없으면 사이드바가 mount 시 읽는 기본값(비관리자)과 같으므로 false 로 본다.
+                    const prevIsAdmin = window.localStorage.getItem('isAdmin') === 'true';
                     window.localStorage.setItem('isAdmin', data.is_admin || false);
                     window.localStorage.setItem('picture', data.profile || '');
                     if (data.role && data.role !== '') {
@@ -1104,8 +1107,19 @@ export default class StorageBaseSupabase {
                         }
                     }
 
-                    if (data && data.is_admin) {
-                        const event = new CustomEvent('localStorageChange', { detail: { key: 'isAdmin', value: data.is_admin } });
+                    // 값이 실제로 달라졌을 때만 알린다.
+                    //
+                    // 예전에는 is_admin 이 참이기만 하면 매번 쐈다. writeUserData 는 isConnection()
+                    // 경로로 불리고, isConnection() 은 getUserInfo() 가 부르므로 getUserInfo() 를
+                    // 호출하는 화면마다 이벤트가 나갔다. VerticalSidebar 는 이 이벤트를 받으면
+                    // loadSidebar() → getDefinitionList() 로 proc_def 전체 목록을 다시 받는다.
+                    // 그래서 관리자 계정은 채팅방을 열 때마다 정의 목록을 2회씩 재조회했다.
+                    // (일반 계정은 이 분기를 타지 않아 증상이 없었다 — 관리자만 느린 버그였다)
+                    //
+                    // 강등(true→false)도 메뉴를 다시 그려야 하므로 함께 알린다.
+                    const nextIsAdmin = !!data.is_admin;
+                    if (nextIsAdmin !== prevIsAdmin) {
+                        const event = new CustomEvent('localStorageChange', { detail: { key: 'isAdmin', value: nextIsAdmin } });
                         window.dispatchEvent(event);
                     }
                 } else if (!data) {
