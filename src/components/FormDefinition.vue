@@ -230,9 +230,11 @@ export default {
 
                     newRow.setAttribute('class', 'row');
 
-                    Array.from(row.firstChild.children).forEach((child) => {
-                        newRow.appendChild(child);
-                    });
+                    if (row.firstElementChild) {
+                        Array.from(row.firstElementChild.children).forEach((child) => {
+                            newRow.appendChild(child);
+                        });
+                    }
 
                     $(newRow)
                         .children('[class^="col-sm-"]')
