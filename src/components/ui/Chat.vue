@@ -3425,6 +3425,14 @@ import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
+// getToolCallList()의 도구 결과 가공(JSON.parse/정규식/문자열 치환) 캐시.
+// 스트리밍 중엔 토큰마다 Chat.vue 전체가 재렌더되는데, getToolCallList가 메시지당 template에서
+// 여러 번 호출되면서 그때마다 지금까지 쌓인 모든 tool 결과 원문을 처음부터 다시 가공하면
+// 토큰 수 × 누적 결과 크기에 비례해 메인 스레드가 막혀 탭이 멈춘다(특히 read_file로 큰 참조
+// 문서를 여러 번 읽는 스킬). message 객체는 스트리밍 동안 참조가 유지되므로(ChatRoomPage.vue의
+// activeStreams) WeakMap + 가벼운 시그니처(원문 내용은 안 건드리고 길이/상태만)로 무효화한다.
+const _toolCallListCache = new WeakMap();
+
 export default {
     components: {
         Icon,
@@ -4570,8 +4578,23 @@ export default {
         },
         /** 채팅 메시지 하단 인라인 '도구 사용 내역'(Claude Desktop식) 용 정규화 목록 */
         getToolCallList(message) {
+            if (!message || typeof message !== 'object') return [];
+            const tools = Array.isArray(message.toolCalls) ? message.toolCalls : [];
+            const skillsRaw = Array.isArray(message.executionSkills) ? message.executionSkills : [];
+            const connectorsRaw = Array.isArray(message.executionConnectors) ? message.executionConnectors : [];
+            // 원문 내용은 절대 만지지 않고 길이/상태만으로 서명을 만든다 — 이 자체는 도구 개수에
+            // 비례할 뿐이라 매 렌더 다시 만들어도 무시할 수준이다.
+            const sig =
+                tools.map((t) => `${t?.status || ''}:${typeof t?.output === 'string' ? t.output.length : t?.output ? 1 : 0}`).join(',') +
+                `|${skillsRaw.length}|${connectorsRaw.length}`;
+            const cached = _toolCallListCache.get(message);
+            if (cached && cached.sig === sig) return cached.result;
+            const result = this._buildToolCallList(tools, skillsRaw, connectorsRaw);
+            _toolCallListCache.set(message, { sig, result });
+            return result;
+        },
+        _buildToolCallList(tools, skillsRaw, connectorsRaw) {
             try {
-                const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
                 const toolItems = tools
                     .map((t) => {
                         const name = (t?.name || t?.tool || '').toString();
@@ -4595,7 +4618,7 @@ export default {
                         };
                     })
                     .filter((t) => t.label);
-                const skills = (Array.isArray(message?.executionSkills) ? message.executionSkills : [])
+                const skills = skillsRaw
                     .map((s) => (typeof s === 'string' ? s : (s?.name || s?.id || '').toString()))
                     .filter(Boolean)
                     .map((name) => ({
@@ -4606,7 +4629,7 @@ export default {
                         details: `사용한 스킬: ${name}`
                     }));
                 const toolConnectorNames = new Set(tools.flatMap((t) => (Array.isArray(t?.connectors) ? t.connectors : [])).map(String));
-                const connectors = (Array.isArray(message?.executionConnectors) ? message.executionConnectors : [])
+                const connectors = connectorsRaw
                     .map((c) => (typeof c === 'string' ? c : (c?.name || c?.id || '').toString()))
                     .filter((name) => name && !toolConnectorNames.has(name))
                     .map((name) => ({

@@ -217,6 +217,7 @@ export default {
                 automaticLayout: true,
                 formatOnType: true,
                 formatOnPaste: true,
+                wordWrap: 'on',
                 readOnly: this.readOnly
             };
         },

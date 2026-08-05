@@ -8250,6 +8250,15 @@ export default {
                         try {
                             const msg = this.activeStreams[agentId];
                             if (!msg) return;
+                            // read_file 등 일부 도구는 결과가 수십~수백 KB에 달할 수 있다. 원문(output)은
+                            // 아래 human-feedback/아티팩트 감지에 그대로 쓰되, toolCalls/plannedToolsById에는
+                            // 표시용으로 잘라 저장한다 — 안 그러면 이 값이 매 토큰마다 Chat.vue 전체 재렌더에서
+                            // 반복 가공되며(getToolCallList) 누적 크기에 비례해 브라우저가 멈추게 된다.
+                            const TOOL_OUTPUT_STORE_LIMIT = 20000;
+                            const capForStorage = (value) => {
+                                if (typeof value !== 'string' || value.length <= TOOL_OUTPUT_STORE_LIMIT) return value;
+                                return `${value.slice(0, TOOL_OUTPUT_STORE_LIMIT)}\n…(생략됨, 원본 ${value.length}자)`;
+                            };
                             const toolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
                             // Match by tool name first so concurrent/sub-agent tool results
                             // are attached to the correct invocation.
@@ -8263,7 +8272,7 @@ export default {
                                     toolCalls[i] = {
                                         ...toolCalls[i],
                                         status: 'done',
-                                        output: output ?? null,
+                                        output: capForStorage(output ?? null),
                                         endedAt: new Date().toISOString()
                                     };
                                     lastRunningTool = toolCalls[i];
@@ -8329,7 +8338,7 @@ export default {
                                         prev?.displayName ||
                                         this.formatToolName((rawEvent?.tool || rawEvent?.tool_name || rawEvent?.name || '').toString()),
                                     status: 'done',
-                                    output: output ?? prev?.output ?? null
+                                    output: capForStorage(output ?? prev?.output ?? null)
                                 };
                                 if (this.planSideInfoEnabled?.tools) this.upsertToolsPanel();
                             }
@@ -10710,10 +10719,23 @@ export default {
             };
 
             const extractContentField = (rawText) => {
-                if (typeof rawText !== 'string') return null;
-                const matched = rawText.match(/^content=(['"])((?:\\.|(?!\1)[\s\S])*)\1(?:\s+\w+=|$)/);
-                if (matched && matched[2]) {
-                    return matched[2];
+                if (typeof rawText !== 'string' || !rawText.startsWith('content=')) return null;
+                const quote = rawText[8];
+                if (quote !== "'" && quote !== '"') return null;
+                // 원래는 (?:\\.|(?!\1)[\s\S])* 형태의 백트래킹 정규식을 썼는데, 이스케이프 문자(\)가
+                // 많이 섞인 큰 문자열(예: read_file로 읽은 스킬 문서 원문)에 대해 catastrophic
+                // backtracking을 일으켜 메인 스레드가 무한정 멈추는 원인이었다(CPU 프로파일로 확인).
+                // "이스케이프 아닌 문자 연속" / "이스케이프 쌍" 을 겹치지 않게 번갈아 매칭하는
+                // 선형 시간 패턴으로 교체한다.
+                const body = rawText.slice(9);
+                const safePattern = quote === "'" ? /^[^'\\]*(?:\\.[^'\\]*)*/ : /^[^"\\]*(?:\\.[^"\\]*)*/;
+                const m = safePattern.exec(body);
+                const content = m[0];
+                const rest = body.slice(content.length);
+                if (rest[0] !== quote) return null;
+                const afterQuote = rest.slice(1);
+                if (afterQuote === '' || /^\s+\w+=/.test(afterQuote)) {
+                    return content;
                 }
                 return null;
             };
