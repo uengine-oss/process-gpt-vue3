@@ -26,6 +26,68 @@ enum ErrorCode {
  * 호출부가 이미 tenant_id 를 지정했다면 존중한다(마켓플레이스/관리자 조회 등).
  * 테넌트를 확정할 수 없으면 필터를 붙이지 않는다(로그인 전 화면 등에서 빈 결과를 만들지 않기 위함).
  */
+/**
+ * 같은 조회가 짧은 시간에 여러 번 나가는 것을 막는다.
+ *
+ * 운영 테넌트 실측에서 첫 화면 진입 한 번에 `users select=*` 가 9번,
+ * 합계 11.3초가 나갔다. 화면 여러 곳이 각자 사용자 목록을 부르는 구조라
+ * 호출부를 전부 고치는 대신 여기서 in-flight 요청을 공유하고 짧게 캐시한다.
+ */
+const _inflight = new Map<string, { at: number; p: Promise<any> }>();
+const INFLIGHT_TTL_MS = 3000;
+
+function dedupe<T>(key: string, run: () => Promise<T>): Promise<T> {
+    const now = Date.now();
+    const hit = _inflight.get(key);
+    if (hit && now - hit.at < INFLIGHT_TTL_MS) return hit.p as Promise<T>;
+
+    const p = run().finally(() => {
+        // 실패한 요청까지 캐시에 남겨 재시도를 막지 않는다
+        setTimeout(() => {
+            const cur = _inflight.get(key);
+            if (cur && cur.p === p) _inflight.delete(key);
+        }, INFLIGHT_TTL_MS);
+    });
+    _inflight.set(key, { at: now, p });
+    return p;
+}
+
+/**
+ * proc_def 목록에서 가져올 컬럼.
+ *
+ * 정의 본문(definition·bpmn)만 빼면 되지만 PostgREST 는 "이 컬럼만 빼고" 를 지원하지
+ * 않아 가져올 컬럼을 나열해야 한다. 문제는 배포 환경마다 스키마가 다르다는 것이다 —
+ * 운영에는 `is_draft` 가 없어서 이 컬럼을 넣으면 쿼리가 42703 으로 통째로 실패한다.
+ * (실제로 그렇게 만들었다가 "응답 1KB" 를 성능 개선으로 오독할 뻔했다)
+ *
+ * 그래서 공통 컬럼만 기본으로 쓰고, 선택 컬럼은 한 번 시도해 보고 없으면 기억한다.
+ */
+const PROC_DEF_BASE_COLUMNS = 'uuid,id,name,type,isdeleted,tenant_id,owner,agent_id,prod_version';
+const PROC_DEF_OPTIONAL_COLUMNS = ['is_draft'];
+let _procDefOptionalOk: boolean | null = null;
+
+function procDefListColumns(): string {
+    if (_procDefOptionalOk === false) return PROC_DEF_BASE_COLUMNS;
+    return `${PROC_DEF_BASE_COLUMNS},${PROC_DEF_OPTIONAL_COLUMNS.join(',')}`;
+}
+
+/** 없는 컬럼(42703) 때문에 실패한 것이면 선택 컬럼을 빼고 한 번만 재시도한다. */
+async function listProcDefWithFallback(options: any): Promise<any[]> {
+    try {
+        const rows = await storage.list('proc_def', { ...options, key: procDefListColumns() });
+        if (_procDefOptionalOk === null) _procDefOptionalOk = true;
+        return rows;
+    } catch (e: any) {
+        const msg = String(e?.message || '');
+        if (_procDefOptionalOk !== false && /does not exist|42703/.test(msg)) {
+            console.warn('[proc_def] 선택 컬럼이 없는 스키마 — 기본 컬럼으로 재시도합니다:', msg);
+            _procDefOptionalOk = false;
+            return await storage.list('proc_def', { ...options, key: PROC_DEF_BASE_COLUMNS });
+        }
+        throw e;
+    }
+}
+
 function withTenantMatch(options?: any): any {
     const tenantId = getTenantId();
     if (!tenantId) return options ?? {};
@@ -140,6 +202,10 @@ class ProcessGPTBackend implements Backend {
 
     async listDefinition(path: string, options?: any) {
         try {
+            // 목록에는 정의 본문(definition·bpmn)이 필요 없다. 운영 한 행을 재보면
+            // bpmn 34KB + definition 10KB 로 두 컬럼이 응답의 99.8% 다.
+            // 상세 화면은 getRawDefinition 등으로 따로 본문을 가져온다.
+            // (컬럼 목록은 listProcDefWithFallback 이 스키마 차이까지 처리한다)
             // proc_def / form_def 는 (id, tenant_id) 로 유일하다. tenant 필터가 빠지면
             // 다른 테넌트의 프로세스 정의가 그대로 목록에 섞여 나온다.
             options = withTenantMatch(options);
@@ -166,7 +232,7 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     options.match.type = 'dmn';
                 }
-                const procDefs = await storage.list('proc_def', options);
+                const procDefs = await listProcDefWithFallback(options);
                 return procDefs;
             } else if (path === 'bpmn') {
                 if (!options) {
@@ -176,7 +242,7 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     options.match['type'] = 'bpmn';
                 }
-                const procDefs = await storage.list('proc_def', options);
+                const procDefs = await listProcDefWithFallback(options);
                 return procDefs;
             } else {
                 if (options) {
@@ -193,7 +259,7 @@ class ProcessGPTBackend implements Backend {
                         }
                     }
                 }
-                const procDefs = await storage.list('proc_def', options);
+                const procDefs = await listProcDefWithFallback(options);
                 // 임시저장(draft, is_draft=true) 프로세스는 목록에서 제외 (기존 null/false 는 유지).
                 const visibleDefs = (procDefs || []).filter((item: any) => item && item.is_draft !== true);
                 visibleDefs.map((item: any) => {
@@ -977,7 +1043,19 @@ class ProcessGPTBackend implements Backend {
 
     async getAllInstanceList(page: any, size: any) {
         try {
-            const list = await storage.list('bpm_proc_inst', withTenantMatch());
+            // page/size 를 받아 놓고 무시해서 인스턴스 전량을 끌어오고 있었다.
+            // (운영 첫 화면에서 bpm_proc_inst 무제한 조회가 5.4초)
+            // 인자가 오면 range 로 서버에서 자르고, 없으면 안전한 상한을 둔다.
+            const listOptions: any = withTenantMatch({ orderBy: 'start_date', sort: 'desc' });
+            const sizeNum = Number(size);
+            if (Number.isFinite(sizeNum) && sizeNum > 0) {
+                const pageNum = Math.max(0, Number(page) || 0);
+                const from = pageNum * sizeNum;
+                listOptions.range = { from, to: from + sizeNum - 1 };
+            } else {
+                listOptions.size = 200;
+            }
+            const list = await storage.list('bpm_proc_inst', listOptions);
             return list.map((item: any) => {
                 return this.returnInstanceObject(item);
                 // return {
@@ -3731,8 +3809,16 @@ class ProcessGPTBackend implements Backend {
             vectorPromise
                 .then(async (vectorResult) => {
                     if (vectorResult && vectorResult.length > 0) {
-                        const procDefs = await storage.list('proc_def', { match: { isdeleted: false } });
-                        let list = procDefs.filter((item: any) => vectorResult.includes(item.id));
+                        // 예전에는 proc_def 를 전량(definition·bpmn 본문 포함) 받아 와서
+                        // 클라이언트에서 vectorResult 로 걸렀다. 운영 테넌트에서 이 한 번의
+                        // 호출이 11.7초를 먹었다. 이미 대상 id 를 알고 있으므로 서버에서
+                        // in 필터로 좁히고, 화면에 쓰는 컬럼만 가져온다.
+                        const procDefs = await storage.list('proc_def', {
+                            match: { isdeleted: false },
+                            inArray: { column: 'id', values: vectorResult },
+                            key: 'id,name,bpmn'
+                        });
+                        let list = procDefs;
                         list = list.map((item: any) => {
                             return {
                                 title: item.name,
@@ -3875,12 +3961,12 @@ class ProcessGPTBackend implements Backend {
                 Object.keys(options).forEach((key) => {
                     filter[key] = options[key];
                 });
-                return await storage.list('users', filter);
+                return await dedupe(`users:${JSON.stringify(filter)}`, () => storage.list('users', filter));
             }
 
             const defaultSetting = useDefaultSetting();
             const defaultAgents = defaultSetting.getAgentList;
-            const users = await storage.list('users', filter);
+            const users = await dedupe(`users:${JSON.stringify(filter)}`, () => storage.list('users', filter));
 
             return [...defaultAgents, ...users];
         } catch (error) {
@@ -7330,7 +7416,13 @@ class ProcessGPTBackend implements Backend {
     async getChatRoomList(path: string) {
         try {
             // 테넌트 필터가 없으면 신규 테넌트에서도 다른 테넌트의 채팅방이 그대로 보인다.
-            return await storage.list(path, withTenantMatch());
+            // 목록 렌더링은 id/name/message/participants 만 쓴다. context(방별 컨텍스트 JSON)는
+            // 방을 열 때 getChatRoom 으로 따로 가져오므로 목록에서는 제외한다.
+            // (운영 uengine 테넌트에서 이 조회가 701KB / 1.0초였다)
+            return await storage.list(
+                path,
+                withTenantMatch({ key: 'id,name,message,participants,primary_agent_id,tenant_id' })
+            );
         } catch (error) {
             throw new Error(error.message);
         }

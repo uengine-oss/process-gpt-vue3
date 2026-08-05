@@ -284,9 +284,9 @@ async function setupTenant() {
             configurable: true
         });
         Object.defineProperty(window, '$tenantName', {
-            // uengine supabase 운영기 연결할때 사용
-            // value: 'uengine',
-            value: 'localhost',
+            // 로컬에서 운영 Supabase 에 붙어 특정 테넌트로 진단할 때 쓴다.
+            // (.env 의 VITE_TENANT_OVERRIDE=uengine 등)
+            value: import.meta.env.VITE_TENANT_OVERRIDE || 'localhost',
             writable: false,
             configurable: false
         });
