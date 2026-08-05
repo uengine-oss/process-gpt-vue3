@@ -321,13 +321,17 @@ export default {
                     activity.orchestration = CASCADE_ORCHESTRATION;
                     activity.agent = agentId;
                     activity.agentAssignedFrom = 'lane-cascade';
+                    // 캐스케이드로 agent를 채울 때는 '미리 설정된 에이전트 사용'도 함께 켜야
+                    // AgentSelectField의 선택 필드가 값을 표시한다(agent만 채우면 체크가 꺼진 채로 남아 빈 필드로 보인다).
+                    activity.usePresetAgent = true;
                     updatedActivityIds.push(activity.id);
 
                     if (this.bpmnModeler) {
                         writeUengineProperties(this.bpmnModeler, activity.id, {
                             orchestration: CASCADE_ORCHESTRATION,
                             agent: agentId,
-                            agentAssignedFrom: 'lane-cascade'
+                            agentAssignedFrom: 'lane-cascade',
+                            usePresetAgent: true
                         });
                     }
                 });
@@ -338,7 +342,8 @@ export default {
                     this.EventBus.emit('lane-agent-cascade-applied', {
                         activityIds: updatedActivityIds,
                         agent: agentId,
-                        orchestration: CASCADE_ORCHESTRATION
+                        orchestration: CASCADE_ORCHESTRATION,
+                        usePresetAgent: true
                     });
                 }
             }

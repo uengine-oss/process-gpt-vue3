@@ -290,6 +290,12 @@ export default {
             if (this.copyUengineProperties.skills !== undefined) this.activity.skills = this.copyUengineProperties.skills;
         }
 
+        // 레인 캐스케이드 등 과거 경로로 usePresetAgent 없이 agent만 저장된 레거시 데이터를 위한 안전망.
+        // agent는 있는데 usePresetAgent가 꺼져 있으면 AgentSelectField의 선택 필드가 계속 빈 채로 보인다.
+        if (!this.activity.usePresetAgent && this.activity.agent) {
+            this.activity.usePresetAgent = true;
+        }
+
         this.normalizeActivityMcpSkillArrays();
 
         if (this.activity.inputData) {
@@ -669,12 +675,14 @@ export default {
             if (this.$refs.agentSelectField && typeof this.$refs.agentSelectField.applyExternalCascade === 'function') {
                 this.$refs.agentSelectField.applyExternalCascade({
                     orchestration: payload.orchestration,
-                    agent: payload.agent
+                    agent: payload.agent,
+                    usePresetAgent: payload.usePresetAgent
                 });
             } else {
                 this.activity.orchestration = payload.orchestration;
                 this.activity.agent = payload.agent;
                 this.activity.agentAssignedFrom = 'lane-cascade';
+                if (payload.usePresetAgent) this.activity.usePresetAgent = true;
             }
         },
         // 깃발 아이콘 진입 신호를 읽어 PI Flag 탭으로 전환 + 묶음 대상 주입
