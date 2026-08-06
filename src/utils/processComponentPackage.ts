@@ -216,6 +216,36 @@ function toArray(v: any): string[] {
     return [];
 }
 
+function addAgentRef(set: Set<string>, value: any) {
+    const refs = toArray(value).filter((ref) => {
+        const normalized = String(ref || '')
+            .trim()
+            .toLowerCase();
+        return normalized && normalized !== 'none' && normalized !== 'null' && normalized !== 'undefined';
+    });
+    for (const ref of refs) set.add(ref);
+}
+
+function addAgentRefsFromValue(set: Set<string>, value: any) {
+    if (!value) return;
+    if (Array.isArray(value)) {
+        for (const item of value) addAgentRefsFromValue(set, item);
+        return;
+    }
+    if (typeof value === 'string') {
+        addAgentRef(set, value);
+        return;
+    }
+    if (typeof value === 'object') {
+        addAgentRef(set, value.id);
+        addAgentRef(set, value.agent);
+        addAgentRef(set, value.username);
+        addAgentRef(set, value.name);
+        addAgentRef(set, value.role);
+        addAgentRef(set, value.alias);
+    }
+}
+
 function collectActivitiesDeep(definition: any): any[] {
     const acc: any[] = [];
     if (!definition || typeof definition !== 'object') return acc;
@@ -248,13 +278,13 @@ export function collectAgentRefs(definition: any): string[] {
     const set = new Set<string>();
     if (Array.isArray(definition?.roles)) {
         for (const role of definition.roles) {
-            const name = role?.name || role?.role;
-            if (name) set.add(String(name).trim());
+            addAgentRef(set, role?.name || role?.role);
         }
     }
     for (const act of collectActivitiesDeep(definition)) {
-        const r = act?.role;
-        if (r) set.add(String(r).trim());
+        addAgentRef(set, act?.role);
+        addAgentRefsFromValue(set, act?.agent);
+        addAgentRefsFromValue(set, act?.agents);
     }
     return Array.from(set).filter(Boolean);
 }
