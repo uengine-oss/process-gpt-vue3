@@ -4036,6 +4036,16 @@ class ProcessGPTBackend implements Backend {
     async putAgent(newAgent: any) {
         try {
             const isGs = window.$gs;
+            const hasSkills = Object.prototype.hasOwnProperty.call(newAgent, 'skills');
+            const skillsArray =
+                typeof newAgent.skills === 'string'
+                    ? newAgent.skills
+                        .split(',')
+                        .map((s: string) => s.trim())
+                        .filter((s: string) => s.length > 0)
+                    : Array.isArray(newAgent.skills)
+                        ? newAgent.skills.map((s: any) => String(s).trim()).filter((s: string) => s.length > 0)
+                        : [];
             const putObj: any = {
                 id: newAgent.id,
                 username: newAgent.name,
@@ -4048,7 +4058,7 @@ class ProcessGPTBackend implements Backend {
                 description: newAgent.description,
                 tools: newAgent.tools,
                 profile: newAgent.img,
-                skills: newAgent.skills,
+                ...(hasSkills ? { skills: skillsArray.join(',') } : {}),
                 model: newAgent.model,
                 tenant_id: window.$tenantName,
                 is_agent: newAgent.isAgent,
@@ -4061,17 +4071,7 @@ class ProcessGPTBackend implements Backend {
 
             await storage.putObject('users', putObj);
 
-            if (!isGs && putObj.id) {
-                const skillsArray =
-                    typeof putObj.skills === 'string'
-                        ? putObj.skills
-                            .split(',')
-                            .map((s: string) => s.trim())
-                            .filter((s: string) => s.length > 0)
-                        : Array.isArray(putObj.skills)
-                            ? putObj.skills
-                            : [];
-
+            if (!isGs && putObj.id && hasSkills) {
                 try {
                     await this.replaceAgentSkills({
                         userId: putObj.id,
