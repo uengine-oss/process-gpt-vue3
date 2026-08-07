@@ -2783,7 +2783,7 @@
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage" />
             <input
                 type="file"
-                accept=".pdf,.hwpx,.doc,.docx,.pptx,.txt,.xlsx"
+                accept=".pdf,.hwp,.hwpx,.doc,.docx,.pptx,.txt,.xlsx"
                 ref="unifiedFileInput"
                 class="d-none"
                 multiple
@@ -2930,7 +2930,7 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip> -->
-                                <v-tooltip text="파일 첨부 · PDF, HWPX, DOC, DOCX, PPTX, TXT · 파일당 최대 10MB">
+                                <v-tooltip text="파일 첨부 · PDF, HWP, HWPX, DOC, DOCX, PPTX, TXT · 파일당 최대 10MB">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
                                             icon
@@ -5575,7 +5575,7 @@ export default {
 
             // changeImage 의 CHAT_ALLOWED_DOC_EXTS 와 같은 집합이어야 한다 — 거기서 통과한 파일이
             // 곧바로 이 함수로 넘어오므로, 목록이 어긋나면 바깥 게이트가 허용한 파일을 여기서 거부한다.
-            const allowedExt = ['.pdf', '.hwpx', '.doc', '.docx', '.pptx', '.txt', '.xlsx'];
+            const allowedExt = ['.pdf', '.hwp', '.hwpx', '.doc', '.docx', '.pptx', '.txt', '.xlsx'];
             const maxBytes = 10 * 1024 * 1024;
             const hasAllowedExtension = (f) => {
                 const name = (f?.name || '').toLowerCase();
@@ -5593,7 +5593,7 @@ export default {
                 errors.push(`10MB를 초과한 파일: ${tooLarge.map((f) => f.name).join(', ')}`);
             }
             if (errors.length) {
-                alert(`${errors.join('\n')}\n\n허용 형식: PDF, HWPX, DOC, DOCX, PPTX, TXT, XLSX\n파일당 최대 용량: 10MB`);
+                alert(`${errors.join('\n')}\n\n허용 형식: PDF, HWP, HWPX, DOC, DOCX, PPTX, TXT, XLSX\n파일당 최대 용량: 10MB`);
             }
             if (!accepted.length) return;
 

@@ -40,9 +40,17 @@
 
             <template v-for="panel in tabPanels" :key="panel.id">
                 <div v-show="!showContext && panel.id === activeId" class="artifact-panel__content">
-                    <!-- HWPX 문서 미리보기 -->
+                    <!-- HWPX 문서 미리보기 — 원본 파일을 rhwp 로 직접 렌더(서버 HTML 변환보다 원본에 충실).
+                         원본 URL 이 없을 때만 기존 HTML 프리뷰로 폴백한다. -->
+                    <HwpxNativeViewer
+                        v-if="panel.type === 'hwpx' && panel.data.fileUrl"
+                        :ref="(el) => setPanelRef(panel.id, el)"
+                        :fileUrl="panel.data.fileUrl"
+                        @close="$emit('close-panel', panel.id)"
+                        @download="emitPanelAction(panel, 'download', $event)"
+                    />
                     <HwpxViewer
-                        v-if="panel.type === 'hwpx'"
+                        v-else-if="panel.type === 'hwpx'"
                         :ref="(el) => setPanelRef(panel.id, el)"
                         :htmlUrl="panel.data.htmlUrl"
                         @close="$emit('close-panel', panel.id)"
@@ -99,6 +107,7 @@
 
 <script>
 import HwpxViewer from '@/components/HwpxViewer.vue';
+import HwpxNativeViewer from '@/components/HwpxNativeViewer.vue';
 import SlideArtifactViewer from '@/components/SlideArtifactViewer.vue';
 import MarkdownViewer from '@/components/MarkdownViewer.vue';
 import PdfViewer from '@/components/PdfViewer.vue';
@@ -119,7 +128,7 @@ const PANEL_TYPE_ICONS = {
 
 export default {
     name: 'ArtifactPanel',
-    components: { HwpxViewer, SlideArtifactViewer, MarkdownViewer, PdfViewer, CsvViewer, AgentChatRoomContext },
+    components: { HwpxViewer, HwpxNativeViewer, SlideArtifactViewer, MarkdownViewer, PdfViewer, CsvViewer, AgentChatRoomContext },
     props: {
         panels: { type: Array, default: () => [] },
         activeId: { type: String, default: null }

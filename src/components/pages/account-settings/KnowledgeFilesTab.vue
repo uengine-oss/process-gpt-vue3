@@ -2234,6 +2234,9 @@ export default {
                 if (data?.indexed) this.notify('재인덱싱 완료');
                 else this.notify('재인덱싱 실패', 'error', data?.error || '인덱싱 실패');
                 await this.fetchList();
+                // 응답 시점에 아직 processing 일 수 있다 → 폴링을 걸어 배지가 스스로 갱신되게 한다.
+                // (안 걸면 사용자가 새로고침할 때까지 '처리중'으로 남는다)
+                this.startStatusPolling();
             } catch (e) {
                 this.notify('재인덱싱 실패', 'error', e?.response?.data?.detail || e?.message);
             } finally {
@@ -2301,6 +2304,7 @@ export default {
                 if (failed === 0) this.notify(`${ok}개 재인덱싱 완료`);
                 else this.notify(`${ok}개 완료, ${failed}개 실패`, failed === targets.length ? 'error' : 'warning');
                 await this.fetchList();
+                this.startStatusPolling(); // 아직 processing 인 항목이 있으면 배지 자동 갱신
             } catch (e) {
                 this.notify('일괄 재인덱싱 실패', 'error', e?.message);
             } finally {

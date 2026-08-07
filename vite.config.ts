@@ -61,7 +61,8 @@ export default defineConfig({
     },
     optimizeDeps: {
         include: ['@fullcalendar/core'],
-        exclude: ['vuetify'],
+        // @rhwp/core 는 wasm-bindgen 글루라 prebundle 하면 wasm URL 처리가 깨진다.
+        exclude: ['vuetify', '@rhwp/core'],
         entries: ['./src/**/*.vue']
     },
     server: {
