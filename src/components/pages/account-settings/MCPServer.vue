@@ -23,43 +23,67 @@
                     </v-row>
                     <div class="mcp-server-list-box">
                         <v-list>
-                            <v-list-item
-                                v-for="(server, key) in filteredMcpServers"
-                                :key="key"
-                                class="mb-2"
-                                :class="{ 'bg-grey-lighten-4': editingKey === key }"
-                            >
-                                <template v-slot:prepend>
-                                    <v-icon :icon="getServerIcon(server)" :color="getServerColor(server)" size="24"></v-icon>
-                                </template>
+                            <template v-for="(server, key) in filteredMcpServers" :key="key">
+                                <v-list-item class="mb-2" :class="{ 'bg-grey-lighten-4': editingKey === key }">
+                                    <template v-slot:prepend>
+                                        <v-icon :icon="getServerIcon(server)" :color="getServerColor(server)" size="24"></v-icon>
+                                    </template>
 
-                                <v-list-item-title class="font-weight-medium">
-                                    {{ formatServerName(key) }}
-                                </v-list-item-title>
+                                    <v-list-item-title class="font-weight-medium">
+                                        {{ formatServerName(key) }}
+                                    </v-list-item-title>
 
-                                <v-list-item-subtitle class="text-caption">
-                                    {{ getServerDescription(server) }}
-                                </v-list-item-subtitle>
+                                    <v-list-item-subtitle class="text-caption">
+                                        {{ getServerDescription(server) }}
+                                    </v-list-item-subtitle>
 
-                                <template v-slot:append>
-                                    <div class="d-flex align-center">
-                                        <v-btn
-                                            :icon="isDefaultServer(key) ? 'mdi-eye' : 'mdi-pencil'"
-                                            variant="text"
-                                            size="small"
-                                            class="mr-2"
-                                            @click.stop="editJson(key)"
-                                        ></v-btn>
-                                        <v-switch
-                                            :model-value="server.enabled"
-                                            color="primary"
-                                            hide-details
-                                            density="compact"
-                                            @update:model-value="toggleServer(key, server.enabled)"
-                                        ></v-switch>
+                                    <div
+                                        v-if="validationStatusMap[key]"
+                                        class="text-caption mt-1 d-flex align-center"
+                                        :class="
+                                            isValidationClickable(key) ? 'text-primary validation-summary-link' : 'text-medium-emphasis'
+                                        "
+                                        @click.stop="isValidationClickable(key) && toggleExpand(key)"
+                                    >
+                                        <v-icon v-if="isValidationClickable(key)" size="12" class="mr-1">{{
+                                            expandedServers[key] ? 'mdi-chevron-down' : 'mdi-chevron-right'
+                                        }}</v-icon>
+                                        {{ validationSummaryText(key) }}
                                     </div>
-                                </template>
-                            </v-list-item>
+
+                                    <template v-slot:append>
+                                        <div class="d-flex align-center">
+                                            <v-icon
+                                                v-if="validationStatusMap[key]"
+                                                icon="mdi-circle"
+                                                size="12"
+                                                class="mr-2"
+                                                :color="validationDotColor(key)"
+                                            ></v-icon>
+                                            <v-btn
+                                                :icon="isDefaultServer(key) ? 'mdi-eye' : 'mdi-pencil'"
+                                                variant="text"
+                                                size="small"
+                                                class="mr-2"
+                                                @click.stop="editJson(key)"
+                                            ></v-btn>
+                                            <v-switch
+                                                :model-value="server.enabled"
+                                                color="primary"
+                                                hide-details
+                                                density="compact"
+                                                @update:model-value="toggleServer(key, server.enabled)"
+                                            ></v-switch>
+                                        </div>
+                                    </template>
+                                </v-list-item>
+
+                                <v-expand-transition>
+                                    <div v-if="expandedServers[key]" class="pl-4 pr-2 pb-2">
+                                        <McpValidationResult :result="validationStatusMap[key]" />
+                                    </div>
+                                </v-expand-transition>
+                            </template>
 
                             <!-- <v-list-item class="mt-4" @click="addNewMCP">
                                 <template v-slot:prepend>
@@ -85,9 +109,9 @@
                         <h5 class="text-h5 mb-3">{{ formatServerName(editingKey) }}</h5>
                     </v-row>
                     <vue-monaco-editor v-model:value="mcpJsonText" language="json" :options="getEditorOptions()" @mount="handleMount" />
-                    <!-- <v-textarea 
-                        v-model="mcpJsonText" 
-                        label="MCP JSON" 
+                    <!-- <v-textarea
+                        v-model="mcpJsonText"
+                        label="MCP JSON"
                         hide-details
                         no-resize
                         class="limited-textarea"
@@ -130,9 +154,9 @@
                         @mount="handleMount"
                         class="mcp-monaco-editor"
                     />
-                    <!-- <v-textarea 
-                        v-model="newJsonText" 
-                        label="MCP JSON" 
+                    <!-- <v-textarea
+                        v-model="newJsonText"
+                        label="MCP JSON"
                         hide-details
                         no-resize
                         class="limited-textarea"
@@ -193,10 +217,10 @@
                     no-resize
                     class="mobile-textarea"
                 />
-                <v-textarea 
-                    v-else 
-                    v-model="newJsonText" 
-                    label="MCP JSON" 
+                <v-textarea
+                    v-else
+                    v-model="newJsonText"
+                    label="MCP JSON"
                     hide-details
                     no-resize
                     class="mobile-textarea"
@@ -235,10 +259,13 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import { useMcpEditorStore } from '@/stores/mcpEditor';
+import mcpValidatorService from '@/services/McpValidatorService';
+import McpValidationResult from './McpValidationResult.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
+    components: { McpValidationResult },
     setup() {
         const mcpEditorStore = useMcpEditorStore();
         return { mcpEditorStore };
@@ -247,6 +274,8 @@ export default {
         selectedToolToAdd: null,
         saving: false,
         adding: false,
+        validationStatusMap: {},
+        expandedServers: {},
         mcpServers: {},
         editDialog: false,
         searchQuery: '',
@@ -358,6 +387,12 @@ export default {
                 });
                 this.mcpServers = configuredData;
             }
+
+            Object.keys(this.mcpServers).forEach((key) => {
+                if (this.mcpServers[key].enabled) {
+                    this.autoValidateServer(key, this.mcpServers[key]);
+                }
+            });
         },
         editJson(serverKey) {
             this.isAddMode = false;
@@ -399,6 +434,54 @@ export default {
             this.mcpEditorStore.clearEditingState();
             this.editDialog = false;
         },
+        async autoValidateServer(key, serverConfig) {
+            if (!serverConfig || !serverConfig.enabled) return;
+
+            this.validationStatusMap = { ...this.validationStatusMap, [key]: { status: 'validating' } };
+            try {
+                const { is_default, enabled, ...configToValidate } = serverConfig;
+                const result = await mcpValidatorService.validateServer(key, configToValidate);
+                this.validationStatusMap = {
+                    ...this.validationStatusMap,
+                    [key]: result || { status: 'error', error_message: 'No validation result' }
+                };
+            } catch (error) {
+                this.validationStatusMap = { ...this.validationStatusMap, [key]: { status: 'error', error_message: error.message } };
+            }
+        },
+        clearValidation(key) {
+            const statusMap = { ...this.validationStatusMap };
+            delete statusMap[key];
+            this.validationStatusMap = statusMap;
+
+            const expanded = { ...this.expandedServers };
+            delete expanded[key];
+            this.expandedServers = expanded;
+        },
+        toggleExpand(key) {
+            this.expandedServers = { ...this.expandedServers, [key]: !this.expandedServers[key] };
+        },
+        validationDotColor(key) {
+            const status = this.validationStatusMap[key] && this.validationStatusMap[key].status;
+            if (status === 'success') return 'success';
+            if (status === 'error') return 'error';
+            return 'grey';
+        },
+        isValidationClickable(key) {
+            const status = this.validationStatusMap[key] && this.validationStatusMap[key].status;
+            return status === 'success' || status === 'error';
+        },
+        validationSummaryText(key) {
+            const info = this.validationStatusMap[key];
+            if (!info) return '';
+            if (info.status === 'success') {
+                return this.$t('MCPServer.toolsAvailable', { count: (info.tools || []).length });
+            }
+            if (info.status === 'error') {
+                return this.$t('MCPServer.validationFailed');
+            }
+            return this.$t('MCPServer.validating');
+        },
         async toggleServer(key, value) {
             try {
                 this.mcpServers[key].enabled = !value;
@@ -407,6 +490,12 @@ export default {
                     mcpServers: this.mcpServers
                 };
                 await backend.setMCPByTenant(dataToSave);
+
+                if (this.mcpServers[key].enabled) {
+                    this.autoValidateServer(key, this.mcpServers[key]);
+                } else {
+                    this.clearValidation(key);
+                }
             } catch (error) {
                 this.mcpServers[key].enabled = !value;
                 console.error('서버 토글 중 오류:', error);
@@ -458,9 +547,10 @@ export default {
                     };
                 }
 
+                const savedKey = this.editingKey;
                 const updatedServers = {
                     ...JSON.parse(JSON.stringify(this.mcpServers)),
-                    [this.editingKey]: updatedServer
+                    [savedKey]: updatedServer
                 };
 
                 const dataToSave = {
@@ -469,6 +559,11 @@ export default {
 
                 await backend.setMCPByTenant(dataToSave);
                 this.mcpServers = updatedServers;
+                if (updatedServer.enabled) {
+                    this.autoValidateServer(savedKey, updatedServer);
+                } else {
+                    this.clearValidation(savedKey);
+                }
                 this.closeEdit();
             } catch (error) {
                 console.error('서버 저장 중 오류:', error);
@@ -486,13 +581,15 @@ export default {
             }
 
             try {
+                const deletedKey = this.editingKey;
                 const updatedServers = { ...this.mcpServers };
-                delete updatedServers[this.editingKey];
+                delete updatedServers[deletedKey];
                 const dataToSave = {
                     mcpServers: updatedServers
                 };
                 await backend.setMCPByTenant(dataToSave);
                 this.mcpServers = updatedServers;
+                this.clearValidation(deletedKey);
                 this.closeEdit();
             } catch (error) {
                 console.error('서버 삭제 중 오류:', error);
@@ -589,6 +686,9 @@ export default {
 
                 await backend.setMCPByTenant(dataToSave);
                 this.mcpServers = updatedServers;
+                if (newServer.enabled) {
+                    this.autoValidateServer(serverKey, newServer);
+                }
                 this.newJsonText = '';
                 this.selectedToolToAdd = null;
                 this.closeEdit();
@@ -637,6 +737,9 @@ export default {
 }
 .v-list-item.add-mcp-server-item:hover {
     background-color: rgba(var(--v-theme-primary), 0);
+}
+.validation-summary-link {
+    cursor: pointer;
 }
 
 /* 모바일 다이얼로그 스타일 */

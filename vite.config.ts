@@ -164,6 +164,14 @@ export default defineConfig({
                 proxyTimeout: 0,
                 rewrite: (path) => path.replace(/^\/agent/, '')
             },
+            // MCP Validator API (MCP 서버 설정 검증 및 도구 목록 조회)
+            '/mcp-validator/': {
+                target: env.VITE_MCP_VALIDATOR_URL || 'http://127.0.0.1:8800',
+                changeOrigin: true,
+                timeout: 0,
+                proxyTimeout: 0,
+                rewrite: (path) => path.replace(/^\/mcp-validator/, '')
+            },
             // Agent Router API (per-agent pod warmup/proxy)
             '/agent-router/': {
                 target: 'http://127.0.0.1:8001',

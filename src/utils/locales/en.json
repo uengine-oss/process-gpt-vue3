@@ -3432,7 +3432,13 @@
         "previousInputDetail": "Shows form data entered by the previous task actor in the BPM process. Use this to perform the current task and understand the flow. Example: In Approve Request → Review → Approve, at 'Review' you see what was entered at 'Approve Request'."
     },
     "MCPServer": {
-        "searchMCPServers": "Search MCP Servers"
+        "searchMCPServers": "Search MCP Servers",
+        "validating": "Validating...",
+        "validationSuccess": "Validation succeeded",
+        "validationFailed": "Validation failed",
+        "availableTools": "Available Tools",
+        "noToolsFound": "No tools found",
+        "toolsAvailable": "{count} tools available"
     },
     "MCPEnvSecret": {
         "mcpEnvironments": "MCP Environments",
