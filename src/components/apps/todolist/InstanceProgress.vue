@@ -22,6 +22,7 @@
                     :bpmn="bpmn"
                     :options="options"
                     :taskStatus="taskStatus"
+                    :decisionJournal="decisionJournal"
                     style="height: 67vh;"
                     @openFeedbackPanel="onOpenFeedbackPanel"
                 ></BpmnUengine>
@@ -70,6 +71,7 @@ export default {
         updatedKey: 0,
         updatedDefKey: 0,
         taskStatus: null,
+        decisionJournal: null,
         feedbackDrawerOpen: false,
         feedbackInstanceId: '',
         feedbackActivityId: '',
@@ -150,6 +152,18 @@ export default {
             var me = this;
             let instId = me.instance.instId || me.instance.instanceId;
             me.taskStatus = await backend.getActivitiesStatus(instId);
+            // 판단 이력은 보조 정보다. 조회가 늦거나 실패해도 진행 표시는 그대로 동작해야 하므로
+            // 상태 조회와 분리해 기다리지 않고, 도착하면 다이어그램이 다시 그려진다.
+            if (typeof backend.getDecisionJournal === 'function') {
+                backend
+                    .getDecisionJournal(instId)
+                    .then((journal) => {
+                        me.decisionJournal = journal;
+                    })
+                    .catch(() => {
+                        me.decisionJournal = null;
+                    });
+            }
             me.updatedDefKey++;
         },
         onOpenFeedbackPanel({ instanceId, activityId }) {

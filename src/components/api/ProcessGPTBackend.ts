@@ -8,6 +8,7 @@ import { runValidation } from '@/utils/bpmnValidationRules';
 import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
 import { convertXMLToJSON as convertXMLToJSONShared } from '@/utils/bpmnXmlToDefinition';
 import { applySelectedChanges } from '@/utils/bpmnSelectiveMerge';
+import { summarizeDecisionJournal } from '@/utils/bpmnTraversedPath';
 import { getTenantId, setCachedJwtTenantId } from '@/utils/tenant';
 
 import { formatDistanceToNowStrict } from 'date-fns';
@@ -3335,6 +3336,35 @@ class ProcessGPTBackend implements Backend {
         } catch (e) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    /**
+     * 분기 판단 이력을 조회해 "지나간 시퀀스 / 선택되지 않은 시퀀스"로 요약한다.
+     *
+     * 엔진이 게이트웨이에서 어느 갈래로 갔는지를 사실로 남긴 것이므로, 진행 표시는 이 값을
+     * 우선한다. 이력이 없는 과거 인스턴스는 빈 요약이 나오고, 호출부는 그래프 추론으로 되돌아간다.
+     */
+    async getDecisionJournal(instId: string) {
+        const empty = { confirmedSequenceIds: [], rejectedSequenceIds: [] };
+        if (!instId) return empty;
+
+        try {
+            const { data, error } = await window.$supabase
+                .from('events')
+                .select('data')
+                .eq('event_type', 'gateway_decision')
+                // 하위 프로세스의 판단도 같은 다이어그램 위에 그려지므로 함께 가져온다.
+                .or(`proc_inst_id.eq.${instId},data->>rootProcInstId.eq.${instId}`)
+                .order('timestamp', { ascending: true });
+
+            if (error) throw error;
+
+            return summarizeDecisionJournal(data || []);
+        } catch (e) {
+            // 판단 이력은 보조 정보다. 조회에 실패하면 추론으로 되돌아가고 진행 표시는 계속 동작해야 한다.
+            console.warn('분기 판단 이력 조회 실패, 그래프 추론으로 대체합니다:', e);
+            return empty;
         }
     }
 

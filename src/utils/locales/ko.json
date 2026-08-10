@@ -2510,6 +2510,27 @@
                         }
                     ]
                 }
+            },
+            "cliagents": {
+                "title": "CLI 코딩 에이전트",
+                "description": "Claude Code / Codex CLI 에이전트에게 업무를 위임. 파일 산출물과 도구 실행이 필요한 작업에 적합 (3~20분 소요)",
+                "detailDesc": {
+                    "title": "설치된 CLI 코딩 에이전트가 작업 공간에서 직접 수행",
+                    "details": [
+                        {
+                            "title": "🎯 작동 방식:\n→ 업무 전용 작업 공간 생성\n→ 스킬·MCP 도구 주입\n→ 선택한 CLI(Claude Code/Codex)가 실행\n→ 산출 파일과 결과 저장"
+                        },
+                        {
+                            "title": "💡 이런 경우에 사용하세요:\n• 파일을 만들거나 고쳐야 하는 작업\n• 코드·문서 산출물이 필요한 작업\n• CLI 에이전트의 도구 체계를 그대로 쓰고 싶을 때"
+                        },
+                        {
+                            "title": "📝 예시:\n• 소스 코드 수정·리팩터링\n• 사양서 기반 문서 생성\n• 저장소 점검 보고서 작성"
+                        },
+                        {
+                            "title": "⚠️ 참고:\n• 선택한 CLI가 서버에 설치·인증되어 있어야 합니다\n• 미설치 시 다른 에이전트로 대체 실행하지 않고 실패로 보고합니다"
+                        }
+                    ]
+                }
             }
         },
         "cost": {
@@ -2520,6 +2541,20 @@
         "humanApproval": {
             "title": "사용자 승인 및 추가 정보 요청",
             "description": "사용자의 승인 및 추가 정보가 필요합니다. 아래 작업 계획대로 진행해도 괜찮다면 확인을 눌러주세요. 필요한 경우 입력 또는 선택 항목을 작성해 주세요."
+        },
+        "cliAgent": {
+            "cliTitle": "실행 CLI",
+            "cliDescription": "업무를 수행할 CLI 에이전트를 선택합니다.",
+            "cliNotInstalled": "이 서버에 설치되어 있지 않습니다",
+            "cliNotAuthenticated": "인증이 필요합니다",
+            "modelTitle": "모델",
+            "modelPlaceholder": "비워 두면 CLI 기본 모델을 사용합니다",
+            "permissionTitle": "실행 권한",
+            "permission": {
+                "read_only": "읽기 전용 (파일 수정·명령 실행 불가)",
+                "workspace_write": "작업 공간 쓰기 허용 (권장)",
+                "command_exec": "명령 실행 허용 (주의: 임의 명령을 실행할 수 있습니다)"
+            }
         }
     },
     "TestProcess": {

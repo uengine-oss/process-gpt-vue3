@@ -92,6 +92,9 @@ export interface Backend {
     uploadDefinition(file: File, path: string): Promise<any>;
     getCompletedTaskId(instId: string): Promise<any>;
     getActivitiesStatus(instId: string, executionScope: string): Promise<any>;
+    // 분기 판단 이력. 엔진이 어느 갈래로 갔는지를 사실로 알려준다.
+    // 이력이 없는 과거 인스턴스는 빈 요약을 돌려주며, 이 경우 진행 표시는 그래프 추론으로 되돌아간다.
+    getDecisionJournal(instId: string): Promise<any>;
     deleteTest(path: string, tracingTag: string, index: number): Promise<any>;
     deleteRecordTest(path: string, index: number): Promise<any>;
     checkDBConnection(): Promise<any>;

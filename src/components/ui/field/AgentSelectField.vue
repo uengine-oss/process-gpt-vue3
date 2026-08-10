@@ -58,6 +58,59 @@
             </v-select>
         </div>
 
+        <!-- CLI 에이전트 선택 (orchestration === 'cliagents' 일 때만) -->
+        <div v-if="!isSubAgentProfile && activity.orchestration === 'cliagents'" class="mt-4">
+            <div class="text-caption text-medium-emphasis mb-2">
+                {{ $t('AgentSelectInfo.cliAgent.cliDescription') }}
+            </div>
+            <v-select
+                v-model="cliAgentConfig.agent_cli"
+                :items="cliAgentItems"
+                item-title="title"
+                item-value="value"
+                :label="$t('AgentSelectInfo.cliAgent.cliTitle')"
+                variant="outlined"
+                density="compact"
+                :hide-details="true"
+                :loading="cliAgentsLoading"
+                :disabled="engineConfigDisabled"
+            >
+                <template #item="{ item, props }">
+                    <!-- 설치되지 않은 CLI 는 고를 수 없게 한다. 실행 시점에야
+                         실패하는 것보다 선택 시점에 막는 편이 낫다. -->
+                    <v-list-item v-bind="props" :disabled="!item.raw.installed" :title="item.raw.title">
+                        <v-list-item-subtitle v-if="item.raw.hint" class="text-wrap">
+                            {{ item.raw.hint }}
+                        </v-list-item-subtitle>
+                    </v-list-item>
+                </template>
+            </v-select>
+
+            <v-text-field
+                v-model="cliAgentConfig.model"
+                class="mt-3"
+                :label="$t('AgentSelectInfo.cliAgent.modelTitle')"
+                :placeholder="$t('AgentSelectInfo.cliAgent.modelPlaceholder')"
+                variant="outlined"
+                density="compact"
+                :hide-details="true"
+                :disabled="engineConfigDisabled"
+            />
+
+            <v-select
+                v-model="cliAgentConfig.permission"
+                class="mt-3"
+                :items="cliPermissionItems"
+                item-title="title"
+                item-value="value"
+                :label="$t('AgentSelectInfo.cliAgent.permissionTitle')"
+                variant="outlined"
+                density="compact"
+                :hide-details="true"
+                :disabled="engineConfigDisabled"
+            />
+        </div>
+
         <!-- Orchestration-dependent configuration -->
         <div :class="isSubAgentProfile ? '' : 'mt-4'">
             <!-- 완료 수준 -->
@@ -192,6 +245,7 @@
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 
+import axios from 'axios';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 
 export default {
@@ -239,6 +293,12 @@ export default {
             ],
             mcpTools: {},
             toolList: [],
+            // CLI 에이전트(오케스트레이션 'cliagents') 전용 설정. 하나의 오브젝트로
+            // 묶어 activity.agentConfig 로 저장한다 — 워크아이템까지 그대로 실려야
+            // 실행 시점에 "어떤 CLI로 돌릴지"를 알 수 있다.
+            cliAgentConfig: { agent_cli: null, model: '', permission: 'workspace_write' },
+            cliAgentItems: [],
+            cliAgentsLoading: false,
             uploadedSkills: [],
             builtinSkills: [],
             toolsSkillsLoading: false,
@@ -315,6 +375,22 @@ export default {
                     }
                 },
                 {
+                    titleKey: 'AgentSelectInfo.orchestration.cliagents.title',
+                    value: 'cliagents',
+                    icon: 'flowchart',
+                    descKey: 'AgentSelectInfo.orchestration.cliagents.description',
+                    costKey: 'AgentSelectInfo.cost.high',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.cliagents.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.cliagents.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.cliagents.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.cliagents.detailDesc.details.2.title' },
+                            { title: 'AgentSelectInfo.orchestration.cliagents.detailDesc.details.3.title' }
+                        ]
+                    }
+                },
+                {
                     titleKey: 'AgentSelectInfo.orchestration.deepResearchCustom.title',
                     value: 'deep-research-custom',
                     icon: 'playoff',
@@ -346,6 +422,14 @@ export default {
         };
     },
     computed: {
+        cliPermissionItems() {
+            return [
+                { value: 'read_only', title: this.$t('AgentSelectInfo.cliAgent.permission.read_only') },
+                { value: 'workspace_write', title: this.$t('AgentSelectInfo.cliAgent.permission.workspace_write') },
+                { value: 'command_exec', title: this.$t('AgentSelectInfo.cliAgent.permission.command_exec') }
+            ];
+        },
+
         isSingleAgentType() {
             return this.agentType === 'pgagent' || this.agentType === 'a2a';
         },
@@ -387,6 +471,16 @@ export default {
         }
     },
     watch: {
+        // CLI 설정은 activity.agentConfig 로 흘려보낸다. 이 값이 프로세스 정의에
+        // 저장되고, 엔진이 워크아이템의 agent_config 로 옮겨 실어야 실행 시점에
+        // 어떤 CLI·모델·권한으로 돌릴지 결정할 수 있다.
+        cliAgentConfig: {
+            deep: true,
+            handler(newVal) {
+                if (this.activity.orchestration !== 'cliagents') return;
+                this.activity.agentConfig = { ...newVal };
+            }
+        },
         modelValue: {
             deep: true,
             handler(newVal) {
@@ -427,6 +521,14 @@ export default {
             handler(newVal, oldVal) {
                 if (!this.suppressManualMarker && newVal !== oldVal) {
                     this.activity.agentAssignedFrom = 'manual';
+                }
+                if (newVal === 'cliagents') {
+                    this.loadCliAgents();
+                    this.activity.agentConfig = { ...this.cliAgentConfig };
+                } else if (this.activity.agentConfig) {
+                    // 다른 오케스트레이션으로 바꾸면 CLI 설정은 남기지 않는다.
+                    // 남아 있으면 나중에 되돌렸을 때 지운 줄 알았던 값이 살아난다.
+                    this.activity.agentConfig = null;
                 }
                 if (this.isSubAgentProfile) {
                     if (newVal === 'a2a') {
@@ -504,6 +606,12 @@ export default {
         }
     },
     created() {
+        if (this.modelValue?.agentConfig) {
+            this.cliAgentConfig = { ...this.cliAgentConfig, ...this.modelValue.agentConfig };
+        }
+        if (this.modelValue?.orchestration === 'cliagents') {
+            this.loadCliAgents();
+        }
         if (this.modelValue) {
             // agentMode가 없거나 undefined/null인 경우 기본값은 비움(null)
             if (!this.modelValue.agentMode) {
@@ -586,6 +694,33 @@ export default {
         });
     },
     methods: {
+        async loadCliAgents() {
+            if (this.cliAgentsLoading || this.cliAgentItems.length) return;
+            this.cliAgentsLoading = true;
+            try {
+                const response = await axios.get('/process-gpt-cli-agent/agents');
+                this.cliAgentItems = (response.data?.agents || []).map((agent) => ({
+                    value: agent.agent_id,
+                    title: agent.display_name || agent.agent_id,
+                    installed: !!agent.installed,
+                    // 설치/인증이 안 된 이유를 그 자리에서 보여준다. 실행을 눌러
+                    // 실패 메시지로 알게 되는 것보다 낫다.
+                    hint: agent.installed
+                        ? agent.authenticated === false
+                            ? `${this.$t('AgentSelectInfo.cliAgent.cliNotAuthenticated')}${agent.auth_hint ? ` — ${agent.auth_hint}` : ''}`
+                            : ''
+                        : `${this.$t('AgentSelectInfo.cliAgent.cliNotInstalled')}${agent.install_hint ? ` — ${agent.install_hint}` : ''}`
+                }));
+            } catch (error) {
+                console.error('CLI 에이전트 가용성 조회 실패:', error);
+                // 서비스가 내려가 있으면 목록을 비워 둔다. 임의로 채워 넣으면
+                // 설치되지도 않은 CLI 를 고를 수 있게 된다.
+                this.cliAgentItems = [];
+            } finally {
+                this.cliAgentsLoading = false;
+            }
+        },
+
         // 레인 캐스케이드 등 외부(사용자 조작이 아닌)에서 orchestration/agent를 갱신할 때 사용.
         // suppressManualMarker로 감싸서 이 갱신이 'manual' 마커를 붙이지 않도록 한다.
         applyExternalCascade({ orchestration, agent }) {

@@ -150,6 +150,7 @@ import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequen
 import paletteProvider from './customPalette/PaletteProvider';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import { BPMN_AUTO_ORIENTATION_MODES, getAutoOrientationRotateOptions, getBpmnAutoOrientationMode } from '@/utils/bpmnAutoOrientationMode';
+import { buildGraphFromElementRegistry, computeTraversedPath } from '@/utils/bpmnTraversedPath';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
@@ -178,6 +179,12 @@ export default {
         },
         taskStatus: {
             type: Object
+        },
+        // 엔진이 남긴 분기 판단 이력 요약. 있으면 흘러간 경로를 사실로 그리고,
+        // 이력이 없는 구간(시작 이벤트 진입 등)이나 과거 인스턴스는 그래프 추론으로 메운다.
+        decisionJournal: {
+            type: Object,
+            default: null
         },
         adminMode: {
             type: Boolean,
@@ -294,6 +301,12 @@ export default {
         },
         activityStatus(val) {
             this.setTaskStatus(val);
+        },
+        decisionJournal() {
+            // 판단 이력이 뒤늦게 도착해도 흘러간 경로가 다시 그려져야 한다.
+            if (this.bpmnViewer) {
+                this.applyTraversedPath(this.activityStatus || this.taskStatus);
+            }
         },
         async currentInstanceId(val) {
             this.setSubProcessInstance(val);
@@ -1117,6 +1130,9 @@ export default {
                         }
                     });
 
+                    // 이미 흘러간 경로(연결선 + 중간 게이트웨이/이벤트) 강조를 다시 계산해 적용
+                    self.applyTraversedPath(val);
+
                     // 태스크 상태별 처리 및 포커싱 대상 수집
                     Object.keys(val).forEach((task) => {
                         let taskStatus = val[task];
@@ -1198,6 +1214,50 @@ export default {
                     console.error('setTaskStatus error:', error);
                 }
             }
+        },
+        /**
+         * 진행 상태맵으로부터 "이미 흘러간 경로"를 계산해 연결선과 중간 통과 노드에 반영한다.
+         *
+         * 상태맵에는 액티비티만 담기고 게이트웨이/이벤트는 담기지 않으므로, BPMN 그래프를
+         * 따라가 완료된 액티비티에서 다음 실행 지점까지의 간선을 추론한다.
+         * 분기에서 어느 쪽으로 갔는지 단정할 수 없으면 어느 쪽도 표시하지 않는다.
+         */
+        applyTraversedPath(statusMap) {
+            const canvas = this.bpmnViewer && this.bpmnViewer.get('canvas');
+            const elementRegistry = this.bpmnViewer && this.bpmnViewer.get('elementRegistry');
+            if (!canvas || !elementRegistry) return;
+
+            // 재계산 전에 이전 표시를 모두 지운다(뷰어가 재사용될 때 잔상이 남지 않도록).
+            elementRegistry.getAll().forEach((element) => {
+                try {
+                    if (canvas.hasMarker(element, 'traversed')) {
+                        canvas.removeMarker(element, 'traversed');
+                    }
+                } catch (e) {
+                    // 개별 요소 처리 실패 시 계속 진행
+                }
+            });
+
+            let traversed;
+            try {
+                traversed = computeTraversedPath(buildGraphFromElementRegistry(elementRegistry), statusMap, this.decisionJournal);
+            } catch (e) {
+                console.warn('흘러간 경로 계산 실패:', e);
+                return;
+            }
+
+            const applyMarker = (id) => {
+                try {
+                    if (elementRegistry.get(id)) {
+                        canvas.addMarker(id, 'traversed');
+                    }
+                } catch (e) {
+                    // 개별 요소 처리 실패 시 계속 진행
+                }
+            };
+
+            traversed.flowIds.forEach(applyMarker);
+            traversed.nodeIds.forEach(applyMarker);
         },
         /**
          * 포커싱 대상 태스크들의 중간 지점을 현재 뷰포트 정중앙으로 스크롤

@@ -207,6 +207,10 @@ export default {
                 agent: '',
                 agentMode: 'none',
                 orchestration: null,
+                // cliagents 오케스트레이션에서만 채워지는 실행 설정
+                // ({agent_cli, model, permission}). 엔진이 워크아이템의
+                // agent_config 로 옮겨 실어 실행 시점에 사용한다.
+                agentConfig: null,
                 agentAssignedFrom: null,
                 // '미리 설정된 에이전트 사용' 체크 상태. 저장/복원되지 않으면
                 // AgentSelectField 가 이 값을 !!agent 로 재유도하면서, 아직 에이전트를
@@ -776,6 +780,9 @@ export default {
                 usePresetAgent: !!me.activity.usePresetAgent,
                 agentMode: me.activity.agentMode,
                 orchestration: me.activity.orchestration,
+                // cliagents 실행 설정. 여기에 실리지 않으면 화면에서 고른
+                // CLI·모델·권한이 저장 시점에 버려진다.
+                agentConfig: me.activity.agentConfig || null,
                 agentAssignedFrom: me.activity.agentAssignedFrom,
                 attachments: me.activity.attachments,
                 inputData: me.activity.inputData,

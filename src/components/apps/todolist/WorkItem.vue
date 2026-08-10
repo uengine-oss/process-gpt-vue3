@@ -1533,6 +1533,7 @@ export default {
                     'crewai-deep-research',
                     'deep-research-custom',
                     'deepagents',
+                    'cliagents',
                     'crewai-action',
                     'openai-deep-research',
                     'langchain-react',

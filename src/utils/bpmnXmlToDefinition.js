@@ -433,6 +433,9 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
             task.usePresetAgent = false;
             task.agentMode = '';
             task.orchestration = '';
+            // cliagents 오케스트레이션의 실행 CLI·모델·권한. 여기서 초기화하고
+            // 아래에서 복원하지 않으면 저장할 때마다 조용히 사라진다.
+            task.agentConfig = null;
             task.agentAssignedFrom = null;
             task.attachments = [];
             task.inputData = [];
@@ -463,6 +466,7 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
                     propsJson.usePresetAgent !== undefined ? !!propsJson.usePresetAgent : !!task.agent;
                 task.agentMode = propsJson.agentMode || task.agentMode;
                 task.orchestration = propsJson.orchestration || task.orchestration;
+                task.agentConfig = propsJson.agentConfig || task.agentConfig;
                 task.agentAssignedFrom = propsJson.agentAssignedFrom || task.agentAssignedFrom;
                 task.attachments = propsJson.attachments || task.attachments;
                 task.inputData = propsJson.inputData || task.inputData;

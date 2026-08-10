@@ -125,6 +125,7 @@ export default {
             if (
                 window.location.pathname.startsWith('/bpmn-auto-layout-e2e') ||
                 window.location.pathname.startsWith('/processgpt-mapper-ui-e2e') ||
+                window.location.pathname.startsWith('/instance-progress-e2e') ||
                 // 디자인 시스템 쇼케이스는 백엔드/테넌트 없이 단독으로 열려야 한다
                 window.location.pathname.startsWith('/design-system')
             ) {
@@ -200,6 +201,7 @@ export default {
                             window.location.pathname.startsWith('/auth/') ||
                             window.location.pathname.startsWith('/bpmn-auto-layout-e2e') ||
                             window.location.pathname.startsWith('/processgpt-mapper-ui-e2e') ||
+                            window.location.pathname.startsWith('/instance-progress-e2e') ||
                             window.location.port === '8088';
                         const userInfo = await this.backend.getUserInfo();
                         if (!skipLoginCheck) {

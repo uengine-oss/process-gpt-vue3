@@ -1171,6 +1171,11 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    // uEngine 백엔드는 분기 판단 이력을 남기지 않는다. 진행 표시는 그래프 추론으로 동작한다.
+    async getDecisionJournal(_instId: string) {
+        return { confirmedSequenceIds: [], rejectedSequenceIds: [] };
+    }
+
     async dryRun(isSimulate: string, command: object) {
         // command를 object json으로 변경
         const config = {

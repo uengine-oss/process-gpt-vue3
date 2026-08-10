@@ -112,6 +112,8 @@ openspec/specs/*
 !openspec/specs/tenant-scoped-agent-streaming/spec.md
 !openspec/specs/tenant-data-isolation/
 !openspec/specs/tenant-data-isolation/spec.md
+!openspec/specs/instance-progress-visualization/
+!openspec/specs/instance-progress-visualization/spec.md
 
 qa_report/
 
