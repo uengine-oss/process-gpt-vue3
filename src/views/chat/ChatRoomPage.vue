@@ -6032,6 +6032,53 @@ export default {
         },
 
         /**
+         * process-definition.json 의 activity.agent(또는 activity.agents[]) 바인딩을 기준으로
+         * 해당 에이전트가 담당하는 Activity 들의 skills 를 모아 반환한다.
+         * agents/<id>.json 자체에는 skills 필드가 없고(스킬은 activity 단위로 배정됨), 이 매핑이 유일한 출처다.
+         * agentId 는 agentStableId 변환 전 원본 id(process-definition.json 의 activity.agent 와 동일 값)여야 매칭된다.
+         */
+        _collectAgentSkillNames(definition, agentId) {
+            const names = new Set();
+            if (!definition || !agentId) return [];
+            const toArr = (v) => {
+                if (Array.isArray(v)) return v.map((s) => String(s).trim()).filter(Boolean);
+                if (typeof v === 'string')
+                    return v
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                return [];
+            };
+            const matchesAgent = (act) => {
+                if (!act) return false;
+                if (act.agent && String(act.agent) === String(agentId)) return true;
+                if (Array.isArray(act.agents)) {
+                    return act.agents.some((ag) => {
+                        const id = ag && typeof ag === 'object' ? ag.id : ag;
+                        return id && String(id) === String(agentId);
+                    });
+                }
+                return false;
+            };
+            const collectFrom = (activities) => {
+                if (!Array.isArray(activities)) return;
+                for (const act of activities) {
+                    if (matchesAgent(act)) {
+                        for (const s of toArr(act.skills)) names.add(s);
+                    }
+                }
+            };
+            collectFrom(definition.activities);
+            collectFrom(definition.elements);
+            if (Array.isArray(definition.subProcesses)) {
+                for (const sp of definition.subProcesses) {
+                    if (sp && sp.children) collectFrom(sp.children.activities);
+                }
+            }
+            return Array.from(names);
+        },
+
+        /**
          * 산출물 파일 목록에서 skills/<name>/<file> 들을 모아 zip 으로 스킬 서비스에 업로드한다.
          * - draft=true: 파일만 업로드(=/skills/{name} 편집기에서 로드 가능)하고 tenants.skills 목록 등록은 생략.
          * - draft=false(최종 저장): 업로드 + saveSkills 로 목록 승격.
@@ -6590,6 +6637,7 @@ export default {
                                         persona: a.persona || '',
                                         description: a.description || '',
                                         model: a.model || null,
+                                        skills: a.skills,
                                         isAgent: true,
                                         type: 'agent',
                                         is_draft: true
@@ -6610,7 +6658,8 @@ export default {
                                     obj = null;
                                 }
                                 if (!obj || typeof obj !== 'object' || Array.isArray(obj)) continue;
-                                await saveDraftAgent({ ...obj, id: agentStableId(obj, af.path) });
+                                const skills = this._collectAgentSkillNames(definition, obj.id);
+                                await saveDraftAgent({ ...obj, id: agentStableId(obj, af.path), skills });
                             }
                             // (2) 레거시 agents.json(배열/딕셔너리).
                             const agFile = files.find(
@@ -6626,7 +6675,8 @@ export default {
                                 const arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.agents) ? parsed.agents : [];
                                 for (const a of arr) {
                                     if (!a || typeof a !== 'object') continue;
-                                    await saveDraftAgent({ ...a, id: isUuidStable(a.id) ? a.id : agentStableId(a, agFile.path) });
+                                    const skills = this._collectAgentSkillNames(definition, a.id);
+                                    await saveDraftAgent({ ...a, id: isUuidStable(a.id) ? a.id : agentStableId(a, agFile.path), skills });
                                 }
                             }
                         }
@@ -6828,6 +6878,8 @@ export default {
                         // draft 저장·편집기(editTarget)와 동일한 결정적 id(슬러그→uuid)로 승격해야
                         // 같은 에이전트가 정식 등록된다(랜덤 uuid 금지).
                         const agentId = isUuidStable(a.id) ? a.id.toString() : agentStableId(a, filePath);
+                        // 스킬은 agents/<id>.json 자체가 아니라 activity.agent 바인딩(원본 id 기준)으로 배정된다.
+                        const skills = this._collectAgentSkillNames(definition, a.id);
                         try {
                             await backend.putAgent({
                                 id: agentId,
@@ -6838,6 +6890,7 @@ export default {
                                 persona: a.persona || '',
                                 description: a.description || '',
                                 model: a.model || null,
+                                skills,
                                 isAgent: true,
                                 type: 'agent',
                                 is_draft: false // 최종 저장 — draft 였으면 정식 등록으로 승격(목록 노출).
