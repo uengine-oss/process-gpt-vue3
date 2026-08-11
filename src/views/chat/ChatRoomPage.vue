@@ -1369,7 +1369,8 @@ export default {
                     goal: stored.goal || this.contextAgent.goal || '',
                     persona: stored.persona || this.contextAgent.persona || '',
                     description: stored.description || this.contextAgent.description || '',
-                    tools: stored.tools || this.contextAgent.tools || ''
+                    tools: stored.tools || this.contextAgent.tools || '',
+                    tool_filters: stored.tool_filters || this.contextAgent.tool_filters || null
                 };
             }
             const candidates = this.getAgentCandidates();
@@ -1383,7 +1384,8 @@ export default {
                     goal: meta.goal || '',
                     persona: meta.persona || '',
                     description: meta.description || '',
-                    tools: meta.tools || ''
+                    tools: meta.tools || '',
+                    tool_filters: meta.tool_filters || null
                 };
             }
             return null;
@@ -8003,6 +8005,7 @@ export default {
                     persona: agentTarget?.persona || '',
                     description: agentTarget?.description || '',
                     tools: agentTarget?.tools || '',
+                    tool_filters: agentTarget?.tool_filters || null,
                     skills: assignedSkills
                 };
 

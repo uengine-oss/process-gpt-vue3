@@ -143,6 +143,7 @@ export default {
             endpoint: '',
             description: '',
             tools: '',
+            tool_filters: null,
             alias: ''
         },
         dialogReset: false
@@ -199,6 +200,7 @@ export default {
                 endpoint: '',
                 description: '',
                 tools: '',
+                tool_filters: null,
                 alias: '',
                 type: 'agent'
             });

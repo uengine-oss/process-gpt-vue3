@@ -685,6 +685,7 @@
         "agentEndpoint": "Endpoint",
         "agentDescription": "Description",
         "agentTools": "Tools",
+        "toolsSelectedCount": "{count} selected",
         "agentSkills": "Skills",
         "aiProvider": "AI Provider",
         "aiModel": "AI Model",
@@ -3438,7 +3439,8 @@
         "validationFailed": "Validation failed",
         "availableTools": "Available Tools",
         "noToolsFound": "No tools found",
-        "toolsAvailable": "{count} tools available"
+        "toolsAvailable": "{count} tools available",
+        "serverNotFound": "MCP server configuration not found"
     },
     "MCPEnvSecret": {
         "mcpEnvironments": "MCP Environments",

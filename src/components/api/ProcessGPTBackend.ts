@@ -4057,6 +4057,7 @@ class ProcessGPTBackend implements Backend {
                 endpoint: newAgent.endpoint,
                 description: newAgent.description,
                 tools: newAgent.tools,
+                tool_filters: newAgent.tool_filters ?? null,
                 profile: newAgent.img,
                 ...(hasSkills ? { skills: skillsArray.join(',') } : {}),
                 model: newAgent.model,

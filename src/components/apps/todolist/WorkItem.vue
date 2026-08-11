@@ -905,29 +905,11 @@ export default {
                     return false;
                 }
 
-                if (Array.isArray(endpoint) && endpoint.includes(currentUserId)) {
-                    if (this.workItem.raw.agent_mode && this.workItem.raw.draft_status && this.workItem.raw.draft_status == 'COMPLETED') {
-                        return true;
-                    } else if (!this.workItem.raw.agent_mode) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-
                 // endpoint가 단일 값일 때 uid와 일치하면 내 업무
                 const endpointList = String(endpoint)
                     .split(',')
                     .map((e) => e.trim());
-                if (endpointList.includes(currentUserId)) {
-                    return true;
-                } else {
-                    if (this.workItem.raw.agent_mode && this.workItem.raw.draft_status && this.workItem.raw.draft_status == 'COMPLETED') {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
+                return endpointList.includes(currentUserId);
             }
         },
         isNoAssignee() {
