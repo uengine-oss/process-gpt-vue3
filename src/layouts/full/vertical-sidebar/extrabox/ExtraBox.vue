@@ -130,7 +130,7 @@ export default defineComponent({
     margin-bottom: 5px;
 }
 .credit-menu-box {
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 16px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     padding: 20px 20px 12px 20px;
@@ -152,38 +152,38 @@ export default defineComponent({
 }
 .credit-menu-icon {
     margin-right: 6px;
-    color: #888;
+    color: var(--cds-text-muted);
     font-size: 18px;
 }
 .credit-menu-label {
     flex: 1;
-    color: #222;
+    color: var(--cds-text-primary);
     font-size: 15px;
     font-weight: 500;
     display: flex;
     align-items: center;
 }
 .credit-menu-value {
-    color: #222;
+    color: var(--cds-text-primary);
     font-size: 17px;
     font-weight: 700;
     margin-left: 8px;
 }
 .credit-menu-desc {
-    color: #888;
+    color: var(--cds-text-muted);
     font-size: 13px;
     margin-left: 24px;
     margin-bottom: 2px;
     line-height: 1.3;
 }
 .credit-menu-footer {
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--cds-border);
     margin-top: 10px;
     padding-top: 8px;
     text-align: left;
 }
 .credit-menu-link {
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
     font-size: 14px;
     text-decoration: none;
     display: inline-flex;
@@ -196,9 +196,9 @@ export default defineComponent({
 .credit-badge {
     display: flex;
     align-items: center;
-    border: 1.5px solid #ececec;
+    border: 1.5px solid var(--cds-border);
     border-radius: 20px;
-    background: #fafbfc;
+    background: var(--cds-bg-neutral);
     padding: 4px 16px 4px 10px;
     font-size: 17px;
     font-weight: 500;
@@ -215,7 +215,7 @@ export default defineComponent({
     margin-right: 2px;
 }
 .credit-badge-value {
-    color: #222;
+    color: var(--cds-text-primary);
     font-weight: 600;
     font-size: 17px;
 }
@@ -225,7 +225,7 @@ export default defineComponent({
     font-size: 16px;
 }
 .credit-badge-upgrade {
-    color: #2196f3;
+    color: hsl(var(--accent-brand));
     font-size: 15px;
     font-weight: 600;
     text-decoration: none;
@@ -234,7 +234,7 @@ export default defineComponent({
     white-space: nowrap;
 }
 .credit-badge-upgrade:hover {
-    color: #1565c0;
+    color: hsl(var(--accent-brand));
     text-decoration: underline;
 }
 </style>

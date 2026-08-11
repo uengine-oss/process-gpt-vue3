@@ -270,7 +270,7 @@ export default {
             centerButton.setAttribute('draggable', 'true');
             centerButton.setAttribute('data-action', 'center-viewport');
             centerButton.setAttribute('title', 'Center viewport');
-            centerButton.innerHTML = '<i class="mdi mdi-crosshairs-gps" style="font-size: 20px; color: #444;"></i>';
+            centerButton.innerHTML = '<i class="mdi mdi-crosshairs-gps" style="font-size: 20px; color: var(--cds-text-secondary);"></i>';
 
             centerButton.addEventListener('click', () => {
                 this.resetViewportToCenter();

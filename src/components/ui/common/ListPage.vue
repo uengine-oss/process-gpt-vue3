@@ -7,7 +7,7 @@
             <!-- 검색 -->
             <div
                 class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5"
-                style="background-color: #fff"
+                style="background-color: var(--cds-surface-2)"
             >
                 <Icons :icon="'magnifer-linear'" :size="22" />
                 <v-text-field

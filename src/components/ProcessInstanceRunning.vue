@@ -173,7 +173,7 @@ export default {
 }
 
 .instance-info {
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--cds-border);
     padding-bottom: 12px;
 }
 
@@ -184,13 +184,13 @@ export default {
 
 .detail-label {
     font-weight: 600;
-    color: #666;
+    color: var(--cds-text-secondary);
     min-width: 120px;
     font-size: 14px;
 }
 
 .detail-value {
-    color: #333;
+    color: var(--cds-text-primary);
     font-size: 14px;
     word-break: break-all;
 }

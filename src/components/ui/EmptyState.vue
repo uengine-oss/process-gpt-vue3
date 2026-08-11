@@ -160,7 +160,7 @@ export default {
 .empty-state {
     text-align: center;
     padding: 0px;
-    background: white;
+    background: var(--cds-surface-2);
     margin-top: 12px;
     overflow: auto;
 }
@@ -173,7 +173,7 @@ export default {
 .empty-state h3 {
     font-size: 18px;
     font-weight: 600;
-    color: #1d2129;
+    color: var(--cds-text-primary);
     margin: 0 0 8px 0;
 }
 
@@ -192,7 +192,7 @@ export default {
 .method-title {
     font-size: 20px;
     font-weight: 600;
-    color: #1d2129;
+    color: var(--cds-text-primary);
     margin-bottom: 0;
 }
 
@@ -228,7 +228,7 @@ export default {
     font-size: 16px !important;
     font-weight: 600 !important;
     line-height: 1.3 !important;
-    color: #1d2129 !important;
+    color: var(--cds-text-primary) !important;
 }
 
 .card-description-vuetify {

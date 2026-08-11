@@ -230,9 +230,11 @@ export default {
 
                     newRow.setAttribute('class', 'row');
 
-                    Array.from(row.firstChild.children).forEach((child) => {
-                        newRow.appendChild(child);
-                    });
+                    if (row.firstElementChild) {
+                        Array.from(row.firstElementChild.children).forEach((child) => {
+                            newRow.appendChild(child);
+                        });
+                    }
 
                     $(newRow)
                         .children('[class^="col-sm-"]')
@@ -457,6 +459,23 @@ export default {
             // console.log(htmlTextToLoad);
 
             const dom = new DOMParser().parseFromString(htmlTextToLoad, 'text/html');
+
+            // AI가 생성한 <row-layout>은 name/alias/is_multidata_mode를 자기 자신에 직접 들고 있는데,
+            // 아래 section 유효성 검사는 div.row의 부모가 곧바로 section이어야 한다고 가정하고 있어서
+            // row-layout이 그대로 남아있으면 항상 '잘못된 구조'로 오인되어 row-layout과 section의 위치가 뒤바뀌는 문제가 있었음.
+            // 따라서 KEditor에 넣기 전에 row-layout의 속성을 하위 div.row로 옮기고 row-layout 자체는 풀어버림
+            dom.querySelectorAll('row-layout').forEach((rowLayout) => {
+                const innerRow = rowLayout.querySelector(':scope > div.row');
+                if (innerRow) {
+                    innerRow.setAttribute('name', rowLayout.getAttribute('name') ?? '');
+                    innerRow.setAttribute('alias', rowLayout.getAttribute('alias') ?? '');
+                    innerRow.setAttribute('is_multidata_mode', rowLayout.getAttribute('is_multidata_mode') ?? 'false');
+                }
+                while (rowLayout.firstChild) {
+                    rowLayout.parentNode.insertBefore(rowLayout.firstChild, rowLayout);
+                }
+                rowLayout.parentNode.removeChild(rowLayout);
+            });
 
             // 만약 AI 생성오류 등으로 row안에 있는 col-sm-{숫자}의 총합이 12가 아니라면 모든 내용을 col-sm-12에 담아버림
             dom.querySelectorAll('div.row').forEach((row) => {

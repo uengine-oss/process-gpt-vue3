@@ -38,8 +38,7 @@
                 :radius="30"
                 :_style="{
                     'stroke-width': 0.5,
-                    fill: '#FFFF00'
-                }"
+                    fill: '#FFFF00'}"
             ></geometry-circle>
 
             <sub-elements>

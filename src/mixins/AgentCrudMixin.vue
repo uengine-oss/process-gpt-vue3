@@ -303,6 +303,7 @@ export default {
                         endpoint: latestUserData.endpoint,
                         description: latestUserData.description,
                         tools: latestUserData.tools,
+                        tool_filters: latestUserData.tool_filters ?? null,
                         skills: latestUserData.skills,
                         img: latestUserData.profile || latestUserData.img,
                         type: latestUserData.agent_type || latestUserData.type,

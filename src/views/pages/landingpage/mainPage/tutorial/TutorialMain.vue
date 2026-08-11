@@ -89,7 +89,7 @@ export default {
 <style scoped>
 .tutorial-main {
     width: 100%;
-    background: #ffffff;
+    background: var(--cds-surface-2);
 }
 
 .tutorial-layout {

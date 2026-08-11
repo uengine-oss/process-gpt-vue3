@@ -17,7 +17,7 @@
                 </v-tabs>
                 <v-spacer v-if="!isMobile"></v-spacer>
                 <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
-                    <v-btn @click="closeDialog" rounded density="compact" style="background-color: #808080; color: white">닫기</v-btn>
+                    <v-btn @click="closeDialog" rounded density="compact" style="background-color: var(--cds-text-muted); color: white">닫기</v-btn>
                 </div>
                 <div v-else>
                     <v-btn @click="closeDialog" class="ml-auto" variant="text" density="compact" icon>

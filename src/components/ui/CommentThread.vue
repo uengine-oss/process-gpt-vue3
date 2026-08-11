@@ -416,13 +416,13 @@ export default defineComponent({
     border-radius: 2px 0 0 2px;
 }
 .ct-strip--hq {
-    background: #1d4ed8;
+    background: hsl(var(--accent-brand));
 }
 .ct-strip--field {
-    background: #059669;
+    background: var(--cds-text-success);
 }
 .ct-strip--public {
-    background: #6b7280;
+    background: var(--cds-text-secondary);
 }
 
 /* reviewer_type 배지 */
@@ -435,16 +435,16 @@ export default defineComponent({
     white-space: nowrap;
 }
 .ct-badge--hq {
-    background: #dbeafe;
-    color: #1d4ed8;
+    background: var(--cds-bg-accent);
+    color: hsl(var(--accent-brand));
 }
 .ct-badge--field {
-    background: #d1fae5;
+    background: var(--cds-bg-success);
     color: #065f46;
 }
 .ct-badge--public {
-    background: #f1f5f9;
-    color: #475569;
+    background: var(--cds-bg-neutral);
+    color: var(--cds-text-secondary);
 }
 
 /* resolve 조치 내용 표시 */
@@ -453,12 +453,12 @@ export default defineComponent({
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: #059669;
+    color: var(--cds-text-success);
     margin-top: 6px;
     padding: 4px 8px;
-    background: #f0fdf4;
+    background: var(--cds-bg-success);
     border-radius: 6px;
-    border-left: 2px solid #10b981;
+    border-left: 2px solid var(--cds-text-success);
 }
 .ct-resolve-label {
     font-weight: 600;
@@ -467,15 +467,15 @@ export default defineComponent({
 
 /* resolve 다이얼로그 원본 피드백 */
 .ct-resolve-original {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--cds-bg-neutral);
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     padding: 10px 12px;
 }
 .ct-resolve-original-label {
     font-size: 11px;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--cds-text-muted);
     margin-bottom: 4px;
     text-transform: uppercase;
     letter-spacing: 0.5px;

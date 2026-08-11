@@ -714,7 +714,7 @@ export default {
 
 .marketplace-image {
     /* 엄청 연한 회색 배경색 적용 */
-    background-color: #f5f5f5;
+    background-color: var(--cds-bg-neutral);
 }
 
 .tag-chip {
@@ -729,7 +729,7 @@ export default {
 
 .category-label {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--cds-text-secondary);
     margin-bottom: 4px;
     font-weight: 500;
 }

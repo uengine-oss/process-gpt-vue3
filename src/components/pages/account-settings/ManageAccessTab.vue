@@ -2,7 +2,7 @@
     <v-card flat class="pa-4">
         <v-row class="ma-0 pa-0">
             <!-- 검색 -->
-            <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: #fff">
+            <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: var(--cds-surface-2)">
                 <Icons :icon="'magnifer-linear'" :size="22" />
                 <v-text-field
                     v-model="searchInput"
@@ -575,11 +575,11 @@ export default {
 
 .chip-select-wrapper.text-black :deep(.v-field__append-inner),
 .chip-select-wrapper.text-black :deep(.v-field__append-inner .v-icon) {
-    color: #000 !important;
+    color: var(--cds-text-primary) !important;
 }
 
 .user-row {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--cds-border);
     transition: background-color 0.2s ease;
 }
 
@@ -588,7 +588,7 @@ export default {
 }
 
 .user-row:hover {
-    background-color: #f8f9fa;
+    background-color: var(--cds-bg-neutral);
 }
 
 @media screen and (max-width: 768px) {

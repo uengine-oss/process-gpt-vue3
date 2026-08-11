@@ -48,7 +48,7 @@ onMounted(() => {
     </div>
 
     <!-- 에이전트 메인페이지 -->
-    <div style="background: white">
+    <div style="background: var(--cds-surface-2)">
         <Header :is-tutorial-mode="showTutorialState" @show-tutorial="showTutorial" @close-tutorial="closeTutorial" />
         <HomeView :show-tutorial="showTutorialState" @close-tutorial="closeTutorial" />
         <Footer />

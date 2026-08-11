@@ -43,8 +43,7 @@
                 :radius="30"
                 :_style="{
                     fill: 'black',
-                    'fill-opacity': 1
-                }"
+                    'fill-opacity': 1}"
             ></geometry-circle>
 
             <sub-elements>

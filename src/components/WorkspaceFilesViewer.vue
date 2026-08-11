@@ -414,7 +414,7 @@ export default {
     min-height: 320px;
     border: 1px solid rgba(var(--v-theme-borderColor), 0.6);
     border-radius: 6px;
-    background: #fff;
+    background: var(--cds-surface-2);
 }
 .ws-files__code {
     margin: 0;

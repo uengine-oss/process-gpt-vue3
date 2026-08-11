@@ -15,7 +15,7 @@
             <div
                 v-if="componentName != 'SubProcessDetail'"
                 class="header-section"
-                style="position: sticky; top: 0; z-index: 2; background-color: white; border-bottom: 1px solid rgba(0, 0, 0, 0.08)"
+                style="position: sticky; top: 0; z-index: 2; background-color: var(--cds-surface-2); border-bottom: 1px solid rgba(0, 0, 0, 0.08)"
             >
                 <div
                     class="d-flex pa-4 pl-6 pr-6"
@@ -2882,7 +2882,7 @@ export default {
 }
 
 .glass-tab-container {
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     position: sticky;
     top: 73px; /* Adjust based on header height */
@@ -2909,19 +2909,19 @@ export default {
 
 /* 선택된 탭 회색 배경 */
 .premium-tab.v-tab--selected {
-    background-color: #757575 !important;
+    background-color: var(--cds-text-muted) !important;
     color: white !important;
 }
 
 /* 선택되지 않은 도메인 칩 기본 색상 */
 .domain-chip {
-    border-color: #808080 !important;
-    color: #808080 !important;
+    border-color: var(--cds-text-muted) !important;
+    color: var(--cds-text-muted) !important;
 }
 
 /* 선택된 도메인 칩 회색 배경 */
 .domain-chip-selected {
-    background-color: #757575 !important;
+    background-color: var(--cds-text-muted) !important;
     color: white !important;
 }
 
@@ -2933,7 +2933,7 @@ export default {
 /* 선택되지 않은 카운트 칩 연한 회색 배경 */
 .domain-chip .count-chip:not(.v-chip--variant-flat) {
     background-color: rgba(128, 128, 128, 0.15) !important;
-    color: #808080 !important;
+    color: var(--cds-text-muted) !important;
 }
 
 .premium-tab .d-flex {
@@ -3024,9 +3024,9 @@ export default {
 }
 
 .color-option.color-selected {
-    border-color: #333;
+    border-color: var(--cds-text-primary);
     transform: scale(1.05);
-    box-shadow: 0 0 0 2px white, 0 0 0 4px #333;
+    box-shadow: 0 0 0 2px var(--cds-surface-2), 0 0 0 4px var(--cds-text-primary);
 }
 
 .domain-actions {
@@ -3048,7 +3048,7 @@ export default {
 /* 채팅 리사이저 */
 .chat-resizer {
     width: 6px;
-    background: #e2e8f0;
+    background: var(--cds-border);
     cursor: col-resize;
     display: flex;
     align-items: center;
@@ -3058,13 +3058,13 @@ export default {
 }
 
 .chat-resizer:hover {
-    background: #cbd5e1;
+    background: var(--cds-border);
 }
 
 .resizer-handle {
     width: 2px;
     height: 40px;
-    background: #94a3b8;
+    background: var(--cds-text-muted);
     border-radius: 2px;
 }
 
@@ -3081,8 +3081,8 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background: white;
-    border-bottom: 1px solid #e2e8f0;
+    background: var(--cds-surface-2);
+    border-bottom: 1px solid var(--cds-border);
     flex-shrink: 0;
 }
 
@@ -3094,7 +3094,7 @@ export default {
 .chat-panel-header .header-title {
     font-size: 16px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--cds-text-primary);
 }
 
 .chat-panel-content {

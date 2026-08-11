@@ -233,7 +233,7 @@ export default {
     justify-content: center;
     padding: 16px 8px;
     text-align: center;
-    color: #666;
+    color: var(--cds-text-secondary);
 }
 
 .skill-items {

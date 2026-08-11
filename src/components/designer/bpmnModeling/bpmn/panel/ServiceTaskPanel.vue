@@ -101,8 +101,7 @@
                     :key="color.value"
                     :style="{
                         backgroundColor: color.value,
-                        border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
-                    }"
+                        border: copyUengineProperties.taskColor === color.value ? '3px solid hsl(var(--accent-brand))' : '1px solid var(--cds-text-muted)'}"
                     size="small"
                     icon
                     :disabled="isViewMode"
@@ -151,8 +150,7 @@
                         width: '24px',
                         height: '24px',
                         borderRadius: '4px',
-                        border: '1px solid #ccc'
-                    }"
+                        border: '1px solid var(--cds-text-muted)'}"
                     class="mr-2"
                 ></div>
                 <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>

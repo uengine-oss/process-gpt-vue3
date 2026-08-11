@@ -1,122 +1,47 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { useTheme } from 'vuetify';
+import { ref, onMounted } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
-import {
-    CheckIcon,
-    LayoutColumnsIcon,
-    LayoutDistributeHorizontalIcon,
-    LayoutDistributeVerticalIcon,
-    LayoutNavbarIcon,
-    LayoutSidebarLeftCollapseIcon,
-    TextDirectionLtrIcon,
-    TextDirectionRtlIcon
-} from 'vue-tabler-icons';
+import { CheckIcon } from 'vue-tabler-icons';
+import { applyAppearance, appearanceFromTheme, THEME_BY_APPEARANCE, type Appearance } from '@/ds/appearance';
 
-import { Icon } from '@iconify/vue';
-
-const theme = useTheme();
 const customizer = useCustomizerStore();
 
-const themeColors = ref([
-    { name: 'BLUE_THEME', bg: 'themeBlue', colorCode: '#0085DB' },
-    { name: 'AQUA_THEME', bg: 'themeAqua', colorCode: '#0074BA' },
-    { name: 'PURPLE_THEME', bg: 'themePurple', colorCode: '#763EBD' },
-    { name: 'GREEN_THEME', bg: 'themeGreen', colorCode: '#0A7EA4' },
-    { name: 'CYAN_THEME', bg: 'themeCyan', colorCode: '#01C0C8' },
-    { name: 'ORANGE_THEME', bg: 'themeOrange', colorCode: '#FA896B' }
-]);
+/**
+ * 색상 테마 세 가지.
+ * swatch 는 그 테마의 앱 배경, dot 은 강조색이다.
+ */
+const themes: Array<{ value: Appearance; labelKey: string; swatch: string; dot: string }> = [
+    { value: 'light', labelKey: 'Customizer.light', swatch: '#f9f9f7', dot: '#d97757' },
+    { value: 'sky', labelKey: 'Customizer.sky', swatch: '#f0f5f9', dot: '#0085db' },
+    { value: 'dark', labelKey: 'Customizer.dark', swatch: '#262624', dot: '#d97757' }
+];
 
-const pickerColor = ref('#0085DB');
-const activeCustomColor = ref('');
+const active = ref<Appearance>('sky');
 
-function lightenColor(hex: string, percent: number): string {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const r = Math.min(255, Math.floor((num >> 16) + (255 - (num >> 16)) * percent));
-    const g = Math.min(255, Math.floor(((num >> 8) & 0x00ff) + (255 - ((num >> 8) & 0x00ff)) * percent));
-    const b = Math.min(255, Math.floor((num & 0x0000ff) + (255 - (num & 0x0000ff)) * percent));
-    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+function select(appearance: Appearance) {
+    active.value = appearance;
+    // 토큰 레이어 · Vuetify 테마 · BPMN 캔버스가 함께 전환된다
+    applyAppearance(appearance);
+    saveSettings();
 }
 
-function getReadableOnPrimaryColor(hex: string): string {
-    const normalizedHex = hex.replace('#', '');
-    const r = parseInt(normalizedHex.substring(0, 2), 16);
-    const g = parseInt(normalizedHex.substring(2, 4), 16);
-    const b = parseInt(normalizedHex.substring(4, 6), 16);
-    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-    return luminance > 0.6 ? '#000000' : '#FFFFFF';
-}
-
-function applyCustomPrimaryColor(color: string) {
-    activeCustomColor.value = color;
-    const activeThemeName = customizer.actTheme;
-    const onPrimaryColor = getReadableOnPrimaryColor(color);
-    theme.themes.value[activeThemeName].colors.primary = color;
-    theme.themes.value[activeThemeName].colors['on-primary'] = onPrimaryColor;
-    theme.themes.value[activeThemeName].colors.lightprimary = lightenColor(color, 0.85);
-    theme.themes.value[activeThemeName].colors.background = lightenColor(color, 0.93);
-
-    const bgColor = lightenColor(color, 0.93);
-    const targets = document.querySelectorAll('.v-application__wrap, .v-app-bar.v-toolbar, .bg-background');
-    targets.forEach((el) => (el as HTMLElement).style.setProperty('background-color', bgColor, 'important'));
-    saveSettings(color);
-}
-
-function onPresetThemeSelect(themeName: string) {
-    activeCustomColor.value = '';
-    const preset = themeColors.value.find((t) => t.name === themeName);
-    if (preset) {
-        const onPrimaryColor = getReadableOnPrimaryColor(preset.colorCode);
-        theme.themes.value[themeName].colors.primary = preset.colorCode;
-        theme.themes.value[themeName].colors['on-primary'] = onPrimaryColor;
-        theme.themes.value[themeName].colors.lightprimary = lightenColor(preset.colorCode, 0.85);
-        pickerColor.value = preset.colorCode;
-    }
-    const targets = document.querySelectorAll('.v-application__wrap, .v-app-bar.v-toolbar, .bg-background');
-    targets.forEach((el) => (el as HTMLElement).style.removeProperty('background-color'));
-}
-
-function saveSettings(customColor?: string) {
-    const selectedTheme = themeColors.value.find((t) => t.name === customizer.actTheme);
-    const themeColorCode = customColor || (selectedTheme ? selectedTheme.colorCode : '#0085DB');
-    const userSettings = {
-        boxed: false,
-        mini_sidebar: customizer.mini_sidebar,
-        actTheme: customizer.actTheme,
-        themeColorCode: themeColorCode,
-        customPrimaryColor: customColor || ''
-    };
-    localStorage.setItem('userSettings', JSON.stringify(userSettings));
+function saveSettings() {
+    localStorage.setItem(
+        'userSettings',
+        JSON.stringify({
+            boxed: false,
+            mini_sidebar: customizer.mini_sidebar,
+            actTheme: customizer.actTheme
+        })
+    );
 }
 
 onMounted(() => {
-    const savedSettings = JSON.parse(localStorage.getItem('userSettings') ?? '{}');
+    const saved = JSON.parse(localStorage.getItem('userSettings') ?? '{}');
     customizer.boxed = false;
-    customizer.mini_sidebar = savedSettings.mini_sidebar ?? false;
-    customizer.actTheme = savedSettings.actTheme ?? 'BLUE_THEME';
-
-    if (savedSettings.customPrimaryColor) {
-        activeCustomColor.value = savedSettings.customPrimaryColor;
-        pickerColor.value = savedSettings.customPrimaryColor;
-        setTimeout(() => {
-            applyCustomPrimaryColor(savedSettings.customPrimaryColor);
-        }, 300);
-    }
-});
-
-watch(pickerColor, (newColor) => {
-    if (newColor) {
-        const hex = typeof newColor === 'string' ? newColor : newColor;
-        const cleanHex = hex.length === 9 ? hex.slice(0, 7) : hex;
-        applyCustomPrimaryColor(cleanHex);
-    }
-});
-
-watch([() => customizer.mini_sidebar, () => customizer.actTheme], ([newMiniSidebar, newActTheme], [oldMiniSidebar, oldActTheme]) => {
-    if (oldActTheme && newActTheme !== oldActTheme) {
-        onPresetThemeSelect(newActTheme);
-    }
-    saveSettings(activeCustomColor.value || undefined);
+    customizer.mini_sidebar = saved.mini_sidebar ?? false;
+    customizer.actTheme = saved.actTheme ?? THEME_BY_APPEARANCE.sky;
+    active.value = appearanceFromTheme(customizer.actTheme);
 });
 </script>
 
@@ -131,44 +56,49 @@ watch([() => customizer.mini_sidebar, () => customizer.actTheme], ([newMiniSideb
     <perfect-scrollbar style="height: calc(100vh - 90px)">
         <div class="pa-6">
             <h6 class="text-h6 mb-5">{{ $t('Customizer.themeColor') }}</h6>
-            <v-item-group mandatory v-model="customizer.actTheme" class="ml-n2 v-row">
-                <v-col cols="4" v-for="themeItem in themeColors" :key="themeItem.name" class="pa-2">
-                    <v-item v-slot="{ isSelected, toggle }" :value="themeItem.name">
-                        <v-sheet
-                            rounded="xl"
-                            class="border cursor-pointer d-block text-center px-5 py-4 hover-btns"
-                            elevation="10"
-                            @click="toggle"
-                        >
-                            <v-avatar :class="themeItem.bg" size="25">
-                                <CheckIcon color="white" size="18" v-if="isSelected && !activeCustomColor" />
-                            </v-avatar>
-                        </v-sheet>
-                    </v-item>
-                </v-col>
-            </v-item-group>
 
-            <v-color-picker v-model="pickerColor" class="mt-4" mode="hex" :modes="['hex']" elevation="0" width="100%"></v-color-picker>
-            <!---  불필요하게 작아지는 사이드바 영역 타입을 설정하는 부분 --->
-            <!-- <v-sheet v-if="customizer.setHorizontalLayout != true">
-                <h6 class="text-h6 mt-11 mb-2">Sidebar Type</h6>
-                <v-btn-toggle v-model="customizer.mini_sidebar" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
-                    <v-btn :value="false" variant="text" elevation="10" class="rounded-xl">
-                        <Icons :icon="'sidebar-minimalistic-outline'" :size="22" class="mr-2" />
-                        Full
-                    </v-btn>
-                    <v-btn :value="true" variant="text" elevation="10" class="rounded-xl">
-                        <Icons :icon="'siderbar-outline'" :size="22" class="mr-2" />
-                        Collapse
-                    </v-btn>
-                </v-btn-toggle>
-            </v-sheet> -->
+            <v-row class="ma-0">
+                <v-col v-for="item in themes" :key="item.value" cols="4" class="pa-2">
+                    <v-sheet
+                        rounded="md"
+                        class="cursor-pointer d-block text-center px-3 py-4 theme-card"
+                        :class="{ 'theme-card--active': active === item.value }"
+                        @click="select(item.value)"
+                    >
+                        <v-avatar :style="{ background: item.swatch }" size="28" class="theme-card__swatch">
+                            <CheckIcon
+                                v-if="active === item.value"
+                                :color="item.value === 'dark' ? '#faf9f5' : '#0b0b0b'"
+                                size="18"
+                            />
+                            <span v-else class="theme-card__dot" :style="{ background: item.dot }" />
+                        </v-avatar>
+                        <div class="text-caption mt-2">{{ $t(item.labelKey) }}</div>
+                    </v-sheet>
+                </v-col>
+            </v-row>
         </div>
     </perfect-scrollbar>
 </template>
 
 <style lang="scss">
-.v-color-picker .v-color-picker-edit__input span {
-    display: none;
+.theme-card {
+    border: 0.5px solid var(--cds-border);
+    transition: border-color 120ms var(--cds-ease-out), background-color 120ms var(--cds-ease-out);
+}
+.theme-card:hover {
+    border-color: var(--cds-border-strong);
+}
+.theme-card--active {
+    border-color: hsl(var(--accent-brand));
+    background: var(--cds-bg-neutral);
+}
+.theme-card__swatch {
+    box-shadow: inset 0 0 0 0.5px var(--cds-border-strong);
+}
+.theme-card__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
 }
 </style>

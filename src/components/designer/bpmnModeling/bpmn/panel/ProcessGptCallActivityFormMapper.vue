@@ -723,7 +723,7 @@ export default {
 .empty-state {
     border: 1px dashed #d8dee8;
     border-radius: 8px;
-    color: #6b7280;
+    color: var(--cds-text-secondary);
     font-size: 13px;
     padding: 20px;
     text-align: center;

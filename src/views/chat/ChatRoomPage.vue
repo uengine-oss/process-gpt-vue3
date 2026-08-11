@@ -1369,7 +1369,8 @@ export default {
                     goal: stored.goal || this.contextAgent.goal || '',
                     persona: stored.persona || this.contextAgent.persona || '',
                     description: stored.description || this.contextAgent.description || '',
-                    tools: stored.tools || this.contextAgent.tools || ''
+                    tools: stored.tools || this.contextAgent.tools || '',
+                    tool_filters: stored.tool_filters || this.contextAgent.tool_filters || null
                 };
             }
             const candidates = this.getAgentCandidates();
@@ -1383,7 +1384,8 @@ export default {
                     goal: meta.goal || '',
                     persona: meta.persona || '',
                     description: meta.description || '',
-                    tools: meta.tools || ''
+                    tools: meta.tools || '',
+                    tool_filters: meta.tool_filters || null
                 };
             }
             return null;
@@ -2455,6 +2457,17 @@ export default {
         async maybeStartAssistantRecoveryPoll(roomId) {
             const targetRoomId = (roomId || this.currentChatRoom?.id || '').toString();
             if (!targetRoomId) return;
+            // definition-map에서 넘어온 kickoff가 대기 중이면 이 방은 "중단된 턴"이 아니라
+            // "이 페이지에서 곧 직접 스트리밍을 시작할 방"이다. 그런데도 복구 폴링을 같이 돌리면
+            // kickoff 스트림과 경쟁하게 된다: 스트리밍 중 프론트가 진행 상황을 DB에 임시
+            // 저장(content 아직 빈 문자열)하는데, 폴링이 이걸 "assistant row 발견"으로 오판해
+            // loadMessages()로 this.messages를 그 미완성 스냅샷으로 덮어쓴다. 그러면 실시간
+            // 스트리밍 중이던 항목이 dedup 로직에 의해 화면에서 통째로 사라졌다가, 나중에 별도
+            // 경로로 다시 붙으며 중복 노출되는 문제로 이어진다. kickoff가 있으면 그 흐름이
+            // 책임지므로 복구 폴링은 건너뛴다.
+            try {
+                if (sessionStorage.getItem(`chatKickoff:${targetRoomId}`)) return;
+            } catch (e) {}
             if (!this._roomLooksInFlight(this.messages)) return;
             await this.pollForAssistantRow(targetRoomId, { timeoutMs: 60_000, intervalMs: 1_200, pageSize: 20 });
         },
@@ -2841,7 +2854,31 @@ export default {
                 // 2) 그 후 (timeStamp, rowUuid) 기준으로 안정 정렬해 결정성을 보장한다.
                 this._backfillMissingTimeStamps(asc);
                 this._stableSortMessages(asc);
-                this.messages = asc;
+                // 느린 서브에이전트 호출 등에서 백엔드가 같은 턴에 대해 로컬 fallback row 와
+                // 서버 확정 row 를 서로 다른 uuid 로 각각 남기는 경우가 있다(_dedupeMessagesByLogicalUuid
+                // 는 uuid 가 다르면 걸러내지 못한다). 같은 agentId/email 의 assistant 메시지가
+                // 사이에 user 메시지 없이 짧은 시간 안에 연속되면 같은 턴의 응답으로 보고,
+                // 가장 나중(=가장 완결된) 것만 남긴다.
+                const collapsed = [];
+                for (let i = 0; i < asc.length; i++) {
+                    const m = asc[i];
+                    if (m && (m.role || '').toString() === 'assistant' && !m.__humanFeedback) {
+                        const n = asc[i + 1];
+                        const mts = new Date(m.timeStamp || 0).getTime();
+                        const mAgentId = (m.agentId || '').toString();
+                        const mEmail = (m.email || '').toString();
+                        const nIsSameTurn =
+                            n &&
+                            (n.role || '').toString() === 'assistant' &&
+                            !n.__humanFeedback &&
+                            Math.abs(new Date(n.timeStamp || 0).getTime() - mts) <= 60000 &&
+                            ((mAgentId && (n.agentId || '').toString() === mAgentId) ||
+                                (!mAgentId && mEmail && (n.email || '').toString() === mEmail));
+                        if (nIsSameTurn) continue;
+                    }
+                    collapsed.push(m);
+                }
+                this.messages = collapsed;
 
                 // 채팅 메시지에 박혀있는 pdf2bpmn 그래프 payload 를 캐시로 hydrate.
                 // 새로고침/방 재진입 시 외부 API 호출 없이 그래프 미리보기가 가능해진다.
@@ -3291,6 +3328,50 @@ export default {
                         if (!panelMsg.timeStamp && incoming.timeStamp) panelMsg.timeStamp = incoming.timeStamp;
                         // 본문은 비운 채 유지(초안은 패널 context 로만 표시) — DB 의 초안 평문을 덮어쓰지 않는다.
                         this.persistMessageFrontendState(panelMsg, roomId);
+                        return;
+                    }
+                }
+                // 느린 서브에이전트 호출(task 툴 등) 대비: activeStreams 매칭 윈도우(10초)가 지나면
+                // onDone 의 10초 fallback(:8521-8541)이 스트리밍 placeholder를 로컬 uuid로 이미
+                // this.messages 에 push 해 버린다. 그 뒤(예: 수십 초 뒤) 서버가 실제 chats row 를
+                // INSERT 하면 uuid/시간이 달라 위의 매칭들이 모두 실패하고 여기(push-new)로 빠져
+                // 같은 답변이 두 번 보인다.
+                // rowUuid 유무만으로는 판별할 수 없다: activeStreams 매칭 브랜치(위 :3218-3244)가
+                // 자기 자신의 fallback INSERT 를 realtime 으로 되돌려받아 rowUuid 를 자기 uuid로
+                // "자가 확정"시켜 버리는 경우가 있어(진짜 서버 row 와는 무관), rowUuid 가 있어도
+                // 그 uuid 자체가 여전히 프런트 로컬 생성 포맷(대시 포함 36자)이면 아직 서버의
+                // 최종 row 로 대체된 적이 없는 것으로 간주한다.
+                if (typeof incoming === 'object' && (incoming.role || '').toString() === 'assistant') {
+                    const inAgentId = (incoming.agentId || '').toString();
+                    const inEmail = (incoming.email || '').toString();
+                    const inKeyUuid = (incoming.uuid || incoming.rowUuid || '').toString();
+                    const isLocalClientUuid = (v) =>
+                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test((v || '').toString());
+                    let orphanIdx = -1;
+                    for (let i = this.messages.length - 1; i >= 0; i--) {
+                        const m = this.messages[i];
+                        if (!m) continue;
+                        if ((m.role || '').toString() !== 'assistant') continue;
+                        if (m.__humanFeedback) continue; // HITL 패널은 위에서 별도 처리(영구히 rowUuid 없음)
+                        const mKeyUuid = (m.rowUuid || m.uuid || '').toString();
+                        if (mKeyUuid && mKeyUuid === inKeyUuid) continue; // 이미 이 row 자신
+                        if (!isLocalClientUuid(mKeyUuid)) continue; // 이미 서버의 다른 row 로 확정됨
+                        const mAgentId = (m.agentId || '').toString();
+                        const mEmail = (m.email || '').toString();
+                        if (inAgentId && mAgentId && mAgentId !== inAgentId) continue;
+                        if (!inAgentId && inEmail && mEmail && mEmail !== inEmail) continue;
+                        if (!inAgentId && !inEmail) continue;
+                        orphanIdx = i;
+                        break;
+                    }
+                    if (orphanIdx !== -1) {
+                        const orphanMsg = this.messages[orphanIdx];
+                        this.messages[orphanIdx] = this.normalizeAssistantMessageForDisplay({
+                            ...orphanMsg,
+                            ...incoming,
+                            rowUuid: incoming.rowUuid || incoming.uuid || orphanMsg.rowUuid || null
+                        });
+                        this.persistMessageFrontendState(this.messages[orphanIdx], roomId);
                         return;
                     }
                 }
@@ -5977,6 +6058,53 @@ export default {
         },
 
         /**
+         * process-definition.json 의 activity.agent(또는 activity.agents[]) 바인딩을 기준으로
+         * 해당 에이전트가 담당하는 Activity 들의 skills 를 모아 반환한다.
+         * agents/<id>.json 자체에는 skills 필드가 없고(스킬은 activity 단위로 배정됨), 이 매핑이 유일한 출처다.
+         * agentId 는 agentStableId 변환 전 원본 id(process-definition.json 의 activity.agent 와 동일 값)여야 매칭된다.
+         */
+        _collectAgentSkillNames(definition, agentId) {
+            const names = new Set();
+            if (!definition || !agentId) return [];
+            const toArr = (v) => {
+                if (Array.isArray(v)) return v.map((s) => String(s).trim()).filter(Boolean);
+                if (typeof v === 'string')
+                    return v
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                return [];
+            };
+            const matchesAgent = (act) => {
+                if (!act) return false;
+                if (act.agent && String(act.agent) === String(agentId)) return true;
+                if (Array.isArray(act.agents)) {
+                    return act.agents.some((ag) => {
+                        const id = ag && typeof ag === 'object' ? ag.id : ag;
+                        return id && String(id) === String(agentId);
+                    });
+                }
+                return false;
+            };
+            const collectFrom = (activities) => {
+                if (!Array.isArray(activities)) return;
+                for (const act of activities) {
+                    if (matchesAgent(act)) {
+                        for (const s of toArr(act.skills)) names.add(s);
+                    }
+                }
+            };
+            collectFrom(definition.activities);
+            collectFrom(definition.elements);
+            if (Array.isArray(definition.subProcesses)) {
+                for (const sp of definition.subProcesses) {
+                    if (sp && sp.children) collectFrom(sp.children.activities);
+                }
+            }
+            return Array.from(names);
+        },
+
+        /**
          * 산출물 파일 목록에서 skills/<name>/<file> 들을 모아 zip 으로 스킬 서비스에 업로드한다.
          * - draft=true: 파일만 업로드(=/skills/{name} 편집기에서 로드 가능)하고 tenants.skills 목록 등록은 생략.
          * - draft=false(최종 저장): 업로드 + saveSkills 로 목록 승격.
@@ -6535,6 +6663,7 @@ export default {
                                         persona: a.persona || '',
                                         description: a.description || '',
                                         model: a.model || null,
+                                        skills: a.skills,
                                         isAgent: true,
                                         type: 'agent',
                                         is_draft: true
@@ -6555,7 +6684,8 @@ export default {
                                     obj = null;
                                 }
                                 if (!obj || typeof obj !== 'object' || Array.isArray(obj)) continue;
-                                await saveDraftAgent({ ...obj, id: agentStableId(obj, af.path) });
+                                const skills = this._collectAgentSkillNames(definition, obj.id);
+                                await saveDraftAgent({ ...obj, id: agentStableId(obj, af.path), skills });
                             }
                             // (2) 레거시 agents.json(배열/딕셔너리).
                             const agFile = files.find(
@@ -6571,7 +6701,8 @@ export default {
                                 const arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.agents) ? parsed.agents : [];
                                 for (const a of arr) {
                                     if (!a || typeof a !== 'object') continue;
-                                    await saveDraftAgent({ ...a, id: isUuidStable(a.id) ? a.id : agentStableId(a, agFile.path) });
+                                    const skills = this._collectAgentSkillNames(definition, a.id);
+                                    await saveDraftAgent({ ...a, id: isUuidStable(a.id) ? a.id : agentStableId(a, agFile.path), skills });
                                 }
                             }
                         }
@@ -6773,6 +6904,8 @@ export default {
                         // draft 저장·편집기(editTarget)와 동일한 결정적 id(슬러그→uuid)로 승격해야
                         // 같은 에이전트가 정식 등록된다(랜덤 uuid 금지).
                         const agentId = isUuidStable(a.id) ? a.id.toString() : agentStableId(a, filePath);
+                        // 스킬은 agents/<id>.json 자체가 아니라 activity.agent 바인딩(원본 id 기준)으로 배정된다.
+                        const skills = this._collectAgentSkillNames(definition, a.id);
                         try {
                             await backend.putAgent({
                                 id: agentId,
@@ -6783,6 +6916,7 @@ export default {
                                 persona: a.persona || '',
                                 description: a.description || '',
                                 model: a.model || null,
+                                skills,
                                 isAgent: true,
                                 type: 'agent',
                                 is_draft: false // 최종 저장 — draft 였으면 정식 등록으로 승격(목록 노출).
@@ -7934,6 +8068,7 @@ export default {
                     persona: agentTarget?.persona || '',
                     description: agentTarget?.description || '',
                     tools: agentTarget?.tools || '',
+                    tool_filters: agentTarget?.tool_filters || null,
                     skills: assignedSkills
                 };
 
@@ -8220,6 +8355,15 @@ export default {
                         try {
                             const msg = this.activeStreams[agentId];
                             if (!msg) return;
+                            // read_file 등 일부 도구는 결과가 수십~수백 KB에 달할 수 있다. 원문(output)은
+                            // 아래 human-feedback/아티팩트 감지에 그대로 쓰되, toolCalls/plannedToolsById에는
+                            // 표시용으로 잘라 저장한다 — 안 그러면 이 값이 매 토큰마다 Chat.vue 전체 재렌더에서
+                            // 반복 가공되며(getToolCallList) 누적 크기에 비례해 브라우저가 멈추게 된다.
+                            const TOOL_OUTPUT_STORE_LIMIT = 20000;
+                            const capForStorage = (value) => {
+                                if (typeof value !== 'string' || value.length <= TOOL_OUTPUT_STORE_LIMIT) return value;
+                                return `${value.slice(0, TOOL_OUTPUT_STORE_LIMIT)}\n…(생략됨, 원본 ${value.length}자)`;
+                            };
                             const toolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
                             // Match by tool name first so concurrent/sub-agent tool results
                             // are attached to the correct invocation.
@@ -8233,7 +8377,7 @@ export default {
                                     toolCalls[i] = {
                                         ...toolCalls[i],
                                         status: 'done',
-                                        output: output ?? null,
+                                        output: capForStorage(output ?? null),
                                         endedAt: new Date().toISOString()
                                     };
                                     lastRunningTool = toolCalls[i];
@@ -8245,13 +8389,18 @@ export default {
                             // call. Do not leave the visible chat body claiming
                             // that the tool is still running while the agent is
                             // preparing its next action or final response.
+                            // NOTE: content must stay non-empty here — Chat.vue's
+                            // filteredMessages drops any message with no content/
+                            // image/file/panel, so setting '' made the whole bubble
+                            // (avatar + name) briefly vanish between tool_end and the
+                            // next token/done event.
                             if (
                                 lastRunningTool &&
                                 !toolCalls.some((toolCall) => toolCall?.status === 'running') &&
                                 (msg.content || '').toString().startsWith('🔧') &&
                                 (msg.content || '').toString().includes('실행 중')
                             ) {
-                                msg.content = '';
+                                msg.content = '생각 중...';
                             }
                             // file_artifact can persist the message just before tool_end.
                             // Persist the terminal state as well so reopening the room does
@@ -8294,7 +8443,7 @@ export default {
                                         prev?.displayName ||
                                         this.formatToolName((rawEvent?.tool || rawEvent?.tool_name || rawEvent?.name || '').toString()),
                                     status: 'done',
-                                    output: output ?? prev?.output ?? null
+                                    output: capForStorage(output ?? prev?.output ?? null)
                                 };
                                 if (this.planSideInfoEnabled?.tools) this.upsertToolsPanel();
                             }
@@ -8553,24 +8702,38 @@ export default {
                             // this.messages에 먼저 push된 경우, 여기서 무조건 push하면 동일 내용이
                             // 화면에 두 번(placeholder + realtime row) 보이게 된다. 그런 경우를
                             // 내용/역할 기준으로 감지해 중복 push를 건너뛴다.
+                            // 내용이 완전히 같지 않아도(예: 서브에이전트 task 결과와 최종 supervisor
+                            // 응답처럼 텍스트가 다른 경우) 같은 agentId/email 의 assistant 메시지가
+                            // 이미 도착해 있으면 "다른 턴의 답변"이 아니라 "같은 턴의 서버 확정본"으로
+                            // 간주해 push 대신 병합한다(그렇지 않으면 같은 답변이 두 번 보인다).
                             setTimeout(() => {
                                 if (this.activeStreams[agentId]) {
                                     const stale = this.activeStreams[agentId];
                                     const staleContent = (stale.content || '').toString().trim();
                                     const staleTs = new Date(stale.timeStamp || 0).getTime();
+                                    const staleEmail = (stale.email || '').toString();
                                     // 빈 본문(HITL 패널 등)은 서로 다른 turn 이어도 항상 일치하므로 매칭에서 제외.
-                                    const alreadyLanded =
-                                        !!staleContent &&
-                                        this.messages.some((m) => {
-                                            if (!m || (m.role || '').toString() !== 'assistant') return false;
-                                            if ((m.content || '').toString().trim() !== staleContent) return false;
-                                            const mts = new Date(m.timeStamp || 0).getTime();
-                                            return Math.abs(mts - staleTs) <= 20000;
-                                        });
+                                    const landedIdx = this.messages.findIndex((m) => {
+                                        if (!m || (m.role || '').toString() !== 'assistant') return false;
+                                        const mts = new Date(m.timeStamp || 0).getTime();
+                                        if (Math.abs(mts - staleTs) > 20000) return false;
+                                        if (!!staleContent && (m.content || '').toString().trim() === staleContent) return true;
+                                        const mAgentId = (m.agentId || '').toString();
+                                        const mEmail = (m.email || '').toString();
+                                        if (agentId && mAgentId && mAgentId === agentId.toString()) return true;
+                                        if (!agentId && staleEmail && mEmail && mEmail === staleEmail) return true;
+                                        return false;
+                                    });
                                     delete this.activeStreams[agentId];
-                                    if (!alreadyLanded) {
+                                    if (landedIdx === -1) {
                                         this.messages.push(this.normalizeAssistantMessageForDisplay(stale));
                                         this._stableSortMessages(this.messages);
+                                    } else {
+                                        this.carryOptimisticOnlyFields(stale, this.messages[landedIdx]);
+                                        this.persistMessageFrontendState(
+                                            this.messages[landedIdx],
+                                            this.currentChatRoom?.id || this.roomId || null
+                                        );
                                     }
                                 }
                             }, 10000);
@@ -10674,10 +10837,23 @@ export default {
             };
 
             const extractContentField = (rawText) => {
-                if (typeof rawText !== 'string') return null;
-                const matched = rawText.match(/^content=(['"])((?:\\.|(?!\1)[\s\S])*)\1(?:\s+\w+=|$)/);
-                if (matched && matched[2]) {
-                    return matched[2];
+                if (typeof rawText !== 'string' || !rawText.startsWith('content=')) return null;
+                const quote = rawText[8];
+                if (quote !== "'" && quote !== '"') return null;
+                // 원래는 (?:\\.|(?!\1)[\s\S])* 형태의 백트래킹 정규식을 썼는데, 이스케이프 문자(\)가
+                // 많이 섞인 큰 문자열(예: read_file로 읽은 스킬 문서 원문)에 대해 catastrophic
+                // backtracking을 일으켜 메인 스레드가 무한정 멈추는 원인이었다(CPU 프로파일로 확인).
+                // "이스케이프 아닌 문자 연속" / "이스케이프 쌍" 을 겹치지 않게 번갈아 매칭하는
+                // 선형 시간 패턴으로 교체한다.
+                const body = rawText.slice(9);
+                const safePattern = quote === "'" ? /^[^'\\]*(?:\\.[^'\\]*)*/ : /^[^"\\]*(?:\\.[^"\\]*)*/;
+                const m = safePattern.exec(body);
+                const content = m[0];
+                const rest = body.slice(content.length);
+                if (rest[0] !== quote) return null;
+                const afterQuote = rest.slice(1);
+                if (afterQuote === '' || /^\s+\w+=/.test(afterQuote)) {
+                    return content;
                 }
                 return null;
             };
@@ -10841,7 +11017,7 @@ export default {
 /* ===== BPMN Preview (diagram/xml/ontology) ===== */
 .bpmn-diagram-container {
     height: 450px;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
     position: relative;
 }
 /* 미리보기 다이얼로그에서는 미니맵 숨김(요청) */
@@ -10852,7 +11028,7 @@ export default {
 .bpmn-preview-container {
     height: 450px;
     overflow: auto;
-    background: #1e293b;
+    background: var(--cds-text-primary);
 }
 
 .bpmn-xml-content {
@@ -10861,7 +11037,7 @@ export default {
     font-family: 'Fira Code', 'Consolas', monospace;
     font-size: 12px;
     line-height: 1.5;
-    color: #e2e8f0;
+    color: var(--cds-border);
     white-space: pre-wrap;
     word-break: break-all;
 }
@@ -10879,7 +11055,7 @@ export default {
     justify-content: center;
     gap: 8px;
     padding: 16px;
-    color: #cbd5e1;
+    color: var(--cds-border);
     font-size: 13px;
     text-align: center;
 }
@@ -10937,8 +11113,8 @@ export default {
 
 .input-area {
     padding: 12px 16px 16px 16px;
-    border-top: 1px solid #e2e8f0;
-    background: white;
+    border-top: 1px solid var(--cds-border);
+    background: var(--cds-surface-2);
     flex-shrink: 0;
 }
 
@@ -10958,7 +11134,7 @@ export default {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: #94a3b8;
+    background-color: var(--cds-text-muted);
     flex-shrink: 0;
     transition: background-color 0.3s;
 }
@@ -10969,22 +11145,22 @@ export default {
 }
 
 .voice-pulse-dot.is-responding {
-    background-color: #f59e0b;
+    background-color: var(--cds-text-warning);
     animation: voice-pulse 0.6s ease-in-out infinite;
 }
 
 .voice-pulse-dot.is-playing {
-    background-color: #10b981;
+    background-color: var(--cds-text-success);
     animation: voice-pulse 0.5s ease-in-out infinite;
 }
 
 .voice-pulse-dot.is-connecting {
-    background-color: #94a3b8;
+    background-color: var(--cds-text-muted);
     animation: voice-pulse 1.2s ease-in-out infinite;
 }
 
 .voice-pulse-dot.is-error {
-    background-color: #ef4444;
+    background-color: var(--cds-text-danger);
 }
 
 .voice-mode-bar.is-error {
@@ -10993,7 +11169,7 @@ export default {
 }
 
 .voice-status-label.is-error-text {
-    color: #ef4444;
+    color: var(--cds-text-danger);
 }
 
 @keyframes voice-pulse {

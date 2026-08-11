@@ -439,7 +439,7 @@ export default {
 
 <style>
 .active-slide {
-    background-color: #f0f0f0; /* Change this to your desired highlight color */
+    background-color: var(--cds-border); /* Change this to your desired highlight color */
 }
 .tenant-info-image {
     width: 70%;

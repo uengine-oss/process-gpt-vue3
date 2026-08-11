@@ -1470,6 +1470,6 @@ export default {
 }
 
 .custom-top-area .v-btn {
-    background-color: white;
+    background-color: var(--cds-surface-2);
 }
 </style>

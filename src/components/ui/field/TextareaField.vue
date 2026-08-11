@@ -27,7 +27,7 @@
                 :density="density"
             >
                 <template v-slot:label>
-                    <span style="color: black">
+                    <span style="color: var(--cds-text-primary)">
                         {{ displayLabel }}
                     </span>
                 </template>
@@ -248,14 +248,14 @@ export default {
     margin-bottom: 16px;
 }
 .form-text-area__readonly {
-    border: 1px solid #e4e6ea;
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
-    background: #f7f8fa;
+    background: var(--cds-bg-neutral);
     padding: 10px 12px;
 }
 .form-text-area__label {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--cds-text-secondary);
     margin-bottom: 6px;
 }
 .form-text-area__labelrow {
@@ -278,15 +278,15 @@ export default {
     word-break: break-word;
     font-family: 'Consolas', 'Menlo', monospace;
     font-size: 12.5px;
-    color: #1f2937;
+    color: var(--cds-text-primary);
 }
 .form-text-area__empty {
     font-size: 13.5px;
-    color: #9ca3af;
+    color: var(--cds-text-muted);
 }
 .form-text-area__md {
     font-size: 13.5px;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     line-height: 1.6;
     white-space: normal;
     word-break: break-word;
@@ -311,7 +311,7 @@ export default {
 }
 .form-text-area__md :deep(th),
 .form-text-area__md :deep(td) {
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--cds-border);
     padding: 4px 8px;
 }
 .form-text-area__md :deep(code) {

@@ -490,7 +490,7 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     justify-content: space-between;
     padding: 16px 24px 14px;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 16px 16px 0 0;
     flex-shrink: 0;
 }
@@ -501,17 +501,17 @@ onBeforeUnmount(cleanupRealtime);
 .inbox-title {
     font-size: 18px;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--cds-text-primary);
     margin: 0;
 }
 .inbox-subtitle {
     font-size: 12px;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     margin: 0;
 }
 
 .inbox-tabs-wrap {
-    background: #fff;
+    background: var(--cds-surface-2);
     border-bottom: 1px solid #e8ecf0;
     flex-shrink: 0;
     padding: 0 16px;
@@ -548,7 +548,7 @@ onBeforeUnmount(cleanupRealtime);
 }
 
 .inbox-card {
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 12px;
     padding: 14px 16px;
     cursor: pointer;
@@ -560,7 +560,7 @@ onBeforeUnmount(cleanupRealtime);
     transform: translateY(-1px);
 }
 .inbox-card--reopen {
-    border-left: 3px solid #f59e0b;
+    border-left: 3px solid var(--cds-text-warning);
 }
 
 .inbox-card-top {
@@ -593,9 +593,9 @@ onBeforeUnmount(cleanupRealtime);
 
 .inbox-reopen-reason {
     font-size: 12px;
-    color: #475569;
+    color: var(--cds-text-secondary);
     padding: 6px 10px;
-    background: #fffbeb;
+    background: var(--cds-bg-warning);
     border-radius: 8px;
     margin-top: 8px;
     line-height: 1.5;
@@ -618,10 +618,10 @@ onBeforeUnmount(cleanupRealtime);
     display: flex;
     align-items: center;
     font-size: 11px;
-    color: #64748b;
+    color: var(--cds-text-secondary);
 }
 .meta-item--error {
-    color: #dc2626;
+    color: var(--cds-text-danger);
 }
 
 .inbox-card-actions {
@@ -636,7 +636,7 @@ onBeforeUnmount(cleanupRealtime);
     width: 4px;
 }
 .inbox-content::-webkit-scrollbar-thumb {
-    background: #d0d7de;
+    background: var(--cds-border);
     border-radius: 4px;
 }
 
@@ -658,12 +658,12 @@ onBeforeUnmount(cleanupRealtime);
     max-width: 90vw;
 }
 .global-toast--success {
-    background: #d1fae5;
+    background: var(--cds-bg-success);
     color: #065f46;
-    border: 1px solid #a7f3d0;
+    border: 1px solid var(--cds-bg-success);
 }
 .global-toast--error {
-    background: #fee2e2;
+    background: var(--cds-bg-danger);
     color: #991b1b;
     border: 1px solid #fecaca;
 }

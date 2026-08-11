@@ -29,7 +29,7 @@
             </v-row>
             <!-- 미리보기 확장 영역 -->
             <v-row v-if="previewMenu" class="ma-0 pa-4" @click.stop="previewMenu = false" style="cursor: pointer">
-                <v-sheet elevation="3" rounded style="width: 100%; padding: 16px; background: white; position: relative; min-height: 500px">
+                <v-sheet elevation="3" rounded style="width: 100%; padding: 16px; background: var(--cds-surface-2); position: relative; min-height: 500px">
                     <SlideComponent :content="localModelValue" :isEditMode="false" style="width: 100%; height: 100%" />
                 </v-sheet>
             </v-row>
@@ -268,7 +268,7 @@ $e^{i\\pi} + 1 = 0$
 .editor {
     flex: 1;
     padding: 1rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
     font-family: monospace;
     resize: none;

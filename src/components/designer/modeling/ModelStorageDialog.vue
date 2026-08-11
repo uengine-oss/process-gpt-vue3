@@ -11,7 +11,7 @@
             <v-card-title class="headline">{{ condition.title }}</v-card-title>
             <v-card-text>
                 <div v-if="condition.action == 'fork' && condition.isForkModel" style="font-size: 15px">
-                    <span class="mdi mdi-alert-outline" style="color: #ffa726; font-weight: 700; font-size: 20px"></span> You've already
+                    <span class="mdi mdi-alert-outline" style="color: var(--cds-text-warning); font-weight: 700; font-size: 20px"></span> You've already
                     FORKED this model.<br />
                     Click the arrow to access the model
                     <v-btn v-if="condition.action == 'fork' && condition.isForkModel" color="primary" text small @click="changedModel()">

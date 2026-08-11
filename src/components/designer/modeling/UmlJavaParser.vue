@@ -1,7 +1,7 @@
 <template>
     <v-row>
         <v-dialog v-model="showDialog" @click:outside="closeJavaParseDialog()" width="auto">
-            <v-card fluid style="background-color: white; width: 500px">
+            <v-card fluid style="background-color: var(--cds-surface-2); width: 500px">
                 <div v-if="isListening"><b>listening ...</b></div>
                 <div>
                     <v-textarea

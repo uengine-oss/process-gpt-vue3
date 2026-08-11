@@ -13,11 +13,11 @@
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
         <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
-                <v-icon @click="resetZoom" style="color: #444; cursor: pointer">mdi-crosshairs-gps</v-icon>
-                <v-icon @click="zoomIn" style="color: #444; cursor: pointer">mdi-plus</v-icon>
+                <v-icon @click="resetZoom" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crosshairs-gps</v-icon>
+                <v-icon @click="zoomIn" style="color: var(--cds-text-secondary); cursor: pointer">mdi-plus</v-icon>
                 <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
-                <v-icon @click="zoomOut" style="color: #444; cursor: pointer">mdi-minus</v-icon>
-                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer">mdi-crop-rotate</v-icon>
+                <v-icon @click="zoomOut" style="color: var(--cds-text-secondary); cursor: pointer">mdi-minus</v-icon>
+                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- Font size and zoom controls (edit mode only) -->
@@ -28,7 +28,7 @@
                 <!-- Color Ruleset button -->
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: #444; cursor: pointer" size="small"
+                        <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: var(--cds-text-secondary); cursor: pointer" size="small"
                             >mdi-palette</v-icon
                         >
                     </template>
@@ -39,7 +39,7 @@
             <div class="controls-row">
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer" size="small"
+                        <v-icon v-bind="props" @click="decreaseFontSize" style="color: var(--cds-text-secondary); cursor: pointer" size="small"
                             >mdi-format-font-size-decrease</v-icon
                         >
                     </template>
@@ -48,7 +48,7 @@
                 <span class="font-size-value">{{ labelFontSize }}px</span>
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer" size="small"
+                        <v-icon v-bind="props" @click="increaseFontSize" style="color: var(--cds-text-secondary); cursor: pointer" size="small"
                             >mdi-format-font-size-increase</v-icon
                         >
                     </template>
@@ -262,6 +262,11 @@ export default {
 
         this.initializeViewer();
         this.setDiagramEvent();
+
+        // 색상 테마가 바뀌면 캔버스를 다시 그린다.
+        // 도형 색은 SVG '속성'이라 CSS 변수처럼 저절로 따라오지 않는다.
+        this._appearanceHandler = () => this.repaintForAppearance();
+        window.addEventListener('pg:appearance-changed', this._appearanceHandler);
         if (typeof this.bpmn === 'string' && this.bpmn.trim().length > 0) {
             this.diagramXML = this.bpmn;
         } else {
@@ -321,6 +326,10 @@ export default {
         document.addEventListener('keydown', this._keyboardHandler);
     },
     beforeUnmount() {
+        if (this._appearanceHandler) {
+            window.removeEventListener('pg:appearance-changed', this._appearanceHandler);
+            this._appearanceHandler = null;
+        }
         // Remove keyboard event listener
         if (this._keyboardHandler) {
             document.removeEventListener('keydown', this._keyboardHandler);
@@ -363,6 +372,25 @@ export default {
                         if (normalizedNewVal === normalizedCurrentModelXml || normalizedNewVal === normalizedImportedXml) {
                             return;
                         }
+                    }
+
+                    // 무한 재-import 루프 방지: import.done 이 매 import 마다 saveXML() 결과를
+                    // self.bpmnXML 에 반영하고 이게 상위로 emit 되어 bpmn prop 으로 다시 내려오는데,
+                    // 이 컴포넌트가 한 번도 저장을 거치지 않은(예: bpmn.io 데모에서 그대로 내보낸)
+                    // 원본 XML은 이 앱의 직렬화 포맷(들여쓰기·속성 순서 등)과 텍스트적으로 절대 일치하지
+                    // 않아 위 문자열 비교 가드를 통과하지 못한다. 그 결과 import → save → prop 갱신 →
+                    // 다시 import 가 초당 수십 번 반복되며 탭이 100% CPU로 멈춘다. 짧은 시간 안에
+                    // 재-import 가 비정상적으로 많이 발생하면 회로를 끊는다(정상적인 연속 편집으로는
+                    // 도달할 수 없는 빈도).
+                    const now = Date.now();
+                    this._reimportTimestamps = (this._reimportTimestamps || []).filter((t) => now - t < 3000);
+                    this._reimportTimestamps.push(now);
+                    if (this._reimportTimestamps.length > 15) {
+                        console.error(
+                            '[BpmnUengine] bpmn prop 재-import 루프를 감지해 중단했습니다. ' +
+                                '이 다이어그램의 XML 포맷이 저장 후 재직렬화 결과와 일치하지 않는 것으로 보입니다.'
+                        );
+                        return;
                     }
 
                     this.onLoadStart();
@@ -461,6 +489,26 @@ export default {
         }
     },
     methods: {
+        /**
+         * 색상 테마 변경 시 캔버스 도형을 다시 그린다.
+         *
+         * 커스텀 렌더러가 토큰을 hex 로 해석해 SVG 속성(fill/stroke)에 써 넣기 때문에
+         * CSS 변수가 바뀌어도 이미 그려진 도형은 그대로다. 캐시를 비운 뒤
+         * `elements.changed` 를 발생시켜 전체를 다시 그리게 한다.
+         * (캐시 비우기는 `ds/appearance.ts` 가 이 이벤트 직전에 수행한다)
+         */
+        repaintForAppearance() {
+            if (!this.bpmnViewer) return;
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const eventBus = this.bpmnViewer.get('eventBus');
+                const elements = elementRegistry.getAll();
+                if (elements.length) eventBus.fire('elements.changed', { elements });
+            } catch (e) {
+                console.warn('[BpmnUengine] 테마 변경 후 재렌더 실패:', e);
+            }
+        },
+
         // ===== PI Flag 캔버스 오버레이 (개별 깃발 배지 + 묶음 점선 박스) =====
         refreshPiFlagOverlays() {
             if (!this.bpmnViewer) return;
@@ -1381,6 +1429,23 @@ export default {
                 }
             });
             eventBus.on('import.render.complete', async function (event) {
+                // 'import.render.complete' 는 편집 중 XML 이 재직렬화되어 다시 importXML 될 때마다
+                // (예: commandStack.changed → changeElement emit → 상위에서 bpmn prop 갱신 → 재-import)
+                // 매번 재발화된다. 이 콜백 안에서 element.dblclick 등을 eventBus.on 으로 등록하면
+                // 제거 없이 계속 누적되어, 더블클릭 한 번에 openPanel 이 여러 번 겹쳐 호출되고
+                // (그 결과 마지막에 우연히 패널이 닫힌 상태로 정착해 "간헐적으로 안 열림"·"지연"
+                // 증상이 생긴다). 이전 실행에서 등록한 리스너를 재실행 시작 시 먼저 제거하고,
+                // 이번 실행에서 등록하는 리스너만 다음 재실행 때 제거되도록 추적한다.
+                if (self._diagramRenderListeners) {
+                    Object.keys(self._diagramRenderListeners).forEach((evtName) => {
+                        self._diagramRenderListeners[evtName].forEach((fn) => eventBus.off(evtName, fn));
+                    });
+                }
+                self._diagramRenderListeners = {};
+                const trackListener = (eventName, handler) => {
+                    eventBus.on(eventName, handler);
+                    (self._diagramRenderListeners[eventName] = self._diagramRenderListeners[eventName] || []).push(handler);
+                };
                 let startTime = performance.now();
                 var error = event.error;
                 var warnings = event.warnings;
@@ -1504,7 +1569,7 @@ export default {
                                         html.style.cssText =
                                             'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
                                         html.innerHTML =
-                                            '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: #333;"></i>';
+                                            '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: var(--cds-text-primary);"></i>';
 
                                         html.addEventListener('click', function (e) {
                                             e.stopPropagation(); // Prevent element selection
@@ -1527,7 +1592,7 @@ export default {
                     });
 
                     // View 모드: 더블클릭 시 CallActivity/SubProcess(definitionId 있음)면 프로세스로 이동(openDefinition), 그 외는 패널 열기
-                    eventBus.on('element.dblclick', function (e) {
+                    trackListener('element.dblclick', function (e) {
                         const el = e.element;
                         const bo = el.businessObject;
                         let emitNavigate = false;
@@ -1546,7 +1611,7 @@ export default {
                         }
                     });
                 } else {
-                    eventBus.on('element.dblclick', function (e) {
+                    trackListener('element.dblclick', function (e) {
                         if (e.element.type.includes('CallActivity')) {
                             self.$emit('openPanel', e.element.id);
                         } else if (e.element.type.includes('Collaboration')) {
@@ -1575,18 +1640,18 @@ export default {
                 }
 
                 // ContextPad에서 속성 패널 열기 버튼 클릭 시
-                eventBus.on('element.openPanel', function (e) {
+                trackListener('element.openPanel', function (e) {
                     self.$emit('openPanel', e.element.id);
                 });
 
                 // ContextPad에서 코멘트 작성 버튼 클릭 시
-                eventBus.on('element.addComment', function (e) {
+                trackListener('element.addComment', function (e) {
                     self.$emit('addComment', e.element.id);
                 });
 
                 // ContextPad에서 PI Flag 작성 버튼 클릭 시
                 // 단일 진입이어도 현재 캔버스에 여러 task가 선택돼 있으면 묶음으로 처리
-                eventBus.on('element.addPiFlag', function (e) {
+                trackListener('element.addPiFlag', function (e) {
                     const selected = self.bpmnViewer.get('selection').get() || [];
                     const taskIds = selected.filter((el) => el.type && el.type.includes('Task')).map((el) => el.id);
                     if (taskIds.length > 1 && taskIds.includes(e.element.id)) {
@@ -1597,7 +1662,7 @@ export default {
                 });
 
                 // ContextPad에서 묶음(다중 선택) PI Flag 작성 버튼 클릭 시
-                eventBus.on('elements.addPiFlag', function (e) {
+                trackListener('elements.addPiFlag', function (e) {
                     self.$emit(
                         'addPiFlag',
                         e.elements.map((el) => el.id)
@@ -1605,7 +1670,7 @@ export default {
                 });
 
                 // directEditing 시작/종료 시 커스텀 텍스트 처리 (인라인 편집 충돌 방지)
-                eventBus.on('directEditing.activate', function (e) {
+                trackListener('directEditing.activate', function (e) {
                     // 인라인 편집 시작 시 해당 요소의 커스텀 텍스트 숨기기
                     const elementId = e.active?.element?.id;
                     if (elementId) {
@@ -1619,7 +1684,7 @@ export default {
                     }
                 });
 
-                eventBus.on('directEditing.complete', function (e) {
+                trackListener('directEditing.complete', function (e) {
                     // 인라인 편집 완료 시 해당 요소 다시 렌더링
                     const elementId = e.active?.element?.id;
                     if (elementId) {
@@ -1636,7 +1701,7 @@ export default {
                     }
                 });
 
-                eventBus.on('directEditing.cancel', function (e) {
+                trackListener('directEditing.cancel', function (e) {
                     // 인라인 편집 취소 시 커스텀 텍스트 다시 보이기
                     const elementId = e.active?.element?.id;
                     if (elementId) {
@@ -1650,7 +1715,7 @@ export default {
                     }
                 });
 
-                eventBus.on('commandStack.changed', async function (evt) {
+                trackListener('commandStack.changed', async function (evt) {
                     console.log('commandStack.changed');
                     // PI Flag 표시가 켜져 있으면 깃발/묶음 박스 갱신 (추가·삭제·이동 반영)
                     self.schedulePiFlagRefresh();
@@ -1666,7 +1731,7 @@ export default {
                 });
 
                 // Phase 4-2: Business ID auto-assignment on task creation
-                eventBus.on('shape.added', function (event) {
+                trackListener('shape.added', function (event) {
                     const element = event.element;
                     if (!element || !element.type || !element.type.includes('Task')) return;
                     // Only assign if no businessId already
@@ -1732,7 +1797,7 @@ export default {
                 });
 
                 // Phase 4-4: SSO Lane - block direct editing for Organization type
-                eventBus.on('directEditing.activate', function (event) {
+                trackListener('directEditing.activate', function (event) {
                     const element = event.active?.element;
                     if (!element || element.type !== 'bpmn:Lane') return;
                     // Check if lane has Organization type
@@ -1754,7 +1819,7 @@ export default {
                 });
 
                 // Phase 2-7: Multi-select detection
-                eventBus.on('selection.changed', function (event) {
+                trackListener('selection.changed', function (event) {
                     const newSelection = event.newSelection || [];
                     const tasks = newSelection.filter((el) => el.type && el.type.includes('Task'));
                     if (tasks.length >= 2) {
@@ -2976,13 +3041,13 @@ export default {
 .djs-element.validation-error .djs-visual rect,
 .djs-element.validation-error .djs-visual circle,
 .djs-element.validation-error .djs-visual polygon {
-    stroke: #f44336 !important;
+    stroke: var(--cds-text-danger) !important;
     stroke-width: 2px !important;
 }
 .djs-element.validation-warning .djs-visual rect,
 .djs-element.validation-warning .djs-visual circle,
 .djs-element.validation-warning .djs-visual polygon {
-    stroke: #ff9800 !important;
+    stroke: var(--cds-text-warning) !important;
     stroke-width: 2px !important;
 }
 
@@ -3044,20 +3109,20 @@ export default {
 
 .font-size-value {
     font-size: 12px;
-    color: #666;
+    color: var(--cds-text-secondary);
     min-width: 36px;
     text-align: center;
 }
 
 .zoom-level-value {
     font-size: 12px;
-    color: #666;
+    color: var(--cds-text-secondary);
     min-width: 40px;
     text-align: center;
 }
 
 .controls-divider {
-    color: #ccc;
+    color: var(--cds-text-muted);
     margin: 0 4px;
 }
 
@@ -3068,15 +3133,27 @@ export default {
     display: none !important;
 }
 
-/* Dynamic text color for dark backgrounds */
+/* 도형 채움색 대비용 글자색.
+   테마 표면이 아니라 '그 도형의 채움색'에 대한 대비라서 토큰을 쓰면 안 된다.
+   (--cds-surface-2 를 쓰면 다크에서 어두운 도형 위에 어두운 글자가 찍힌다) */
 .djs-element[data-dark-bg='true'] text,
 .djs-element[data-dark-bg='true'] text tspan {
-    fill: #ffffff !important;
+    fill: #ffffff /* tokenize-colors: ignore */ !important;
 }
 
 .djs-element[data-dark-bg='false'] text,
 .djs-element[data-dark-bg='false'] text tspan {
-    fill: #000000 !important;
+    fill: #0b0b0b /* tokenize-colors: ignore */ !important;
+}
+
+/* 레인·풀 제목과 시퀀스 플로우 라벨은 커스텀 렌더러를 타지 않아
+   data-dark-bg 가 붙지 않는다. bpmn-js 기본 검정으로 남아 다크에서 안 보이므로
+   테마 글자색을 따르게 한다. (!important 없이 — 위 대비 규칙이 우선) */
+.djs-element:not([data-dark-bg]) text,
+.djs-element:not([data-dark-bg]) text tspan,
+.djs-label text,
+.djs-label tspan {
+    fill: var(--cds-text-primary);
 }
 
 /* Minimap card styling */
@@ -3085,7 +3162,7 @@ export default {
     top: auto !important;
     left: 12px !important;
     right: auto !important;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border-radius: 12px;
     padding: 6px;
 }

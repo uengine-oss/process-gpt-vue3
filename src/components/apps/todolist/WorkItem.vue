@@ -84,7 +84,7 @@
                         variant="elevated" 
                         class="rounded-pill ml-1"
                         density="compact"
-                        style="background-color: #808080; color: white;"
+                        style="background-color: var(--cds-text-muted); color: white;"
                     >이전 단계</v-btn>
                 </v-row> -->
             </div>
@@ -136,7 +136,7 @@
                                 :key="tab.value"
                                 :variant="selectedTab === tab.value ? 'flat' : 'text'"
                                 :color="selectedTab === tab.value ? '' : 'default'"
-                                :style="selectedTab === tab.value ? 'background-color: #808080; color: white;' : ''"
+                                :style="selectedTab === tab.value ? 'background-color: var(--cds-text-muted); color: white;' : ''"
                                 size="small"
                                 @click="selectedTab = tab.value"
                             >
@@ -362,7 +362,7 @@
                                         :size="isMobile ? 'small' : 'default'"
                                         :rounded="!isMobile"
                                         density="comfortable"
-                                        :style="isMobile ? 'border-color: #e0e0e0 !important;' : 'background-color: #808080; color: white;'"
+                                        :style="isMobile ? 'border-color: var(--cds-border) !important;' : 'background-color: var(--cds-text-muted); color: white;'"
                                     >
                                         <v-icon>mdi-delete-outline</v-icon>
                                         <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
@@ -375,7 +375,7 @@
                                         density="comfortable"
                                         rounded
                                         :disabled="isGeneratingExample"
-                                        style="background-color: #808080; color: white; min-width: 36px; padding: 0 6px"
+                                        style="background-color: var(--cds-text-muted); color: white; min-width: 36px; padding: 0 6px"
                                         @click="selectedTab = 'agent-monitor'"
                                     >
                                         <v-icon>mdi-auto-fix</v-icon>
@@ -390,7 +390,7 @@
                                         rounded
                                         :loading="isGeneratingExample"
                                         :disabled="isGeneratingExample"
-                                        style="background-color: #808080; color: white"
+                                        style="background-color: var(--cds-text-muted); color: white"
                                         @click="triggerBasicLlmAgentFromResearchMethod"
                                     >
                                         <Icons :icon="'sparkles'" :size="20" />
@@ -403,7 +403,7 @@
                                         density="comfortable"
                                         @click="toggleFeedback"
                                         :disabled="isGeneratingExample"
-                                        style="background-color: #808080; color: white"
+                                        style="background-color: var(--cds-text-muted); color: white"
                                     >
                                         <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
                                         <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
@@ -417,7 +417,7 @@
                                         icon
                                         variant="outlined"
                                         size="small"
-                                        style="border-color: #e0e0e0 !important"
+                                        style="border-color: var(--cds-border) !important"
                                     >
                                         <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
                                     </v-btn>
@@ -429,7 +429,7 @@
                                         icon
                                         variant="outlined"
                                         size="small"
-                                        style="border-color: #e0e0e0 !important"
+                                        style="border-color: var(--cds-border) !important"
                                         :disabled="isGenerationFinished"
                                     >
                                         <Icons :icon="'sharp-mic'" :size="'16'" />
@@ -442,7 +442,7 @@
                                         icon
                                         variant="outlined"
                                         size="small"
-                                        style="border-color: #e0e0e0 !important"
+                                        style="border-color: var(--cds-border) !important"
                                         :disabled="isGenerationFinished"
                                     >
                                         <Icons :icon="'stop'" :size="'16'" />
@@ -458,7 +458,7 @@
                                         icon
                                         variant="outlined"
                                         size="small"
-                                        style="border-color: #e0e0e0 !important"
+                                        style="border-color: var(--cds-border) !important"
                                     >
                                         <template v-if="!isGeneratingExample">
                                             <v-icon v-if="generator">mdi-refresh</v-icon>
@@ -905,18 +905,12 @@ export default {
                     return false;
                 }
 
-                if (Array.isArray(endpoint)) {
-                    return endpoint.includes(currentUserId);
-                }
-
                 // endpoint가 단일 값일 때 uid와 일치하면 내 업무
                 const endpointList = String(endpoint)
                     .split(',')
                     .map((e) => e.trim());
                 return endpointList.includes(currentUserId);
             }
-
-            return false;
         },
         isNoAssignee() {
             const endpoint = this.workItem && this.workItem.worklist ? this.workItem.worklist.endpoint : null;

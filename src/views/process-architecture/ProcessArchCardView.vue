@@ -426,7 +426,7 @@ function getDomainColor(domainName: string): string {
 .column-header {
     padding: 10px 8px;
     margin-bottom: 10px;
-    border-bottom: 3px solid #e0e0e0;
+    border-bottom: 3px solid var(--cds-border);
     flex-shrink: 0;
 }
 
@@ -445,7 +445,7 @@ function getDomainColor(domainName: string): string {
 
 .stat-text {
     font-size: 0.75rem;
-    color: #757575;
+    color: var(--cds-text-muted);
 }
 
 .stat-divider {
@@ -468,7 +468,7 @@ function getDomainColor(domainName: string): string {
 }
 
 .cards-list::-webkit-scrollbar-thumb {
-    background: #e0e0e0;
+    background: var(--cds-border);
     border-radius: 2px;
 }
 
@@ -481,7 +481,7 @@ function getDomainColor(domainName: string): string {
 }
 
 .card-header {
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
     user-select: none;
 }
 
@@ -515,7 +515,7 @@ function getDomainColor(domainName: string): string {
 }
 
 .sub-item:hover {
-    background-color: #f5f5f5;
+    background-color: var(--cds-bg-neutral);
 }
 
 .sub-item .fav-btn {
@@ -539,7 +539,7 @@ function getDomainColor(domainName: string): string {
 }
 
 .empty-column {
-    border: 2px dashed #e0e0e0;
+    border: 2px dashed var(--cds-border);
     border-radius: 8px;
 }
 
@@ -562,7 +562,7 @@ function getDomainColor(domainName: string): string {
 
 .sunset-item {
     opacity: 0.7;
-    border-left: 3px solid #c62828;
+    border-left: 3px solid var(--cds-text-danger);
     padding-left: 9px !important;
 }
 </style>

@@ -511,14 +511,14 @@ export default {
     flex-direction: column;
     height: 100%;
     border-left: 1px solid rgba(0, 0, 0, 0.08);
-    background-color: #fafbfc;
+    background-color: var(--cds-bg-neutral);
     overflow: hidden;
 }
 .agent-message-panel-header {
     display: flex;
     align-items: center;
     padding: 10px 14px;
-    background-color: #fff;
+    background-color: var(--cds-surface-2);
     flex-shrink: 0;
 }
 .agent-message-panel-scroll {

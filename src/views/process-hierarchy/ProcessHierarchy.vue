@@ -866,13 +866,13 @@ export default {
     height: calc(100vh - 125px);
     overflow: hidden;
     position: relative;
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
 }
 
 .hierarchy-left-panel {
     position: relative;
     flex-shrink: 0;
-    border-right: 1px solid #e0e0e0;
+    border-right: 1px solid var(--cds-border);
     overflow: hidden;
 }
 
@@ -887,7 +887,7 @@ export default {
 .hierarchy-right-panel {
     position: relative;
     flex-shrink: 0;
-    border-left: 1px solid #e0e0e0;
+    border-left: 1px solid var(--cds-border);
     overflow-y: auto;
 }
 

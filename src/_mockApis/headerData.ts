@@ -1,6 +1,3 @@
-// project imports
-import mock from './mockAdapter';
-
 import type {
     notificationType,
     profileType,

@@ -27,7 +27,7 @@
                         <!-- Domain cell (sticky left) -->
                         <td class="domain-cell" :style="domainCellStyle(domain)">
                             <div class="domain-inner">
-                                <div class="domain-color-bar" :style="{ background: domain.color || '#78909C' }"></div>
+                                <div class="domain-color-bar" :style="{ background: domain.color || '#78909C'}"></div>
                                 <div class="domain-info">
                                     <span class="domain-name">{{ domain.name }}</span>
                                     <span class="domain-count">{{ getDomainProcessCount(domain.id) }} proc</span>
@@ -176,9 +176,9 @@ function toggleCell(key: string) {
 /* ── Scroll container ── */
 .matrix-scroll-area {
     overflow-x: auto;
-    border: 2px solid #94a3b8;
+    border: 2px solid var(--cds-text-muted);
     border-radius: 12px;
-    background: white;
+    background: var(--cds-surface-2);
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
 }
 
@@ -197,10 +197,10 @@ function toggleCell(key: string) {
     z-index: 3;
     width: 160px;
     min-width: 160px;
-    background: #1e293b;
+    background: var(--cds-text-primary);
     padding: 0;
-    border-bottom: 3px solid #3b82f6;
-    border-right: 2px solid #94a3b8;
+    border-bottom: 3px solid hsl(var(--accent-brand));
+    border-right: 2px solid var(--cds-text-muted);
 }
 
 .corner-content {
@@ -249,12 +249,12 @@ function toggleCell(key: string) {
 
 /* ── Mega process header cells ── */
 .mega-header-cell {
-    background: #1e293b;
+    background: var(--cds-text-primary);
     padding: 14px 16px;
     text-align: center;
     min-width: 200px;
     border-left: 2px solid rgba(255, 255, 255, 0.12);
-    border-bottom: 3px solid #3b82f6;
+    border-bottom: 3px solid hsl(var(--accent-brand));
 }
 
 .mega-header-inner {
@@ -290,14 +290,14 @@ function toggleCell(key: string) {
     z-index: 2;
     width: 160px;
     min-width: 160px;
-    background: white;
+    background: var(--cds-surface-2);
     padding: 0 !important;
-    border-bottom: 2px solid #cbd5e1;
-    border-right: 2px solid #94a3b8;
+    border-bottom: 2px solid var(--cds-border);
+    border-right: 2px solid var(--cds-text-muted);
 }
 
 .row-alt .domain-cell {
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
 }
 
 .domain-inner {
@@ -325,26 +325,26 @@ function toggleCell(key: string) {
 .domain-name {
     font-weight: 700;
     font-size: 0.82rem;
-    color: #1e293b;
+    color: var(--cds-text-primary);
 }
 
 .domain-count {
     font-size: 0.7rem;
-    color: #94a3b8;
+    color: var(--cds-text-muted);
     font-weight: 500;
 }
 
 /* ── Process cells ── */
 .process-cell {
     padding: 12px 14px !important;
-    border-bottom: 2px solid #cbd5e1;
-    border-left: 2px solid #cbd5e1;
+    border-bottom: 2px solid var(--cds-border);
+    border-left: 2px solid var(--cds-border);
     vertical-align: top;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
 }
 
 .row-alt .process-cell {
-    background: #f1f5f9;
+    background: var(--cds-bg-neutral);
 }
 
 .cell-content {
@@ -356,8 +356,8 @@ function toggleCell(key: string) {
 
 /* ── Process card inside cell ── */
 .process-card {
-    background: white;
-    border: 1px solid #cbd5e1;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     padding: 10px 12px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -365,11 +365,11 @@ function toggleCell(key: string) {
 }
 
 .row-alt .process-card {
-    background: white;
+    background: var(--cds-surface-2);
 }
 
 .process-card:hover {
-    border-color: #60a5fa;
+    border-color: hsl(var(--accent-brand));
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
@@ -390,7 +390,7 @@ function toggleCell(key: string) {
 }
 
 .process-link:hover {
-    color: #1d4ed8;
+    color: hsl(var(--accent-brand));
     text-decoration: underline;
 }
 
@@ -400,8 +400,8 @@ function toggleCell(key: string) {
     justify-content: center;
     min-width: 20px;
     height: 20px;
-    background: #eff6ff;
-    color: #3b82f6;
+    background: var(--cds-bg-accent);
+    color: hsl(var(--accent-brand));
     font-size: 0.65rem;
     font-weight: 700;
     border-radius: 10px;
@@ -418,7 +418,7 @@ function toggleCell(key: string) {
     display: inline-flex;
     align-items: center;
     font-size: 0.7rem;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     background: none;
     border: none;
     cursor: pointer;
@@ -428,7 +428,7 @@ function toggleCell(key: string) {
 }
 
 .sub-toggle:hover {
-    color: #3b82f6;
+    color: hsl(var(--accent-brand));
 }
 
 .sub-list {
@@ -436,7 +436,7 @@ function toggleCell(key: string) {
     flex-direction: column;
     gap: 1px;
     margin-top: 4px;
-    border-left: 2px solid #e2e8f0;
+    border-left: 2px solid var(--cds-border);
     padding-left: 8px;
 }
 
@@ -452,7 +452,7 @@ function toggleCell(key: string) {
 }
 
 .sub-row:hover {
-    background: #eff6ff;
+    background: var(--cds-bg-accent);
 }
 
 .sub-row .fav-btn {
@@ -470,7 +470,7 @@ function toggleCell(key: string) {
 
 .sub-name {
     font-size: 0.75rem;
-    color: #475569;
+    color: var(--cds-text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -482,12 +482,12 @@ function toggleCell(key: string) {
     align-items: center;
     justify-content: center;
     min-height: 48px;
-    background: repeating-linear-gradient(-45deg, transparent, transparent 6px, #f1f5f9 6px, #f1f5f9 7px);
+    background: repeating-linear-gradient(-45deg, transparent, transparent 6px, var(--cds-bg-neutral) 6px, var(--cds-bg-neutral) 7px);
     border-radius: 6px;
 }
 
 .empty-dash {
-    color: #94a3b8;
+    color: var(--cds-text-muted);
     font-size: 0.75rem;
     letter-spacing: 1px;
     background: rgba(248, 250, 252, 0.8);

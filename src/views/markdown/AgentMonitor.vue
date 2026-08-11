@@ -1699,7 +1699,7 @@ export default {
     flex-direction: column;
     padding: 0;
     flex-shrink: 0;
-    background: white;
+    background: var(--cds-surface-2);
     border-top: 1px solid #e1e8ed;
 }
 
@@ -1709,8 +1709,8 @@ export default {
     align-items: center;
     gap: 8px;
     padding: 12px;
-    background: #f8fafb;
-    border: 1px solid #e4e6ea;
+    background: var(--cds-bg-neutral);
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     margin: 12px 0 12px; /* 상단 간격 추가로 위 요소와 붙는 현상 완화 */
     font-size: 14px;
@@ -1733,7 +1733,7 @@ export default {
     margin-left: auto;
     background: transparent;
     border: none;
-    color: #f57c00;
+    color: var(--cds-text-warning);
     font-size: 24px;
     cursor: pointer;
 }
@@ -1752,21 +1752,21 @@ export default {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: white;
-    border: 1px solid #d1d5db;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     border-radius: 20px;
     padding: 6px 12px;
     cursor: pointer;
     font-size: 13px;
     font-weight: 400;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     transition: all 0.2s ease;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .dropdown-trigger:hover {
     background: #f9fafb;
-    border-color: #9ca3af;
-    color: #000000;
+    border-color: var(--cds-text-muted);
+    color: var(--cds-text-primary);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -1779,8 +1779,8 @@ export default {
     position: absolute;
     bottom: 100%;
     left: 0;
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1000;
@@ -1797,16 +1797,16 @@ export default {
     padding: 8px 16px;
     cursor: pointer;
     font-size: 13px;
-    color: #374151;
+    color: var(--cds-text-secondary);
     transition: background-color 0.1s ease;
     margin: 0;
 }
 .dropdown-item:hover {
-    background: #f3f4f6;
+    background: var(--cds-bg-neutral);
 }
 .dropdown-item.active {
-    background: #f3f4f6;
-    color: #000;
+    background: var(--cds-bg-neutral);
+    color: var(--cds-text-primary);
     font-weight: 500;
 }
 
@@ -1824,7 +1824,7 @@ export default {
     font-size: 13px;
 }
 .check-icon {
-    color: #10b981;
+    color: var(--cds-text-success);
     font-weight: 600;
     font-size: 12px;
 }
@@ -1855,11 +1855,11 @@ export default {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    background: #f8f9fa;
+    background: var(--cds-bg-neutral);
 }
 
 .iframe-header {
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, hsl(var(--accent-brand)) 0%, hsl(var(--accent-brand)) 100%);
     color: white;
     padding: 16px 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -1889,7 +1889,7 @@ export default {
     width: 100%;
     height: 500px; /* 높이 대폭 줄임 */
     border: none;
-    background: white;
+    background: var(--cds-surface-2);
     transform: scale(0.3); /* 30% 축소 */
     transform-origin: top left;
     width: 333%; /* 축소된 만큼 너비 조정 */
@@ -1934,7 +1934,7 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 16px 24px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--cds-border);
 }
 
 .close-btn {
@@ -1951,13 +1951,13 @@ export default {
     width: 100%;
     height: 100%;
     border: none;
-    background: white;
+    background: var(--cds-surface-2);
 }
 
 .empty-state {
     text-align: center;
     padding: 0px;
-    background: white;
+    background: var(--cds-surface-2);
     margin-top: 12px;
     overflow: auto;
 }
@@ -1970,7 +1970,7 @@ export default {
 .empty-state h3 {
     font-size: 18px;
     font-weight: 600;
-    color: #1d2129;
+    color: var(--cds-text-primary);
     margin: 0 0 8px 0;
 }
 

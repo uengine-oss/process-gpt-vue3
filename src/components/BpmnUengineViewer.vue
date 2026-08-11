@@ -9,17 +9,17 @@
     >
         <div :class="isMobile ? 'mobile-position' : 'desktop-position'" :style="laneAssignments.length > 0 ? '' : ''">
             <div class="pa-1 ga-2" :class="isMobile ? 'mobile-style' : 'desktop-style'">
-                <v-icon @click="resetZoom" style="color: #444; cursor: pointer">mdi-crosshairs-gps</v-icon>
-                <v-icon @click="zoomIn" style="color: #444; cursor: pointer">mdi-plus</v-icon>
-                <v-icon @click="zoomOut" style="color: #444; cursor: pointer">mdi-minus</v-icon>
-                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer">mdi-crop-rotate</v-icon>
-                <v-icon @click="capturePng" style="color: #444; cursor: pointer">mdi-download</v-icon>
+                <v-icon @click="resetZoom" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crosshairs-gps</v-icon>
+                <v-icon @click="zoomIn" style="color: var(--cds-text-secondary); cursor: pointer">mdi-plus</v-icon>
+                <v-icon @click="zoomOut" style="color: var(--cds-text-secondary); cursor: pointer">mdi-minus</v-icon>
+                <v-icon @click="changeOrientation" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crop-rotate</v-icon>
+                <v-icon @click="capturePng" style="color: var(--cds-text-secondary); cursor: pointer">mdi-download</v-icon>
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
                         <v-icon
                             v-bind="props"
                             @click="showExpandedProcessView"
-                            style="color: #444; cursor: pointer"
+                            style="color: var(--cds-text-secondary); cursor: pointer"
                             :class="{ 'text-primary': showExpandedView }"
                             >mdi-sitemap</v-icon
                         >
@@ -51,15 +51,15 @@
                                                 <template v-slot:error>
                                                     <v-img src="/images/defaultUser.png" cover>
                                                         <template v-slot:error>
-                                                            <v-icon size="small" style="color: #666">mdi-account</v-icon>
+                                                            <v-icon size="small" style="color: var(--cds-text-secondary)">mdi-account</v-icon>
                                                         </template>
                                                     </v-img>
                                                 </template>
                                             </v-img>
                                         </v-avatar>
                                         <div class="flex-grow-1">
-                                            <div class="text-body-2 font-weight-medium" style="color: #444">{{ assignment.laneName }}</div>
-                                            <div class="text-caption" style="color: #666">{{ assignment.assignee }}</div>
+                                            <div class="text-body-2 font-weight-medium" style="color: var(--cds-text-secondary)">{{ assignment.laneName }}</div>
+                                            <div class="text-caption" style="color: var(--cds-text-secondary)">{{ assignment.assignee }}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -72,7 +72,7 @@
         <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10">
             <v-row class="ma-0 pa-0">
                 <div v-for="(previewer, index) in previewersXMLLists" :key="index">
-                    <h6 @click="goToPreviewer(index)" class="text-h6 cursor-pointer" style="color: #444">{{ previewer.name }}</h6>
+                    <h6 @click="goToPreviewer(index)" class="text-h6 cursor-pointer" style="color: var(--cds-text-secondary)">{{ previewer.name }}</h6>
                     <v-icon v-if="index < previewersXMLLists.length - 1">mdi-chevron-right </v-icon>
                 </div>
                 <div class="ma-0 pa-0 d-flex">
@@ -1539,7 +1539,7 @@ export default {
 }
 
 .bpmn-diff-deleted .djs-visual > :nth-child(1) {
-    stroke: #e74c3c !important; /* 빨간색 - 삭제된 항목 */
+    stroke: var(--cds-text-danger) !important; /* 빨간색 - 삭제된 항목 */
     stroke-width: 3px !important;
 }
 
@@ -1555,7 +1555,7 @@ export default {
 }
 
 [data-element-id*='SequenceFlow'].bpmn-diff-deleted .djs-visual > path {
-    stroke: #e74c3c !important; /* 빨간색 - 삭제된 연결선 */
+    stroke: var(--cds-text-danger) !important; /* 빨간색 - 삭제된 연결선 */
     stroke-width: 3px !important;
 }
 
@@ -1571,7 +1571,7 @@ export default {
 }
 
 [data-element-id*='SequenceFlow'].bpmn-diff-deleted .djs-visual > path[marker-end] {
-    stroke: #e74c3c !important;
+    stroke: var(--cds-text-danger) !important;
     stroke-width: 3px !important;
 }
 
@@ -1582,8 +1582,8 @@ export default {
 }
 
 [data-element-id*='SequenceFlow'].bpmn-diff-deleted .djs-visual marker path {
-    fill: #e74c3c !important;
-    stroke: #e74c3c !important;
+    fill: var(--cds-text-danger) !important;
+    stroke: var(--cds-text-danger) !important;
 }
 
 /* SVG 마커 정의에 대한 글로벌 스타일 */
@@ -1599,8 +1599,8 @@ svg .bpmn-diff-added marker[id*='sequenceflow-end'] path {
 
 .bpmn-diff-deleted ~ svg defs marker[id*='sequenceflow-end'] path,
 svg .bpmn-diff-deleted marker[id*='sequenceflow-end'] path {
-    fill: #e74c3c !important;
-    stroke: #e74c3c !important;
+    fill: var(--cds-text-danger) !important;
+    stroke: var(--cds-text-danger) !important;
 }
 
 .view-mode .djs-palette {

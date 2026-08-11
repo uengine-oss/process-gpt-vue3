@@ -579,7 +579,7 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
-    background: #fff;
+    background: var(--cds-surface-2);
 }
 
 .designer-toolbar {
@@ -587,8 +587,8 @@ export default {
     align-items: center;
     justify-content: space-between;
     padding: 8px 16px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #fafafa;
+    border-bottom: 1px solid var(--cds-border);
+    background: var(--cds-bg-neutral);
     flex-shrink: 0;
     min-height: 48px;
 }
@@ -636,21 +636,21 @@ export default {
 <style>
 /* 검증 에러 마커 - scoped가 아닌 global CSS (bpmn-js DOM에 적용) */
 .validation-error-element .djs-visual > :nth-child(1) {
-    stroke: #f44336 !important;
+    stroke: var(--cds-text-danger) !important;
     stroke-width: 2.5px !important;
 }
 .validation-error-element .djs-outline {
-    stroke: #f44336 !important;
+    stroke: var(--cds-text-danger) !important;
     stroke-width: 1px !important;
     stroke-dasharray: 4 3;
 }
 /* 검증 경고 마커 */
 .validation-warning-element .djs-visual > :nth-child(1) {
-    stroke: #ff9800 !important;
+    stroke: var(--cds-text-warning) !important;
     stroke-width: 2.5px !important;
 }
 .validation-warning-element .djs-outline {
-    stroke: #ff9800 !important;
+    stroke: var(--cds-text-warning) !important;
     stroke-width: 1px !important;
     stroke-dasharray: 4 3;
 }

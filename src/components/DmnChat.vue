@@ -1047,7 +1047,7 @@ export default {
 
 .dmn-section {
     overflow: hidden;
-    background-color: white;
+    background-color: var(--cds-surface-2);
 }
 
 .dmn-modeler-wrapper :deep(.vue-dmn-diagram-container) {

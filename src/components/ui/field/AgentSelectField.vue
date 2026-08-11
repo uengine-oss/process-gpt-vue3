@@ -531,46 +531,8 @@ export default {
     },
     async mounted() {
         await this.loadToolsAndSkills();
-        if (this.activity.usePresetAgent && this.activity.agent && this.activity.agent !== null) {
-            if (this.activity.agent.includes(',')) {
-                const agents = this.activity.agent.split(',');
-                const selectedAgents = [];
-                for (const agentId of agents) {
-                    let agent = this.defaultSetting.getAgentById(agentId);
-                    if (!agent) {
-                        agent = await this.backend.getUserById(agentId);
-                    }
-                    if (agent && agent.id && agent.is_agent) {
-                        selectedAgents.push({
-                            ...agent,
-                            id: agent.id,
-                            name: agent.username,
-                            isAgent: agent.is_agent,
-                            agentType: agent.agent_type,
-                            alias: agent.alias
-                        });
-                    }
-                }
-                this.selectedAgent = selectedAgents;
-            } else {
-                const agentId = this.activity.agent;
-                let agent = this.defaultSetting.getAgentById(agentId);
-                if (!agent) {
-                    agent = await this.backend.getUserById(agentId);
-                }
-                if (agent && agent.id && agent.is_agent) {
-                    this.selectedAgent = [
-                        {
-                            ...agent,
-                            id: agent.id,
-                            name: agent.username,
-                            isAgent: agent.is_agent,
-                            agentType: agent.agent_type,
-                            alias: agent.alias
-                        }
-                    ];
-                }
-            }
+        if (this.activity.usePresetAgent && this.activity.agent) {
+            await this.resolvePresetAgentSelection(this.activity.agent);
         }
 
         if (this.isExecute) {
@@ -586,13 +548,45 @@ export default {
         });
     },
     methods: {
+        // activity.agent(단일 id 또는 콤마로 연결된 다중 id)를 실제 에이전트 객체로 조회해
+        // selectedAgent(user-select-field에 표시되는 값)를 채운다.
+        async resolvePresetAgentSelection(agentValue) {
+            if (!agentValue) return;
+            const agentIds = agentValue.includes(',') ? agentValue.split(',') : [agentValue];
+            const selectedAgents = [];
+            for (const agentId of agentIds) {
+                let agent = this.defaultSetting.getAgentById(agentId);
+                if (!agent) {
+                    agent = await this.backend.getUserById(agentId);
+                }
+                if (agent && agent.id && agent.is_agent) {
+                    selectedAgents.push({
+                        ...agent,
+                        id: agent.id,
+                        name: agent.username,
+                        isAgent: agent.is_agent,
+                        agentType: agent.agent_type,
+                        alias: agent.alias
+                    });
+                }
+            }
+            if (selectedAgents.length > 0) {
+                this.selectedAgent = selectedAgents;
+            }
+        },
         // 레인 캐스케이드 등 외부(사용자 조작이 아닌)에서 orchestration/agent를 갱신할 때 사용.
         // suppressManualMarker로 감싸서 이 갱신이 'manual' 마커를 붙이지 않도록 한다.
-        applyExternalCascade({ orchestration, agent }) {
+        applyExternalCascade({ orchestration, agent, usePresetAgent }) {
             this.suppressManualMarker = true;
             this.activity.orchestration = orchestration;
             this.activity.agent = agent;
             this.activity.agentAssignedFrom = 'lane-cascade';
+            if (usePresetAgent) {
+                // usePresetAgent를 함께 켜지 않으면 체크박스가 꺼진 채로 남아
+                // 선택 필드가 계속 비어 보이는 문제(activity.agent는 채워져 있는데 화면엔 안 보임)가 생긴다.
+                this.activity.usePresetAgent = true;
+                this.resolvePresetAgentSelection(agent);
+            }
             this.$nextTick(() => {
                 this.suppressManualMarker = false;
             });

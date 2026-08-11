@@ -299,8 +299,8 @@ export default defineComponent({
 <style scoped>
 /* Task Card - Flat Design */
 .task-card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: var(--cds-surface-2);
+    border: 1px solid var(--cds-border);
     border-radius: 8px;
     padding: 16px;
     cursor: grab;
@@ -312,8 +312,8 @@ export default defineComponent({
 }
 
 .task-card:hover {
-    border-color: #3b82f6;
-    background-color: #fafbfc;
+    border-color: hsl(var(--accent-brand));
+    background-color: var(--cds-bg-neutral);
 }
 
 .task-card:active {
@@ -341,7 +341,7 @@ export default defineComponent({
 .task-name {
     font-size: 14px;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     line-height: 1.3;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -353,7 +353,7 @@ export default defineComponent({
 /* Description */
 .task-description {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--cds-text-secondary);
     line-height: 1.4;
     flex: 1;
     overflow: hidden;
@@ -370,6 +370,6 @@ export default defineComponent({
     gap: 4px;
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid var(--cds-bg-neutral);
 }
 </style>

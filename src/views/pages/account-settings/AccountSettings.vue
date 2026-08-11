@@ -507,7 +507,7 @@ export default {
 
 <style scoped>
 .selected-tab {
-    background: #808080 !important;
+    background: var(--cds-text-muted) !important;
     color: white !important;
 }
 

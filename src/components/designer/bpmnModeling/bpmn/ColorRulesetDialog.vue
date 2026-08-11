@@ -61,9 +61,8 @@
                                 v-if="rule.type === 'taskType'"
                                 class="color-preview-box mr-3"
                                 :style="{
-                                    backgroundColor: normalizeColor(rule.fillColor) || '#fdf2d0',
-                                    borderColor: normalizeColor(rule.strokeColor) || '#ccc'
-                                }"
+                                    backgroundColor: normalizeColor(rule.fillColor) || 'var(--cds-bg-warning)',
+                                    borderColor: normalizeColor(rule.strokeColor) || 'var(--cds-text-muted)'}"
                             />
                             <!-- Intensity Preview for leadTime -->
                             <div v-else class="intensity-preview-box mr-3" />
@@ -162,7 +161,7 @@
                                                         <div
                                                             v-bind="props"
                                                             class="color-picker-btn"
-                                                            :style="{ backgroundColor: normalizeColor(rule.fillColor) || '#fdf2d0' }"
+                                                            :style="{ backgroundColor: normalizeColor(rule.fillColor) || 'var(--cds-bg-warning)'}"
                                                         >
                                                             <v-icon size="x-small" color="grey-darken-2">mdi-eyedropper</v-icon>
                                                         </div>
@@ -180,8 +179,7 @@
                                                             class="color-picker-btn"
                                                             :style="{
                                                                 backgroundColor: normalizeColor(rule.strokeColor) || 'transparent',
-                                                                border: normalizeColor(rule.strokeColor) ? 'none' : '2px dashed #ccc'
-                                                            }"
+                                                                border: normalizeColor(rule.strokeColor) ? 'none' : '2px dashed var(--cds-text-muted)'}"
                                                         >
                                                             <v-icon size="x-small" color="grey-darken-2">mdi-eyedropper</v-icon>
                                                         </div>
@@ -532,15 +530,15 @@ export default {
 }
 
 .add-rule-section {
-    background: #f8f9fa;
+    background: var(--cds-bg-neutral);
     border-radius: 8px;
     padding: 16px;
 }
 
 .empty-state {
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
     border-radius: 8px;
-    border: 2px dashed #e0e0e0;
+    border: 2px dashed var(--cds-border);
 }
 
 .rule-card {
@@ -554,11 +552,11 @@ export default {
 
 .rule-card.rule-disabled {
     opacity: 0.6;
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
 }
 
 .rule-header {
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
     border-radius: 8px 8px 0 0;
 }
 
@@ -580,7 +578,7 @@ export default {
 
 .preset-colors {
     padding: 4px;
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
     border-radius: 6px;
 }
 
@@ -588,7 +586,7 @@ export default {
     width: 24px;
     height: 24px;
     border-radius: 4px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     cursor: pointer;
     transition: all 0.15s ease;
 }
@@ -599,7 +597,7 @@ export default {
 }
 
 .preset-color.selected {
-    border: 2px solid #1976d2;
+    border: 2px solid hsl(var(--accent-brand));
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.3);
 }
 
@@ -607,7 +605,7 @@ export default {
     width: 32px;
     height: 32px;
     border-radius: 6px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--cds-text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -620,36 +618,36 @@ export default {
 }
 
 .condition-section {
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
     border-radius: 6px;
     padding: 12px;
 }
 
 .color-section {
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 6px;
     padding: 12px;
-    border: 1px solid #eee;
+    border: 1px solid var(--cds-border);
 }
 
 .duplicate-warning {
-    border-color: #ff9800 !important;
+    border-color: var(--cds-text-warning) !important;
 }
 
 .duration-input-group {
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 6px;
     padding: 8px 12px;
-    border: 1px solid #eee;
+    border: 1px solid var(--cds-border);
 }
 
 .intensity-preview-box {
     width: 32px;
     height: 32px;
     border-radius: 6px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--cds-text-muted);
     flex-shrink: 0;
-    background: linear-gradient(to right, #fdf2d0, #7a6520);
+    background: linear-gradient(to right, var(--cds-bg-warning), #7a6520);
 }
 
 .intensity-preview-bar {

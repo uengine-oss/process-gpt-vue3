@@ -53,7 +53,7 @@ export default {
 }
 ul.tree-list li .list-hover {
     color: #ffffff;
-    background-color: #3f51b5;
+    background-color: hsl(var(--accent-brand));
     border-radius: 15px;
     cursor: pointer;
 }

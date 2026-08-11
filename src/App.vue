@@ -7,7 +7,16 @@
             indeterminate
             class="my-progress-linear"
         ></v-progress-linear>
-        <v-overlay v-model="loading" :scrim="true" :persistent="true"></v-overlay>
+        <!--
+            첫 화면 로딩 동안에는 화면을 잠그지 않는다.
+            $try 는 저장뿐 아니라 배경 조회에도 쓰이는데(호출부 179곳), 부팅 직후에는 그것들이
+            여러 건 겹쳐서 돈다. 예전에는 그 동안 오버레이가 화면 전체를 덮어, 콘텐츠가 이미
+            그려졌는데도 사용자가 아무것도 못 하고 기다려야 했다. 진행 중이라는 표시는
+            위 progress-linear 로 충분하다.
+            부팅이 끝나면(initialLoadSettled) 이후 화면은 원래대로 오버레이가 동작한다.
+        -->
+        <v-overlay :model-value="blockingLoading" :scrim="true" :persistent="true"></v-overlay>
+
         <v-snackbar v-model="snackbar" class="custom-snackbar" :timeout="5000" :color="snackbarColor" elevation="24" location="top"
             ><span v-html="snackbarMessage"></span>
             <v-btn v-if="snackbarMessageDetail" variant="plain" @click="show = !show">
@@ -23,7 +32,7 @@
         <!-- v-if="!loadScreen" -->
         <div
             v-if="!loadScreen"
-            style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: white"
+            style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: var(--cds-surface-2)"
             class="main-page-skeleton"
         >
             <v-row class="ma-0 pa-0" style="height: 100%">
@@ -44,6 +53,7 @@
 // import { createClient } from '@supabase/supabase-js';
 import { RouterView } from 'vue-router';
 import BackendFactory from '@/components/api/BackendFactory';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import partialParse from 'partial-json-parser';
 import { getMainDomainUrl } from '@/utils/domainUtils';
 import { setCachedJwtTenantId } from '@/utils/tenant';
@@ -55,7 +65,11 @@ export default {
     },
     data: () => ({
         show: false,
-        loading: false,
+        // 겹쳐 도는 $try 를 세어야 한다. boolean 이던 시절에는 동시에 뜬 것 중
+        // 하나만 끝나도 표시가 꺼졌다.
+        loadingCount: 0,
+        // 부팅 직후의 $try 무리가 다 빠졌는지. 그 전까지는 오버레이로 화면을 잠그지 않는다.
+        initialLoadSettled: false,
         snackbarSuccessStatus: false,
         snackbarMessage: '',
         snackbarMessageDetail: null,
@@ -70,7 +84,22 @@ export default {
         defaultSetting: useDefaultSetting()
     }),
     watch: {
+        // 부팅 중 $try 가 한 건도 없으면 finally 훅이 안 돌아 플래그가 영영 안 켜진다.
+        // 스켈레톤이 걷히는 시점에도 한 번 확인해 준다.
+        loadScreen(v) {
+            if (v) this.markInitialLoadSettled();
+        },
         $route(to, from) {
+            // 로그인 화면에서 앱으로 들어오는 순간이 진짜 '첫 화면 로딩'이다.
+            // App.vue 는 로그인 화면과 같은 인스턴스라 부팅 플래그가 로그인 화면에서
+            // 이미 켜져 버린다. 그대로 두면 정작 무거운 첫 화면이 잠긴 채 로딩된다.
+            const fromAuth = String(from?.path || '').startsWith('/auth');
+            const toAuth = String(to?.path || '').startsWith('/auth');
+            if (fromAuth && !toAuth) {
+                this.initialLoadSettled = false;
+                this.markInitialLoadSettled();
+            }
+
             if (to.query.code && to.query.state && to.query.scope && this.backend) {
                 this.backend.callbackOAuth();
             }
@@ -96,7 +125,9 @@ export default {
         if (window.$mode == 'ProcessGPT') {
             if (
                 window.location.pathname.startsWith('/bpmn-auto-layout-e2e') ||
-                window.location.pathname.startsWith('/processgpt-mapper-ui-e2e')
+                window.location.pathname.startsWith('/processgpt-mapper-ui-e2e') ||
+                // 디자인 시스템 쇼케이스는 백엔드/테넌트 없이 단독으로 열려야 한다
+                window.location.pathname.startsWith('/design-system')
             ) {
                 this.loadScreen = true;
                 return;
@@ -110,26 +141,59 @@ export default {
             this.loadScreen = false;
             this.backend = BackendFactory.createBackend();
 
+            // RLS(public.tenant_id())와 게이트웨이는 auth.users 의 "현재값"이 아니라
+            // 실제로 발급되어 지금 세션에 붙어있는 access_token 안에 굳어있는 app_metadata.tenant_id 클레임을 본다.
+            // getUser()는 auth.users 를 라이브로 조회하므로, 서브도메인이 바뀌기 전에 이미 값이 일치해버리면
+            // (예: 공유 쿠키로 다른 테넌트에서 발급된 옛 토큰이 복구된 경우) 아래 비교가 "일치"로 오판해
+            // setTenant/refreshSession 자체가 스킵되고 낡은 토큰이 계속 쓰인다 — proc_def/bpm_proc_inst 목록이
+            // 조용히 텅 비는 원인. 그래서 라이브 값이 아니라 토큰 자체를 까서 비교해야 한다.
+            const decodeAccessTokenTenantId = (accessToken) => {
+                try {
+                    const payload = accessToken.split('.')[1];
+                    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+                    return JSON.parse(json)?.app_metadata?.tenant_id || '';
+                } catch (e) {
+                    return '';
+                }
+            };
+
             const ensureTenantAppMetadata = async () => {
                 try {
                     if (!window.$supabase?.auth) return;
                     const tenantName = window.$tenantName;
 
-                    const { data, error } = await window.$supabase.auth.getUser();
-                    if (error || !data?.user) return;
-
-                    const currentTenantId = data?.user?.app_metadata?.tenant_id;
+                    const { data: sessionData, error: sessionError } = await window.$supabase.auth.getSession();
+                    const accessToken = sessionData?.session?.access_token;
+                    if (sessionError || !accessToken) return;
 
                     // 메인 도메인(www / process-gpt)에서는 서브도메인으로 테넌트를 알 수 없다.
                     // 이 경우 JWT 클레임이 유일한 진실이므로 캐시에 담아 getTenantId() 가
                     // 'uengine' 같은 하드코딩 값 대신 실제 테넌트를 반환하게 한다.
                     if (!tenantName) {
-                        setCachedJwtTenantId(currentTenantId || '');
+                        setCachedJwtTenantId(decodeAccessTokenTenantId(accessToken));
                         return;
                     }
 
-                    if (!currentTenantId || currentTenantId !== tenantName) {
-                        await this.backend.setTenant(tenantName);
+                    let tokenTenantId = decodeAccessTokenTenantId(accessToken);
+
+                    if (tokenTenantId !== tenantName) {
+                        const res = await this.backend.setTenant(tenantName);
+                        if (!res) {
+                            console.error('[tenant] setTenant 실패: 세션을 현재 서브도메인으로 갱신하지 못했습니다. 재로그인을 유도합니다.');
+                            await this.forceReloginForTenantMismatch();
+                            return;
+                        }
+
+                        const { data: refreshedSessionData } = await window.$supabase.auth.getSession();
+                        tokenTenantId = decodeAccessTokenTenantId(refreshedSessionData?.session?.access_token || '');
+
+                        if (tokenTenantId !== tenantName) {
+                            console.error(
+                                `[tenant] 세션 갱신 후에도 테넌트 불일치: 토큰=${tokenTenantId || '(none)'}, 기대값=${tenantName}. 재로그인을 유도합니다.`
+                            );
+                            await this.forceReloginForTenantMismatch();
+                            return;
+                        }
                     }
                     setCachedJwtTenantId(tenantName);
                 } catch (e) {
@@ -216,9 +280,30 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        // 진행 표시(상단 바)는 부팅 중에도 그대로 보여준다.
+        loading() {
+            return this.loadingCount > 0;
+        },
+        // 화면을 잠그는 오버레이는 부팅이 끝난 뒤부터만 뜬다.
+        blockingLoading() {
+            return this.loadingCount > 0 && this.initialLoadSettled;
         }
     },
     methods: {
+        // 세션의 access_token 이 현재 서브도메인 테넌트로 갱신되지 않을 때(공유 쿠키로 다른 테넌트의
+        // 옛 토큰이 복구된 경우 등) 낡은 토큰으로 조용히 빈 화면을 보여주는 대신 강제로 재로그인시킨다.
+        // storage.signOut()을 써야 서브도메인 간 공유 쿠키(access_token/refresh_token)까지 함께 지워진다 —
+        // supabase.auth.signOut()만 하면 공유 쿠키가 남아 다음 로드에서 같은 낡은 세션이 또 복구된다.
+        async forceReloginForTenantMismatch() {
+            try {
+                await StorageBaseFactory.getStorage()?.signOut();
+            } catch (e) {
+                console.warn('[tenant] forceReloginForTenantMismatch signOut failed:', e);
+            }
+            localStorage.removeItem('tenantId');
+            window.location.href = '/auth/login';
+        },
         getChatRoomIdFromUrl(url) {
             if (!url || typeof url !== 'string') return null;
             try {
@@ -383,7 +468,7 @@ export default {
             const useGlobalLoading = !options?.noLoading;
             try {
                 if (useGlobalLoading) {
-                    window.$app_.loading = true;
+                    window.$app_.loadingCount++;
                 }
                 await options.action(options.parameters);
                 if (options.successMsg) {
@@ -433,9 +518,28 @@ export default {
                 console.log(e);
             } finally {
                 if (useGlobalLoading) {
-                    window.$app_.loading = false;
+                    window.$app_.loadingCount = Math.max(0, window.$app_.loadingCount - 1);
+                    window.$app_.markInitialLoadSettled();
                 }
             }
+        },
+
+        /**
+         * 부팅 직후의 $try 무리가 다 빠졌는지 판단한다.
+         *
+         * 호출들 사이에 잠깐 틈이 생기는 것만으로 "끝났다"고 보면 남은 부팅 호출이
+         * 다시 화면을 잠그므로, 카운터가 0 인 상태가 잠시 유지될 때만 확정한다.
+         * 한 번 확정되면 되돌리지 않는다 — 이후 화면은 원래대로 오버레이가 동작한다.
+         */
+        markInitialLoadSettled() {
+            if (this.initialLoadSettled) return;
+            clearTimeout(this._initialSettleTimer);
+            if (this.loadingCount > 0) return;
+            this._initialSettleTimer = setTimeout(() => {
+                if (this.loadingCount === 0 && this.loadScreen) {
+                    this.initialLoadSettled = true;
+                }
+            }, 700);
         }
     },
     beforeUnmount() {
@@ -471,10 +575,10 @@ export default {
 
 /* Footer Styles */
 .footer {
-    background-color: #f8f9fa;
+    background-color: var(--cds-bg-neutral);
     padding: 40px 0 20px 0;
     margin-top: auto;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--cds-border);
 }
 
 .footer-content {
@@ -490,14 +594,14 @@ export default {
 }
 
 .copyright {
-    color: #495057;
+    color: var(--cds-text-secondary);
     font-size: 14px;
     font-weight: 500;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .company-info {
-    color: #6c757d;
+    color: var(--cds-text-muted);
     font-size: 12px;
     line-height: 1.6;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -508,7 +612,7 @@ export default {
 }
 
 .terms-header {
-    color: #495057;
+    color: var(--cds-text-secondary);
     font-size: 14px;
     font-weight: 600;
     display: flex;
@@ -523,7 +627,7 @@ export default {
 }
 
 .terms-link {
-    color: #6c757d;
+    color: var(--cds-text-muted);
     font-size: 12px;
     text-decoration: none;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -531,7 +635,7 @@ export default {
 }
 
 .terms-link:hover {
-    color: #495057;
+    color: var(--cds-text-secondary);
     text-decoration: underline;
 }
 
@@ -545,7 +649,7 @@ export default {
     width: 40px !important;
     height: 40px !important;
     border-radius: 50% !important;
-    background-color: #e9ecef !important;
+    background-color: var(--cds-border) !important;
     border: none !important;
     padding: 0 !important;
     min-width: unset !important;
@@ -561,14 +665,14 @@ export default {
 }
 
 .social-text {
-    color: #495057;
+    color: var(--cds-text-secondary);
     font-size: 10px;
     font-weight: 600;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .social-icon .v-icon {
-    color: #495057 !important;
+    color: var(--cds-text-secondary) !important;
 }
 
 /* 반응형 디자인 */

@@ -246,7 +246,7 @@ export default {
     transform: translateX(-50%);
     width: 100%;
     max-width: 1200px;
-    background-color: white;
+    background-color: var(--cds-surface-2);
     z-index: 10;
     border-radius: 8px;
 }
@@ -271,7 +271,7 @@ export default {
 }
 
 .privacy-modal-content {
-    background-color: white;
+    background-color: var(--cds-surface-2);
     border-radius: 8px;
     width: 31.5rem; /* 21rem * 1.5 */
     max-width: 90%;
@@ -281,7 +281,7 @@ export default {
 .privacy-modal-header {
     padding: 1.5rem;
     margin-top: 1rem;
-    /* border-bottom: 1px solid #e5e7eb; */
+    /* border-bottom: 1px solid var(--cds-border); */
 }
 
 .privacy-modal-body {
@@ -291,12 +291,12 @@ export default {
 .privacy-modal-footer {
     padding: 1.5rem;
     margin-bottom: 1rem;
-    /* border-top: 1px solid #e5e7eb; */
+    /* border-top: 1px solid var(--cds-border); */
     text-align: center;
 }
 
 .btn-privacy-modal {
-    background-color: #1976d2;
+    background-color: hsl(var(--accent-brand));
     color: white;
 }
 

@@ -155,7 +155,11 @@
                 width: 427px;
                 height: 417px;
                 border-radius: 100%;
+                /* 장식용 원. 테마의 error 색을 그대로 쓰면 팔레트에 따라
+                   너무 진해져(라이트의 #8e2626) 경고처럼 보인다.
+                   원본(스카이)의 살몬 톤 인상을 유지하도록 투명도를 준다. */
                 background-color: rgb(var(--v-theme-error));
+                opacity: 0.55;
             }
 
             &::after {

@@ -532,7 +532,7 @@ export default {
     max-width: 100%;
     height: 100%;
     overflow-y: auto;
-    background-color: #ffffff;
+    background-color: var(--cds-surface-2);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -555,7 +555,7 @@ export default {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    background-color: #ffffff;
+    background-color: var(--cds-surface-2);
     border-radius: 0 6px 6px 0;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
     z-index: 25;
@@ -611,7 +611,7 @@ export default {
 
 .version-manager-deploy-btn {
     cursor: pointer;
-    background-color: #1976d2;
+    background-color: hsl(var(--accent-brand));
     color: #ffffff;
     padding: 4px 10px;
     border-radius: 4px;
@@ -621,7 +621,7 @@ export default {
 }
 
 .version-manager-production-label {
-    background-color: #4caf50;
+    background-color: var(--cds-text-success);
     color: #ffffff;
     padding: 4px 10px;
     border-radius: 4px;
@@ -638,7 +638,7 @@ export default {
     padding: 4px 10px;
     border-radius: 4px;
     font-size: 12px;
-    color: #666;
+    color: var(--cds-text-secondary);
     max-width: calc(100% - 100px);
     z-index: 10;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);

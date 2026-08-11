@@ -771,25 +771,25 @@ export default {
 .form-mapper .v-toolbar-title {
     font-size: 16px;
     font-weight: bold;
-    color: #eee;
+    color: var(--cds-border);
 }
 .form-mapper #formArea {
     flex: 1 1 auto;
     min-width: 0;
     width: auto;
     height: 80vh;
-    background: #eee;
+    background: var(--cds-border);
 }
 .form-mapper .block > rect {
     fill: rgba(127, 127, 127, 1);
-    stroke: #888;
+    stroke: var(--cds-text-muted);
     stroke-width: 2;
     rx: 4;
     ry: 4;
 }
 .form-mapper .block > text {
     font-size: 11px;
-    fill: #fff;
+    fill: var(--cds-surface-2);
     text-anchor: start;
     alignment-baseline: middle;
     pointer-events: none;
@@ -874,7 +874,7 @@ export default {
 }
 
 .form-mapper .tree-node .node-wrapper {
-    border-block-color: #eee;
+    border-block-color: var(--cds-border);
     border-block-width: 1px;
     border-block-style: solid;
     width: 100%;
@@ -888,7 +888,7 @@ export default {
     font-weight: normal;
 }
 .form-mapper .tree-node .node-wrapper:hover {
-    background: #eee;
+    background: var(--cds-border);
 }
 .form-mapper .form-menu {
     max-height: 300px;

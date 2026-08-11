@@ -61,7 +61,7 @@ export default {
 
 .progress-border .progress-border-span:nth-child(4) {
     position: absolute;
-    background: linear-gradient(to top, #29b6f6, #0288d1);
+    background: linear-gradient(to top, #29b6f6, hsl(var(--accent-brand)));
     transition: height 0.1s linear 0.3s;
     left: 0;
     bottom: 0;

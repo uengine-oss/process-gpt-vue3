@@ -61,7 +61,7 @@
                         transform: rotate(5deg);
                         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
                         border-radius: 8px;
-                        background: white;
+                        background: var(--cds-surface-2);
                         overflow: hidden;
                     "
                 >
@@ -78,7 +78,7 @@
 
             <!-- 접기/펼치기용 미리보기 영역 (읽기 전용 BPMN 뷰어) -->
             <v-row v-if="previewMenu" class="ma-0 pa-4 pt-0" @click.stop="previewMenu = false" style="cursor: pointer">
-                <v-sheet elevation="3" rounded style="width: 100%; padding: 16px; background: white; position: relative; min-height: 400px">
+                <v-sheet elevation="3" rounded style="width: 100%; padding: 16px; background: var(--cds-surface-2); position: relative; min-height: 400px">
                     <BpmnUengine
                         :bpmn="effectiveBpmn"
                         :isViewMode="true"

@@ -57,8 +57,8 @@
             <!--
             <v-col cols="12" md="5" class="pa-0 preview-section">
                 <div class="d-flex align-center ml-1 mt-1">
-                    <v-icon style="font-size: 18px; color: #888">mdi-alert-circle</v-icon>
-                    <div class="ml-1" style="font-size: 14px; color: #888">{{ i18n.global.t('SlideEditor.preview') }}</div>
+                    <v-icon style="font-size: 18px; color: var(--cds-text-muted)">mdi-alert-circle</v-icon>
+                    <div class="ml-1" style="font-size: 14px; color: var(--cds-text-muted)">{{ i18n.global.t('SlideEditor.preview') }}</div>
                 </div>
                 <slide-component
                     v-if="!isPresentationMode && onLoaded"
@@ -225,7 +225,7 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 8px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--cds-border);
     flex-shrink: 0;
 }
 
@@ -235,8 +235,8 @@ export default {
 }
 
 .preview-section {
-    background: white;
-    border-left: 1px solid #ddd;
+    background: var(--cds-surface-2);
+    border-left: 1px solid var(--cds-border);
     height: 100%;
     overflow: auto;
     display: flex;
@@ -264,7 +264,7 @@ export default {
 }
 
 .action-button {
-    color: #333;
+    color: var(--cds-text-primary);
     border: none;
     border-radius: 50px;
     padding: 4px 8px 4px 8px;
@@ -275,7 +275,7 @@ export default {
 
 .action-button:hover {
     /* 한글 설명: hover 시 배경색을 더 연하게(#f2f2f2) 변경 */
-    background-color: #f2f2f2;
+    background-color: var(--cds-bg-neutral);
 }
 
 /* 반응형 디자인 */
@@ -299,7 +299,7 @@ export default {
 
     .preview-section {
         border-left: none;
-        border-top: 1px solid #ddd;
+        border-top: 1px solid var(--cds-border);
         height: 50%;
     }
 

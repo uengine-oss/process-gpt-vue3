@@ -181,7 +181,7 @@ export default {
 .prf-error {
     margin-top: 6px;
     font-size: 12px;
-    color: #d32f2f;
+    color: var(--cds-text-danger);
 }
 
 .prf-footer {

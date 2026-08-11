@@ -116,7 +116,7 @@ export default {
 }
 
 .total-display {
-    background: #f5f5f5;
+    background: var(--cds-bg-neutral);
     padding: 4px 8px;
     border-radius: 4px;
 }

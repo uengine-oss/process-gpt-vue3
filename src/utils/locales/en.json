@@ -203,7 +203,7 @@
         "todoList": "My Task List",
         "schedule": "Scheduler",
         "calendar": "Calendar",
-        "layoutSetting": "Layout Setting",
+        "layoutSetting": "Appearance",
         "knowledgeBase": "Knowledge Base",
         "admin": "Admin Page",
         "setting": "Setting",
@@ -685,6 +685,7 @@
         "agentEndpoint": "Endpoint",
         "agentDescription": "Description",
         "agentTools": "Tools",
+        "toolsSelectedCount": "{count} selected",
         "agentSkills": "Skills",
         "aiProvider": "AI Provider",
         "aiModel": "AI Model",
@@ -1416,19 +1417,19 @@
         "driveIndexingInProgress": "Indexing all files in the Drive folder.",
         "driveIndexingCompleted": "Drive folder document processing is completed.",
         "driveIndexingFailed": "Drive folder document processing failed.",
-"driveSetupGuideTooltip": "View setup instructions",
-"driveSetupGuideTitle": "How to set up Google Drive integration",
-"driveSetupGuideSubtitle": "Follow these steps in order to complete the integration.",
-"driveSetupGuideGcpLink": "Open GCP Console",
-"driveSetupGuideCredentialsLink": "Open Credentials page",
-"copy": "Copy",
-"driveSetupGuideStep1": "In the GCP (Google Cloud Platform) console, select or create a project.",
-"driveSetupGuideStep2": "Go to \"APIs & Services > Library\" and enable the \"Google Drive API\".",
-"driveSetupGuideStep3": "In \"APIs & Services > Credentials\", select \"Create Credentials > OAuth client ID\".",
-"driveSetupGuideStep4": "Set the application type to \"Web application\".",
-"driveSetupGuideStep5": "Enter the address below exactly as shown in \"Authorized redirect URIs\".",
-"driveSetupGuideStep6": "Copy the generated Client ID and Client Secret, paste them into the fields below, and save.",
-"driveSetupGuideNote": "If the redirect URI doesn't match the actual value, you may not be redirected back to this screen after authentication.",
+        "driveSetupGuideTooltip": "View setup instructions",
+        "driveSetupGuideTitle": "How to set up Google Drive integration",
+        "driveSetupGuideSubtitle": "Follow these steps in order to complete the integration.",
+        "driveSetupGuideGcpLink": "Open GCP Console",
+        "driveSetupGuideCredentialsLink": "Open Credentials page",
+        "copy": "Copy",
+        "driveSetupGuideStep1": "In the GCP (Google Cloud Platform) console, select or create a project.",
+        "driveSetupGuideStep2": "Go to \"APIs & Services > Library\" and enable the \"Google Drive API\".",
+        "driveSetupGuideStep3": "In \"APIs & Services > Credentials\", select \"Create Credentials > OAuth client ID\".",
+        "driveSetupGuideStep4": "Set the application type to \"Web application\".",
+        "driveSetupGuideStep5": "Enter the address below exactly as shown in \"Authorized redirect URIs\".",
+        "driveSetupGuideStep6": "Copy the generated Client ID and Client Secret, paste them into the fields below, and save.",
+        "driveSetupGuideNote": "If the redirect URI doesn't match the actual value, you may not be redirected back to this screen after authentication.",
         "edit": "Edit",
         "cancel": "Cancel",
         "close": "Close",
@@ -1740,12 +1741,14 @@
         "notification": "Notifications"
     },
     "Customizer": {
-        "settings": "Layout settings",
+        "settings": "Appearance",
         "themeColor": "Theme Color",
         "containerOption": "Container Option",
         "boxed": "Boxed",
         "full": "Full",
-        "customColor": "Custom Color"
+        "light": "Light",
+        "dark": "Dark",
+        "sky": "Sky"
     },
     "Mashup": {
         "hoverText": "Drag a layout (Container) here to start editing the form."
@@ -3430,7 +3433,14 @@
         "previousInputDetail": "Shows form data entered by the previous task actor in the BPM process. Use this to perform the current task and understand the flow. Example: In Approve Request → Review → Approve, at 'Review' you see what was entered at 'Approve Request'."
     },
     "MCPServer": {
-        "searchMCPServers": "Search MCP Servers"
+        "searchMCPServers": "Search MCP Servers",
+        "validating": "Validating...",
+        "validationSuccess": "Validation succeeded",
+        "validationFailed": "Validation failed",
+        "availableTools": "Available Tools",
+        "noToolsFound": "No tools found",
+        "toolsAvailable": "{count} tools available",
+        "serverNotFound": "MCP server configuration not found"
     },
     "MCPEnvSecret": {
         "mcpEnvironments": "MCP Environments",

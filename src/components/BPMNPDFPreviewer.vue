@@ -14,7 +14,7 @@
     >
         <div
             style="
-                background-color: white;
+                background-color: var(--cds-surface-2);
                 padding: 20px;
                 border-radius: 10px;
                 position: absolute;

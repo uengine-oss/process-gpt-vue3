@@ -545,8 +545,8 @@ export default {
 
 /* JSON Preview */
 .json-preview {
-    background-color: #f5f5f5;
-    border: 1px solid #e0e0e0;
+    background-color: var(--cds-bg-neutral);
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
     padding: 16px;
     max-height: 200px;

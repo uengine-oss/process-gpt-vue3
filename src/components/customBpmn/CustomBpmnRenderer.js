@@ -1,4 +1,5 @@
 import BaseRenderer from 'diagram-js/lib/draw/BaseRenderer';
+import { dsColor } from './dsPalette';
 
 import { append as svgAppend, attr as svgAttr, create as svgCreate, remove as svgRemove } from 'tiny-svg';
 
@@ -123,7 +124,7 @@ function renderWrappedText(parentNode, text, x, y, width, height, fontSize, fill
         'text-anchor': 'middle',
         'font-size': fontSize + 'px',
         'font-family': 'Arial, sans-serif',
-        fill: fillColor || '#000000',
+        fill: fillColor || dsColor('text'),
         'pointer-events': 'none'
     });
 
@@ -291,7 +292,7 @@ function getColorFromRules(element) {
             return null;
         }
 
-        const defaultColor = '#fdf2d0';
+        const defaultColor = dsColor('surfaceMuted');
 
         // Get element type
         const elementType = element.businessObject?.$type;
@@ -388,7 +389,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
             'font-family': 'Arial, sans-serif',
             'font-weight': '700',
             'text-anchor': 'middle',
-            fill: '#535353'
+            fill: dsColor('textSecondary')
         });
         // titleText.textContent = '영업 활동 프로세스';
 
@@ -477,16 +478,16 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     // 스윔레인 배경 색상 및 선 색상 bpmn:Lane, (stroke : 선 색상, fill: 배경 색상)
     drawCustomLane(parentNode, shape, element) {
         svgAttr(shape, {
-            stroke: '#4e72be',
+            stroke: dsColor('stroke'),
             strokeWidth: '1',
-            fill: '#f4f8fc'
+            fill: dsColor('surface')
         });
     }
 
     drawCustomParticipant(parentNode, shape, element) {
         svgAttr(shape, {
-            stroke: '#4e72be',
-            fill: '#f4f8fc'
+            stroke: dsColor('stroke'),
+            fill: dsColor('surface')
         });
     }
 
@@ -495,8 +496,8 @@ export default class CustomBpmnRenderer extends BaseRenderer {
         const existingHeight = shape.height.baseVal.value;
         const isVertical = existingHeight > existingWidth;
 
-        const fillColor = element.businessObject.fillColor || '#f4f8fc';
-        const strokeColor = element.businessObject.strokeColor || '#4e72be';
+        const fillColor = element.businessObject.fillColor || dsColor('surface');
+        const strokeColor = element.businessObject.strokeColor || dsColor('stroke');
 
         const phaseVisual = drawNotchTag(parentNode, existingWidth, existingHeight, fillColor, strokeColor, 0, 0, isVertical);
 
@@ -511,7 +512,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
                 'alignment-baseline': 'middle',
                 'font-size': '14px',
                 'font-family': 'Arial, sans-serif',
-                fill: '#333',
+                fill: dsColor('text'),
                 'font-weight': 'bold',
                 transform: `rotate(-90, ${centerX}, ${centerY})`
             });
@@ -523,7 +524,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
                 'alignment-baseline': 'middle',
                 'font-size': '20px',
                 'font-family': 'Arial, sans-serif',
-                fill: '#333',
+                fill: dsColor('text'),
                 'font-weight': 'bold'
             });
         }
@@ -600,7 +601,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
         // Priority 3: Fallback to default color
         if (!fillColor) {
-            fillColor = '#fdf2d0';
+            fillColor = dsColor('surfaceMuted');
         }
 
         const borderRect = drawBorderRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, customStrokeColor);
@@ -611,7 +612,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
         // Dynamic text color: white text on dark backgrounds
         const useWhiteText = shouldUseWhiteText(fillColor);
-        const textColor = useWhiteText ? '#ffffff' : '#000000';
+        const textColor = useWhiteText ? dsColor('onBrand') : dsColor('text');
 
         // Set data attribute for CSS-based styling (immediate, no flicker)
         if (parentNode.closest) {
@@ -709,7 +710,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
                 'text-anchor': 'middle',
                 'font-size': '9px',
                 'font-family': '"Courier New", monospace',
-                fill: '#888888',
+                fill: dsColor('textMuted'),
                 'pointer-events': 'none'
             });
             bidLabel.textContent = businessId;
@@ -740,7 +741,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
                     height: existingHeight,
                     rx: TASK_BORDER_RADIUS,
                     ry: TASK_BORDER_RADIUS,
-                    stroke: '#e53935',
+                    stroke: dsColor('danger'),
                     strokeWidth: 2,
                     strokeDasharray: '6,3',
                     fill: 'none',
@@ -755,7 +756,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
                     y1: strikeY,
                     x2: existingWidth - 10,
                     y2: strikeY,
-                    stroke: '#e53935',
+                    stroke: dsColor('danger'),
                     strokeWidth: 1.5,
                     'pointer-events': 'none'
                 });
@@ -770,7 +771,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
                     y: -2,
                     rx: TASK_BORDER_RADIUS + 2,
                     ry: TASK_BORDER_RADIUS + 2,
-                    stroke: '#1565c0',
+                    stroke: dsColor('accent'),
                     strokeWidth: 3,
                     strokeOpacity: 0.6,
                     fill: 'none',
@@ -785,7 +786,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
                     height: existingHeight,
                     rx: TASK_BORDER_RADIUS,
                     ry: TASK_BORDER_RADIUS,
-                    stroke: '#f57c00',
+                    stroke: dsColor('warning'),
                     strokeWidth: 2,
                     strokeDasharray: '6,3',
                     fill: 'none',
@@ -798,7 +799,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
                     x: existingWidth - 14,
                     y: 14,
                     'font-size': '12px',
-                    fill: '#f57c00',
+                    fill: dsColor('warning'),
                     'pointer-events': 'none'
                 });
                 robotIcon.textContent = '🤖';
@@ -821,7 +822,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
                 'text-anchor': 'middle',
                 'font-size': '10px',
                 'font-family': 'Arial, sans-serif',
-                fill: '#666666',
+                fill: dsColor('textSecondary'),
                 'font-style': 'italic'
             });
             metaLabel.textContent = `[${labelText}]`;
@@ -837,7 +838,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
         const borderRect = drawBorderRect(parentNode, size, size, radius, strokeColor);
         prependTo(borderRect, parentNode);
-        const rect = drawRect(parentNode, size, size, radius, 'none', '#f6c745');
+        const rect = drawRect(parentNode, size, size, radius, 'none', dsColor('warningBg'));
         prependTo(rect, parentNode);
         svgRemove(shape);
     }
@@ -850,7 +851,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
         const borderRect = drawBorderRect(parentNode, size, size, radius, strokeColor);
         prependTo(borderRect, parentNode);
-        const rect = drawRect(parentNode, size, size, radius, 'none', '#f6c745');
+        const rect = drawRect(parentNode, size, size, radius, 'none', dsColor('warningBg'));
         prependTo(rect, parentNode);
         svgRemove(shape);
     }
@@ -963,12 +964,11 @@ export default class CustomBpmnRenderer extends BaseRenderer {
         const diamond = drawPolygon(parentNode, points);
 
         copyAttributes(shape, diamond);
-        var strokeColor = '#000000';
-        diamond.style.stroke = strokeColor;
-        diamond.style.strokeWidth = strokeColor === '#000000' ? '2' : '5';
-        if (strokeColor != '#000000') {
-            diamond.style.strokeDasharray = '10, 10';
-        }
+        // 기존 코드는 strokeColor 를 '#000000' 리터럴로 두고 자기 자신과 비교해
+        // 항상 strokeWidth 2 · dasharray 미적용으로 그려졌다. 색만 토큰으로 바꾸고
+        // 렌더 결과는 그대로 유지한다.
+        diamond.style.stroke = dsColor('stroke');
+        diamond.style.strokeWidth = '2';
 
         prependTo(diamond, parentNode);
 
@@ -980,11 +980,11 @@ export default class CustomBpmnRenderer extends BaseRenderer {
         const existingWidth = shape.width.baseVal.value;
         const existingHeight = shape.height.baseVal.value;
 
-        var strokeColor = '#000000';
+        const strokeColor = dsColor('stroke');
 
         const borderRect = drawBorderRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokeColor);
         prependTo(borderRect, parentNode);
-        const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, '#000000', '#ffffff');
+        const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokeColor, dsColor('surface'));
         prependTo(rect, parentNode);
         svgRemove(shape);
     }
@@ -1062,7 +1062,7 @@ function drawRect(parentNode, width, height, borderRadius, strokeColor, fillColo
         ry: borderRadius,
         stroke: strokeColor,
         strokeWidth: 2,
-        fill: fillColor || '#fff',
+        fill: fillColor || dsColor('surface'),
         filter: filterId
     });
 
@@ -1156,7 +1156,7 @@ function updateTextPosition(element, phaseVisual) {
         textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         textElement.setAttribute('text-anchor', 'middle');
         textElement.setAttribute('alignment-baseline', 'middle');
-        textElement.style.fill = '#333'; // 텍스트 색상
+        textElement.style.fill = dsColor('text'); // 텍스트 색상
         textElement.style.fontSize = '14px'; // 폰트 크기
         phaseVisual.appendChild(textElement);
     }

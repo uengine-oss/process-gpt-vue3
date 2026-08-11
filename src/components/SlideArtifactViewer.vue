@@ -735,7 +735,7 @@ export default {
     width: 100%;
     max-width: 720px;
     aspect-ratio: 16 / 9;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 12px;
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04);
     overflow: hidden;
@@ -780,7 +780,7 @@ export default {
     font-size: 15px;
     font-weight: 600;
     margin-bottom: 8px;
-    color: #333;
+    color: var(--cds-text-primary);
 }
 
 .slide-viewer__md :deep(ul),
@@ -822,7 +822,7 @@ export default {
     border: none;
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.06);
-    color: #333;
+    color: var(--cds-text-primary);
     cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
 }
@@ -843,7 +843,7 @@ export default {
 .slide-viewer__counter {
     font-size: 12px;
     font-weight: 500;
-    color: #666;
+    color: var(--cds-text-secondary);
     min-width: 48px;
     text-align: center;
     font-variant-numeric: tabular-nums;
@@ -875,7 +875,7 @@ export default {
     height: 42px;
     border-radius: 6px;
     border: 2px solid transparent;
-    background: #fff;
+    background: var(--cds-surface-2);
     overflow: hidden;
     cursor: pointer;
     transition: border-color 0.15s, box-shadow 0.15s;
@@ -902,7 +902,7 @@ export default {
 
 .slide-viewer__thumb-text {
     font-size: 8px;
-    color: #888;
+    color: var(--cds-text-muted);
     text-align: center;
     padding: 2px;
     line-height: 1.2;
@@ -974,7 +974,7 @@ export default {
     width: 100%;
     max-width: 1100px;
     aspect-ratio: 16 / 9;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 16px;
     box-shadow: 0 8px 48px rgba(0, 0, 0, 0.4);
     overflow: hidden;
@@ -1109,7 +1109,7 @@ export default {
     position: absolute;
     width: min(1100px, 92vw);
     height: min(760px, 88vh);
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 16px;
     box-shadow: 0 12px 60px rgba(0, 0, 0, 0.25);
     pointer-events: none;
@@ -1155,7 +1155,7 @@ export default {
 }
 
 .slide-edit__close :deep(.v-icon) {
-    color: #666 !important;
+    color: var(--cds-text-secondary) !important;
 }
 
 .slide-edit__close:hover {
@@ -1184,7 +1184,7 @@ export default {
 
 .slide-edit__toggle-btn.is-active {
     color: #1d1d1f;
-    background: #fff;
+    background: var(--cds-surface-2);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -1240,7 +1240,7 @@ export default {
 .slide-edit__loading-text {
     margin-top: 16px;
     font-size: 14px;
-    color: #555;
+    color: var(--cds-text-secondary);
 }
 
 /* 하단 입력바 */
@@ -1256,9 +1256,9 @@ export default {
     flex: 1;
     height: 38px;
     padding: 8px 14px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     border-radius: 10px;
-    background: #fff;
+    background: var(--cds-surface-2);
     color: #1d1d1f;
     font-size: 14px;
     line-height: 20px;
@@ -1270,7 +1270,7 @@ export default {
 }
 
 .slide-edit__input::placeholder {
-    color: #aaa;
+    color: var(--cds-text-muted);
 }
 
 .slide-edit__input:focus {
@@ -1323,13 +1323,13 @@ export default {
 }
 
 .slide-edit__action-btn--ghost {
-    background: #f0f0f0;
-    color: #555;
+    background: var(--cds-border);
+    color: var(--cds-text-secondary);
 }
 
 .slide-edit__action-btn--ghost:hover {
     background: #e4e4e4;
-    color: #333;
+    color: var(--cds-text-primary);
 }
 
 .slide-edit__action-btn--primary {
@@ -1351,7 +1351,7 @@ export default {
 .slide-edit__error-text {
     margin-top: 16px;
     font-size: 15px;
-    color: #666;
+    color: var(--cds-text-secondary);
 }
 
 /* 드래그 영역 선택 */
@@ -1386,7 +1386,7 @@ export default {
     left: 50%;
     transform: translateX(-50%);
     font-size: 12px;
-    color: #999;
+    color: var(--cds-text-muted);
     white-space: nowrap;
     pointer-events: none;
 }
@@ -1405,19 +1405,19 @@ export default {
     height: 40px;
     object-fit: cover;
     border-radius: 6px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
 }
 
 .slide-edit__ref-label {
     font-size: 12px;
-    color: #888;
+    color: var(--cds-text-muted);
 }
 
 .slide-edit__ref-remove {
     background: none;
     border: none;
     cursor: pointer;
-    color: #aaa;
+    color: var(--cds-text-muted);
     display: flex;
     padding: 2px;
     border-radius: 50%;
@@ -1425,7 +1425,7 @@ export default {
 
 .slide-edit__ref-remove:hover {
     background: rgba(0, 0, 0, 0.06);
-    color: #666;
+    color: var(--cds-text-secondary);
 }
 
 .slide-edit__attach {
@@ -1434,7 +1434,7 @@ export default {
     border: none;
     border-radius: 10px;
     background: transparent;
-    color: #888;
+    color: var(--cds-text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1445,7 +1445,7 @@ export default {
 
 .slide-edit__attach:hover {
     background: rgba(0, 0, 0, 0.06);
-    color: #555;
+    color: var(--cds-text-secondary);
 }
 
 .slide-viewer__btn--edit {

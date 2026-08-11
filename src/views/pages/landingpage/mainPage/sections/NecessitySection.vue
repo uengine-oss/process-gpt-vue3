@@ -73,7 +73,7 @@ export default {
 <style scoped>
 .necessity-section {
     padding: 80px 0;
-    background-color: #ffffff;
+    background-color: var(--cds-surface-2);
 }
 
 .section-title {
@@ -97,7 +97,7 @@ export default {
 }
 
 .feature-card {
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border: 2px solid #e8f0fe;
     border-radius: 16px;
     padding: 32px 24px;
@@ -109,7 +109,7 @@ export default {
 .feature-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(25, 118, 210, 0.15);
-    border-color: #1976d2;
+    border-color: hsl(var(--accent-brand));
 }
 
 .feature-icon {
@@ -120,7 +120,7 @@ export default {
 .feature-title {
     font-size: 17px;
     font-weight: 600;
-    color: #333;
+    color: var(--cds-text-primary);
     margin: 0;
     line-height: 1.4;
 }
@@ -138,9 +138,9 @@ export default {
     margin: 0 auto;
     margin-top: 60px;
     padding: 50px 40px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e8f0fe 100%);
+    background: linear-gradient(135deg, var(--cds-bg-neutral) 0%, #e8f0fe 100%);
     border-radius: 16px;
-    border: 2px solid #1976d2;
+    border: 2px solid hsl(var(--accent-brand));
 }
 
 .solution-header {
@@ -151,7 +151,7 @@ export default {
 .solution-title {
     font-size: 24px;
     font-weight: 700;
-    color: #1976d2;
+    color: hsl(var(--accent-brand));
     line-height: 1.4;
     margin-bottom: 10px !important;
 }
@@ -159,7 +159,7 @@ export default {
 .solution-description {
     font-size: 22px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--cds-text-primary);
     line-height: 1.5;
 }
 
@@ -176,7 +176,7 @@ export default {
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
@@ -190,7 +190,7 @@ export default {
 .benefit-item p {
     font-size: 16px;
     font-weight: 600;
-    color: #333;
+    color: var(--cds-text-primary);
     margin: 0;
     line-height: 1.4;
 }

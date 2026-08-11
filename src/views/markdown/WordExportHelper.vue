@@ -166,7 +166,7 @@ export default {
 }
 
 .docx-export-helper .modal-content {
-    background-color: white;
+    background-color: var(--cds-surface-2);
     width: 90%;
     max-width: 500px;
     border-radius: 8px;
@@ -178,7 +178,7 @@ export default {
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--cds-border);
 }
 
 .docx-export-helper .modal-header h3 {
@@ -191,7 +191,7 @@ export default {
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    color: #999;
+    color: var(--cds-text-muted);
 }
 
 .docx-export-helper .modal-body {
@@ -218,7 +218,7 @@ export default {
 .docx-export-helper .text-input {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--cds-border);
     border-radius: 4px;
 }
 
@@ -241,7 +241,7 @@ export default {
 
 .docx-export-helper .cancel-btn {
     background-color: #f1f1f1;
-    color: #333;
+    color: var(--cds-text-primary);
     border: none;
     padding: 0.5rem 1rem;
     border-radius: 4px;

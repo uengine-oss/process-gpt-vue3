@@ -711,7 +711,7 @@ export default {
 }
 
 .profile-wrapper {
-    background: white !important;
+    background: var(--cds-surface-2) !important;
     border-radius: 15px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.2);
     overflow: hidden;
@@ -740,7 +740,7 @@ export default {
 }
 
 .mobile-content {
-    background: white;
+    background: var(--cds-surface-2);
     height: 94vh;
     overflow-y: auto;
     padding: 16px;
@@ -750,7 +750,7 @@ export default {
     text-align: center;
     margin-bottom: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--cds-border);
 }
 
 .mobile-profile-image {
@@ -759,7 +759,7 @@ export default {
     margin: 0 auto 15px;
     border-radius: 50%;
     overflow: hidden;
-    background: #f0f0f0;
+    background: var(--cds-border);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -777,7 +777,7 @@ export default {
 
 .agent-name {
     margin: 0;
-    color: #333;
+    color: var(--cds-text-primary);
     font-size: 18px;
     font-weight: 600;
 }
@@ -792,7 +792,7 @@ export default {
 }
 
 .mobile-section {
-    background: #f8f9fa;
+    background: var(--cds-bg-neutral);
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 15px;
@@ -811,13 +811,13 @@ export default {
 }
 
 .content-item {
-    background: white;
+    background: var(--cds-surface-2);
     padding: 8px 12px;
     border-radius: 6px;
     margin-bottom: 5px;
     font-size: 13px;
-    color: #555;
-    border: 1px solid #e9ecef;
+    color: var(--cds-text-secondary);
+    border: 1px solid var(--cds-border);
 }
 
 .content-item:last-child {
@@ -826,7 +826,7 @@ export default {
 
 .profile-header {
     align-items: center;
-    background: white;
+    background: var(--cds-surface-2);
 }
 
 .profile-title {
@@ -930,13 +930,13 @@ export default {
     width: 100%;
     height: 100%;
     border-radius: 12px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--cds-text-muted);
 }
 
 /* D3.js 스타일 */
 .profile-svg :deep(.callout-box) {
-    fill: white;
-    stroke: #ddd;
+    fill: var(--cds-surface-2);
+    stroke: var(--cds-border);
     stroke-width: 1;
     filter: drop-shadow(1px 1px 3px rgba(0, 0, 0, 0.1));
     cursor: pointer;
@@ -944,8 +944,8 @@ export default {
 }
 
 .profile-svg :deep(.callout-box:hover) {
-    fill: #f8f9fa;
-    stroke: #667eea;
+    fill: var(--cds-bg-neutral);
+    stroke: hsl(var(--accent-brand));
     stroke-width: 2;
 }
 
@@ -965,7 +965,7 @@ export default {
 }
 
 .profile-svg :deep(.connection-line) {
-    stroke: #667eea;
+    stroke: hsl(var(--accent-brand));
     stroke-width: 2;
     fill: none;
     opacity: 0.6;
@@ -978,8 +978,8 @@ export default {
 }
 
 .profile-svg :deep(.center-profile) {
-    fill: #667eea;
-    stroke: white;
+    fill: hsl(var(--accent-brand));
+    stroke: var(--cds-surface-2);
     stroke-width: 3;
     filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
     cursor: default;

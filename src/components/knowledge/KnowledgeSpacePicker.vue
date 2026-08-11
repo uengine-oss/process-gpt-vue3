@@ -680,7 +680,7 @@ export default {
     padding: 4px 10px;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 14px;
-    background: #fff;
+    background: var(--cds-surface-2);
     cursor: pointer;
     font-size: 12px;
     color: rgba(0, 0, 0, 0.7);
@@ -699,7 +699,7 @@ export default {
 .ksp-role-chip.is-active.is-content {
     background: rgba(25, 118, 210, 0.12);
     border-color: rgba(25, 118, 210, 0.5);
-    color: #1976d2;
+    color: hsl(var(--accent-brand));
 }
 .ksp-role-chip.is-active.is-glossary {
     background: rgba(123, 31, 162, 0.12);
@@ -709,12 +709,12 @@ export default {
 .ksp-role-chip.is-active.is-template {
     background: rgba(239, 108, 0, 0.12);
     border-color: rgba(239, 108, 0, 0.5);
-    color: #ef6c00;
+    color: var(--cds-text-warning);
 }
 .ksp-role-chip.is-active.is-reference {
     background: rgba(56, 142, 60, 0.12);
     border-color: rgba(56, 142, 60, 0.5);
-    color: #388e3c;
+    color: var(--cds-text-success);
 }
 .ksp-role-chip.is-active.is-dataset {
     background: rgba(0, 137, 123, 0.12);
@@ -764,11 +764,11 @@ export default {
 }
 .ksp-role-badge.is-template {
     background: rgba(239, 108, 0, 0.12);
-    color: #ef6c00;
+    color: var(--cds-text-warning);
 }
 .ksp-role-badge.is-reference {
     background: rgba(56, 142, 60, 0.12);
-    color: #388e3c;
+    color: var(--cds-text-success);
 }
 
 .ksp-toolbar {
@@ -888,17 +888,17 @@ export default {
 
 .ksp-status-badge.is-processing {
     background: rgba(33, 150, 243, 0.12);
-    color: #1976d2;
+    color: hsl(var(--accent-brand));
 }
 
 .ksp-status-badge.is-failed {
     background: rgba(244, 67, 54, 0.12);
-    color: #c62828;
+    color: var(--cds-text-danger);
 }
 
 .ksp-status-badge.is-excluded {
     background: rgba(158, 158, 158, 0.18);
-    color: #616161;
+    color: var(--cds-text-secondary);
 }
 
 .ksp-footer {

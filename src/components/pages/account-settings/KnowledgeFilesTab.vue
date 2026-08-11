@@ -1337,7 +1337,7 @@ export default {
     padding: 6px 12px;
     border-radius: 6px;
     border: 1px solid transparent;
-    background: #fff;
+    background: var(--cds-surface-2);
     cursor: pointer;
     font-size: 13px;
     color: rgba(0, 0, 0, 0.7);
@@ -1365,7 +1365,7 @@ export default {
 }
 
 .kft-role-tab.is-active.is-all {
-    color: #616161;
+    color: var(--cds-text-secondary);
     background: rgba(97, 97, 97, 0.08);
 }
 .kft-role-tab.is-active.is-content {
@@ -1377,7 +1377,7 @@ export default {
     background: rgba(103, 65, 217, 0.1);
 }
 .kft-role-tab.is-active.is-template {
-    color: #ef6c00;
+    color: var(--cds-text-warning);
     background: rgba(239, 108, 0, 0.1);
 }
 .kft-role-tab.is-active.is-reference {
@@ -1438,7 +1438,7 @@ export default {
     flex: 0 0 220px;
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 8px;
-    background: #fafafa;
+    background: var(--cds-bg-neutral);
     max-height: 600px;
     overflow-y: auto;
 }
@@ -1514,8 +1514,8 @@ export default {
     gap: 2px;
     padding: 2px 4px;
     border-radius: 4px;
-    background: #fafafa;
-    box-shadow: -4px 0 6px -2px #fafafa;
+    background: var(--cds-bg-neutral);
+    box-shadow: -4px 0 6px -2px var(--cds-bg-neutral);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.12s ease;
@@ -1630,17 +1630,17 @@ export default {
 
 .kft-stat-chip.is-indexed {
     background: rgba(76, 175, 80, 0.1);
-    color: #2e7d32;
+    color: var(--cds-text-success);
 }
 
 .kft-stat-chip.is-processing {
     background: rgba(33, 150, 243, 0.1);
-    color: #1565c0;
+    color: hsl(var(--accent-brand));
 }
 
 .kft-stat-chip.is-failed {
     background: rgba(244, 67, 54, 0.1);
-    color: #c62828;
+    color: var(--cds-text-danger);
 }
 
 .kft-table :deep(.v-data-table__td) {

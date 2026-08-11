@@ -421,7 +421,7 @@ export default {
 
 <style scoped>
 .error-border {
-    border: 2px solid #f44336 !important;
+    border: 2px solid var(--cds-text-danger) !important;
     border-radius: 8px;
 }
 
@@ -478,7 +478,7 @@ export default {
 .add-file-card {
     min-width: 280px;
     padding: 12px;
-    border: 2px dashed #9e9e9e;
+    border: 2px dashed var(--cds-text-muted);
     border-radius: 8px;
     cursor: pointer;
 }

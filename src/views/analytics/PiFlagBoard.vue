@@ -461,15 +461,15 @@ export default {
 
 /* PI Flag Board 테이블 톤 (참조 pi-system 디자인 인용) */
 .pi-flag-board-table :deep(thead th) {
-    background: #f8fafc !important;
+    background: var(--cds-bg-neutral) !important;
     font-size: 12px !important;
     font-weight: 600 !important;
-    color: #374151 !important;
+    color: var(--cds-text-secondary) !important;
 }
 
 .pi-flag-board-table :deep(tbody td) {
     font-size: 12px !important;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     vertical-align: top;
     padding-top: 8px !important;
     padding-bottom: 8px !important;
@@ -480,14 +480,14 @@ export default {
 }
 
 .cell-link {
-    color: #1976d2;
+    color: hsl(var(--accent-brand));
     cursor: pointer;
     text-decoration: none;
 }
 
 .cell-date {
     font-variant-numeric: tabular-nums;
-    color: #6b7280;
+    color: var(--cds-text-secondary);
 }
 .cell-multiline {
     display: inline-block;
@@ -498,7 +498,7 @@ export default {
 
 .pi-flag-expanded-row .pi-flag-expanded-cell {
     padding: 0 !important;
-    background: #f8fafc;
+    background: var(--cds-bg-neutral);
 }
 
 .child-diff-list {
@@ -515,7 +515,7 @@ export default {
     align-items: flex-start;
     padding: 8px 0 14px;
     background: transparent;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--cds-border);
 }
 
 .child-diff-row:last-child {
@@ -544,7 +544,7 @@ export default {
     margin-top: 8px;
     font-size: 12px;
     line-height: 1.5;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     word-break: break-all;
 }
 
@@ -571,12 +571,12 @@ export default {
 .child-diff-type-text {
     font-size: 12px;
     line-height: 1.5;
-    color: #475569;
+    color: var(--cds-text-secondary);
 }
 
 .child-diff-meta {
     font-size: 11px;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     white-space: nowrap;
 }
 
@@ -591,7 +591,7 @@ export default {
     align-items: center;
     gap: 7px;
     max-width: 100%;
-    color: #1f2937;
+    color: var(--cds-text-primary);
     font-size: 12px;
     font-weight: 600;
     line-height: 1.45;
@@ -602,7 +602,7 @@ export default {
     padding: 2px 6px;
     border-radius: 3px;
     background: #eef0f2;
-    color: #64748b;
+    color: var(--cds-text-secondary);
     font-size: 10px;
     font-weight: 700;
     line-height: 1.4;
@@ -621,7 +621,7 @@ export default {
 }
 
 .cell-type {
-    color: #475569;
+    color: var(--cds-text-secondary);
     font-size: 12px;
 }
 

@@ -155,6 +155,15 @@ spring:
                       - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
                   order: 3
 
+                # mcp-validator
+                - id: mcp-validator
+                  uri: http://mcp-validator:8800
+                  predicates:
+                      - Path=/mcp-validator/**
+                  filters:
+                      - RewritePath=/mcp-validator/?(?<segment>.*), /$\{segment}
+                  order: 4
+
                 # Completion 서비스
                 - id: completion
                   uri: http://completion-service:8000

@@ -43,6 +43,68 @@ enum ErrorCode {
  * 호출부가 이미 tenant_id 를 지정했다면 존중한다(마켓플레이스/관리자 조회 등).
  * 테넌트를 확정할 수 없으면 필터를 붙이지 않는다(로그인 전 화면 등에서 빈 결과를 만들지 않기 위함).
  */
+/**
+ * 같은 조회가 짧은 시간에 여러 번 나가는 것을 막는다.
+ *
+ * 운영 테넌트 실측에서 첫 화면 진입 한 번에 `users select=*` 가 9번,
+ * 합계 11.3초가 나갔다. 화면 여러 곳이 각자 사용자 목록을 부르는 구조라
+ * 호출부를 전부 고치는 대신 여기서 in-flight 요청을 공유하고 짧게 캐시한다.
+ */
+const _inflight = new Map<string, { at: number; p: Promise<any> }>();
+const INFLIGHT_TTL_MS = 3000;
+
+function dedupe<T>(key: string, run: () => Promise<T>): Promise<T> {
+    const now = Date.now();
+    const hit = _inflight.get(key);
+    if (hit && now - hit.at < INFLIGHT_TTL_MS) return hit.p as Promise<T>;
+
+    const p = run().finally(() => {
+        // 실패한 요청까지 캐시에 남겨 재시도를 막지 않는다
+        setTimeout(() => {
+            const cur = _inflight.get(key);
+            if (cur && cur.p === p) _inflight.delete(key);
+        }, INFLIGHT_TTL_MS);
+    });
+    _inflight.set(key, { at: now, p });
+    return p;
+}
+
+/**
+ * proc_def 목록에서 가져올 컬럼.
+ *
+ * 정의 본문(definition·bpmn)만 빼면 되지만 PostgREST 는 "이 컬럼만 빼고" 를 지원하지
+ * 않아 가져올 컬럼을 나열해야 한다. 문제는 배포 환경마다 스키마가 다르다는 것이다 —
+ * 운영에는 `is_draft` 가 없어서 이 컬럼을 넣으면 쿼리가 42703 으로 통째로 실패한다.
+ * (실제로 그렇게 만들었다가 "응답 1KB" 를 성능 개선으로 오독할 뻔했다)
+ *
+ * 그래서 공통 컬럼만 기본으로 쓰고, 선택 컬럼은 한 번 시도해 보고 없으면 기억한다.
+ */
+const PROC_DEF_BASE_COLUMNS = 'uuid,id,name,type,isdeleted,tenant_id,owner,agent_id,prod_version';
+const PROC_DEF_OPTIONAL_COLUMNS = ['is_draft'];
+let _procDefOptionalOk: boolean | null = null;
+
+function procDefListColumns(): string {
+    if (_procDefOptionalOk === false) return PROC_DEF_BASE_COLUMNS;
+    return `${PROC_DEF_BASE_COLUMNS},${PROC_DEF_OPTIONAL_COLUMNS.join(',')}`;
+}
+
+/** 없는 컬럼(42703) 때문에 실패한 것이면 선택 컬럼을 빼고 한 번만 재시도한다. */
+async function listProcDefWithFallback(options: any): Promise<any[]> {
+    try {
+        const rows = await storage.list('proc_def', { ...options, key: procDefListColumns() });
+        if (_procDefOptionalOk === null) _procDefOptionalOk = true;
+        return rows;
+    } catch (e: any) {
+        const msg = String(e?.message || '');
+        if (_procDefOptionalOk !== false && /does not exist|42703/.test(msg)) {
+            console.warn('[proc_def] 선택 컬럼이 없는 스키마 — 기본 컬럼으로 재시도합니다:', msg);
+            _procDefOptionalOk = false;
+            return await storage.list('proc_def', { ...options, key: PROC_DEF_BASE_COLUMNS });
+        }
+        throw e;
+    }
+}
+
 function withTenantMatch(options?: any): any {
     const tenantId = getTenantId();
     if (!tenantId) return options ?? {};
@@ -123,7 +185,7 @@ class ProcessGPTBackend implements Backend {
         await this.deleteTest(`${path}/record`, '', index);
     }
 
-    async releaseVersion(releaseName: string): Promise<any> {}
+    async releaseVersion(releaseName: string): Promise<any> { }
 
     async testList(_path: string): Promise<any> {
         const map = this.__loadTestRawMap();
@@ -157,6 +219,10 @@ class ProcessGPTBackend implements Backend {
 
     async listDefinition(path: string, options?: any) {
         try {
+            // 목록에는 정의 본문(definition·bpmn)이 필요 없다. 운영 한 행을 재보면
+            // bpmn 34KB + definition 10KB 로 두 컬럼이 응답의 99.8% 다.
+            // 상세 화면은 getRawDefinition 등으로 따로 본문을 가져온다.
+            // (컬럼 목록은 listProcDefWithFallback 이 스키마 차이까지 처리한다)
             // proc_def / form_def 는 (id, tenant_id) 로 유일하다. tenant 필터가 빠지면
             // 다른 테넌트의 프로세스 정의가 그대로 목록에 섞여 나온다.
             options = withTenantMatch(options);
@@ -183,7 +249,7 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     options.match.type = 'dmn';
                 }
-                const procDefs = await storage.list('proc_def', options);
+                const procDefs = await listProcDefWithFallback(options);
                 return procDefs;
             } else if (path === 'bpmn') {
                 if (!options) {
@@ -193,7 +259,7 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     options.match['type'] = 'bpmn';
                 }
-                const procDefs = await storage.list('proc_def', options);
+                const procDefs = await listProcDefWithFallback(options);
                 return procDefs;
             } else {
                 if (options) {
@@ -210,7 +276,7 @@ class ProcessGPTBackend implements Backend {
                         }
                     }
                 }
-                const procDefs = await storage.list('proc_def', options);
+                const procDefs = await listProcDefWithFallback(options);
                 // 임시저장(draft, is_draft=true) 프로세스는 목록에서 제외 (기존 null/false 는 유지).
                 const visibleDefs = (procDefs || []).filter((item: any) => item && item.is_draft !== true);
                 visibleDefs.map((item: any) => {
@@ -283,23 +349,26 @@ class ProcessGPTBackend implements Backend {
             if (defId.includes('.bpmn')) defId = defId.replace('.bpmn', '');
 
             if (options && options.type === 'form') {
-                return await storage.delete(`form_def/${defId.replace(/\//g, '#')}`, { key: 'id' });
+                // form_def 는 (id, tenant_id) 로 유일하다. tenant 필터가 빠지면 같은 id를
+                // 쓰는 다른 테넌트의 폼까지 삭제될 수 있다(마켓플레이스로 설치된 프로세스는
+                // 여러 테넌트가 동일한 componentId/폼 id를 그대로 공유하기 때문).
+                return await storage.delete('form_def', withTenantMatch({ match: { id: defId.replace(/\//g, '#') } }));
             } else {
-                const form = await storage.list('form_def', {
+                const form = await storage.list('form_def', withTenantMatch({
                     sort: 'desc',
                     match: { proc_def_id: defId }
-                });
+                }));
                 if (form && form.length > 0) {
-                    await storage.delete(`form_def/${defId}`, { key: 'proc_def_id' });
+                    await storage.delete('form_def', withTenantMatch({ match: { proc_def_id: defId } }));
                 }
 
-                const arcv = await storage.list('proc_def_version', {
+                const arcv = await storage.list('proc_def_version', withTenantMatch({
                     sort: 'desc',
                     orderBy: 'timeStamp',
                     match: { proc_def_id: defId }
-                });
+                }));
                 if (arcv && arcv.length > 0) {
-                    await storage.delete(`proc_def_version/${defId}`, { key: 'proc_def_id' });
+                    await storage.delete('proc_def_version', withTenantMatch({ match: { proc_def_id: defId } }));
                 }
 
                 const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
@@ -307,12 +376,15 @@ class ProcessGPTBackend implements Backend {
                     await storage.delete(`lock/${defId}`, { key: 'id' });
                 }
 
+                // todolist / bpm_proc_inst 는 RLS가 없어 테넌트 격리가 전적으로 이 필터에 달려 있다
+                // (withTenantMatch 상단 주석 참고). tenant 필터가 빠지면 같은 proc_def_id를 공유하는
+                // 다른 테넌트의 진행 중인 업무/인스턴스까지 삭제된다.
                 await Promise.all([
-                    await storage.delete('todolist', { match: { proc_def_id: defId } }),
-                    await storage.delete('bpm_proc_inst', { match: { proc_def_id: defId } })
+                    await storage.delete('todolist', withTenantMatch({ match: { proc_def_id: defId } })),
+                    await storage.delete('bpm_proc_inst', withTenantMatch({ match: { proc_def_id: defId } }))
                 ]);
 
-                return await storage.delete(`proc_def/${defId}`, { key: 'id' });
+                return await storage.delete('proc_def', withTenantMatch({ match: { id: defId } }));
 
                 // var procDef: any = await storage.getObject('proc_def', {
                 //     match: {
@@ -378,6 +450,8 @@ class ProcessGPTBackend implements Backend {
 
             // 폼 정보를 저장하기 위해서
             if (options && options.type === 'form') {
+                // AI가 row-layout 없이 div.row만 내보낸 경우를 대비해 저장 전 무조건 감싼다.
+                xml = this.normalizeFormRowLayout(xml);
                 const fieldsJson = this.extractFields(xml);
                 if (!fieldsJson) {
                     throw new Error('An error occurred while analyzing the form fields.');
@@ -452,11 +526,11 @@ class ProcessGPTBackend implements Backend {
                 return;
             }
 
-            let procDef: any = await storage.getObject('proc_def', {
+            let procDef: any = await storage.getObject('proc_def', withTenantMatch({
                 match: {
                     id: defId
                 }
-            });
+            }));
 
             if (procDef) {
                 procDef.bpmn = xml;
@@ -986,7 +1060,19 @@ class ProcessGPTBackend implements Backend {
 
     async getAllInstanceList(page: any, size: any) {
         try {
-            const list = await storage.list('bpm_proc_inst', withTenantMatch());
+            // page/size 를 받아 놓고 무시해서 인스턴스 전량을 끌어오고 있었다.
+            // (운영 첫 화면에서 bpm_proc_inst 무제한 조회가 5.4초)
+            // 인자가 오면 range 로 서버에서 자르고, 없으면 안전한 상한을 둔다.
+            const listOptions: any = withTenantMatch({ orderBy: 'start_date', sort: 'desc' });
+            const sizeNum = Number(size);
+            if (Number.isFinite(sizeNum) && sizeNum > 0) {
+                const pageNum = Math.max(0, Number(page) || 0);
+                const from = pageNum * sizeNum;
+                listOptions.range = { from, to: from + sizeNum - 1 };
+            } else {
+                listOptions.size = 200;
+            }
+            const list = await storage.list('bpm_proc_inst', listOptions);
             return list.map((item: any) => {
                 return this.returnInstanceObject(item);
                 // return {
@@ -1196,7 +1282,8 @@ class ProcessGPTBackend implements Backend {
                     pythonCode: activityInfo && activityInfo.pythonCode ? activityInfo.pythonCode : '',
                     type: activityInfo && activityInfo.type ? activityInfo.type : ''
                 },
-                parameterValues: parameterValues || {}
+                parameterValues: parameterValues || {},
+                raw: workitem
             };
             return newWorkItem;
         } catch (e) {
@@ -1215,14 +1302,14 @@ class ProcessGPTBackend implements Backend {
     async getTaskReturnAvailability(taskId: string): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 반송 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/return/availability`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/return/availability`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
     async returnTask(taskId: string, payload: any): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 반송 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/return`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/return`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
@@ -1236,14 +1323,14 @@ class ProcessGPTBackend implements Backend {
     async getTaskSkipAvailability(taskId: string): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 SKIP 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/skip/availability`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/skip/availability`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
     async skipTask(taskId: string, payload: any): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 SKIP 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/skip`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/skip`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
@@ -2651,6 +2738,45 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // AI(채팅/딥에이전트 등)가 생성한 폼 HTML이 row-layout으로 감싸지 않은 채
+    // <div class='row' ...> 만 내보내는 경우가 있어, 저장 전에 무조건 row-layout으로 감싸서
+    // 렌더링(RowLayout.vue)과 fields_json 추출(row-layout 기반 is_multidata_mode 그룹핑)이
+    // 항상 동작하도록 보정한다. 이미 row-layout으로 감싸져 있으면 그대로 둔다.
+    normalizeFormRowLayout(html: string): string {
+        if (!html || typeof html !== 'string' || !/<div[^>]*class=(["'])[^"']*\brow\b[^"']*\1/i.test(html)) {
+            return html;
+        }
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const rows = Array.from(doc.querySelectorAll('div.row'));
+
+            rows.forEach((row) => {
+                const parent = row.parentElement;
+                if (!parent || parent.tagName.toLowerCase() === 'row-layout') return;
+
+                const rowLayout = doc.createElement('row-layout');
+                ['name', 'alias', 'is_multidata_mode'].forEach((attr) => {
+                    const value = row.getAttribute(attr);
+                    if (value !== null) {
+                        rowLayout.setAttribute(attr, value);
+                        row.removeAttribute(attr);
+                    }
+                });
+                rowLayout.setAttribute('v-model', 'formValues');
+                rowLayout.setAttribute('v-slot', 'slotProps');
+
+                parent.insertBefore(rowLayout, row);
+                rowLayout.appendChild(row);
+            });
+
+            return doc.body.innerHTML;
+        } catch (error) {
+            console.warn('[ProcessGPTBackend] row-layout 정규화 실패, 원본 HTML 유지:', error);
+            return html;
+        }
+    }
+
     extractFields(html: string) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -3701,8 +3827,16 @@ class ProcessGPTBackend implements Backend {
             vectorPromise
                 .then(async (vectorResult) => {
                     if (vectorResult && vectorResult.length > 0) {
-                        const procDefs = await storage.list('proc_def', { match: { isdeleted: false } });
-                        let list = procDefs.filter((item: any) => vectorResult.includes(item.id));
+                        // 예전에는 proc_def 를 전량(definition·bpmn 본문 포함) 받아 와서
+                        // 클라이언트에서 vectorResult 로 걸렀다. 운영 테넌트에서 이 한 번의
+                        // 호출이 11.7초를 먹었다. 이미 대상 id 를 알고 있으므로 서버에서
+                        // in 필터로 좁히고, 화면에 쓰는 컬럼만 가져온다.
+                        const procDefs = await storage.list('proc_def', {
+                            match: { isdeleted: false },
+                            inArray: { column: 'id', values: vectorResult },
+                            key: 'id,name,bpmn'
+                        });
+                        let list = procDefs;
                         list = list.map((item: any) => {
                             return {
                                 title: item.name,
@@ -3845,12 +3979,12 @@ class ProcessGPTBackend implements Backend {
                 Object.keys(options).forEach((key) => {
                     filter[key] = options[key];
                 });
-                return await storage.list('users', filter);
+                return await dedupe(`users:${JSON.stringify(filter)}`, () => storage.list('users', filter));
             }
 
             const defaultSetting = useDefaultSetting();
             const defaultAgents = defaultSetting.getAgentList;
-            const users = await storage.list('users', filter);
+            const users = await dedupe(`users:${JSON.stringify(filter)}`, () => storage.list('users', filter));
 
             return [...defaultAgents, ...users];
         } catch (error) {
@@ -3919,6 +4053,16 @@ class ProcessGPTBackend implements Backend {
     async putAgent(newAgent: any) {
         try {
             const isGs = window.$gs;
+            const hasSkills = Object.prototype.hasOwnProperty.call(newAgent, 'skills');
+            const skillsArray =
+                typeof newAgent.skills === 'string'
+                    ? newAgent.skills
+                        .split(',')
+                        .map((s: string) => s.trim())
+                        .filter((s: string) => s.length > 0)
+                    : Array.isArray(newAgent.skills)
+                        ? newAgent.skills.map((s: any) => String(s).trim()).filter((s: string) => s.length > 0)
+                        : [];
             const putObj: any = {
                 id: newAgent.id,
                 username: newAgent.name,
@@ -3930,8 +4074,9 @@ class ProcessGPTBackend implements Backend {
                 endpoint: newAgent.endpoint,
                 description: newAgent.description,
                 tools: newAgent.tools,
+                tool_filters: newAgent.tool_filters ?? null,
                 profile: newAgent.img,
-                skills: newAgent.skills,
+                ...(hasSkills ? { skills: skillsArray.join(',') } : {}),
                 model: newAgent.model,
                 tenant_id: window.$tenantName,
                 is_agent: newAgent.isAgent,
@@ -3944,17 +4089,7 @@ class ProcessGPTBackend implements Backend {
 
             await storage.putObject('users', putObj);
 
-            if (!isGs && putObj.id) {
-                const skillsArray =
-                    typeof putObj.skills === 'string'
-                        ? putObj.skills
-                              .split(',')
-                              .map((s: string) => s.trim())
-                              .filter((s: string) => s.length > 0)
-                        : Array.isArray(putObj.skills)
-                        ? putObj.skills
-                        : [];
-
+            if (!isGs && putObj.id && hasSkills) {
                 try {
                     await this.replaceAgentSkills({
                         userId: putObj.id,
@@ -4214,7 +4349,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadDefinition(file: File, path: string) {}
+    async uploadDefinition(file: File, path: string) { }
 
     async getLock(id: string) {
         try {
@@ -4418,7 +4553,7 @@ class ProcessGPTBackend implements Backend {
             setCachedJwtTenantId(tenantId);
             try {
                 localStorage.setItem('tenantId', tenantId);
-            } catch (e) {}
+            } catch (e) { }
 
             if (window.$tenantName !== 'localhost') {
                 for (const process of defaultProcessesData.defaultProcesses) {
@@ -4878,7 +5013,7 @@ class ProcessGPTBackend implements Backend {
      * - 기존 `processFile()`과 분리된 신규 호출로, 기존 로직에 영향이 없습니다.
      * - 백엔드가 폴더 전체 처리를 지원하는 경우(file_path 없이 storage_type="drive") 이를 사용합니다.
      */
-    async processDriveFolder(options?: { drive_folder_id?: string; [key: string]: any }) {
+    async processDriveFolder(options?: { drive_folder_id?: string;[key: string]: any }) {
         try {
             const response = await axios.post(
                 '/memento/process',
@@ -5691,11 +5826,11 @@ class ProcessGPTBackend implements Backend {
                 const skills = Array.isArray(a.skills)
                     ? a.skills
                     : typeof a.skills === 'string'
-                    ? a.skills
-                          .split(',')
-                          .map((s: string) => s.trim())
-                          .filter(Boolean)
-                    : [];
+                        ? a.skills
+                            .split(',')
+                            .map((s: string) => s.trim())
+                            .filter(Boolean)
+                        : [];
                 await this.putAgent({
                     id: agentId,
                     name,
@@ -5818,9 +5953,14 @@ class ProcessGPTBackend implements Backend {
                 String(s || '')
                     .trim()
                     .toLowerCase();
-            const matched = users.filter((u: any) => refs.has(norm(u.role)) || refs.has(norm(u.username)) || refs.has(norm(u.alias)));
-            const pool = matched.length > 0 ? matched : users;
-            agentSpecs = pool.map((u: any) => ({
+            const matched = users.filter(
+                (u: any) =>
+                    refs.has(norm(u.id)) ||
+                    refs.has(norm(u.role)) ||
+                    refs.has(norm(u.username)) ||
+                    refs.has(norm(u.alias))
+            );
+            agentSpecs = matched.map((u: any) => ({
                 username: u.username,
                 role: u.role || '',
                 alias: u.alias || null,
@@ -5831,12 +5971,12 @@ class ProcessGPTBackend implements Backend {
                 skills:
                     typeof u.skills === 'string'
                         ? u.skills
-                              .split(',')
-                              .map((s: string) => s.trim())
-                              .filter(Boolean)
+                            .split(',')
+                            .map((s: string) => s.trim())
+                            .filter(Boolean)
                         : Array.isArray(u.skills)
-                        ? u.skills
-                        : [],
+                            ? u.skills
+                            : [],
                 description: u.description || null
             }));
         } catch (e) {
@@ -5859,11 +5999,11 @@ class ProcessGPTBackend implements Backend {
         const tags = Array.isArray(meta?.tags)
             ? meta?.tags
             : typeof meta?.tags === 'string'
-            ? (meta?.tags as string)
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-            : [];
+                ? (meta?.tags as string)
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                : [];
         let author = meta?.author;
         if (!author) {
             try {
@@ -5933,7 +6073,7 @@ class ProcessGPTBackend implements Backend {
         } else {
             let collides = false;
             try {
-                const existing = await storage.getObject('proc_def', { match: { id: manifest.componentId } });
+                const existing = await storage.getObject('proc_def', withTenantMatch({ match: { id: manifest.componentId } }));
                 collides = !!existing;
             } catch (e) {
                 collides = false;
@@ -6103,8 +6243,8 @@ class ProcessGPTBackend implements Backend {
             typeof meta.category === 'string'
                 ? meta.category
                 : meta.category
-                ? `${meta.category.mega || ''}/${meta.category.major || ''}`
-                : '';
+                    ? `${meta.category.mega || ''}/${meta.category.major || ''}`
+                    : '';
         const tagsStr = Array.isArray(meta.tags) ? meta.tags.join(',') : meta.tags || '';
 
         // 중복 버전 사전 체크(친절한 에러 메시지).
@@ -6273,9 +6413,9 @@ class ProcessGPTBackend implements Backend {
             tags:
                 typeof full.tags === 'string'
                     ? full.tags
-                          .split(',')
-                          .map((s: string) => s.trim())
-                          .filter(Boolean)
+                        .split(',')
+                        .map((s: string) => s.trim())
+                        .filter(Boolean)
                     : [],
             author: { name: full.author_name, uid: full.author_uid },
             definition: full.definition,
@@ -7300,7 +7440,13 @@ class ProcessGPTBackend implements Backend {
     async getChatRoomList(path: string) {
         try {
             // 테넌트 필터가 없으면 신규 테넌트에서도 다른 테넌트의 채팅방이 그대로 보인다.
-            return await storage.list(path, withTenantMatch());
+            // 목록 렌더링은 id/name/message/participants 만 쓴다. context(방별 컨텍스트 JSON)는
+            // 방을 열 때 getChatRoom 으로 따로 가져오므로 목록에서는 제외한다.
+            // (운영 uengine 테넌트에서 이 조회가 701KB / 1.0초였다)
+            return await storage.list(
+                path,
+                withTenantMatch({ key: 'id,name,message,participants,primary_agent_id,tenant_id' })
+            );
         } catch (error) {
             throw new Error(error.message);
         }
@@ -8079,25 +8225,6 @@ class ProcessGPTBackend implements Backend {
             if (!isCompleted) {
                 return false;
             }
-            const currentUserId = localStorage.getItem('uid');
-            const endpoint = workItem.endpoint;
-            if (!currentUserId || !endpoint) {
-                return false;
-            }
-
-            let isOwnWorkItem = false;
-            if (Array.isArray(endpoint)) {
-                isOwnWorkItem = endpoint.includes(currentUserId);
-            } else {
-                const endpointList = String(endpoint)
-                    .split(',')
-                    .map((e) => e.trim());
-                isOwnWorkItem = endpointList.includes(currentUserId);
-            }
-
-            if (!isOwnWorkItem) {
-                return false;
-            }
 
             const activityId = workItem.tracingTag;
             const procInstId = workItem.instId;
@@ -8302,11 +8429,11 @@ class ProcessGPTBackend implements Backend {
                     const skills = Array.isArray(a.skills)
                         ? a.skills
                         : typeof a.skills === 'string'
-                        ? a.skills
-                              .split(',')
-                              .map((s: string) => s.trim())
-                              .filter(Boolean)
-                        : [];
+                            ? a.skills
+                                .split(',')
+                                .map((s: string) => s.trim())
+                                .filter(Boolean)
+                            : [];
                     await this.putAgent({
                         id: agentId,
                         name,

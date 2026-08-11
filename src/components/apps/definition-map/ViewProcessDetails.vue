@@ -293,7 +293,7 @@ export default {
 .line {
     width: 30px;
     flex-grow: 0.5; /* 선이 남은 공간을 모두 차지하도록 설정 */
-    border-top: 2px dotted black; /* 점선 생성 */
+    border-top: 2px dotted var(--cds-text-primary); /* 점선 생성 */
     height: 2px; /* 선의 높이 설정 */
 }
 </style>

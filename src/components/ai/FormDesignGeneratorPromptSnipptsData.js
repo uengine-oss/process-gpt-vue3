@@ -176,7 +176,8 @@ Detailed guidelines:
 \`\`\`json
 {
   "htmlOutput": "<section>
-  <div class='row' name='personal_info' alias='Personal Information' is_multidata_mode='false'>
+  <row-layout name='personal_info' alias='Personal Information' is_multidata_mode='false' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-6'>
           <text-field name='employee_name' alias='Full Name' type='text'></text-field>
           <text-field name='employee_birth' alias='Date of Birth' type='date'></text-field>
@@ -185,10 +186,12 @@ Detailed guidelines:
           <text-field name='employee_email' alias='Email Address' type='email'></text-field>
           <text-field name='employee_phone' alias='Phone Number' type='tel'></text-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>
 <section>
-  <div class='row' name='job_details' alias='Job Details' is_multidata_mode='false'>
+  <row-layout name='job_details' alias='Job Details' is_multidata_mode='false' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-4'>
           <select-field name='employee_department' alias='Department' is_dynamic_load='false' items='[{"hr": "Human Resources"}, {"dev": "Development"}, {"sales": "Sales"}, {"marketing": "Marketing"}]'></select-field>
       </div>
@@ -198,10 +201,12 @@ Detailed guidelines:
       <div class='col-sm-4'>
           <text-field name='employee_hire_date' alias='Hire Date' type='date'></text-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>
 <section>
-  <div class='row' name='compensation' alias='Compensation' is_multidata_mode='false'>
+  <row-layout name='compensation' alias='Compensation' is_multidata_mode='false' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-8'>
           <text-field name='monthly_salary' alias='Monthly Salary' type='number'></text-field>
           <text-field name='annual_salary' alias='Annual Salary' type='number' readonly='true'></text-field>
@@ -209,10 +214,12 @@ Detailed guidelines:
       <div class='col-sm-4'>
           <boolean-field name='is_contractor' alias='Is Contractor'></boolean-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>
 <section>
-  <div class='row' name='emergency_contacts' alias='Emergency Contacts' is_multidata_mode='true'>
+  <row-layout name='emergency_contacts' alias='Emergency Contacts' is_multidata_mode='true' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-3'>
           <text-field name='contact_name' alias='Contact Name'></text-field>
       </div>
@@ -225,17 +232,21 @@ Detailed guidelines:
       <div class='col-sm-3'>
           <text-field name='contact_email' alias='Email' type='email'></text-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>
 <section>
-  <div class='row' name='employee_documents' alias='Documents' is_multidata_mode='true'>
+  <row-layout name='employee_documents' alias='Documents' is_multidata_mode='true' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-12'>
           <file-field name='employee_document' alias='Upload Document'></file-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>
 <section>
-  <div class='row' name='code_section' alias='Code Functions' is_multidata_mode='false'>
+  <row-layout name='code_section' alias='Code Functions' is_multidata_mode='false' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-12'>
           <code-field name='validateEmployeeForm' alias='Employee Form Validation' event_type='validate'>
           if(this.formValues['employee_name'] === '') error = 'Employee name is required.';
@@ -250,7 +261,8 @@ Detailed guidelines:
           }
           </code-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>"
 }
 \`\`\``
@@ -262,7 +274,8 @@ Detailed guidelines:
                     'Add a performance evaluation section to the employee form with fields for evaluation date, evaluator (user selection), performance rating (1-5), strengths, areas for improvement, and goals. Make the evaluation date required and validate it.',
                 existingForm: `\
 <section>
-  <div class='row' name='personal_info' alias='Personal Information' is_multidata_mode='false'>
+  <row-layout name='personal_info' alias='Personal Information' is_multidata_mode='false' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-6'>
           <text-field name='employee_name' alias='Full Name' type='text'></text-field>
           <text-field name='employee_birth' alias='Date of Birth' type='date'></text-field>
@@ -271,10 +284,12 @@ Detailed guidelines:
           <text-field name='employee_email' alias='Email Address' type='email'></text-field>
           <text-field name='employee_phone' alias='Phone Number' type='tel'></text-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>
 <section>
-  <div class='row' name='job_details' alias='Job Details' is_multidata_mode='false'>
+  <row-layout name='job_details' alias='Job Details' is_multidata_mode='false' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-4'>
           <select-field name='employee_department' alias='Department' is_dynamic_load='false' items='[{"hr": "Human Resources"}, {"dev": "Development"}, {"sales": "Sales"}, {"marketing": "Marketing"}]'></select-field>
       </div>
@@ -284,10 +299,12 @@ Detailed guidelines:
       <div class='col-sm-4'>
           <text-field name='employee_hire_date' alias='Hire Date' type='date'></text-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>
 <section>
-  <div class='row' name='code_section' alias='Code Functions' is_multidata_mode='false'>
+  <row-layout name='code_section' alias='Code Functions' is_multidata_mode='false' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-12'>
           <code-field name='validateEmployeeForm' alias='Employee Form Validation' event_type='validate'>
           if(this.formValues['employee_name'] === '') error = 'Employee name is required.';
@@ -295,7 +312,8 @@ Detailed guidelines:
           if(this.formValues['employee_hire_date'] === '') error = 'Hire date is required.';
           </code-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>`
             },
             output: `
@@ -306,7 +324,8 @@ Detailed guidelines:
           "action": "addAfter",
           "targetCSSSelector": "section:nth-child(2)",
           "tagValue": "<section>
-  <div class='row' name='performance_evaluation' alias='Performance Evaluation' is_multidata_mode='false'>
+  <row-layout name='performance_evaluation' alias='Performance Evaluation' is_multidata_mode='false' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-4'>
           <text-field name='evaluation_date' alias='Evaluation Date' type='date'></text-field>
           <user-select-field name='evaluator' alias='Evaluator'></user-select-field>
@@ -314,32 +333,37 @@ Detailed guidelines:
       <div class='col-sm-8'>
           <select-field name='performance_rating' alias='Performance Rating' is_dynamic_load='false' items='[{"1": "1 - Needs Improvement"}, {"2": "2 - Below Expectations"}, {"3": "3 - Meets Expectations"}, {"4": "4 - Exceeds Expectations"}, {"5": "5 - Outstanding"}]'></select-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>"
       },
       {
           "action": "addAfter",
           "targetCSSSelector": "section:nth-child(3)",
           "tagValue": "<section>
-  <div class='row' name='evaluation_details' alias='Evaluation Details' is_multidata_mode='false'>
+  <row-layout name='evaluation_details' alias='Evaluation Details' is_multidata_mode='false' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-6'>
           <textarea-field name='strengths' alias='Strengths' rows='4'></textarea-field>
       </div>
       <div class='col-sm-6'>
           <textarea-field name='improvement_areas' alias='Areas for Improvement' rows='4'></textarea-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>"
       },
       {
           "action": "addAfter",
           "targetCSSSelector": "section:nth-child(4)",
           "tagValue": "<section>
-  <div class='row' name='goals' alias='Performance Goals' is_multidata_mode='true'>
+  <row-layout name='goals' alias='Performance Goals' is_multidata_mode='true' v-model="formValues" v-slot="slotProps">
+    <div class='row'>
       <div class='col-sm-12'>
           <textarea-field name='performance_goal' alias='Goal Description' rows='2'></textarea-field>
       </div>
-  </div>
+    </div>
+  </row-layout>
 </section>"
       },
       {

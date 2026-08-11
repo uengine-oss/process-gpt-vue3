@@ -136,7 +136,7 @@ export default {
     display: flex;
     align-items: center;
     padding: 0 16px;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border: 1px solid #d9e2ef;
     border-radius: 8px;
     margin-bottom: 12px;
@@ -165,7 +165,7 @@ export default {
 
 .mapper-ui-e2e__mapper {
     display: block;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border: 1px solid #d9e2ef;
     border-radius: 8px;
     overflow: hidden;

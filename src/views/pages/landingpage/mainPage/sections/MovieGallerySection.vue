@@ -151,21 +151,21 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
         <div class="bg-white p-8 rounded-lg shadow-md">
           <div class="w-12 h-12 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4"
-              style="background-color: #1976D2;"
+              style="background-color: hsl(var(--accent-brand));"
           >1</div>
           <h3 class="text-xl font-bold mb-4">{{ $t('MovieGallerySection.feature1Title') }}</h3>
           <p class="text-gray-700">{{ $t('MovieGallerySection.feature1Description') }}</p>
         </div>
         <div class="bg-white p-8 rounded-lg shadow-md">
           <div class="w-12 h-12 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4"
-              style="background-color: #1976D2;"
+              style="background-color: hsl(var(--accent-brand));"
           >2</div>
           <h3 class="text-xl font-bold mb-4">{{ $t('MovieGallerySection.feature2Title') }}</h3>
           <p class="text-gray-700">{{ $t('MovieGallerySection.feature2Description') }}</p>
         </div>
         <div class="bg-white p-8 rounded-lg shadow-md">
           <div class="w-12 h-12 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4"
-              style="background-color: #1976D2;"
+              style="background-color: hsl(var(--accent-brand));"
           >3</div>
           <h3 class="text-xl font-bold mb-4">{{ $t('MovieGallerySection.feature3Title') }}</h3>
           <p class="text-gray-700">{{ $t('MovieGallerySection.feature3Description') }}</p>
@@ -174,14 +174,14 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="bg-white p-8 rounded-lg shadow-md">
           <div class="w-12 h-12 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4"
-              style="background-color: #1976D2;"
+              style="background-color: hsl(var(--accent-brand));"
           >4</div>
           <h3 class="text-xl font-bold mb-4">{{ $t('MovieGallerySection.feature4Title') }}</h3>
           <p class="text-gray-700">{{ $t('MovieGallerySection.feature4Description') }}</p>
         </div>
         <div class="bg-white p-8 rounded-lg shadow-md">
           <div class="w-12 h-12 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4"
-              style="background-color: #1976D2;"
+              style="background-color: hsl(var(--accent-brand));"
           >5</div>
           <h3 class="text-xl font-bold mb-4">{{ $t('MovieGallerySection.feature5Title') }}</h3>
           <p class="text-gray-700">{{ $t('MovieGallerySection.feature5Description') }}</p>
@@ -241,9 +241,9 @@ export default {
 <style scoped>
 .movie-gallery {
     padding: 80px 0 40px;
-    /* background-color: #1976D2; */
+    /* background-color: hsl(var(--accent-brand)); */
     /* background-color: var(--bg-color-light); */
-    background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+    background: linear-gradient(180deg, var(--cds-bg-neutral) 0%, var(--cds-surface-2) 100%);
 }
 
 /* .special {

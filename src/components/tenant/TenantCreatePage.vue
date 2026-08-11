@@ -1,5 +1,5 @@
 <template>
-    <div style="height: 100%; width: 100%; background-color: white">
+    <div style="height: 100%; width: 100%; background-color: var(--cds-surface-2)">
         <v-icon @click="$router.push('/tenant/manage')" size="24" class="tenant-back-btn">mdi-arrow-left </v-icon>
 
         <v-row v-if="!tenantCreated" no-gutters justify="center">
@@ -107,7 +107,7 @@ export default {
 /* 성공 카드 스타일 */
 .success-card {
     border-radius: 20px !important;
-    border: 3px solid #4caf50 !important;
+    border: 3px solid var(--cds-text-success) !important;
     background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%) !important;
 }
 

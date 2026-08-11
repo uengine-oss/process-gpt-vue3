@@ -485,8 +485,8 @@ export default {
     justify-content: center;
     width: 22px;
     height: 22px;
-    background: #fff;
-    border: 2px solid #1976d2;
+    background: var(--cds-surface-2);
+    border: 2px solid hsl(var(--accent-brand));
     border-radius: 5px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     cursor: pointer;

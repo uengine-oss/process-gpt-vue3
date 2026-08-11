@@ -176,6 +176,12 @@ export default {
         localModelValue: {
             handler() {
                 if (JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return;
+                // localModelValue의 초기값(빈 배열/null)과 아직 내려오지 않은 modelValue(null/undefined)는
+                // 둘 다 '선택 없음'을 의미하는 동치 상태다. immediate 워처가 마운트 직후 이 둘을
+                // 문자열로 비교해 다르다고 판단하면, 부모가 실제 값을 채워주기도 전에 빈 배열을
+                // 곧바로 emit해버려 부모 쪽 상태(예: 미리 설정된 에이전트)를 지워버릴 수 있다.
+                const isEmpty = (v) => v === null || v === undefined || (Array.isArray(v) && v.length === 0);
+                if (isEmpty(this.localModelValue) && isEmpty(this.modelValue)) return;
                 this.$emit('update:modelValue', this.localModelValue);
             },
             deep: true,

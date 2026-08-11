@@ -90,6 +90,34 @@
                         </v-tooltip>
                     </template>
                 </v-combobox>
+                <v-expansion-panels v-if="!gs && selectedServerNames.length" variant="accordion" class="mb-2">
+                    <v-expansion-panel v-for="serverName in selectedServerNames" :key="serverName">
+                        <v-expansion-panel-title>
+                            <span>{{ serverName }}</span>
+                            <v-chip
+                                v-if="agent.tool_filters && agent.tool_filters[serverName]"
+                                size="x-small"
+                                variant="tonal"
+                                color="primary"
+                                class="ml-2"
+                            >
+                                {{ $t('agentField.toolsSelectedCount', { count: agent.tool_filters[serverName].length }) }}
+                            </v-chip>
+                        </v-expansion-panel-title>
+                        <v-expansion-panel-text>
+                            <div v-if="loadingValidation[serverName]" class="text-caption text-medium-emphasis py-2">
+                                {{ $t('MCPServer.validating') }}
+                            </div>
+                            <McpValidationResult
+                                v-else
+                                :result="serverValidation[serverName]"
+                                selectable
+                                :model-value="agent.tool_filters ? agent.tool_filters[serverName] : null"
+                                @update:model-value="(val) => setToolFilter(serverName, val)"
+                            />
+                        </v-expansion-panel-text>
+                    </v-expansion-panel>
+                </v-expansion-panels>
                 <v-combobox
                     v-if="!gs"
                     v-model="selectedSkills"
@@ -150,12 +178,15 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import ProfileField from '@/components/ui/field/ProfileField.vue';
 import UserInputGenerator from '@/components/ui/UserInputGenerator.vue';
+import McpValidationResult from '@/components/pages/account-settings/McpValidationResult.vue';
+import McpValidatorService from '@/services/McpValidatorService';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 
 export default {
     components: {
         ProfileField,
-        UserInputGenerator
+        UserInputGenerator,
+        McpValidationResult
     },
     props: {
         modelValue: {
@@ -172,7 +203,8 @@ export default {
                 skills: '',
                 model: '',
                 alias: '',
-                tools: ''
+                tools: '',
+                tool_filters: null
             })
         },
         teamInfo: {
@@ -219,11 +251,14 @@ export default {
                 description: '',
                 skills: '',
                 model: '',
-                tools: ''
+                tools: '',
+                tool_filters: null
             },
             mcpTools: {},
             toolList: [],
             selectedTools: [],
+            serverValidation: {},
+            loadingValidation: {},
             uploadedSkills: [],
             builtinSkills: [],
             selectedSkills: [],
@@ -303,6 +338,11 @@ export default {
         gs() {
             return window.$gs;
         },
+        selectedServerNames() {
+            return (this.selectedTools || [])
+                .map((t) => (typeof t === 'object' && t?.value != null ? t.value : String(t ?? '')))
+                .filter(Boolean);
+        },
         skillItemsForCombobox() {
             const items = [];
             items.push({
@@ -377,6 +417,14 @@ export default {
                     this.$nextTick(() => {
                         this.selectedTools = normalized;
                     });
+                }
+                normalized.forEach((serverName) => this.fetchServerValidation(serverName));
+                if (this.agent.tool_filters) {
+                    const pruned = {};
+                    Object.keys(this.agent.tool_filters).forEach((serverName) => {
+                        if (normalized.includes(serverName)) pruned[serverName] = this.agent.tool_filters[serverName];
+                    });
+                    this.agent.tool_filters = Object.keys(pruned).length ? pruned : null;
                 }
             }
         },
@@ -494,6 +542,46 @@ export default {
                 }
                 return { title: name, value: name, subtitle };
             });
+        },
+        async fetchServerValidation(serverName) {
+            if (this.serverValidation[serverName] || this.loadingValidation[serverName]) return;
+            this.loadingValidation = { ...this.loadingValidation, [serverName]: true };
+            try {
+                if (!this.mcpTools[serverName]) {
+                    await this.getTools();
+                }
+                const config = this.mcpTools[serverName];
+                if (!config) {
+                    this.serverValidation = {
+                        ...this.serverValidation,
+                        [serverName]: {
+                            status: 'error',
+                            error_message: this.$t('MCPServer.serverNotFound'),
+                            tools: []
+                        }
+                    };
+                    return;
+                }
+                const result = await McpValidatorService.validateServer(serverName, config);
+                this.serverValidation = { ...this.serverValidation, [serverName]: result || { status: 'error', tools: [] } };
+            } catch (e) {
+                console.error('MCP tool validation failed', serverName, e);
+                this.serverValidation = {
+                    ...this.serverValidation,
+                    [serverName]: { status: 'error', error_message: e?.message || '', tools: [] }
+                };
+            } finally {
+                this.loadingValidation = { ...this.loadingValidation, [serverName]: false };
+            }
+        },
+        setToolFilter(serverName, val) {
+            const filters = { ...(this.agent.tool_filters || {}) };
+            if (val && val.length) {
+                filters[serverName] = val;
+            } else {
+                delete filters[serverName];
+            }
+            this.agent.tool_filters = Object.keys(filters).length ? filters : null;
         },
         async getSkills() {
             const normalize = (result) => {

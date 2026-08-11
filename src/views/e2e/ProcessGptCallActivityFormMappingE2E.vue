@@ -216,7 +216,7 @@ export default {
 
 .call-activity-e2e__header {
     align-items: center;
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border: 1px solid #d9e2ef;
     border-radius: 8px;
     display: flex;
@@ -255,7 +255,7 @@ export default {
 
 .call-activity-e2e__panel,
 .call-activity-e2e__json {
-    background: #ffffff;
+    background: var(--cds-surface-2);
     border: 1px solid #d9e2ef;
     border-radius: 8px;
     overflow: hidden;
@@ -272,9 +272,9 @@ export default {
 }
 
 .call-activity-e2e__json pre {
-    background: #111827;
+    background: var(--cds-text-primary);
     border-radius: 8px;
-    color: #e5e7eb;
+    color: var(--cds-border);
     font-size: 12px;
     line-height: 1.5;
     margin: 0;

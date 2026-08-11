@@ -113,7 +113,7 @@ export default {
 }
 
 .close-btn:hover {
-    background: white;
+    background: var(--cds-surface-2);
     transform: scale(1.1);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
@@ -155,7 +155,7 @@ export default {
 }
 
 .tutorial-card {
-    background: white;
+    background: var(--cds-surface-2);
     border-radius: 16px;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -175,7 +175,7 @@ export default {
     right: 20px;
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, hsl(var(--accent-brand)) 0%, #764ba2 100%);
     color: white;
     border-radius: 50%;
     display: flex;
@@ -195,7 +195,7 @@ export default {
 
 .tutorial-content p {
     font-size: 1rem;
-    color: #6c757d;
+    color: var(--cds-text-muted);
     line-height: 1.6;
     margin-bottom: 20px;
 }
@@ -203,7 +203,7 @@ export default {
 .tutorial-demo {
     text-align: center;
     padding: 20px;
-    background-color: #f8f9fa;
+    background-color: var(--cds-bg-neutral);
     border-radius: 8px;
     margin-top: 20px;
 }
@@ -236,7 +236,7 @@ export default {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, hsl(var(--accent-brand)) 0%, #764ba2 100%);
     color: white;
 }
 

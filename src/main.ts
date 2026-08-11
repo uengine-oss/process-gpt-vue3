@@ -44,17 +44,19 @@ import 'vue3-carousel/dist/carousel.css';
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar';
 import 'perfect-scrollbar/css/perfect-scrollbar.css';
 import App from './App.vue';
+import designSystem, { initMode as initDesignSystemMode } from '@/ds';
 import vuetify from './plugins/vuetify';
 import hammerDirective from '@/components/directive/hammerDirective';
 import i18nDirective from './plugins/i18nDirective';
 import { router } from './router';
 import store from './store';
 import axios from 'axios';
-//Mock Api data
 import Maska from 'maska';
 import VCalendar from 'v-calendar';
 import VueRecaptcha from 'vue3-recaptcha-v2';
-import './_mockApis';
+// spikeadmin 템플릿 데모용 axios mock(`./_mockApis`)은 더 이상 등록하지 않는다.
+// 라우트가 모두 주석 처리된 데모 화면 전용이었고, 엔트리 청크에 mock 데이터를
+// 통째로 끌어들이고 있었다. 살아있는 정적 데이터 모듈은 각자 직접 import 한다.
 // print
 // import print from 'vue3-print-nb';
 // Table
@@ -101,15 +103,14 @@ import 'dayjs/locale/ko';
 import ganttastic from '@infectoone/vue-ganttastic';
 import { ref } from 'vue';
 
-// 브라우저 언어 기반 즉시 판별(동기).
-// 부팅 경로에서는 반드시 이 함수만 사용한다 — 네트워크 대기 없이 즉시 렌더링하기 위함.
-function detectLanguageSync(): 'ko' | 'en' {
-    const browserLang = navigator.language || (navigator.languages && navigator.languages[0]) || 'en';
+// 브라우저 언어로 즉시 판정 (네트워크 없음)
+function detectLanguageFromBrowser(): 'ko' | 'en' {
+    const browserLang = navigator.language || (navigator.languages && navigator.languages[0]) || '';
     return browserLang.toLowerCase().startsWith('ko') ? 'ko' : 'en';
 }
 
 // IP 기반 언어 보정(비동기, 백그라운드 전용).
-// 과거에는 이 함수를 createApp() 이전에 await 했는데, IP 서비스 3곳을 각 5초 타임아웃으로 "순차" 시도하는 구조라
+// 과거에는 이 조회를 createApp() 이전에 await 했는데, IP 서비스 3곳을 각 5초 타임아웃으로 "순차" 시도하는 구조라
 // 광고차단기/프록시 환경에서 최대 15초간 화면이 백지로 남았다. (특히 http://ip-api.com 은 HTTPS 배포에서
 // mixed content 로 무조건 차단되어 타임아웃이 확정적으로 발생했다.)
 // 따라서 (1) 부팅을 막지 않고, (2) 순차가 아닌 병렬로, (3) 짧은 타임아웃으로 시도한다.
@@ -149,6 +150,30 @@ async function detectLanguageByIp(timeoutMs = 2000): Promise<'ko' | 'en' | null>
     } catch {
         return null;
     }
+}
+
+/**
+ * 지오IP 기반 언어 판정을 백그라운드로 수행한다.
+ * 예전에는 이 조회를 mount 전에 await 해서, IP 조회가 차단된 환경에서
+ * 서비스 3곳 × 5초 타임아웃 = 최대 15초 동안 백지 화면이 노출됐다.
+ * 이제는 브라우저 언어로 즉시 렌더한 뒤, 결과가 다를 때만 살짝 갱신한다.
+ */
+function refineLocaleInBackground() {
+    detectLanguageByIp()
+        .then((detectedLocale) => {
+            // 조회에 모두 실패하면 브라우저 언어 판정을 그대로 둔다.
+            if (!detectedLocale) return;
+            // 조회 도중 사용자가 직접 언어를 골랐다면 그 선택을 존중한다.
+            if (localStorage.getItem('locale')) return;
+
+            localStorage.setItem('locale', detectedLocale);
+            if ((i18n.global as any).locale !== detectedLocale) {
+                (i18n.global as any).locale = detectedLocale;
+            }
+        })
+        .catch(() => {
+            /* 언어 자동 감지는 실패해도 앱 동작에 영향이 없다 */
+        });
 }
 
 // i18n 설정을 기본값으로 초기화
@@ -274,9 +299,9 @@ async function setupTenant() {
             configurable: true
         });
         Object.defineProperty(window, '$tenantName', {
-            // uengine supabase 운영기 연결할때 사용
-            // value: 'uengine',
-            value: 'localhost',
+            // 로컬에서 운영 Supabase 에 붙어 특정 테넌트로 진단할 때 쓴다.
+            // (.env 의 VITE_TENANT_OVERRIDE=uengine 등)
+            value: import.meta.env.VITE_TENANT_OVERRIDE || 'localhost',
             writable: false,
             configurable: false
         });
@@ -298,25 +323,10 @@ async function initializeApp() {
     await setupSupabase();
     await setupTenant();
 
-    // 동적 언어 설정 (localStorage에 저장된 언어 우선, 없으면 브라우저 언어로 "즉시" 결정)
-    // 부팅 경로에서 네트워크를 기다리지 않는다 — IP 보정은 렌더 이후 백그라운드로 수행한다.
+    // 동적 언어 설정 (localStorage에 저장된 언어 우선, 없으면 브라우저 언어로 즉시 판정)
+    // 지오IP 조회는 렌더를 막지 않도록 mount 이후 백그라운드로 돌린다. (refineLocaleInBackground)
     const savedLocale = localStorage.getItem('locale');
-    if (!savedLocale) {
-        const initialLocale = detectLanguageSync();
-        (i18n.global as any).locale = initialLocale;
-        localStorage.setItem('locale', initialLocale);
-
-        // 브라우저 언어와 실제 접속 국가가 다른 경우(예: 영문 브라우저 + 국내 접속)를 위한 보정.
-        // 실패하거나 느려도 부팅에는 영향을 주지 않으며, 사용자가 언어를 직접 바꾼 뒤에는 덮어쓰지 않는다.
-        void detectLanguageByIp().then((ipLocale) => {
-            if (!ipLocale || ipLocale === initialLocale) return;
-            if (localStorage.getItem('locale') !== initialLocale) return; // 그 사이 사용자가 변경함
-            (i18n.global as any).locale = ipLocale;
-            localStorage.setItem('locale', ipLocale);
-        });
-    } else {
-        (i18n.global as any).locale = savedLocale;
-    }
+    (i18n.global as any).locale = savedLocale || detectLanguageFromBrowser();
 
     const app = createApp(App);
 
@@ -409,14 +419,25 @@ async function initializeApp() {
     app.use(i18nDirective);
     app.use(Maska);
     app.use(VueApexCharts);
-    app.use(vuetify).mount('#app');
 
-    // NOTE: 여기서 유휴 프리로드를 하지 않는다.
-    // 번들 분석 결과 이 청크는 ChatModule 과 병합되어 gzip 약 2.5MB 이므로,
+    // 새 디자인 시스템 (Pg*). Vuetify 를 대체해 가는 중이라 당분간 공존한다.
+    initDesignSystemMode();
+    app.use(designSystem);
+
+    app.use(vuetify).mount('#app');
+    // Vuetify 컴포넌트를 새 디자인 언어로 덮는 레이어.
+    // Vuetify 스타일이 주입된 뒤에 와야 하므로 mount 이후에 적용한다.
+    await import('@/ds/vuetify-bridge/overrides.css');
+
+    // NOTE: 디자이너 컴포넌트를 여기서 유휴 프리로드하지 않는다.
+    // 번들 분석 결과 그 청크는 ChatModule 과 병합되어 gzip 약 2.5MB 이므로,
     // 디자이너를 쓰지 않는 사용자에게까지 배경 다운로드시키면 절감 효과가 상쇄된다.
     // 등록은 위의 라우터 가드(pathNeedsDesignerComponents)가 전담한다.
 
     app.use(setLocale);
+
+    // mount 이후에 지오IP 기반 언어 판정을 이어서 수행 (렌더를 막지 않음)
+    if (!savedLocale) refineLocaleInBackground();
     //ScrollTop Use
     // app.use(VueScrollTo);
     app.use(VueScrollTo, {

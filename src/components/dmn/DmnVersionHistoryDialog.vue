@@ -783,8 +783,8 @@ export default {
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px;
-    background: #fff;
-    border-bottom: 1px solid #e6e8ee;
+    background: var(--cds-surface-2);
+    border-bottom: 1px solid var(--cds-border);
     flex-shrink: 0;
     gap: 14px;
 }
@@ -819,7 +819,7 @@ export default {
     flex-direction: column;
     min-width: 400px;
     overflow: hidden;
-    border-right: 1px solid #e6e8ee;
+    border-right: 1px solid var(--cds-border);
 }
 .dvc-vpanel {
     flex: 1;
@@ -832,8 +832,8 @@ export default {
     align-items: center;
     justify-content: space-between;
     padding: 8px 16px;
-    background: #fff;
-    border-bottom: 1px solid #eee;
+    background: var(--cds-surface-2);
+    border-bottom: 1px solid var(--cds-border);
     flex-shrink: 0;
     gap: 12px;
 }
@@ -855,8 +855,8 @@ export default {
     white-space: nowrap;
 }
 .dvc-badge-new {
-    background: #eaf1ff;
-    color: #1b4fcb;
+    background: var(--cds-bg-accent);
+    color: hsl(var(--accent-brand));
 }
 .dvc-badge-old {
     background: #f0ebfb;
@@ -878,7 +878,7 @@ export default {
     flex: 1;
     position: relative;
     overflow: hidden;
-    background: #fff;
+    background: var(--cds-surface-2);
 }
 .dvc-empty {
     display: flex;
@@ -911,7 +911,7 @@ export default {
     display: flex;
     align-items: center;
     gap: 6px;
-    color: #697084;
+    color: var(--cds-text-secondary);
 }
 .dvc-legend-dot {
     width: 10px;
@@ -919,10 +919,10 @@ export default {
     border-radius: 50%;
 }
 .dvc-dot-added {
-    background: #22a05b;
+    background: var(--cds-text-success);
 }
 .dvc-dot-modified {
-    background: #e0922b;
+    background: var(--cds-text-warning);
 }
 .dvc-dot-removed {
     background: #e04848;
@@ -936,9 +936,9 @@ export default {
     gap: 10px;
     padding: 11px 14px;
     margin: 0 10px 7px;
-    border: 1px solid #e6e8ee;
+    border: 1px solid var(--cds-border);
     border-radius: 11px;
-    background: #fff;
+    background: var(--cds-surface-2);
 }
 .dvc-diff-bar {
     width: 4px;
@@ -946,10 +946,10 @@ export default {
     flex: none;
 }
 .dvc-diff-bar-added {
-    background: #22a05b;
+    background: var(--cds-text-success);
 }
 .dvc-diff-bar-modified {
-    background: #e0922b;
+    background: var(--cds-text-warning);
 }
 .dvc-diff-bar-removed {
     background: #e04848;
@@ -967,7 +967,7 @@ export default {
 }
 .dvc-diff-sub {
     font-size: 11.5px;
-    color: #697084;
+    color: var(--cds-text-secondary);
     margin-top: 2px;
 }
 .dvc-diff-tag {
@@ -979,10 +979,10 @@ export default {
     white-space: nowrap;
 }
 .dvc-diff-tag-added {
-    background: #22a05b;
+    background: var(--cds-text-success);
 }
 .dvc-diff-tag-modified {
-    background: #e0922b;
+    background: var(--cds-text-warning);
 }
 .dvc-diff-tag-removed {
     background: #e04848;
@@ -1002,11 +1002,11 @@ export default {
 .dvc-diff-detail {
     margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px solid #e6e8ee;
+    border-top: 1px solid var(--cds-border);
 }
 .dvc-diff-meta {
     font-size: 12px;
-    color: #697084;
+    color: var(--cds-text-secondary);
     background: #f4f6f9;
     border-radius: 6px;
     padding: 6px 10px;
@@ -1020,11 +1020,11 @@ export default {
 }
 .dvc-history-btn {
     border: 1px solid #d9dce3;
-    background: #fff;
+    background: var(--cds-surface-2);
     border-radius: 7px;
     padding: 5px 9px;
     font-size: 11px;
-    color: #697084;
+    color: var(--cds-text-secondary);
     font-weight: 600;
     cursor: pointer;
     transition: 0.12s;
@@ -1038,8 +1038,8 @@ export default {
     display: flex;
     padding: 8px 14px 0;
     gap: 4px;
-    border-bottom: 1px solid #e6e8ee;
-    background: #fff;
+    border-bottom: 1px solid var(--cds-border);
+    background: var(--cds-surface-2);
     flex-shrink: 0;
 }
 .dmn-history-tab {
@@ -1049,7 +1049,7 @@ export default {
     padding: 9px 6px;
     font-size: 12.5px;
     font-weight: 600;
-    color: #697084;
+    color: var(--cds-text-secondary);
     border-bottom: 2px solid transparent;
     display: flex;
     align-items: center;
@@ -1059,15 +1059,15 @@ export default {
     transition: 0.15s;
 }
 .dmn-history-tab:hover {
-    color: #1e2330;
+    color: var(--cds-text-primary);
 }
 .dmn-history-tab--active {
-    color: #1b4fcb;
+    color: hsl(var(--accent-brand));
     border-bottom-color: #2f6bff;
 }
 .dmn-history-tab-count {
-    background: #eaf1ff;
-    color: #1b4fcb;
+    background: var(--cds-bg-accent);
+    color: hsl(var(--accent-brand));
     font-size: 10.5px;
     font-weight: 700;
     border-radius: 8px;
@@ -1085,10 +1085,10 @@ export default {
     gap: 11px;
     padding: 12px 14px;
     margin: 8px 12px 0;
-    border: 1px solid #e6e8ee;
+    border: 1px solid var(--cds-border);
     border-radius: 11px;
     align-items: center;
-    background: #fff;
+    background: var(--cds-surface-2);
 }
 .dmn-history-row--cur {
     border-color: #bbcbe8;
@@ -1098,8 +1098,8 @@ export default {
     width: 38px;
     height: 38px;
     border-radius: 9px;
-    background: #eaf1ff;
-    color: #1b4fcb;
+    background: var(--cds-bg-accent);
+    color: hsl(var(--accent-brand));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1121,7 +1121,7 @@ export default {
 }
 .dmn-history-sub {
     font-size: 11px;
-    color: #697084;
+    color: var(--cds-text-secondary);
     margin-top: 2px;
 }
 .dmn-history-cur-tag {
@@ -1138,14 +1138,14 @@ export default {
     background: #eef0f4;
     border-radius: 6px;
     padding: 1px 7px;
-    color: #697084;
+    color: var(--cds-text-secondary);
 }
 
 /* PR 목록 */
 .dmn-pr-list-head {
     font-size: 11px;
     font-weight: 700;
-    color: #9aa0ad;
+    color: var(--cds-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     padding: 12px 14px 6px;
@@ -1156,9 +1156,9 @@ export default {
     align-items: flex-start;
     padding: 12px;
     margin: 0 10px 7px;
-    border: 1px solid #e6e8ee;
+    border: 1px solid var(--cds-border);
     border-radius: 11px;
-    background: #fff;
+    background: var(--cds-surface-2);
     position: relative;
     cursor: pointer;
     transition: border-color 0.12s, box-shadow 0.12s;
@@ -1182,13 +1182,13 @@ export default {
     border-radius: 3px;
 }
 .ac-open {
-    background: #1b4fcb;
+    background: hsl(var(--accent-brand));
 }
 .ac-chg {
-    background: #e0922b;
+    background: var(--cds-text-warning);
 }
 .ac-app {
-    background: #22a05b;
+    background: var(--cds-text-success);
 }
 .ac-merged {
     background: #7c6bd6;
@@ -1226,11 +1226,11 @@ export default {
     gap: 6px;
     margin-top: 5px;
     font-size: 11.5px;
-    color: #697084;
+    color: var(--cds-text-secondary);
     flex-wrap: wrap;
 }
 .dmn-prc-byline b {
-    color: #1e2330;
+    color: var(--cds-text-primary);
     font-weight: 600;
 }
 .dmn-prc-branchline {
@@ -1241,7 +1241,7 @@ export default {
     flex-wrap: wrap;
 }
 .dmn-dot-sep {
-    color: #9aa0ad;
+    color: var(--cds-text-muted);
 }
 .dmn-branch-chip {
     font-family: ui-monospace, Menlo, monospace;
@@ -1249,7 +1249,7 @@ export default {
     background: #eef0f4;
     border-radius: 6px;
     padding: 1px 7px;
-    color: #697084;
+    color: var(--cds-text-secondary);
 }
 .dmn-st-badge {
     font-size: 10px;
@@ -1259,8 +1259,8 @@ export default {
     white-space: nowrap;
 }
 .st-open {
-    background: #eaf1ff;
-    color: #1b4fcb;
+    background: var(--cds-bg-accent);
+    color: hsl(var(--accent-brand));
 }
 .st-chg {
     background: #fcf1dd;
@@ -1281,8 +1281,8 @@ export default {
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    border-bottom: 1px solid #e6e8ee;
-    background: #fff;
+    border-bottom: 1px solid var(--cds-border);
+    background: var(--cds-surface-2);
     flex-shrink: 0;
 }
 .dmn-pr-back-btn {
@@ -1293,7 +1293,7 @@ export default {
     gap: 4px;
     font-size: 12px;
     font-weight: 600;
-    color: #697084;
+    color: var(--cds-text-secondary);
     cursor: pointer;
     padding: 4px 8px;
     border-radius: 6px;
@@ -1301,22 +1301,22 @@ export default {
 }
 .dmn-pr-back-btn:hover {
     background: #f4f6f9;
-    color: #1e2330;
+    color: var(--cds-text-primary);
 }
 .dmn-pr-detail-title {
     font-size: 13px;
     font-weight: 600;
-    color: #1e2330;
+    color: var(--cds-text-primary);
     min-width: 0;
 }
 .dmn-pr-approval-section {
     padding: 14px 16px;
-    border-bottom: 1px solid #e6e8ee;
+    border-bottom: 1px solid var(--cds-border);
 }
 .dmn-pr-section-head {
     font-size: 11px;
     font-weight: 700;
-    color: #9aa0ad;
+    color: var(--cds-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-bottom: 9px;
@@ -1334,8 +1334,8 @@ export default {
 .dmn-pr-role-chip {
     font-size: 10px;
     font-weight: 700;
-    color: #1b4fcb;
-    background: #eaf1ff;
+    color: hsl(var(--accent-brand));
+    background: var(--cds-bg-accent);
     border-radius: 5px;
     padding: 1px 6px;
 }
@@ -1352,7 +1352,7 @@ export default {
 }
 .st-pend {
     background: #eef0f4;
-    color: #697084;
+    color: var(--cds-text-secondary);
 }
 .st-req {
     background: #fcf1dd;

@@ -18,7 +18,7 @@
                     variant="outlined"
                     :color="'grey-lighten-4'"
                 >
-                    <v-card-title class="d-flex align-center pa-4" style="background-color: #f5f5f5; border-bottom: 2px solid #e0e0e0">
+                    <v-card-title class="d-flex align-center pa-4" style="background-color: var(--cds-bg-neutral); border-bottom: 2px solid var(--cds-border)">
                         <v-icon class="mr-2" color="info">mdi-information-outline</v-icon>
                         <div class="flex-grow-1">
                             <div class="text-body-1 font-weight-medium">
@@ -42,7 +42,7 @@
             </div>
             <!-- 현재 폼 -->
             <v-card v-if="html" class="mb-4" variant="outlined">
-                <v-card-title v-if="refForms.length > 0" class="pa-4" style="background-color: #e3f2fd; border-bottom: 2px solid #2196f3">
+                <v-card-title v-if="refForms.length > 0" class="pa-4" style="background-color: var(--cds-bg-accent); border-bottom: 2px solid hsl(var(--accent-brand))">
                     <v-icon class="mr-2" color="primary">mdi-file-document-edit-outline</v-icon>
                     <span class="text-body-1 font-weight-medium">
                         {{ $t('ExternalForms.currentStep') }}
