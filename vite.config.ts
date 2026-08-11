@@ -1,5 +1,4 @@
 import { fileURLToPath, URL } from 'url';
-import { createRequire } from 'module';
 import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vuetify from 'vite-plugin-vuetify';
@@ -8,8 +7,6 @@ import path from 'path';
 dotenv.config();
 const env = loadEnv('development', process.cwd(), '');
 
-const require = createRequire(import.meta.url);
-const monacoEditorPlugin = require('vite-plugin-monaco-editor').default || require('vite-plugin-monaco-editor');
 const uengineGatewayTarget = env.VITE_UENGINE_GATEWAY_URL || 'http://127.0.0.1:8088';
 
 function spaFallbackPlugin() {
@@ -41,10 +38,11 @@ export default defineConfig({
         vuetify({
             autoImport: true,
             styles: { configFile: 'src/scss/variables.scss' }
-        }),
-        monacoEditorPlugin({
-            languageWorkers: ['editorWorkerService', 'typescript', 'json', 'html']
         })
+        // monacoEditorPlugin 은 제거했다.
+        // 이 플러그인(1.1.0)의 esbuild 워커 번들링이 monaco 0.52 의 static 초기화 블록을 깨뜨려
+        // 에디터를 열자마자 "Node is not a constructor" 로 워커가 죽었다.
+        // 워커는 src/main.ts 에서 Vite 의 `?worker` 임포트로 직접 등록한다. (자세한 사유는 main.ts 주석)
     ],
     resolve: {
         alias: {

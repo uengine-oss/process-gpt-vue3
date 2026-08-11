@@ -785,6 +785,7 @@ import MainChatInput from '@/components/MainChatInput.vue';
 import ChatModule from '@/components/ChatModule.vue';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import BackendFactory from '@/components/api/BackendFactory';
+import { PROC_DEF_LIST_COLUMNS } from '@/components/api/ProcessGPTBackend';
 const backend = BackendFactory.createBackend();
 import { processGptAgent } from '@/constants/processGptAgent';
 import { getTenantId } from '@/utils/tenant';
@@ -2148,9 +2149,8 @@ export default {
         // 체계도에 등록되지 않은 프로세스를 "미분류" Mega에 추가
         async updateUncategorizedProcesses() {
             try {
-                // 1. 모든 proc_def 가져오기
-                // const { data: allProcDefs } = await window.$supabase.from('proc_def').select('id, name');
-                const allProcDefs = await backend.listDefinition('bpmn');
+                // 1. 모든 proc_def 가져오기 (id/name/path 만 사용하므로 definition·bpmn 은 받지 않는다)
+                const allProcDefs = await backend.listDefinition('bpmn', { key: PROC_DEF_LIST_COLUMNS });
                 if (!allProcDefs || allProcDefs.length === 0) return;
 
                 // 미분류 이름 목록

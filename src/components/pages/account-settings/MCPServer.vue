@@ -254,7 +254,27 @@ export default {
             automaticLayout: true,
             formatOnType: true,
             formatOnPaste: true,
-            readOnly: false
+            readOnly: false,
+            // --- 아래는 JSON 설정 편집 사용성 개선용 ---
+            tabSize: 4,
+            insertSpaces: true,
+            autoIndent: 'full',
+            autoClosingBrackets: 'always',
+            autoClosingQuotes: 'always',
+            // 긴 url/토큰 값이 가로 스크롤 없이 보이도록 줄바꿈
+            wordWrap: 'on',
+            // 좁은 편집 영역이라 미니맵은 자리만 차지한다
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            // v-dialog(오버레이) 안에서 자동완성·마우스오버 위젯이 잘리는 것을 방지
+            fixedOverflowWidgets: true,
+            // 우클릭 잘라내기/복사/붙여넣기 메뉴
+            contextmenu: true,
+            fontSize: 13,
+            lineNumbers: 'on',
+            bracketPairColorization: { enabled: true },
+            renderLineHighlight: 'line',
+            scrollbar: { alwaysConsumeMouseWheel: false }
         }
     }),
     computed: {
@@ -330,9 +350,74 @@ export default {
     },
     methods: {
         handleMount(editor) {
-            if (editor) {
-                const height = window.innerHeight - 320;
-                editor.layout({ height: height, width: editor.getLayoutInfo().width });
+            if (!editor) return;
+
+            const height = window.innerHeight - 320;
+            editor.layout({ height: height, width: editor.getLayoutInfo().width });
+
+            // NOTE: Monaco 인스턴스를 data()/컴포넌트 상태에 보관하면 안 된다.
+            // Vue 3 가 반응형 프록시로 감싸면서 Monaco 의 거대한 내부 객체 그래프를 훑기 시작해
+            // 예외 없이 화면이 멈춘다. 필요한 곳에서는 아래처럼 콜백 인자로 받은 editor 만 쓴다.
+
+            // 붙여넣기 후 정렬 보정.
+            //
+            // formatOnPaste 는 "붙여넣은 범위"만 서식화하므로, 한 줄로 압축(minify)된 JSON 전체를
+            // 붙여넣으면 줄바꿈이 없어 사실상 그대로 한 줄로 남는다. 그래서 붙여넣기 직후 내용이
+            // 통째로 유효한 JSON 이면 보기 좋게 다시 펼쳐 준다.
+            // JSON.parse/stringify 로 처리하므로 언어 서버 상태와 무관하게 항상 동작한다.
+            if (typeof editor.onDidPaste === 'function') {
+                editor.onDidPaste(() => {
+                    // 붙여넣기 편집이 모델에 반영된 뒤 실행
+                    setTimeout(() => this.prettifyEditorJson(editor), 0);
+                });
+            }
+
+            // 편집기에서 포커스가 빠질 때 한 번 더 정렬한다.
+            // (타이핑 도중에 정렬하면 커서가 튀므로 입력이 끝난 시점에만 손댄다)
+            if (typeof editor.onDidBlurEditorText === 'function') {
+                editor.onDidBlurEditorText(() => {
+                    this.prettifyEditorJson(editor);
+                });
+            }
+        },
+
+        /** JSON 형식 오류를 사용자에게 알린다. (조용히 실패해서 '저장이 안 먹는' 것처럼 보이던 문제 방지) */
+        notifyJsonError(error) {
+            const detail = (error && error.message) || '';
+            const message = `JSON 형식이 올바르지 않습니다. 내용을 확인해 주세요.${detail ? `\n(${detail})` : ''}`;
+            const app = window.$app_;
+            if (app) {
+                app.snackbarMessage = message;
+                app.snackbarColor = 'error';
+                app.snackbar = true;
+            } else {
+                alert(message);
+            }
+        },
+
+        /** 편집기 내용이 유효한 JSON 이면 들여쓰기를 정리한다. (유효하지 않으면 사용자의 입력을 건드리지 않음) */
+        prettifyEditorJson(editor) {
+            try {
+                const model = editor.getModel && editor.getModel();
+                if (!model) return;
+
+                const raw = model.getValue();
+                if (!raw || !raw.trim()) return;
+
+                const pretty = JSON.stringify(JSON.parse(raw), null, 4);
+                if (pretty === raw) return;
+
+                // pushEditOperations 로 적용해야 Ctrl+Z 한 번으로 되돌릴 수 있다.
+                const position = editor.getPosition && editor.getPosition();
+                model.pushEditOperations([], [{ range: model.getFullModelRange(), text: pretty }], () => null);
+                if (position && editor.setPosition) {
+                    // 정렬 후 커서가 문서 밖으로 나가지 않도록 보정
+                    const lineCount = model.getLineCount();
+                    const line = Math.min(position.lineNumber, lineCount);
+                    editor.setPosition({ lineNumber: line, column: Math.min(position.column, model.getLineMaxColumn(line)) });
+                }
+            } catch (e) {
+                // JSON 이 아직 완성되지 않은 상태(편집 중)면 그대로 둔다.
             }
         },
         getEditorOptions() {
@@ -427,6 +512,8 @@ export default {
                 try {
                     parsedJson = JSON.parse(this.mcpJsonText);
                 } catch (e) {
+                    // 예전에는 조용히 return 해서, 저장 버튼을 눌러도 아무 반응이 없는 것처럼 보였다.
+                    this.notifyJsonError(e);
                     return;
                 }
 
@@ -536,6 +623,7 @@ export default {
                     parsedJson = JSON.parse(this.newJsonText);
                 } catch (e) {
                     console.error('JSON 파싱 오류:', e);
+                    this.notifyJsonError(e);
                     return;
                 }
 

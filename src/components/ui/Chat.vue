@@ -112,7 +112,7 @@
 
                                     <div
                                         v-for="(message, index) in userFilteredMessages"
-                                        :key="index"
+                                        :key="message.__rowKey || index"
                                         class="py-1 px-3 chat-message-row"
                                         :class="{
                                             'chat-message-row--highlight':
@@ -4051,10 +4051,26 @@ export default {
             return this.filteredMessages.filter((m) => this.isAgentRelatedMessage(m));
         },
         userFilteredMessages() {
-            if (!this.showAgentMessagePanel) {
-                return this.filteredMessages;
+            const list = !this.showAgentMessagePanel
+                ? this.filteredMessages
+                : this.filteredMessages.filter((m) => !this.isAgentRelatedMessage(m));
+
+            // v-for 의 :key 로 쓸 "안정적이고 유일한" 값을 부여한다.
+            // 기존에는 :key="index" 였는데, filteredMessages 가 매번 새 객체를 만들어 내는 데다
+            // '이전 메시지 더보기'로 앞쪽에 메시지를 prepend 하면 모든 인덱스가 밀려서
+            // 마크다운 렌더러·BPMN 미리보기·HITL 패널이 전부 재마운트됐다.
+            // (여기의 항목들은 filteredMessages 가 만든 복사본이므로 원본 messages 를 오염시키지 않는다.)
+            const seenCount = new Map();
+            for (let i = 0; i < list.length; i++) {
+                const m = list[i];
+                if (!m || typeof m !== 'object') continue;
+                const base = (m.uuid || m.rowUuid || m.id || `idx-${i}`).toString();
+                const seen = seenCount.get(base) || 0;
+                seenCount.set(base, seen + 1);
+                // 같은 uuid 가 두 번 이상 나오는 예외 상황에서도 key 가 겹치지 않게 한다.
+                m.__rowKey = seen === 0 ? base : `${base}#${seen}`;
             }
-            return this.filteredMessages.filter((m) => !this.isAgentRelatedMessage(m));
+            return list;
         },
         isAgentPanelWidthAvailable() {
             return this.windowWidth >= 1279;

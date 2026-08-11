@@ -2134,7 +2134,7 @@ export default {
                         });
                     }
 
-                    const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', payload.mentionedUsers || []);
+                    const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', payload.mentionedUsers || [], payload);
                     if (agentTargets.length > 0) {
                         await this.streamAgents(agentTargets, msg.content || '', payload);
                     }
@@ -2248,7 +2248,7 @@ export default {
                         });
                     }
 
-                    const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', payload.mentionedUsers || []);
+                    const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', payload.mentionedUsers || [], payload);
                     if (agentTargets.length > 0) {
                         await this.streamAgents(agentTargets, msg.content || '', payload);
                     }
@@ -2610,7 +2610,7 @@ export default {
                     }
                 } catch (e) {}
 
-                const agentTargets = await this.resolveAgentTargetsForMessage(payload.text || '');
+                const agentTargets = await this.resolveAgentTargetsForMessage(payload.text || '', [], payload);
                 if (agentTargets.length > 0) {
                     const kickoffFiles = this.normalizePayloadFiles(payload);
                     // definition-map kickoff 등 handleSendMessage를 거치지 않는 경로에서도 첨부를 chat_attachments에 저장
@@ -4978,7 +4978,7 @@ export default {
                 }
 
                 // ---- 멀티 에이전트 라우팅/스트리밍 ----
-                const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', msg.mentionedUsers || []);
+                const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', msg.mentionedUsers || [], msg);
                 if (agentTargets.length > 0) {
                     await this.streamAgents(agentTargets, msg.content || '', payload);
                 }
@@ -5394,7 +5394,7 @@ export default {
             return Array.from(new Set(mentions));
         },
 
-        async resolveAgentTargetsForMessage(text, mentionedUsers = []) {
+        async resolveAgentTargetsForMessage(text, mentionedUsers = [], payload = null) {
             const inRoomAgentsRaw = this.getAgentCandidates();
             // NOTE:
             // - 멘션이 아닌 경우에는 1:1(사람-사람 / 사람-에이전트 포함)이라도 router가 개입 여부/추천을 판단해야 함.
@@ -5503,8 +5503,20 @@ export default {
                 const tenant_id = getTenantId();
                 const user_uid = this.userInfo?.uid || this.userInfo?.id || '';
                 const router = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
+                // 첨부만 보낸 메시지는 text 가 비어 라우터가 empty_input 으로 판단해 아무도 응답하지 않았다.
+                // 라우터가 의도를 추정할 수 있도록 첨부 정보를 요약해 함께 싣는다.
+                const routingFiles = this.normalizePayloadFiles(payload);
+                const routingFileNames = routingFiles
+                    .map((f) => (f?.name || f?.fileName || '').toString().trim())
+                    .filter(Boolean);
+                const routingUserMessage =
+                    (text || '').toString().trim() ||
+                    (routingFileNames.length > 0 ? `[첨부 파일] ${routingFileNames.join(', ')}` : '');
+
                 const routed = await router.routeAgents({
-                    user_message: (text || '').toString(),
+                    user_message: routingUserMessage,
+                    attachment_count: routingFiles.length,
+                    attachment_names: routingFileNames,
                     recent_history,
                     agents_info,
                     candidate_agent_ids,
@@ -5519,6 +5531,18 @@ export default {
                 const selected = Array.isArray(routed?.selected_agent_ids) ? routed.selected_agent_ids : [];
                 const selectedSet = new Set(selected.map((v) => (v || '').toString()).filter(Boolean));
                 if (!should || selectedSet.size === 0) {
+                    // 라우터가 개입 대상을 못 정했을 때(예: 첨부만 보내 text 가 비어 empty_input),
+                    // 그대로 빈 배열을 돌려주면 아무 에이전트도 응답하지 않아 사용자는 무반응으로 느낀다.
+                    // 첨부가 있으면 기본 에이전트가 "이 파일로 무엇을 할지" 되묻도록 폴백한다.
+                    if (routingFiles.length > 0) {
+                        const fallbackAgent =
+                            (inRoomAgentsRaw || []).find((a) => a?.id === PROCESS_GPT_AGENT_ID) ||
+                            (inRoomAgentsRaw || [])[0] ||
+                            null;
+                        if (fallbackAgent) {
+                            return [{ ...fallbackAgent, policy: 'must_reply', __routingLoadingUuid: routingLoadingUuid }];
+                        }
+                    }
                     this.removeRoutingLoadingMessage(routingLoadingUuid);
                     return [];
                 }
@@ -7834,6 +7858,45 @@ export default {
                     this.$nextTick(() => this.scrollToBottomSafe());
                 };
 
+                // 스트리밍 토큰마다 msg.content 를 쓰면 Chat.vue 의 filteredMessages(메시지 전건 deep copy)가
+                // 토큰 수만큼 재계산된다. 메시지 50건 방에서 2000토큰 응답이면 약 10만 회의 deep copy 다.
+                // → 60ms 단위로 묶어서 반영해 재계산 횟수를 수십 분의 1로 줄인다. (표시 내용은 동일)
+                const STREAM_FLUSH_MS = 60;
+                let streamFlushTimer = null;
+                const applyStreamedContent = () => {
+                    const msg = this.activeStreams[agentId];
+                    if (msg) {
+                        // HITL 패널(__humanFeedback)이 이미 붙은 메시지는 본문을 비워 둔다.
+                        // (request_human_input 후보/승인 질문이 plan_tools 로 패널화된 뒤에도
+                        //  스트리밍 토큰이 계속 와 본문에 질문 텍스트가 남던 문제 방지 — 체크박스 패널만 표시.)
+                        msg.content = msg.__humanFeedback
+                            ? ''
+                            : hasHumanFeedback
+                            ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
+                            : full.length === 0
+                            ? '생각 중...'
+                            : full;
+                        msg.isLoading = !msg.__humanFeedback;
+                    }
+                    this.setAgentStatus(agentId, { state: 'streaming', message: '' });
+                    maybeScroll();
+                };
+                const scheduleStreamedContent = () => {
+                    if (streamFlushTimer) return;
+                    streamFlushTimer = setTimeout(() => {
+                        streamFlushTimer = null;
+                        applyStreamedContent();
+                    }, STREAM_FLUSH_MS);
+                };
+                // 스트림 종료/중단 시 마지막 토큰까지 반드시 반영한다.
+                const flushStreamedContentNow = () => {
+                    if (streamFlushTimer) {
+                        clearTimeout(streamFlushTimer);
+                        streamFlushTimer = null;
+                    }
+                    applyStreamedContent();
+                };
+
                 maybeScroll();
 
                 // warmup (process-gpt-agent는 라우터 warmup 대상이 아님)
@@ -7952,22 +8015,8 @@ export default {
                 const callbacks = {
                     onToken: (token) => {
                         full += token;
-                        const msg = this.activeStreams[agentId];
-                        if (msg) {
-                            // HITL 패널(__humanFeedback)이 이미 붙은 메시지는 본문을 비워 둔다.
-                            // (request_human_input 후보/승인 질문이 plan_tools 로 패널화된 뒤에도
-                            //  스트리밍 토큰이 계속 와 본문에 질문 텍스트가 남던 문제 방지 — 체크박스 패널만 표시.)
-                            msg.content = msg.__humanFeedback
-                                ? ''
-                                : hasHumanFeedback
-                                ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
-                                : full.length === 0
-                                ? '생각 중...'
-                                : full;
-                            msg.isLoading = !msg.__humanFeedback;
-                        }
-                        this.setAgentStatus(agentId, { state: 'streaming', message: '' });
-                        maybeScroll();
+                        // 실제 반영은 applyStreamedContent 에서 60ms 단위로 묶어 수행한다.
+                        scheduleStreamedContent();
                     },
                     onPlanTools: (tools) => {
                         try {
@@ -8389,6 +8438,8 @@ export default {
                         }
                     },
                     onDone: async (content) => {
+                        // 60ms 배칭으로 아직 반영되지 않은 마지막 토큰들을 먼저 확정한다.
+                        flushStreamedContentNow();
                         const finalContent = (content || full || '').toString().trim();
 
                         // deepagent interrupt(request_human_input) 종료 마커 처리:
@@ -8588,6 +8639,8 @@ export default {
                         } catch (e) {}
                     },
                     onError: async (err) => {
+                        // 배칭 타이머가 살아 있으면 아래에서 세팅한 오류 본문을 덮어쓸 수 있으므로 먼저 취소·확정한다.
+                        flushStreamedContentNow();
                         delete this.agentAbortControllers[abortKey];
                         // 백엔드가 보낸 실제 오류 메시지를 화면에 노출한다(오류를 먹지 않음).
                         const errText = (err && (err.message || err.toString())) || '';
@@ -8632,6 +8685,8 @@ export default {
 
                 // 중지 버튼: placeholder면 제거, 부분 응답이 있으면 messages로 이관 후 로딩 해제
                 const onAbortHandler = () => {
+                    // 중지 시에도 미반영 토큰을 먼저 확정해야 부분 응답이 잘리지 않는다.
+                    flushStreamedContentNow();
                     delete this.agentAbortControllers[abortKey];
                     const msg = this.activeStreams[agentId];
                     if (msg) {
@@ -8672,6 +8727,13 @@ export default {
                         },
                         { signal: abortController.signal }
                     );
+                }
+
+                // 방어적 정리 — onDone/onError/onAbort 중 어느 것도 호출되지 않고 스트림이 끝난 경우,
+                // 남은 배칭 타이머가 나중에 깨어나 상태를 'streaming' 으로 되돌리지 않도록 한다.
+                if (streamFlushTimer) {
+                    clearTimeout(streamFlushTimer);
+                    streamFlushTimer = null;
                 }
             });
 

@@ -415,6 +415,7 @@ import NavGroup from './NavGroup/index.vue';
 import NavItem from './NavItem/index.vue';
 import ExtraBox from './extrabox/ExtraBox.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import { PROC_DEF_LIST_COLUMNS } from '@/components/api/ProcessGPTBackend';
 
 import VerticalHeader from '../vertical-header/VerticalHeader.vue';
 
@@ -938,7 +939,8 @@ export default {
             this.closeDownloadDefinitionList();
         },
         async getChild(subitem) {
-            let res = await backend.listDefinition(subitem.path);
+            // 메뉴에는 name/path/owner 만 쓰므로 definition·bpmn 원문은 받지 않는다.
+            let res = await backend.listDefinition(subitem.path, { key: PROC_DEF_LIST_COLUMNS });
             let menu = [];
             const me = this;
 
@@ -977,7 +979,7 @@ export default {
         async getDefinitionList() {
             const me = this;
             this.isDefinitionListLoading = true;
-            const list = await backend.listDefinition();
+            const list = await backend.listDefinition(undefined, { key: PROC_DEF_LIST_COLUMNS });
             if (list && list.length > 0) {
                 var menu = {
                     children: []
