@@ -321,12 +321,63 @@ export default {
             this._markedRunningIds = running;
             this._markedCompletedIds = completed;
         },
+        /**
+         * 프로세스의 첫 번째 실행 대상 액티비티를 찾는다.
+         *
+         * 예전에는 시작 이벤트의 id 가 반드시 'start_event' 라고 가정했다.
+         *   sequences.find(s => s.source === 'start_event')
+         * 그런데 정의에 따라 시작 이벤트 id 가 'start_event1', 'start' 처럼 다르게 생성된다.
+         * 그 경우 위 조회가 실패해 activities[0] 로 폴백했는데, activities 배열의 순서는
+         * 실행 순서와 무관하다. 실제로 activities[0] 이 마지막 태스크인 정의가 있어
+         * "프로세스를 실행하면 마지막 태스크가 열리는" 문제가 발생했다.
+         *
+         * 그래서 id 이름 대신 (1) 노드 타입으로 시작 지점을 찾고,
+         * (2) 시퀀스를 따라가며 처음 만나는 액티비티를 반환한다. (게이트웨이/이벤트는 통과)
+         */
         findStartActivity() {
-            const startSequence = this.processDefinition.sequences.find((sequence) => sequence.source === 'start_event');
-            if (startSequence) {
-                return this.processDefinition.activities.find((activity) => activity.id === startSequence.target);
+            const def = this.processDefinition || {};
+            const sequences = Array.isArray(def.sequences) ? def.sequences : [];
+            const activities = Array.isArray(def.activities) ? def.activities : [];
+            if (activities.length === 0) return null;
+
+            const activityById = new Map(activities.map((a) => [a && a.id, a]));
+            const isStartType = (type) => String(type || '').toLowerCase().includes('start');
+
+            // 1) 타입이 startEvent 인 노드를 시작 지점으로 삼는다. (events / gateways 양쪽 확인)
+            const startNodeIds = [];
+            for (const list of [def.events, def.gateways]) {
+                if (!Array.isArray(list)) continue;
+                for (const node of list) {
+                    if (node && node.id && isStartType(node.type)) startNodeIds.push(node.id);
+                }
             }
-            return this.processDefinition.activities[0];
+
+            const targets = new Set(sequences.map((s) => s && s.target));
+
+            // 2) 시작 이벤트가 명시돼 있지 않으면, 들어오는 연결이 없는 노드를 시작 지점으로 본다.
+            if (startNodeIds.length === 0) {
+                for (const s of sequences) {
+                    if (s && s.source && !targets.has(s.source)) startNodeIds.push(s.source);
+                }
+            }
+
+            // 3) 시작 지점에서 연결을 따라가며 처음 만나는 액티비티를 반환한다.
+            const visited = new Set();
+            const queue = [...startNodeIds];
+            while (queue.length > 0) {
+                const nodeId = queue.shift();
+                if (!nodeId || visited.has(nodeId)) continue;
+                visited.add(nodeId);
+                for (const s of sequences) {
+                    if (!s || s.source !== nodeId) continue;
+                    const activity = activityById.get(s.target);
+                    if (activity) return activity;
+                    queue.push(s.target);
+                }
+            }
+
+            // 4) 최후 폴백: 들어오는 연결이 없는 액티비티 → 그래도 없으면 첫 번째
+            return activities.find((a) => a && !targets.has(a.id)) || activities[0];
         },
         async init() {
             var me = this;

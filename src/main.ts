@@ -6,6 +6,35 @@ window.console.warn = () => {};
 
 import '@/scss/style.scss';
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
+
+// ---------------------------------------------------------------------------
+// Monaco 워커 설정 (Vite 기본 방식)
+//
+// 예전에는 vite-plugin-monaco-editor 가 워커를 만들어 줬는데, 그 플러그인(1.1.0)은
+// esbuild.buildSync 를 keepNames 없이 호출한다. 그러면 monaco 0.52 의
+//   class Node { static { this.Undefined = new Node(undefined); } }
+// 가
+//   var Node = class { static { this.Undefined = new Node(void 0); } }
+// 로 변환되면서 클래스 이름 바인딩이 사라져, 정적 초기화 시점에 Node 가 아직 undefined 라
+// "TypeError: Node is not a constructor" 로 워커가 즉시 죽는다.
+// (게다가 플러그인은 캐시 파일이 있으면 다시 빌드하지 않아 깨진 번들이 계속 남는다)
+//
+// Vite 의 `?worker` 임포트는 Rollup 이 처리하므로 이 문제가 없다.
+// 워커 파일은 별도 청크로 나가고, 실제로 new 로 만들 때만 로드된다.
+// ---------------------------------------------------------------------------
+import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
+import HtmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
+import TsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+
+(self as any).MonacoEnvironment = {
+    getWorker(_moduleId: string, label: string) {
+        if (label === 'json') return new JsonWorker();
+        if (label === 'html' || label === 'handlebars' || label === 'razor') return new HtmlWorker();
+        if (label === 'typescript' || label === 'javascript') return new TsWorker();
+        return new EditorWorker();
+    }
+};
 import { createClient } from '@supabase/supabase-js';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
@@ -63,8 +92,7 @@ import VueScrollTo from 'vue-scrollto';
 import ModelerImageGenerator from '@/components/designer/ModelerImageGenerator.vue';
 import type { KeycloakOnLoad } from 'keycloak-js';
 import Keycloak from 'keycloak-js';
-import loadbpmnComponents from './components/designer/bpmnModeling/bpmn';
-import loadOpengraphComponents from './opengraph';
+import { ensureDesignerComponents, pathNeedsDesignerComponents } from './utils/designerComponents';
 import DetailComponent from './components/ui-components/details/DetailComponent.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -77,66 +105,51 @@ import { ref } from 'vue';
 
 // 브라우저 언어로 즉시 판정 (네트워크 없음)
 function detectLanguageFromBrowser(): 'ko' | 'en' {
-    const browserLang = navigator.language || navigator.languages[0] || '';
-    return browserLang.startsWith('ko') ? 'ko' : 'en';
+    const browserLang = navigator.language || (navigator.languages && navigator.languages[0]) || '';
+    return browserLang.toLowerCase().startsWith('ko') ? 'ko' : 'en';
 }
 
-// 동적 언어 설정 함수
-async function detectLanguage(): Promise<'ko' | 'en'> {
-    // 여러 IP 감지 서비스 목록 (폴백용)
+// IP 기반 언어 보정(비동기, 백그라운드 전용).
+// 과거에는 이 조회를 createApp() 이전에 await 했는데, IP 서비스 3곳을 각 5초 타임아웃으로 "순차" 시도하는 구조라
+// 광고차단기/프록시 환경에서 최대 15초간 화면이 백지로 남았다. (특히 http://ip-api.com 은 HTTPS 배포에서
+// mixed content 로 무조건 차단되어 타임아웃이 확정적으로 발생했다.)
+// 따라서 (1) 부팅을 막지 않고, (2) 순차가 아닌 병렬로, (3) 짧은 타임아웃으로 시도한다.
+async function detectLanguageByIp(timeoutMs = 2000): Promise<'ko' | 'en' | null> {
+    // http:// 서비스는 HTTPS 페이지에서 mixed content 로 차단되므로 아예 시도하지 않는다.
+    const isHttps = typeof location !== 'undefined' && location.protocol === 'https:';
     const ipServices = [
-        {
-            name: 'ipinfo.io',
-            url: 'https://ipinfo.io/json',
-            parser: (data: any) => data.country
-        },
-        {
-            name: 'ipapi.co',
-            url: 'https://ipapi.co/json/',
-            parser: (data: any) => data.country_code
-        },
-        {
-            name: 'ip-api.com',
-            url: 'http://ip-api.com/json/',
-            parser: (data: any) => data.countryCode
-        }
-    ];
+        { url: 'https://ipinfo.io/json', parser: (d: any) => d.country },
+        { url: 'https://ipapi.co/json/', parser: (d: any) => d.country_code },
+        { url: 'http://ip-api.com/json/', parser: (d: any) => d.countryCode }
+    ].filter((s) => !isHttps || s.url.startsWith('https:'));
 
-    for (const service of ipServices) {
+    const probe = async (service: (typeof ipServices)[number]): Promise<'ko' | 'en'> => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-
             const response = await fetch(service.url, {
                 signal: controller.signal,
-                headers: {
-                    Accept: 'application/json',
-                    'User-Agent': 'ProcessGPT-App/1.0'
-                }
+                headers: { Accept: 'application/json' }
             });
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 throw new Error('Invalid content type');
             }
-
-            const data = await response.json();
-            const country = service.parser(data);
-
+            const country = service.parser(await response.json());
+            if (!country) throw new Error('No country');
             return country === 'KR' ? 'ko' : 'en';
-        } catch (error) {
-            // 다음 서비스로 계속 시도
-            continue;
+        } finally {
+            clearTimeout(timeoutId);
         }
-    }
+    };
 
-    // 모든 IP 감지 서비스 실패시 브라우저 언어로 폴백
-    return detectLanguageFromBrowser();
+    try {
+        // 가장 먼저 성공한 응답을 사용한다(모두 실패하면 AggregateError).
+        return await Promise.any(ipServices.map(probe));
+    } catch {
+        return null;
+    }
 }
 
 /**
@@ -146,8 +159,10 @@ async function detectLanguage(): Promise<'ko' | 'en'> {
  * 이제는 브라우저 언어로 즉시 렌더한 뒤, 결과가 다를 때만 살짝 갱신한다.
  */
 function refineLocaleInBackground() {
-    detectLanguage()
+    detectLanguageByIp()
         .then((detectedLocale) => {
+            // 조회에 모두 실패하면 브라우저 언어 판정을 그대로 둔다.
+            if (!detectedLocale) return;
             // 조회 도중 사용자가 직접 언어를 골랐다면 그 선택을 존중한다.
             if (localStorage.getItem('locale')) return;
 
@@ -309,7 +324,7 @@ async function initializeApp() {
     await setupTenant();
 
     // 동적 언어 설정 (localStorage에 저장된 언어 우선, 없으면 브라우저 언어로 즉시 판정)
-    // 지오IP 조회는 렌더를 막지 않도록 mount 이후 백그라운드로 돌린다.
+    // 지오IP 조회는 렌더를 막지 않도록 mount 이후 백그라운드로 돌린다. (refineLocaleInBackground)
     const savedLocale = localStorage.getItem('locale');
     (i18n.global as any).locale = savedLocale || detectLanguageFromBrowser();
 
@@ -340,47 +355,18 @@ async function initializeApp() {
     };
 
     // vite-plugin-monaco-editor가 자동으로 경로를 설정하므로 별도 경로 설정 불필요
-    app.use(VueMonacoEditorPlugin, {
-        setup(monaco: any) {
-            monaco.editor.onDidCreateEditor((editor: any) => {
-                if ('addAction' in editor) {
-                    editor.addAction({
-                        id: 'monaco-clipboard-copy',
-                        label: 'Copy',
-                        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC],
-                        run: (ed: any) => {
-                            const model = ed.getModel();
-                            const selection = ed.getSelection();
-                            if (model && selection) {
-                                const text = model.getValueInRange(selection);
-                                if (text) navigator.clipboard.writeText(text);
-                            }
-                        }
-                    });
-                    editor.addAction({
-                        id: 'monaco-clipboard-paste',
-                        label: 'Paste',
-                        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV],
-                        run: async (ed: any) => {
-                            const text = await navigator.clipboard.readText();
-                            if (text) {
-                                const selection = ed.getSelection();
-                                if (selection) {
-                                    ed.executeEdits('clipboard-paste', [
-                                        {
-                                            range: selection,
-                                            text: text,
-                                            forceMoveMarkers: true
-                                        }
-                                    ]);
-                                }
-                            }
-                        }
-                    });
-                }
-            });
-        }
-    });
+    //
+    // [주의] 여기에서 Ctrl+C / Ctrl+V 를 커스텀 액션으로 덮어쓰면 안 된다. (과거 그렇게 하다 아래 문제들이 있었다)
+    //  1) 커스텀 붙여넣기는 executeEdits 로 텍스트를 직접 밀어넣기 때문에 Monaco 의 붙여넣기 파이프라인을
+    //     타지 않는다. 그래서 formatOnPaste 가 동작하지 않아, 한 줄로 압축된 JSON 을 붙여넣으면
+    //     그대로 한 줄로 들어갔다.
+    //  2) navigator.clipboard.readText() 는 Firefox 등에서 웹 페이지에 허용되지 않고 Chrome 에서도 권한이
+    //     필요해, 실패하면 붙여넣기가 아무 반응 없이 무시됐다.
+    //  3) 선택 영역이 없을 때 네이티브 Ctrl+C 는 '현재 줄 전체'를 복사하는데, 커스텀 액션은 아무것도
+    //     복사하지 않았다.
+    // Monaco 의 기본 클립보드 처리는 브라우저 네이티브 copy/paste 이벤트를 쓰므로 권한이 필요 없고
+    // formatOnPaste / 실행취소 묶음도 정상 동작한다.
+    app.use(VueMonacoEditorPlugin, {});
     app.use(store);
     // @ts-ignore
     app.config.globalProperties.$try = app._component.methods.try;
@@ -399,8 +385,19 @@ async function initializeApp() {
     // modeler-image-generator
     // Use plugins
 
-    loadOpengraphComponents(app);
-    loadbpmnComponents(app);
+    // 디자이너 전역 컴포넌트(opengraph 28개 + bpmnModeling 128개, 약 1.8MB)는 부팅 시 등록하지 않는다.
+    // 별도 청크로 분리해 두고 (1) 실제 디자이너 라우트 진입 시 라우터 가드에서 보장 등록,
+    // (2) 그 외에는 최초 렌더 이후 유휴 시점에 백그라운드 등록한다.
+    router.beforeEach(async (to, _from, next) => {
+        if (pathNeedsDesignerComponents(to.path)) {
+            try {
+                await ensureDesignerComponents(app);
+            } catch (e) {
+                console.error('[designer components] 등록 실패:', e);
+            }
+        }
+        next();
+    });
 
     app.use(router);
     // app.component('EasyDataTable', Vue3EasyDataTable);
@@ -431,6 +428,12 @@ async function initializeApp() {
     // Vuetify 컴포넌트를 새 디자인 언어로 덮는 레이어.
     // Vuetify 스타일이 주입된 뒤에 와야 하므로 mount 이후에 적용한다.
     await import('@/ds/vuetify-bridge/overrides.css');
+
+    // NOTE: 디자이너 컴포넌트를 여기서 유휴 프리로드하지 않는다.
+    // 번들 분석 결과 그 청크는 ChatModule 과 병합되어 gzip 약 2.5MB 이므로,
+    // 디자이너를 쓰지 않는 사용자에게까지 배경 다운로드시키면 절감 효과가 상쇄된다.
+    // 등록은 위의 라우터 가드(pathNeedsDesignerComponents)가 전담한다.
+
     app.use(setLocale);
 
     // mount 이후에 지오IP 기반 언어 판정을 이어서 수행 (렌더를 막지 않음)
@@ -446,17 +449,26 @@ async function initializeApp() {
     dayjs.locale('ko');
     app.use(ganttastic);
 
-    // 전역으로 복사 가능하게 추가 (Monaco 에디터 내부는 자체 복사 액션 사용)
+    // 전역 복사 보조 — 일부 커스텀 뷰에서 선택 영역 복사가 되지 않는 경우를 위한 폴백.
+    // Monaco 에디터와 입력 요소 안에서는 브라우저 기본 동작을 그대로 둔다.
+    // (과거에는 선택 영역이 없어도 preventDefault 를 호출해 Ctrl+C 자체를 먹어버렸다)
     document.addEventListener('keydown', function (event) {
-        if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
-            const target = event.target as HTMLElement;
-            if (target.closest('.monaco-editor')) return;
+        if (!(event.ctrlKey || event.metaKey) || event.key !== 'c') return;
 
-            const selection = window.getSelection();
-            if (selection && selection.toString()) {
-                navigator.clipboard.writeText(selection.toString());
-            }
+        const target = event.target as HTMLElement | null;
+        if (!target) return;
+        if (target.closest('.monaco-editor')) return;
+        if (target.closest('input, textarea, [contenteditable="true"]')) return;
+
+        const selection = window.getSelection();
+        const text = selection ? selection.toString() : '';
+        if (!text) return; // 복사할 것이 없으면 기본 동작을 막지 않는다
+
+        try {
+            navigator.clipboard.writeText(text);
             event.preventDefault();
+        } catch {
+            /* 클립보드 API 불가 시 브라우저 기본 복사에 맡긴다 */
         }
     });
 

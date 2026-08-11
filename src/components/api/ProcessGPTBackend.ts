@@ -1,6 +1,23 @@
 import axios from '@/utils/axios';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
+
+// getFieldValue 의 참조정보 조회를 폼 단위로 합치기 위한 짧은 in-flight 캐시.
+// (_fetchDoneWorkitemsForFieldLookup 주석 참고 — 폼 1개를 열 때 필드 수만큼 반복되던 동일 쿼리를 1회로 줄인다.)
+const DONE_WORKITEM_LOOKUP_TTL_MS = 2000;
+const DONE_WORKITEM_LOOKUP_CACHE = new Map<string, { at: number; promise: Promise<any[]> }>();
+
+/**
+ * 목록/드롭다운 화면에서 proc_def 를 읽을 때 쓰는 컬럼 목록.
+ *
+ * proc_def 에는 definition(JSONB)과 bpmn(XML 원문)이 함께 들어 있어 행당 평균 17KB 를 넘는다.
+ * 이름만 필요한 목록 화면에서 select * 를 하면 uengine 테넌트 기준 326행에 5.75MB(780ms)가 오가는데,
+ * 아래 컬럼만 고르면 34KB(84ms)로 끝난다. (운영 DB 실측)
+ *
+ * listDefinition 의 후처리(path/name 보정, is_draft 필터)에 필요한 컬럼을 모두 포함한다.
+ * 실제 존재하는 컬럼만 나열해야 한다 — 없는 컬럼을 넣으면 PostgREST 가 42703 으로 실패한다.
+ */
+export const PROC_DEF_LIST_COLUMNS = 'id, name, type, owner, isdeleted, is_draft, tenant_id, prod_version';
 import type { Backend } from './Backend';
 import defaultProcessesData from './defaultProcesses.json';
 import { useDefaultSetting } from '@/stores/defaultSetting';
@@ -7796,6 +7813,46 @@ class ProcessGPTBackend implements Backend {
         return undefined;
     }
 
+    /**
+     * getFieldValue 가 참조하는 "같은 루트 인스턴스의 완료된 워크아이템" 목록을 가져온다.
+     *
+     * 폼을 열 때 FormWorkItem 이 필드마다 getFieldValue 를 병렬 호출하는데(20필드 폼이면 20회),
+     * 예전에는 호출마다 getInstance 1회 + todolist 전체 컬럼 조회 1회가 그대로 반복됐다.
+     * 즉 같은 응답을 20번 받아오면서 output/draft/feedback/log JSONB 를 매번 전송했다.
+     *
+     * 여기서는 (1) 진행 중인 동일 조회를 하나로 합치고(in-flight 공유),
+     * (2) 실제로 쓰는 컬럼(output, proc_def_id, execution_scope)만 선택한다.
+     * 짧은 TTL 이라 폼을 다시 열면 항상 새로 조회한다.
+     */
+    async _fetchDoneWorkitemsForFieldLookup(instanceId: string): Promise<any[]> {
+        const now = Date.now();
+        const cached = DONE_WORKITEM_LOOKUP_CACHE.get(instanceId);
+        if (cached && now - cached.at < DONE_WORKITEM_LOOKUP_TTL_MS) {
+            return cached.promise;
+        }
+
+        const promise = (async () => {
+            const instance = await this.getInstance(instanceId);
+            const rootInstanceId = (instance && instance.root_proc_inst_id) || instanceId;
+
+            const { data, error } = await window.$supabase
+                .from('todolist')
+                .select('output, proc_def_id, execution_scope')
+                .eq('root_proc_inst_id', rootInstanceId)
+                .eq('status', 'DONE');
+
+            if (error) {
+                throw new Error('workitem not found');
+            }
+            return data || [];
+        })();
+
+        DONE_WORKITEM_LOOKUP_CACHE.set(instanceId, { at: now, promise });
+        // 실패한 조회는 캐시에 남기지 않는다(다음 시도에서 재조회되도록).
+        promise.catch(() => DONE_WORKITEM_LOOKUP_CACHE.delete(instanceId));
+        return promise;
+    }
+
     async getFieldValue(field: string, procDefId: string, instanceId: string) {
         try {
             if (!field || !procDefId || !instanceId) {
@@ -7809,18 +7866,7 @@ class ProcessGPTBackend implements Backend {
 
             // BPMN 시퀀스/서브프로세스 위치와 무관하게, 같은 루트 프로세스 인스턴스 내
             // 워크아이템의 산출물(output)에서 formId/fieldId로 직접 조회한다.
-            const instance = await this.getInstance(instanceId);
-            const rootInstanceId = (instance && instance.root_proc_inst_id) || instanceId;
-
-            const { data, error } = await window.$supabase
-                .from('todolist')
-                .select('*')
-                .eq('root_proc_inst_id', rootInstanceId)
-                .eq('status', 'DONE');
-
-            if (error) {
-                throw new Error('workitem not found');
-            }
+            const data = await this._fetchDoneWorkitemsForFieldLookup(instanceId);
 
             let candidates = (data || []).filter(
                 (item: any) => this.extractFieldFromOutput(item.output, formId, fieldId) !== undefined
