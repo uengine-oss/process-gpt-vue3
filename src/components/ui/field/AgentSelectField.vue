@@ -409,6 +409,14 @@ export default {
                 }
             }
         },
+        // 저장된 agent id 가 (mount 이후에) 채워질 수 있어 mounted 1회 복원으로는 놓친다.
+        // 표시용 selectedAgent 만 비어 드롭다운이 빈칸으로 보이던 원인.
+        'activity.agent': {
+            handler() {
+                this.restoreSelectedAgent();
+            },
+            immediate: true
+        },
         'activity.usePresetAgent': {
             handler(newVal) {
                 if (newVal) {
@@ -523,47 +531,7 @@ export default {
     },
     async mounted() {
         await this.loadToolsAndSkills();
-        if (this.activity.usePresetAgent && this.activity.agent && this.activity.agent !== null) {
-            if (this.activity.agent.includes(',')) {
-                const agents = this.activity.agent.split(',');
-                const selectedAgents = [];
-                for (const agentId of agents) {
-                    let agent = this.defaultSetting.getAgentById(agentId);
-                    if (!agent) {
-                        agent = await this.backend.getUserById(agentId);
-                    }
-                    if (agent && agent.id && agent.is_agent) {
-                        selectedAgents.push({
-                            ...agent,
-                            id: agent.id,
-                            name: agent.username,
-                            isAgent: agent.is_agent,
-                            agentType: agent.agent_type,
-                            alias: agent.alias
-                        });
-                    }
-                }
-                this.selectedAgent = selectedAgents;
-            } else {
-                const agentId = this.activity.agent;
-                let agent = this.defaultSetting.getAgentById(agentId);
-                if (!agent) {
-                    agent = await this.backend.getUserById(agentId);
-                }
-                if (agent && agent.id && agent.is_agent) {
-                    this.selectedAgent = [
-                        {
-                            ...agent,
-                            id: agent.id,
-                            name: agent.username,
-                            isAgent: agent.is_agent,
-                            agentType: agent.agent_type,
-                            alias: agent.alias
-                        }
-                    ];
-                }
-            }
-        }
+        await this.restoreSelectedAgent();
 
         if (this.isExecute) {
             this.activity.agentMode = 'draft';
@@ -572,6 +540,34 @@ export default {
         }
     },
     methods: {
+        /** 저장된 activity.agent(id[,id]) 로 드롭다운 표시값(selectedAgent)을 복원한다. */
+        async restoreSelectedAgent() {
+            const raw = this.activity && this.activity.agent;
+            if (!raw) return;
+            // agent 가 있으면 그 자체가 "미리 설정된 에이전트 사용"이다 — 별도 플래그가
+            // 저장되지 않은 기존 정의도 이 경로로 복구된다.
+            if (!this.activity.usePresetAgent) this.activity.usePresetAgent = true;
+
+            const ids = String(raw).split(',').map((s) => s.trim()).filter(Boolean);
+            const picked = [];
+            for (const agentId of ids) {
+                let agent = this.defaultSetting.getAgentById(agentId);
+                if (!agent) {
+                    agent = await this.backend.getUserById(agentId);
+                }
+                if (agent && agent.id && agent.is_agent) {
+                    picked.push({
+                        ...agent,
+                        id: agent.id,
+                        name: agent.username,
+                        isAgent: agent.is_agent,
+                        agentType: agent.agent_type,
+                        alias: agent.alias
+                    });
+                }
+            }
+            if (picked.length) this.selectedAgent = picked;
+        },
         getCostColor(costKey) {
             if (costKey === 'AgentSelectInfo.cost.low') {
                 return 'success';

@@ -188,6 +188,13 @@ export default {
                 this.applyToPreviewTab();
             }
         },
+        // 편집/미리보기는 type 이 고정된 *별개 인스턴스*라 위 type 워처로는 동기화가 안 된다.
+        // 둘을 잇는 유일한 통로가 v-model 이므로 여기서 미리보기를 다시 그린다.
+        modelValue(newVal) {
+            if (this.type === 'edit') return;
+            this.previewHTML = newVal ? this.keditorContentHTMLToDynamicFormHTML(newVal) : '';
+            this.isShowPreview = true;
+        },
         previewHTML: {
             handler(newVal) {
                 this.EventBus.emit('updatePreviewHTML', newVal);
@@ -201,7 +208,8 @@ export default {
                 const kEditorContent = this.$refs.mashup.getKEditorContentHtml();
                 return this.keditorContentHTMLToDynamicFormHTML(kEditorContent);
             } else {
-                return this.formHTML;
+                // mashup 없는 미리보기 인스턴스 — DB 사본(formHTML)보다 편집쪽이 올린 modelValue 가 최신.
+                return this.modelValue || this.formHTML;
             }
         },
         changedKEditorContent(value) {
