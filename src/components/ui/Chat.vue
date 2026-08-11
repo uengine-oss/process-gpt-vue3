@@ -1672,6 +1672,29 @@
                                                                                 </div>
                                                                             </div> -->
 
+                                                                            <!-- 프로세스 안내 카드 — 본문 JSON(processDefinitionId+elements)을 실행 가능한 카드로 -->
+                                                                            <div
+                                                                                v-if="isProcessJsonMessage(message, index)"
+                                                                                class="mt-3 pa-3"
+                                                                                style="border: 1px solid rgba(var(--v-theme-primary), 0.35); border-radius: 10px"
+                                                                            >
+                                                                                <div class="d-flex align-center mb-2" style="gap: 6px">
+                                                                                    <v-icon size="16" color="primary">mdi-sitemap</v-icon>
+                                                                                    <span class="font-weight-medium">{{ getProcessCardName(message) }}</span>
+                                                                                </div>
+                                                                                <div class="d-flex align-center" style="gap: 8px">
+                                                                                    <v-btn
+                                                                                        size="small"
+                                                                                        color="primary"
+                                                                                        variant="flat"
+                                                                                        prepend-icon="mdi-play"
+                                                                                        @click="startProcessFromMessage(message)"
+                                                                                    >
+                                                                                        {{ $t('chat.executeProcess') || '실행' }}
+                                                                                    </v-btn>
+                                                                                </div>
+                                                                            </div>
+
                                                                             <!-- PDF2BPMN 결과 카드 -->
                                                                             <div
                                                                                 v-if="hasPdf2bpmnResultSections(message)"
@@ -4284,6 +4307,20 @@ export default {
             const processName = this.getInlineProcessName();
             const ready = !!(this.processGenerationProgress && this.processGenerationProgress.bpmn_xml);
             return ready ? `${processName}` : `${processName} 생성중...`;
+        },
+        /** 안내 카드에 표시할 프로세스명 */
+        getProcessCardName(message) {
+            const d = this._extractProcessDefinitionFromText(String(message?.content || ''));
+            return (d && (d.processDefinitionName || d.processDefinitionId)) || '프로세스';
+        },
+        /** 안내 카드의 실행 버튼 → 부모(ChatRoomPage)가 실행 다이얼로그를 연다 */
+        startProcessFromMessage(message) {
+            const d = this._extractProcessDefinitionFromText(String(message?.content || ''));
+            if (!d || !d.processDefinitionId) {
+                console.warn('[Chat] 실행할 프로세스 정의를 찾지 못했습니다.');
+                return;
+            }
+            this.$emit('startProcess', { processDefinitionId: d.processDefinitionId, processDefinition: d });
         },
         isProcessJsonMessage(message, index) {
             const text = String(message?.content || '').trim();

@@ -164,6 +164,7 @@
                                 @openui-state-update="handleOpenUiStateUpdate"
                                 @openui-parse-result="handleOpenUiParseResult"
                                 @beforeReply="handleBeforeReply"
+                                @startProcess="handleStartProcess"
                                 @invite-agent="handleInviteAgent"
                                 @getMoreChat="loadMoreMessages"
                                 @human-feedback-submit="handleHumanFeedbackSubmit"
@@ -327,6 +328,7 @@
                             @openui-state-update="handleOpenUiStateUpdate"
                             @openui-parse-result="handleOpenUiParseResult"
                             @beforeReply="handleBeforeReply"
+                                @startProcess="handleStartProcess"
                             @invite-agent="handleInviteAgent"
                             @getMoreChat="loadMoreMessages"
                             @human-feedback-submit="handleHumanFeedbackSubmit"
@@ -468,6 +470,7 @@
                         @openui-state-update="handleOpenUiStateUpdate"
                         @openui-parse-result="handleOpenUiParseResult"
                         @beforeReply="handleBeforeReply"
+                                @startProcess="handleStartProcess"
                         @invite-agent="handleInviteAgent"
                         @getMoreChat="loadMoreMessages"
                         @human-feedback-submit="handleHumanFeedbackSubmit"
@@ -791,12 +794,24 @@
             </v-card>
         </v-dialog>
     </v-card>
+        <!-- 채팅에서 안내한 프로세스를 그 자리에서 실행 (역할 지정 + 첫 폼) -->
+        <v-dialog v-model="processExecuteDialog" max-width="1200" scrollable>
+            <process-gpt-execute
+                v-if="processExecuteDialog && processExecuteTarget"
+                :processDefinition="processExecuteTarget"
+                :definitionId="processExecuteTarget.processDefinitionId"
+                :isSimulate="'false'"
+                @close="processExecuteDialog = false"
+                @createInstance="processExecuteDialog = false"
+            ></process-gpt-execute>
+        </v-dialog>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import Chat from '@/components/ui/Chat.vue';
+import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
@@ -870,6 +885,7 @@ export default {
         initialRoomId: { type: String, default: null }
     },
     components: {
+        'process-gpt-execute': ProcessGPTExecute,
         UnifiedChatInput,
         Chat,
         ProcessDefinition,
@@ -879,6 +895,8 @@ export default {
     },
     data() {
         return {
+            processExecuteDialog: false,
+            processExecuteTarget: null,
             defaultSetting: useDefaultSetting(),
             userInfo: null,
             userList: [],
@@ -1631,6 +1649,21 @@ export default {
                 this.chatAccessHeartbeatTimer = null;
             }
         },
+        /**
+         * 채팅 안내 카드의 ▶ 버튼 → 프로세스 실행 다이얼로그.
+         * Chat.vue 가 본문 JSON(processDefinitionId+elements)을 파싱해 넘겨준다.
+         */
+        handleStartProcess(messageObj) {
+            const def = messageObj?.processDefinition || messageObj;
+            const id = def?.processDefinitionId || messageObj?.processDefinitionId;
+            if (!id) {
+                console.warn('[ChatRoomPage] startProcess: processDefinitionId 없음', messageObj);
+                return;
+            }
+            this.processExecuteTarget = { ...def, processDefinitionId: id };
+            this.processExecuteDialog = true;
+        },
+
         handleBeforeReply(message) {
             try {
                 this.$refs.composer?.setReply?.(message);
