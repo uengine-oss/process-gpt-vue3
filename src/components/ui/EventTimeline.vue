@@ -459,10 +459,31 @@
                             <span>{{ $t('agentMonitor.workInProgress') }}</span>
                         </div>
 
+                        <!-- 실행 계획(write_todos) 카드: 도구 사용 목록과 분리해 항상 펼쳐서 표시 -->
+                        <div v-if="getLatestTodos(item.payload.jobId)" class="todo-plan-card">
+                            <div class="todo-plan-card-header">
+                                <h4 class="todo-plan-card-title">{{ $t('EventTimeline.planUpdated') }}</h4>
+                                <span class="todo-plan-progress">{{ getTodoProgressLabel(getLatestTodos(item.payload.jobId)) }}</span>
+                            </div>
+                            <ul class="todo-plan-list">
+                                <li
+                                    v-for="(todo, tIdx) in getLatestTodos(item.payload.jobId)"
+                                    :key="tIdx"
+                                    :class="['todo-plan-item', `todo-status-${todo.status}`]"
+                                >
+                                    <span class="todo-plan-icon">
+                                        <span v-if="todo.status === 'completed'">✓</span>
+                                        <span v-else-if="todo.status === 'in_progress'" class="todo-plan-spinner"></span>
+                                    </span>
+                                    <span class="todo-plan-content">{{ todo.content }}</span>
+                                </li>
+                            </ul>
+                        </div>
+
                         <!-- 도구 사용 상태 -->
-                        <div v-if="getToolUsageList(item.payload.jobId).length" class="tool-usage-status-list">
+                        <div v-if="getOtherToolUsageList(item.payload.jobId).length" class="tool-usage-status-list">
                             <div
-                                v-for="(tool, idx) in getToolUsageList(item.payload.jobId)"
+                                v-for="(tool, idx) in getOtherToolUsageList(item.payload.jobId)"
                                 :key="`${item.payload.jobId}-${tool.tool_name}-${idx}`"
                             >
                                 <div class="tool-usage-status-item">
@@ -846,6 +867,23 @@ export default {
                 tool.status === 'done' ? this.$t('EventTimeline.toolUsageComplete') : this.$t('EventTimeline.toolUsageInProgress');
             const detail = tool.query;
             return `${tool.tool_name} ${this.$t('EventTimeline.tool')} ${status}${detail ? ': ' + detail : ''}`;
+        },
+        getOtherToolUsageList(jobId) {
+            return this.getToolUsageList(jobId).filter((tool) => tool.tool_name !== 'write_todos');
+        },
+        getLatestTodos(jobId) {
+            const tools = this.getToolUsageList(jobId);
+            for (let i = tools.length - 1; i >= 0; i--) {
+                if (tools[i].tool_name === 'write_todos' && Array.isArray(tools[i].todos) && tools[i].todos.length > 0) {
+                    return tools[i].todos;
+                }
+            }
+            return null;
+        },
+        getTodoProgressLabel(todos) {
+            const list = Array.isArray(todos) ? todos : [];
+            const completed = list.filter((t) => t.status === 'completed').length;
+            return `${completed}/${list.length} ${this.$t('EventTimeline.completed')}`;
         },
         toggleToolUsageExpansion(jobId, idx) {
             const key = `${jobId}-${idx}`;
@@ -1942,6 +1980,101 @@ export default {
     border-radius: 6px;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.todo-plan-card {
+    background: var(--cds-bg-neutral);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--cds-border);
+    margin-top: 12px;
+}
+
+.todo-plan-card-header {
+    padding: 12px 16px;
+    background: var(--cds-bg-neutral);
+    border-bottom: 1px solid var(--cds-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.todo-plan-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cds-text-primary);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.todo-plan-progress {
+    font-size: 12px;
+    color: var(--cds-text-muted);
+    font-weight: 500;
+}
+
+.todo-plan-list {
+    list-style: none;
+    margin: 0;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.todo-plan-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+.todo-plan-icon {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+    border-radius: 50%;
+    border: 1.5px solid var(--cds-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: bold;
+    color: white;
+}
+
+.todo-status-completed .todo-plan-icon {
+    border-color: var(--cds-text-success);
+    background-color: var(--cds-text-success);
+}
+
+.todo-status-completed .todo-plan-content {
+    color: var(--cds-text-muted);
+    text-decoration: line-through;
+}
+
+.todo-status-in_progress .todo-plan-icon {
+    border-color: hsl(var(--accent-brand));
+}
+
+.todo-status-in_progress .todo-plan-content {
+    color: var(--cds-text-primary);
+    font-weight: 600;
+}
+
+.todo-plan-spinner {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid var(--cds-border);
+    border-top-color: hsl(var(--accent-brand));
+    animation: spin 1s linear infinite;
+}
+
+.todo-plan-content {
+    color: var(--cds-text-secondary);
 }
 
 .tool-usage-status-item::before {

@@ -3352,6 +3352,7 @@
         "toolUsageInProgress": "in progress",
         "tool": "tool",
         "viewResult": "View Result",
+        "planUpdated": "Plan",
         "parsingDocument": "Parsing document...",
         "parsingFailed": "Parsing failed",
         "approved": "Approved",

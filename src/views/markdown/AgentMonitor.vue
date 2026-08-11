@@ -423,12 +423,17 @@ export default {
                     if (!usageMap[jobId]) usageMap[jobId] = [];
 
                     if (event_type === 'tool_usage_started') {
-                        usageMap[jobId].push({
-                            tool_name: data.tool_name || crew_type,
+                        const toolName = data.tool_name || crew_type;
+                        const entry = {
+                            tool_name: toolName,
                             query: data.query || null,
                             info: null,
                             status: 'searching'
-                        });
+                        };
+                        if (toolName === 'write_todos' && Array.isArray(data.args?.todos)) {
+                            entry.todos = data.args.todos;
+                        }
+                        usageMap[jobId].push(entry);
                     } else if (event_type === 'tool_usage_finished') {
                         if (!finishedEventsByJob[jobId]) finishedEventsByJob[jobId] = [];
                         finishedEventsByJob[jobId].push({
