@@ -10878,6 +10878,38 @@ class ProcessGPTBackend implements Backend {
     // BPMN 인앱 단위 테스트 — 백엔드 test_mode.py 라우트 호출.
     // 경로: 게이트웨이 /completion/** → completion-service(/test/*)
     // ---------------------------------------------------------------
+    /**
+     * 프로세스의 시작 액티비티를 "엔진에게 물어본다".
+     *
+     * 시작 지점 판별은 실행 엔진의 판단이어야 하는데, 그동안 화면마다 프론트가 각자 계산했고
+     * 규칙이 서로 달라 잘못된 액티비티가 열리는 문제가 있었다.
+     * 이제 엔진의 판별 로직(ProcessDefinition.find_initial_activity)을 그대로 호출한다.
+     *
+     * 네트워크/서버 오류로 실패하면 null 을 돌려준다. 호출부는 utils/processStart 의
+     * 동일 규칙 구현으로 폴백해 화면이 멈추지 않게 한다.
+     */
+    async getStartActivity(payload: {
+        process_definition_id?: string;
+        definition?: any;
+        version_tag?: string;
+        version?: number | string;
+        arcv_id?: string;
+    }): Promise<{ startEventId: string | null; activityId: string | null; activity: any } | null> {
+        try {
+            const response = await axios.post(
+                '/completion/process-definition/start-activity',
+                { ...payload, tenant_id: getTenantId() },
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+            const data = response?.data;
+            if (!data || !data.activityId) return null;
+            return data;
+        } catch (e) {
+            console.warn('[getStartActivity] 엔진 조회 실패 — 로컬 판별로 폴백합니다.', e);
+            return null;
+        }
+    }
+
     async testInitiate(payload: {
         process_definition_id: string;
         target_activity_id?: string;
