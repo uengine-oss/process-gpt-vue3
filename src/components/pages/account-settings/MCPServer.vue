@@ -1,7 +1,7 @@
 <template>
     <v-row class="justify-center ma-0 pa-0">
         <!-- 좌측: 리스트 -->
-        <v-col cols="12" lg="6">
+        <v-col cols="6" class="mcp-list-col">
             <v-card flat class="pa-1">
                 <v-card-item class="pa-0">
                     <!-- <h5 class="text-h5 mb-4">MCP Servers</h5> -->
@@ -99,10 +99,10 @@
         </v-col>
 
         <!-- 세로 디바이더 (데스크톱에서만 표시) -->
-        <v-divider vertical class="d-none d-md-block"></v-divider>
+        <v-divider vertical class="mcp-divider"></v-divider>
 
         <!-- 우측: 수정 화면 (데스크톱) -->
-        <v-col cols="12" lg="6" class="d-none d-lg-block pa-0" style="padding: 16px 16px 0px 16px !important">
+        <v-col cols="6" class="mcp-edit-col pa-0" style="padding: 16px 16px 0px 16px !important">
             <div v-if="editingKey && !isAddMode" flat>
                 <div class="pt-0 pb-4">
                     <v-row class="ma-0 pa-0 align-center">
@@ -791,6 +791,29 @@ export default {
 </script>
 
 <style scoped>
+/* 좌우 분할 레이아웃을 데스크톱 폭(모바일 다이얼로그 전환 기준인 1024px)까지는
+   화면 배율/해상도와 무관하게 항상 좌우로 고정한다.
+   (Vuetify 기본 lg 브레이크포인트(1280px)와 모바일 다이얼로그 전환 기준(1024px)이
+   서로 달라 그 사이 구간에서 우측 영역이 사라지던 문제 방지) */
+.mcp-edit-col,
+.mcp-divider {
+    display: none;
+}
+@media (min-width: 1024px) {
+    .mcp-list-col {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+    .mcp-edit-col {
+        display: block !important;
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+    .mcp-divider {
+        display: block !important;
+    }
+}
+
 .limited-textarea :deep(.v-field__input) {
     height: calc(100vh - 320px) !important;
     overflow-y: auto !important;

@@ -925,17 +925,31 @@ export default {
         fail(msg) {
             this.$emit('fail', msg);
         },
-        executeProcess() {
-            if (
-                this.workItem.raw &&
-                this.workItem.raw.agent_mode &&
-                (!this.workItem.raw.draft_status || this.workItem.raw.draft_status !== 'COMPLETED')
-            ) {
+        async executeProcess() {
+            if (this.workItem.raw && this.workItem.raw.agent_mode && (await this.isDraftIncomplete())) {
                 this.agentIncompleteDialog = true;
                 return;
             }
 
             this.proceedExecuteProcess();
+        },
+        // workItem.raw는 화면 진입 시점의 스냅샷이라 draft_status가 실시간으로 반영되지 않는다.
+        // 제출 직전에 최신 상태를 다시 조회해서 판단한다.
+        async isDraftIncomplete() {
+            const taskId = this.workItem?.worklist?.taskId || this.$route.params.taskId;
+            if (!taskId) return false;
+
+            try {
+                const data = await backend.getTodoStatus(taskId);
+                if (!data) return false;
+
+                if (this.workItem.raw) this.workItem.raw.draft_status = data.draft_status;
+
+                return !data.draft_status || data.draft_status !== 'COMPLETED';
+            } catch (error) {
+                console.error('[FormWorkItem] draft_status 조회 실패:', error);
+                return false;
+            }
         },
         cancelAgentIncompleteSubmit() {
             this.agentIncompleteDialog = false;
@@ -943,7 +957,8 @@ export default {
         async confirmAgentIncompleteSubmit() {
             this.agentIncompleteDialog = false;
             try {
-                await backend.putWorkItem(this.$route.params.taskId, { draft_status: 'CANCELLED' });
+                const taskId = this.workItem?.worklist?.taskId || this.$route.params.taskId;
+                await backend.putWorkItem(taskId, { draft_status: 'CANCELLED' });
                 if (this.workItem.raw) this.workItem.raw.draft_status = 'CANCELLED';
             } catch (error) {
                 console.error('[FormWorkItem] draft_status 업데이트 실패:', error);
