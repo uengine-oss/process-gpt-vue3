@@ -219,6 +219,7 @@
 import AssistantChats from '../chat/AssistantChats.vue';
 import Attachments from './Attachments.vue';
 import ChatModule from '@/components/ChatModule.vue';
+import { findStartActivity } from '@/utils/processStart';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import CompanyQueryGenerator from '@/components/ai/CompanyQueryGenerator.js';
@@ -713,42 +714,41 @@ export default {
                     let firstActivityForm = null;
 
                     if (processDef && processDef.definition) {
-                        const definition = processDef.definition;
+                        // 시작 액티비티는 실행 엔진에게 물어본다.
+                        // (예전에는 화면마다 규칙이 달라, 시작 이벤트 id 나 타입 표기가 조금만 달라도
+                        //  엉뚱한 액티비티가 첫 번째로 잡혔다)
+                        const resolvedStart = await me.backend.getStartActivity({
+                            process_definition_id: processDef.id || processDef.definition.processDefinitionId,
+                            definition: processDef.definition
+                        });
+                        const definitionActivities = Array.isArray(processDef.definition.activities)
+                            ? processDef.definition.activities
+                            : [];
+                        firstActivity =
+                            (resolvedStart?.activityId &&
+                                (definitionActivities.find((a) => a && a.id === resolvedStart.activityId) ||
+                                    resolvedStart.activity)) ||
+                            // 엔진 조회 실패 시에만 동일 규칙의 로컬 구현으로 폴백한다.
+                            findStartActivity(processDef.definition);
 
-                        // Start Event 찾기
-                        const startEvent = definition.events?.find((event) => event.type === 'startEvent');
+                        if (firstActivity && firstActivity.tool && firstActivity.tool.startsWith('formHandler:')) {
+                            const formKey = firstActivity.tool.replace('formHandler:', '');
 
-                        if (startEvent) {
-                            // Start Event 이후의 첫 번째 Sequence 찾기
-                            const firstSequence = definition.sequences?.find((seq) => seq.source === startEvent.id);
+                            try {
+                                // 폼 정보 가져오기
+                                const formInfo = await me.backend.getFormFields(formKey);
 
-                            if (firstSequence && firstSequence.target) {
-                                // 첫 번째 액티비티 찾기
-                                firstActivity = definition.activities?.find((activity) => activity.id === firstSequence.target);
-
-                                if (firstActivity) {
-                                    // 액티비티의 폼 정보 가져오기
-                                    if (firstActivity.tool && firstActivity.tool.startsWith('formHandler:')) {
-                                        const formKey = firstActivity.tool.replace('formHandler:', '');
-
-                                        try {
-                                            // 폼 정보 가져오기
-                                            const formInfo = await me.backend.getFormFields(formKey);
-
-                                            if (formInfo) {
-                                                firstActivityForm = {
-                                                    formKey: formKey,
-                                                    formHtml: formInfo.html,
-                                                    fields: formInfo.fields_json,
-                                                    activityName: firstActivity.name || firstActivity.id,
-                                                    activityId: firstActivity.id
-                                                };
-                                            }
-                                        } catch (error) {
-                                            console.error('폼 정보 가져오기 오류:', error);
-                                        }
-                                    }
+                                if (formInfo) {
+                                    firstActivityForm = {
+                                        formKey: formKey,
+                                        formHtml: formInfo.html,
+                                        fields: formInfo.fields_json,
+                                        activityName: firstActivity.name || firstActivity.id,
+                                        activityId: firstActivity.id
+                                    };
                                 }
+                            } catch (error) {
+                                console.error('폼 정보 가져오기 오류:', error);
                             }
                         }
                     }

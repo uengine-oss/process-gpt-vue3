@@ -1057,9 +1057,14 @@ export default {
          * pendingHumanFeedback가 속한 메시지 객체 (submit 시 참조)
          */
         pendingHumanFeedbackMessage() {
-            if (!this.messages || this.messages.length === 0) return null;
-            for (let i = this.messages.length - 1; i >= 0; i--) {
-                const msg = this.messages[i];
+            // pendingHumanFeedback 과 반드시 같은 범위를 봐야 한다.
+            // 예전에는 여기만 this.messages 만 뒤져서, 패널이 아직 스트림 메시지(activeStreams)에만
+            // 있는 동안 제출하면 대상 메시지를 못 찾았다. 그러면 __submitted 표시도, DB 저장도 안 되고
+            // 다음 턴에서 activeStreams 가 교체되며 패널이 화면에서 통째로 사라졌다.
+            const allMsgs = [...this.messages, ...Object.values(this.activeStreams)];
+            if (allMsgs.length === 0) return null;
+            for (let i = allMsgs.length - 1; i >= 0; i--) {
+                const msg = allMsgs[i];
                 const feedback = msg && msg.__humanFeedback ? msg.__humanFeedback : null;
                 const hasOptions =
                     (Array.isArray(feedback?.questions) && feedback.questions.length > 0) ||
@@ -4622,6 +4627,24 @@ export default {
                     }
                 } catch (persistErr) {
                     console.warn('[HumanFeedback] 제출 상태 DB 저장 실패:', persistErr);
+                }
+            }
+
+            // 패널이 아직 스트림 메시지(activeStreams)에만 있으면, 다음 턴이 시작될 때
+            // activeStreams 가 교체·삭제되면서 화면에서 통째로 사라진다.
+            // (사용자가 "이대로 프로세스 생성" 을 고르는 순간 컨설팅 초안 카드가 없어지던 문제)
+            // → 확정 목록(this.messages)으로 옮겨 응답 기록이 대화에 남게 한다.
+            //   같은 객체 참조를 그대로 넣어야 __humanFeedback 의 readonly 상태가 유지되고,
+            //   displayMessages 가 uuid 로 중복을 걸러 주므로 두 번 렌더되지 않는다.
+            if (targetMessage && targetMessage.__humanFeedback) {
+                const alreadyListed = this.messages.some(
+                    (m) =>
+                        m &&
+                        ((targetMessage.uuid && m.uuid === targetMessage.uuid) ||
+                            (targetMessage.rowUuid && m.rowUuid === targetMessage.rowUuid))
+                );
+                if (!alreadyListed) {
+                    this.messages.push(targetMessage);
                 }
             }
 
