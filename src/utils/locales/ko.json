@@ -3325,6 +3325,7 @@
         "expand": "더보기",
         "doubleClick": "더블클릭으로도 접기/펼치기가 가능합니다",
         "workInProgress": "작업을 진행하고 있습니다...",
+        "workCancelled": "작업이 취소되었습니다.",
         "workQueued": "작업이 대기열에 등록되었습니다",
         "noWorkInProgress": "대기 중",
         "workStarted": "작업이 시작되면 여기에 표시됩니다.",
@@ -3360,6 +3361,7 @@
         "processed": "처리됨",
         "inProgress": "진행중",
         "taskFailed": "작업실패",
+        "taskCancelled": "취소됨",
         "allCompleted": "전체완료",
         "taskCompleted": "작업완료"
     },
@@ -3674,7 +3676,10 @@
         "previousStep": "이전 단계",
         "intermediateSave": "중간 저장",
         "delegateMessage": "'{taskName}'업무를 {email}({username})에게 위임하였습니다.",
-        "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {email}({username})으로 위임하였습니다."
+        "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {email}({username})으로 위임하였습니다.",
+        "agentIncompleteWarning": "현재 진행 중인 에이전트의 작업이 완료되지 않았습니다.\n그래도 제출하시겠습니까?",
+        "yes": "예",
+        "no": "아니오"
     },
     "InstanceSource": {
         "addFile": "파일 추가",

@@ -3325,6 +3325,7 @@
         "expand": "Expand",
         "doubleClick": "Double-click to collapse/expand",
         "workInProgress": "Working...",
+        "workCancelled": "The task has been cancelled.",
         "workQueued": "Work has been registered in the queue.",
         "noWorkInProgress": "Standby",
         "workStarted": "The work will be displayed here once it starts.",
@@ -3360,6 +3361,7 @@
         "processed": "Processed",
         "inProgress": "In Progress",
         "taskFailed": "Task Failed",
+        "taskCancelled": "Cancelled",
         "allCompleted": "All Completed",
         "taskCompleted": "Task Completed"
     },
@@ -3674,7 +3676,10 @@
         "previousStep": "Previous Step",
         "intermediateSave": "Intermediate Save",
         "delegateMessage": "Task '{taskName}' has been delegated to {email}({username}).",
-        "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {email}({username})."
+        "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {email}({username}).",
+        "agentIncompleteWarning": "The current agent's task is not yet complete.\nDo you still want to submit?",
+        "yes": "Yes",
+        "no": "No"
     },
     "InstanceSource": {
         "addFile": "Add File",

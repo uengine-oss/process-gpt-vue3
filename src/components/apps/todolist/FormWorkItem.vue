@@ -188,12 +188,31 @@
         <!-- <v-dialog v-model="delegateTaskDialog"
             :class="isMobile ? 'form-work-item-delegate-task-form-dialog-mobile' : 'form-work-item-delegate-task-form-dialog-pc'"
         >
-            <DelegateTaskForm 
+            <DelegateTaskForm
                 :task="workItem"
                 @delegate="delegateTask"
                 @close="closeDelegateTask"
             />
         </v-dialog> -->
+
+        <v-dialog v-model="agentIncompleteDialog" max-width="480" persistent>
+            <v-card class="pa-0">
+                <v-row class="ma-0 pa-4 pb-0 flex-start">
+                    <v-card-title class="pa-0 alert-message">
+                        {{ $t('FormWorkItem.agentIncompleteWarning') }}
+                    </v-card-title>
+                </v-row>
+                <v-row class="ma-0 pa-4">
+                    <v-spacer></v-spacer>
+                    <v-btn rounded variant="flat" color="gray" @click="cancelAgentIncompleteSubmit">
+                        {{ $t('FormWorkItem.no') }}
+                    </v-btn>
+                    <v-btn class="ml-2" rounded variant="flat" color="primary" @click="confirmAgentIncompleteSubmit">
+                        {{ $t('FormWorkItem.yes') }}
+                    </v-btn>
+                </v-row>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -279,6 +298,7 @@ export default {
         useTextAudio: false,
         isLoading: false,
         delegateTaskDialog: false,
+        agentIncompleteDialog: false,
         inputFields: null,
         isInitialized: false,
         fileFieldNames: [],
@@ -395,6 +415,7 @@ export default {
         });
 
         await this.init();
+
     },
     methods: {
         extractFileFieldNames(html) {
@@ -905,6 +926,31 @@ export default {
             this.$emit('fail', msg);
         },
         executeProcess() {
+            if (
+                this.workItem.raw &&
+                this.workItem.raw.agent_mode &&
+                (!this.workItem.raw.draft_status || this.workItem.raw.draft_status !== 'COMPLETED')
+            ) {
+                this.agentIncompleteDialog = true;
+                return;
+            }
+
+            this.proceedExecuteProcess();
+        },
+        cancelAgentIncompleteSubmit() {
+            this.agentIncompleteDialog = false;
+        },
+        async confirmAgentIncompleteSubmit() {
+            this.agentIncompleteDialog = false;
+            try {
+                await backend.putWorkItem(this.$route.params.taskId, { draft_status: 'CANCELLED' });
+                if (this.workItem.raw) this.workItem.raw.draft_status = 'CANCELLED';
+            } catch (error) {
+                console.error('[FormWorkItem] draft_status 업데이트 실패:', error);
+            }
+            this.proceedExecuteProcess();
+        },
+        proceedExecuteProcess() {
             if (this.isSimulate == 'true') {
                 this.isLoading = true;
             }
@@ -1256,6 +1302,14 @@ export default {
 <style>
 .form-work-item-mobile {
     display: none;
+}
+
+.v-card-title.alert-message {
+    white-space: pre-line !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    word-break: break-word !important;
+    height: auto;
 }
 
 /* Chip 버튼 스타일 */

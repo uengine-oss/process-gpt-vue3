@@ -449,6 +449,11 @@
                             </div>
                         </div>
 
+                        <!-- 취소 상태 -->
+                        <div v-else-if="!item.payload.isCompleted && isTaskCancelled(item.payload)" class="task-progress task-cancelled">
+                            <span>{{ $t('agentMonitor.workCancelled') }}</span>
+                        </div>
+
                         <!-- 진행 상태 -->
                         <div v-else-if="!item.payload.isCompleted" class="task-progress">
                             <div class="progress-dots">
@@ -744,8 +749,13 @@ export default {
         getTaskStatusClass(payload) {
             const baseClass = 'task-status';
             if (payload.isError) return [baseClass, 'error'];
-            if (!payload.isCompleted) return [baseClass, 'running'];
+            if (!payload.isCompleted) {
+                return [baseClass, this.isTaskCancelled(payload) ? 'cancelled' : 'running'];
+            }
             return [baseClass, payload.isCrewCompleted ? 'crew-completed' : 'completed'];
+        },
+        isTaskCancelled(payload) {
+            return !payload.isCompleted && this.todoStatus?.draft_status === 'CANCELLED';
         },
         getTaskMeta(payload) {
             const typeLabel = payload.isHumanAsked ? 'human asked' : payload.crewType;
@@ -925,7 +935,9 @@ export default {
             }
         },
         getStatusText(task) {
-            if (!task.isCompleted) return this.$t('EventTimeline.inProgress');
+            if (!task.isCompleted) {
+                return this.isTaskCancelled(task) ? this.$t('EventTimeline.taskCancelled') : this.$t('EventTimeline.inProgress');
+            }
             if (task.isError) return this.$t('EventTimeline.taskFailed');
             return task.isCrewCompleted ? this.$t('EventTimeline.allCompleted') : this.$t('EventTimeline.taskCompleted');
         },
@@ -1457,6 +1469,11 @@ export default {
     border: 1px solid #fecaca;
 }
 
+.task-status.cancelled {
+    background: #f1f1f1;
+    color: #757575;
+}
+
 .status-dot {
     width: 6px;
     height: 6px;
@@ -1756,6 +1773,12 @@ export default {
     font-size: 14px;
     color: hsl(var(--accent-brand));
     font-weight: 500;
+}
+
+.task-progress.task-cancelled {
+    background: #f5f5f5;
+    border-color: #e0e0e0;
+    color: #757575;
 }
 
 .progress-dots {
