@@ -42,15 +42,13 @@
                             >
                                 <div class="agent-avatar">
                                     <img
-                                        v-if="agent.img"
-                                        :src="agent.img"
+                                        :src="agent.img || '/images/defaultUser.png'"
                                         :alt="agent.name"
                                         class="agent-image"
                                         width="32"
                                         height="32"
                                         @error="handleImageError"
                                     />
-                                    <div v-else class="agent-emoji">🤖</div>
                                 </div>
                                 <div class="agent-info">
                                     <span class="agent-name">{{ agent.name || 'Unnamed Agent' }}</span>
