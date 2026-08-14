@@ -3092,7 +3092,7 @@
                                     </template>
                                 </v-tooltip>
                                 <v-select
-                                    v-if="selectableOrchestration"
+                                    v-if="selectableOrchestration && isOrchestrationSelectableRoute"
                                     v-model="orchestration"
                                     :items="orchestrationOptions"
                                     item-title="label"
@@ -3871,6 +3871,16 @@ export default {
         }
     },
     computed: {
+        /**
+         * 오케스트레이션(기본/딥 에이전트) 선택 필드를 노출할 화면인지.
+         *
+         * 이 선택은 "새 대화를 어떤 에이전트로 시작할지" 고르는 값이라 프로세스 맵 화면에서만 의미가 있다.
+         * 채팅방(/chat) 안에서는 이미 시작된 대화이므로 노출하면 안 된다.
+         */
+        isOrchestrationSelectableRoute() {
+            const path = String(this.$route?.path || '');
+            return path === '/definition-map' || path.startsWith('/definition-map/');
+        },
         orchestrationOptions() {
             return [
                 { label: this.$t('chats.basicAgent'), value: 'langchain-react' },
