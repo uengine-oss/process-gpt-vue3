@@ -8579,6 +8579,8 @@ class ProcessGPTBackend implements Backend {
                 let tenantSkills = tenantInfo.skills || [];
                 tenantSkills = tenantSkills.filter((skill: any) => skill.name !== deletedSkill);
                 await this.saveSkills(tenantSkills);
+                // 사이드바 SkillList 가 즉시 반영되도록 알림 (tenant_skills realtime 이 지연/비활성인 경우 대비).
+                EventBus.emit('skillsRemoved', [deletedSkill]);
                 return response.data;
             } else {
                 return false;

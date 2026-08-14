@@ -269,12 +269,14 @@ export default {
 
             if (existingIndex !== -1) {
                 // 기존 에이전트 업데이트
+                // img/profile 이 없는 이벤트(예: 컴포넌트 재설치로 인한 agentUpdated)로 인해
+                // 실제 프로필 이미지가 지워지지 않도록 기존 값을 보존한다.
                 this.agentList[existingIndex] = {
                     ...this.agentList[existingIndex],
                     id: updatedAgent.id,
                     name: updatedAgent.username || updatedAgent.name,
                     role: updatedAgent.role,
-                    img: updatedAgent.profile || updatedAgent.img,
+                    img: updatedAgent.profile || updatedAgent.img || this.agentList[existingIndex].img,
                     type: updatedAgent.agent_type || 'agent'
                 };
             } else {

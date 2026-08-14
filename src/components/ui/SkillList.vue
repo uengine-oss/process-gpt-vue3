@@ -99,8 +99,9 @@ export default {
         this.loadSkillProposals();
         this.subscribeSkillProposals();
         this.loadSkillOwners();
-        // 마켓플레이스/컴포넌트로 스킬이 설치된 직후 즉시 반영 (tenant_skills realtime 지연/비활성 대비).
-        this.EventBus.on('skillsAdded', this.handleSkillsAdded);
+        // 마켓플레이스/컴포넌트 설치, 스킬 관리 페이지 삭제 직후 즉시 반영 (tenant_skills realtime 지연/비활성 대비).
+        this.EventBus.on('skillsAdded', this.handleSkillsChanged);
+        this.EventBus.on('skillsRemoved', this.handleSkillsChanged);
     },
     beforeUnmount() {
         if (this.skillsWatchRef && typeof this.skillsWatchRef.unsubscribe === 'function') {
@@ -109,7 +110,8 @@ export default {
         if (this.proposalsWatchRef && typeof this.proposalsWatchRef.unsubscribe === 'function') {
             this.proposalsWatchRef.unsubscribe();
         }
-        this.EventBus.off('skillsAdded', this.handleSkillsAdded);
+        this.EventBus.off('skillsAdded', this.handleSkillsChanged);
+        this.EventBus.off('skillsRemoved', this.handleSkillsChanged);
     },
     watch: {
         $route() {
@@ -133,7 +135,7 @@ export default {
                 console.error('Failed to subscribe tenant_skills realtime:', e);
             }
         },
-        handleSkillsAdded() {
+        handleSkillsChanged() {
             this.loadSkillList();
             this.loadSkillOwners();
         },
