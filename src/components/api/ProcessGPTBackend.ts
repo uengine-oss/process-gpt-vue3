@@ -26,6 +26,7 @@ import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRule
 import { convertXMLToJSON as convertXMLToJSONShared } from '@/utils/bpmnXmlToDefinition';
 import { applySelectedChanges } from '@/utils/bpmnSelectiveMerge';
 import { getTenantId, setCachedJwtTenantId } from '@/utils/tenant';
+import { EventBus } from '@/utils/eventBus';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -5854,7 +5855,7 @@ class ProcessGPTBackend implements Backend {
                             .map((s: string) => s.trim())
                             .filter(Boolean)
                         : [];
-                await this.putAgent({
+                const agentPayload = {
                     id: agentId,
                     name,
                     role,
@@ -5868,8 +5869,11 @@ class ProcessGPTBackend implements Backend {
                     isAgent: true,
                     type: 'agent',
                     alias: a.alias || null
-                });
+                };
+                await this.putAgent(agentPayload);
                 created.push(agentId);
+                // 사이드바 AgentList 가 즉시 반영되도록 알림 (신규는 추가, 기존 재사용은 갱신).
+                EventBus.emit(dup ? 'agentUpdated' : 'agentAdded', agentPayload);
             } catch (e: any) {
                 warnings.push(`agent '${a?.username || a?.name}' 생성 실패: ${e?.message || e}`);
             }
@@ -6176,6 +6180,8 @@ class ProcessGPTBackend implements Backend {
         if (registeredSkills.length > 0) {
             try {
                 await this.saveSkills(registeredSkills);
+                // 사이드바 SkillList 가 즉시 반영되도록 알림 (tenant_skills realtime 이 지연/비활성인 경우 대비).
+                EventBus.emit('skillsAdded', registeredSkills);
             } catch (e: any) {
                 report.warnings.push(`skills 등록 실패: ${e?.message || e}`);
             }
