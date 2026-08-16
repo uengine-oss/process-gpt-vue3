@@ -2080,7 +2080,12 @@ export default {
                 const roomId = this.uuid();
                 const nowIso = new Date().toISOString();
 
-                const orchestration = (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
+                // 방에 이미 오케스트레이션이 저장돼 있으면 그것이 최우선이다.
+                // (새로고침/방 이동 직후 컴포저가 기본값 deepagents 를 들고 있는 상태로 전송되면
+                //  기본 에이전트로 시작한 대화가 딥 에이전트로 답하던 문제)
+                const storedOrchestration = this.getStoredRoomOrchestration();
+                const orchestration =
+                    storedOrchestration || (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
                 const canWrite = this.shouldClientWriteChatDb(orchestration);
                 const room = {
                     id: roomId,
@@ -2194,7 +2199,12 @@ export default {
                 const roomId = this.uuid();
                 const nowIso = new Date().toISOString();
 
-                const orchestration = (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
+                // 방에 이미 오케스트레이션이 저장돼 있으면 그것이 최우선이다.
+                // (새로고침/방 이동 직후 컴포저가 기본값 deepagents 를 들고 있는 상태로 전송되면
+                //  기본 에이전트로 시작한 대화가 딥 에이전트로 답하던 문제)
+                const storedOrchestration = this.getStoredRoomOrchestration();
+                const orchestration =
+                    storedOrchestration || (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
                 const canWrite = this.shouldClientWriteChatDb(orchestration);
                 const room = {
                     id: roomId,
@@ -2681,8 +2691,16 @@ export default {
                 }
             } catch (e) {}
 
-            const rooms = await backend.getChatRoomList('chat_rooms');
-            const found = (rooms || []).find((r) => r.id === roomId) || null;
+            // 방 하나만 단건 조회한다.
+            // 목록(getChatRoomList)은 성능을 위해 context 컬럼을 빼고 가져오므로 여기서 쓰면 안 된다.
+            // 예전에 목록에서 찾아 쓰다가 currentChatRoom.context 가 비어,
+            // 새로고침/방 이동 후 저장된 orchestration(기본 에이전트)을 잃고 딥 에이전트로 넘어갔다.
+            let found = null;
+            try {
+                found = await backend.getChatRoom(roomId);
+            } catch (e) {
+                found = null;
+            }
             this.currentChatRoom = found || cachedRoom || { id: roomId, name: this.$t('chatListing.chat'), participants: [] };
 
             // 최신 context 등을 위해 로컬 인덱스 갱신(가능하면)
@@ -2761,6 +2779,19 @@ export default {
             }
         },
 
+        /**
+         * 방에 "명시적으로 저장된" 오케스트레이션. 없으면 빈 문자열.
+         * getRoomOrchestration 과 달리 기본값(deepagents)으로 대체하지 않는다.
+         * 이미 정해진 방이면 컴포저의 값보다 이 값이 우선해야 하기 때문이다.
+         */
+        getStoredRoomOrchestration() {
+            try {
+                const ctx = this.readChatRoomContext(this.currentChatRoom);
+                return (ctx?.orchestration || '').toString().trim();
+            } catch (e) {
+                return '';
+            }
+        },
         getRoomOrchestration() {
             try {
                 const ctx = this.readChatRoomContext(this.currentChatRoom);
