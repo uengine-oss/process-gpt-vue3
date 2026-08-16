@@ -26,6 +26,7 @@ import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRule
 import { convertXMLToJSON as convertXMLToJSONShared } from '@/utils/bpmnXmlToDefinition';
 import { applySelectedChanges } from '@/utils/bpmnSelectiveMerge';
 import { getTenantId, setCachedJwtTenantId } from '@/utils/tenant';
+import { EventBus } from '@/utils/eventBus';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -2768,6 +2769,29 @@ class ProcessGPTBackend implements Backend {
 
                 parent.insertBefore(rowLayout, row);
                 rowLayout.appendChild(row);
+            });
+
+            // row-layout은 slot으로 modelValue만 넘길 뿐 자식 필드에 자동으로 바인딩해주지 않는다.
+            // AI가 v-model 없이 필드만 출력하면(예: `기본 에이전트` 채팅이 forms/*.html을 직접
+            // 저장하는 경로 — KEditor의 keditorContentHTMLToDynamicFormHTML을 거치지 않음)
+            // 화면엔 보여도 입력값이 formValues에 반영되지 않는 '먹통' 폼이 된다.
+            // is_multidata_mode='true'는 슬롯이 배열(localModelValue[name])을 넘기고 v-for로
+            // item을 순회해야 하는데 이 정규화 단계는 그 래퍼를 만들지 않으므로 다루지 않는다.
+            doc.querySelectorAll('row-layout').forEach((rowLayout) => {
+                if (rowLayout.getAttribute('is_multidata_mode') === 'true') return;
+                rowLayout.querySelectorAll('[name]').forEach((field) => {
+                    const tag = field.tagName.toLowerCase();
+                    // 필드 컴포넌트는 전부 하이픈 포함 커스텀 태그(text-field 등)다.
+                    // div.row/col-sm-* 같은 순수 레이아웃 요소가 남겨둔 name 속성은 건드리지 않는다.
+                    if (!tag.includes('-') || tag === 'row-layout' || field.hasAttribute('v-model')) return;
+                    const name = field.getAttribute('name');
+                    if (!name) return;
+                    if (field.tagName.toLowerCase() === 'code-field') {
+                        field.setAttribute('v-model', `codeInfos['${name}']`);
+                    } else {
+                        field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
+                    }
+                });
             });
 
             return doc.body.innerHTML;
@@ -5831,7 +5855,7 @@ class ProcessGPTBackend implements Backend {
                             .map((s: string) => s.trim())
                             .filter(Boolean)
                         : [];
-                await this.putAgent({
+                const agentPayload = {
                     id: agentId,
                     name,
                     role,
@@ -5845,8 +5869,11 @@ class ProcessGPTBackend implements Backend {
                     isAgent: true,
                     type: 'agent',
                     alias: a.alias || null
-                });
+                };
+                await this.putAgent(agentPayload);
                 created.push(agentId);
+                // 사이드바 AgentList 가 즉시 반영되도록 알림 (신규는 추가, 기존 재사용은 갱신).
+                EventBus.emit(dup ? 'agentUpdated' : 'agentAdded', agentPayload);
             } catch (e: any) {
                 warnings.push(`agent '${a?.username || a?.name}' 생성 실패: ${e?.message || e}`);
             }
@@ -6153,6 +6180,8 @@ class ProcessGPTBackend implements Backend {
         if (registeredSkills.length > 0) {
             try {
                 await this.saveSkills(registeredSkills);
+                // 사이드바 SkillList 가 즉시 반영되도록 알림 (tenant_skills realtime 이 지연/비활성인 경우 대비).
+                EventBus.emit('skillsAdded', registeredSkills);
             } catch (e: any) {
                 report.warnings.push(`skills 등록 실패: ${e?.message || e}`);
             }
@@ -8550,6 +8579,8 @@ class ProcessGPTBackend implements Backend {
                 let tenantSkills = tenantInfo.skills || [];
                 tenantSkills = tenantSkills.filter((skill: any) => skill.name !== deletedSkill);
                 await this.saveSkills(tenantSkills);
+                // 사이드바 SkillList 가 즉시 반영되도록 알림 (tenant_skills realtime 이 지연/비활성인 경우 대비).
+                EventBus.emit('skillsRemoved', [deletedSkill]);
                 return response.data;
             } else {
                 return false;

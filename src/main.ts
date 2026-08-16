@@ -188,7 +188,7 @@ const i18n = createI18n({
 
 // EventBus
 import mitt from 'mitt';
-const emitter = mitt();
+import { EventBus as emitter } from '@/utils/eventBus';
 const OpenGraphEmitter = mitt();
 const ModelingEmitter = mitt();
 
