@@ -8366,8 +8366,11 @@ export default {
                                 });
                             }
                             msg.toolCalls = toolCalls;
-                            // WorkAssistantChatPanel처럼 현재 동작 텍스트로 표시
-                            msg.content = `🔧 ${this.formatToolName(name)} 실행 중...`;
+                            // 도구 실행 상태는 Chat.vue의 실시간 타임라인(toolCalls 기반)이 별도로 보여준다.
+                            // 여기서 content를 "실행 중..." 문구로 덮어쓰면 이미 도착한 답변 토큰이
+                            // 도구 실행 동안 화면에서 사라지므로(클로드 코드는 tool과 답변을 함께 보여줌),
+                            // content는 건드리지 않는다. 아직 토큰이 없으면 applyStreamedContent가
+                            // '생각 중...' placeholder를 유지한다.
                             this.appendAgentLogToMessage(assistantUuid, {
                                 level: 'info',
                                 category: 'tool',
@@ -8457,23 +8460,6 @@ export default {
                                 }
                             }
                             msg.toolCalls = toolCalls;
-                            // The execution detail already records the completed
-                            // call. Do not leave the visible chat body claiming
-                            // that the tool is still running while the agent is
-                            // preparing its next action or final response.
-                            // NOTE: content must stay non-empty here — Chat.vue's
-                            // filteredMessages drops any message with no content/
-                            // image/file/panel, so setting '' made the whole bubble
-                            // (avatar + name) briefly vanish between tool_end and the
-                            // next token/done event.
-                            if (
-                                lastRunningTool &&
-                                !toolCalls.some((toolCall) => toolCall?.status === 'running') &&
-                                (msg.content || '').toString().startsWith('🔧') &&
-                                (msg.content || '').toString().includes('실행 중')
-                            ) {
-                                msg.content = '생각 중...';
-                            }
                             // file_artifact can persist the message just before tool_end.
                             // Persist the terminal state as well so reopening the room does
                             // not restore a stale "실행 중" bubble for a completed call.
