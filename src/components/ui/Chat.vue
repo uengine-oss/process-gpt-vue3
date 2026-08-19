@@ -3829,13 +3829,22 @@ export default {
                 try {
                     const newId = newRoom?.id != null ? String(newRoom.id) : '';
                     const oldId = oldRoom?.id != null ? String(oldRoom.id) : '';
-                    // 같은 방에 대한 메시지/미리보기 갱신마다 실행되므로, 방 전환 시에만 서버 값으로 동기화한다.
-                    // (매 갱신마다 덮어쓰면 컴포저에서 선택한 orchestration 이 전송 전에 초기화됨)
-                    if (newId && oldId && newId === oldId) {
+                    const readOrchestration = (r) => {
+                        const c = r?.context ?? r?.room_context ?? r?.roomContext ?? null;
+                        return (c?.orchestration || '').toString().trim();
+                    };
+                    const v = readOrchestration(newRoom);
+
+                    // 같은 방에 대한 메시지/미리보기 갱신마다 실행되므로, 저장된 값이 그대로면 건드리지 않는다.
+                    // (매 갱신마다 덮어쓰면 컴포저에서 선택한 orchestration 이 전송 전에 초기화된다)
+                    //
+                    // 단, 'id 가 같으면 무조건 무시' 하면 안 된다. loadRoom 은 localStorage 캐시로 먼저
+                    // currentChatRoom 을 채운 뒤 DB 값으로 교체하는데, 캐시에 context 가 없거나 낡았으면
+                    // 첫 세팅에서 기본값(deepagents)으로 정해진 뒤 뒤이어 오는 DB 값이 무시됐다.
+                    // → 방 새로고침·이동 후 기본 에이전트가 딥 에이전트로 바뀌던 원인.
+                    if (newId && oldId && newId === oldId && v === readOrchestration(oldRoom)) {
                         return;
                     }
-                    const ctx = newRoom?.context ?? newRoom?.room_context ?? newRoom?.roomContext ?? null;
-                    const v = (ctx?.orchestration || '').toString().trim();
                     if (v == '' || v == null) {
                         this.selectableOrchestration = true;
                     } else {

@@ -1820,6 +1820,17 @@ export default {
          * chat_rooms 업데이트 시, 서버에서 갱신한 context(예: tool 호출 내역)가
          * 오래된 클라이언트 payload로 덮어써지지 않도록 DB 최신 context를 읽어 merge 후 저장한다.
          */
+        /**
+         * 채팅방 행 저장. (메시지 미리보기 갱신 때문에 대화할 때마다 호출된다)
+         *
+         * putObject 는 행 전체를 upsert 하므로 context 도 함께 쓰인다.
+         * (컬럼을 빼면 보존되는 게 아니라 null 로 덮어써지므로 반드시 함께 보내야 한다)
+         *
+         * 그래서 저장 직전에 DB 의 context 를 다시 읽어 병합하는데, 이때
+         * 에이전트 전용 키(pending_actions)는 로컬 스냅샷 쪽을 버리고 항상 DB 값을 쓴다.
+         * 프론트가 방을 열 때 읽어둔 옛 pending_actions 를 되쓰면, 그 사이 에이전트가 저장한
+         * HITL 진행상태가 옛 값으로 되돌아가 컨설팅 초안이 반복해서 뜬다.
+         */
         async putChatRoomMerged(room) {
             const r = room !== undefined && room !== null ? room : this.currentChatRoom;
             if (!r || !r.id) return;
@@ -1831,7 +1842,14 @@ export default {
                     .maybeSingle();
                 if (!error) {
                     const existingCtx = this.normalizeRoomContext(existing?.context);
-                    const incomingCtx = this.normalizeRoomContext(r.context);
+                    const incomingCtx = { ...this.normalizeRoomContext(r.context) };
+
+                    // 에이전트가 소유하는 키는 프론트가 절대 되쓰지 않는다. (항상 DB 값 유지)
+                    // 프론트의 r.context 는 방을 열 때 읽어둔 스냅샷이라, 그 사이 에이전트가 갱신한
+                    // HITL 진행상태를 옛 값으로 되돌려 놓는다.
+                    const AGENT_OWNED_CONTEXT_KEYS = ['pending_actions'];
+                    for (const key of AGENT_OWNED_CONTEXT_KEYS) delete incomingCtx[key];
+
                     const merged = this.deepMergeObjects(existingCtx, incomingCtx);
 
                     // AI 가 지어준 이름이 되돌아가던 문제:
@@ -2062,7 +2080,12 @@ export default {
                 const roomId = this.uuid();
                 const nowIso = new Date().toISOString();
 
-                const orchestration = (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
+                // 방에 이미 오케스트레이션이 저장돼 있으면 그것이 최우선이다.
+                // (새로고침/방 이동 직후 컴포저가 기본값 deepagents 를 들고 있는 상태로 전송되면
+                //  기본 에이전트로 시작한 대화가 딥 에이전트로 답하던 문제)
+                const storedOrchestration = this.getStoredRoomOrchestration();
+                const orchestration =
+                    storedOrchestration || (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
                 const canWrite = this.shouldClientWriteChatDb(orchestration);
                 const room = {
                     id: roomId,
@@ -2176,7 +2199,12 @@ export default {
                 const roomId = this.uuid();
                 const nowIso = new Date().toISOString();
 
-                const orchestration = (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
+                // 방에 이미 오케스트레이션이 저장돼 있으면 그것이 최우선이다.
+                // (새로고침/방 이동 직후 컴포저가 기본값 deepagents 를 들고 있는 상태로 전송되면
+                //  기본 에이전트로 시작한 대화가 딥 에이전트로 답하던 문제)
+                const storedOrchestration = this.getStoredRoomOrchestration();
+                const orchestration =
+                    storedOrchestration || (payload?.orchestration || '').toString().trim() || this.getRoomOrchestration();
                 const canWrite = this.shouldClientWriteChatDb(orchestration);
                 const room = {
                     id: roomId,
@@ -2663,8 +2691,16 @@ export default {
                 }
             } catch (e) {}
 
-            const rooms = await backend.getChatRoomList('chat_rooms');
-            const found = (rooms || []).find((r) => r.id === roomId) || null;
+            // 방 하나만 단건 조회한다.
+            // 목록(getChatRoomList)은 성능을 위해 context 컬럼을 빼고 가져오므로 여기서 쓰면 안 된다.
+            // 예전에 목록에서 찾아 쓰다가 currentChatRoom.context 가 비어,
+            // 새로고침/방 이동 후 저장된 orchestration(기본 에이전트)을 잃고 딥 에이전트로 넘어갔다.
+            let found = null;
+            try {
+                found = await backend.getChatRoom(roomId);
+            } catch (e) {
+                found = null;
+            }
             this.currentChatRoom = found || cachedRoom || { id: roomId, name: this.$t('chatListing.chat'), participants: [] };
 
             // 최신 context 등을 위해 로컬 인덱스 갱신(가능하면)
@@ -2743,6 +2779,19 @@ export default {
             }
         },
 
+        /**
+         * 방에 "명시적으로 저장된" 오케스트레이션. 없으면 빈 문자열.
+         * getRoomOrchestration 과 달리 기본값(deepagents)으로 대체하지 않는다.
+         * 이미 정해진 방이면 컴포저의 값보다 이 값이 우선해야 하기 때문이다.
+         */
+        getStoredRoomOrchestration() {
+            try {
+                const ctx = this.readChatRoomContext(this.currentChatRoom);
+                return (ctx?.orchestration || '').toString().trim();
+            } catch (e) {
+                return '';
+            }
+        },
         getRoomOrchestration() {
             try {
                 const ctx = this.readChatRoomContext(this.currentChatRoom);
