@@ -833,10 +833,11 @@ const backend = BackendFactory.createBackend();
 
 // 산출물 계약 — deepagents-lite ``app/agent/artifacts.py`` 의 CONTENT_TYPES 와 같은 집합.
 // 값은 ArtifactPanel 의 뷰어 선택 키이기도 하다(hwpx/docx/pdf/csv/markdown/slide).
-const ARTIFACT_KINDS = new Set(['hwpx', 'docx', 'pdf', 'csv', 'markdown', 'slide']);
+const ARTIFACT_KINDS = new Set(['hwpx', 'docx', 'xlsx', 'pdf', 'csv', 'markdown', 'slide']);
 const ARTIFACT_FALLBACK_LABEL = {
     hwpx: 'document.hwpx',
     docx: 'document.docx',
+    xlsx: 'workbook.xlsx',
     pdf: 'PDF',
     csv: 'CSV',
     markdown: 'Markdown',
@@ -846,6 +847,7 @@ const ARTIFACT_FALLBACK_LABEL = {
 const ARTIFACT_DONE_MESSAGE = {
     hwpx: 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.',
     docx: 'DOCX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.',
+    xlsx: '엑셀 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.',
     pdf: '검토 의견서를 생성했습니다. 오른쪽 패널에서 확인해주세요.',
     csv: 'CSV 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.',
     markdown: '검토 비교표를 생성했습니다. 오른쪽 패널에서 확인해주세요.',
@@ -4957,7 +4959,7 @@ export default {
                 this.activeArtifactId = id;
             }
             // 문서/슬라이드 같은 "실제 아티팩트"는 넓게 열기
-            if (type === 'hwpx' || type === 'docx' || type === 'slide' || type === 'markdown' || type === 'pdf') {
+            if (type === 'hwpx' || type === 'docx' || type === 'xlsx' || type === 'slide' || type === 'markdown' || type === 'pdf') {
                 if ((this.artifactSidebarWidth || 0) < this.artifactSidebarWideWidth) {
                     this.artifactSidebarWidth = this.artifactSidebarWideWidth;
                 }
@@ -5369,6 +5371,7 @@ export default {
             const ct = contentType.toLowerCase();
             const fn = fileName.toLowerCase();
             if (ct.includes('wordprocessingml') || fn.endsWith('.docx')) return 'docx';
+            if (ct.includes('spreadsheetml') || fn.endsWith('.xlsx') || fn.endsWith('.xlsm')) return 'xlsx';
             if (ct.includes('hwp') || fn.endsWith('.hwpx')) return 'hwpx';
             if (ct.includes('application/pdf') || fn.endsWith('.pdf')) return 'pdf';
             if (ct.includes('text/csv') || fn.endsWith('.csv')) return 'csv';
@@ -5406,6 +5409,8 @@ export default {
          */
         artifactFromMessage(msg) {
             if (!msg) return null;
+            // 신규 저장분은 이 한 필드로 끝난다 — 종류가 늘어도 손댈 곳이 없다.
+            if (msg.artifact && msg.artifact.artifact_type) return msg.artifact;
             if (msg.slideMarkdown) {
                 return { slide_markdown: msg.slideMarkdown, image_urls: msg.slideImageUrls || [] };
             }
@@ -5473,6 +5478,16 @@ export default {
          * 저장은 messages jsonb 통째 교체라, 여기서 얹어두지 않으면 복원 시 패널이 사라진다.
          */
         rememberArtifactOnMessage(msg, art, label, data) {
+            // 종류에 무관한 정본. 아래 종류별 필드는 이미 저장된 메시지를 읽는 구 경로가
+            // 계속 돌게 두려고 남긴 것이다(docx·xlsx 는 애초에 여기 없었고, 그래서
+            // 새로고침하면 패널이 사라졌다).
+            msg.artifact = {
+                artifact_type: art.kind,
+                file_name: label,
+                file_url: art.fileUrl || '',
+                content_type: art.contentType || '',
+                preview: art.preview || null
+            };
             if (art.kind === 'hwpx') {
                 msg.hwpxHtmlUrl = data.htmlUrl;
                 msg.hwpxFileUrl = art.fileUrl;
