@@ -57,9 +57,10 @@
                         @download="emitPanelAction(panel, 'download', $event)"
                         @page-edit-request="emitPanelAction(panel, 'page-edit-request', $event)"
                     />
-                    <!-- DOCX 문서 미리보기 -->
+                    <!-- DOCX·XLSX 문서 미리보기 — 서버가 만든 HTML 을 같은 뷰어로 띄운다.
+                         (엑셀은 시트별 표로 렌더되며 수식 칸은 계산값과 수식을 함께 보여준다.) -->
                     <HwpxViewer
-                        v-else-if="panel.type === 'docx'"
+                        v-else-if="panel.type === 'docx' || panel.type === 'xlsx'"
                         :ref="(el) => setPanelRef(panel.id, el)"
                         :htmlUrl="panel.data.htmlUrl"
                         @close="$emit('close-panel', panel.id)"
@@ -118,6 +119,7 @@ import AgentChatRoomContext, { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/component
 const PANEL_TYPE_ICONS = {
     hwpx: 'mdi-file-document-outline',
     docx: 'mdi-file-word-outline',
+    xlsx: 'mdi-file-excel-outline',
     slide: 'mdi-presentation',
     markdown: 'mdi-language-markdown-outline',
     pdf: 'mdi-file-pdf-box',
