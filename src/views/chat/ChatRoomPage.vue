@@ -4839,13 +4839,32 @@ export default {
                     file_id: (f.file_id || f.fileId || '').toString() || '',
                     fileType: f.fileType || f.type || '',
                     fileSize: f.fileSize || f.size || 0,
+                    // 산출물이면 어느 문서의 몇 번째 판인지 — 백엔드가 최신판을 고르는 근거.
+                    derived_from: (f.derived_from || '').toString(),
+                    doc_version: Number(f.doc_version || 0) || 0,
                 };
             };
             try {
                 for (const m of this.messages || []) {
-                    if (!m || m.role !== 'user') continue;
-                    if (m.pdfFile) pushSessionFile(m.pdfFile);
-                    if (Array.isArray(m.pdfFiles)) m.pdfFiles.forEach(pushSessionFile);
+                    if (!m) continue;
+                    if (m.role === 'user') {
+                        if (m.pdfFile) pushSessionFile(m.pdfFile);
+                        if (Array.isArray(m.pdfFiles)) m.pdfFiles.forEach(pushSessionFile);
+                        continue;
+                    }
+                    // ★ 에이전트가 만든 산출물도 방의 파일이다. 예전엔 user 메시지만 훑어서
+                    //   산출물이 목록에 없었고, 그래서 다음 턴이 매번 *처음 올린 원본* 을 열어
+                    //   직전 작업을 통째로 날렸다(실측: 시트를 하나씩 채우는 3턴 요청에서
+                    //   2번 결과에 1번이 없고 3번에 1·2번이 없었다).
+                    if (m.artifact && m.artifact.file_url) {
+                        pushSessionFile({
+                            fileName: m.artifact.file_name,
+                            fileUrl: m.artifact.file_url,
+                            fileType: m.artifact.content_type || '',
+                            derived_from: m.artifact.derived_from || '',
+                            doc_version: m.artifact.doc_version || 0,
+                        });
+                    }
                 }
             } catch (e) {
                 // 누적 수집 실패해도 nominal flow 는 유지
@@ -5354,6 +5373,8 @@ export default {
             const fileUrl = (raw.file_url || raw.fileUrl || '').toString();
             const fileName = (raw.file_name || raw.fileName || '').toString();
             const contentType = (raw.content_type || raw.contentType || '').toString();
+            const derivedFrom = (raw.derived_from || raw.derivedFrom || '').toString();
+            const docVersion = Number(raw.doc_version || raw.docVersion || 0) || 0;
             const kind = this.artifactKind(raw, fileName, contentType);
             if (!kind) return null;
             const preview = this.normalizeArtifactPreview(raw, kind, fileUrl);
@@ -5361,7 +5382,7 @@ export default {
             const extras = (Array.isArray(raw.extras) ? raw.extras : [])
                 .map((e) => this.normalizeArtifact(e))
                 .filter(Boolean);
-            return { kind, fileName, contentType, fileUrl, preview, extras };
+            return { kind, fileName, contentType, fileUrl, preview, extras, derivedFrom, docVersion };
         },
 
         /** ``artifact_type`` 이 정본. 없는 구 payload 만 content_type/확장자로 추정한다. */
@@ -5484,6 +5505,9 @@ export default {
             msg.artifact = {
                 artifact_type: art.kind,
                 file_name: label,
+                // 계보 — 다음 턴이 "이 문서의 최신판" 을 찾는 근거 (백엔드 room_files 로 흐른다).
+                derived_from: art.derivedFrom || '',
+                doc_version: art.docVersion || 0,
                 file_url: art.fileUrl || '',
                 content_type: art.contentType || '',
                 preview: art.preview || null
