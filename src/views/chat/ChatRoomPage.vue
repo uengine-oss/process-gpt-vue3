@@ -2911,8 +2911,13 @@ export default {
                 // 느린 서브에이전트 호출 등에서 백엔드가 같은 턴에 대해 로컬 fallback row 와
                 // 서버 확정 row 를 서로 다른 uuid 로 각각 남기는 경우가 있다(_dedupeMessagesByLogicalUuid
                 // 는 uuid 가 다르면 걸러내지 못한다). 같은 agentId/email 의 assistant 메시지가
-                // 사이에 user 메시지 없이 짧은 시간 안에 연속되면 같은 턴의 응답으로 보고,
-                // 가장 나중(=가장 완결된) 것만 남긴다.
+                // 사이에 user 메시지 없이 연속되면 같은 턴의 응답으로 보고, 가장 나중(=가장 완결된) 것만
+                // 남긴다. Odoo 조회 + 이메일 발송처럼 도구를 여러 번 거치는 턴은 1분을 넘기기도 해서
+                // (실측: 클라이언트 fallback row 와 SDK 확정 row 가 72초 차이로 남아 중복 노출된 사례)
+                // 시간 창은 10분으로 넉넉히 잡는다 — agentId 일치 + user 메시지 미개입이 이미 충분히
+                // 강한 신호이므로, 이 정도 창을 넘겨 같은 에이전트가 정말 별개로 두 번 답하는 경우는
+                // 사실상 없다.
+                const SAME_TURN_COLLAPSE_WINDOW_MS = 10 * 60 * 1000;
                 const collapsed = [];
                 for (let i = 0; i < asc.length; i++) {
                     const m = asc[i];
@@ -2925,7 +2930,7 @@ export default {
                             n &&
                             (n.role || '').toString() === 'assistant' &&
                             !n.__humanFeedback &&
-                            Math.abs(new Date(n.timeStamp || 0).getTime() - mts) <= 60000 &&
+                            Math.abs(new Date(n.timeStamp || 0).getTime() - mts) <= SAME_TURN_COLLAPSE_WINDOW_MS &&
                             ((mAgentId && (n.agentId || '').toString() === mAgentId) ||
                                 (!mAgentId && mEmail && (n.email || '').toString() === mEmail));
                         if (nIsSameTurn) continue;
@@ -8151,6 +8156,11 @@ export default {
                         (payload?.message_uuid || payload?.messageUuid || '').toString().trim() ||
                         (payload?.metadata?.message_uuid || payload?.metadata?.messageUuid || '').toString().trim() ||
                         null,
+                    // 이 assistant turn의 activeStreams placeholder(위 assistantUuid)를 그대로
+                    // SDK의 persist_chat_to_db upsert 대상으로 넘긴다 — 서버가 별도 uuid로 새 row를
+                    // 또 만들지 않게 되어, 느린 턴에서 클라이언트 row/서버 row가 서로 다른 uuid로
+                    // 갈라져 답변이 두 번 보이던 문제(60초 병합 창을 넘긴 사례)를 근본적으로 막는다.
+                    response_message_uuid: assistantUuid,
                     tenant_id: tenantId,
                     user_uid: this.userInfo?.uid || this.userInfo?.id,
                     user_email: this.userInfo?.email,

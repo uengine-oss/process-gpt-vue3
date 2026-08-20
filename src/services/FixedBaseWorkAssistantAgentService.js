@@ -40,8 +40,14 @@ class FixedBaseWorkAssistantAgentService {
                 signal: options.signal,
                 body: JSON.stringify({
                     message: params.message,
-                    // 클라이언트가 생성한 안정적인 메시지 UUID(서버 중복 저장/재시도 dedupe용)
+                    // 클라이언트가 생성한 안정적인 "사용자" 메시지 UUID(서버 중복 저장/재시도 dedupe용)
                     message_uuid: params.message_uuid || null,
+                    // 클라이언트가 스트리밍 중 미리 만들어 낙관적으로 저장해 둔 "assistant 응답" row의
+                    // uuid. SDK가 최종 저장 시 이 uuid로 upsert하면 서버가 별도 uuid로 새 row를 또
+                    // 만들지 않아, 같은 턴이 chats 테이블에 두 번 남는 걸 막는다. message_uuid(사용자
+                    // 메시지 uuid)와는 다른 값이어야 한다 — 섞어 쓰면 assistant 응답이 user 메시지
+                    // row를 덮어쓴다.
+                    response_message_uuid: params.response_message_uuid || null,
                     tenant_id: params.tenant_id,
                     user_uid: params.user_uid,
                     user_email: params.user_email,
