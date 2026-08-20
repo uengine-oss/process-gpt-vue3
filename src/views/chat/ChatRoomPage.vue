@@ -8030,6 +8030,22 @@ export default {
                 const agentId = agentTarget.id;
                 if (!agentId) return;
 
+                // agentTarget은 defaultSetting.getAgentById()로 보강되는데, 이 스토어의
+                // agentList는 앱 어디서도 채워지지 않아(하드코딩된 built-in 목록뿐) 사용자가
+                // 만든 커스텀 프로필은 항상 조회 실패해 role/goal/persona/tools/skills가
+                // 비어있다. 비어있으면 실제 DB 값을 가진 에이전트 디렉터리(캐시됨)에서 보강한다.
+                if (!agentTarget.role && !agentTarget.goal && !agentTarget.persona) {
+                    try {
+                        const directory = await this._getAgentDirectoryCached(60_000);
+                        const fullProfile = (directory || []).find((a) => (a?.id || a?.uid) === agentId);
+                        if (fullProfile) {
+                            agentTarget = { ...agentTarget, ...fullProfile, id: agentId };
+                        }
+                    } catch (e) {
+                        // 조회 실패 시 기존 값 그대로 진행
+                    }
+                }
+
                 const assistantUuid = this.uuid();
                 // activeStreams[agentId]에 스트리밍 메시지 등록 → displayMessages 통해 렌더됨
                 // DB 확정 메시지가 실시간으로 도착하면 handleRealtimeMessage에서 제거
