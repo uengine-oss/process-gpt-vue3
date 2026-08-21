@@ -1362,7 +1362,7 @@
                                                                         v-if="
                                                                             chatRoomMode &&
                                                                             (message.role === 'assistant' || message.role === 'agent') &&
-                                                                            message.isLoading
+                                                                            (message.isLoading || hasRunningTool(message))
                                                                         "
                                                                         class="chat-room-loading-indicator"
                                                                     >
@@ -4739,6 +4739,17 @@ export default {
             const result = this._buildToolCallList(tools, skillsRaw, connectorsRaw);
             _toolCallListCache.set(message, { sig, result });
             return result;
+        },
+        hasRunningTool(message) {
+            const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
+            if (!tools.length) return false;
+            const STALE_RUNNING_MS = 5 * 60 * 1000;
+            const now = Date.now();
+            return tools.some((tc) => {
+                if (tc?.status !== 'running') return false;
+                const startedAt = tc?.startedAt ? new Date(tc.startedAt).getTime() : NaN;
+                return !Number.isFinite(startedAt) || now - startedAt < STALE_RUNNING_MS;
+            });
         },
         _buildToolCallList(tools, skillsRaw, connectorsRaw) {
             try {

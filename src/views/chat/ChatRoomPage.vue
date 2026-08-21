@@ -8047,6 +8047,11 @@ export default {
                 }
 
                 const assistantUuid = this.uuid();
+                const prevStream = this.activeStreams[agentId];
+                if (prevStream && prevStream.isLoading === false) {
+                    this.messages.push(this.normalizeAssistantMessageForDisplay(prevStream));
+                    if (typeof this._stableSortMessages === 'function') this._stableSortMessages(this.messages);
+                }
                 // activeStreams[agentId]에 스트리밍 메시지 등록 → displayMessages 통해 렌더됨
                 // DB 확정 메시지가 실시간으로 도착하면 handleRealtimeMessage에서 제거
                 this.activeStreams[agentId] = {
@@ -8706,92 +8711,88 @@ export default {
                                 );
                             }
 
-                            const hwpxPayload = this.extractHwpxPayload(safeFinal || full || '');
-                            if (hwpxPayload && this.isSlidePayload(hwpxPayload)) {
-                                this.pushSlideArtifact(hwpxPayload, msg);
-                                safeFinal = '슬라이드를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
-                            } else if (hwpxPayload) {
-                                const pdfUrl = hwpxPayload.pdf_url || hwpxPayload.pdfUrl || '';
-                                const pdfName = (hwpxPayload.pdf_name || hwpxPayload.pdfName || '').toString();
-                                const fileUrl = hwpxPayload.file_url || hwpxPayload.fileUrl || '';
-                                const fileName = (hwpxPayload.file_name || hwpxPayload.fileName || 'filled.hwpx').toString();
-                                const contentType = (
-                                    hwpxPayload.content_type ||
-                                    hwpxPayload.contentType ||
-                                    'application/vnd.hancom.hwpx'
-                                ).toString();
-                                const htmlUrl = this.extractHwpxHtmlUrl(hwpxPayload);
+                            try {
+                                const hwpxPayload = this.extractHwpxPayload(safeFinal || full || '');
+                                if (hwpxPayload && this.isSlidePayload(hwpxPayload)) {
+                                    this.pushSlideArtifact(hwpxPayload, msg);
+                                    safeFinal = '슬라이드를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
+                                } else if (hwpxPayload) {
+                                    const pdfUrl = hwpxPayload.pdf_url || hwpxPayload.pdfUrl || '';
+                                    const pdfName = (hwpxPayload.pdf_name || hwpxPayload.pdfName || '').toString();
+                                    const fileUrl = hwpxPayload.file_url || hwpxPayload.fileUrl || '';
+                                    const fileName = (hwpxPayload.file_name || hwpxPayload.fileName || 'filled.hwpx').toString();
+                                    const contentType = (
+                                        hwpxPayload.content_type ||
+                                        hwpxPayload.contentType ||
+                                        'application/vnd.hancom.hwpx'
+                                    ).toString();
+                                    const htmlUrl = this.extractHwpxHtmlUrl(hwpxPayload);
 
-                                if (pdfUrl) {
-                                    msg.pdfFile = {
-                                        url: pdfUrl,
-                                        fileUrl: pdfUrl,
-                                        name: pdfName || 'filled.pdf',
-                                        fileName: pdfName || 'filled.pdf',
-                                        contentType: hwpxPayload.pdf_content_type || 'application/pdf'
-                                    };
-                                    safeFinal = 'PDF 미리보기가 준비되었습니다. 아래 첨부 파일을 확인해주세요.';
-                                } else if (hwpxPayload.base64_data || hwpxPayload.base64Data) {
-                                    const base64 = hwpxPayload.base64_data || hwpxPayload.base64Data;
-                                    const blobUrl = this.createBlobUrlFromBase64(base64, contentType);
-                                    if (blobUrl) {
-                                        msg.pdfFile = { url: blobUrl, fileUrl: blobUrl, name: fileName, fileName, contentType };
+                                    if (pdfUrl) {
+                                        msg.pdfFile = {
+                                            url: pdfUrl,
+                                            fileUrl: pdfUrl,
+                                            name: pdfName || 'filled.pdf',
+                                            fileName: pdfName || 'filled.pdf',
+                                            contentType: hwpxPayload.pdf_content_type || 'application/pdf'
+                                        };
+                                        safeFinal = 'PDF 미리보기가 준비되었습니다. 아래 첨부 파일을 확인해주세요.';
+                                    } else if (hwpxPayload.base64_data || hwpxPayload.base64Data) {
+                                        const base64 = hwpxPayload.base64_data || hwpxPayload.base64Data;
+                                        const blobUrl = this.createBlobUrlFromBase64(base64, contentType);
+                                        if (blobUrl) {
+                                            msg.pdfFile = { url: blobUrl, fileUrl: blobUrl, name: fileName, fileName, contentType };
+                                        }
+                                        safeFinal = 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
+                                    } else if (fileUrl) {
+                                        msg.pdfFile = { url: fileUrl, fileUrl, name: fileName, fileName, contentType };
+                                        safeFinal = this.isDocxPayload(hwpxPayload)
+                                            ? 'DOCX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.'
+                                            : 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
                                     }
-                                    safeFinal = 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
-                                } else if (fileUrl) {
-                                    msg.pdfFile = { url: fileUrl, fileUrl, name: fileName, fileName, contentType };
-                                    safeFinal = this.isDocxPayload(hwpxPayload)
-                                        ? 'DOCX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.'
-                                        : 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
-                                }
 
-                                if (htmlUrl) {
-                                    if (this.isDocxPayload(hwpxPayload)) {
-                                        this.pushDocxArtifact(hwpxPayload, msg);
-                                    } else {
-                                        this.pushHwpxArtifact(hwpxPayload, msg);
+                                    if (htmlUrl) {
+                                        if (this.isDocxPayload(hwpxPayload)) {
+                                            this.pushDocxArtifact(hwpxPayload, msg);
+                                        } else {
+                                            this.pushHwpxArtifact(hwpxPayload, msg);
+                                        }
                                     }
                                 }
+                            } catch (e) {
+                                console.warn('[ChatRoomPage] onDone hwpx/artifact 파싱 실패(무시):', e?.message || e);
                             }
 
-                            // HITL 패널(__humanFeedback)이 붙은 메시지는 본문을 비워 둔다.
-                            // (interrupt 후 빈 final done 의 onDone 이 본문을 초안 텍스트로 덮어써 패널 대신
-                            //  텍스트가 보이던 문제 방지 — 체크박스/승인 패널만 표시.)
                             msg.content = msg.__humanFeedback ? '' : safeFinal || full || '';
                             displayContent = this.extractDisplayAssistantContent(msg.content);
                             msg.isLoading = false;
                             msg.contentType = 'text';
 
-                            this.applyHwpxViewerFromToolCalls(msg.toolCalls, msg);
-                            if (!this.hasArtifactPanel) {
-                                const urlFromText = this.extractHwpxHtmlUrlFromText(msg.content);
-                                if (urlFromText) {
-                                    this.pushHwpxArtifact({ html_url: urlFromText }, msg);
+                            try {
+                                this.applyHwpxViewerFromToolCalls(msg.toolCalls, msg);
+                                if (!this.hasArtifactPanel) {
+                                    const urlFromText = this.extractHwpxHtmlUrlFromText(msg.content);
+                                    if (urlFromText) {
+                                        this.pushHwpxArtifact({ html_url: urlFromText }, msg);
+                                    }
                                 }
-                            }
-                            const hasRawHwpxInContent =
-                                /https?:\/\/\S+\.hwpx/i.test(msg.content) || /https?:\/\/\S*filled-\S+\.html/i.test(msg.content);
-                            if (hasRawHwpxInContent) {
-                                // cleanupHwpxMessageContent는 messages 인덱스 기반이므로 직접 정리
-                                msg.content = msg.content
-                                    .replace(/https?:\/\/\S+\.hwpx\S*/gi, '')
-                                    .replace(/https?:\/\/\S*filled-\S+\.html\S*/gi, '')
-                                    .trim();
-                                safeFinal = msg.content;
+                                const hasRawHwpxInContent =
+                                    /https?:\/\/\S+\.hwpx/i.test(msg.content) || /https?:\/\/\S*filled-\S+\.html/i.test(msg.content);
+                                if (hasRawHwpxInContent) {
+                                    // cleanupHwpxMessageContent는 messages 인덱스 기반이므로 직접 정리
+                                    msg.content = msg.content
+                                        .replace(/https?:\/\/\S+\.hwpx\S*/gi, '')
+                                        .replace(/https?:\/\/\S*filled-\S+\.html\S*/gi, '')
+                                        .trim();
+                                    safeFinal = msg.content;
+                                }
+                            } catch (e) {
+                                console.warn('[ChatRoomPage] onDone hwpx 뷰어/정리 실패(무시):', e?.message || e);
                             }
 
-                            // realtime INSERT가 오지 않는 경우 대비: 10초 후 messages로 이관.
-                            // 단, 그 사이 realtime INSERT가 이미 도착했지만 agentId/email 불일치로
-                            // handleRealtimeMessage의 activeStreams 매칭에 실패해 별도 row로
-                            // this.messages에 먼저 push된 경우, 여기서 무조건 push하면 동일 내용이
-                            // 화면에 두 번(placeholder + realtime row) 보이게 된다. 그런 경우를
-                            // 내용/역할 기준으로 감지해 중복 push를 건너뛴다.
-                            // 내용이 완전히 같지 않아도(예: 서브에이전트 task 결과와 최종 supervisor
-                            // 응답처럼 텍스트가 다른 경우) 같은 agentId/email 의 assistant 메시지가
-                            // 이미 도착해 있으면 "다른 턴의 답변"이 아니라 "같은 턴의 서버 확정본"으로
-                            // 간주해 push 대신 병합한다(그렇지 않으면 같은 답변이 두 번 보인다).
+                            const finishedMsg = msg;
                             setTimeout(() => {
-                                if (this.activeStreams[agentId]) {
+                                if (this.activeStreams[agentId] === finishedMsg) {
                                     const stale = this.activeStreams[agentId];
                                     const staleContent = (stale.content || '').toString().trim();
                                     const staleTs = new Date(stale.timeStamp || 0).getTime();
