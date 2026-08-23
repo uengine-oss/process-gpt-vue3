@@ -214,6 +214,18 @@ export default {
                 const tenantId = await this.backend.getTenant(window.$tenantName);
                 if (window.$tenantName !== 'localhost') {
                     if (!tenantId) {
+                        // 로컬 개발 호스트(VITE_TENANT_OVERRIDE 사용 시): 메인 도메인 URL이
+                        // 같은 origin 으로 되돌아와 alert → /tenant/manage → alert 무한 루프가 되고,
+                        // anon 세션이면 RLS(tenants_select_policy: TO authenticated)에 막혀
+                        // 실제로 존재하는 테넌트도 "없음"으로 오판된다. 로그인으로만 보낸다.
+                        const localHost = window.location.hostname;
+                        if (localHost === 'localhost' || localHost === '127.0.0.1' || localHost.startsWith('192.168')) {
+                            if (!window.location.pathname.startsWith('/auth/')) {
+                                this.$router.push('/auth/login');
+                            }
+                            this.loadScreen = true;
+                            return;
+                        }
                         if (localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === window.$tenantName) {
                             localStorage.removeItem('tenantId');
                         }

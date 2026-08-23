@@ -80,8 +80,8 @@ function dedupe<T>(key: string, run: () => Promise<T>): Promise<T> {
  *
  * 그래서 공통 컬럼만 기본으로 쓰고, 선택 컬럼은 한 번 시도해 보고 없으면 기억한다.
  */
-const PROC_DEF_BASE_COLUMNS = 'uuid,id,name,type,isdeleted,tenant_id,owner,agent_id,prod_version';
-const PROC_DEF_OPTIONAL_COLUMNS = ['is_draft'];
+const PROC_DEF_BASE_COLUMNS = 'uuid,id,name,type,isdeleted,tenant_id,owner,prod_version';
+const PROC_DEF_OPTIONAL_COLUMNS = ['is_draft', 'agent_id'];
 let _procDefOptionalOk: boolean | null = null;
 
 function procDefListColumns(): string {
@@ -557,9 +557,11 @@ class ProcessGPTBackend implements Backend {
                     bpmn: xml,
                     definition: options.definition || null,
                     owner: currentOwner,
-                    agent_id: options.agent_id || null,
                     type: options.type || 'bpmn'
                 };
+                // agent_id 컬럼이 없는 스키마(PAL)도 있어서, 값이 있을 때만 payload 에 포함한다
+                // (없으면 컬럼 기본값 null 과 동일 — PGRST204 회피).
+                if (options.agent_id) procDef.agent_id = options.agent_id;
                 if (Object.prototype.hasOwnProperty.call(options, 'is_draft')) {
                     procDef.is_draft = !!options.is_draft;
                 }

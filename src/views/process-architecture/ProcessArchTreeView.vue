@@ -3,100 +3,193 @@
         <div v-if="rows.length === 0" class="text-center text-grey pa-10">
             {{ $t('processArchitecture.noData') }}
         </div>
-        <div v-else class="tree-list">
-            <div
-                v-for="row in rows"
-                :key="row.key"
-                class="tree-row d-flex align-center"
-                :class="[
-                    `tree-level-${row.level}`,
-                    { 'tree-row-clickable': row.type === 'sub' },
-                    { 'dnd-over': dragOverKey === row.key && isDragOverTarget(row) },
-                    { 'dnd-dragging': draggingKey === row.key },
-                    { 'wip-row': showToBe && row.type === 'sub' && row.status?.status === 'wip' },
-                    { 'sunset-row': showToBe && row.type === 'sub' && row.status?.status === 'sunset' }
-                ]"
-                :style="{ paddingLeft: `${row.level * 24 + 12}px` }"
-                :draggable="row.type === 'sub'"
-                @click="row.type === 'sub' ? $emit('navigate', row.id, row.name) : null"
-                @dragstart="row.type === 'sub' ? onDragStart($event, row) : null"
-                @dragend="onDragEnd"
-                @dragover.prevent="onDragOver($event, row)"
-                @dragleave="onDragLeave(row)"
-                @drop.prevent="onDrop($event, row)"
-            >
-                <!-- Expand/Collapse -->
-                <v-btn v-if="row.hasChildren" icon variant="text" size="x-small" class="mr-1" @click.stop="toggleExpand(row.key)">
-                    <v-icon size="16">
-                        {{ expanded.has(row.key) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
-                    </v-icon>
+        <template v-else>
+            <div class="view-control-bar">
+                <v-btn variant="outlined" size="small" prepend-icon="mdi-unfold-more-horizontal" @click="expandAllRows">
+                    전체 펼치기
                 </v-btn>
-                <div v-else style="width: 28px" class="mr-1"></div>
-
-                <!-- Drag handle (only for sub-processes) -->
-                <v-icon v-if="row.type === 'sub'" size="14" color="grey-lighten-1" class="drag-handle mr-1" title="Drag to move">
-                    mdi-drag-vertical
-                </v-icon>
-
-                <!-- Type Icon -->
-                <v-icon :size="row.type === 'domain' ? 18 : row.type === 'sub' ? 14 : 16" :color="getIconColor(row.type)" class="mr-2">
-                    {{ getIcon(row.type) }}
-                </v-icon>
-
-                <!-- Name -->
-                <span
-                    class="tree-name flex-grow-1"
-                    :class="{
-                        'font-weight-bold': row.type === 'domain',
-                        'font-weight-semibold': row.type === 'mega',
-                        'font-weight-medium': row.type === 'major',
-                        'text-body-2': row.type === 'sub'
-                    }"
+                <v-btn variant="outlined" size="small" prepend-icon="mdi-unfold-less-horizontal" @click="collapseAllRows">
+                    전체 접기
+                </v-btn>
+            </div>
+            <div class="tree-list">
+                <div
+                    v-for="row in rows"
+                    :key="row.key"
+                    class="tree-row d-flex align-center"
+                    :class="[
+                        `tree-level-${row.level}`,
+                        { 'tree-row-clickable': row.type === 'sub' },
+                        { 'dnd-over': dragOverKey === row.key && isDragOverTarget(row) },
+                        { 'dnd-dragging': draggingKey === row.key },
+                        { 'wip-row': showToBe && row.type === 'sub' && row.status?.status === 'wip' },
+                        { 'sunset-row': showToBe && row.type === 'sub' && row.status?.status === 'sunset' }
+                    ]"
+                    :style="{ paddingLeft: `${row.level * 24 + 12}px` }"
+                    :draggable="row.type === 'sub' && !props.readonly"
+                    :title="row.description || ''"
+                    @click="row.type === 'sub' ? $emit('navigate', row.id, row.name) : null"
+                    @dragstart="row.type === 'sub' ? onDragStart($event, row) : null"
+                    @dragend="onDragEnd"
+                    @dragover.prevent="onDragOver($event, row)"
+                    @dragleave="onDragLeave(row)"
+                    @drop.prevent="onDrop($event, row)"
                 >
-                    {{ row.name }}
-                </span>
-
-                <!-- Domain Badge (for domain rows) -->
-                <v-chip v-if="row.type === 'domain' && row.color" :color="row.color" size="x-small" variant="flat" class="ml-2">
-                    {{ row.name }}
-                </v-chip>
-
-                <!-- Right info -->
-                <div class="d-flex align-center ga-2 ml-auto tree-meta">
-                    <!-- Process count -->
-                    <span v-if="row.count !== undefined" class="text-caption text-grey">
-                        {{ row.count }} {{ row.count === 1 ? 'process' : 'processes' }}
-                    </span>
-
-                    <!-- Favorite toggle for sub processes -->
-                    <v-btn
-                        v-if="row.type === 'sub'"
-                        icon
-                        variant="text"
-                        size="x-small"
-                        :class="['fav-btn', { 'is-fav': favorites?.has(row.id) }]"
-                        @click.stop="emit('toggleFavorite', row.id)"
-                    >
-                        <v-icon size="14" :color="favorites?.has(row.id) ? 'amber' : 'grey-lighten-1'">
-                            {{ favorites?.has(row.id) ? 'mdi-star' : 'mdi-star-outline' }}
+                    <v-tooltip v-if="row.description" activator="parent" location="top" max-width="360">
+                        <div class="process-desc-tooltip">{{ row.description }}</div>
+                    </v-tooltip>
+                    <!-- Expand/Collapse -->
+                    <v-btn v-if="row.hasChildren" icon variant="text" size="x-small" class="mr-1" @click.stop="toggleExpand(row.key)">
+                        <v-icon size="16">
+                            {{ expanded.has(row.key) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
                         </v-icon>
                     </v-btn>
+                    <div v-else style="width: 28px" class="mr-1"></div>
 
-                    <!-- Status badge for sub processes -->
-                    <ProgressBadge
-                        v-if="row.type === 'sub' && row.status"
-                        type="status"
-                        :status="row.status.status"
-                        :d-day="row.status.dDay ?? null"
-                        :review-end-date="row.status.reviewEndDate ?? ''"
-                        size="x-small"
-                    />
+                    <!-- Drag handle (only for sub-processes) -->
+                    <v-icon v-if="row.type === 'sub'" size="14" color="grey-lighten-1" class="drag-handle mr-1" title="Drag to move">
+                        mdi-drag-vertical
+                    </v-icon>
 
-                    <!-- Version -->
-                    <span v-if="row.type === 'sub' && row.status?.version" class="text-caption text-grey"> v{{ row.status.version }} </span>
+                    <!-- Type Icon -->
+                    <v-icon :size="row.type === 'domain' ? 18 : row.type === 'sub' ? 14 : 16" :color="getIconColor(row.type)" class="mr-2">
+                        {{ getIcon(row.type) }}
+                    </v-icon>
+
+                    <!-- Updated indicator -->
+                    <v-icon
+                        v-if="(row.type === 'major' || row.type === 'sub') && isUpdatedSinceLastVisit?.(row)"
+                        size="8"
+                        color="info"
+                        class="mr-1 flex-shrink-0"
+                        >mdi-circle</v-icon
+                    >
+
+                    <!-- Name -->
+                    <span
+                        class="tree-name flex-grow-1"
+                        :class="{
+                            'font-weight-bold': row.type === 'domain',
+                            'font-weight-semibold': row.type === 'mega',
+                            'font-weight-medium': row.type === 'major',
+                            'text-body-2': row.type === 'sub'
+                        }"
+                    >
+                        {{ row.name }}
+                    </span>
+
+                    <!-- Domain Badge (for domain rows) -->
+                    <v-chip v-if="row.type === 'domain' && row.color" :color="row.color" size="x-small" variant="flat" class="ml-2">
+                        {{ row.name }}
+                    </v-chip>
+
+                    <!-- Right info -->
+                    <div class="d-flex align-center ga-2 ml-auto tree-meta">
+                        <v-chip v-if="row.type === 'major' && row.stageLabel" size="x-small" variant="tonal" color="primary">
+                            {{ row.stageLabel }}
+                        </v-chip>
+
+                        <!-- Process count -->
+                        <span v-if="row.count !== undefined" class="text-caption text-grey">
+                            {{ row.count }} {{ row.count === 1 ? 'process' : 'processes' }}
+                        </span>
+
+                        <!-- Add button: mega에서 major 추가 -->
+                        <v-tooltip v-if="row.type === 'mega' && !props.readonly" location="bottom">
+                            <template v-slot:activator="{ props: tp }">
+                                <v-icon
+                                    v-bind="tp"
+                                    size="14"
+                                    color="grey-lighten-1"
+                                    class="edit-icon"
+                                    style="cursor: pointer"
+                                    @click.stop="emit('addProcess', { type: 'major', megaId: row.id })"
+                                    >mdi-plus</v-icon
+                                >
+                            </template>
+                            <span>Major 프로세스 추가</span>
+                        </v-tooltip>
+
+                        <!-- Edit button for mega/major -->
+                        <v-tooltip v-if="(row.type === 'mega' || row.type === 'major') && !props.readonly" location="bottom">
+                            <template v-slot:activator="{ props: tp }">
+                                <v-icon
+                                    v-bind="tp"
+                                    size="14"
+                                    color="grey-lighten-1"
+                                    class="edit-icon"
+                                    style="cursor: pointer"
+                                    @click.stop="emit('editProcess', row)"
+                                    >mdi-pencil-outline</v-icon
+                                >
+                            </template>
+                            <span>편집</span>
+                        </v-tooltip>
+
+                        <!-- Permission (lock) button -->
+                        <v-tooltip location="bottom">
+                            <template v-slot:activator="{ props: tp }">
+                                <v-icon
+                                    v-bind="tp"
+                                    size="14"
+                                    color="grey-lighten-1"
+                                    class="permission-icon"
+                                    style="cursor: pointer"
+                                    @click.stop="emit('openPermission', row)"
+                                    >mdi-lock-outline</v-icon
+                                >
+                            </template>
+                            <span>{{ $t('permissionDialog.title') || '권한 설정' }}</span>
+                        </v-tooltip>
+
+                        <!-- Favorite toggle for sub processes -->
+                        <v-tooltip v-if="row.type === 'sub'" location="bottom">
+                            <template v-slot:activator="{ props: tp }">
+                                <v-btn
+                                    v-bind="tp"
+                                    icon
+                                    variant="text"
+                                    size="x-small"
+                                    :class="['fav-btn', { 'is-fav': favorites?.has(row.id) }]"
+                                    @click.stop="emit('toggleFavorite', row.id)"
+                                >
+                                    <v-icon size="14" :color="favorites?.has(row.id) ? 'amber' : 'grey-lighten-1'">
+                                        {{ favorites?.has(row.id) ? 'mdi-star' : 'mdi-star-outline' }}
+                                    </v-icon>
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('processArchitecture.myProcesses.favorites') || '즐겨찾기' }}</span>
+                        </v-tooltip>
+
+                        <!-- Status badge for sub processes -->
+                        <ProgressBadge
+                            v-if="row.type === 'sub' && row.status?.status && row.status.status !== 'none'"
+                            type="status"
+                            :status="row.status.status"
+                            :d-day="row.status.dDay ?? null"
+                            :review-end-date="row.status.reviewEndDate ?? ''"
+                            size="x-small"
+                        />
+
+                        <!-- KPI 본부 태그 -->
+                        <v-chip
+                            v-if="row.type === 'sub' && kpiTaggedProcessIds?.get(row.id)"
+                            size="x-small"
+                            color="primary"
+                            variant="tonal"
+                            class="kpi-org-chip"
+                        >
+                            {{ kpiTaggedProcessIds.get(row.id) }}
+                        </v-chip>
+
+                        <!-- Version -->
+                        <span v-if="row.type === 'sub' && row.status?.version" class="text-caption text-grey">
+                            v{{ row.status.version }}
+                        </span>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
 
         <!-- Drag & Drop Warning Dialog -->
         <v-dialog v-model="showMoveDialog" max-width="480" persistent>
@@ -141,11 +234,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, getCurrentInstance } from 'vue';
+import { ref, computed, watch, getCurrentInstance } from 'vue';
 import ProgressBadge from '@/components/ui/ProgressBadge.vue';
+import { compareMajorsByStage, getMajorBusinessDomain, getMajorStageLabel, majorMatchesDomain } from './processClassification';
 
-const { proxy } = getCurrentInstance()!;
-const t = (key: string, params?: any) => proxy?.$t(key, params) || key;
+const instance = getCurrentInstance();
+const t = (key: string, params?: any) => {
+    const fn = instance?.proxy?.$t;
+    return fn ? (fn as any)(key, params) : key;
+};
 
 const props = defineProps<{
     procMap: any;
@@ -153,30 +250,102 @@ const props = defineProps<{
     processStatuses: Map<string, any>;
     selectedDomain: string | null;
     showToBe?: boolean;
+    hideDomainRoots?: boolean;
     favorites?: Set<string>;
+    searchQuery?: string;
+    isUpdatedSinceLastVisit?: (process: any) => boolean;
+    readonly?: boolean;
+    kpiTaggedProcessIds?: Map<string, string>;
 }>();
 
 const emit = defineEmits<{
     (e: 'navigate', id: string, name?: string): void;
     (e: 'moveSub', subId: string, fromMajorId: string, toMajorId: string): void;
     (e: 'toggleFavorite', id: string): void;
+    (e: 'openPermission', row: TreeRow): void;
+    (e: 'editProcess', row: TreeRow): void;
+    (e: 'addProcess', row: { type: string; megaId?: string }): void;
 }>();
 
 const expanded = ref(new Set<string>());
 
-// Initialize with domains expanded
-function initExpanded() {
+function collectExpandableKeys(): Set<string> {
+    const keys = new Set<string>();
     const map = props.procMap;
-    if (!map?.mega_proc_list) return;
-    // Expand domain-level items and mega items by default
-    for (const domain of props.domains) {
-        expanded.value.add(`domain-${domain.id}`);
+    if (!map?.mega_proc_list) return keys;
+
+    if (props.domains.length > 0) {
+        for (const domain of props.domains) {
+            const domainKey = `domain-${domain.id}`;
+            keys.add(domainKey);
+
+            for (const mega of map.mega_proc_list) {
+                const megaMajorsInDomain = (mega.major_proc_list || []).filter((major: any) =>
+                    majorMatchesDomain(major, domain, props.domains)
+                );
+                if (megaMajorsInDomain.length === 0) continue;
+
+                const megaKey = `domain-${domain.id}-mega-${mega.id}`;
+                keys.add(megaKey);
+
+                for (const major of megaMajorsInDomain) {
+                    if ((major.sub_proc_list || []).length > 0) {
+                        keys.add(`${megaKey}-major-${major.id}`);
+                    }
+                }
+            }
+        }
+
+        const orphanMajors: any[] = [];
+        for (const mega of map.mega_proc_list) {
+            for (const major of mega.major_proc_list || []) {
+                const domainName = getMajorBusinessDomain(major, props.domains);
+                if (!domainName || !props.domains.find((domain: any) => domain.name === domainName || domain.id === domainName)) {
+                    orphanMajors.push({ mega, major });
+                }
+            }
+        }
+
+        if (orphanMajors.length > 0) {
+            keys.add('domain-unassigned');
+            for (const { mega, major } of orphanMajors) {
+                const megaKey = `domain-unassigned-mega-${mega.id}`;
+                keys.add(megaKey);
+                if ((major.sub_proc_list || []).length > 0) {
+                    keys.add(`${megaKey}-major-${major.id}`);
+                }
+            }
+        }
+    } else {
+        for (const mega of map.mega_proc_list) {
+            const megaKey = `mega-${mega.id}`;
+            keys.add(megaKey);
+            for (const major of mega.major_proc_list || []) {
+                if ((major.sub_proc_list || []).length > 0) {
+                    keys.add(`${megaKey}-major-${major.id}`);
+                }
+            }
+        }
     }
-    for (const mega of map.mega_proc_list) {
-        expanded.value.add(`mega-${mega.id}`);
-    }
+
+    return keys;
 }
-initExpanded();
+
+function expandAllRows() {
+    expanded.value = collectExpandableKeys();
+}
+
+function collapseAllRows() {
+    expanded.value = new Set();
+}
+
+watch(
+    () => [props.procMap, props.domains, props.hideDomainRoots],
+    () => {
+        expandAllRows();
+    },
+    { immediate: true }
+);
 
 interface TreeRow {
     key: string;
@@ -188,6 +357,8 @@ interface TreeRow {
     color?: string;
     count?: number;
     status?: any;
+    stageLabel?: string;
+    description?: string;
     // For DnD: track parent context
     megaId?: string;
     majorId?: string;
@@ -201,6 +372,8 @@ const rows = computed<TreeRow[]>(() => {
 
     // If domains exist, group by domain
     if (props.domains.length > 0) {
+        const hideDomainRoots = !!props.hideDomainRoots;
+
         for (const domain of props.domains) {
             const domainKey = `domain-${domain.id}`;
             // Count processes in this domain
@@ -208,40 +381,42 @@ const rows = computed<TreeRow[]>(() => {
             if (map.mega_proc_list) {
                 for (const mega of map.mega_proc_list) {
                     for (const major of mega.major_proc_list || []) {
-                        const majorDomain = major.domain || major.domain_id;
-                        if (majorDomain === domain.name || majorDomain === domain.id) {
+                        if (majorMatchesDomain(major, domain, props.domains)) {
                             domainCount += (major.sub_proc_list || []).length;
                         }
                     }
                 }
             }
 
-            result.push({
-                key: domainKey,
-                type: 'domain',
-                level: 0,
-                id: domain.id,
-                name: domain.name,
-                hasChildren: true,
-                color: domain.color,
-                count: domainCount
-            });
+            if (!hideDomainRoots) {
+                result.push({
+                    key: domainKey,
+                    type: 'domain',
+                    level: 0,
+                    id: domain.id,
+                    name: domain.name,
+                    hasChildren: true,
+                    color: domain.color,
+                    count: domainCount
+                });
 
-            if (!expanded.value.has(domainKey)) continue;
+                if (!expanded.value.has(domainKey)) continue;
+            }
 
             // Find mega processes that have majors in this domain
             for (const mega of map.mega_proc_list) {
-                const megaMajorsInDomain = (mega.major_proc_list || []).filter((m: any) => {
-                    const d = m.domain || m.domain_id;
-                    return d === domain.name || d === domain.id;
-                });
+                const megaMajorsInDomain = (mega.major_proc_list || [])
+                    .filter((m: any) => {
+                        return majorMatchesDomain(m, domain, props.domains);
+                    })
+                    .sort(compareMajorsByStage);
                 if (megaMajorsInDomain.length === 0) continue;
 
                 const megaKey = `domain-${domain.id}-mega-${mega.id}`;
                 result.push({
                     key: megaKey,
                     type: 'mega',
-                    level: 1,
+                    level: hideDomainRoots ? 0 : 1,
                     id: mega.id,
                     name: mega.name,
                     hasChildren: megaMajorsInDomain.length > 0,
@@ -251,57 +426,59 @@ const rows = computed<TreeRow[]>(() => {
                 if (!expanded.value.has(megaKey)) continue;
 
                 for (const major of megaMajorsInDomain) {
-                    addMajorRows(result, major, 2, `domain-${domain.id}-mega-${mega.id}`, mega.id);
+                    addMajorRows(result, major, hideDomainRoots ? 1 : 2, `domain-${domain.id}-mega-${mega.id}`, mega.id);
                 }
             }
         }
 
         // Also show majors without domain
-        const orphanMajors: any[] = [];
-        for (const mega of map.mega_proc_list) {
-            for (const major of mega.major_proc_list || []) {
-                const d = major.domain || major.domain_id;
-                if (!d || !props.domains.find((dom: any) => dom.name === d || dom.id === d)) {
-                    orphanMajors.push({ mega, major });
+        if (!hideDomainRoots) {
+            const orphanMajors: any[] = [];
+            for (const mega of map.mega_proc_list) {
+                for (const major of mega.major_proc_list || []) {
+                    const d = getMajorBusinessDomain(major, props.domains);
+                    if (!d || !props.domains.find((dom: any) => dom.name === d || dom.id === d)) {
+                        orphanMajors.push({ mega, major });
+                    }
                 }
             }
-        }
 
-        if (orphanMajors.length > 0) {
-            const orphanKey = 'domain-unassigned';
-            result.push({
-                key: orphanKey,
-                type: 'domain',
-                level: 0,
-                id: 'unassigned',
-                name: '미분류',
-                hasChildren: true,
-                count: orphanMajors.reduce((sum, o) => sum + (o.major.sub_proc_list || []).length, 0)
-            });
+            if (orphanMajors.length > 0) {
+                const orphanKey = 'domain-unassigned';
+                result.push({
+                    key: orphanKey,
+                    type: 'domain',
+                    level: 0,
+                    id: 'unassigned',
+                    name: '미분류',
+                    hasChildren: true,
+                    count: orphanMajors.reduce((sum, o) => sum + (o.major.sub_proc_list || []).length, 0)
+                });
 
-            if (expanded.value.has(orphanKey)) {
-                // Group orphans by mega
-                const megaGroups = new Map<string, any[]>();
-                for (const o of orphanMajors) {
-                    if (!megaGroups.has(o.mega.id)) megaGroups.set(o.mega.id, []);
-                    megaGroups.get(o.mega.id)!.push(o);
-                }
-                for (const [megaId, group] of megaGroups) {
-                    const mega = group[0].mega;
-                    const megaKey = `domain-unassigned-mega-${megaId}`;
-                    result.push({
-                        key: megaKey,
-                        type: 'mega',
-                        level: 1,
-                        id: megaId,
-                        name: mega.name,
-                        hasChildren: true,
-                        count: group.length
-                    });
+                if (expanded.value.has(orphanKey)) {
+                    // Group orphans by mega
+                    const megaGroups = new Map<string, any[]>();
+                    for (const o of orphanMajors) {
+                        if (!megaGroups.has(o.mega.id)) megaGroups.set(o.mega.id, []);
+                        megaGroups.get(o.mega.id)!.push(o);
+                    }
+                    for (const [megaId, group] of megaGroups) {
+                        const mega = group[0].mega;
+                        const megaKey = `domain-unassigned-mega-${megaId}`;
+                        result.push({
+                            key: megaKey,
+                            type: 'mega',
+                            level: 1,
+                            id: megaId,
+                            name: mega.name,
+                            hasChildren: true,
+                            count: group.length
+                        });
 
-                    if (!expanded.value.has(megaKey)) continue;
-                    for (const o of group) {
-                        addMajorRows(result, o.major, 2, megaKey, megaId);
+                        if (!expanded.value.has(megaKey)) continue;
+                        for (const o of [...group].sort((a, b) => compareMajorsByStage(a.major, b.major))) {
+                            addMajorRows(result, o.major, 2, megaKey, megaId);
+                        }
                     }
                 }
             }
@@ -322,7 +499,7 @@ const rows = computed<TreeRow[]>(() => {
 
             if (!expanded.value.has(megaKey)) continue;
 
-            for (const major of mega.major_proc_list || []) {
+            for (const major of [...(mega.major_proc_list || [])].sort(compareMajorsByStage)) {
                 addMajorRows(result, major, 1, megaKey, mega.id);
             }
         }
@@ -342,12 +519,15 @@ function addMajorRows(result: TreeRow[], major: any, level: number, parentKey: s
         name: major.name,
         hasChildren: subs.length > 0,
         count: subs.length,
+        stageLabel: getMajorStageLabel(major),
+        description: major.description || '',
         megaId
     });
 
     if (!expanded.value.has(majorKey)) return;
 
-    for (const sub of subs) {
+    const sortedSubs = [...subs].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+    for (const sub of sortedSubs) {
         result.push({
             key: `${majorKey}-sub-${sub.id}`,
             type: 'sub',
@@ -355,6 +535,7 @@ function addMajorRows(result: TreeRow[], major: any, level: number, parentKey: s
             id: sub.id,
             name: sub.name,
             hasChildren: false,
+            description: sub.description || '',
             status: props.processStatuses.get(sub.id),
             megaId,
             majorId: major.id,
@@ -362,6 +543,39 @@ function addMajorRows(result: TreeRow[], major: any, level: number, parentKey: s
         });
     }
 }
+
+// 검색어 변경 시 매칭 노드의 상위 트리를 모두 expand
+watch(
+    () => props.searchQuery,
+    (query) => {
+        if (!query || !query.trim()) return;
+        const q = query.toLowerCase();
+        const map = props.procMap;
+        if (!map?.mega_proc_list) return;
+
+        const keys = new Set(expanded.value);
+        for (const domain of props.domains) {
+            const domainKey = `domain-${domain.id}`;
+            for (const mega of map.mega_proc_list) {
+                const megaKey = props.hideDomainRoots ? `mega-${mega.id}` : `${domainKey}-mega-${mega.id}`;
+                for (const major of mega.major_proc_list || []) {
+                    if (!majorMatchesDomain(major, domain, props.domains)) continue;
+                    const majorKey = `${megaKey}-major-${major.id}`;
+                    const majorMatch = major.name?.toLowerCase().includes(q);
+                    const subMatch = (major.sub_proc_list || []).some(
+                        (s: any) => s.name?.toLowerCase().includes(q) || s.id?.toLowerCase().includes(q)
+                    );
+                    if (majorMatch || subMatch) {
+                        keys.add(domainKey);
+                        keys.add(megaKey);
+                        if (subMatch) keys.add(majorKey);
+                    }
+                }
+            }
+        }
+        expanded.value = keys;
+    }
+);
 
 function toggleExpand(key: string) {
     if (expanded.value.has(key)) {
@@ -497,15 +711,22 @@ async function confirmMove() {
 </script>
 
 <style scoped>
+.view-control-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
 .tree-list {
-    border: 1px solid var(--cds-border);
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
     overflow: hidden;
 }
 
 .tree-row {
     padding: 8px 12px;
-    border-bottom: 1px solid var(--cds-bg-neutral);
+    border-bottom: 1px solid #f5f5f5;
     min-height: 40px;
     transition: background-color 0.15s ease;
 }
@@ -515,7 +736,7 @@ async function confirmMove() {
 }
 
 .tree-row:hover {
-    background-color: var(--cds-bg-neutral);
+    background-color: #fafafa;
 }
 
 .tree-row-clickable {
@@ -523,11 +744,11 @@ async function confirmMove() {
 }
 
 .tree-row-clickable:hover {
-    background-color: var(--cds-bg-accent);
+    background-color: #e3f2fd;
 }
 
 .tree-level-0 {
-    background-color: var(--cds-bg-neutral);
+    background-color: #f8f9fa;
 }
 
 .tree-name {
@@ -535,6 +756,11 @@ async function confirmMove() {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 400px;
+}
+
+.process-desc-tooltip {
+    white-space: pre-line;
+    line-height: 1.45;
 }
 
 .tree-meta {
@@ -554,6 +780,22 @@ async function confirmMove() {
     opacity: 1;
 }
 
+.tree-row .permission-icon,
+.tree-row .edit-icon {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.tree-row:hover .permission-icon,
+.tree-row:hover .edit-icon {
+    opacity: 0.5;
+}
+
+.tree-row:hover .permission-icon:hover,
+.tree-row:hover .edit-icon:hover {
+    opacity: 1;
+}
+
 /* Drag & Drop styles */
 .drag-handle {
     cursor: grab;
@@ -570,8 +812,8 @@ async function confirmMove() {
 }
 
 .dnd-over {
-    background-color: var(--cds-bg-success) !important;
-    border: 2px dashed var(--cds-text-success) !important;
+    background-color: #e8f5e9 !important;
+    border: 2px dashed #4caf50 !important;
     border-radius: 4px;
 }
 
@@ -593,6 +835,6 @@ async function confirmMove() {
 
 .sunset-row {
     opacity: 0.7;
-    border-left: 3px solid var(--cds-text-danger) !important;
+    border-left: 3px solid #c62828 !important;
 }
 </style>
