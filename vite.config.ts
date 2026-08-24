@@ -188,6 +188,17 @@ export default defineConfig({
             // Path map: /process-gpt-deepagents/skills -> claude-skills /skills/list,
             //           /process-gpt-deepagents/skills-builtin -> /skills/list-builtin,
             //           /process-gpt-deepagents/skills/... -> /skills/... (upload, {name}/files, ...)
+            // cli-agent service: the CLI picker asks it which agents this
+            // deployment can actually run, and skills/files/streams come from
+            // the same place. In a deployed environment the gateway does this
+            // (see services/cli-agent/deploy/nginx.conf); dev needs it here.
+            '/process-gpt-cli-agent': {
+                target: process.env.VITE_CLI_AGENT_URL || 'http://127.0.0.1:8890',
+                changeOrigin: true,
+                timeout: 0,
+                proxyTimeout: 0,
+                rewrite: (path) => path.replace(/^\/process-gpt-cli-agent/, '')
+            },
             '/process-gpt-deepagents/skills': {
                 target: 'http://127.0.0.1:8765',
                 changeOrigin: true,

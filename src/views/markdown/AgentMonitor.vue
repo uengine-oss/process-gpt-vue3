@@ -219,6 +219,24 @@ export default {
                     }
                 },
                 {
+                    titleKey: 'AgentSelectInfo.orchestration.cliagents.title',
+                    value: 'cliagents',
+                    label: this.$t('AgentSelectInfo.orchestration.cliagents.title'),
+                    startLabel: 'CLI Agent',
+                    icon: 'flowchart',
+                    descKey: 'AgentSelectInfo.orchestration.cliagents.description',
+                    costKey: 'AgentSelectInfo.cost.high',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.cliagents.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.cliagents.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.cliagents.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.cliagents.detailDesc.details.2.title' },
+                            { title: 'AgentSelectInfo.orchestration.cliagents.detailDesc.details.3.title' }
+                        ]
+                    }
+                },
+                {
                     titleKey: 'AgentSelectInfo.orchestration.langchainReact.title',
                     value: 'langchain-react',
                     label: this.$t('AgentSelectInfo.orchestration.langchainReact.title'),
