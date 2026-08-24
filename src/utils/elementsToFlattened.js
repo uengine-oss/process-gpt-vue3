@@ -69,6 +69,7 @@ export function elementsToFlattenedDefinition(processDefinition) {
                 tool: el.tool,
                 type: ACTIVITY_TYPE_MAP[el.type] || 'userTask',
                 agent: el.agent,
+                rootAgent: el.rootAgent || null,
                 process: procId,
                 duration: asIntDuration(el.duration),
                 agentMode: el.agentMode || 'none',

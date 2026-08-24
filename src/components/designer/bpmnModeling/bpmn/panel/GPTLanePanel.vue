@@ -324,6 +324,9 @@ export default {
                     // 캐스케이드로 agent를 채울 때는 '미리 설정된 에이전트 사용'도 함께 켜야
                     // AgentSelectField의 선택 필드가 값을 표시한다(agent만 채우면 체크가 꺼진 채로 남아 빈 필드로 보인다).
                     activity.usePresetAgent = true;
+                    // 캐스케이드는 담당을 이 에이전트 1명으로 덮어쓴다. 여러 명 배정 시절에
+                    // 골라둔 루트 지정은 더 이상 유효하지 않으므로 함께 비운다.
+                    activity.rootAgent = null;
                     updatedActivityIds.push(activity.id);
 
                     if (this.bpmnModeler) {
@@ -331,7 +334,8 @@ export default {
                             orchestration: CASCADE_ORCHESTRATION,
                             agent: agentId,
                             agentAssignedFrom: 'lane-cascade',
-                            usePresetAgent: true
+                            usePresetAgent: true,
+                            rootAgent: null
                         });
                     }
                 });

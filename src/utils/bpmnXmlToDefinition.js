@@ -430,6 +430,7 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
             task.process = activity.process;
             task.attachedEvents = activity.attachedEvents || null;
             task.agent = '';
+            task.rootAgent = null;
             task.usePresetAgent = false;
             task.agentMode = '';
             task.orchestration = '';
@@ -457,6 +458,8 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
                 task.instruction = propsJson.instruction || task.instruction;
                 task.checkpoints = propsJson.checkpoints || task.checkpoints;
                 task.agent = propsJson.agent || task.agent;
+                // 배정 에이전트 중 딥 에이전트 루트로 승격할 대상(없으면 자동 규칙).
+                task.rootAgent = propsJson.rootAgent || task.rootAgent;
                 // '미리 설정된 에이전트 사용' 은 UI 전용처럼 보이지만 저장되지 않으면
                 // 패널 재진입 때 !!agent 로 재유도되면서 선택이 초기화된다.
                 task.usePresetAgent =
