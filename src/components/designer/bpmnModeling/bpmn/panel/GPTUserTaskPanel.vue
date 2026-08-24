@@ -212,6 +212,9 @@ export default {
                 // agent_config 로 옮겨 실어 실행 시점에 사용한다.
                 agentConfig: null,
                 agentAssignedFrom: null,
+                // 배정 에이전트가 2명 이상일 때 그중 하나를 딥 에이전트 루트로 승격하는 설정.
+                // null(미설정)이면 실행 시 자동 규칙(배정 1명이면 승격)이 적용된다.
+                rootAgent: null,
                 // '미리 설정된 에이전트 사용' 체크 상태. 저장/복원되지 않으면
                 // AgentSelectField 가 이 값을 !!agent 로 재유도하면서, 아직 에이전트를
                 // 고르기 전(agent=null)에 체크가 스스로 풀리고 선택이 지워진다.
@@ -276,6 +279,7 @@ export default {
             if (this.copyUengineProperties.usePresetAgent !== undefined)
                 this.activity.usePresetAgent = !!this.copyUengineProperties.usePresetAgent;
             if (this.copyUengineProperties.agentMode !== undefined) this.activity.agentMode = this.copyUengineProperties.agentMode;
+            if (this.copyUengineProperties.rootAgent !== undefined) this.activity.rootAgent = this.copyUengineProperties.rootAgent || null;
             if (this.copyUengineProperties.orchestration !== undefined && this.copyUengineProperties.orchestration !== 'none')
                 this.activity.orchestration = this.copyUengineProperties.orchestration;
             if (this.copyUengineProperties.agentAssignedFrom !== undefined)
@@ -749,8 +753,10 @@ export default {
                     targetActivity.checkpoints = Array.isArray(me.activity.checkpoints) ? [...me.activity.checkpoints] : [];
 
                     targetActivity.agent = me.activity.agent || null;
+                    targetActivity.rootAgent = me.activity.rootAgent || null;
                     targetActivity.usePresetAgent = !!me.activity.usePresetAgent;
                     targetActivity.agentMode = me.activity.agentMode || null;
+                    targetActivity.rootAgent = me.activity.rootAgent || null;
                     targetActivity.orchestration = me.activity.orchestration || null;
                     targetActivity.agentAssignedFrom = me.activity.agentAssignedFrom || null;
 
@@ -785,6 +791,7 @@ export default {
                 description: me.activity.description,
                 checkpoints: me.activity.checkpoints,
                 agent: me.activity.agent,
+                rootAgent: me.activity.rootAgent || null,
                 usePresetAgent: !!me.activity.usePresetAgent,
                 agentMode: me.activity.agentMode,
                 orchestration: me.activity.orchestration,

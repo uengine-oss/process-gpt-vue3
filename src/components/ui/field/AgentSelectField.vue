@@ -169,6 +169,26 @@
                 ></user-select-field>
             </div>
 
+            <!--
+                메인 에이전트: 배정된 에이전트가 2명 이상일 때만 의미가 있다.
+                1명이면 그 에이전트가 자동으로 메인이 되므로 물어볼 것이 없고,
+                0명이면 애초에 승격 대상이 없다.
+            -->
+            <div v-if="showRootAgentSelect" class="mt-4">
+                <v-select
+                    v-model="rootAgentSelection"
+                    :items="rootAgentItems"
+                    item-title="title"
+                    item-value="value"
+                    :label="$t('BpmnPropertyPanel.rootAgent')"
+                    density="compact"
+                    variant="outlined"
+                    :hide-details="true"
+                    :disabled="engineConfigDisabled"
+                ></v-select>
+                <div v-if="rootAgentHint" class="text-caption text-medium-emphasis mt-1">{{ rootAgentHint }}</div>
+            </div>
+
             <!-- 도구/스킬 -->
             <div class="mt-4">
                 <v-select
@@ -247,6 +267,14 @@ import DetailComponent from '@/components/ui-components/details/DetailComponent.
 
 import axios from 'axios';
 import { useDefaultSetting } from '@/stores/defaultSetting';
+
+// 메인 에이전트 '자동'의 화면 전용 표식. 저장 시에는 null 로 떨어뜨려, 값이 없으면
+// 백엔드가 기존 자동 휴리스틱(배정 1명이면 승격)을 그대로 쓰게 한다.
+// 이 선택기는 배정 에이전트가 2명 이상일 때만 뜨므로 '자동'의 실제 결과는 언제나
+// '기본 딥 에이전트가 전원을 서브에이전트로 위임'이다 — 둘을 따로 두지 않는다.
+// 저장 필드명(activity.rootAgent)과 백엔드 계약(root_agent_id)은 딥 에이전트의
+// root_profile 개념과 맞추어 root 를 유지한다 — 화면 표기만 '메인 에이전트'다.
+const ROOT_AGENT_AUTO = '__auto__';
 
 export default {
     components: {
@@ -439,6 +467,43 @@ export default {
             if (this.agentType === 'a2a' && this.activity.orchestration !== 'a2a') return true;
             return false;
         },
+        /** 메인 에이전트 선택은 딥 에이전트 + 미리 설정된 에이전트 2명 이상일 때만 노출한다. */
+        showRootAgentSelect() {
+            if (this.isSubAgentProfile) return false;
+            if (!this.activity.usePresetAgent) return false;
+            if (this.activity.orchestration !== 'deepagents') return false;
+            return this.selectedAgentList.length >= 2;
+        },
+        selectedAgentList() {
+            return Array.isArray(this.selectedAgent) ? this.selectedAgent.filter(Boolean) : [];
+        },
+        rootAgentItems() {
+            const items = [{ title: this.$t('BpmnPropertyPanel.rootAgentAuto'), value: ROOT_AGENT_AUTO }];
+            this.selectedAgentList.forEach((agent) => {
+                const id = (agent?.id || '').toString();
+                if (!id) return;
+                items.push({ title: agent.alias || agent.username || agent.name || id, value: id });
+            });
+            return items;
+        },
+        rootAgentSelection: {
+            get() {
+                const stored = (this.activity.rootAgent || '').toString();
+                if (!stored) return ROOT_AGENT_AUTO;
+                // 배정에서 빠진 에이전트를 가리키는 낡은 값은 '자동'으로 보여준다.
+                return this.selectedAgentList.some((a) => (a?.id || '').toString() === stored) ? stored : ROOT_AGENT_AUTO;
+            },
+            set(value) {
+                this.activity.rootAgent = value === ROOT_AGENT_AUTO ? null : value;
+            }
+        },
+        rootAgentHint() {
+            const selection = this.rootAgentSelection;
+            if (selection === ROOT_AGENT_AUTO) return '';
+            const picked = this.selectedAgentList.find((a) => (a?.id || '').toString() === selection);
+            const name = picked?.alias || picked?.username || picked?.name || selection;
+            return this.$t('BpmnPropertyPanel.rootAgentHintPinned', { name });
+        },
         presetAllowedAgentTypes() {
             return this.activity.orchestration === 'a2a' ? ['a2a'] : ['agent'];
         },
@@ -488,6 +553,7 @@ export default {
                     this.activity.agentMode = /[A-Z]/.test(newVal.agentMode) ? newVal.agentMode.toLowerCase() : newVal.agentMode;
                     this.activity.orchestration = this.isSubAgentProfile ? 'deepagents' : newVal.orchestration;
                     this.activity.agent = newVal.agent;
+                    if (newVal.rootAgent !== undefined) this.activity.rootAgent = newVal.rootAgent || null;
                     if (newVal.tools !== undefined) this.activity.tools = newVal.tools;
                     if (newVal.skills !== undefined) this.activity.skills = newVal.skills;
                     // usePresetAgent 는 사용자가 명시적으로 켠 체크 상태다.
@@ -514,6 +580,7 @@ export default {
                 } else {
                     this.selectedAgent = null;
                     this.activity.agent = null;
+                    this.activity.rootAgent = null;
                 }
             }
         },
@@ -529,6 +596,11 @@ export default {
                     // 다른 오케스트레이션으로 바꾸면 CLI 설정은 남기지 않는다.
                     // 남아 있으면 나중에 되돌렸을 때 지운 줄 알았던 값이 살아난다.
                     this.activity.agentConfig = null;
+                }
+                // 메인 에이전트 지정은 딥 에이전트 전용 개념이다. 다른 연구 방식으로 바꾸면
+                // 화면에서 사라지는 값이 조용히 남아 실행에 영향을 주지 않도록 비운다.
+                if (newVal !== 'deepagents') {
+                    this.activity.rootAgent = null;
                 }
                 if (this.isSubAgentProfile) {
                     if (newVal === 'a2a') {
@@ -584,11 +656,19 @@ export default {
                         agentIds.push(agent.id);
                     });
                     this.activity.agent = agentIds.join(',');
+                    // 배정이 1명으로 줄면 메인 에이전트 선택 UI가 사라진다. 화면에서 감춰진
+                    // 값이 조용히 실행에 영향을 주지 않도록 비운다. 지정해 둔 에이전트가
+                    // 배정 목록에서 빠진 경우도 마찬가지다.
+                    const pinned = (this.activity.rootAgent || '').toString();
+                    if (pinned && (agentIds.length < 2 || !agentIds.includes(pinned))) {
+                        this.activity.rootAgent = null;
+                    }
                 } else {
                     this.agentType = null;
                     this.agentAlias = null;
                     // 담당 에이전트를 비우면 activity.agent도 반드시 비워 저장되도록 동기화
                     this.activity.agent = null;
+                    this.activity.rootAgent = null;
                 }
             }
         },
@@ -623,6 +703,7 @@ export default {
             }
             this.activity.orchestration = this.isSubAgentProfile ? 'deepagents' : this.modelValue.orchestration || null;
             this.activity.agent = this.modelValue.agent || null;
+            this.activity.rootAgent = this.modelValue.rootAgent || null;
             this.activity.usePresetAgent =
                 this.modelValue.usePresetAgent !== undefined ? !!this.modelValue.usePresetAgent : !!this.modelValue.agent;
             if (this.activity.orchestration === 'a2a') {
@@ -633,7 +714,8 @@ export default {
                 agent: null,
                 agentMode: null,
                 orchestration: null,
-                usePresetAgent: false
+                usePresetAgent: false,
+                rootAgent: null
             };
         }
     },

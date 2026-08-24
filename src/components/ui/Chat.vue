@@ -1362,30 +1362,51 @@
                                                                         v-if="
                                                                             chatRoomMode &&
                                                                             (message.role === 'assistant' || message.role === 'agent') &&
-                                                                            message.isLoading
+                                                                            (message.isLoading || hasRunningTool(message))
                                                                         "
                                                                         class="chat-room-loading-indicator"
                                                                     >
-                                                                        <template v-if="getRunningToolCall(message)">
-                                                                            <div class="chat-room-tool-calls">
-                                                                                <div class="chat-room-tool-call-item">
-                                                                                    <v-icon size="14" color="primary" class="mr-1"
-                                                                                        >mdi-wrench</v-icon
-                                                                                    >
-                                                                                    <span class="tool-name">{{
-                                                                                        formatToolName(getRunningToolCall(message).name)
-                                                                                    }}</span>
+                                                                        <!-- 실시간 도구 실행 타임라인 (Claude Code식): 완료된 스텝은 쌓이고, 실행 중인 스텝은 스피너로 표시 -->
+                                                                        <div
+                                                                            v-if="getToolCallList(message).length"
+                                                                            class="chat-tool-activity__list chat-tool-activity__list--live"
+                                                                        >
+                                                                            <div
+                                                                                v-for="(tc, tcIdx) in getToolCallList(message)"
+                                                                                :key="`live-tc-${index}-${tcIdx}`"
+                                                                                class="chat-tool-activity__item-wrap"
+                                                                            >
+                                                                                <div class="chat-tool-activity__item">
                                                                                     <v-progress-circular
+                                                                                        v-if="tc.status === 'running'"
                                                                                         indeterminate
-                                                                                        size="14"
+                                                                                        size="12"
                                                                                         width="2"
                                                                                         color="primary"
-                                                                                        class="ml-2"
+                                                                                        class="mr-1"
                                                                                     />
+                                                                                    <v-icon
+                                                                                        v-else
+                                                                                        size="12"
+                                                                                        class="mr-1"
+                                                                                        :color="tc.status === 'error' ? 'error' : 'success'"
+                                                                                        >{{ getExecutionItemIcon(tc) }}</v-icon
+                                                                                    >
+                                                                                    <span class="chat-tool-activity__name">{{
+                                                                                        tc.label
+                                                                                    }}</span>
+                                                                                    <span
+                                                                                        class="chat-tool-activity__status"
+                                                                                        :class="`is-${tc.status}`"
+                                                                                        >{{ tc.status }}</span
+                                                                                    >
                                                                                 </div>
                                                                             </div>
-                                                                        </template>
-                                                                        <template v-else>
+                                                                        </div>
+                                                                        <div
+                                                                            class="d-flex align-center"
+                                                                            :class="{ 'mt-2': getToolCallList(message).length }"
+                                                                        >
                                                                             <v-progress-circular
                                                                                 indeterminate
                                                                                 size="14"
@@ -1396,7 +1417,7 @@
                                                                                 class="ml-2 markdown-content streaming-content"
                                                                                 v-html="renderStreamingMarkdown(message)"
                                                                             ></div>
-                                                                        </template>
+                                                                        </div>
                                                                     </div>
 
                                                                     <v-sheet
@@ -2792,28 +2813,61 @@
                         >
                         </v-textarea>
 
-                        <div v-if="showUserList" class="user-list mention-autocomplete-list" :style="mentionDropdownStyle">
-                            <template v-if="!filteredUserList || filteredUserList.length === 0">
-                                <div class="mention-autocomplete-empty">멘션할 수 있는 참여자가 없습니다.</div>
-                            </template>
-                            <template v-else>
-                                <div
-                                    v-for="(user, idx) in filteredUserList"
-                                    :key="user.id"
-                                    @click="selectUser(user)"
-                                    :class="[
-                                        'user-item mention-autocomplete-item',
-                                        { 'mention-autocomplete-item--active': idx === mentionActiveIndex }
-                                    ]"
-                                >
-                                    <img :src="user.profile" alt="profile" class="mention-autocomplete-avatar" />
-                                    <div class="mention-autocomplete-meta">
-                                        <div class="mention-autocomplete-name">{{ user.username }}</div>
-                                        <div class="mention-autocomplete-sub">{{ user.email }}</div>
+                        <Teleport to="body">
+                            <div
+                                v-if="showUserList"
+                                class="user-list mention-autocomplete-list mention-autocomplete-list--fixed"
+                                :style="mentionDropdownStyle"
+                            >
+                                <template v-if="!filteredUserList || filteredUserList.length === 0">
+                                    <div class="mention-autocomplete-empty">멘션할 수 있는 참여자가 없습니다.</div>
+                                </template>
+                                <template v-else>
+                                    <div
+                                        v-for="(user, idx) in filteredUserList"
+                                        :key="user.id"
+                                        @click="selectUser(user)"
+                                        :class="[
+                                            'user-item mention-autocomplete-item',
+                                            { 'mention-autocomplete-item--active': idx === mentionActiveIndex }
+                                        ]"
+                                    >
+                                        <img :src="user.profile" alt="profile" class="mention-autocomplete-avatar" />
+                                        <div class="mention-autocomplete-meta">
+                                            <div class="mention-autocomplete-name">{{ user.username }}</div>
+                                            <div class="mention-autocomplete-sub">{{ user.email }}</div>
+                                        </div>
                                     </div>
-                                </div>
-                            </template>
-                        </div>
+                                </template>
+                            </div>
+
+                            <div
+                                v-if="showSkillList"
+                                class="user-list mention-autocomplete-list mention-autocomplete-list--fixed skill-autocomplete-list"
+                                :style="skillDropdownStyle"
+                            >
+                                <template v-if="!filteredSkillList || filteredSkillList.length === 0">
+                                    <div class="mention-autocomplete-empty">사용 가능한 스킬이 없습니다.</div>
+                                </template>
+                                <template v-else>
+                                    <div
+                                        v-for="(skill, idx) in filteredSkillList"
+                                        :key="skill.name"
+                                        @click="selectSkill(skill)"
+                                        :class="[
+                                            'user-item mention-autocomplete-item skill-autocomplete-item',
+                                            { 'mention-autocomplete-item--active': idx === skillActiveIndex }
+                                        ]"
+                                    >
+                                        <v-icon size="16" class="skill-autocomplete-icon">mdi-slash-forward</v-icon>
+                                        <div class="mention-autocomplete-meta">
+                                            <div class="mention-autocomplete-name">/{{ skill.name }}</div>
+                                            <div class="mention-autocomplete-sub" v-if="skill.description">{{ skill.description }}</div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </Teleport>
                     </div>
 
                     <div class="d-flex justify-space-between align-center w-100 pa-2">
@@ -3024,28 +3078,61 @@
                     >
                     </v-textarea>
 
-                    <div v-if="showUserList" class="user-list mention-autocomplete-list" :style="mentionDropdownStyle">
-                        <template v-if="!filteredUserList || filteredUserList.length === 0">
-                            <div class="mention-autocomplete-empty">멘션할 수 있는 참여자가 없습니다.</div>
-                        </template>
-                        <template v-else>
-                            <div
-                                v-for="(user, idx) in filteredUserList"
-                                :key="user.id"
-                                @click="selectUser(user)"
-                                :class="[
-                                    'user-item mention-autocomplete-item',
-                                    { 'mention-autocomplete-item--active': idx === mentionActiveIndex }
-                                ]"
-                            >
-                                <img :src="user.profile" alt="profile" class="mention-autocomplete-avatar" />
-                                <div class="mention-autocomplete-meta">
-                                    <div class="mention-autocomplete-name">{{ user.username }}</div>
-                                    <div class="mention-autocomplete-sub">{{ user.email }}</div>
+                    <Teleport to="body">
+                        <div
+                            v-if="showUserList"
+                            class="user-list mention-autocomplete-list mention-autocomplete-list--fixed"
+                            :style="mentionDropdownStyle"
+                        >
+                            <template v-if="!filteredUserList || filteredUserList.length === 0">
+                                <div class="mention-autocomplete-empty">멘션할 수 있는 참여자가 없습니다.</div>
+                            </template>
+                            <template v-else>
+                                <div
+                                    v-for="(user, idx) in filteredUserList"
+                                    :key="user.id"
+                                    @click="selectUser(user)"
+                                    :class="[
+                                        'user-item mention-autocomplete-item',
+                                        { 'mention-autocomplete-item--active': idx === mentionActiveIndex }
+                                    ]"
+                                >
+                                    <img :src="user.profile" alt="profile" class="mention-autocomplete-avatar" />
+                                    <div class="mention-autocomplete-meta">
+                                        <div class="mention-autocomplete-name">{{ user.username }}</div>
+                                        <div class="mention-autocomplete-sub">{{ user.email }}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </template>
-                    </div>
+                            </template>
+                        </div>
+
+                        <div
+                            v-if="showSkillList"
+                            class="user-list mention-autocomplete-list mention-autocomplete-list--fixed skill-autocomplete-list"
+                            :style="skillDropdownStyle"
+                        >
+                            <template v-if="!filteredSkillList || filteredSkillList.length === 0">
+                                <div class="mention-autocomplete-empty">사용 가능한 스킬이 없습니다.</div>
+                            </template>
+                            <template v-else>
+                                <div
+                                    v-for="(skill, idx) in filteredSkillList"
+                                    :key="skill.name"
+                                    @click="selectSkill(skill)"
+                                    :class="[
+                                        'user-item mention-autocomplete-item skill-autocomplete-item',
+                                        { 'mention-autocomplete-item--active': idx === skillActiveIndex }
+                                    ]"
+                                >
+                                    <v-icon size="16" class="skill-autocomplete-icon">mdi-slash-forward</v-icon>
+                                    <div class="mention-autocomplete-meta">
+                                        <div class="mention-autocomplete-name">/{{ skill.name }}</div>
+                                        <div class="mention-autocomplete-sub" v-if="skill.description">{{ skill.description }}</div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </Teleport>
                 </div>
                 <div class="d-flex justify-space-between align-center w-100 pl-1">
                     <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;' : 'position:relative;'">
@@ -3423,6 +3510,7 @@ import mermaid from 'mermaid';
 import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
+import { getTenantId } from '@/utils/tenant';
 const backend = BackendFactory.createBackend();
 
 // getToolCallList()의 도구 결과 가공(JSON.parse/정규식/문자열 치환) 캐시.
@@ -3642,6 +3730,14 @@ export default {
             mentionStartIndex: null,
             mentionQuery: '',
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
+            // '/' 스킬 자동완성 (딥 에이전트 채팅에서만 활성화)
+            showSkillList: false,
+            skillStartIndex: null,
+            skillQuery: '',
+            skillActiveIndex: 0,
+            skillDropdownStyle: {},
+            availableSkills: [],
+            skillsLoaded: false,
             file: null,
             isRender: false,
             highlightedMessageUuid: null,
@@ -3761,6 +3857,20 @@ export default {
             }
         });
 
+        // 멘션/스킬 자동완성 목록이 열려 있을 때 바깥을 클릭하면 닫히도록 한다.
+        // 목록은 <Teleport to="body">로 렌더링되므로 입력창(.mention-autocomplete-wrap)과
+        // 목록(.mention-autocomplete-list) 둘 다를 벗어난 클릭인지로 판단한다.
+        this._autocompleteOutsideClickHandler = (event) => {
+            if (!me.showUserList && !me.showSkillList) return;
+            const target = event.target;
+            if (target?.closest?.('.mention-autocomplete-wrap') || target?.closest?.('.mention-autocomplete-list')) return;
+            me.showUserList = false;
+            me.mentionDropdownStyle = {};
+            me.showSkillList = false;
+            me.skillDropdownStyle = {};
+        };
+        document.addEventListener('click', this._autocompleteOutsideClickHandler);
+
         this.EventBus.on('scroll_update', () => {
             if (this.$refs && this.$refs.scrollContainer) {
                 setTimeout(() => {
@@ -3806,6 +3916,9 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.handleResize);
+        if (this._autocompleteOutsideClickHandler) {
+            document.removeEventListener('click', this._autocompleteOutsideClickHandler);
+        }
         this.stopAgentPanelResize();
         try {
             if (this._highlightTimer) clearTimeout(this._highlightTimer);
@@ -3902,6 +4015,13 @@ export default {
                 this.newMessage.startsWith('>') ||
                 this.newMessage.startsWith('!')
             );
+        },
+        filteredSkillList() {
+            if (!this.showSkillList || this.skillStartIndex === null) return [];
+            const q = (this.skillQuery || '').toString().toLowerCase();
+            const list = Array.isArray(this.availableSkills) ? this.availableSkills : [];
+            if (!q) return list;
+            return list.filter((s) => (s.name || '').toLowerCase().includes(q));
         },
         filteredUserList() {
             if (!this.showUserList || this.mentionStartIndex === null || !this.userList || !this.currentChatRoom) {
@@ -4603,14 +4723,6 @@ export default {
             marked.setOptions({ breaks: true, gfm: true });
             return this.withMermaidContainers(marked(this.linkify(raw)));
         },
-        getRunningToolCall(message) {
-            try {
-                const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
-                return tools.find((t) => t?.status === 'running') || null;
-            } catch (e) {
-                return null;
-            }
-        },
         /** 채팅 메시지 하단 인라인 '도구 사용 내역'(Claude Desktop식) 용 정규화 목록 */
         getToolCallList(message) {
             if (!message || typeof message !== 'object') return [];
@@ -4627,6 +4739,17 @@ export default {
             const result = this._buildToolCallList(tools, skillsRaw, connectorsRaw);
             _toolCallListCache.set(message, { sig, result });
             return result;
+        },
+        hasRunningTool(message) {
+            const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
+            if (!tools.length) return false;
+            const STALE_RUNNING_MS = 5 * 60 * 1000;
+            const now = Date.now();
+            return tools.some((tc) => {
+                if (tc?.status !== 'running') return false;
+                const startedAt = tc?.startedAt ? new Date(tc.startedAt).getTime() : NaN;
+                return !Number.isFinite(startedAt) || now - startedAt < STALE_RUNNING_MS;
+            });
         },
         _buildToolCallList(tools, skillsRaw, connectorsRaw) {
             try {
@@ -5508,11 +5631,35 @@ export default {
                     this.updateMentionDropdownPosition(event);
                     this.showUserList = true;
                 });
+                this.showSkillList = false;
+                this.skillStartIndex = null;
+                this.skillQuery = '';
+                this.skillDropdownStyle = {};
             } else {
                 this.mentionStartIndex = null;
                 this.mentionQuery = '';
                 this.showUserList = false;
                 this.mentionDropdownStyle = {};
+
+                // '/' 스킬 자동완성: 딥 에이전트 채팅에서만, 메세지 맨 앞에서 '/'로 시작할 때 활성화
+                const skillCtx = this.orchestration === 'deepagents' ? this.getSkillContext(text, caretPos) : null;
+                if (skillCtx) {
+                    this.skillStartIndex = skillCtx.startIndex;
+                    this.skillQuery = skillCtx.query;
+                    this.skillActiveIndex = 0;
+                    this.showSkillList = false;
+                    this.skillDropdownStyle = { visibility: 'hidden' };
+                    this.loadAvailableSkills();
+                    this.$nextTick(() => {
+                        this.updateSkillDropdownPosition(event);
+                        this.showSkillList = true;
+                    });
+                } else {
+                    this.skillStartIndex = null;
+                    this.skillQuery = '';
+                    this.showSkillList = false;
+                    this.skillDropdownStyle = {};
+                }
             }
 
             // NOTE: 현재 UX는 "멘션은 chip으로만 표시" (텍스트에 @token을 넣지 않음)
@@ -5530,52 +5677,103 @@ export default {
         },
         handleTextareaCaretMove(event) {
             // caret 이동/클릭 시에도 위치 업데이트
-            if (!this.showUserList) return;
-            this.$nextTick(() => {
-                this.updateMentionDropdownPosition(event);
-            });
+            if (this.showUserList) {
+                this.$nextTick(() => {
+                    this.updateMentionDropdownPosition(event);
+                });
+            }
+            if (this.showSkillList) {
+                this.$nextTick(() => {
+                    this.updateSkillDropdownPosition(event);
+                });
+            }
         },
         handleTextareaKeydown(event) {
-            if (!this.showUserList) return;
-            const key = (event?.key || '').toString();
-            const list = Array.isArray(this.filteredUserList) ? this.filteredUserList : [];
-            if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Enter' || key === 'Escape' || key === 'Tab') {
-                event.preventDefault?.();
-                event.stopPropagation?.();
-            } else {
+            if (this.showUserList) {
+                const key = (event?.key || '').toString();
+                const list = Array.isArray(this.filteredUserList) ? this.filteredUserList : [];
+                if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Enter' || key === 'Escape' || key === 'Tab') {
+                    event.preventDefault?.();
+                    event.stopPropagation?.();
+                } else {
+                    return;
+                }
+
+                if (key === 'Escape' || key === 'Tab') {
+                    this.showUserList = false;
+                    this.mentionDropdownStyle = {};
+                    return;
+                }
+
+                if (list.length === 0) return;
+
+                if (key === 'ArrowDown') {
+                    this.mentionActiveIndex = (this.mentionActiveIndex + 1) % list.length;
+                    this.$nextTick(() => this.scrollActiveMentionIntoView());
+                    return;
+                }
+                if (key === 'ArrowUp') {
+                    this.mentionActiveIndex = (this.mentionActiveIndex - 1 + list.length) % list.length;
+                    this.$nextTick(() => this.scrollActiveMentionIntoView());
+                    return;
+                }
+                if (key === 'Enter') {
+                    const picked = list[this.mentionActiveIndex] || null;
+                    if (picked) this.selectUser(picked);
+                    return;
+                }
                 return;
             }
 
-            if (key === 'Escape' || key === 'Tab') {
-                this.showUserList = false;
-                this.mentionDropdownStyle = {};
-                return;
-            }
+            if (this.showSkillList) {
+                const key = (event?.key || '').toString();
+                const list = Array.isArray(this.filteredSkillList) ? this.filteredSkillList : [];
+                if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Enter' || key === 'Escape' || key === 'Tab') {
+                    event.preventDefault?.();
+                    event.stopPropagation?.();
+                } else {
+                    return;
+                }
 
-            if (list.length === 0) return;
+                if (key === 'Escape' || key === 'Tab') {
+                    this.showSkillList = false;
+                    this.skillDropdownStyle = {};
+                    return;
+                }
 
-            if (key === 'ArrowDown') {
-                this.mentionActiveIndex = (this.mentionActiveIndex + 1) % list.length;
-                this.$nextTick(() => this.scrollActiveMentionIntoView());
-                return;
-            }
-            if (key === 'ArrowUp') {
-                this.mentionActiveIndex = (this.mentionActiveIndex - 1 + list.length) % list.length;
-                this.$nextTick(() => this.scrollActiveMentionIntoView());
-                return;
-            }
-            if (key === 'Enter') {
-                const picked = list[this.mentionActiveIndex] || null;
-                if (picked) this.selectUser(picked);
-                return;
+                if (list.length === 0) return;
+
+                if (key === 'ArrowDown') {
+                    this.skillActiveIndex = (this.skillActiveIndex + 1) % list.length;
+                    this.$nextTick(() => this.scrollActiveSkillIntoView());
+                    return;
+                }
+                if (key === 'ArrowUp') {
+                    this.skillActiveIndex = (this.skillActiveIndex - 1 + list.length) % list.length;
+                    this.$nextTick(() => this.scrollActiveSkillIntoView());
+                    return;
+                }
+                if (key === 'Enter') {
+                    const picked = list[this.skillActiveIndex] || null;
+                    if (picked) this.selectSkill(picked);
+                    return;
+                }
             }
         },
         scrollActiveMentionIntoView() {
             try {
-                const wrap = this.$el?.querySelector?.('.mention-autocomplete-wrap');
-                const listEl = wrap?.querySelector?.('.mention-autocomplete-list');
+                // 드롭다운은 Teleport로 document.body 아래에 렌더링되므로 this.$el 밖에서 찾는다.
+                const listEl = document.querySelector('.mention-autocomplete-list--fixed:not(.skill-autocomplete-list)');
                 const items = listEl?.querySelectorAll?.('.mention-autocomplete-item');
                 const el = items?.[this.mentionActiveIndex];
+                el?.scrollIntoView?.({ block: 'nearest' });
+            } catch (e) {}
+        },
+        scrollActiveSkillIntoView() {
+            try {
+                const listEl = document.querySelector('.skill-autocomplete-list');
+                const items = listEl?.querySelectorAll?.('.skill-autocomplete-item');
+                const el = items?.[this.skillActiveIndex];
                 el?.scrollIntoView?.({ block: 'nearest' });
             } catch (e) {}
         },
@@ -5668,28 +5866,53 @@ export default {
             const textarea = this.getActiveTextareaEl(event);
             if (!textarea) return;
 
-            const wrap = textarea.closest?.('.mention-autocomplete-wrap') || this.$el?.querySelector?.('.mention-autocomplete-wrap');
-            if (!wrap) return;
-
             // anchor at '@' position (not at current caret)
             const anchorPos = Math.max(0, Math.min(this.mentionStartIndex, (textarea.value || '').length));
             const caret = this.getTextareaCaretCoordinates(textarea, anchorPos);
-
-            const wrapRect = wrap.getBoundingClientRect();
-            const taRect = textarea.getBoundingClientRect();
-
-            // position in wrap's coordinate space
-            let left = taRect.left - wrapRect.left + caret.left - textarea.scrollLeft;
-            let top = taRect.top - wrapRect.top - 20 + caret.top - textarea.scrollTop + caret.height;
-
-            // clamp horizontally within wrap
-            const maxLeft = Math.max(0, (wrap.clientWidth || 0) - 80);
-            left = Math.max(8, Math.min(left, maxLeft));
+            const { left, top, maxHeight } = this.computeFixedDropdownStyle(textarea, caret, 360);
 
             this.mentionDropdownStyle = {
-                position: 'absolute',
+                position: 'fixed',
                 left: `${left}px`,
                 top: `${top}px`,
+                maxHeight: `${maxHeight}px`,
+                transform: 'translateY(-100%)',
+                marginTop: '-8px',
+                visibility: 'visible'
+            };
+        },
+        // 드롭다운은 <Teleport to="body">로 렌더링되므로 좌표는 뷰포트 기준(position:fixed)으로 계산한다.
+        // 채팅 패널의 overflow:hidden 컨테이너에 더 이상 갇히지 않으므로, 뷰포트 상단까지의
+        // 실제 가용 공간에 맞춰 높이를 정하고(너무 좁으면 최소 보장 높이는 유지), 위로 펼친다.
+        computeFixedDropdownStyle(textarea, caret, preferredMaxHeight) {
+            const taRect = textarea.getBoundingClientRect();
+
+            let left = taRect.left + caret.left - textarea.scrollLeft;
+            const maxLeft = Math.max(8, window.innerWidth - 340);
+            left = Math.max(8, Math.min(left, maxLeft));
+
+            // anchor: 팝업의 (변형 전) top === 렌더링 후 bottom 좌표 (translateY(-100%) 적용)
+            const anchorBottom = taRect.top - 20 + caret.top - textarea.scrollTop + caret.height;
+
+            const available = anchorBottom - 8; // 뷰포트 최상단에서 8px 여유
+            const maxHeight = Math.max(160, Math.min(preferredMaxHeight, available));
+
+            return { left, top: anchorBottom, maxHeight };
+        },
+        updateSkillDropdownPosition(event) {
+            if (this.skillStartIndex == null) return;
+            const textarea = this.getActiveTextareaEl(event);
+            if (!textarea) return;
+
+            const anchorPos = Math.max(0, Math.min(this.skillStartIndex, (textarea.value || '').length));
+            const caret = this.getTextareaCaretCoordinates(textarea, anchorPos);
+            const { left, top, maxHeight } = this.computeFixedDropdownStyle(textarea, caret, 420);
+
+            this.skillDropdownStyle = {
+                position: 'fixed',
+                left: `${left}px`,
+                top: `${top}px`,
+                maxHeight: `${maxHeight}px`,
                 transform: 'translateY(-100%)',
                 marginTop: '-8px',
                 visibility: 'visible'
@@ -5710,6 +5933,79 @@ export default {
             if (at < 0) return null;
             const query = (m[2] || '').toString();
             return { startIndex: at, query };
+        },
+        getSkillContext(text, caretPos) {
+            const s = (text || '').toString();
+            const pos = Math.max(0, Math.min(Number(caretPos ?? 0), s.length));
+            const beforeCaret = s.slice(0, pos);
+            // 클로드 코드의 슬래시 커맨드처럼, 메세지 맨 앞에서 "/query" 형태일 때만 활성화
+            const m = /^\/([0-9A-Za-z가-힣._-]*)$/.exec(beforeCaret);
+            if (!m) return null;
+            return { startIndex: 0, query: (m[1] || '').toString() };
+        },
+        async loadAvailableSkills() {
+            if (this.skillsLoaded) return;
+            try {
+                const tenantId = getTenantId();
+                const [tenantResult, builtinResult] = await Promise.all([
+                    tenantId ? backend.getTenantSkills(tenantId) : Promise.resolve([]),
+                    backend.getTenantBuiltinSkills ? backend.getTenantBuiltinSkills() : Promise.resolve([])
+                ]);
+                const normalize = (result) => {
+                    const raw = result?.skills ?? result;
+                    const list = Array.isArray(raw) ? raw : raw?.skills || [];
+                    return list
+                        .map((s) => ({
+                            name: typeof s === 'string' ? s : s.name || s.skill_name || '',
+                            description: typeof s === 'string' ? '' : s.description || ''
+                        }))
+                        .filter((s) => s.name);
+                };
+                const merged = [...normalize(tenantResult), ...normalize(builtinResult)];
+                const seen = new Set();
+                this.availableSkills = merged.filter((s) => {
+                    if (seen.has(s.name)) return false;
+                    seen.add(s.name);
+                    return true;
+                });
+            } catch (e) {
+                console.error('스킬 목록 조회 실패:', e);
+                this.availableSkills = [];
+            } finally {
+                this.skillsLoaded = true;
+            }
+        },
+        selectSkill(skill) {
+            if (!skill) return;
+            if (this.skillStartIndex == null) return;
+
+            const textarea = this.getActiveTextareaEl();
+            const caretPos =
+                textarea && Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : (this.newMessage || '').length;
+
+            const start = Math.max(0, Math.min(this.skillStartIndex, (this.newMessage || '').length));
+            const before = (this.newMessage || '').substring(0, start);
+            const after = (this.newMessage || '').substring(caretPos);
+
+            const skillText = `/${(skill.name || '').toString().trim()}`;
+            const inserted = `${skillText} `;
+            this.newMessage = `${before}${inserted}${after}`;
+
+            this.showSkillList = false;
+            this.skillStartIndex = null;
+            this.skillQuery = '';
+            this.skillDropdownStyle = {};
+            this.skillActiveIndex = 0;
+
+            this.$nextTick(() => {
+                try {
+                    const ta = this.getActiveTextareaEl();
+                    if (!ta) return;
+                    const nextPos = Math.min((before + inserted).length, (ta.value || '').length);
+                    ta.focus?.();
+                    ta.setSelectionRange?.(nextPos, nextPos);
+                } catch (e) {}
+            });
         },
         removeMentionedUser(user) {
             if (!user) return;
@@ -6981,6 +7277,10 @@ pre {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.skill-autocomplete-icon {
+    flex: 0 0 auto;
+    opacity: 0.7;
+}
 .definition-map-chat-menu-background {
     // background-color: rgb(var(--v-theme-primary), 0.15) !important;
     padding: 0px;
@@ -7310,27 +7610,23 @@ pre {
     }
 }
 
-.chat-room-tool-calls {
-    margin-top: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+/* 로딩 중(스트리밍) 실시간 도구 타임라인 — 완료 후의 접이식 .chat-tool-activity__list와 스타일 공유,
+   전체를 항상 펼쳐서 보여준다는 점만 다르다. */
+.chat-tool-activity__list--live {
+    padding: 2px 0;
 }
-
-.chat-room-tool-call-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    font-family: inherit;
-    color: rgba(0, 0, 0, 0.87);
+.chat-tool-activity__list--live .chat-tool-activity__item {
+    animation: chat-tool-activity-item-in 0.15s ease-out;
 }
-
-.chat-room-tool-call-item .tool-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: min(520px, 70vw);
+@keyframes chat-tool-activity-item-in {
+    from {
+        opacity: 0;
+        transform: translateY(-2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .chat-room-edit-wrap {
@@ -7442,8 +7738,9 @@ pre {
 
 .chat-room-loading-indicator {
     display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     padding: 10px 12px;
     border-radius: 12px;
     background: transparent;

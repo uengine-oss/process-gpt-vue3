@@ -624,7 +624,8 @@
         "upload": "Upload definition list",
         "release": "Definition Export",
         "defaultForm": "Default Form Management",
-        "completedList": "View completed instance list"
+        "completedList": "View completed instance list",
+        "formDesigner": "Form Designer"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -827,14 +828,18 @@
             "card": "Card",
             "matrix": "Matrix",
             "tree": "Tree",
-            "hierarchy": "Hierarchy"
+            "hierarchy": "Hierarchy",
+            "mermaid": "Mermaid"
         },
         "stats": {
             "total": "Total",
             "subProcesses": "Sub Processes",
             "published": "Completed",
             "review": "Under Review",
-            "draft": "In Progress"
+            "draft": "In Progress",
+            "inReview": "In Review (In-review)",
+            "publicFeedback": "Public Feedback (Public-Feedback)",
+            "finalEdit": "Final Editing (Final-Edit)"
         },
         "matrix": {
             "domain": "Domain",
@@ -882,13 +887,26 @@
             "leadTimeRange": "Lead-time Range",
             "days": "days",
             "systems": "Related Systems",
-            "systemSearch": "Filter by system or OSS..."
+            "systemSearch": "Filter by system or OSS...",
+            "statusFinalEdit": "Final Edit"
         },
         "hierarchy": {
             "selectDomain": "Select Domain",
             "expandAll": "Expand All",
             "collapseAll": "Collapse All",
-            "clickToToggle": "Click node to expand/collapse"
+            "clickToToggle": "Click node to expand/collapse",
+            "title": "Process Architecture",
+            "subtitle": "Hierarchical Process Structure",
+            "zoomIn": "Zoom In",
+            "zoomOut": "Zoom Out",
+            "legendStructure": "Hierarchy Structure",
+            "legendStatus": "Process Status",
+            "legendItems": {
+                "domain": "Domain",
+                "mega": "Mega Process",
+                "major": "Major Process",
+                "sub": "Sub Process"
+            }
         },
         "mermaid": {
             "zoomLevel": "Zoom",
@@ -913,7 +931,9 @@
             "favorites": "Favorites",
             "myCreation": "My Creation",
             "myOrganization": "My Organization",
-            "apply": "Apply Filter"
+            "apply": "Apply Filter",
+            "title": "Access Permission Settings",
+            "applied": "Batch changes applied."
         },
         "emptyState": {
             "message": "Select a process",
@@ -972,8 +992,28 @@
             "createAndOpen": "Create & Open",
             "aiSuggestion": "AI Suggested Location",
             "recommended": "Recommended",
-            "applySuggestion": "Apply"
-        }
+            "applySuggestion": "Apply",
+            "callActivitySub": "Process Module (not registered in hierarchy)",
+            "fieldOwners": "Field Owner(s)",
+            "fieldOwnerPlaceholder": "Select field owners",
+            "hqOwners": "HQ Owner(s)",
+            "hqOwnerPlaceholder": "Select HQ owners",
+            "upload": "Upload",
+            "scratchInfo": "Start from a new blank canvas.",
+            "templateInfo": "Start quickly from an existing standard template.",
+            "cloneInfo": "Create a similar process efficiently by copying an existing process.",
+            "uploadInfo": "Create a new process directly from a BPMN/XML file.",
+            "uploadHint": "The uploaded BPMN/XML will be saved as the initial definition of the new process.",
+            "selectUploadFile": "Select BPMN File",
+            "replaceUploadFile": "Choose Another File",
+            "selectedUploadFile": "Selected file",
+            "uploadRequired": "You must upload a BPMN XML file before creating the process.",
+            "invalidUploadFile": "Only valid BPMN XML files can be uploaded.",
+            "sourceDefinitionLoadFailed": "Failed to load the source process definition.",
+            "createFailed": "Failed to create the process."
+        },
+        "message": "Saving will reset the current approval process. Continue?",
+        "resetFilters": "Reset Filters"
     },
     "processHierarchy": {
         "title": "Process Hierarchy",
@@ -1041,7 +1081,33 @@
         "taskSaveSuccess": "Task properties saved.",
         "callActivitySaveSuccess": "Call Activity properties saved.",
         "expandAll": "Expand All",
-        "collapseAll": "Collapse All"
+        "collapseAll": "Collapse All",
+        "treeDesc": "Open the process selected from the architecture in the hierarchy editor.",
+        "saveDesc": "Save the process currently being edited.",
+        "versionHistoryDesc": "Review saved versions and changes in the bottom history panel.",
+        "propertiesDesc": "Review properties and governance for the selected process and task.",
+        "expandPanel": "Expand panel",
+        "adminOnlyEdit": "Only administrators can edit.",
+        "readOnlyMode": "Displayed in read-only mode.",
+        "lockedByOther": " is editing this process. Displayed in read-only mode.",
+        "lockedByOtherReadOnly": "Another user is editing this process. Displayed in read-only mode.",
+        "xmlEditHint": "After editing the XML, apply it to update the current BPMN canvas.",
+        "xmlApplySuccess": "XML changes have been applied.",
+        "xmlApplyFailed": "Failed to apply XML changes.",
+        "addMega": "Add Mega Process",
+        "addMajor": "Add Major Process",
+        "megaNamePlaceholder": "Mega process name",
+        "majorNamePlaceholder": "Major process name",
+        "selectDomain": "Select domain",
+        "duplicateMegaName": "A mega process with the same name already exists.",
+        "duplicateMajorName": "A major process with the same name already exists.",
+        "domainRequired": "Please select a domain.",
+        "megaAdded": "Mega process has been added.",
+        "majorAdded": "Major process has been added.",
+        "addFailed": "Failed to add process.",
+        "addCallActivitySub": "Add Process Module",
+        "callActivityNamePlaceholder": "Process module name",
+        "callActivityAdded": "Process module has been created."
     },
     "versionComparison": {
         "title": "Version Comparison",
@@ -1067,7 +1133,8 @@
         "rollbackFailed": "Failed to rollback.",
         "selectProcessToCompare": "Select a process from the list on the left to compare",
         "selectProcessHint": "Select a process to compare differences between versions",
-        "noVersions": "No saved versions"
+        "noVersions": "No saved versions",
+        "syncScroll": "Sync Scroll"
     },
     "toolbarInfo": {
         "savedAgo": "Saved {n}m ago",
@@ -1189,7 +1256,10 @@
         "publicReviewTooltip": "HQ/business review has been approved. Feel free to leave comments.",
         "publicReviewTooltipWithDate": "HQ/business review has been approved. Feel free to leave comments until {date}.",
         "wip": "WIP",
-        "sunset": "Sunset"
+        "sunset": "Sunset",
+        "in_review": "Review",
+        "public_feedback": "Feedback",
+        "final_edit": "Final Edit"
     },
     "ownerSelect": {
         "noData": "No organization members found",
@@ -1554,7 +1624,8 @@
         "noAvailableTeams": "No teams available to add",
         "addSelectedTeams": "Add Selected Teams",
         "deleteConfirmMessage": "Are you sure you want to delete '{name}' group?",
-        "affiliatedTeam": "Affiliated team"
+        "affiliatedTeam": "Affiliated team",
+        "confirmDelete": "Delete Group"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -1636,7 +1707,8 @@
         "updatePassword": "Update Password"
     },
     "ExtraBox": {
-        "logOut": "log out"
+        "logOut": "log out",
+        "myAccount": "Settings"
     },
     "BpmnPropertyPanel": {
         "readOnly": "Read Only",
@@ -1689,6 +1761,9 @@
         "attachments": "Attachments",
         "agentMode": "Completion Level",
         "usePresetAgent": "Use preset agent",
+        "rootAgent": "Main agent",
+        "rootAgentAuto": "Auto",
+        "rootAgentHintPinned": "{name} becomes the main agent; the remaining assigned agents are delegated to as subagents.",
         "orchestration": "Orchestration",
         "days": "days",
         "selectForm": "Select Form to Reference",
@@ -1715,7 +1790,8 @@
         "mcpSkillsLoading": "Loading lists…",
         "mcpSkillsEmpty": "No items registered, or lists are unavailable in this mode.",
         "skillsUploaded": "Uploaded skills",
-        "skillsBuiltin": "Built-in skills"
+        "skillsBuiltin": "Built-in skills",
+        "selectProcessVariable": "Select Process Variables to Reference (incl. DB datasource)"
     },
     "KeyValueField": {
         "add": "Add",
@@ -1748,7 +1824,8 @@
         "full": "Full",
         "light": "Light",
         "dark": "Dark",
-        "sky": "Sky"
+        "sky": "Sky",
+        "customColor": "Custom Color"
     },
     "Mashup": {
         "hoverText": "Drag a layout (Container) here to start editing the form."
@@ -1915,7 +1992,9 @@
         "roundRobin": "Round Robin (Sequential Assignment)",
         "leastTasks": "Least Tasks First",
         "idle": "Longest Idle First",
-        "candidateList": "Candidate list"
+        "candidateList": "Candidate list",
+        "claim": "Claim",
+        "claimDescription": "Claim Assignment"
     },
     "Mapper": {
         "mapper": "Mapper"
@@ -1991,7 +2070,10 @@
         "dispatchingOptionAuto": "Auto",
         "dispatchingOptionAutoDescription": "Automatically determined based on the number of users. (IAM Role only)",
         "radioDescriptionTitle": "Select the role you want to add.",
-        "radioDescriptionSubTitle": "None: Selecting this option does not assign a specific role to the task. All users can perform this task.\nOrganization/Group: Select a team from org chart or an organization group. Only users belonging to the selected organization can perform this task.\nSelect by Role Name: Selecting this option allows you to choose from a predefined list of roles. Only users belonging to the selected role can perform this task.\nSelect Users Directly: Selecting this option allows you to designate specific users. Only designated users can perform this task."
+        "radioDescriptionSubTitle": "None: Selecting this option does not assign a specific role to the task. All users can perform this task.\nOrganization/Group: Select a team from org chart or an organization group. Only users belonging to the selected organization can perform this task.\nSelect by Role Name: Selecting this option allows you to choose from a predefined list of roles. Only users belonging to the selected role can perform this task.\nSelect Users Directly: Selecting this option allows you to designate specific users. Only designated users can perform this task.",
+        "externalSupplier": "External Supplier",
+        "searchSupplier": "Search by supplier name or business number",
+        "supplierSearchHint": "Enter supplier name"
     },
     "MessageEventDefinitionPanel": {
         "correlationKey": "Correlation Key",
@@ -2019,7 +2101,10 @@
         "methodTypeDescriptionSubTitle1": "1.GET: A request to retrieve data from the server \n2.POST: A request to create and send new data to the server \n3.PUT: A request to update or replace existing data entirely \n4.PATCH: A request to partially modify existing data \n5.API URL: The endpoint URL of the server where the request will be sent",
         "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list.",
         "message": "Send Email",
-        "send": "Send Rest API"
+        "send": "Send Rest API",
+        "recipients": "Mail Recipients",
+        "recipientsLabel": "Recipient emails (type or select users, multiple allowed)",
+        "autoSendInfo": "When the process reaches this task, the email is sent immediately to the recipients and the task completes automatically."
     },
     "ScriptTaskPanel": {
         "return": "Variable to store the return value",
@@ -2097,7 +2182,10 @@
         "dataObject": "Create Data Object",
         "autoLayout": "Auto Layout",
         "revertLayout": "Revert Layout",
-        "changeOrientation": "Change layout orientation"
+        "changeOrientation": "Change layout orientation",
+        "AdHocSubProcess": "Create Ad-hoc Sub Process",
+        "adHocSubProcess": "Create Ad-hoc Sub Process",
+        "group": "Annotation Area (dashed box)"
     },
     "chatListing": {
         "title": "Chat Room Settings",
@@ -2125,7 +2213,9 @@
     },
     "userListing": {
         "search": "User search",
-        "chat": "Chat"
+        "chat": "Chat",
+        "loading": "Loading users...",
+        "empty": "No users to display."
     },
     "ProcessDefinitionChat": {
         "greetingMessage": "Hello {name}! What tasks and issues are you experiencing? Please let me know and I'll help you!",
@@ -2269,7 +2359,8 @@
         "replace-with-non-interrupting-timer-boundary": "Replace with non-interrupting timer boundary event",
         "replace-with-signal-boundary": "Replace with signal boundary event",
         "replace-with-timer-boundary": "Replace with timer boundary event",
-        "replace-with-expanded-pool": "Replace with expanded pool"
+        "replace-with-expanded-pool": "Replace with expanded pool",
+        "replace-with-adhoc-subprocess": "Replace with ad-hoc subprocess"
     },
     "WorkItem": {
         "progress": "Progress",
@@ -2801,7 +2892,8 @@
         "verificationEmailSent": "A verification email has been sent. Please check your email and log in again.<br>If you do not see the email, please check your spam folder.",
         "registrationSuccess": "Registration successful.",
         "emailSent": "An email has been sent.",
-        "passwordUpdated": "Your password has been updated."
+        "passwordUpdated": "Your password has been updated.",
+        "signupPendingApproval": "Your signup request has been submitted. You can log in after an admin approves your account."
     },
     "StorageBaseSupabase": {
         "emailNotConfirmed": "Email verification is not complete. Please check your email and log in again.",
@@ -2809,7 +2901,9 @@
         "wrongId": "The ID is incorrect.",
         "notRegisteredEmail": "This email address is not registered.",
         "loginRequired": "Login is required.",
-        "unRegisteredTenant": "This tenant is not registered."
+        "unRegisteredTenant": "This tenant is not registered.",
+        "signupPendingApproval": "Your account is pending admin approval. Please try again later.",
+        "signupRejected": "Your signup request was rejected. Please contact an administrator."
     },
     "TodoTaskItemCard": {
         "assignee": "Assignee",
@@ -3077,7 +3171,8 @@
         "technology2": "Multi-agent, <b>Agentic BPM, A2A</b> communication<br>(e.g. AgentSpace, Orchestrate)",
         "technology3": "Autonomous agent network (<b>Agentic Mesh</b>) + governance<br>(e.g. Palantir AIP)",
         "description1": "In the 'Agent Boss' system, AI executes repetitive tasks, and humans focus on strategy and supervision, forming a collaborative agent system.",
-        "description2": "This matches the 3-stage transition model of MS Work Trend Index 2025, greatly improving work efficiency through role-based collaboration and execution automation within the organization."
+        "description2": "This matches the 3-stage transition model of MS Work Trend Index 2025, greatly improving work efficiency through role-based collaboration and execution automation within the organization.",
+        "title": "MS Work Trend Index 2025: 3 Stages of AI Transformation"
     },
     "DemoSection": {
         "title": "AI-based Business Process Innovation",
@@ -3105,7 +3200,15 @@
         "description4-3": "Improved knowledge is reflected in the ontology and used for process and task design.",
         "description5-1": "Supports both web-based MCP (browser/desktop) and mobile app environments for diverse user needs.",
         "description5-2": "Office workers get precision process design UI; field/sales get voice/image-based mobile interface.",
-        "description5-3": "Multi-interface options ensure consistent UX and task continuity regardless of location or device."
+        "description5-3": "Multi-interface options ensure consistent UX and task continuity regardless of location or device.",
+        "subtitle": "Various business tasks, now Process-GPT executes them",
+        "description1-3": "Manage documents and data based on ontology to use for learning and execution.",
+        "description1-4": "Configure necessary tools and permissions to automate tasks and system integrations.",
+        "description2-4": "Include input forms and approval procedures to configure, and you can edit in natural language or BPMN.",
+        "description3-4": "Provide an execution-centered environment that can use internal search·office tools.",
+        "description3-5": "Mobile supports voice·image input, desktop supports text input to ensure task continuity anywhere.",
+        "description4-4": "People can add new knowledge·rules to retrain agents.",
+        "description4-5": "Organizations gradually improve their operational environment based on data."
     },
     "ConsultingSection": {
         "title": "Process Consulting AI and Management",
@@ -3700,7 +3803,8 @@
             "inference": "Rule Inference",
             "management": "Rule Management"
         },
-        "businessRule": "Business Rule"
+        "businessRule": "Business Rule",
+        "knowledgeSetupInProgress": "Setting up knowledge"
     },
     "FormWorkItem": {
         "previous": "Previous Step",
@@ -3862,7 +3966,12 @@
         "snapshotCompare": "Snapshot Compare",
         "compareAsIs": "Compare As-Is",
         "compareDraft": "Draft View",
-        "snapshotAt": "Snapshot at"
+        "snapshotAt": "Snapshot at",
+        "draftLong": "Drafting (Draft)",
+        "expertReviewLong": "In Review (In-review)",
+        "publicFeedbackLong": "Public Feedback (Public-Feedback)",
+        "finalEditLong": "Final Editing (Final-Edit)",
+        "publishedLong": "Published (Published)"
     },
     "AgentChatRoomContext": {
         "progress": "Progress",
@@ -4051,7 +4160,13 @@
         "add": "Add",
         "close": "Close",
         "reset": "Reset",
-        "none": "None"
+        "none": "None",
+        "copy": "Copy",
+        "loading": "Loading...",
+        "owner": "Owner",
+        "manage": "Manage",
+        "name": "Name",
+        "refresh": "Refresh"
     },
     "taskCatalog": {
         "title": "Task Catalog Management",
@@ -4280,7 +4395,16 @@
         "noReopenItems": "No re-open requests",
         "noSubmissions": "No submissions",
         "total": "Total",
-        "items": "items"
+        "items": "items",
+        "publicFeedback": "Feedback",
+        "finalEdit": "Final Edit",
+        "draftLong": "Drafting (Draft)",
+        "inReviewLong": "In Review (In-review)",
+        "fieldInReviewLong": "Field In-review",
+        "hqInReviewLong": "HQ In-review",
+        "publicFeedbackLong": "Public Feedback (Public-Feedback)",
+        "finalEditLong": "Final Editing (Final-Edit)",
+        "publishedLong": "Published (Published)"
     },
     "approval": {
         "inProgressTitle": "Approval In Progress",
@@ -4289,7 +4413,37 @@
         "cancelledByNewSave": "Cancelled due to new version save",
         "currentState": "Current State",
         "version": "Version",
-        "submittedBy": "Submitted by"
+        "submittedBy": "Submitted by",
+        "heatmap": "Heatmap",
+        "pivot": "Pivot Table",
+        "performance": "Performance",
+        "query": "Natural Query",
+        "totalInstances": "Total Instances",
+        "completedTasks": "Completed Tasks",
+        "avgDuration": "Average Duration",
+        "activeUsers": "Active Users",
+        "instanceTrend": "Instance Trend",
+        "taskDistribution": "Task Distribution",
+        "cubeSelect": "Select Cube",
+        "schemaUpload": "Upload Schema",
+        "schemaRequired": "Schema Required",
+        "schemaRequiredDesc": "Please upload a Mondrian XML schema to use the pivot table.",
+        "naturalQueryDesc": "Query your data using natural language (Text2SQL)",
+        "agentPerformance": "Agent Performance",
+        "humanPerformance": "Human Performance",
+        "taskCount": "Task Count",
+        "avgF1": "Average F1",
+        "avgProcessTime": "Avg Process Time",
+        "errorCount": "Error Count",
+        "f1Trend": "F1 Score Trend",
+        "taskCountTrend": "Task Count Trend",
+        "rows": "Rows",
+        "columns": "Columns",
+        "measures": "Measures",
+        "dimensions": "Dimensions",
+        "executeQuery": "Execute Query",
+        "queryPlaceholder": "e.g., Show me the number of completed instances this month",
+        "generatedSql": "Generated SQL"
     },
     "mainChat": {
         "placeholder": "How can I help you? Try asking to create, execute, or search processes.",
@@ -4603,5 +4757,260 @@
         "share": "Share",
         "weighted": "Weighted",
         "close": "Close"
+    },
+    "gatewayNeedsBranches": "Gateway needs at least 2 branches.",
+    "unnamedTask": "Task has no name.",
+    "noLaneAssignee": "Lane has no assignee.",
+    "missingCondition": "Condition expression is missing.",
+    "validationError": "Validation Error",
+    "connectionMissing": "Connection Missing",
+    "nameRequired": "Name Required",
+    "branchingRequired": "Branching Required",
+    "conditionMissing": "Condition Missing",
+    "assigneeRequired": "Assignee Required",
+    "clearOverlays": "Clear Overlays",
+    "analysisDashboard": {
+        "title": "Analysis Dashboard",
+        "subtitle": "Process operations dashboard",
+        "openInNewTab": "Open In New Tab",
+        "activeTab": "Active Tab {tab}",
+        "emptyTitle": "Grafana URL is not configured for tab {tab}.",
+        "emptyDescription": "Add the following environment variable to your .env file to embed Grafana in this tab.",
+        "modeNative": "Native UI",
+        "modeEmbed": "BI Embed",
+        "dataPathOperational": "Operational Path",
+        "dataPathAnalytical": "Analytical Path",
+        "latencyOperational": "Reflect within 5 seconds",
+        "latencyAnalytical": "Near real-time or 1 hour batch",
+        "refreshManagedExternally": "Managed by external sync cadence",
+        "refreshEverySeconds": "Refresh every {seconds}s",
+        "refreshEveryMinutes": "Refresh every {minutes}m",
+        "dataSource": "Data Source",
+        "dataSourceOperational": "OLTP / Materialized View / Realtime Index Query",
+        "dataSourceAnalyticalEmbed": "DW / Data Mart / Grafana or QuickSight Embed",
+        "dataSourceAnalyticalNative": "DW / Data Mart / OLAP Native Widget",
+        "nativeViewMissingTitle": "Native view is not configured.",
+        "nativeViewMissingDescription": "Assign a native view in settings to render this tab.",
+        "globalControls": {
+            "domainScope": "Domain Scope",
+            "domainAll": "All Domains",
+            "organization": "Organization",
+            "orgAll": "All Organizations",
+            "includeSubOrgs": "Include sub-organizations",
+            "dateRange": "Date Range",
+            "thisQuarter": "This Quarter",
+            "ytd": "YTD",
+            "customRange": "Custom Range",
+            "dateFrom": "From",
+            "dateTo": "To",
+            "dateBasedOn": "Based on creation & update date",
+            "comparisonMode": "Comparison Mode",
+            "vsLastQuarter": "vs Last Quarter",
+            "comparisonHint": "Show quarter-over-quarter change rate",
+            "apply": "Apply",
+            "reset": "Reset"
+        },
+        "bottleneckTitle": "Process Bottleneck Top 10",
+        "totalProcesses": "Total Processes",
+        "processName": "Process",
+        "domain": "Domain",
+        "department": "Department",
+        "taskCount": "Tasks",
+        "staleTitle": "Zombie Process Management",
+        "all": "All",
+        "monthsInactive": "mo+ inactive",
+        "status": "Status",
+        "lastModified": "Last Modified",
+        "elapsedDays": "Elapsed Days",
+        "days": "d",
+        "refreshRequest": "Request Update",
+        "noRecipients": "No recipients available",
+        "actionRequiredTitle": "Action Required",
+        "delayedReview": "Delayed Review",
+        "submitter": "Submitter",
+        "reopenPending": "Pending Re-open",
+        "issueType": "Type",
+        "requester": "Requester",
+        "noData": "No data available",
+        "settings": {
+            "title": "Dashboard Settings",
+            "description": "Configure the render mode and either the dashboard URL or native view per tab. Changes apply immediately without server restart.",
+            "tabName": "Tab Name",
+            "tabMode": "Render Mode",
+            "modeEmbed": "BI Embed",
+            "modeNative": "Native UI",
+            "dataPath": "Data Path",
+            "dataPathOperational": "Operational OLTP",
+            "dataPathAnalytical": "Analytical OLAP",
+            "grafanaUrl": "Grafana URL",
+            "nativeView": "Native View",
+            "nativeOperationalBoard": "Operational Board",
+            "refreshSeconds": "Refresh Seconds",
+            "latencyLabel": "Latency Label",
+            "latencyPlaceholder": "e.g. Reflect within 5 seconds",
+            "viewRole": "View Permission",
+            "viewRoleAdmin": "Admin only",
+            "viewRoleOwner": "Owner and above",
+            "viewRoleEditor": "Editor and above",
+            "viewRoleReviewer": "Reviewer and above",
+            "viewRoleAll": "All users",
+            "addTab": "Add Tab",
+            "save": "Save",
+            "cancel": "Cancel",
+            "noTabs": "No dashboard tabs configured.",
+            "emptyHint": "Add a Grafana URL in settings to display a dashboard in this tab."
+        }
+    },
+    "usageAdoption": {
+        "title": "Usage Adoption Dashboard",
+        "subtitle": "Track team access, BPMN viewing and editing, user contribution, and repeat usage.",
+        "refresh": "Refresh",
+        "migrationRequired": "The usage event table is not available yet. Apply supabase/migrations/20260421_usage_adoption_analytics.sql before data can be collected.",
+        "totalUsers": "Authorized Users",
+        "activeUsers": "Weekly Active Users",
+        "modelViews": "Model Views",
+        "modelEdits": "Model Edits",
+        "activeTime": "Active Time",
+        "whosIn": "1. Who's In?",
+        "whosInDesc": "See which teams entered the system early and stayed engaged.",
+        "teamActivation": "Signup and Access Rate by Team",
+        "weeklyTopTeams": "Top 5 Teams This Week",
+        "team": "Team",
+        "members": "Members",
+        "accessed": "Accessed",
+        "activationRate": "Access Rate",
+        "avgStay": "Avg Stay per Person",
+        "whatDoing": "2. Content Activity",
+        "whatDoingDesc": "Separate teams that only view models from teams that edit and create them.",
+        "topModels": "Top 10 Models by Views",
+        "editViewMix": "Edit vs View by Team",
+        "heroes": "3. Hero of the Week",
+        "heroesDesc": "Find the users who visited most often and contributed the most this week.",
+        "frequentVisitors": "Most Frequent Visitors",
+        "topEditors": "Top Editors",
+        "longestSessions": "Longest Sessions",
+        "stickiness": "4. Stickiness",
+        "stickinessDesc": "Check whether users return after their first visit.",
+        "retention": "Retention by Team",
+        "lastSeen": "Last Seen",
+        "noData": "No data available"
+    },
+    "formBuilder": {
+        "freeEditMode": "Free Edit",
+        "builderMode": "Field Builder",
+        "addField": "Add Field",
+        "empty": "No fields yet. Add a field above or generate a form via AI chat.",
+        "rawBlock": "Custom HTML block (edit in Free Edit mode)",
+        "fieldName": "Field key (stored name)",
+        "fieldAlias": "Display name",
+        "width": "Width (of 12 columns)",
+        "items": "Options (one per line)",
+        "readonly": "Readonly",
+        "disabled": "Disabled",
+        "type": {
+            "text": "Text",
+            "textarea": "Textarea",
+            "select": "Dropdown",
+            "radio": "Radio",
+            "checkbox": "Checkbox",
+            "boolean": "Yes/No",
+            "file": "File",
+            "label": "Label",
+            "userSelect": "User Select",
+            "report": "Report"
+        }
+    },
+    "adminRequest": {
+        "title": "Admin Permission Request",
+        "description": "Request admin privileges. An Admin will review your request.",
+        "alreadyAdmin": "You already have admin privileges.",
+        "alreadyAdminDesc": "No additional request is needed.",
+        "pendingTitle": "Your request has been submitted.",
+        "pendingDesc": "Waiting for Admin approval.",
+        "rejectedTitle": "Your previous request was rejected.",
+        "formTitle": "Request Admin Permission",
+        "formDesc": "Please enter the reason for your request and submit.",
+        "reason": "Reason",
+        "reasonPlaceholder": "Enter the reason why you need admin privileges.",
+        "submit": "Submit Request",
+        "submitSuccess": "Your request has been submitted.",
+        "submitError": "Failed to submit your request.",
+        "history": "Request History",
+        "requestedAt": "Requested At",
+        "status": "Status",
+        "reviewedBy": "Reviewed By",
+        "rejectReason": "Reject Reason",
+        "statusPending": "Pending",
+        "statusApproved": "Approved",
+        "statusRejected": "Rejected"
+    },
+    "adminConsole": {
+        "tabSignupApproval": "Signup Approval",
+        "tabAdminRequest": "Roles / Requests",
+        "tabKpi": "KPI Goals",
+        "tabUsageAdoption": "Usage Adoption",
+        "tabSuppliers": "Supplier Management",
+        "tabInternalRoles": "Internal Role Management",
+        "tabCallActivity": "Process Modules",
+        "callActivity": {
+            "title": "Process Module Management",
+            "description": "Manage process modules that are not part of the process hierarchy.",
+            "searchPlaceholder": "Search by name or ID",
+            "savedAt": "Last Saved",
+            "empty": "No process modules found.",
+            "deleteTitle": "Delete Process Module",
+            "deleteConfirm": "Are you sure you want to delete this process module?"
+        },
+        "signupApproval": {
+            "title": "Signup Approval Management",
+            "description": "Review signup requests and approve or reject accounts.",
+            "refresh": "Refresh",
+            "filterAll": "All",
+            "filterPending": "Pending",
+            "filterApproved": "Approved",
+            "filterRejected": "Rejected",
+            "userName": "Name",
+            "email": "Email",
+            "requestedAt": "Requested At",
+            "status": "Status",
+            "reviewedBy": "Reviewed By",
+            "actions": "Actions",
+            "noRequests": "No signup requests to display.",
+            "approve": "Approve",
+            "reject": "Reject",
+            "rejectReason": "Reject Reason",
+            "rejectReasonPlaceholder": "Enter reject reason (optional)",
+            "rejectDialogTitle": "Reject Signup Request",
+            "statusPending": "Pending",
+            "statusApproved": "Approved",
+            "statusRejected": "Rejected"
+        },
+        "adminRequest": {
+            "title": "Admin Permission Approval",
+            "description": "Review and approve or reject admin permission requests.",
+            "superAdminOnly": "Admin permission is required.",
+            "adminOnly": "Admin permission is required.",
+            "refresh": "Refresh",
+            "filterAll": "All",
+            "filterPending": "Pending",
+            "filterApproved": "Approved",
+            "filterRejected": "Rejected",
+            "userName": "Name",
+            "email": "Email",
+            "reason": "Reason",
+            "requestedAt": "Requested At",
+            "status": "Status",
+            "reviewedBy": "Reviewed By",
+            "actions": "Actions",
+            "noRequests": "No admin requests to display.",
+            "approve": "Approve",
+            "reject": "Reject",
+            "rejectReason": "Reject Reason",
+            "rejectReasonPlaceholder": "Enter reject reason (optional)",
+            "rejectDialogTitle": "Reject Admin Request",
+            "statusPending": "Pending",
+            "statusApproved": "Approved",
+            "statusRejected": "Rejected"
+        }
     }
 }

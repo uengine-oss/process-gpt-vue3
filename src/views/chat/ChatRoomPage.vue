@@ -2917,8 +2917,13 @@ export default {
                 // 느린 서브에이전트 호출 등에서 백엔드가 같은 턴에 대해 로컬 fallback row 와
                 // 서버 확정 row 를 서로 다른 uuid 로 각각 남기는 경우가 있다(_dedupeMessagesByLogicalUuid
                 // 는 uuid 가 다르면 걸러내지 못한다). 같은 agentId/email 의 assistant 메시지가
-                // 사이에 user 메시지 없이 짧은 시간 안에 연속되면 같은 턴의 응답으로 보고,
-                // 가장 나중(=가장 완결된) 것만 남긴다.
+                // 사이에 user 메시지 없이 연속되면 같은 턴의 응답으로 보고, 가장 나중(=가장 완결된) 것만
+                // 남긴다. Odoo 조회 + 이메일 발송처럼 도구를 여러 번 거치는 턴은 1분을 넘기기도 해서
+                // (실측: 클라이언트 fallback row 와 SDK 확정 row 가 72초 차이로 남아 중복 노출된 사례)
+                // 시간 창은 10분으로 넉넉히 잡는다 — agentId 일치 + user 메시지 미개입이 이미 충분히
+                // 강한 신호이므로, 이 정도 창을 넘겨 같은 에이전트가 정말 별개로 두 번 답하는 경우는
+                // 사실상 없다.
+                const SAME_TURN_COLLAPSE_WINDOW_MS = 10 * 60 * 1000;
                 const collapsed = [];
                 for (let i = 0; i < asc.length; i++) {
                     const m = asc[i];
@@ -2931,7 +2936,7 @@ export default {
                             n &&
                             (n.role || '').toString() === 'assistant' &&
                             !n.__humanFeedback &&
-                            Math.abs(new Date(n.timeStamp || 0).getTime() - mts) <= 60000 &&
+                            Math.abs(new Date(n.timeStamp || 0).getTime() - mts) <= SAME_TURN_COLLAPSE_WINDOW_MS &&
                             ((mAgentId && (n.agentId || '').toString() === mAgentId) ||
                                 (!mAgentId && mEmail && (n.email || '').toString() === mEmail));
                         if (nIsSameTurn) continue;
@@ -8043,7 +8048,28 @@ export default {
                 const agentId = agentTarget.id;
                 if (!agentId) return;
 
+                // agentTarget은 defaultSetting.getAgentById()로 보강되는데, 이 스토어의
+                // agentList는 앱 어디서도 채워지지 않아(하드코딩된 built-in 목록뿐) 사용자가
+                // 만든 커스텀 프로필은 항상 조회 실패해 role/goal/persona/tools/skills가
+                // 비어있다. 비어있으면 실제 DB 값을 가진 에이전트 디렉터리(캐시됨)에서 보강한다.
+                if (!agentTarget.role && !agentTarget.goal && !agentTarget.persona) {
+                    try {
+                        const directory = await this._getAgentDirectoryCached(60_000);
+                        const fullProfile = (directory || []).find((a) => (a?.id || a?.uid) === agentId);
+                        if (fullProfile) {
+                            agentTarget = { ...agentTarget, ...fullProfile, id: agentId };
+                        }
+                    } catch (e) {
+                        // 조회 실패 시 기존 값 그대로 진행
+                    }
+                }
+
                 const assistantUuid = this.uuid();
+                const prevStream = this.activeStreams[agentId];
+                if (prevStream && prevStream.isLoading === false) {
+                    this.messages.push(this.normalizeAssistantMessageForDisplay(prevStream));
+                    if (typeof this._stableSortMessages === 'function') this._stableSortMessages(this.messages);
+                }
                 // activeStreams[agentId]에 스트리밍 메시지 등록 → displayMessages 통해 렌더됨
                 // DB 확정 메시지가 실시간으로 도착하면 handleRealtimeMessage에서 제거
                 this.activeStreams[agentId] = {
@@ -8169,6 +8195,11 @@ export default {
                         (payload?.message_uuid || payload?.messageUuid || '').toString().trim() ||
                         (payload?.metadata?.message_uuid || payload?.metadata?.messageUuid || '').toString().trim() ||
                         null,
+                    // 이 assistant turn의 activeStreams placeholder(위 assistantUuid)를 그대로
+                    // SDK의 persist_chat_to_db upsert 대상으로 넘긴다 — 서버가 별도 uuid로 새 row를
+                    // 또 만들지 않게 되어, 느린 턴에서 클라이언트 row/서버 row가 서로 다른 uuid로
+                    // 갈라져 답변이 두 번 보이던 문제(60초 병합 창을 넘긴 사례)를 근본적으로 막는다.
+                    response_message_uuid: assistantUuid,
                     tenant_id: tenantId,
                     user_uid: this.userInfo?.uid || this.userInfo?.id,
                     user_email: this.userInfo?.email,
@@ -8384,8 +8415,11 @@ export default {
                                 });
                             }
                             msg.toolCalls = toolCalls;
-                            // WorkAssistantChatPanel처럼 현재 동작 텍스트로 표시
-                            msg.content = `🔧 ${this.formatToolName(name)} 실행 중...`;
+                            // 도구 실행 상태는 Chat.vue의 실시간 타임라인(toolCalls 기반)이 별도로 보여준다.
+                            // 여기서 content를 "실행 중..." 문구로 덮어쓰면 이미 도착한 답변 토큰이
+                            // 도구 실행 동안 화면에서 사라지므로(클로드 코드는 tool과 답변을 함께 보여줌),
+                            // content는 건드리지 않는다. 아직 토큰이 없으면 applyStreamedContent가
+                            // '생각 중...' placeholder를 유지한다.
                             this.appendAgentLogToMessage(assistantUuid, {
                                 level: 'info',
                                 category: 'tool',
@@ -8475,23 +8509,6 @@ export default {
                                 }
                             }
                             msg.toolCalls = toolCalls;
-                            // The execution detail already records the completed
-                            // call. Do not leave the visible chat body claiming
-                            // that the tool is still running while the agent is
-                            // preparing its next action or final response.
-                            // NOTE: content must stay non-empty here — Chat.vue's
-                            // filteredMessages drops any message with no content/
-                            // image/file/panel, so setting '' made the whole bubble
-                            // (avatar + name) briefly vanish between tool_end and the
-                            // next token/done event.
-                            if (
-                                lastRunningTool &&
-                                !toolCalls.some((toolCall) => toolCall?.status === 'running') &&
-                                (msg.content || '').toString().startsWith('🔧') &&
-                                (msg.content || '').toString().includes('실행 중')
-                            ) {
-                                msg.content = '생각 중...';
-                            }
                             // file_artifact can persist the message just before tool_end.
                             // Persist the terminal state as well so reopening the room does
                             // not restore a stale "실행 중" bubble for a completed call.
@@ -8712,92 +8729,88 @@ export default {
                                 );
                             }
 
-                            const hwpxPayload = this.extractHwpxPayload(safeFinal || full || '');
-                            if (hwpxPayload && this.isSlidePayload(hwpxPayload)) {
-                                this.pushSlideArtifact(hwpxPayload, msg);
-                                safeFinal = '슬라이드를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
-                            } else if (hwpxPayload) {
-                                const pdfUrl = hwpxPayload.pdf_url || hwpxPayload.pdfUrl || '';
-                                const pdfName = (hwpxPayload.pdf_name || hwpxPayload.pdfName || '').toString();
-                                const fileUrl = hwpxPayload.file_url || hwpxPayload.fileUrl || '';
-                                const fileName = (hwpxPayload.file_name || hwpxPayload.fileName || 'filled.hwpx').toString();
-                                const contentType = (
-                                    hwpxPayload.content_type ||
-                                    hwpxPayload.contentType ||
-                                    'application/vnd.hancom.hwpx'
-                                ).toString();
-                                const htmlUrl = this.extractHwpxHtmlUrl(hwpxPayload);
+                            try {
+                                const hwpxPayload = this.extractHwpxPayload(safeFinal || full || '');
+                                if (hwpxPayload && this.isSlidePayload(hwpxPayload)) {
+                                    this.pushSlideArtifact(hwpxPayload, msg);
+                                    safeFinal = '슬라이드를 생성했습니다. 오른쪽 패널에서 확인해주세요.';
+                                } else if (hwpxPayload) {
+                                    const pdfUrl = hwpxPayload.pdf_url || hwpxPayload.pdfUrl || '';
+                                    const pdfName = (hwpxPayload.pdf_name || hwpxPayload.pdfName || '').toString();
+                                    const fileUrl = hwpxPayload.file_url || hwpxPayload.fileUrl || '';
+                                    const fileName = (hwpxPayload.file_name || hwpxPayload.fileName || 'filled.hwpx').toString();
+                                    const contentType = (
+                                        hwpxPayload.content_type ||
+                                        hwpxPayload.contentType ||
+                                        'application/vnd.hancom.hwpx'
+                                    ).toString();
+                                    const htmlUrl = this.extractHwpxHtmlUrl(hwpxPayload);
 
-                                if (pdfUrl) {
-                                    msg.pdfFile = {
-                                        url: pdfUrl,
-                                        fileUrl: pdfUrl,
-                                        name: pdfName || 'filled.pdf',
-                                        fileName: pdfName || 'filled.pdf',
-                                        contentType: hwpxPayload.pdf_content_type || 'application/pdf'
-                                    };
-                                    safeFinal = 'PDF 미리보기가 준비되었습니다. 아래 첨부 파일을 확인해주세요.';
-                                } else if (hwpxPayload.base64_data || hwpxPayload.base64Data) {
-                                    const base64 = hwpxPayload.base64_data || hwpxPayload.base64Data;
-                                    const blobUrl = this.createBlobUrlFromBase64(base64, contentType);
-                                    if (blobUrl) {
-                                        msg.pdfFile = { url: blobUrl, fileUrl: blobUrl, name: fileName, fileName, contentType };
+                                    if (pdfUrl) {
+                                        msg.pdfFile = {
+                                            url: pdfUrl,
+                                            fileUrl: pdfUrl,
+                                            name: pdfName || 'filled.pdf',
+                                            fileName: pdfName || 'filled.pdf',
+                                            contentType: hwpxPayload.pdf_content_type || 'application/pdf'
+                                        };
+                                        safeFinal = 'PDF 미리보기가 준비되었습니다. 아래 첨부 파일을 확인해주세요.';
+                                    } else if (hwpxPayload.base64_data || hwpxPayload.base64Data) {
+                                        const base64 = hwpxPayload.base64_data || hwpxPayload.base64Data;
+                                        const blobUrl = this.createBlobUrlFromBase64(base64, contentType);
+                                        if (blobUrl) {
+                                            msg.pdfFile = { url: blobUrl, fileUrl: blobUrl, name: fileName, fileName, contentType };
+                                        }
+                                        safeFinal = 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
+                                    } else if (fileUrl) {
+                                        msg.pdfFile = { url: fileUrl, fileUrl, name: fileName, fileName, contentType };
+                                        safeFinal = this.isDocxPayload(hwpxPayload)
+                                            ? 'DOCX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.'
+                                            : 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
                                     }
-                                    safeFinal = 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
-                                } else if (fileUrl) {
-                                    msg.pdfFile = { url: fileUrl, fileUrl, name: fileName, fileName, contentType };
-                                    safeFinal = this.isDocxPayload(hwpxPayload)
-                                        ? 'DOCX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.'
-                                        : 'HWPX 파일을 생성했습니다. 아래 첨부 파일을 확인해주세요.';
-                                }
 
-                                if (htmlUrl) {
-                                    if (this.isDocxPayload(hwpxPayload)) {
-                                        this.pushDocxArtifact(hwpxPayload, msg);
-                                    } else {
-                                        this.pushHwpxArtifact(hwpxPayload, msg);
+                                    if (htmlUrl) {
+                                        if (this.isDocxPayload(hwpxPayload)) {
+                                            this.pushDocxArtifact(hwpxPayload, msg);
+                                        } else {
+                                            this.pushHwpxArtifact(hwpxPayload, msg);
+                                        }
                                     }
                                 }
+                            } catch (e) {
+                                console.warn('[ChatRoomPage] onDone hwpx/artifact 파싱 실패(무시):', e?.message || e);
                             }
 
-                            // HITL 패널(__humanFeedback)이 붙은 메시지는 본문을 비워 둔다.
-                            // (interrupt 후 빈 final done 의 onDone 이 본문을 초안 텍스트로 덮어써 패널 대신
-                            //  텍스트가 보이던 문제 방지 — 체크박스/승인 패널만 표시.)
                             msg.content = msg.__humanFeedback ? '' : safeFinal || full || '';
                             displayContent = this.extractDisplayAssistantContent(msg.content);
                             msg.isLoading = false;
                             msg.contentType = 'text';
 
-                            this.applyHwpxViewerFromToolCalls(msg.toolCalls, msg);
-                            if (!this.hasArtifactPanel) {
-                                const urlFromText = this.extractHwpxHtmlUrlFromText(msg.content);
-                                if (urlFromText) {
-                                    this.pushHwpxArtifact({ html_url: urlFromText }, msg);
+                            try {
+                                this.applyHwpxViewerFromToolCalls(msg.toolCalls, msg);
+                                if (!this.hasArtifactPanel) {
+                                    const urlFromText = this.extractHwpxHtmlUrlFromText(msg.content);
+                                    if (urlFromText) {
+                                        this.pushHwpxArtifact({ html_url: urlFromText }, msg);
+                                    }
                                 }
-                            }
-                            const hasRawHwpxInContent =
-                                /https?:\/\/\S+\.hwpx/i.test(msg.content) || /https?:\/\/\S*filled-\S+\.html/i.test(msg.content);
-                            if (hasRawHwpxInContent) {
-                                // cleanupHwpxMessageContent는 messages 인덱스 기반이므로 직접 정리
-                                msg.content = msg.content
-                                    .replace(/https?:\/\/\S+\.hwpx\S*/gi, '')
-                                    .replace(/https?:\/\/\S*filled-\S+\.html\S*/gi, '')
-                                    .trim();
-                                safeFinal = msg.content;
+                                const hasRawHwpxInContent =
+                                    /https?:\/\/\S+\.hwpx/i.test(msg.content) || /https?:\/\/\S*filled-\S+\.html/i.test(msg.content);
+                                if (hasRawHwpxInContent) {
+                                    // cleanupHwpxMessageContent는 messages 인덱스 기반이므로 직접 정리
+                                    msg.content = msg.content
+                                        .replace(/https?:\/\/\S+\.hwpx\S*/gi, '')
+                                        .replace(/https?:\/\/\S*filled-\S+\.html\S*/gi, '')
+                                        .trim();
+                                    safeFinal = msg.content;
+                                }
+                            } catch (e) {
+                                console.warn('[ChatRoomPage] onDone hwpx 뷰어/정리 실패(무시):', e?.message || e);
                             }
 
-                            // realtime INSERT가 오지 않는 경우 대비: 10초 후 messages로 이관.
-                            // 단, 그 사이 realtime INSERT가 이미 도착했지만 agentId/email 불일치로
-                            // handleRealtimeMessage의 activeStreams 매칭에 실패해 별도 row로
-                            // this.messages에 먼저 push된 경우, 여기서 무조건 push하면 동일 내용이
-                            // 화면에 두 번(placeholder + realtime row) 보이게 된다. 그런 경우를
-                            // 내용/역할 기준으로 감지해 중복 push를 건너뛴다.
-                            // 내용이 완전히 같지 않아도(예: 서브에이전트 task 결과와 최종 supervisor
-                            // 응답처럼 텍스트가 다른 경우) 같은 agentId/email 의 assistant 메시지가
-                            // 이미 도착해 있으면 "다른 턴의 답변"이 아니라 "같은 턴의 서버 확정본"으로
-                            // 간주해 push 대신 병합한다(그렇지 않으면 같은 답변이 두 번 보인다).
+                            const finishedMsg = msg;
                             setTimeout(() => {
-                                if (this.activeStreams[agentId]) {
+                                if (this.activeStreams[agentId] === finishedMsg) {
                                     const stale = this.activeStreams[agentId];
                                     const staleContent = (stale.content || '').toString().trim();
                                     const staleTs = new Date(stale.timeStamp || 0).getTime();

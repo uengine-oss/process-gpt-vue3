@@ -4,6 +4,9 @@ window.console.warn = () => {};
 // window.console.log = () => {};
 // window.console.error = () => {};
 
+// PAL 플래그는 라우터 모듈보다 먼저 초기화되어야 한다.
+import './palMode';
+
 import '@/scss/style.scss';
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 
@@ -38,6 +41,7 @@ import TsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import { createClient } from '@supabase/supabase-js';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
+import { initAuthClaimsListener } from '@/utils/authClaims';
 import VueTablerIcons from 'vue-tabler-icons';
 import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
@@ -77,6 +81,12 @@ import '@/assets/css/globalStyle.css';
 import '@/assets/css/dmnStyle.scss';
 import '@/assets/css/mashUpStyle.css';
 import '@/assets/css/customMarkdown.scss';
+
+// Pal 모드 공통 디자인 시스템 (page-header / sk-page-card / sk-data-table / sk-mapping-list 등
+// 글로벌 클래스 정의) — 비 Pal 화면의 스타일에 영향을 주지 않도록 Pal 모드에서만 로드한다.
+if ((window as any).$pal) {
+    import('@/assets/css/SKGlobalStyle.scss');
+}
 
 // 전역 관리 ts
 import globalState from '@/stores/globalState';
@@ -203,14 +213,11 @@ declare global {
         _env_: any;
         $themeColor: any; // 테마 색상을 위한 전역 변수 추가
         $globalIsMobile: boolean; // 모바일 체크를 위한 전역 변수 추가
+        $paletteSettings: any;
+        $paletteTaskTypes: any[];
+        $enabledPaletteTaskTypes: any[];
     }
 }
-
-Object.defineProperty(window, '$pal', {
-    value: false,
-    writable: false,
-    configurable: false
-});
 
 // 반응형 모바일 상태 생성
 const globalIsMobile = ref(window.innerWidth <= 768);
@@ -301,6 +308,9 @@ async function setupTenant() {
         Object.defineProperty(window, '$tenantName', {
             // 로컬에서 운영 Supabase 에 붙어 특정 테넌트로 진단할 때 쓴다.
             // (.env 의 VITE_TENANT_OVERRIDE=uengine 등)
+            // 기본값은 반드시 'localhost' — 실제 테넌트명을 하드코딩하면 App.vue 의
+            // 테넌트 존재 검사가 로컬에서도 실행되고, anon 세션에선 RLS 때문에
+            // tenants 행이 안 보여 "존재하지 않는 경로" alert 무한 루프에 빠진다.
             value: import.meta.env.VITE_TENANT_OVERRIDE || 'localhost',
             writable: false,
             configurable: false
@@ -322,6 +332,7 @@ async function setupTenant() {
 async function initializeApp() {
     await setupSupabase();
     await setupTenant();
+    initAuthClaimsListener();
 
     // 동적 언어 설정 (localStorage에 저장된 언어 우선, 없으면 브라우저 언어로 즉시 판정)
     // 지오IP 조회는 렌더를 막지 않도록 mount 이후 백그라운드로 돌린다. (refineLocaleInBackground)
