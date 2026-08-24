@@ -458,6 +458,50 @@ const allRoutes = [
         path: '/process-hierarchy',
         component: () => import('@/views/process-hierarchy/ProcessHierarchy.vue')
     },
+    ...(window.$pal
+        ? [
+              {
+                  name: 'Process Hierarchy Legacy',
+                  path: '/process-hierarchy/process_management',
+                  component: () => import('@/views/process-hierarchy/ProcessHierarchy.vue')
+              },
+              {
+                  name: 'Admin Console',
+                  path: '/admin-console',
+                  component: () => import('@/views/admin/AdminConsoleLayout.vue'),
+                  redirect: '/admin-console/property-schemas',
+                  children: [
+                      {
+                          name: 'Admin Property Schemas',
+                          path: 'property-schemas',
+                          component: () => import('@/views/admin/tabs/PropertySchemaStudio.vue'),
+                          meta: {
+                              adminTitle: 'adminConsole.propertySchema.title',
+                              adminDescription: 'adminConsole.tabSchemas'
+                          }
+                      },
+                      {
+                          name: 'Admin Recycle Bin',
+                          path: 'recycle-bin',
+                          component: () => import('@/views/admin/tabs/RecycleBin.vue'),
+                          meta: {
+                              adminTitle: 'adminConsole.tabRecycle',
+                              adminDescription: 'adminConsole.description'
+                          }
+                      },
+                      {
+                          name: 'Admin Task Types',
+                          path: 'task-types',
+                          component: () => import('@/views/admin/tabs/TaskTypeManagement.vue'),
+                          meta: {
+                              adminTitle: 'taskCatalog.taskTypes',
+                              adminDescription: 'taskCatalog.taskTypesDescription'
+                          }
+                      }
+                  ]
+              }
+          ]
+        : []),
     {
         name: 'Version Comparison',
         path: '/version-comparison',

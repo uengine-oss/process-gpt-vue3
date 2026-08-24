@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import BackendFactory from '@/components/api/BackendFactory';
+import { useAdminConsoleStore } from '@/stores/adminConsole';
 
 // Interfaces
 export interface TaskSystem {
@@ -25,23 +26,34 @@ export interface PropertySchema {
     task_type: string;
     property_key: string;
     property_label: string;
-    property_type: 'string' | 'number' | 'boolean' | 'select' | 'textarea' | 'url' | 'db-select' | 'formula';
-    is_mandatory: boolean;
+    property_type: 'string' | 'number' | 'boolean' | 'select' | 'multiselect' | 'textarea' | 'url' | 'db-select' | 'formula' | 'date' | 'daterange' | 'user';
+    is_required: boolean;
     default_value?: string;
     options?: { label: string; value: any }[];
     display_order: number;
     applies_to?: 'both' | 'process' | 'task';
     placeholder?: string;
     visible_by_default?: boolean;
+    is_active?: boolean;
     config?: Record<string, any>;
-    // Layout properties
-    row_index?: number; // Row position (0-based, properties with same row_index appear on same row)
-    col_span?: number; // Column span (1-12, Vuetify grid system)
-    section_name?: string; // Section header name (properties with same section are grouped)
+    deleted_at?: string | null;
+    deleted_by?: string | null;
+    number_min?: number | null;
+    number_max?: number | null;
+    number_use_comma?: boolean;
+    number_unit?: string;
+    select_source_type?: 'static' | 'api';
+    select_api_endpoint?: string;
+    select_api_label_field?: string;
+    select_api_value_field?: string;
+    row_index?: number;
+    col_span?: number;
+    section_name?: string;
 }
 
 export interface PaletteSettings {
     visibleTaskTypes: string[];
+    visibleEventTypes: string[];
 }
 
 export interface PaletteTaskType {
@@ -56,22 +68,216 @@ export interface PaletteTaskType {
 
 // Available BPMN task types for palette settings
 export const AVAILABLE_TASK_TYPES = [
+    { value: 'bpmn:Task', label: 'Task', labelKo: '일반 작업' },
     { value: 'bpmn:ManualTask', label: 'Manual Task', labelKo: '수동 작업' },
     { value: 'bpmn:ServiceTask', label: 'Service Task', labelKo: '서비스 작업' },
     { value: 'bpmn:UserTask', label: 'User Task', labelKo: '사용자 작업' },
     { value: 'bpmn:ScriptTask', label: 'Script Task', labelKo: '스크립트 작업' },
     { value: 'bpmn:BusinessRuleTask', label: 'Business Rule Task', labelKo: '비즈니스 규칙 작업' },
     { value: 'bpmn:SendTask', label: 'Send Task', labelKo: '전송 작업' },
-    { value: 'bpmn:ReceiveTask', label: 'Receive Task', labelKo: '수신 작업' }
+    { value: 'bpmn:ReceiveTask', label: 'Receive Task', labelKo: '수신 작업' },
+    { value: 'bpmn:CallActivity', label: 'Call Activity', labelKo: '호출 활동' },
+    { value: 'bpmn:SubProcess', label: 'Sub Process', labelKo: '하위 프로세스' },
+    { value: 'bpmn:AdHocSubProcess', label: 'Ad-Hoc Sub Process', labelKo: '비정형 하위 프로세스' },
+    { value: 'bpmn:Transaction', label: 'Transaction', labelKo: '트랜잭션' }
 ];
+
+export const DEFAULT_VISIBLE_TASK_TYPES = AVAILABLE_TASK_TYPES.map((taskType) => taskType.value);
+
+export const AVAILABLE_EVENT_TYPES = [
+    { value: 'replace-with-none-start', label: 'Start Event', labelKo: '시작 이벤트', group: 'Start', icon: 'mdi-play-circle-outline' },
+    { value: 'replace-with-message-start', label: 'Message Start Event', labelKo: '메시지 시작 이벤트', group: 'Start', icon: 'mdi-message-outline' },
+    { value: 'replace-with-timer-start', label: 'Timer Start Event', labelKo: '타이머 시작 이벤트', group: 'Start', icon: 'mdi-timer-outline' },
+    { value: 'replace-with-conditional-start', label: 'Conditional Start Event', labelKo: '조건 시작 이벤트', group: 'Start', icon: 'mdi-source-branch' },
+    { value: 'replace-with-signal-start', label: 'Signal Start Event', labelKo: '시그널 시작 이벤트', group: 'Start', icon: 'mdi-access-point' },
+    { value: 'replace-with-error-start', label: 'Error Start Event', labelKo: '오류 시작 이벤트', group: 'Start', icon: 'mdi-alert-circle-outline' },
+    { value: 'replace-with-escalation-start', label: 'Escalation Start Event', labelKo: '에스컬레이션 시작 이벤트', group: 'Start', icon: 'mdi-arrow-up-bold-circle-outline' },
+    { value: 'replace-with-compensation-start', label: 'Compensation Start Event', labelKo: '보상 시작 이벤트', group: 'Start', icon: 'mdi-undo-variant' },
+    {
+        value: 'replace-with-non-interrupting-message-start',
+        label: 'Non-Interrupting Message Start Event',
+        labelKo: '비중단 메시지 시작 이벤트',
+        group: 'Start',
+        icon: 'mdi-message-badge-outline'
+    },
+    {
+        value: 'replace-with-non-interrupting-timer-start',
+        label: 'Non-Interrupting Timer Start Event',
+        labelKo: '비중단 타이머 시작 이벤트',
+        group: 'Start',
+        icon: 'mdi-timer-sand'
+    },
+    {
+        value: 'replace-with-non-interrupting-conditional-start',
+        label: 'Non-Interrupting Conditional Start Event',
+        labelKo: '비중단 조건 시작 이벤트',
+        group: 'Start',
+        icon: 'mdi-source-branch-check'
+    },
+    {
+        value: 'replace-with-non-interrupting-signal-start',
+        label: 'Non-Interrupting Signal Start Event',
+        labelKo: '비중단 시그널 시작 이벤트',
+        group: 'Start',
+        icon: 'mdi-access-point-check'
+    },
+    {
+        value: 'replace-with-non-interrupting-escalation-start',
+        label: 'Non-Interrupting Escalation Start Event',
+        labelKo: '비중단 에스컬레이션 시작 이벤트',
+        group: 'Start',
+        icon: 'mdi-arrow-up-circle-outline'
+    },
+    {
+        value: 'replace-with-none-intermediate-throw',
+        label: 'Intermediate Throw Event',
+        labelKo: '중간 Throw 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-circle-outline',
+        replaceKeys: ['replace-with-none-intermediate-throw', 'replace-with-none-intermediate-throwing']
+    },
+    {
+        value: 'replace-with-message-intermediate-catch',
+        label: 'Message Intermediate Catch Event',
+        labelKo: '메시지 중간 Catch 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-message-arrow-left-outline'
+    },
+    {
+        value: 'replace-with-message-intermediate-throw',
+        label: 'Message Intermediate Throw Event',
+        labelKo: '메시지 중간 Throw 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-message-arrow-right-outline'
+    },
+    {
+        value: 'replace-with-timer-intermediate-catch',
+        label: 'Timer Intermediate Catch Event',
+        labelKo: '타이머 중간 Catch 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-timer-outline'
+    },
+    {
+        value: 'replace-with-escalation-intermediate-throw',
+        label: 'Escalation Intermediate Throw Event',
+        labelKo: '에스컬레이션 중간 Throw 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-arrow-up-bold-circle-outline'
+    },
+    {
+        value: 'replace-with-conditional-intermediate-catch',
+        label: 'Conditional Intermediate Catch Event',
+        labelKo: '조건 중간 Catch 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-source-branch'
+    },
+    {
+        value: 'replace-with-link-intermediate-catch',
+        label: 'Link Intermediate Catch Event',
+        labelKo: '링크 중간 Catch 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-link-variant'
+    },
+    {
+        value: 'replace-with-link-intermediate-throw',
+        label: 'Link Intermediate Throw Event',
+        labelKo: '링크 중간 Throw 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-link-variant-plus'
+    },
+    {
+        value: 'replace-with-compensation-intermediate-throw',
+        label: 'Compensation Intermediate Throw Event',
+        labelKo: '보상 중간 Throw 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-undo-variant'
+    },
+    {
+        value: 'replace-with-signal-intermediate-catch',
+        label: 'Signal Intermediate Catch Event',
+        labelKo: '시그널 중간 Catch 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-access-point'
+    },
+    {
+        value: 'replace-with-signal-intermediate-throw',
+        label: 'Signal Intermediate Throw Event',
+        labelKo: '시그널 중간 Throw 이벤트',
+        group: 'Intermediate',
+        icon: 'mdi-access-point-plus'
+    },
+    { value: 'replace-with-none-end', label: 'End Event', labelKo: '종료 이벤트', group: 'End', icon: 'mdi-stop-circle-outline' },
+    { value: 'replace-with-message-end', label: 'Message End Event', labelKo: '메시지 종료 이벤트', group: 'End', icon: 'mdi-message-outline' },
+    { value: 'replace-with-escalation-end', label: 'Escalation End Event', labelKo: '에스컬레이션 종료 이벤트', group: 'End', icon: 'mdi-arrow-up-bold-circle-outline' },
+    { value: 'replace-with-error-end', label: 'Error End Event', labelKo: '오류 종료 이벤트', group: 'End', icon: 'mdi-alert-circle-outline' },
+    { value: 'replace-with-cancel-end', label: 'Cancel End Event', labelKo: '취소 종료 이벤트', group: 'End', icon: 'mdi-cancel' },
+    { value: 'replace-with-compensation-end', label: 'Compensation End Event', labelKo: '보상 종료 이벤트', group: 'End', icon: 'mdi-undo-variant' },
+    { value: 'replace-with-signal-end', label: 'Signal End Event', labelKo: '시그널 종료 이벤트', group: 'End', icon: 'mdi-access-point' },
+    { value: 'replace-with-terminate-end', label: 'Terminate End Event', labelKo: '종료 처리 이벤트', group: 'End', icon: 'mdi-close-octagon-outline' },
+    { value: 'replace-with-message-boundary', label: 'Message Boundary Event', labelKo: '메시지 경계 이벤트', group: 'Boundary', icon: 'mdi-message-outline' },
+    { value: 'replace-with-timer-boundary', label: 'Timer Boundary Event', labelKo: '타이머 경계 이벤트', group: 'Boundary', icon: 'mdi-timer-outline' },
+    {
+        value: 'replace-with-escalation-boundary',
+        label: 'Escalation Boundary Event',
+        labelKo: '에스컬레이션 경계 이벤트',
+        group: 'Boundary',
+        icon: 'mdi-arrow-up-bold-circle-outline'
+    },
+    { value: 'replace-with-conditional-boundary', label: 'Conditional Boundary Event', labelKo: '조건 경계 이벤트', group: 'Boundary', icon: 'mdi-source-branch' },
+    { value: 'replace-with-error-boundary', label: 'Error Boundary Event', labelKo: '오류 경계 이벤트', group: 'Boundary', icon: 'mdi-alert-circle-outline' },
+    { value: 'replace-with-cancel-boundary', label: 'Cancel Boundary Event', labelKo: '취소 경계 이벤트', group: 'Boundary', icon: 'mdi-cancel' },
+    { value: 'replace-with-signal-boundary', label: 'Signal Boundary Event', labelKo: '시그널 경계 이벤트', group: 'Boundary', icon: 'mdi-access-point' },
+    { value: 'replace-with-compensation-boundary', label: 'Compensation Boundary Event', labelKo: '보상 경계 이벤트', group: 'Boundary', icon: 'mdi-undo-variant' },
+    {
+        value: 'replace-with-non-interrupting-message-boundary',
+        label: 'Non-Interrupting Message Boundary Event',
+        labelKo: '비중단 메시지 경계 이벤트',
+        group: 'Boundary',
+        icon: 'mdi-message-badge-outline'
+    },
+    {
+        value: 'replace-with-non-interrupting-timer-boundary',
+        label: 'Non-Interrupting Timer Boundary Event',
+        labelKo: '비중단 타이머 경계 이벤트',
+        group: 'Boundary',
+        icon: 'mdi-timer-sand'
+    },
+    {
+        value: 'replace-with-non-interrupting-escalation-boundary',
+        label: 'Non-Interrupting Escalation Boundary Event',
+        labelKo: '비중단 에스컬레이션 경계 이벤트',
+        group: 'Boundary',
+        icon: 'mdi-arrow-up-circle-outline'
+    },
+    {
+        value: 'replace-with-non-interrupting-conditional-boundary',
+        label: 'Non-Interrupting Conditional Boundary Event',
+        labelKo: '비중단 조건 경계 이벤트',
+        group: 'Boundary',
+        icon: 'mdi-source-branch-check'
+    },
+    {
+        value: 'replace-with-non-interrupting-signal-boundary',
+        label: 'Non-Interrupting Signal Boundary Event',
+        labelKo: '비중단 시그널 경계 이벤트',
+        group: 'Boundary',
+        icon: 'mdi-access-point-check'
+    }
+];
+
+export const DEFAULT_VISIBLE_EVENT_TYPES = AVAILABLE_EVENT_TYPES.map((eventType) => eventType.value);
 
 // Property types for schema
 export const PROPERTY_TYPES = [
     { value: 'string', label: 'Text' },
-    { value: 'textarea', label: 'Text Area' },
+    { value: 'textarea', label: 'Long Text' },
     { value: 'number', label: 'Number' },
     { value: 'boolean', label: 'Boolean' },
-    { value: 'select', label: 'Select' },
+    { value: 'select', label: 'Single Select' },
+    { value: 'multiselect', label: 'Multi Select' },
+    { value: 'date', label: 'Date' },
+    { value: 'daterange', label: 'Date Range' },
+    { value: 'user', label: 'User' },
     { value: 'url', label: 'URL' },
     { value: 'db-select', label: 'DB-Select' },
     { value: 'formula', label: 'Formula' }
@@ -105,7 +311,8 @@ export const useTaskCatalogStore = defineStore({
 
         // Palette Settings (legacy)
         paletteSettings: {
-            visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask']
+            visibleTaskTypes: [...DEFAULT_VISIBLE_TASK_TYPES],
+            visibleEventTypes: [...DEFAULT_VISIBLE_EVENT_TYPES]
         } as PaletteSettings,
         paletteSettingsLoaded: false,
 
@@ -128,13 +335,11 @@ export const useTaskCatalogStore = defineStore({
             this.error = null;
             try {
                 const backend = BackendFactory.createBackend();
-                const systems = await backend.getTaskSystems();
-                this.systems = Array.isArray(systems) ? systems.filter((item) => item && typeof item === 'object') : [];
+                this.systems = await backend.getTaskSystems();
                 this.systemsLoaded = true;
             } catch (error: any) {
                 console.error('Failed to load task systems:', error);
                 this.error = error.message;
-                this.systems = [];
             } finally {
                 this.loading = false;
             }
@@ -186,13 +391,11 @@ export const useTaskCatalogStore = defineStore({
             this.error = null;
             try {
                 const backend = BackendFactory.createBackend();
-                const catalogItems = await backend.getTaskCatalogList(options);
-                this.catalogItems = Array.isArray(catalogItems) ? catalogItems.filter((item) => item && typeof item === 'object') : [];
+                this.catalogItems = await backend.getTaskCatalogList(options);
                 this.catalogLoaded = true;
             } catch (error: any) {
                 console.error('Failed to load task catalog:', error);
                 this.error = error.message;
-                this.catalogItems = [];
             } finally {
                 this.loading = false;
             }
@@ -301,7 +504,14 @@ export const useTaskCatalogStore = defineStore({
             this.error = null;
             try {
                 const backend = BackendFactory.createBackend();
-                this.paletteSettings = await backend.getPaletteSettings();
+                const settings = await backend.getPaletteSettings();
+                const visibleTaskTypes = Array.isArray(settings?.visibleTaskTypes)
+                    ? [...settings.visibleTaskTypes]
+                    : [...DEFAULT_VISIBLE_TASK_TYPES];
+                const visibleEventTypes = Array.isArray(settings?.visibleEventTypes)
+                    ? [...settings.visibleEventTypes]
+                    : [...DEFAULT_VISIBLE_EVENT_TYPES];
+                this.paletteSettings = { ...(settings || {}), visibleTaskTypes, visibleEventTypes };
                 this.paletteSettingsLoaded = true;
             } catch (error: any) {
                 console.error('Failed to load palette settings:', error);
@@ -317,7 +527,15 @@ export const useTaskCatalogStore = defineStore({
             try {
                 const backend = BackendFactory.createBackend();
                 await backend.savePaletteSettings(settings);
-                this.paletteSettings = settings;
+                this.paletteSettings = {
+                    ...settings,
+                    visibleTaskTypes: [...(settings.visibleTaskTypes || [])],
+                    visibleEventTypes: [...(settings.visibleEventTypes || [])]
+                };
+                this.paletteSettingsLoaded = true;
+                if (typeof window !== 'undefined') {
+                    window.$paletteSettings = this.paletteSettings;
+                }
             } catch (error: any) {
                 console.error('Failed to save palette settings:', error);
                 this.error = error.message;
@@ -327,14 +545,72 @@ export const useTaskCatalogStore = defineStore({
             }
         },
 
-        toggleTaskType(taskType: string) {
-            const index = this.paletteSettings.visibleTaskTypes.indexOf(taskType);
-            if (index !== -1) {
-                this.paletteSettings.visibleTaskTypes.splice(index, 1);
+        async setTaskTypeVisible(taskType: string, isVisible: boolean) {
+            const visibleTaskTypes = new Set(this.paletteSettings.visibleTaskTypes || []);
+            const beforeEnabled = visibleTaskTypes.has(taskType);
+            if (beforeEnabled === isVisible) return;
+
+            const typeInfo = AVAILABLE_TASK_TYPES.find((item) => item.value === taskType);
+            if (isVisible) {
+                visibleTaskTypes.add(taskType);
             } else {
-                this.paletteSettings.visibleTaskTypes.push(taskType);
+                visibleTaskTypes.delete(taskType);
             }
-            this.savePaletteSettings(this.paletteSettings);
+            await this.savePaletteSettings({ ...this.paletteSettings, visibleTaskTypes: Array.from(visibleTaskTypes) });
+            await useAdminConsoleStore().writeAdminAuditLog({
+                action: 'task_type_visibility_update',
+                target_type: 'task_event_type',
+                target_id: taskType,
+                target_name: typeInfo?.labelKo || typeInfo?.label || taskType,
+                before_value: {
+                    name: typeInfo?.labelKo || typeInfo?.label || taskType,
+                    type_id: taskType,
+                    is_enabled: beforeEnabled
+                },
+                after_value: {
+                    name: typeInfo?.labelKo || typeInfo?.label || taskType,
+                    type_id: taskType,
+                    is_enabled: isVisible
+                }
+            });
+        },
+
+        async toggleTaskType(taskType: string) {
+            await this.setTaskTypeVisible(taskType, !this.paletteSettings.visibleTaskTypes.includes(taskType));
+        },
+
+        async setEventTypeVisible(eventType: string, isVisible: boolean) {
+            const visibleEventTypes = new Set(this.paletteSettings.visibleEventTypes || []);
+            const beforeEnabled = visibleEventTypes.has(eventType);
+            if (beforeEnabled === isVisible) return;
+
+            const typeInfo = AVAILABLE_EVENT_TYPES.find((item) => item.value === eventType);
+            if (isVisible) {
+                visibleEventTypes.add(eventType);
+            } else {
+                visibleEventTypes.delete(eventType);
+            }
+            await this.savePaletteSettings({ ...this.paletteSettings, visibleEventTypes: Array.from(visibleEventTypes) });
+            await useAdminConsoleStore().writeAdminAuditLog({
+                action: 'event_type_visibility_update',
+                target_type: 'task_event_type',
+                target_id: eventType,
+                target_name: typeInfo?.labelKo || typeInfo?.label || eventType,
+                before_value: {
+                    name: typeInfo?.labelKo || typeInfo?.label || eventType,
+                    type_id: eventType,
+                    is_enabled: beforeEnabled
+                },
+                after_value: {
+                    name: typeInfo?.labelKo || typeInfo?.label || eventType,
+                    type_id: eventType,
+                    is_enabled: isVisible
+                }
+            });
+        },
+
+        async toggleEventType(eventType: string) {
+            await this.setEventTypeVisible(eventType, !this.paletteSettings.visibleEventTypes.includes(eventType));
         },
 
         // ============================================
@@ -365,8 +641,29 @@ export const useTaskCatalogStore = defineStore({
             try {
                 const backend = BackendFactory.createBackend();
                 const newEnabled = !taskType.is_enabled;
+                const beforeEnabled = taskType.is_enabled;
                 await backend.updatePaletteTaskType(id, newEnabled);
                 taskType.is_enabled = newEnabled;
+                if (typeof window !== 'undefined') {
+                    window.$paletteTaskTypes = this.paletteTaskTypes;
+                    window.$enabledPaletteTaskTypes = this.enabledPaletteTaskTypes;
+                }
+                await useAdminConsoleStore().writeAdminAuditLog({
+                    action: 'task_type_visibility_update',
+                    target_type: 'task_event_type',
+                    target_id: taskType.task_type || id,
+                    target_name: taskType.label_ko || taskType.label || taskType.task_type || id,
+                    before_value: {
+                        name: taskType.label_ko || taskType.label || taskType.task_type || id,
+                        type_id: taskType.task_type || id,
+                        is_enabled: beforeEnabled
+                    },
+                    after_value: {
+                        name: taskType.label_ko || taskType.label || taskType.task_type || id,
+                        type_id: taskType.task_type || id,
+                        is_enabled: newEnabled
+                    }
+                });
             } catch (error: any) {
                 console.error('Failed to toggle palette task type:', error);
                 this.error = error.message;
@@ -386,7 +683,10 @@ export const useTaskCatalogStore = defineStore({
             this.catalogLoaded = false;
             this.propertySchemas = [];
             this.schemasLoaded = false;
-            this.paletteSettings = { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+            this.paletteSettings = {
+                visibleTaskTypes: [...DEFAULT_VISIBLE_TASK_TYPES],
+                visibleEventTypes: [...DEFAULT_VISIBLE_EVENT_TYPES]
+            };
             this.paletteSettingsLoaded = false;
             this.paletteTaskTypes = [];
             this.paletteTaskTypesLoaded = false;
@@ -416,10 +716,10 @@ export const useTaskCatalogStore = defineStore({
             return state.propertySchemas.filter((s) => s.task_type === taskType).sort((a, b) => a.display_order - b.display_order);
         },
 
-        // Get mandatory schemas by task type
-        mandatorySchemasByTaskType: (state) => (taskType: string) => {
+        // Get required schemas by task type
+        requiredSchemasByTaskType: (state) => (taskType: string) => {
             return state.propertySchemas
-                .filter((s) => s.task_type === taskType && s.is_mandatory)
+                .filter((s) => s.task_type === taskType && s.is_required)
                 .sort((a, b) => a.display_order - b.display_order);
         },
 
@@ -440,13 +740,38 @@ export const useTaskCatalogStore = defineStore({
                     }
                     return false;
                 })
+                .filter((s) => !s.deleted_at)
+                .filter((s) => s.is_active !== false)
                 .filter((s) => s.visible_by_default !== false)
+                .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+        },
+
+        // Get deprecated schemas by target (for read-only preservation of legacy values)
+        deprecatedSchemasByAppliesTo: (state) => (target: 'process' | 'task', elementType?: string) => {
+            return state.propertySchemas
+                .filter((s) => !!s.deleted_at)
+                .filter((s) => {
+                    const at = s.applies_to || 'both';
+                    if (target === 'process') {
+                        return at === 'process' || at === 'both';
+                    }
+                    if (target === 'task') {
+                        if (at === 'task' || at === 'both') return true;
+                        if (elementType && at === elementType) return true;
+                        return false;
+                    }
+                    return false;
+                })
                 .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
         },
 
         // Check if task type is visible in palette
         isTaskTypeVisible: (state) => (taskType: string) => {
             return state.paletteSettings.visibleTaskTypes.includes(taskType);
+        },
+
+        isEventTypeVisible: (state) => (eventType: string) => {
+            return state.paletteSettings.visibleEventTypes.includes(eventType);
         },
 
         // Get enabled palette task types (new table-based)

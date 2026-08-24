@@ -203,7 +203,7 @@
                 </div>
 
                 <!-- 프로세스 관리 타이틀 + 목록 -->
-                <!-- <div v-if="processItem.length > 0" class="mb-4">
+                <div v-if="pal && processItem.length > 0" class="mb-4">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('processHierarchy.processManagement') }}
                     </div>
@@ -223,7 +223,7 @@
                             <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
                         </v-list-item>
                     </v-col>
-                </div> -->
+                </div>
 
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
                 <v-col v-if="isAdmin" class="pa-0">
@@ -337,6 +337,29 @@
                         </template>
                     </ExpandableList>
                 </v-col>
+
+                <div v-if="pal && isAdmin" class="mb-4 mt-8">
+                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">관리자</div>
+                    <v-col class="pa-0">
+                        <v-list-item
+                            v-for="item in [
+                                { title: '속성 스키마', icon: 'formList', to: '/admin-console/property-schemas' },
+                                { title: '휴지통', icon: 'trash', to: '/admin-console/recycle-bin' },
+                                { title: 'Task 종류 설정', icon: 'completed-task', to: '/admin-console/task-types' }
+                            ]"
+                            :key="item.to"
+                            :to="item.to"
+                            density="compact"
+                            class="leftPadding sidebar-list-hover-bg"
+                            :class="{ 'sidebar-list-hover-bg--active': $route?.path === item.to }"
+                        >
+                            <template v-slot:prepend>
+                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                            </template>
+                            <v-list-item-title>{{ item.title }}</v-list-item-title>
+                        </v-list-item>
+                    </v-col>
+                </div>
 
                 <!-- 분석(Analytics) 타이틀 + 목록 -->
                 <div v-if="analyticsItem.length > 0 && !gs" class="mb-4 mt-8">

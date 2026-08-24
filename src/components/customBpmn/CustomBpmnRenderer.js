@@ -284,18 +284,32 @@ function shouldUseWhiteText(hexColor) {
     return luminance < 0.4;
 }
 
+// [8.6] Default task type color map (fallback when no admin rules exist)
+// Pal 모드 전용 — process-gpt 기본 화면은 기존 중립색(surfaceMuted)을 유지한다.
+const DEFAULT_TASK_TYPE_COLORS = {
+    'bpmn:ServiceTask': { fillColor: '#e8e8e8', strokeColor: '#9e9e9e' }, // grey
+    'bpmn:ManualTask': { fillColor: '#fce4e4', strokeColor: '#e57373' }, // red-tinted
+    'bpmn:UserTask': { fillColor: '#e3f2fd', strokeColor: '#64b5f6' }, // blue-tinted
+    'bpmn:ScriptTask': { fillColor: '#f3e5f5', strokeColor: '#ba68c8' }, // purple-tinted
+    'bpmn:SendTask': { fillColor: '#e8f5e9', strokeColor: '#81c784' }, // green-tinted
+    'bpmn:ReceiveTask': { fillColor: '#fff3e0', strokeColor: '#ffb74d' } // orange-tinted
+};
+
 // Get color from rules stored in BPMN XML (via window.$bpmnColorRules)
 function getColorFromRules(element) {
     try {
         const rules = window.$bpmnColorRules;
+        const elementType = element.businessObject?.$type;
+        const defaultTypeColor = window.$pal && elementType ? DEFAULT_TASK_TYPE_COLORS[elementType] : null;
+
+        // If no admin rules, apply default task type colors (Pal 모드 한정).
         if (!rules || !Array.isArray(rules) || rules.length === 0) {
-            return null;
+            return defaultTypeColor;
         }
 
-        const defaultColor = dsColor('surfaceMuted');
+        const defaultColor = defaultTypeColor?.fillColor || dsColor('surfaceMuted');
+        const defaultStrokeColor = defaultTypeColor?.strokeColor || '';
 
-        // Get element type
-        const elementType = element.businessObject?.$type;
         if (!elementType) return { fillColor: defaultColor };
 
         // Get leadTime (duration) from extension elements
@@ -323,11 +337,13 @@ function getColorFromRules(element) {
 
         // Step 1: Get base color from task type rules
         let baseColor = defaultColor;
-        let baseStrokeColor = '';
+        let baseStrokeColor = defaultStrokeColor;
+        let hasTaskTypeRule = false;
         for (const rule of sortedRules.filter((r) => r.type === 'taskType')) {
             if (rule.taskTypes?.includes(elementType)) {
                 baseColor = rule.fillColor || defaultColor;
                 baseStrokeColor = rule.strokeColor || '';
+                hasTaskTypeRule = true;
                 break;
             }
         }
@@ -351,7 +367,7 @@ function getColorFromRules(element) {
         }
 
         // Return base color if no leadTime rule matched
-        if (baseColor !== defaultColor) {
+        if (hasTaskTypeRule || defaultTypeColor) {
             return { fillColor: baseColor, strokeColor: baseStrokeColor };
         }
 

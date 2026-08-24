@@ -1592,6 +1592,7 @@ export default {
                     });
 
                     // View 모드: 더블클릭 시 CallActivity/SubProcess(definitionId 있음)면 프로세스로 이동(openDefinition), 그 외는 패널 열기
+                    // Pal 모드에서는 속성 패널을 우클릭(contextmenu)으로만 연다 — 더블클릭은 연결 프로세스 이동 전용
                     trackListener('element.dblclick', function (e) {
                         const el = e.element;
                         const bo = el.businessObject;
@@ -1606,14 +1607,16 @@ export default {
                         }
                         if (emitNavigate) {
                             self.$emit('openDefinition', bo);
-                        } else {
+                        } else if (!self.isPal) {
                             self.$emit('openPanel', el.id);
                         }
                     });
                 } else {
+                    // Edit 모드: Pal 모드에서는 더블클릭으로 패널을 열지 않는다 (우클릭 전용,
+                    // 더블클릭은 bpmn-js 기본 인라인 이름 편집에 맡긴다 — 표준 BPMN UX)
                     trackListener('element.dblclick', function (e) {
                         if (e.element.type.includes('CallActivity')) {
-                            self.$emit('openPanel', e.element.id);
+                            if (!self.isPal) self.$emit('openPanel', e.element.id);
                         } else if (e.element.type.includes('Collaboration')) {
                             const businessObject = e.element.businessObject;
                             if (
@@ -1633,11 +1636,14 @@ export default {
                                     }
                                 }
                             }
-                        } else {
+                        } else if (!self.isPal) {
                             self.$emit('openPanel', e.element.id);
                         }
                     });
                 }
+
+                // Pal 모드: 캔버스 우클릭 → 속성 패널 열기 (View/Edit 공통)
+                self.bindPalContextMenu();
 
                 // ContextPad에서 속성 패널 열기 버튼 클릭 시
                 trackListener('element.openPanel', function (e) {
@@ -2732,6 +2738,110 @@ export default {
             }
             ev.srcEvent.stopPropagation();
             ev.srcEvent.preventDefault();
+        },
+        // ── Pal 모드: 우클릭(contextmenu)으로 속성 패널 열기 ──────────────────
+        // playground-pi-system-web 의 BpmnUengine 과 동일한 UX. 요소 위에서 우클릭하면
+        // 해당 요소를 선택하고 openPanel 을 emit, 빈 공간이면 루트(프로세스) 패널을 연다.
+        // bpmnViewer 는 컴포넌트 생명주기 동안 1회만 생성되므로 중복 등록을 플래그로 막는다.
+        bindPalContextMenu() {
+            if (!this.isPal || this._palCtxMenuBound || !this.bpmnViewer) return;
+            const self = this;
+            const canvas = this.bpmnViewer.get('canvas');
+            const container = canvas.getContainer();
+            container.addEventListener('contextmenu', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                // 클릭된 SVG 요소에서 data-element-id 찾기
+                let target = event.target;
+                let elementId = null;
+                while (target && target !== container) {
+                    elementId = target.getAttribute && target.getAttribute('data-element-id');
+                    if (elementId) break;
+                    target = target.parentElement;
+                }
+
+                const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                const selection = self.bpmnViewer.get('selection');
+                const element = self.resolveContextMenuElement(event, container, canvas, elementRegistry, elementId);
+                if (element && element.type !== 'bpmn:Process' && element.type !== 'bpmn:Collaboration') {
+                    // 우클릭한 요소도 선택해 포커스 UI(파란 테두리)를 패널과 함께 표시
+                    selection.select(element);
+                    self.$emit('openPanel', element.id);
+                } else {
+                    // 빈 공간 또는 루트(Process/Collaboration) 우클릭 → 선택 해제 후 프로세스 패널 열기
+                    selection.select([]);
+                    const rootEl = canvas.getRootElement && canvas.getRootElement();
+                    if (rootEl) self.$emit('openPanel', rootEl.id);
+                }
+            });
+            this._palCtxMenuBound = true;
+        },
+        resolveContextMenuElement(event, container, canvas, elementRegistry, elementId) {
+            const initial = elementId ? elementRegistry.get(elementId) : null;
+            const normalizedInitial = initial && initial.labelTarget ? initial.labelTarget : initial;
+            if (normalizedInitial && !this.isContainerElement(normalizedInitial)) {
+                return normalizedInitial;
+            }
+
+            const point = this.getCanvasPointFromEvent(event, container, canvas);
+            if (!point) {
+                return normalizedInitial;
+            }
+
+            const root = canvas.getRootElement && canvas.getRootElement();
+            const candidates = elementRegistry.filter((element) => {
+                if (!element || element.waypoints || element.labelTarget || this.isContainerElement(element)) {
+                    return false;
+                }
+                if (root && this.getElementRoot(element) !== root) {
+                    return false;
+                }
+                return this.isPointInsideElement(point, element);
+            });
+
+            if (candidates.length === 0) {
+                return normalizedInitial;
+            }
+
+            candidates.sort((a, b) => {
+                const areaA = (a.width || 0) * (a.height || 0);
+                const areaB = (b.width || 0) * (b.height || 0);
+                return areaA - areaB;
+            });
+
+            return candidates[0] || normalizedInitial;
+        },
+        isContainerElement(element) {
+            return ['bpmn:Process', 'bpmn:Collaboration', 'bpmn:Participant', 'bpmn:Lane'].includes(element?.type);
+        },
+        getElementRoot(element) {
+            let current = element;
+            while (current && current.parent) {
+                current = current.parent;
+            }
+            return current;
+        },
+        getCanvasPointFromEvent(event, container, canvas) {
+            try {
+                const rect = container.getBoundingClientRect();
+                const viewbox = canvas.viewbox();
+                const scale = viewbox.scale || 1;
+                return {
+                    x: (event.clientX - rect.left) / scale + viewbox.x,
+                    y: (event.clientY - rect.top) / scale + viewbox.y
+                };
+            } catch (e) {
+                return null;
+            }
+        },
+        isPointInsideElement(point, element) {
+            return (
+                point.x >= element.x &&
+                point.x <= element.x + element.width &&
+                point.y >= element.y &&
+                point.y <= element.y + element.height
+            );
         },
         onDragOver(event) {
             // Enable drop

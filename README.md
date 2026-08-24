@@ -1,5 +1,7 @@
 > **전체 설치 및 실행 방법은 메인 프로젝트를 참고하세요:** [ProcessGPT](https://github.com/uengine-oss/process-gpt)
 
+> 🚀 **처음이신가요?** 설치 도구 → 환경 변수 → DB(SQL) 초기화 → 첫 접속까지 순서대로 정리한 **[처음 시작 가이드 (docs/GETTING_STARTED.md)](docs/GETTING_STARTED.md)** 를 따라 하세요.
+
 # process-gpt-vue3
 
 Process-GPT **프론트엔드(Vue 3)** 프로젝트입니다. 이 저장소는 프론트엔드뿐 아니라 `docker-compose/`를 통해 **전체 스택(프론트엔드·백엔드 마이크로서비스·Supabase·Nginx·부가 에이전트)** 을 함께 실행할 수 있도록 구성되어 있습니다.

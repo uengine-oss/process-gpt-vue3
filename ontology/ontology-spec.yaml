@@ -1,0 +1,406 @@
+# =============================================================================
+# Process GPT Graph Ontology — machine-readable spec
+# 사람용 정본: SCHEMA.md (이 파일은 그 미러 — 함께 갱신하고 version을 동기화할 것)
+# 용도: 외부 프로젝트의 코드생성/검증, LLM 에이전트 컨텍스트 주입(text2cypher),
+#       질의 빌더의 스키마 소스.
+# 표기: key = 업무키(UNIQUE 인덱스로 DB 강제). 시간(datetime)은 ISO-8601 UTC 문자열.
+#       엣지 merge_key 의 "endpoints" = (from키, to키, 라벨) 조합으로 중복 판정.
+# =============================================================================
+meta:
+  name: process-gpt-ontology
+  version: 0.2.0            # GraphMeta.schema_version 과 일치해야 함
+  graph: process_gpt
+  database: "PostgreSQL 15 + Apache AGE 1.6 (self-hosted Supabase)"
+  multi_tenancy: "single graph; every node carries tenant_id — always filter by it"
+  age_constraints:
+    - "one label per vertex (no multi-label) — subtype via `type` property"
+    - "edge labels are graph-global — endpoint combos documented per edge"
+    - "no schema/constraint enforcement in AGE — keys enforced by unique expression indexes"
+    - "return properties(n) or scalars; casting a whole vertex to text fails"
+    - "cypher() 3rd arg must be a real bind parameter (PREPARE / extended protocol)"
+  common_node_properties: [tenant_id, created_at, updated_at]
+  deferred_layers: [governance]   # 2026-07-10 결정 — 스펙은 deferred 블록에 보존
+
+layers:
+  strategy:     "북극성 — BSC 전략목표/KPI/실행과제 (원천: strategy-service, pull 동기화)"
+  definition:   "프로세스 정의 정적 구조 (원천: proc_def.definition JSONB, form_def, configuration)"
+  organization: "행위자 — 사람/AI에이전트/팀/그룹 (원천: users, 조직도 JSON)"
+  execution:    "런타임 트레이스 (원천: bpm_proc_inst, todolist 등, outbox 동기화)"
+  knowledge:    "스킬·지식문서 (원천: tenant_skills, knowledge_files)"
+  governance:   "[보류] 승인·리소스 PR"
+  ops:          "그래프 운영 메타"
+
+nodes:
+  # ---------------- strategy ----------------
+  - label: Perspective
+    layer: strategy
+    key: [tenant_id, id]
+    source: "BSC 4관점 시드 (graph_seed_perspectives)"
+    properties:
+      id: {type: string, enum: [financial, customer, internal_process, learning_growth], note: "테넌트별 커스텀 관점 추가 가능"}
+      name: string
+      sort_order: int
+  - label: Objective
+    layer: strategy
+    key: [tenant_id, id]
+    source: "strategy-service GET /map .objectives[]"
+    properties: {id: string, name: string, description: string}
+  - label: KPI
+    layer: strategy
+    key: [tenant_id, id]
+    source: "strategy-service .kpis[] (측정 시계열은 미적재 — 최신값만)"
+    properties:
+      id: string
+      name: string
+      unit: string
+      measure_type: {type: string, enum: [instance_count, avg_duration_hours, survey_score, manual]}
+      direction: {type: string, enum: [increase, decrease]}
+      target_value: float
+      current_value: float
+      last_measured_at: datetime
+      survey_questions: list<string>
+  - label: Initiative
+    layer: strategy
+    key: [tenant_id, id]
+    source: "strategy-service .initiatives[]"
+    properties:
+      id: string
+      name: string
+      description: string
+      status: {type: string, enum_hint: [planned]}   # strategy-service enum 미확정
+      progress: {type: int, range: [0, 100]}
+      start_date: datetime
+      due_date: datetime
+
+  # ---------------- definition ----------------
+  - label: Tenant
+    layer: definition
+    key: [id]
+    source: "public.tenants"
+    properties: {id: string, owner: {type: string, note: "owner uid"}}
+  - label: MegaProcess
+    layer: definition
+    key: [tenant_id, id]
+    source: "configuration(key='proc_map').mega_proc_list[]"
+    properties: {id: string, name: string}
+  - label: MajorProcess
+    layer: definition
+    key: [tenant_id, id]
+    source: "configuration(key='proc_map')...major_proc_list[]"
+    properties: {id: string, name: string}
+  - label: ProcessDefinition
+    layer: definition
+    key: [tenant_id, id]
+    source: "public.proc_def (bpmn XML/definition JSONB 원문은 미적재)"
+    properties:
+      id: string
+      uuid: string
+      name: string
+      description: string
+      type: {type: string, enum: [bpmn, dmn]}
+      owner: string
+      prod_version: string
+      is_draft: bool
+  - label: ProcessVersion
+    layer: definition
+    key: [uuid]
+    source: "public.proc_def_version (요소 서브그래프는 현행 head에만 존재)"
+    properties:
+      uuid: string
+      arcv_id: {type: string, note: "'{proc_def_id}_{version}'"}
+      proc_def_id: string
+      version: string
+      version_tag: {type: string, enum: [published, major, minor, null]}
+      message: string
+      timestamp: datetime
+      parent_version: string
+  - label: Activity
+    layer: definition
+    key: [tenant_id, proc_def_id, element_id]
+    source: "proc_def.definition.activities[] / subProcesses[] (재귀)"
+    properties:
+      proc_def_id: string
+      element_id: string
+      name: string
+      type: {type: string, enum: [userTask, manualTask, serviceTask, scriptTask, sendTask, receiveTask, businessRuleTask, subProcess, callActivity]}
+      description: string
+      instruction: string
+      duration: {type: int, note: "일 단위"}
+      agent_mode: {type: string, enum: [none, DRAFT, COMPLETE]}
+      orchestration: {type: string, enum: [none, default, deepagents, langchain-react, deep-research-custom]}
+      checkpoints: list
+      properties: {type: map, note: "uengine properties 원문 보존"}
+  - label: Event
+    layer: definition
+    key: [tenant_id, proc_def_id, element_id]
+    source: "proc_def.definition.events[]"
+    properties:
+      proc_def_id: string
+      element_id: string
+      name: string
+      type: {type: string, enum: [startEvent, endEvent, intermediateCatchEvent, intermediateThrowEvent, boundary]}
+      trigger: string
+      event_definition: {type: string, enum: [timer, message, signal, error, escalation, conditional, compensate, cancel, terminate, link]}
+  - label: Gateway
+    layer: definition
+    key: [tenant_id, proc_def_id, element_id]
+    source: "proc_def.definition.gateways[]"
+    properties:
+      proc_def_id: string
+      element_id: string
+      name: string
+      type: {type: string, enum: [exclusiveGateway, parallelGateway, inclusiveGateway]}
+      condition: string
+  - label: Role
+    layer: definition
+    key: [tenant_id, proc_def_id, name]
+    source: "proc_def.definition.roles[] (레인). 미해석 요소는 name='Unknown' Role에 연결"
+    properties: {proc_def_id: string, name: string, resolution_rule: string}
+  - label: Variable
+    layer: definition
+    key: [tenant_id, proc_def_id, name]
+    source: "proc_def.definition.data[]"
+    properties: {proc_def_id: string, name: string, type: string, description: string, default_value: string}
+  - label: Form
+    layer: definition
+    key: [tenant_id, id]
+    source: "public.form_def (html 원문 미적재)"
+    properties: {id: string, uuid: string, proc_def_id: string, activity_id: string}
+  - label: FormField
+    layer: definition
+    key: [tenant_id, form_id, key]
+    source: "form_def.fields_json[] (row-layout 하위 필드도 개별 노드)"
+    properties:
+      form_id: string
+      key: string
+      label: string
+      type: {type: string, enum: [text, select, checkbox, radio, file, label, boolean, textarea, user-select, report, slide, bpmn-uengine, row-layout]}
+      items: list
+      is_multidata: bool
+
+  # ---------------- organization ----------------
+  - label: User
+    layer: organization
+    key: [tenant_id, id]
+    source: "public.users WHERE is_agent=false (같은 사람도 테넌트별 별도 노드)"
+    properties: {id: string, username: string, email: string, role: string, is_admin: bool, department_id: string}
+  - label: Agent
+    layer: organization
+    key: [tenant_id, id]
+    source: "public.users WHERE is_agent=true"
+    properties:
+      id: string
+      alias: string
+      username: string
+      agent_type: {type: string, enum: [agent, pgagent]}
+      goal: string
+      persona: string
+      model: string
+      endpoint: string
+      tools: list<string>
+      is_draft: bool
+  - label: Team
+    layer: organization
+    key: [tenant_id, id]
+    source: "configuration(key='organization') JSON 트리(isTeam=true) / departments"
+    properties: {id: string, name: string, level: int, path: string}
+  - label: OrgGroup
+    layer: organization
+    key: [tenant_id, id]
+    source: "public.org_chart_groups (트리와 독립적인 횡단 팀 묶음)"
+    properties: {id: string, name: string, description: string}
+
+  # ---------------- execution ----------------
+  - label: ProcessInstance
+    layer: execution
+    key: [id]
+    source: "public.bpm_proc_inst (variables_data/participants 원문 미적재)"
+    properties:
+      id: {type: string, note: "'{proc_def_id}.{uuid}'"}
+      name: string
+      status: {type: string, enum: [NEW, RUNNING, COMPLETED]}
+      start_date: datetime
+      end_date: datetime
+      due_date: datetime
+      execution_scope: string
+      current_activity_ids: list<string>
+      version: string
+      version_tag: string
+  - label: WorkItem
+    layer: execution
+    key: [id]
+    source: "public.todolist (output/draft/feedback JSONB 원문 미적재)"
+    properties:
+      id: string
+      activity_id: string
+      activity_name: string
+      status: {type: string, enum: [NEW, TODO, IN_PROGRESS, SUBMITTED, PENDING, DONE, CANCELLED]}
+      tool: {type: string, note: "'formHandler:<form_id>' 등"}
+      agent_mode: {type: string, enum: [DRAFT, COMPLETE]}
+      agent_orch: {type: string, enum: [crewai-action, openai-deep-research, crewai-deep-research, langchain-react, browser-automation-agent, a2a, visionparse, pdf2bpmn]}
+      draft_status: {type: string, enum: [STARTED, CANCELLED, COMPLETED, FB_REQUESTED, HUMAN_ASKED, FAILED]}
+      start_date: datetime
+      end_date: datetime
+      due_date: datetime
+      duration: int
+      rework_count: int
+      retry: int
+      adhoc: bool
+      output_url: string
+  - label: Delegation
+    layer: execution
+    key: [id]
+    source: "public.delegation_history (n-ary reification)"
+    properties:
+      id: string
+      reason: string
+      status: {type: string, enum: [REQUESTED, ACCEPTED, REJECTED, COMPLETED]}
+      created_at: datetime
+      responded_at: datetime
+  - label: Project
+    layer: execution
+    key: [id]
+    source: "public.project"
+    properties: {id: string, name: string, status: string, start_date: datetime, end_date: datetime, due_date: datetime}
+  - label: ChatRoom
+    layer: execution
+    key: [id]
+    source: "public.chat_rooms (메시지 chats 는 미적재; 프로세스 채팅방 id == proc_inst_id)"
+    properties: {id: string, name: string, primary_agent_id: string}
+  - label: Topic
+    layer: execution
+    key: [tenant_id, proc_def_id, topic_id]
+    source: "instance-classifier µsvc toplist (BERTopic 군집)"
+    properties: {proc_def_id: string, topic_id: int, name: string, keywords: string, is_noise: bool, count: int}
+
+  # ---------------- knowledge / ops ----------------
+  - label: Skill
+    layer: knowledge
+    key: [tenant_id, name]
+    source: "public.tenant_skills + Git SKILL.md frontmatter"
+    properties: {name: string, description: string}
+  - label: KnowledgeDoc
+    layer: knowledge
+    key: [id]
+    source: "public.knowledge_files (임베딩은 pgvector documents 에 유지)"
+    properties:
+      id: string
+      file_name: string
+      doc_role: {type: string, enum: [content, glossary, template, reference, dataset]}
+      source_type: {type: string, enum: [drive, upload]}
+      source_ref: string
+      folder_path: string
+      index_status: {type: string, enum: [pending, processing, indexed, failed, excluded]}
+  - label: GraphMeta
+    layer: ops
+    key: [id]
+    source: "03-seed.sql (id='meta' 단일 노드)"
+    properties: {id: string, schema_version: string, applied_at: datetime}
+
+edges:
+  # ---------------- strategy (북극성 계보) ----------------
+  - {label: IN_PERSPECTIVE,     layer: strategy, from: Objective, to: Perspective, cardinality: "N:1", merge_key: endpoints, source: "objective.perspective"}
+  - {label: CONTRIBUTES_TO,     layer: strategy, from: Objective, to: Objective, cardinality: "N:M (DAG)", merge_key: endpoints, source: "objective.parents[] — 스트레티지 맵 인과관계(하위→상위)"}
+  - {label: MEASURES,           layer: strategy, from: KPI, to: Objective, cardinality: "N:1", merge_key: endpoints, source: "kpi.objective_id"}
+  - {label: DRIVES,             layer: strategy, from: Initiative, to: Objective, cardinality: "N:1", merge_key: endpoints, source: "initiative.objective_id"}
+  - {label: SOURCED_FROM,       layer: strategy, from: KPI, to: ProcessDefinition, cardinality: "N:1", merge_key: endpoints, source: "kpi.proc_def_id — 정량 집계 원천·설문 발행 대상", properties: {measure_type: string}}
+  - {label: REALIZED_BY,        layer: strategy, from: Initiative, to: ProcessDefinition, cardinality: "N:1", merge_key: endpoints, source: "initiative.proc_def_id"}
+  - {label: OWNED_BY,           layer: strategy, from: Initiative, to: User, cardinality: "N:1", merge_key: endpoints, source: "initiative.owner_email (email→uid resolver)"}
+  - {label: SURVEYED,           layer: strategy, from: ProcessInstance, to: KPI, cardinality: "N:M", merge_key: request_id, source: "strategy-service surveys — 정성 평가 계보", properties: {request_id: string, status: string, avg_rating: float, answered_at: datetime}}
+
+  # ---------------- definition ----------------
+  - {label: OWNS,               layer: definition, from: Tenant, to: ProcessDefinition, cardinality: "1:N", merge_key: endpoints, source: "proc_def.tenant_id"}
+  - {label: CONTAINS,           layer: definition, from: [MegaProcess, MajorProcess, Activity], to: [MajorProcess, ProcessDefinition, Activity, Event, Gateway], cardinality: "1:N", merge_key: endpoints, source: "proc_map JSON / subProcesses[].children (재귀)", properties: {sort_order: int}}
+  - {label: HAS_VERSION,        layer: definition, from: ProcessDefinition, to: ProcessVersion, cardinality: "1:N", merge_key: endpoints, source: "proc_def_version.proc_def_id"}
+  - {label: PRODUCTION,         layer: definition, from: ProcessDefinition, to: ProcessVersion, cardinality: "1:0..1", merge_key: from_only_replace, source: "proc_def.prod_version"}
+  - {label: DERIVED_FROM,       layer: definition, from: ProcessVersion, to: ProcessVersion, cardinality: "N:1", merge_key: endpoints, source: "proc_def_version.parent_version"}
+  - {label: DEFINES,            layer: definition, from: ProcessDefinition, to: [Activity, Event, Gateway, Role, Variable], cardinality: "1:N", merge_key: endpoints, source: "현행 head의 definition JSON (버전별 요소 복제 없음)"}
+  - {label: FLOWS_TO,           layer: definition, from: [Activity, Event, Gateway], to: [Activity, Event, Gateway], cardinality: "N:M", merge_key: seq_id, source: "definition.sequences[]", properties: {seq_id: string, name: string, condition: string}}
+  - {label: CALLS,              layer: definition, from: Activity, to: ProcessDefinition, cardinality: "N:1", merge_key: endpoints, source: "called_element / subProcesses[].process (type=callActivity|subProcess)"}
+  - {label: IN_LANE,            layer: definition, from: [Activity, Event, Gateway], to: Role, cardinality: "N:1", merge_key: endpoints, source: "element.role == roles[].name"}
+  - {label: RESOLVES_TO,        layer: definition, from: Role, to: [User, Team, OrgGroup], cardinality: "N:M", merge_key: endpoints+kind, source: "roles[].endpoint/default, Organization 바인딩", properties: {kind: {type: string, enum: [direct, default, organization, external, iam]}, rule: string}}
+  - {label: USES_FORM,          layer: definition, from: Activity, to: Form, cardinality: "N:1", merge_key: endpoints, source: "activity.tool == 'formHandler:<form_id>'"}
+  - {label: HAS_FIELD,          layer: definition, from: Form, to: FormField, cardinality: "1:N", merge_key: endpoints, source: "form_def.fields_json[]", properties: {sort_order: int}}
+  - {label: REFERENCES,         layer: definition, from: Activity, to: FormField, cardinality: "N:M", merge_key: endpoints, source: "activity.inputData[] == 'formId.fieldId'", properties: {as: string}}
+  - {label: DECIDES_BY,         layer: definition, from: Gateway, to: FormField, cardinality: "N:M", merge_key: endpoints, source: "gateway.conditionData[] == 'formId.fieldId'"}
+  - {label: BINDS_TO,           layer: definition, from: FormField, to: Variable, cardinality: "N:1", merge_key: endpoints, source: "variableForHtmlFormContext"}
+  - {label: PERFORMED_BY_AGENT, layer: definition, from: Activity, to: Agent, cardinality: "N:1", merge_key: endpoints, source: "activity.agent + agentMode", properties: {mode: {type: string, enum: [DRAFT, COMPLETE]}, orchestration: string}}
+  - {label: REQUIRES_SKILL,     layer: definition, from: Activity, to: Skill, cardinality: "N:M", merge_key: endpoints, source: "activity.skills[]"}
+  - {label: INVOLVES,           layer: definition, from: ProcessDefinition, to: Team, cardinality: "N:M", merge_key: endpoints, source: "public.process_organizations", properties: {organization_type: string}}
+
+  # ---------------- organization ----------------
+  - {label: MEMBER_OF,          layer: organization, from: [User, Agent], to: Team, cardinality: "N:1", merge_key: endpoints, source: "조직도 JSON / users.department_id", properties: {position: string}}
+  - {label: PART_OF,            layer: organization, from: Team, to: Team, cardinality: "N:1 (트리)", merge_key: endpoints, source: "조직도 children / departments.parent_id"}
+  - {label: INCLUDES,           layer: organization, from: OrgGroup, to: Team, cardinality: "N:M", merge_key: endpoints, source: "public.org_chart_group_teams"}
+  - {label: HAS_SKILL,          layer: organization, from: Agent, to: Skill, cardinality: "N:M", merge_key: endpoints, source: "public.agent_skills"}
+  - {label: EXTENDS,            layer: organization, from: Skill, to: Skill, cardinality: "N:M (DAG)", merge_key: endpoints, source: "SKILL.md frontmatter extends"}
+
+  # ---------------- execution ----------------
+  - {label: INSTANCE_OF,        layer: execution, from: ProcessInstance, to: ProcessDefinition, cardinality: "N:1", merge_key: endpoints, source: "proc_def_id + proc_def_version", properties: {version: string, version_tag: string}}
+  - {label: SUB_OF,             layer: execution, from: ProcessInstance, to: ProcessInstance, cardinality: "N:1 (트리)", merge_key: endpoints, source: "parent_proc_inst_id", properties: {execution_scope: string}}
+  - {label: IN_INSTANCE,        layer: execution, from: WorkItem, to: ProcessInstance, cardinality: "N:1", merge_key: endpoints, source: "todolist.proc_inst_id"}
+  - {label: EXECUTES,           layer: execution, from: WorkItem, to: Activity, cardinality: "N:1", merge_key: endpoints, source: "(proc_def_id, activity_id) 매칭 — adhoc/구버전 요소는 엣지 생략+dangling"}
+  - {label: ASSIGNED_TO,        layer: execution, from: WorkItem, to: [User, Agent], cardinality: "N:M", merge_key: endpoints, source: "todolist.user_id(email/uid resolver) + assignees", properties: {kind: {type: string, enum: [single, multi]}}}
+  - {label: ROLE_BOUND,         layer: execution, from: ProcessInstance, to: User, cardinality: "N:M", merge_key: endpoints+role_name, source: "bpm_proc_inst.role_bindings", properties: {role_name: string, is_default: bool}}
+  - {label: DEPENDS_ON,         layer: execution, from: WorkItem, to: WorkItem, cardinality: "N:M", merge_key: endpoints, source: "public.task_dependency", properties: {type: string, lag_time: int, lead_time: int}}
+  - {label: DELEGATION_OF,      layer: execution, from: Delegation, to: WorkItem, cardinality: "N:1", merge_key: endpoints, source: "delegation_history.task_id"}
+  - {label: DELEGATION_FROM,    layer: execution, from: Delegation, to: User, cardinality: "N:1", merge_key: endpoints, source: "delegation_history.from_user_id"}
+  - {label: DELEGATION_TO,      layer: execution, from: Delegation, to: User, cardinality: "N:1", merge_key: endpoints, source: "delegation_history.to_user_id"}
+  - {label: CLASSIFIED_AS,      layer: execution, from: ProcessInstance, to: Topic, cardinality: "N:1", merge_key: from_only_replace, source: "instance-classifier (재군집 시 교체)", properties: {similarity: float}}
+  - {label: ABOUT,              layer: execution, from: ChatRoom, to: ProcessInstance, cardinality: "1:0..1", merge_key: endpoints, source: "chat_rooms.id == proc_inst_id"}
+  - {label: PARTICIPATES_IN,    layer: execution, from: [User, Agent], to: ChatRoom, cardinality: "N:M", merge_key: endpoints, source: "chat_rooms.participants JSONB"}
+  - {label: IN_PROJECT,         layer: execution, from: ProcessInstance, to: Project, cardinality: "N:1", merge_key: endpoints, source: "bpm_proc_inst.project_id"}
+  - {label: ORIGINATED_FROM,    layer: execution, from: ProcessInstance, to: KnowledgeDoc, cardinality: "N:M", merge_key: endpoints, source: "public.proc_inst_source (file_id 매칭 시)"}
+  - {label: TRIGGERED_BY,       layer: execution, from: ProcessVersion, to: WorkItem, cardinality: "N:1", merge_key: endpoints, source: "proc_def_version.source_todolist_id — 피드백→minor 버전 계보"}
+
+# -----------------------------------------------------------------------------
+# [보류] Governance 레이어 — 2026-07-10 결정. 라벨 미생성. 활성화 시 nodes/edges 로 승격.
+# -----------------------------------------------------------------------------
+deferred:
+  nodes:
+    - label: Review
+      layer: governance
+      key: [id]
+      source: "public.proc_def_approval_state"
+      properties:
+        id: string
+        proc_def_id: string
+        state: {type: string, enum: [draft, in_review, public_feedback, final_edit, published, reopen_requested, archived, rejected, cancelled]}
+        version_label: string
+        major_version: int
+        minor_version: int
+        hq_status: {type: string, enum: [pending, approved, rejected]}
+        field_status: {type: string, enum: [pending, approved, rejected]}
+        submitted_at: datetime
+        published_at: datetime
+    - label: ResourcePR
+      layer: governance
+      key: [id]
+      source: "public.resource_pull_requests"
+      properties:
+        id: string
+        resource_type: {type: string, enum: [skill, bpmn, dmn]}
+        status: {type: string, enum: [OPEN, CHANGES_REQUESTED, APPROVED, MERGED, CLOSED]}
+        branch_name: string
+        base_branch: string
+        title: string
+        git_pr_url: string
+    - label: Terminology
+      layer: governance
+      key: [tenant_id, category, term]
+      source: "public.standard_terminology"
+      properties:
+        category: {type: string, enum: [task_name, lane_name, gateway_name, event_name, condition]}
+        term: string
+        usage_count: int
+  edges:
+    - {label: REVIEWS,        layer: governance, from: Review, to: ProcessDefinition, cardinality: "N:1", merge_key: endpoints, source: "approval_state.proc_def_id"}
+    - {label: SUBMITTED,      layer: governance, from: User, to: Review, cardinality: "1:N", merge_key: endpoints, source: "submitted_by/at", properties: {at: datetime, comment: string}}
+    - {label: HQ_REVIEWED,    layer: governance, from: User, to: Review, cardinality: "1:N", merge_key: endpoints, source: "hq_reviewer_*, hq_status", properties: {status: string, at: datetime, comment: string}}
+    - {label: FIELD_REVIEWED, layer: governance, from: User, to: Review, cardinality: "1:N", merge_key: endpoints, source: "field_reviewer_*, field_status", properties: {status: string, at: datetime, comment: string}}
+    - {label: PUBLISHED,      layer: governance, from: User, to: Review, cardinality: "1:N", merge_key: endpoints, source: "published_by_*", properties: {at: datetime, comment: string}}
+    - {label: REJECTED,       layer: governance, from: User, to: Review, cardinality: "1:N", merge_key: endpoints, source: "rejected_by_*", properties: {at: datetime, comment: string}}
+    - {label: FOLLOWS,        layer: governance, from: Review, to: Review, cardinality: "N:1", merge_key: endpoints, source: "root_cause_review_id (reopen 계보)"}
+    - {label: TARGETS,        layer: governance, from: ResourcePR, to: [Skill, ProcessDefinition], cardinality: "N:1", merge_key: endpoints, source: "resource_type + resource_id"}
+    - {label: REQUESTED,      layer: governance, from: User, to: ResourcePR, cardinality: "1:N", merge_key: endpoints, source: "requester_id", properties: {at: datetime}}
+    - {label: REVIEWS_PR,     layer: governance, from: User, to: ResourcePR, cardinality: "N:M", merge_key: endpoints+at, source: "resource_pr_reviews", properties: {action: string, comment: string, at: datetime}}
