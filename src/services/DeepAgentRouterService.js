@@ -88,6 +88,32 @@ class DeepAgentRouterService {
     }
 
     /**
+     * 진행 중인 채팅 턴을 **서버에서** 중지한다.
+     *
+     * 프론트의 abort 는 자기 fetch 만 끊을 뿐이라 서버의 그래프 실행은 계속 돌아간다
+     * (LLM/도구 호출이 그대로 소비되고 산출물까지 만들어진다). 중지 버튼이 실제로
+     * 멈추게 하려면 이 호출이 필요하다. 베스트 에포트 — 실패해도 예외를 던지지 않는다.
+     */
+    async stopStream(conversationId, options = {}) {
+        if (!conversationId) return { stopped: false };
+        try {
+            const response = await fetch(`${this.baseUrl}/chat/stop`, {
+                method: 'POST',
+                headers: buildAgentHeaders({ user_jwt: options.userJwt || '', tenant_id: options.tenantId || '' }),
+                body: JSON.stringify({
+                    conversation_id: conversationId,
+                    tenant_id: options.tenantId || '',
+                    user_jwt: options.userJwt || ''
+                })
+            });
+            if (!response.ok) return { stopped: false };
+            return await response.json().catch(() => ({ stopped: false }));
+        } catch (error) {
+            return { stopped: false };
+        }
+    }
+
+    /**
      * 진행 중인 채팅 스트림에 재접속한다(재진입/새로고침 대응).
      * 활성 스트림이 없으면(백엔드가 실패 상태코드 또는 204/빈 응답으로 표현) 어떤 콜백도
      * 오류로 호출하지 않고 조용히 종료한다 — 이 메서드는 항상 베스트 에포트다.

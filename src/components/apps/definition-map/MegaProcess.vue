@@ -200,11 +200,9 @@ export default {
             this.$emit('clickPlayBtn', value);
         },
         editProcess(process) {
-            const index = this.value.major_proc_list.findIndex((item) => item.id === process.id);
-            if (index > -1) {
-                this.value.major_proc_list[index].name = process.name;
-                this.value.major_proc_list[index].domain = process.domain;
-            }
+            // 이 다이얼로그는 자기 자신(Mega)의 이름을 수정한다. (하위 Major 수정은 MajorProcess 가 담당)
+            if (!process || !process.name) return;
+            this.value.name = process.name;
         }
     }
 };

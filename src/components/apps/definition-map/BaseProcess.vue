@@ -56,8 +56,8 @@ export default {
             this.EventBus.emit('openPermissionDialog', process);
         },
         editProcess(process) {
-            this.value.id = process.id;
-            this.value.label = process.label;
+            // 수정 다이얼로그는 이름만 변경한다. (id 는 하위 참조 때문에 유지)
+            if (!process || !process.name || !this.value) return;
             this.value.name = process.name;
         },
         editProcessdialog(processType) {

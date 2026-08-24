@@ -2895,7 +2895,13 @@ export default {
                     m.rowUuid = row?.uuid || null;
                     m.uuid = m.uuid || m.clientUuid || m.rowUuid || this.uuid();
                     m.clientUuid = m.clientUuid || m.uuid;
-                    return this.normalizeAssistantMessageForDisplay(m);
+                    this.normalizeAssistantMessageForDisplay(m);
+                    // 새로고침/방 재진입으로 DB 에서 되살린 메시지도 HITL 패널로 복원한다.
+                    // (이 호출이 없으면 컨설팅 승인/후보 선택 패널이 본문 텍스트로만 남아
+                    //  버튼 없이 깨져 보이고, 아래 '같은 턴 접기' 로직에도 걸려 사라질 수 있다.
+                    //  기존에는 Supabase Realtime 경로에서만 호출돼 새로고침 시 간헐적으로 깨졌다.)
+                    this.restoreDeepagentHitlFromAssistantContent(m);
+                    return m;
                 });
                 // desc로 받아왔으니 asc로 정렬된 형태가 되도록 reverse
                 const asc = this._dedupeMessagesByLogicalUuid(mapped.reverse());
@@ -3064,7 +3070,9 @@ export default {
                         m.rowUuid = row?.uuid || null;
                         m.uuid = m.uuid || m.clientUuid || m.rowUuid || this.uuid();
                         m.clientUuid = m.clientUuid || m.uuid;
-                        return this.normalizeAssistantMessageForDisplay(m);
+                        this.normalizeAssistantMessageForDisplay(m);
+                        this.restoreDeepagentHitlFromAssistantContent(m);
+                        return m;
                     })
                     .reverse(); // asc
 
@@ -4110,6 +4118,16 @@ export default {
          */
         _buildDeepagentHitlPanel(msg, { question, context, runState, options, multiSelect } = {}) {
             if (!msg) return;
+            // request_human_input 은 interrupt 로 멈추므로 tool_end 가 오지 않는다. 그대로 두면
+            // "request_human_input 실행 중..." 칩이 영원히 남아, 사용자 응답을 기다리는 중인데도
+            // 에이전트가 계속 돌고 있는 것처럼 보인다. 패널을 띄우는 시점에 종료로 확정한다.
+            try {
+                for (const tc of Array.isArray(msg.toolCalls) ? msg.toolCalls : []) {
+                    if (tc && (tc.name || '') === 'request_human_input' && (tc.status || '') === 'running') {
+                        tc.status = 'done';
+                    }
+                }
+            } catch (e) {}
             const convId = (this.currentChatRoom?.id || this.roomId || '').toString();
             const headerQ = (question || '').toString().trim();
             const bodyText = (context || '').toString().trim();
@@ -10469,6 +10487,28 @@ export default {
                     delete map[k];
                 }
             });
+            // fetch abort 는 **클라이언트 쪽 수신만** 끊는다. 서버의 그래프 실행은 그대로
+            // 계속 돌아가 LLM/도구 호출을 소비하고 산출물까지 만든다 — 사용자에겐
+            // "중지를 눌렀는데 계속 동작"으로 보인다. 서버에도 중지를 알린다(베스트 에포트).
+            this.stopAgentTurnOnServer(rid);
+        },
+
+        /** deepagents 서버에서 진행 중인 턴을 실제로 취소한다(중지 버튼용). */
+        async stopAgentTurnOnServer(roomId) {
+            const rid = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+            if (!rid) return;
+            const orchestration = this.getRoomOrchestration();
+            const router = this.getAgentRouterForOrchestration(orchestration);
+            if (!router || typeof router.stopStream !== 'function') return;
+            try {
+                const [userJwt, tenantId] = await Promise.all([getValidToken(), resolveTenantId()]);
+                const result = await router.stopStream(rid, { userJwt: userJwt || '', tenantId });
+                if (!result?.stopped) {
+                    console.info('[Stop] 서버에 중지할 진행 중인 턴이 없습니다:', result?.reason || '');
+                }
+            } catch (e) {
+                console.warn('[Stop] 서버 중지 요청 실패(무시):', e);
+            }
         },
 
         extractDisplayAssistantContent(rawContent) {
