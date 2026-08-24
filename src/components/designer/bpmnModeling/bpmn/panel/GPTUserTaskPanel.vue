@@ -207,6 +207,10 @@ export default {
                 agent: '',
                 agentMode: 'none',
                 orchestration: null,
+                // cliagents 오케스트레이션에서만 채워지는 실행 설정
+                // ({agent_cli, model, permission}). 엔진이 워크아이템의
+                // agent_config 로 옮겨 실어 실행 시점에 사용한다.
+                agentConfig: null,
                 agentAssignedFrom: null,
                 // 배정 에이전트가 2명 이상일 때 그중 하나를 딥 에이전트 루트로 승격하는 설정.
                 // null(미설정)이면 실행 시 자동 규칙(배정 1명이면 승격)이 적용된다.
@@ -791,6 +795,9 @@ export default {
                 usePresetAgent: !!me.activity.usePresetAgent,
                 agentMode: me.activity.agentMode,
                 orchestration: me.activity.orchestration,
+                // cliagents 실행 설정. 여기에 실리지 않으면 화면에서 고른
+                // CLI·모델·권한이 저장 시점에 버려진다.
+                agentConfig: me.activity.agentConfig || null,
                 agentAssignedFrom: me.activity.agentAssignedFrom,
                 attachments: me.activity.attachments,
                 inputData: me.activity.inputData,

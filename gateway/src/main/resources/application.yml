@@ -65,6 +65,14 @@ spring:
                   filters:
                       - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
+                # CLI Agent 서비스 (실행 CLI/모델 가용성 조회, 스킬/스트리밍)
+                - id: process-gpt-cli-agent
+                  uri: http://localhost:8890
+                  predicates:
+                      - Path=/process-gpt-cli-agent/**
+                  filters:
+                      - RewritePath=/process-gpt-cli-agent/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
                 - id: agent
                   uri: http://localhost:8008
                   predicates:
@@ -234,6 +242,16 @@ spring:
                       - Path=/process-gpt-deepagents/**
                   filters:
                       - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
+                  order: 45
+
+                # CLI Agent 서비스 (실행 CLI/모델 가용성 조회, 스킬/스트리밍)
+                - id: process-gpt-cli-agent
+                  uri: http://process-gpt-cli-agent:8890
+                  predicates:
+                      - Path=/process-gpt-cli-agent/**
+                  filters:
+                      - RewritePath=/process-gpt-cli-agent/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
                   order: 45
 

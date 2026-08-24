@@ -2602,6 +2602,27 @@
                         }
                     ]
                 }
+            },
+            "cliagents": {
+                "title": "CLI coding agent",
+                "description": "Delegate the work item to a Claude Code / Codex CLI agent. Suited to work that produces files or needs tool execution (3-20 min)",
+                "detailDesc": {
+                    "title": "An installed CLI coding agent works in its own workspace",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\n→ A per-work-item workspace is created\n→ Skills and MCP tools are injected\n→ The selected CLI (Claude Code/Codex) runs\n→ Produced files and the result are saved"
+                        },
+                        {
+                            "title": "💡 Use this when:\n• The work creates or edits files\n• You need code or document artifacts\n• You want the CLI agent's own toolchain"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Source code changes and refactoring\n• Generating documents from a specification\n• Repository review reports"
+                        },
+                        {
+                            "title": "⚠️ Note:\n• The selected CLI must be installed and authenticated on the server\n• If it is missing, the run fails with guidance rather than silently using another agent"
+                        }
+                    ]
+                }
             }
         },
         "cost": {
@@ -2612,6 +2633,20 @@
         "humanApproval": {
             "title": "User approval and additional information request",
             "description": "User approval and additional information are required. If you approve the following work plan, please click the check button. If needed, please enter or select the item."
+        },
+        "cliAgent": {
+            "cliTitle": "CLI agent",
+            "cliDescription": "Which CLI agent performs this work item.",
+            "cliNotInstalled": "not installed on this server",
+            "cliNotAuthenticated": "authentication required",
+            "modelTitle": "Model",
+            "modelPlaceholder": "Leave empty to use the CLI's default model",
+            "permissionTitle": "Permission",
+            "permission": {
+                "read_only": "Read only (no file edits, no commands)",
+                "workspace_write": "Workspace write (recommended)",
+                "command_exec": "Command execution (caution: arbitrary commands)"
+            }
         }
     },
     "TestProcess": {
