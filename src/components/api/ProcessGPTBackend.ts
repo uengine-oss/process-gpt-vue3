@@ -1,4 +1,5 @@
 import axios from '@/utils/axios';
+import deepagentsApi from '@/utils/deepagentsApi';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 
@@ -5886,7 +5887,7 @@ class ProcessGPTBackend implements Backend {
     /** 스킬 파일을 zip(ArrayBuffer)으로 받아온다(백엔드 /skills/{name}/export). */
     async fetchSkillExportZip(skillName: string): Promise<ArrayBuffer | null> {
         try {
-            const resp = await axios.get(`/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/export`, {
+            const resp = await deepagentsApi.get(`/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/export`, {
                 params: { tenant_id: window.$tenantName },
                 responseType: 'arraybuffer',
                 // deepagents 미기동/지연 시 export 전체가 멈추지 않도록 타임아웃.
@@ -8512,11 +8513,11 @@ class ProcessGPTBackend implements Backend {
                 form.append('file', options.file, options.file.name);
                 form.append('tenant_id', window.$tenantName);
 
-                response = await axios.post('/process-gpt-deepagents/skills/upload', form, {
+                response = await deepagentsApi.post('/process-gpt-deepagents/skills/upload', form, {
                     headers: header
                 });
             } else if (options.type == 'url') {
-                response = await axios.post(
+                response = await deepagentsApi.post(
                     '/process-gpt-deepagents/skills/upload-from-git',
                     {
                         repo_url: options.url,
@@ -8568,7 +8569,7 @@ class ProcessGPTBackend implements Backend {
     async deleteSkills(options: any) {
         try {
             const skillName = options.skillName;
-            const response = await axios.delete(`/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}`, {
+            const response = await deepagentsApi.delete(`/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}`, {
                 data: { tenant_id: window.$tenantName, mode: 'local' }
             });
             if (response.status === 200 && response.data && response.data.skill_name) {
@@ -8594,7 +8595,7 @@ class ProcessGPTBackend implements Backend {
 
     async getTenantSkills(tenantId: string) {
         try {
-            const response = await axios.get(`/process-gpt-deepagents/skills?tenant_id=${encodeURIComponent(tenantId)}`);
+            const response = await deepagentsApi.get(`/process-gpt-deepagents/skills?tenant_id=${encodeURIComponent(tenantId)}`);
             if (response.status === 200) {
                 return response.data;
             } else {
@@ -8608,7 +8609,7 @@ class ProcessGPTBackend implements Backend {
 
     async getTenantBuiltinSkills() {
         try {
-            const response = await axios.get('/process-gpt-deepagents/skills-builtin');
+            const response = await deepagentsApi.get('/process-gpt-deepagents/skills-builtin');
             if (response.status === 200) {
                 return response.data;
             } else {
@@ -8699,7 +8700,7 @@ class ProcessGPTBackend implements Backend {
             if (tenantId) {
                 url += `?tenant_id=${encodeURIComponent(tenantId)}`;
             }
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) {
                 return response.data;
             } else {
@@ -8732,7 +8733,7 @@ class ProcessGPTBackend implements Backend {
                 body.author_email = localStorage.getItem('email');
             }
 
-            const response = await axios.post(url, body, {
+            const response = await deepagentsApi.post(url, body, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -8762,7 +8763,7 @@ class ProcessGPTBackend implements Backend {
             const params = new URLSearchParams();
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) {
                 return {
                     branches: response.data.branches ?? [],
@@ -8782,7 +8783,7 @@ class ProcessGPTBackend implements Backend {
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
             if (branch) params.set('branch', branch);
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/commits?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) {
                 return response.data.commits ?? [];
             }
@@ -8800,7 +8801,7 @@ class ProcessGPTBackend implements Backend {
         if (uid) body.owner_id = uid;
         if (options?.initialContent !== undefined) body.initial_content = options.initialContent;
         if (options?.filePath !== undefined) body.file_path = options.filePath;
-        const response = await axios.post(url, body);
+        const response = await deepagentsApi.post(url, body);
         if (response.status === 200 || response.status === 201) {
             return response.data;
         }
@@ -8809,7 +8810,7 @@ class ProcessGPTBackend implements Backend {
 
     async createSkillBranch(skillName: string, branch: string, from = 'main') {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches`;
-        const response = await axios.post(url, {
+        const response = await deepagentsApi.post(url, {
             tenant_id: window.$tenantName,
             branch,
             from
@@ -8822,7 +8823,7 @@ class ProcessGPTBackend implements Backend {
 
     async createSkillPullRequest(skillName: string, title: string, description: string, head: string, base = 'main') {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests`;
-        const response = await axios.post(url, {
+        const response = await deepagentsApi.post(url, {
             tenant_id: window.$tenantName,
             title,
             description,
@@ -8840,7 +8841,7 @@ class ProcessGPTBackend implements Backend {
         if (window.$tenantName) params.set('tenant_id', window.$tenantName);
         params.set('state', state);
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests?${params}`;
-        const response = await axios.get(url);
+        const response = await deepagentsApi.get(url);
         if (response.status === 200) return response.data;
         throw new Error(response.data?.message || 'Failed to fetch pull requests');
     }
@@ -8853,7 +8854,7 @@ class ProcessGPTBackend implements Backend {
             const params = new URLSearchParams();
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests/${prNumber}/files?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) return response.data?.files ?? response.data ?? [];
             return [];
         } catch {
@@ -8863,7 +8864,7 @@ class ProcessGPTBackend implements Backend {
 
     async mergeSkillPullRequest(skillName: string, prNumber: number, message?: string) {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests/${prNumber}/merge`;
-        const response = await axios.post(url, {
+        const response = await deepagentsApi.post(url, {
             tenant_id: window.$tenantName,
             message: message || `Merge pull request #${prNumber}`,
             auto_sync: true
@@ -8878,7 +8879,7 @@ class ProcessGPTBackend implements Backend {
             params.set('branch', branch);
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches/files?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) {
                 return response.data;
             }
@@ -8897,7 +8898,7 @@ class ProcessGPTBackend implements Backend {
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches/files/${encodeURIComponent(
                 filePath
             )}?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) {
                 return response.data;
             }
@@ -8915,7 +8916,7 @@ class ProcessGPTBackend implements Backend {
             const params = new URLSearchParams();
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/inheritance?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) return response.data;
             return null;
         } catch {
@@ -8925,7 +8926,7 @@ class ProcessGPTBackend implements Backend {
 
     async syncSkill(skillName: string) {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/sync`;
-        const response = await axios.post(url, { tenant_id: window.$tenantName });
+        const response = await deepagentsApi.post(url, { tenant_id: window.$tenantName });
         if (response.status === 200) {
             return response.data;
         }
@@ -9120,7 +9121,7 @@ class ProcessGPTBackend implements Backend {
                 data.author_name = localStorage.getItem('userName');
                 data.author_email = localStorage.getItem('email');
             }
-            const response = await axios.delete(url, { data });
+            const response = await deepagentsApi.delete(url, { data });
             if (response.status === 200) {
                 return response.data;
             } else {
