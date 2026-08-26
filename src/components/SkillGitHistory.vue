@@ -178,7 +178,11 @@
                             <div class="prc-body">
                                 <div class="prc-title">
                                     {{ pr.title }}
-                                    <span class="st-badge st-merged">{{ $t('SkillGitHistory.mergedBadge') }}</span>
+                                    <!-- 이 섹션에는 병합된 PR 과 병합 없이 닫힌 PR 이 함께 온다.
+                                         배지를 병합됨으로 고정하면 닫힌 PR 이 병합된 것으로 오해된다. -->
+                                    <span class="st-badge" :class="pr.status === 'CLOSED' ? 'st-closed' : 'st-merged'">
+                                        {{ prStatusLabel(pr.status) }}
+                                    </span>
                                 </div>
                                 <div class="prc-byline">
                                     <b>{{ pr.requester_name || $t('SkillGitHistory.unknownUser') }}</b>
@@ -446,6 +450,8 @@ export default {
             this.prReviewsMap = {};
             try {
                 this.prRecords = await this.backend.getResourcePrRecords('skill', this.skillName, undefined, this.repoUrl || undefined);
+                this.prRecords.forEach((pr) => this.normalizeRequesterName(pr));
+                await this.reconcilePrStatusWithGit(this.prRecords);
                 this.openPrCount = this.prRecords.filter(pr => pr.status !== 'MERGED' && pr.status !== 'CLOSED').length;
                 await Promise.all([
                     ...this.prRecords.map(async (pr) => {
@@ -456,6 +462,58 @@ export default {
                 ]);
             } finally {
                 this.prsLoading = false;
+            }
+        },
+
+        /**
+         * requester_name 을 사람이 읽는 한 줄로 정규화한다.
+         * DB 컬럼이 배열이라 값이 `["홍길동"]` 처럼 들어오면 화면에 대괄호까지 그대로 찍힌다.
+         * 레코드 단계에서 고쳐 두면 목록·PR 헤더 등 모든 렌더러에 함께 반영된다.
+         */
+        normalizeRequesterName(pr) {
+            if (!pr) return;
+            let name = pr.requester_name;
+            if (typeof name === 'string') {
+                const text = name.trim();
+                // 배열이 문자열로 직렬화된 경우("[\"홍길동\"]")도 풀어준다.
+                if (text.startsWith('[')) {
+                    try {
+                        name = JSON.parse(text);
+                    } catch (_) {
+                        name = text.replace(/^\[|\]$/g, '').replace(/"/g, '');
+                    }
+                }
+            }
+            if (Array.isArray(name)) name = name.filter(Boolean).join(', ');
+            pr.requester_name = (name || '').toString().trim();
+        },
+
+        /**
+         * DB 레코드의 PR 상태를 Git 의 실제 상태로 보정한다.
+         * PR 을 깃에서 직접 닫거나 병합하면 DB(resource_pull_requests)에는 반영되지 않아
+         * 목록이 계속 "검토 대기" 로 남는다. 그러면 변경 이력을 신뢰할 수 없으므로,
+         * 목록을 그릴 때 provider 의 실제 상태로 대조해 표시를 맞춘다.
+         * 조회가 실패하면 DB 값을 그대로 쓴다(목록 자체는 계속 보여야 한다).
+         */
+        async reconcilePrStatusWithGit(prRecords) {
+            if (!Array.isArray(prRecords) || prRecords.length === 0) return;
+            let livePrs = [];
+            try {
+                const res = await this.backend.getSkillPullRequests(this.skillName, 'all');
+                livePrs = Array.isArray(res) ? res : res?.pull_requests || [];
+            } catch (_) {
+                return;
+            }
+            if (!livePrs.length) return;
+
+            const byNumber = new Map(livePrs.map((pr) => [Number(pr.number), pr]));
+            for (const record of prRecords) {
+                const live = byNumber.get(Number(record.git_pr_number));
+                if (!live) continue;
+                const merged = !!(live.merged || live.merged_at);
+                const closed = merged || live.state === 'closed';
+                if (!closed) continue;
+                record.status = merged ? 'MERGED' : 'CLOSED';
             }
         },
 
@@ -581,9 +639,27 @@ export default {
                 await this.backend.createSkillRepo(this.skillName);
                 await this.fetchBranches();
             } catch (err) {
-                this.createRepoError = err?.message || String(err);
+                // 백엔드는 실패를 { error: '...' } 로 던진다. message 만 보면 '[object Object]' 가 찍힌다.
+                this.createRepoError = this.errorText(err) || '레포 생성에 실패했습니다.';
+                // 다른 세션이 이미 만들었을 수 있으므로 목록을 다시 읽어 화면을 자가 교정한다.
+                await this.fetchBranches();
             } finally {
                 this.creatingRepo = false;
+            }
+        },
+
+        /** Error/axios error/평범한 객체 어디에 담겨 오든 사람이 읽을 수 있는 문구를 뽑는다. */
+        errorText(err) {
+            if (!err) return '';
+            if (typeof err === 'string') return err;
+            const data = err.response?.data ?? err.data ?? err;
+            const picked = data?.error || data?.detail || data?.message || err.message;
+            if (typeof picked === 'string' && picked.trim()) return picked.trim();
+            try {
+                const json = JSON.stringify(data);
+                return json && json !== '{}' ? json : String(err);
+            } catch (_) {
+                return String(err);
             }
         },
 
@@ -704,6 +780,11 @@ export default {
 .st-chg    { background: #FBF0DA; color: #92610A; }
 .st-app    { background: #E7F4DF; color: #2E6B16; }
 .st-merged { background: #EFEAFB; color: #5b46b8; }
+/* 병합 없이 닫힌 PR — 병합됨과 시각적으로 구분한다 */
+.st-closed {
+    background: rgba(var(--v-theme-on-surface), 0.08);
+    color: rgba(var(--v-theme-on-surface), 0.6);
+}
 
 .gh-link { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: rgba(var(--v-theme-on-surface), 0.45); text-decoration: none; }
 .gh-link:hover { color: rgb(var(--v-theme-primary)); }

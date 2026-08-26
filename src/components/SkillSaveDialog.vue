@@ -19,6 +19,9 @@
                     <div class="text-body-2">{{ $t('SkillSaveDialog.noRepoMessage') }}</div>
                 </v-alert>
                 <p class="text-body-2 text-medium-emphasis">{{ $t('SkillSaveDialog.noRepoHint') }}</p>
+                <p class="text-body-2 text-medium-emphasis mt-3">
+                    깃 연동 없이 이 파일만 바로 저장할 수도 있습니다. 이 경우 변경 이력과 병합 요청은 사용할 수 없습니다.
+                </p>
                 <v-alert v-if="errorMsg" type="error" density="compact" class="mt-3" closable @click:close="errorMsg = ''">
                     {{ errorMsg }}
                 </v-alert>
@@ -208,6 +211,9 @@
                 <v-btn v-if="step !== 'checking'" variant="text" @click="close">
                     {{ step === 'success' ? $t('common.close') : $t('common.cancel') }}
                 </v-btn>
+                <v-btn v-if="step === 'no-repo'" variant="tonal" rounded :loading="savingLocal" @click="saveWithoutGit">
+                    깃 없이 저장
+                </v-btn>
                 <v-btn v-if="step === 'no-repo'" color="primary" rounded variant="flat" :loading="loading" @click="createRepo">
                     {{ $t('SkillSaveDialog.createRepo') }}
                 </v-btn>
@@ -278,6 +284,7 @@ export default {
             successHint: '',
             errorMsg: '',
             loading: false,
+            savingLocal: false,
             defaultBranch: 'main',
             isOwner: true,
             repoUrl: null,
@@ -492,6 +499,24 @@ export default {
         },
         close() {
             this.$emit('update:modelValue', false);
+        },
+        /**
+         * Git 레포 없이 이 파일만 테넌트 스킬 디렉터리에 바로 저장한다.
+         * Git 공급자가 연결되지 않은 테넌트도 스킬을 편집·저장할 수 있어야 하기 때문이다.
+         * 변경 이력·병합 요청은 제공되지 않는다(레포를 만든 뒤에만 가능).
+         */
+        async saveWithoutGit() {
+            this.savingLocal = true;
+            this.errorMsg = '';
+            try {
+                await this.backend.putSkillFileLocal(this.skillName, this.filePath, this.content);
+                this.$emit('saved', { mode: 'direct' });
+                this.close();
+            } catch (err) {
+                this.errorMsg = (err && err.response && err.response.data && err.response.data.error) || err?.message || String(err);
+            } finally {
+                this.savingLocal = false;
+            }
         },
         async createRepo() {
             this.loading = true;

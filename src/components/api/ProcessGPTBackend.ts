@@ -8512,6 +8512,9 @@ class ProcessGPTBackend implements Backend {
                 const form = new FormData();
                 form.append('file', options.file, options.file.name);
                 form.append('tenant_id', window.$tenantName);
+                // overwrite: 이미 등록된 스킬이면 내용을 교체한다(사용자가 저장 버튼을 눌러 수정을
+                // 반영하는 경우). 없으면 서버가 409 로 거부해 수정이 조용히 유실된다.
+                if (options.overwrite) form.append('overwrite', 'true');
 
                 response = await deepagentsApi.post('/process-gpt-deepagents/skills/upload', form, {
                     headers: header
@@ -8709,6 +8712,25 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             return false;
         }
+    }
+
+    /**
+     * Git 없이 스킬 파일 하나를 테넌트 스킬 디렉터리에 직접 저장한다.
+     * Git 공급자가 연결되지 않은 테넌트는 커밋 경로(putSkillFile)를 쓸 수 없으므로 이 경로를 쓴다.
+     * 버전·병합 관리는 제공되지 않는다(git 연결 시에만 가능).
+     */
+    async putSkillFileLocal(skillName: string, filePath: string, content: string) {
+        const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/files/${filePath
+            .split('/')
+            .map((seg) => encodeURIComponent(seg))
+            .join('/')}`;
+        const response = await deepagentsApi.put(
+            url,
+            { tenant_id: window.$tenantName, content },
+            { headers: { 'Content-Type': 'application/json' } }
+        );
+        if (response.status === 200 || response.status === 201) return response.data;
+        throw new Error(response.data?.error || 'Failed to save skill file');
     }
 
     async putSkillFile(

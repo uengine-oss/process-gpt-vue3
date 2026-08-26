@@ -3165,6 +3165,16 @@ export default {
          * 실시간 토큰을 기존 activeStreams 렌더링 경로로 이어붙인다. 실패/활성
          * 스트림 없음은 항상 조용히 무시하는 베스트 에포트 동작이다.
          */
+        /**
+         * "아직 아무 내용도 없는 진행 중 말풍선"인지 판정한다.
+         * 서버가 진행 중인 턴의 chats row 를 이 문구 그대로 저장하므로, 새로고침 후에도
+         * 같은 문자열이 메시지 목록에 남는다.
+         */
+        _isPlaceholderContent(content) {
+            const text = (content || '').toString().trim();
+            return !text || text === '...' || ['생각 중', '생각 중...', '생각중', '생각중...'].includes(text);
+        },
+
         async attachToActiveStream(roomId) {
             try {
                 if (!roomId) return;
@@ -3187,7 +3197,20 @@ export default {
 
                 let seeded = false;
                 let full = '';
-                const assistantUuid = this.uuid();
+                // 진행 중인 턴은 서버가 '생각 중...' 상태의 chats row 를 이미 저장해 두었고,
+                // 새로고침하면 그게 messages 에 그대로 실려 온다. attach 가 새 uuid 로 말풍선을
+                // 또 만들면 같은 턴이 두 개로 보이므로, 실제로 스트림을 잡았을 때(=시드 시점)
+                // 그 placeholder 를 걷어내고 uuid 를 물려받는다. 활성 스트림이 없으면 attach 는
+                // 조용히 끝나므로, 그때는 기존 말풍선을 건드리지 않아야 메시지가 사라지지 않는다.
+                let assistantUuid = this.uuid();
+                const takeOverPlaceholder = () => {
+                    const idx = (this.messages || []).findIndex(
+                        (m) => m && m.role === 'assistant' && m.agentId === agentId && this._isPlaceholderContent(m.content)
+                    );
+                    if (idx === -1) return;
+                    assistantUuid = this.messages[idx].uuid || assistantUuid;
+                    this.messages.splice(idx, 1);
+                };
 
                 await deepAgentRouterService.attachToStream(
                     roomId,
@@ -3198,6 +3221,7 @@ export default {
                             if (!seeded) {
                                 full = (content || '').toString();
                                 seeded = true;
+                                takeOverPlaceholder();
                                 this.activeStreams[agentId] = {
                                     uuid: assistantUuid,
                                     role: 'assistant',
@@ -6123,6 +6147,20 @@ export default {
                 const i = arr.findIndex(
                     (f) => f.path === entry.path || this._workspaceLogicalPath(f.path) === logicalPath
                 );
+                // 내용이 실제로 바뀌었으면(또는 새 파일이면) 이 그룹의 '저장됨' 을 해제한다.
+                // 해제하지 않으면 같은 방에서 스킬을 두 번째로 수정했을 때 버튼이 '저장됨' 에
+                // 잠긴 채로 남아, 미리보기에는 수정본이 보이는데 저장할 방법이 없어진다.
+                // 턴 종료 시 동일 내용이 재전송되는 경로가 있어 '변경됐을 때만' 해제한다.
+                const prevContent = i === -1 ? null : (arr[i] && arr[i].content) ?? null;
+                const nextContent = entry.content ?? null;
+                const contentChanged = i === -1 || (nextContent !== null && nextContent !== prevContent);
+                if (contentChanged) {
+                    const st = this.workspaceSaveStateByGroup[group];
+                    if (st && st.saved) {
+                        st.saved = false;
+                        st.error = '';
+                    }
+                }
                 if (i === -1) arr.push(entry);
                 else arr.splice(i, 1, { ...arr[i], ...entry });
                 // (A) process-definition.json 이면 프론트 createBpmnXml 로 .bpmn 파생 → 같은 그룹에 추가(뷰어 표시용).
@@ -6206,17 +6244,66 @@ export default {
          * SKILL.md frontmatter(name/description)가 없으면 항상 유효본으로 보정(스킬 서버 "No valid skills" 방지).
          * 반환: 등록(또는 업로드)된 스킬명 배열.
          */
-        async _uploadSkillsFromFiles(list, { draft = false } = {}) {
+        /** SKILL.md frontmatter 의 `name:` 값을 뽑는다. 없으면 ''. */
+        _skillNameFromFrontmatter(content) {
+            const fm = (content || '').toString().match(/^---\s*\n([\s\S]*?)\n---/);
+            if (!fm) return '';
+            const m = fm[1].match(/(?:^|\n)\s*name\s*:\s*["']?([^"'\n]+)["']?\s*(?:\n|$)/);
+            return m ? m[1].trim() : '';
+        },
+
+        async _uploadSkillsFromFiles(list, { draft = false, errors = null } = {}) {
             const savedSkillNames = [];
             const skillFilesByName = {};
-            for (const f of list || []) {
-                const p = (f.path || '').replace(/\\/g, '/');
+            const files = (list || []).map((f) => ({ f, p: (f.path || '').replace(/\\/g, '/') }));
+            const claimed = new Set();
+            const add = (name, relPath, f) => {
+                (skillFilesByName[name] = skillFilesByName[name] || []).push({ relPath, content: (f.content || '').toString() });
+            };
+            // (1) skills/<name>/<rel> — 프로세스 생성 흐름이 만드는 산출물 레이아웃.
+            for (const { f, p } of files) {
                 const m = p.match(/\/skills\/([^/]+)\/(.+)$/);
                 if (!m) continue;
-                (skillFilesByName[m[1]] = skillFilesByName[m[1]] || []).push({ relPath: m[2], content: (f.content || '').toString() });
+                add(m[1], m[2], f);
+                claimed.add(p);
+            }
+            // (2) skills/ 세그먼트가 없는 산출물 — 스킬 단독 생성·수정 흐름은
+            //     <room>/<skill-name>/SKILL.md 로 떨어진다. SKILL.md 가 있는 디렉터리를
+            //     스킬 루트로 보고 그 하위 전체를 모은다. 이 폴백이 없으면 스킬 파일을
+            //     하나도 수집하지 못한 채 "저장됨"으로 표시돼 수정이 조용히 유실된다.
+            const roots = [];
+            for (const { p } of files) {
+                if (claimed.has(p)) continue;
+                if (!/(?:^|\/)SKILL\.md$/i.test(p)) continue;
+                const prefix = p.slice(0, p.length - 'SKILL.md'.length);
+                const dirName = (prefix.replace(/\/$/, '').split('/').pop() || '').trim();
+                // 스킬명은 SKILL.md frontmatter 의 name 을 우선한다. 스킬 단독 흐름은 산출물을
+                // <room>/SKILL.md 로 떨어뜨리기도 하는데, 그때 디렉터리명을 쓰면 대화방 UUID 가
+                // 스킬명이 되어 버린다. frontmatter 가 없을 때만 디렉터리명으로 되돌린다.
+                const skillMd = files.find((x) => x.p === p);
+                const name = this._skillNameFromFrontmatter(skillMd?.f?.content) || dirName;
+                if (!name) continue;
+                roots.push({ prefix, name });
+            }
+            for (const { prefix, name } of roots) {
+                for (const { f, p } of files) {
+                    if (claimed.has(p) || !p.startsWith(prefix)) continue;
+                    add(name, p.slice(prefix.length), f);
+                    claimed.add(p);
+                }
             }
             const skillEntries = Object.entries(skillFilesByName);
-            if (!skillEntries.length || !backend.uploadSkills) return savedSkillNames;
+            const note = (msg) => {
+                if (Array.isArray(errors)) errors.push(msg);
+            };
+            if (!skillEntries.length) {
+                note('산출물에서 스킬 폴더(SKILL.md)를 찾지 못했습니다.');
+                return savedSkillNames;
+            }
+            if (!backend.uploadSkills) {
+                note('현재 백엔드가 스킬 업로드를 지원하지 않습니다.');
+                return savedSkillNames;
+            }
             const hasValidSkillFrontmatter = (txt) => {
                 const s = (txt || '').toString();
                 const mm = s.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
@@ -6254,10 +6341,16 @@ export default {
                 let res = null;
                 try {
                     // draft 든 최종이든 파일은 업로드(편집기 로드용). 등록(saveSkills)은 draft 면 생략.
-                    res = await backend.uploadSkills({ type: 'file', file, skipRegister: true });
+                    // overwrite: 최종 저장(사용자가 저장 버튼을 누른 경우)은 이미 등록된 스킬의
+                    // 내용을 교체해야 한다. 이게 없으면 서버가 409 로 거부하고, 아래 catch 가
+                    // 그걸 "이미 존재하니 무시"로 넘겨 수정이 조용히 유실된다.
+                    res = await backend.uploadSkills({ type: 'file', file, skipRegister: true, overwrite: !draft });
                 } catch (upErr) {
-                    // draft 후 최종 저장 시 이미 업로드돼 있을 수 있음 → 무시하고 등록 단계로.
-                    console.warn('[Skills] 업로드 실패(이미 존재 가능, 무시):', upErr);
+                    // draft 업로드는 이미 존재할 수 있으므로 무시하고 등록 단계로 넘어간다.
+                    // 최종 저장에서의 실패는 실제 실패이므로 사유를 남겨 호출자가 표면화한다.
+                    console.warn('[Skills] 업로드 실패:', upErr);
+                    note(`파일 업로드 실패: ${(upErr && (upErr.message || upErr.detail)) || upErr}`);
+                    if (!draft) throw upErr;
                 }
                 const added = Array.isArray(res?.skills_added) && res.skills_added.length ? res.skills_added : skillEntries.map(([n]) => n);
                 savedSkillNames.push(...added);
@@ -6266,10 +6359,12 @@ export default {
                         await backend.saveSkills(savedSkillNames);
                     } catch (e) {
                         console.warn('[Skills] saveSkills 등록 실패(무시):', e);
+                        note(`스킬 목록 등록 실패: ${(e && (e.message || e.detail)) || e}`);
                     }
                 }
             } catch (skErr) {
                 console.warn('[Skills] zip 업로드 실패:', skErr);
+                note(`스킬 패키징/업로드 실패: ${(skErr && (skErr.message || skErr.detail)) || skErr}`);
             }
             return savedSkillNames;
         },
@@ -6894,18 +6989,27 @@ export default {
             const pdFile = list.find((f) => this._workspaceFileBaseName(f) === 'process-definition.json');
             if (!pdFile) {
                 // 단독 스킬 산출물(프로세스 없음): SKILL.md 만 있으면 스킬만 저장(정식 등록/승격).
+                // 수집 규칙(_uploadSkillsFromFiles)과 동일하게 "SKILL.md 가 있으면 스킬 산출물"로 본다.
                 const hasSkill = list.some(
-                    (f) =>
-                        /\/skills\/[^/]+\/SKILL\.md$/i.test((f.path || '').replace(/\\/g, '/')) ||
-                        (f.name || '').toLowerCase() === 'skill.md'
+                    (f) => /(?:^|\/)SKILL\.md$/i.test((f.path || '').replace(/\\/g, '/')) || (f.name || '').toLowerCase() === 'skill.md'
                 );
                 if (hasSkill) {
                     st.saving = true;
                     st.error = '';
                     try {
-                        const saved = await this._uploadSkillsFromFiles(list, { draft: false });
+                        const uploadErrors = [];
+                        const saved = await this._uploadSkillsFromFiles(list, { draft: false, errors: uploadErrors });
+                        // 실제로 등록된 스킬이 하나도 없으면 저장 성공으로 표시하지 않는다.
+                        // (경로 규칙 불일치 등으로 아무것도 업로드되지 않은 채 '저장됨' 이 되면
+                        //  사용자는 수정이 반영됐다고 오인한다.)
+                        if (!Array.isArray(saved) || saved.length === 0) {
+                            st.saving = false;
+                            st.error = `스킬 저장 실패: ${uploadErrors[0] || '업로드된 스킬이 없습니다.'}`;
+                            return;
+                        }
                         st.saved = true;
                         st.saving = false;
+                        if (uploadErrors.length) st.error = uploadErrors.join(' / ');
                         this.$forceUpdate && this.$forceUpdate();
                         return;
                     } catch (e) {
@@ -8956,15 +9060,7 @@ export default {
                     delete this.agentAbortControllers[abortKey];
                     const msg = this.activeStreams[agentId];
                     if (msg) {
-                        const content = (msg.content || '').toString().trim();
-                        const isPlaceholder =
-                            !content ||
-                            content === '...' ||
-                            content === '생각 중' ||
-                            content === '생각 중...' ||
-                            content === '생각중...' ||
-                            content === '생각중';
-                        if (!isPlaceholder) {
+                        if (!this._isPlaceholderContent(msg.content)) {
                             msg.isLoading = false;
                             msg.openuiIsStreaming = false;
                             this.messages.push(this.normalizeAssistantMessageForDisplay(msg));
