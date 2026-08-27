@@ -6087,6 +6087,69 @@ export default {
             const matched = normalized.match(/\/\.bpmn\/[^/]+\/(?:process-[^/]+\/)?(.+)$/);
             return (matched ? matched[1] : normalized).toLowerCase();
         },
+        /**
+         * 산출물 파일 내용의 지문. '이 패널이 지금 보여주는 내용이 이미 저장된 그 내용인가'를
+         * 판정하는 데만 쓰므로 암호학적 강도는 필요 없고, 동기 계산(FNV-1a)으로 충분하다.
+         */
+        _workspaceContentHash(text) {
+            const s = (text ?? '').toString();
+            let h = 0x811c9dc5;
+            for (let i = 0; i < s.length; i++) {
+                h ^= s.charCodeAt(i);
+                h = Math.imul(h, 0x01000193) >>> 0;
+            }
+            return `${s.length.toString(36)}.${h.toString(36)}`;
+        },
+        /**
+         * 그룹의 모든 파일이 "저장 당시 내용 그대로"인가.
+         *
+         * 저장 상태를 boolean 으로 들고 있지 않고 여기서 도출하는 이유: 저장 상태는 컴포넌트
+         * 상태(workspaceSaveStateByGroup)에만 있고 bootstrapRoom 이 방을 열 때마다 비우기
+         * 때문에, 새로고침하면 이미 저장한 스킬도 '저장' 버튼이 다시 활성화됐다. 파일 항목에
+         * 남긴 savedHash 는 메시지(workspaceFiles)와 함께 영속되므로 새로고침 후에도 살아남는다.
+         *
+         * process-definition.json 에서 프론트가 파생시킨 .bpmn 항목(derived)은 저장 대상이
+         * 아니라 매번 새로 만들어지므로 판정에서 제외한다 — 원본 json 이 검사되므로 충분하다.
+         */
+        _isWorkspaceGroupSaved(files) {
+            const list = (files || []).filter((f) => f && !f.derived);
+            if (!list.length) return false;
+            return list.every((f) => !!f.savedHash && f.savedHash === this._workspaceContentHash(f.content));
+        },
+        /**
+         * 저장에 성공한 파일들에 "이 내용으로 저장했다" 표식을 남기고 메시지에 영속한다.
+         * 방 단위 배열(roomWorkspaceFilesByGroup)과 메시지 배열(msg.workspaceFiles)은 갱신 과정에서
+         * 서로 다른 객체가 되므로 경로로 찾아 양쪽 모두 찍는다.
+         */
+        _markWorkspaceFilesSaved(list) {
+            const stamps = {};
+            for (const f of list || []) {
+                if (!f || !f.path || f.derived) continue;
+                const hash = this._workspaceContentHash(f.content);
+                stamps[f.path] = hash;
+                f.savedHash = hash;
+            }
+            if (!Object.keys(stamps).length) return;
+            for (const arr of Object.values(this.roomWorkspaceFilesByGroup || {})) {
+                for (const f of arr || []) {
+                    if (f && stamps[f.path]) f.savedHash = stamps[f.path];
+                }
+            }
+            for (const m of this.messages || []) {
+                if (!m || !Array.isArray(m.workspaceFiles)) continue;
+                // "값이 바뀐 항목" 이 아니라 "찍을 항목이 있는 메시지" 를 기준으로 영속한다.
+                // 복원 직후에는 패널 배열과 메시지 배열이 같은 객체를 가리켜서, 위에서 이미
+                // savedHash 가 들어간 상태다. 값 변화로 판정하면 그 경우 영속이 통째로 생략돼
+                // 새로고침하면 다시 '저장' 활성으로 돌아간다.
+                let touched = false;
+                for (const f of m.workspaceFiles) {
+                    if (!f || !stamps[f.path]) continue;
+                    f.savedHash = stamps[f.path];
+                    touched = true;
+                }
+                if (touched) this.scheduleMessageFrontendStatePersist(m);
+            }
+        },
         _workspaceFileBaseName(file) {
             const raw = typeof file === 'string' ? file : file?.name || file?.path || '';
             return raw.toString().replace(/\\/g, '/').split('/').pop().toLowerCase().replace(/^\.+/, '');
@@ -6147,20 +6210,10 @@ export default {
                 const i = arr.findIndex(
                     (f) => f.path === entry.path || this._workspaceLogicalPath(f.path) === logicalPath
                 );
-                // 내용이 실제로 바뀌었으면(또는 새 파일이면) 이 그룹의 '저장됨' 을 해제한다.
-                // 해제하지 않으면 같은 방에서 스킬을 두 번째로 수정했을 때 버튼이 '저장됨' 에
-                // 잠긴 채로 남아, 미리보기에는 수정본이 보이는데 저장할 방법이 없어진다.
-                // 턴 종료 시 동일 내용이 재전송되는 경로가 있어 '변경됐을 때만' 해제한다.
-                const prevContent = i === -1 ? null : (arr[i] && arr[i].content) ?? null;
-                const nextContent = entry.content ?? null;
-                const contentChanged = i === -1 || (nextContent !== null && nextContent !== prevContent);
-                if (contentChanged) {
-                    const st = this.workspaceSaveStateByGroup[group];
-                    if (st && st.saved) {
-                        st.saved = false;
-                        st.error = '';
-                    }
-                }
+                // 병합(spread)으로 갱신해 savedHash 같은 저장 표식이 살아남게 한다.
+                // 표식은 남기고 content 만 바뀌면 아래 _isWorkspaceGroupSaved 가 해시 불일치로
+                // '저장됨' 을 자동 해제한다 — 턴 종료 시 동일 내용이 재전송되는 경로에서는
+                // 해시가 그대로라 '저장됨' 이 풀리지 않는다.
                 if (i === -1) arr.push(entry);
                 else arr.splice(i, 1, { ...arr[i], ...entry });
                 // (A) process-definition.json 이면 프론트 createBpmnXml 로 .bpmn 파생 → 같은 그룹에 추가(뷰어 표시용).
@@ -6176,6 +6229,17 @@ export default {
             if (arr.length === 0) return;
             if (!this.workspaceSaveStateByGroup[group]) {
                 this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' };
+            }
+            // '저장됨' 은 들고 있는 상태가 아니라 파일 내용에서 매번 도출한다. 그래야 새로고침으로
+            // 컴포넌트 상태가 초기화돼도(bootstrapRoom 이 매번 비운다) 이미 저장한 산출물이
+            // 다시 '저장' 활성 상태로 되돌아가지 않는다.
+            const st = this.workspaceSaveStateByGroup[group];
+            if (!st.saving) {
+                const saved = this._isWorkspaceGroupSaved(arr);
+                if (saved !== st.saved) {
+                    st.saved = saved;
+                    if (saved) st.error = '';
+                }
             }
             const roomKey = (this.currentChatRoom?.id || this.roomId || 'room').toString();
             this.pushArtifactPanel({
@@ -6390,7 +6454,10 @@ export default {
                     json: (pdEntry.content || '').toString(),
                     jsonPath: pdEntry.path,
                     op: 'create',
-                    status: 'done'
+                    status: 'done',
+                    // 에이전트 산출물이 아니라 process-definition.json 에서 매번 다시 파생시키는
+                    // 표시용 항목 — 저장 여부 판정 대상이 아니다(_isWorkspaceGroupSaved).
+                    derived: true
                 };
             } catch (e) {
                 return null;
@@ -7007,6 +7074,7 @@ export default {
                             st.error = `스킬 저장 실패: ${uploadErrors[0] || '업로드된 스킬이 없습니다.'}`;
                             return;
                         }
+                        this._markWorkspaceFilesSaved(list);
                         st.saved = true;
                         st.saving = false;
                         if (uploadErrors.length) st.error = uploadErrors.join(' / ');
@@ -7157,6 +7225,7 @@ export default {
                     console.warn('[SaveWS] proc_map 등록 실패(무시):', pmErr);
                 }
 
+                this._markWorkspaceFilesSaved(list);
                 st.saved = true;
                 st.saving = false;
 
