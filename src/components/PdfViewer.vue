@@ -6,7 +6,7 @@
                 <v-btn icon size="x-small" variant="text" title="새 탭에서 열기" @click="openNewTab">
                     <v-icon size="15">mdi-open-in-new</v-icon>
                 </v-btn>
-                <v-btn icon size="x-small" variant="text" title="다운로드(PDF)" @click="download">
+                <v-btn icon size="x-small" variant="text" :title="downloadTitle" @click="download">
                     <v-icon size="15">mdi-download</v-icon>
                 </v-btn>
             </div>
@@ -21,7 +21,10 @@ export default {
     name: 'PdfViewer',
     props: {
         fileUrl: { type: String, default: '' },
-        fileName: { type: String, default: 'document.pdf' }
+        fileName: { type: String, default: 'document.pdf' },
+        downloadUrl: { type: String, default: '' },
+        downloadFileName: { type: String, default: '' },
+        downloadTitle: { type: String, default: '다운로드(PDF)' }
     },
     emits: ['close'],
     methods: {
@@ -29,11 +32,12 @@ export default {
             if (this.fileUrl) window.open(this.fileUrl, '_blank', 'noopener');
         },
         download() {
-            if (!this.fileUrl) return;
+            const url = this.downloadUrl || this.fileUrl;
+            if (!url) return;
             const a = document.createElement('a');
-            a.href = this.fileUrl;
-            const base = this.fileName || 'document';
-            a.download = /\.pdf$/i.test(base) ? base : `${base}.pdf`;
+            a.href = url;
+            const base = this.downloadFileName || this.fileName || 'document.pdf';
+            a.download = base;
             // 크로스 오리진이면 download 속성이 무시될 수 있어 새 탭 fallback 도 허용
             a.target = '_blank';
             a.rel = 'noopener';

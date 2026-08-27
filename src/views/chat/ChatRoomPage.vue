@@ -5407,7 +5407,9 @@ export default {
                     kind: p.kind.toString(),
                     url: (p.url || '').toString(),
                     content: (p.content || '').toString(),
-                    images: Array.isArray(p.images) ? p.images : []
+                    images: Array.isArray(p.images) ? p.images : [],
+                    fileName: (p.file_name || p.fileName || '').toString(),
+                    pageCount: Number(p.page_count || p.pageCount || 0) || 0
                 };
             }
             // ↓ 구 payload / DB 에 이미 저장된 메시지 호환. 신규 산출물은 위에서 끝난다.
@@ -5480,6 +5482,9 @@ export default {
                 const data = {
                     fileUrl: art.fileUrl,
                     fileName: label,
+                    previewUrl: art.preview.kind === 'pdf' ? art.preview.url : '',
+                    previewFileName: art.preview.kind === 'pdf' ? art.preview.fileName : '',
+                    previewPageCount: art.preview.kind === 'pdf' ? art.preview.pageCount : 0,
                     htmlUrl: art.preview.kind === 'html' ? art.preview.url : '',
                     markdownContent: art.preview.kind === 'markdown' ? art.preview.content : '',
                     slideMarkdown: art.preview.kind === 'inline' ? art.preview.content : '',
@@ -5601,6 +5606,16 @@ export default {
                 // 다운로드만 복원되고 패널이 안 열렸으면(프리뷰 없는 산출물) 계속 위로 훑는다.
                 this.renderArtifact(this.artifactFromMessage(msg), i);
                 if (this.hasArtifactPanel) return;
+                if (msg.role === 'assistant' || msg.role === 'agent') {
+                    const storedFiles = [
+                        ...(Array.isArray(msg.pdfFiles) ? msg.pdfFiles : []),
+                        ...(msg.pdfFile ? [msg.pdfFile] : [])
+                    ];
+                    for (let fileIndex = storedFiles.length - 1; fileIndex >= 0; fileIndex -= 1) {
+                        this.renderArtifact(storedFiles[fileIndex], i);
+                        if (this.hasArtifactPanel) return;
+                    }
+                }
                 const urlFromText = this.extractHwpxHtmlUrlFromText(msg?.content);
                 if (urlFromText) {
                     this.renderArtifact({ artifact_type: 'hwpx', preview: { kind: 'html', url: urlFromText } }, i);
@@ -6879,7 +6894,11 @@ export default {
                             for (const f of _files) {
                                 const url = f?.url || f?.fileUrl || '';
                                 if (!url) continue;
-                                this.attachMessageDownload(idx, url, f?.name || f?.fileName || '', f?.contentType || '');
+                                if (!this.renderArtifact(f, idx)) {
+                                    this.attachMessageDownload(
+                                        idx, url, f?.name || f?.fileName || '', f?.contentType || ''
+                                    );
+                                }
                             }
 
                             // NOTE: 이전에는 0.5초 후 optimistic 메시지를 강제 splice 했지만,

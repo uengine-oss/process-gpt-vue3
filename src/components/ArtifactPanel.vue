@@ -57,6 +57,17 @@
                         @download="emitPanelAction(panel, 'download', $event)"
                         @page-edit-request="emitPanelAction(panel, 'page-edit-request', $event)"
                     />
+                    <!-- DOCX는 서버의 최종 시각 검수를 통과한 PDF 렌더를 표시한다. -->
+                    <PdfViewer
+                        v-else-if="panel.type === 'docx' && panel.data.previewUrl"
+                        :ref="(el) => setPanelRef(panel.id, el)"
+                        :fileUrl="panel.data.previewUrl"
+                        :fileName="panel.data.fileName || panel.label"
+                        :downloadUrl="panel.data.fileUrl"
+                        :downloadFileName="panel.data.fileName || panel.label"
+                        downloadTitle="원본 DOCX 다운로드"
+                        @close="$emit('close-panel', panel.id)"
+                    />
                     <!-- DOCX·XLSX 문서 미리보기 — 서버가 만든 HTML 을 같은 뷰어로 띄운다.
                          (엑셀은 시트별 표로 렌더되며 수식 칸은 계산값과 수식을 함께 보여준다.) -->
                     <HwpxViewer
