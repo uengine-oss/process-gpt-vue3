@@ -274,6 +274,7 @@ export default {
     name: 'HwpxViewer',
     props: {
         htmlUrl: { type: String, default: '' },
+        htmlContent: { type: String, default: '' },
         readOnly: { type: Boolean, default: false }
     },
     data() {
@@ -355,35 +356,54 @@ export default {
         htmlUrl: {
             immediate: true,
             handler() {
-                if (!this.htmlUrl) {
-                    this.isLoading = false;
-                    this.hasError = false;
-                    this.bodyHtml = '';
-                    this.styleText = '';
-                    this.removeStyleTag();
-                    this.isEditing = false;
-                    if (this.loadTimer) clearTimeout(this.loadTimer);
-                    this.loadTimer = null;
-                    return;
-                }
-                this.isLoading = true;
+                this.loadHtmlPreview();
+            }
+        },
+        htmlContent() {
+            this.loadHtmlPreview();
+        }
+    },
+    methods: {
+        loadHtmlPreview() {
+            if (this.htmlContent) {
+                if (this.loadTimer) clearTimeout(this.loadTimer);
+                this.loadTimer = null;
+                const parsed = this.parseHtml(this.htmlContent);
+                this.bodyHtml = parsed.bodyHtml;
+                this.originalHtml = parsed.bodyHtml;
+                this.styleText = parsed.styleText;
+                this.injectStyleTag(parsed.styleText);
+                this.isLoading = false;
+                this.hasError = false;
+                this.isEditing = false;
+                return;
+            }
+            if (!this.htmlUrl) {
+                this.isLoading = false;
                 this.hasError = false;
                 this.bodyHtml = '';
                 this.styleText = '';
                 this.removeStyleTag();
                 this.isEditing = false;
                 if (this.loadTimer) clearTimeout(this.loadTimer);
-                this.loadTimer = setTimeout(() => {
-                    if (this.isLoading) {
-                        this.isLoading = false;
-                        this.hasError = true;
-                    }
-                }, 12000);
-                this.fetchHtml(this.htmlUrl);
+                this.loadTimer = null;
+                return;
             }
-        }
-    },
-    methods: {
+            this.isLoading = true;
+            this.hasError = false;
+            this.bodyHtml = '';
+            this.styleText = '';
+            this.removeStyleTag();
+            this.isEditing = false;
+            if (this.loadTimer) clearTimeout(this.loadTimer);
+            this.loadTimer = setTimeout(() => {
+                if (this.isLoading) {
+                    this.isLoading = false;
+                    this.hasError = true;
+                }
+            }, 12000);
+            this.fetchHtml(this.htmlUrl);
+        },
         async fetchHtml(url) {
             try {
                 const response = await fetch(url);

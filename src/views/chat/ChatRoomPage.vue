@@ -4783,17 +4783,21 @@ export default {
                 out.push({
                     id: fid,
                     source_type: 'upload',
-                    file_name: (f.fileName || f.name || '').toString(),
-                    mime_type: (f.fileType || f.type || '').toString(),
+                    file_name: (f.fileName || f.file_name || f.name || '').toString(),
+                    mime_type: (f.fileType || f.content_type || f.type || '').toString(),
                     folder_path: '',
-                    doc_role: 'content'
+                    doc_role: 'content',
+                    derived_from: (f.derived_from || f.derivedFrom || '').toString(),
+                    doc_version: Number(f.doc_version || f.docVersion || 0) || 0,
+                    sha256: (f.sha256 || '').toString()
                 });
             };
             try {
                 for (const m of this.messages || []) {
-                    if (!m || m.role !== 'user') continue;
+                    if (!m) continue;
                     if (m.pdfFile) add(m.pdfFile);
                     if (Array.isArray(m.pdfFiles)) m.pdfFiles.forEach(add);
+                    if (m.artifact) add(m.artifact);
                 }
             } catch (e) {
                 // 수집 실패해도 nominal flow 유지
@@ -4860,6 +4864,7 @@ export default {
                         pushSessionFile({
                             fileName: m.artifact.file_name,
                             fileUrl: m.artifact.file_url,
+                            file_id: m.artifact.file_id || '',
                             fileType: m.artifact.content_type || '',
                             derived_from: m.artifact.derived_from || '',
                             doc_version: m.artifact.doc_version || 0,
@@ -5007,6 +5012,8 @@ export default {
         /** 활동 패널에 한 항목 추가/갱신. status 변경에도 사용. */
         recordActivity(entry) {
             if (!entry) return;
+            const toolName = (entry.tool || entry.name || '').toString();
+            if (toolName && !this.isUserVisibleActivityTool(toolName)) return;
             const id = (entry.id || `${entry.tool || 'tool'}-${this._activityOrder}`).toString();
             const prev = this.plannedActivityById[id] || null;
             const merged = {
@@ -5033,7 +5040,7 @@ export default {
                     for (let i = 0; i < tcs.length; i++) {
                         const tc = tcs[i] || {};
                         const name = (tc.name || tc.tool || '').toString();
-                        if (!name) continue;
+                        if (!name || !this.isUserVisibleActivityTool(name)) continue;
                         const input = tc.input ?? null;
                         const subagentType =
                             name === 'task' ? (input?.subagent_type || input?.subagentType || '').toString() : '';
@@ -5053,6 +5060,14 @@ export default {
             } catch (e) {
                 // 활동 패널 재구성 실패는 화면 흐름을 막지 않음
             }
+        },
+
+        /** 제품 도구명만 활동 UI에 표시한다. 셸 명령/경로는 서버 trace 전용이다. */
+        isUserVisibleActivityTool(name) {
+            const value = (name || '').toString().trim();
+            if (!value) return false;
+            if (value === 'commandExecution' || value === 'fileChange') return false;
+            return /^[A-Za-z_][A-Za-z0-9_.:-]{0,127}$/.test(value);
         },
 
         /** 우측 사이드바에 Tools 정보 패널(숨김 타입) 생성/갱신 */
@@ -5375,6 +5390,8 @@ export default {
             const contentType = (raw.content_type || raw.contentType || '').toString();
             const derivedFrom = (raw.derived_from || raw.derivedFrom || '').toString();
             const docVersion = Number(raw.doc_version || raw.docVersion || 0) || 0;
+            const fileId = (raw.file_id || raw.fileId || '').toString();
+            const sha256 = (raw.sha256 || '').toString();
             const kind = this.artifactKind(raw, fileName, contentType);
             if (!kind) return null;
             const preview = this.normalizeArtifactPreview(raw, kind, fileUrl);
@@ -5382,7 +5399,7 @@ export default {
             const extras = (Array.isArray(raw.extras) ? raw.extras : [])
                 .map((e) => this.normalizeArtifact(e))
                 .filter(Boolean);
-            return { kind, fileName, contentType, fileUrl, preview, extras, derivedFrom, docVersion };
+            return { kind, fileName, contentType, fileUrl, preview, extras, derivedFrom, docVersion, fileId, sha256 };
         },
 
         /** ``artifact_type`` 이 정본. 없는 구 payload 만 content_type/확장자로 추정한다. */
@@ -5419,8 +5436,10 @@ export default {
                 const md = (raw.markdown || '').toString();
                 if (md || fileUrl) return { kind: 'markdown', url: fileUrl, content: md, images: [] };
             }
-            // pdf/csv 는 뷰어가 파일을 직접 연다 — 별도 프리뷰 산출물이 필요 없다.
-            if ((kind === 'pdf' || kind === 'csv') && fileUrl) {
+            // pdf/csv/xlsx/hwpx는 뷰어가 원본 파일을 직접 연다 — 별도 프리뷰 산출물이 필요 없다.
+            // (hwpx 는 HwpxNativeViewer 가 rhwp 로 원본을 그린다. 서버 HTML 프리뷰가 필수이던
+            //  시절엔 이 목록에 없어서, 프리뷰를 안 붙이는 백엔드의 hwpx 는 패널이 안 열렸다.)
+            if ((kind === 'pdf' || kind === 'csv' || kind === 'xlsx' || kind === 'hwpx') && fileUrl) {
                 return { kind: 'file', url: '', content: '', images: [] };
             }
             return null;
@@ -5475,7 +5494,7 @@ export default {
 
             // ① 다운로드 — 프리뷰 유무와 무관 (규칙 1)
             if (art.fileUrl) {
-                this.attachMessageDownload(msgIdx, art.fileUrl, label, art.contentType);
+                this.attachMessageDownload(msgIdx, art.fileUrl, label, art.contentType, art);
             }
             // ② 패널 — 프리뷰가 있을 때만 (규칙 2)
             if (art.preview) {
@@ -5486,6 +5505,7 @@ export default {
                     previewFileName: art.preview.kind === 'pdf' ? art.preview.fileName : '',
                     previewPageCount: art.preview.kind === 'pdf' ? art.preview.pageCount : 0,
                     htmlUrl: art.preview.kind === 'html' ? art.preview.url : '',
+                    htmlContent: art.preview.kind === 'html' ? art.preview.content : '',
                     markdownContent: art.preview.kind === 'markdown' ? art.preview.content : '',
                     slideMarkdown: art.preview.kind === 'inline' ? art.preview.content : '',
                     imageUrls: art.preview.images,
@@ -5510,6 +5530,8 @@ export default {
             msg.artifact = {
                 artifact_type: art.kind,
                 file_name: label,
+                file_id: art.fileId || '',
+                sha256: art.sha256 || '',
                 // 계보 — 다음 턴이 "이 문서의 최신판" 을 찾는 근거 (백엔드 room_files 로 흐른다).
                 derived_from: art.derivedFrom || '',
                 doc_version: art.docVersion || 0,
@@ -5544,16 +5566,30 @@ export default {
          * UI 가 그 데이터에 바인딩해 렌더한다. 모델이 답변 텍스트에 베껴 쓴 URL(긴 uuid 를
          * 망가뜨리기 쉬움)에 절대 의존하지 않는다.
          */
-        attachMessageDownload(msgIdx, fileUrl, fileName, contentType) {
+        attachMessageDownload(msgIdx, fileUrl, fileName, contentType, metadata = {}) {
             const url = (fileUrl || '').toString();
             if (!url) return;
             const msg = this.messages?.[msgIdx];
             if (!msg) return;
             const list = Array.isArray(msg.pdfFiles) ? msg.pdfFiles : [];
-            if (list.some((f) => (f?.url || f?.fileUrl) === url)) return; // 중복 방지
+            const existing = list.find((f) => (f?.url || f?.fileUrl) === url);
+            const lineage = {
+                file_id: (metadata.file_id || metadata.fileId || '').toString(),
+                sha256: (metadata.sha256 || '').toString(),
+                derived_from: (metadata.derived_from || metadata.derivedFrom || '').toString(),
+                doc_version: Number(metadata.doc_version || metadata.docVersion || 0) || 0,
+                turn_id: (metadata.turn_id || metadata.turnId || '').toString()
+            };
+            if (existing) {
+                Object.assign(existing, Object.fromEntries(Object.entries(lineage).filter(([, value]) => value)));
+                return;
+            }
             msg.pdfFiles = [
                 ...list,
-                { url, fileUrl: url, name: fileName || '', fileName: fileName || '', contentType: contentType || '' }
+                {
+                    url, fileUrl: url, name: fileName || '', fileName: fileName || '',
+                    contentType: contentType || '', ...lineage
+                }
             ];
         },
 
@@ -5606,6 +5642,8 @@ export default {
                 // 다운로드만 복원되고 패널이 안 열렸으면(프리뷰 없는 산출물) 계속 위로 훑는다.
                 this.renderArtifact(this.artifactFromMessage(msg), i);
                 if (this.hasArtifactPanel) return;
+                // Codex 서버가 먼저 저장한 응답은 범용 다운로드 계약(pdfFiles)만 가진다.
+                // assistant 산출물만 다시 아티팩트로 승격해 새로고침/재진입에서도 뷰어를 복원한다.
                 if (msg.role === 'assistant' || msg.role === 'agent') {
                     const storedFiles = [
                         ...(Array.isArray(msg.pdfFiles) ? msg.pdfFiles : []),
@@ -6526,7 +6564,7 @@ export default {
                             const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                             if (idx === -1) return;
                             const name = (tool?.name || tool || '').toString();
-                            if (!name) return;
+                            if (!name || !this.isUserVisibleActivityTool(name)) return;
                             const cur = this.messages[idx];
                             const toolCalls = Array.isArray(cur.toolCalls) ? cur.toolCalls : [];
                             // 중복 방지
@@ -6603,6 +6641,10 @@ export default {
                     },
                     onToolEnd: (output, rawEvent) => {
                         try {
+                            const eventToolName = (
+                                rawEvent?.tool || rawEvent?.tool_name || rawEvent?.name || ''
+                            ).toString();
+                            if (eventToolName && !this.isUserVisibleActivityTool(eventToolName)) return;
                             const idx = this.messages.findIndex((m) => m?.uuid === assistantUuid);
                             if (idx === -1) return;
                             const cur = this.messages[idx];
@@ -6894,10 +6936,10 @@ export default {
                             for (const f of _files) {
                                 const url = f?.url || f?.fileUrl || '';
                                 if (!url) continue;
+                                // XLSX/PDF/CSV 등 알려진 산출물은 다운로드와 아티팩트 패널을 함께 연다.
+                                // 알 수 없는 파일 형식만 범용 다운로드 첨부로 폴백한다.
                                 if (!this.renderArtifact(f, idx)) {
-                                    this.attachMessageDownload(
-                                        idx, url, f?.name || f?.fileName || '', f?.contentType || ''
-                                    );
+                                    this.attachMessageDownload(idx, url, f?.name || f?.fileName || '', f?.contentType || '', f);
                                 }
                             }
 
@@ -8723,6 +8765,11 @@ export default {
         normalizeAssistantMessageForDisplay(message) {
             if (!message || typeof message !== 'object') return message;
             this.hydrateMessageOpenUiFromDb(message);
+            if (Array.isArray(message.toolCalls)) {
+                message.toolCalls = message.toolCalls.filter((tc) =>
+                    this.isUserVisibleActivityTool((tc?.name || tc?.tool || '').toString())
+                );
+            }
             const role = (message.role || '').toString();
             const content = message.content;
             if (role !== 'assistant' || typeof content !== 'string') return message;
