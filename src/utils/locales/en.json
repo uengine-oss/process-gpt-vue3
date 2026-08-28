@@ -3738,6 +3738,8 @@
     "SkillGitHistory": {
         "title": "History · Review",
         "noRepoTitle": "No Git repository",
+        "loadFailedTitle": "Could not load the change history",
+        "retry": "Retry",
         "noRepoDesc": "Create a repository to manage change history and pull requests.",
         "createRepo": "Create repository",
         "commitsTab": "History",
@@ -4091,6 +4093,7 @@
         "prSuccessTitle": "PR Created",
         "prSuccessMessage": "Pull Request has been successfully created.",
         "prSuccessHint": "Changes will be applied to the agent after review and merge.",
+        "prRecordFailed": "The merge request could not be recorded in the list. The PR was created — check it with the link above.",
         "prSuccessOpen": "Open PR",
         "notOwnerNotice": "You are not the owner of this skill. Only PR creation is available.",
         "notOwnerFeatureBranchNotice": "You are not the owner of this skill. You can commit directly to this branch or create a new branch with a PR.",

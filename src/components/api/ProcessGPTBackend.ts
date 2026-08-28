@@ -9,6 +9,22 @@ const DONE_WORKITEM_LOOKUP_TTL_MS = 2000;
 const DONE_WORKITEM_LOOKUP_CACHE = new Map<string, { at: number; promise: Promise<any[]> }>();
 
 /**
+ * deepagentsApi 는 Error 가 아니라 **응답 본문**(객체 또는 문자열)으로 reject 한다.
+ * 그대로 화면에 쓰면 "[object Object]" 만 남아 사용자도 개발자도 원인을 알 수 없다.
+ */
+function describeApiError(error: any): string {
+    if (!error) return 'unknown error';
+    if (typeof error === 'string') return error;
+    return (
+        error.error ||
+        error.detail ||
+        error.message ||
+        error.response?.data?.error ||
+        JSON.stringify(error).slice(0, 300)
+    );
+}
+
+/**
  * 목록/드롭다운 화면에서 proc_def 를 읽을 때 쓰는 컬럼 목록.
  *
  * proc_def 에는 definition(JSONB)과 bpmn(XML 원문)이 함께 들어 있어 행당 평균 17KB 를 넘는다.
@@ -8780,7 +8796,12 @@ class ProcessGPTBackend implements Backend {
         return this.putSkillFile(skillName, filePath, content, commitMessage, branchName);
     }
 
-    async getSkillBranches(skillName: string): Promise<{ branches: { name: string; sha: string }[]; default_branch: string }> {
+    /**
+     * 스킬 레포의 브랜치 목록. 조회 자체가 실패하면 `error` 에 사유를 담아 돌려준다 —
+     * 실패를 빈 목록으로만 알리면 호출부가 "레포가 없다"로 오해해, 이미 있는 레포를
+     * 다시 만들라고 권하거나 병합 요청 목록을 통째로 감추게 된다.
+     */
+    async getSkillBranches(skillName: string): Promise<{ branches: { name: string; sha: string }[]; default_branch: string; error?: string }> {
         try {
             const params = new URLSearchParams();
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
@@ -8792,10 +8813,10 @@ class ProcessGPTBackend implements Backend {
                     default_branch: response.data.default_branch || 'main'
                 };
             }
-            return { branches: [], default_branch: 'main' };
-        } catch (error) {
+            return { branches: [], default_branch: 'main', error: `HTTP ${response.status}` };
+        } catch (error: any) {
             console.error('스킬 브랜치 목록 조회 실패:', error);
-            return { branches: [], default_branch: 'main' };
+            return { branches: [], default_branch: 'main', error: describeApiError(error) };
         }
     }
 
@@ -9000,6 +9021,10 @@ class ProcessGPTBackend implements Backend {
             gitPrNumber?: number;
             gitPrUrl?: string;
             gitRepoUrl?: string;
+            // 깃에만 있던 PR 을 목록에 복구할 때, 실제 생성 시각을 그대로 남긴다.
+            // 생략하면 DB 기본값(now())이 들어가 "방금 올라온 요청"처럼 보인다.
+            createdAt?: string;
+            updatedAt?: string;
         }
     ): Promise<any> {
         const tenantId = window.$tenantName;
@@ -9018,7 +9043,9 @@ class ProcessGPTBackend implements Backend {
             requester_name: data.requesterName || null,
             git_pr_number: data.gitPrNumber ?? null,
             git_pr_url: data.gitPrUrl ?? null,
-            git_repo_url: data.gitRepoUrl ?? null
+            git_repo_url: data.gitRepoUrl ?? null,
+            ...(data.createdAt ? { created_at: data.createdAt } : {}),
+            ...(data.updatedAt ? { updated_at: data.updatedAt } : {})
         };
         await storage.putObject('resource_pull_requests', record, { onConflict: 'id' });
 

@@ -205,6 +205,9 @@
                 <p class="text-body-1 mb-1">{{ successMessage }}</p>
                 <p class="text-body-2 text-medium-emphasis mb-4">{{ successHint }}</p>
                 <a v-if="prResultUrl" :href="prResultUrl" target="_blank" class="text-caption text-primary"> PR 보기 → </a>
+                <v-alert v-if="prRecordWarning" type="warning" density="compact" variant="tonal" class="mt-4 text-left">
+                    {{ prRecordWarning }}
+                </v-alert>
             </v-card-text>
 
             <v-card-actions class="d-flex justify-end align-center pa-4 pt-0">
@@ -236,6 +239,10 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import CommitMessageGenerator from '@/components/ai/CommitMessageGenerator';
+
+// 앱 사용자 정보를 얻지 못했을 때 쓰는 requester_id (컬럼이 uuid[] NOT NULL).
+// 서버 측 기록 경로(core/api/skills_router.py)도 같은 값을 쓴다.
+const NIL_REQUESTER_ID = '00000000-0000-0000-0000-000000000000';
 
 export default {
     name: 'SkillSaveDialog',
@@ -282,6 +289,7 @@ export default {
             prResultUrl: '',
             successMessage: '',
             successHint: '',
+            prRecordWarning: '',
             errorMsg: '',
             loading: false,
             savingLocal: false,
@@ -403,6 +411,7 @@ export default {
             this.prResultUrl = '';
             this.successMessage = '';
             this.successHint = '';
+            this.prRecordWarning = '';
             this.errorMsg = '';
             this.loading = false;
             this.isOwner = true;
@@ -617,28 +626,34 @@ export default {
             );
             this.prResultUrl = pr?.html_url || '';
 
-            // DB에 PR 워크플로우 레코드 저장
+            // 병합 요청 레코드 저장.
+            //
+            // 이 기록이 없으면 깃에는 PR 이 있는데 스킬 상세의 병합 요청 탭에서는 보이지
+            // 않는다("목록이 비어 보이는" 상태). 그래서
+            //   (1) 사용자 정보를 못 얻어도 기록 자체는 남긴다 — 예전에는 requesterId 가
+            //       없으면 저장을 통째로 건너뛰어 PR 이 목록에서 통째로 사라졌다.
+            //   (2) 실패하면 조용히 넘기지 않고 성공 화면에 그대로 알린다.
+            this.prRecordWarning = '';
             try {
-                const userInfo = await this.backend.getUserInfo();
-                const requesterId = userInfo?.uid || userInfo?.id || null;
+                const userInfo = await this.backend.getUserInfo().catch(() => null);
+                const requesterId = userInfo?.uid || userInfo?.id || localStorage.getItem('uid') || NIL_REQUESTER_ID;
                 const requesterName = localStorage.getItem('userName') || userInfo?.username || userInfo?.name || undefined;
-                if (requesterId) {
-                    const gitRepoUrl = pr?.html_url ? pr.html_url.replace(/\/pull\/\d+.*$/, '') : undefined;
-                    await this.backend.createResourcePrRecord('skill', {
-                        resourceId: this.skillName,
-                        branchName: this.prBranchName,
-                        baseBranch: this.defaultBranch,
-                        title: this.prTitle,
-                        description: this.prDescription || undefined,
-                        requesterId,
-                        requesterName,
-                        gitPrNumber: pr?.number ?? undefined,
-                        gitPrUrl: pr?.html_url ?? undefined,
-                        gitRepoUrl
-                    });
-                }
-            } catch (_) {
-                // DB 저장 실패해도 GitHub PR 생성은 성공으로 처리
+                const gitRepoUrl = pr?.html_url ? pr.html_url.replace(/\/pull\/\d+.*$/, '') : undefined;
+                await this.backend.createResourcePrRecord('skill', {
+                    resourceId: this.skillName,
+                    branchName: this.prBranchName,
+                    baseBranch: this.defaultBranch,
+                    title: this.prTitle,
+                    description: this.prDescription || undefined,
+                    requesterId,
+                    requesterName,
+                    gitPrNumber: pr?.number ?? undefined,
+                    gitPrUrl: pr?.html_url ?? undefined,
+                    gitRepoUrl
+                });
+            } catch (error) {
+                console.error('[SkillSaveDialog] 병합 요청 기록 실패:', error);
+                this.prRecordWarning = this.$t('SkillSaveDialog.prRecordFailed');
             }
 
             this.successMessage = this.$t('SkillSaveDialog.prSuccessMessage');

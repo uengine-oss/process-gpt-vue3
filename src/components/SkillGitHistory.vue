@@ -6,6 +6,16 @@
             <v-progress-circular indeterminate color="primary" size="28" />
         </div>
 
+        <!-- 조회 실패 (레포 없음과 구분해서 보여준다) -->
+        <div v-else-if="loadError" class="d-flex flex-column align-center justify-center py-10 px-6 text-center">
+            <v-icon size="44" color="grey-lighten-1" class="mb-3">mdi-alert-circle-outline</v-icon>
+            <div class="text-body-2 font-weight-medium mb-1">{{ $t('SkillGitHistory.loadFailedTitle') }}</div>
+            <div class="text-caption text-medium-emphasis mb-4">{{ loadError }}</div>
+            <v-btn color="primary" variant="flat" size="small" rounded @click="fetchBranches">
+                {{ $t('SkillGitHistory.retry') }}
+            </v-btn>
+        </div>
+
         <!-- 레포 없음 -->
         <div v-else-if="hasRepo === false" class="d-flex flex-column align-center justify-center py-10 px-6 text-center">
             <v-icon size="44" color="grey-lighten-1" class="mb-3">mdi-git</v-icon>
@@ -255,6 +265,10 @@ import BackendFactory from './api/BackendFactory';
 import SkillPrDetail from './SkillPrDetail.vue';
 import { prStatusLabel as _prStatusLabel, prAccentClass as _prAccentClass, prBadgeClass as _prBadgeClass, getInitial, getAvatarColor, shortBranch as _shortBranch, formatRelativeTime } from '@/composables/usePrUtils';
 
+// 깃에만 있고 앱에는 요청자 정보가 없는 병합 요청을 복구할 때 쓰는 requester_id.
+// (컬럼이 uuid[] NOT NULL 이라 비워 둘 수 없고, 서버 측 기록 경로도 같은 값을 쓴다.)
+const NIL_REQUESTER_ID = '00000000-0000-0000-0000-000000000000';
+
 export default {
     name: 'SkillGitHistory',
     components: { SkillPrDetail },
@@ -270,6 +284,7 @@ export default {
             currentUserName: '',
 
             hasRepo: null,
+            loadError: '',
             repoUrl: null,
             branches: [],
             defaultBranch: 'main',
@@ -381,6 +396,7 @@ export default {
             this.currentUserId = null;
             this.currentUserName = '';
             this.repoUrl = null;
+            this.loadError = '';
         },
 
         async fetchBranches() {
@@ -388,8 +404,15 @@ export default {
             this.branches = [];
             this.commits = [];
             this.hasRepo = null;
+            this.loadError = '';
             try {
                 const result = await this.backend.getSkillBranches(this.skillName);
+                if (result.error) {
+                    // 조회 실패를 "레포 없음"으로 보여주면 이미 있는 레포를 다시 만들라고
+                    // 권하게 되고, 열려 있는 병합 요청도 통째로 사라져 목록이 비어 보인다.
+                    this.loadError = result.error;
+                    return;
+                }
                 this.branches = result.branches ?? [];
                 this.defaultBranch = result.default_branch || 'main';
                 if (this.branches.length > 0) {
@@ -400,8 +423,8 @@ export default {
                 } else {
                     this.hasRepo = false;
                 }
-            } catch (_) {
-                this.hasRepo = false;
+            } catch (error) {
+                this.loadError = error?.error || error?.detail || error?.message || String(error);
             } finally {
                 this.branchesLoading = false;
             }
@@ -449,9 +472,15 @@ export default {
             this.prRecords = [];
             this.prReviewsMap = {};
             try {
-                this.prRecords = await this.backend.getResourcePrRecords('skill', this.skillName, undefined, this.repoUrl || undefined);
-                this.prRecords.forEach((pr) => this.normalizeRequesterName(pr));
-                await this.reconcilePrStatusWithGit(this.prRecords);
+                const [records, livePrs] = await Promise.all([
+                    this.backend.getResourcePrRecords('skill', this.skillName, undefined, this.repoUrl || undefined),
+                    this.fetchLivePrs()
+                ]);
+                let prRecords = Array.isArray(records) ? records : [];
+                this.reconcilePrStatusWithGit(prRecords, livePrs);
+                prRecords = await this.restoreMissingPrRecords(prRecords, livePrs);
+                prRecords.forEach((pr) => this.normalizeRequesterName(pr));
+                this.prRecords = prRecords;
                 this.openPrCount = this.prRecords.filter(pr => pr.status !== 'MERGED' && pr.status !== 'CLOSED').length;
                 await Promise.all([
                     ...this.prRecords.map(async (pr) => {
@@ -488,23 +517,83 @@ export default {
             pr.requester_name = (name || '').toString().trim();
         },
 
+        /** Git provider 가 실제로 갖고 있는 PR 목록. 조회에 실패하면 빈 배열. */
+        async fetchLivePrs() {
+            try {
+                const res = await this.backend.getSkillPullRequests(this.skillName, 'all');
+                return Array.isArray(res) ? res : res?.pull_requests || [];
+            } catch (_) {
+                return [];
+            }
+        },
+
+        /**
+         * Git 에는 열려 있는데 DB 기록이 없는 병합 요청을 복구한다.
+         *
+         * 기록(resource_pull_requests)은 PR 생성과 **별개의 호출**이라, 그 호출이 실패하면
+         * (사용자 정보 조회 실패, 네트워크, 딥에이전트의 DB 기록 실패) PR 은 깃에만 남고
+         * 병합 요청 탭은 비어 보인다. 목록을 그릴 때 실제 열린 PR 을 기준으로 빠진 기록을
+         * 만들어 두면, 이후 리뷰·병합 흐름(리뷰 저장, 상태 변경)도 그대로 동작한다 —
+         * 화면에만 끼워 넣으면 눌러도 아무것도 못 하는 반쪽짜리 항목이 된다.
+         *
+         * 작성자는 알 수 없으므로(깃 계정 ≠ 앱 사용자) requester_id 는 nil UUID 로 두고,
+         * 표시 이름만 깃 작성자로 채운다.
+         */
+        async restoreMissingPrRecords(prRecords, livePrs) {
+            const openLive = (livePrs || []).filter(
+                (pr) => pr.state !== 'closed' && !(pr.merged || pr.merged_at)
+            );
+            if (!openLive.length) return prRecords;
+
+            const knownNumbers = new Set(
+                prRecords.map((pr) => Number(pr.git_pr_number)).filter((n) => n)
+            );
+            const knownBranches = new Set(prRecords.map((pr) => pr.branch_name).filter(Boolean));
+            const missing = openLive.filter(
+                (pr) => !knownNumbers.has(Number(pr.number)) && !knownBranches.has(pr.head)
+            );
+            if (!missing.length) return prRecords;
+
+            const restored = [];
+            for (const live of missing) {
+                try {
+                    const record = await this.backend.createResourcePrRecord('skill', {
+                        resourceId: this.skillName,
+                        branchName: live.head || '',
+                        baseBranch: live.base || this.defaultBranch,
+                        title: live.title || `PR #${live.number}`,
+                        requesterId: NIL_REQUESTER_ID,
+                        requesterName: live.author || undefined,
+                        gitPrNumber: live.number,
+                        gitPrUrl: live.html_url,
+                        gitRepoUrl: this.repoUrlFromPrUrl(live.html_url),
+                        createdAt: live.created_at,
+                        updatedAt: live.updated_at
+                    });
+                    restored.push(record);
+                } catch (error) {
+                    console.warn('[SkillGitHistory] 누락된 병합 요청 기록 복구 실패:', error);
+                }
+            }
+            return restored.length ? [...prRecords, ...restored] : prRecords;
+        },
+
+        /** PR/MR URL 에서 레포 URL 만 잘라낸다. (…/pull/1, …/-/merge_requests/1) */
+        repoUrlFromPrUrl(prUrl) {
+            if (!prUrl) return undefined;
+            return prUrl.replace(/\/(pull|pulls|merge_requests)\/\d+.*$/, '').replace(/\/-$/, '');
+        },
+
         /**
          * DB 레코드의 PR 상태를 Git 의 실제 상태로 보정한다.
          * PR 을 깃에서 직접 닫거나 병합하면 DB(resource_pull_requests)에는 반영되지 않아
          * 목록이 계속 "검토 대기" 로 남는다. 그러면 변경 이력을 신뢰할 수 없으므로,
          * 목록을 그릴 때 provider 의 실제 상태로 대조해 표시를 맞춘다.
-         * 조회가 실패하면 DB 값을 그대로 쓴다(목록 자체는 계속 보여야 한다).
+         * 조회가 실패하면(livePrs 가 비어 있으면) DB 값을 그대로 쓴다.
          */
-        async reconcilePrStatusWithGit(prRecords) {
+        reconcilePrStatusWithGit(prRecords, livePrs) {
             if (!Array.isArray(prRecords) || prRecords.length === 0) return;
-            let livePrs = [];
-            try {
-                const res = await this.backend.getSkillPullRequests(this.skillName, 'all');
-                livePrs = Array.isArray(res) ? res : res?.pull_requests || [];
-            } catch (_) {
-                return;
-            }
-            if (!livePrs.length) return;
+            if (!Array.isArray(livePrs) || !livePrs.length) return;
 
             const byNumber = new Map(livePrs.map((pr) => [Number(pr.number), pr]));
             for (const record of prRecords) {
