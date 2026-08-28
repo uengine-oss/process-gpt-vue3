@@ -5,6 +5,7 @@ import SelectField from '@/components/ui/field/SelectField.vue';
 import CheckboxField from '@/components/ui/field/CheckboxField.vue';
 import RadioField from '@/components/ui/field/RadioField.vue';
 import FileField from '@/components/ui/field/FileField.vue';
+import FolderField from '@/components/ui/field/FolderField.vue';
 import LabelField from '@/components/ui/field/LabelField.vue';
 import BooleanField from '@/components/ui/field/BooleanField.vue';
 import TextareaField from '@/components/ui/field/TextareaField.vue';
@@ -91,6 +92,12 @@ export default {
                 });
             case 'file-field':
                 return this.createComponentWithRef(FileField, {
+                    vueRenderUUID: this.vueRenderUUID,
+                    tagName: tagName,
+                    ...this.parseContentToProps(this.content)
+                });
+            case 'folder-field':
+                return this.createComponentWithRef(FolderField, {
                     vueRenderUUID: this.vueRenderUUID,
                     tagName: tagName,
                     ...this.parseContentToProps(this.content)

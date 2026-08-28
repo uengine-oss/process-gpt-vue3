@@ -22,6 +22,7 @@ import SelectField from '@/components/ui/field/SelectField.vue';
 import CheckboxField from '@/components/ui/field/CheckboxField.vue';
 import RadioField from '@/components/ui/field/RadioField.vue';
 import FileField from '@/components/ui/field/FileField.vue';
+import FolderField from '@/components/ui/field/FolderField.vue';
 import LabelField from '@/components/ui/field/LabelField.vue';
 import BooleanField from '@/components/ui/field/BooleanField.vue';
 import TextareaField from '@/components/ui/field/TextareaField.vue';
@@ -139,7 +140,7 @@ export default {
                 const doc = parser.parseFromString(targetHTML, 'text/html');
 
                 const fields = doc.querySelectorAll(
-                    'text-field, select-field, checkbox-field, radio-field, file-field, boolean-field, textarea-field, user-select-field, report-field, slide-field, bpmn-uengine-field'
+                    'text-field, select-field, checkbox-field, radio-field, file-field, folder-field, boolean-field, textarea-field, user-select-field, report-field, slide-field, bpmn-uengine-field'
                 );
 
                 fields.forEach((field) => {
@@ -182,6 +183,7 @@ export default {
                 CheckboxField,
                 RadioField,
                 FileField,
+                FolderField,
                 LabelField,
                 BooleanField,
                 TextareaField,

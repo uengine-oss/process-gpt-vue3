@@ -2450,6 +2450,7 @@ class ProcessGPTBackend implements Backend {
             'checkbox-field',
             'radio-field',
             'file-field',
+            'folder-field',
             'label-field',
             'boolean-field',
             'textarea-field',

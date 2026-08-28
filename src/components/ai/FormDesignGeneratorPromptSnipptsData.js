@@ -84,6 +84,13 @@ const formDesignGeneratorPromptSnipptsData = {
         },
 
         {
+            tagName: 'folder-field',
+            tag: `<folder-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></folder-field>`,
+            purpose: 'To select knowledge base folders (used as source scope for AI tasks)',
+            limit: 'Value is stored as { folders: [<folder_path>, ...] }'
+        },
+
+        {
             tagName: 'label-field',
             tag: `<label-field label='<label_text>'></label-field>`,
             purpose: 'To provide descriptive text for components',
