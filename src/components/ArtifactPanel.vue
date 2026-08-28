@@ -57,7 +57,16 @@
                         @download="emitPanelAction(panel, 'download', $event)"
                         @page-edit-request="emitPanelAction(panel, 'page-edit-request', $event)"
                     />
-                    <!-- DOCX는 서버의 최종 시각 검수를 통과한 PDF 렌더를 표시한다. -->
+                    <!-- XLSX는 원본 통합 문서를 브라우저에서 직접 읽는다. -->
+                    <XlsxArtifactViewer
+                        v-else-if="panel.type === 'xlsx' && panel.data.fileUrl"
+                        :ref="(el) => setPanelRef(panel.id, el)"
+                        :fileUrl="panel.data.fileUrl"
+                        :fileName="panel.data.fileName || panel.label"
+                        @close="$emit('close-panel', panel.id)"
+                    />
+                    <!-- DOCX는 서버의 최종 시각 검수를 통과한 PDF 렌더를 표시한다.
+                         툴바 다운로드는 프리뷰 PDF가 아니라 원본 DOCX를 유지한다. -->
                     <PdfViewer
                         v-else-if="panel.type === 'docx' && panel.data.previewUrl"
                         :ref="(el) => setPanelRef(panel.id, el)"
@@ -68,12 +77,12 @@
                         downloadTitle="원본 DOCX 다운로드"
                         @close="$emit('close-panel', panel.id)"
                     />
-                    <!-- DOCX·XLSX 문서 미리보기 — 서버가 만든 HTML 을 같은 뷰어로 띄운다.
-                         (엑셀은 시트별 표로 렌더되며 수식 칸은 계산값과 수식을 함께 보여준다.) -->
+                    <!-- 구 DOCX/XLSX 메시지만 기존 서버 HTML 프리뷰로 폴백한다. -->
                     <HwpxViewer
                         v-else-if="panel.type === 'docx' || panel.type === 'xlsx'"
                         :ref="(el) => setPanelRef(panel.id, el)"
                         :htmlUrl="panel.data.htmlUrl"
+                        :htmlContent="panel.data.htmlContent"
                         @close="$emit('close-panel', panel.id)"
                         @download="emitPanelAction(panel, 'download', $event)"
                         @page-edit-request="emitPanelAction(panel, 'page-edit-request', $event)"
@@ -120,6 +129,7 @@
 <script>
 import HwpxViewer from '@/components/HwpxViewer.vue';
 import HwpxNativeViewer from '@/components/HwpxNativeViewer.vue';
+import XlsxArtifactViewer from '@/components/XlsxArtifactViewer.vue';
 import SlideArtifactViewer from '@/components/SlideArtifactViewer.vue';
 import MarkdownViewer from '@/components/MarkdownViewer.vue';
 import PdfViewer from '@/components/PdfViewer.vue';
@@ -141,7 +151,7 @@ const PANEL_TYPE_ICONS = {
 
 export default {
     name: 'ArtifactPanel',
-    components: { HwpxViewer, HwpxNativeViewer, SlideArtifactViewer, MarkdownViewer, PdfViewer, CsvViewer, AgentChatRoomContext },
+    components: { HwpxViewer, HwpxNativeViewer, XlsxArtifactViewer, SlideArtifactViewer, MarkdownViewer, PdfViewer, CsvViewer, AgentChatRoomContext },
     props: {
         panels: { type: Array, default: () => [] },
         activeId: { type: String, default: null }
