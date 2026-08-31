@@ -37,7 +37,7 @@ LEFT JOIN (
 WHERE pd.isdeleted=false;
 
 -- 5. KPI 뷰: 프로세스당 최신 리뷰만 집계
-CREATE  VIEW v_kpi_pipeline_summary AS
+CREATE OR REPLACE VIEW v_kpi_pipeline_summary AS
 SELECT tenant_id,
   COUNT(*) AS total_processes,
   COUNT(CASE WHEN state='draft' THEN 1 END) AS draft_count,
@@ -51,7 +51,7 @@ FROM (
 ) latest_reviews
 GROUP BY tenant_id;
 
-CREATE  VIEW v_kpi_domain_progress AS
+CREATE OR REPLACE VIEW v_kpi_domain_progress AS
 SELECT m.domain_id, m.tenant_id,
   COUNT(*) AS total_processes,
   COUNT(CASE WHEN lr.state='confirmed' THEN 1 END) AS published_count,
@@ -66,7 +66,7 @@ LEFT JOIN (
 WHERE m.deleted_at IS NULL GROUP BY m.domain_id, m.tenant_id;
 
 -- 6. 주간 배포 속도 뷰 수정 (기존 JOIN이 중복 발생 가능하므로 history 자체 tenant_id 사용)
-CREATE  VIEW v_weekly_deployment_velocity AS
+CREATE OR REPLACE VIEW v_weekly_deployment_velocity AS
 SELECT h.tenant_id, DATE_TRUNC('week', h.created_at) AS week_start, COUNT(*) AS deployments
 FROM proc_def_approval_history h
 WHERE h.action='confirm' AND h.to_state='confirmed'
