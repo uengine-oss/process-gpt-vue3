@@ -52,26 +52,18 @@
 </template>
 
 <script>
-const IO_KEYS = ['input', 'procedure', 'output'];
-
 export default {
     name: 'task-io-field',
     props: {
-        // 세부 업무 수행 절차의 Input 항목 목록 (string[] 또는 null)
-        input: Array,
-        // 세부 업무 수행 절차의 Output 항목 목록 (string[] 또는 null)
-        output: Array,
         // 세부 업무 수행 절차의 단계 목록 — 순서가 의미를 가진다 (string[] 또는 null)
         procedure: Array,
         readonly: Boolean
     },
-    emits: ['update:input', 'update:output', 'update:procedure'],
+    emits: ['update:procedure'],
     data() {
         return {
             local: {
-                input: this.normalize(this.input),
-                procedure: this.normalize(this.procedure),
-                output: this.normalize(this.output)
+                procedure: this.normalize(this.procedure)
             },
             syncing: false
         };
@@ -80,45 +72,17 @@ export default {
         sections() {
             return [
                 {
-                    key: 'input',
-                    icon: 'mdi-import',
-                    label: this.$t('taskIo.input') || 'Input',
-                    hint: this.$t('taskIo.inputHint') || '이 업무 수행에 필요한 선행 산출물·참고자료',
-                    placeholder: this.$t('taskIo.inputPlaceholder') || '예: 내부심사 계획서'
-                },
-                {
                     key: 'procedure',
                     icon: 'mdi-format-list-numbered',
                     ordered: true,
                     label: this.$t('taskIo.procedure') || '업무 수행 절차',
                     hint: this.$t('taskIo.procedureHint') || '이 업무를 수행하는 단계별 절차',
                     placeholder: this.$t('taskIo.procedurePlaceholder') || '예: 내부심사 체크리스트를 기준으로 심사 수행'
-                },
-                {
-                    key: 'output',
-                    icon: 'mdi-export',
-                    label: this.$t('taskIo.output') || 'Output',
-                    hint: this.$t('taskIo.outputHint') || '이 업무 수행 결과로 만들어지는 산출물',
-                    placeholder: this.$t('taskIo.outputPlaceholder') || '예: 내부심사 결과 보고서'
                 }
             ];
         }
     },
     watch: {
-        input: {
-            deep: true,
-            handler(newVal) {
-                if (this.syncing) return;
-                this.local.input = this.normalize(newVal);
-            }
-        },
-        output: {
-            deep: true,
-            handler(newVal) {
-                if (this.syncing) return;
-                this.local.output = this.normalize(newVal);
-            }
-        },
         procedure: {
             deep: true,
             handler(newVal) {
@@ -145,7 +109,7 @@ export default {
             this.emitChange(key);
         },
         emitChange(key) {
-            if (!IO_KEYS.includes(key)) return;
+            if (key !== 'procedure') return;
             const cleaned = this.local[key].map((v) => (v || '').toString().trim()).filter(Boolean);
             this.syncing = true;
             // 전부 비어 있으면 null을 내보내 태스크 JSON에 빈 배열이 저장되지 않게 한다. (RaciField와 동일 규칙)
@@ -178,16 +142,6 @@ export default {
     padding: 8px 12px;
     font-size: 13px;
     font-weight: 600;
-}
-
-.io-view-header--input {
-    background: var(--cds-layer-accent, rgba(0, 133, 219, 0.08));
-    color: var(--cds-link-primary, #0085db);
-}
-
-.io-view-header--output {
-    background: var(--cds-layer-accent, rgba(76, 175, 80, 0.08));
-    color: var(--cds-support-success, #2e7d32);
 }
 
 .io-view-header--procedure {

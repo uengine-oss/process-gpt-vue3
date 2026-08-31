@@ -1811,14 +1811,8 @@
     },
     "taskIo": {
         "tab": "Detailed Work Procedure",
-        "input": "Input",
-        "output": "Output",
         "procedure": "Procedure",
-        "inputHint": "Preceding deliverables and references required for this task",
-        "outputHint": "Deliverables produced by this task",
         "procedureHint": "Step-by-step procedure for performing this task",
-        "inputPlaceholder": "e.g. Internal audit plan",
-        "outputPlaceholder": "e.g. Internal audit result report",
         "procedurePlaceholder": "e.g. Conduct audit based on the internal audit checklist",
         "addItem": "Add item",
         "empty": "No items registered."
