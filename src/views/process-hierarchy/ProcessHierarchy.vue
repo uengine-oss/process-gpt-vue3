@@ -105,6 +105,7 @@
                     @partitionBlockAdded="handlePartitionBlockAdded"
                     @partitionCommitPreviewRequested="handlePartitionCommitPreviewRequested"
                     @partitionNodeFocus="handlePartitionNodeFocus"
+                    @persistBpmn="handlePersistBpmn"
                 />
             </div>
 

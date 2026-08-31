@@ -1,11 +1,11 @@
 <template>
     <div>
         <!-- Lead Time -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('lead_time')" class="mt-4">
             <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
 
-        <div class="mt-3">
+        <div v-if="isBuiltinPropVisible('custom_properties')" class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
@@ -14,7 +14,7 @@
         </div>
         <!-- (A) 룰 선택 -->
         <div class="mb-4">
-            <v-row class="ma-0 pa-0 align-center mb-2">
+            <v-row v-if="isBuiltinPropVisible('rule_list_actions')" class="ma-0 pa-0 align-center mb-2">
                 <div style="font-weight: 700">{{ $t('businessRuleTaskPanel.ruleSelectTitle') }}</div>
                 <v-spacer />
                 <v-btn variant="text" density="comfortable" :disabled="isRuleListLoading || isViewMode" @click="refreshRuleList">
@@ -27,6 +27,7 @@
             </v-row>
 
             <v-autocomplete
+                v-if="isBuiltinPropVisible('business_rule_id')"
                 v-model="selectedRuleId"
                 :items="ruleItems"
                 item-title="name"
@@ -40,12 +41,12 @@
                 @update:model-value="onRuleSelected"
             />
 
-            <div v-if="selectedRuleId && selectedRuleName" class="mt-2 text-medium-emphasis" style="font-size: 13px">
+            <div v-if="selectedRuleId && selectedRuleName && isBuiltinPropVisible('business_rule_id')" class="mt-2 text-medium-emphasis" style="font-size: 13px">
                 {{ $t('businessRuleTaskPanel.selectedRulePrefix') }} <span style="font-weight: 600">{{ selectedRuleName }}</span>
             </div>
 
             <!-- 선택된 룰의 판단 기준 미리보기(사람용, JSON/기술용어 노출 금지) -->
-            <v-card v-if="selectedRuleId || loadedRule" variant="outlined" class="mt-3 pa-3">
+            <v-card v-if="(selectedRuleId || loadedRule) && isBuiltinPropVisible('rule_preview')" variant="outlined" class="mt-3 pa-3">
                 <div class="d-flex align-center mb-2">
                     <div style="font-weight: 700">{{ $t('businessRuleTaskPanel.conditionCriteria') }}</div>
                     <v-spacer />
@@ -136,13 +137,15 @@
         </div>
 
         <!-- (B) 데이터 매핑 (기존 Task와 동일한 Mapper 버튼 UI/동작) -->
-        <v-btn block text rounded color="primary" class="my-3" :disabled="!selectedRuleId" @click="openMapperDialog">
-            {{ $t('EventSynchronizationForm.dataMapping') }}
-        </v-btn>
+        <template v-if="isBuiltinPropVisible('data_mapping')">
+            <v-btn block text rounded color="primary" class="my-3" :disabled="!selectedRuleId" @click="openMapperDialog">
+                {{ $t('EventSynchronizationForm.dataMapping') }}
+            </v-btn>
 
-        <div v-if="!selectedRuleId" class="text-medium-emphasis" style="font-size: 13px">
-            {{ $t('businessRuleTaskPanel.selectRuleFirst') }}
-        </div>
+            <div v-if="!selectedRuleId" class="text-medium-emphasis" style="font-size: 13px">
+                {{ $t('businessRuleTaskPanel.selectRuleFirst') }}
+            </div>
+        </template>
 
         <!-- Mapper dialog -->
         <v-dialog
@@ -174,9 +177,11 @@ import BackendFactory from '@/components/api/BackendFactory';
 import Mapper from '@/components/designer/mapper/Mapper.vue';
 import { parseDmnXml } from '@/utils/dmnParser';
 import DmnStructureView from '@/components/dmn/DmnStructureView.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'business-rule-task-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         Mapper,
         DmnStructureView,

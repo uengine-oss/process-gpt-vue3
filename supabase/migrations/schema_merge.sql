@@ -143,8 +143,8 @@ CREATE TABLE IF NOT EXISTS proc_def_comments (
     resolved_by TEXT,
     resolved_at TIMESTAMPTZ,
     resolve_action_text TEXT,          -- 조치 내용 (from governance_workflow)
-    reviewer_type TEXT                 -- hq/field/public (from governance_workflow)
-        CHECK (reviewer_type IS NULL OR reviewer_type IN ('hq', 'field', 'public')),
+    reviewer_type TEXT                 -- hq/field/owner/public (from governance_workflow)
+        CHECK (reviewer_type IS NULL OR reviewer_type IN ('hq', 'field', 'owner', 'public')),
     tenant_id TEXT DEFAULT 'default',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -177,6 +177,7 @@ CREATE TABLE IF NOT EXISTS proc_def_approval_state (
     version_label TEXT,                    -- e.g. "v1.2"
 
     -- 제출 정보
+    submitted_by_id TEXT,
     submitted_by TEXT,
     submitted_at TIMESTAMPTZ,
     submit_comment TEXT,
@@ -335,6 +336,24 @@ CREATE TABLE IF NOT EXISTS kpi_targets (
     UNIQUE (tenant_id, period_type, period_start)
 );
 
+-- KPI 지표 목표 (KPI 목표 - 신규): 지표명/단위/측정주기/운영정의/산출식 기반 성과지표 관리
+CREATE TABLE IF NOT EXISTS kpi_indicators (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id TEXT NOT NULL DEFAULT 'default',
+    category TEXT NOT NULL DEFAULT 'KPI'
+        CHECK (category IN ('KPI','PPI')),
+    name TEXT NOT NULL,
+    unit TEXT,
+    cycle TEXT,
+    definition TEXT,
+    formula TEXT,
+    target_value NUMERIC,
+    proc_name TEXT,
+    created_by TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ============================================
 -- Part 6: Indexes
 -- ============================================
@@ -395,6 +414,9 @@ CREATE INDEX IF NOT EXISTS idx_terminology_usage ON standard_terminology(tenant_
 
 -- kpi_targets
 CREATE INDEX IF NOT EXISTS idx_kpi_targets_tenant ON kpi_targets(tenant_id);
+
+-- kpi_indicators
+CREATE INDEX IF NOT EXISTS idx_kpi_indicators_tenant ON kpi_indicators(tenant_id);
 
 -- ============================================
 -- Part 7: Row Level Security (RLS)
@@ -466,6 +488,9 @@ CREATE POLICY "tenant_isolation" ON standard_terminology
 
 ALTER TABLE kpi_targets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "kpi_targets_all" ON kpi_targets FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE kpi_indicators ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "kpi_indicators_all" ON kpi_indicators FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================
 -- Part 8: Triggers
@@ -644,6 +669,7 @@ SELECT
     pas.major_version,
     pas.minor_version,
     -- 제출 정보
+    pas.submitted_by_id,
     pas.submitted_by,
     pas.submitted_at,
     -- 병렬 승인 (HQ)
@@ -742,6 +768,7 @@ ORDER BY week_start DESC;
 -- ============================================
 
 GRANT ALL ON kpi_targets TO authenticated;
+GRANT ALL ON kpi_indicators TO authenticated;
 GRANT ALL ON proc_def_snapshots TO authenticated;
 GRANT SELECT ON v_review_board TO authenticated;
 GRANT SELECT ON v_kpi_pipeline_summary TO authenticated;

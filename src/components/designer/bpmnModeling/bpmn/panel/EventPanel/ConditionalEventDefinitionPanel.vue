@@ -1,16 +1,18 @@
 <template>
     <div>
-        <ConditionField :value="copyUengineProperties.condition" @update:value="updateCondition" />
+        <ConditionField v-if="isBuiltinPropVisible('condition')" :value="copyUengineProperties.condition" @update:value="updateCondition" />
     </div>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
 import ConditionField from '../ConditionField.vue';
+import builtinPanelVisibilityMixin from '../builtinPanelVisibilityMixin';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'conditional-event-definition-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         ConditionField
     },
@@ -71,7 +73,11 @@ export default {
             }
         }
     },
-    computed: {},
+    computed: {
+        builtinPanelTaskTypeOverride() {
+            return 'bpmn:ConditionalEventDefinition';
+        }
+    },
     watch: {},
     methods: {
         updateCondition(condition) {

@@ -304,7 +304,10 @@ export default {
             .then(() => {
                 if (!this.diagramXML) return;
                 let xml = this.diagramXML;
-                if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
+                // <uengine:json> 요소 형식은 모드와 무관하게 json 속성 형식으로 정규화해서 import 한다 —
+                // moddle 스키마(json isAttr)가 요소 형식을 못 읽어 RACI 등 확장 데이터가 유실된다.
+                // (uengine:json 이 없는 XML 은 no-op)
+                xml = uengineJsonElementToAttr(xml);
                 return this.bpmnViewer.importXML(xml);
             })
             .catch((e) => {
@@ -396,7 +399,8 @@ export default {
                     this.onLoadStart();
                     this.diagramXML = normalizedNewVal;
                     let xml = normalizedNewVal;
-                    if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
+                    // 초기 import 와 동일하게 요소 형식(uengine:json)을 속성 형식으로 정규화 (모드 무관, no-op 안전)
+                    xml = uengineJsonElementToAttr(xml);
                     await this.bpmnViewer.importXML(xml);
                 } catch (e) {
                     console.error('[BpmnUengine] bpmn prop 변경시 import 실패:', e);

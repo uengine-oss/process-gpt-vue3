@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="inputData.length > 0" style="margin-bottom: 20px">
+        <div v-if="inputData.length > 0 && isBuiltinPropVisible('input_data')" style="margin-bottom: 20px">
             <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
@@ -21,7 +21,7 @@
                 </div>
             </v-row>
         </div>
-        <div v-if="outputData.length > 0" style="margin-bottom: 20px">
+        <div v-if="outputData.length > 0 && isBuiltinPropVisible('output_data')" style="margin-bottom: 20px">
             <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.outputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
@@ -43,10 +43,10 @@
             </v-row>
         </div>
         <div>
-            <v-row class="ma-0 pa-0 mb-2">
+            <v-row v-if="isBuiltinPropVisible('input_payload_template')" class="ma-0 pa-0 mb-2">
                 <v-text-field v-model="copyUengineProperties.inputPayloadTemplate" :label="$t('ManualTaskPanel.inputData')"></v-text-field>
             </v-row>
-            <v-row class="ma-0 pa-0">
+            <v-row v-if="isBuiltinPropVisible('data_input')" class="ma-0 pa-0">
                 <v-text-field
                     v-model="copyUengineProperties.dataInput.name"
                     :label="$t('ManualTaskPanel.resultInputVariable')"
@@ -138,7 +138,7 @@
             </v-row>
         </div> -->
         <!-- Business ID (Phase 4-2, read-only) -->
-        <div v-if="copyUengineProperties.businessId" class="mt-4">
+        <div v-if="copyUengineProperties.businessId && isBuiltinPropVisible('business_id')" class="mt-4">
             <v-text-field
                 :model-value="copyUengineProperties.businessId"
                 :label="$t('businessId.readOnly')"
@@ -150,12 +150,12 @@
             />
         </div>
         <!-- Lead Time -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('lead_time')" class="mt-4">
             <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
 
         <!-- Future Status (Phase 2-2) -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('future_status')" class="mt-4">
             <v-select
                 v-model="copyUengineProperties.futureStatus"
                 :label="$t('futureStatus.label')"
@@ -171,7 +171,7 @@
         </div>
 
         <!-- Schema-based Properties -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('schema_based_properties')" class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.schemaProperties') || '일반 속성' }}</div>
             <SchemaBasedProperties
                 task-type="bpmn:ManualTask"
@@ -181,7 +181,7 @@
             />
         </div>
 
-        <div class="mt-3">
+        <div v-if="isBuiltinPropVisible('custom_properties')" class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 정의 속성'"
@@ -190,7 +190,7 @@
         </div>
 
         <!-- Task Color Picker -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('task_color')" class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
 
             <!-- Preset Colors -->
@@ -264,10 +264,12 @@ import KeyValueField from '@/components/designer/KeyValueField.vue';
 import SchemaBasedProperties from './SchemaBasedProperties.vue';
 import LeadTimeInput from './LeadTimeInput.vue';
 import ManualLinkField from '@/components/ui/ManualLinkField.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'manual-task-panel',
+    mixins: [builtinPanelVisibilityMixin],
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
@@ -347,6 +349,10 @@ export default {
         // });
     },
     computed: {
+        builtinPanelTaskTypeOverride() {
+            // element prop이 없는 패널이므로 태스크 타입을 직접 지정한다
+            return 'bpmn:ManualTask';
+        },
         futureStatusOptions() {
             return [
                 { title: this.$t('futureStatus.maintain'), value: 'maintain' },

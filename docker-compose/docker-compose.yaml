@@ -618,7 +618,15 @@ services:
 
   db:
     container_name: supabase-db
-    image: supabase/postgres:15.8.1.060
+    # PAL 모드 온톨로지 익스플로러(Apache AGE 그래프)용 커스텀 이미지.
+    # supabase/postgres 베이스에 AGE 확장을 설치한다 (./supabase-postgres-age/Dockerfile).
+    image: process-gpt/supabase-postgres-age:${SUPABASE_POSTGRES_AGE_TAG:-15.8.1.060-pg15}
+    build:
+      context: ./supabase-postgres-age
+      args:
+        SUPABASE_POSTGRES_IMAGE: ${SUPABASE_POSTGRES_IMAGE:-supabase/postgres:15.8.1.060}
+        PG_MAJOR: ${POSTGRES_MAJOR_VERSION:-15}
+        APACHE_AGE_REF: ${APACHE_AGE_REF:-PG15/v1.6.0-rc0}
     healthcheck:
       test: pg_isready -U postgres -h localhost
       interval: 5s
@@ -651,6 +659,7 @@ services:
       - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
       - ./volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
       - ./volumes/db/init.sql:/docker-entrypoint-initdb.d/init-scripts/100-init.sql:Z
+      - ./volumes/db/age.sql:/docker-entrypoint-initdb.d/init-scripts/101-age.sql:Z
       - db-config:/etc/postgresql-custom
 
 volumes:

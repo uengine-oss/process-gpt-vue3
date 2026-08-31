@@ -1,6 +1,6 @@
 <template>
     <div class="pal-call-activity-panel">
-        <div class="mb-4">
+        <div v-if="isBuiltinPropVisible('definition_id')" class="mb-4">
             <label class="text-body-2 font-weight-medium mb-2 d-block">
                 {{ $t('CallActivityPanel.selectDefinition') || '호출할 프로세스' }}
             </label>
@@ -11,7 +11,7 @@
                 :options="{ hideDetails: true, itemTitle: 'name', itemValue: 'path', commonModuleOnly: true }"
             />
         </div>
-        <div v-if="copyUengineProperties.definitionId" class="text-caption text-medium-emphasis">
+        <div v-if="copyUengineProperties.definitionId && isBuiltinPropVisible('definition_id')" class="text-caption text-medium-emphasis">
             {{ $t('CallActivityPanel.noDefinitionSelected') ? '' : '선택된 프로세스가 호출됩니다.' }}
         </div>
     </div>
@@ -19,9 +19,11 @@
 
 <script>
 import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'pal-call-activity-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         ProcessDefinitionDisplay
     },

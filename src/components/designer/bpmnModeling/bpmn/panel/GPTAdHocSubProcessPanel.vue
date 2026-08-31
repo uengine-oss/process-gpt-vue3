@@ -2,16 +2,17 @@
     <div>
         <v-tabs v-model="activeTab" class="pl-4 pr-4">
             <v-tab value="setting">{{ $t('BpmnPropertyPanel.setting') }}</v-tab>
-            <v-tab value="edit">{{ $t('BpmnPropertyPanel.edit') }}</v-tab>
-            <v-tab value="preview">{{ $t('BpmnPropertyPanel.preview') }}</v-tab>
+            <v-tab v-if="isBuiltinPropVisible('form_edit')" value="edit">{{ $t('BpmnPropertyPanel.edit') }}</v-tab>
+            <v-tab v-if="isBuiltinPropVisible('form_preview')" value="preview">{{ $t('BpmnPropertyPanel.preview') }}</v-tab>
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
                 <!-- Description -->
-                <Description v-model="copyUengineProperties.description" class="mb-4"></Description>
+                <Description v-if="isBuiltinPropVisible('description')" v-model="copyUengineProperties.description" class="mb-4"></Description>
 
                 <!-- Instruction -->
                 <Instruction
+                    v-if="isBuiltinPropVisible('instruction')"
                     v-model="copyUengineProperties.instruction"
                     :mention-candidates="mentionCandidates"
                     :isViewMode="isViewMode"
@@ -19,10 +20,10 @@
                 ></Instruction>
             </v-window-item>
 
-            <v-window-item value="edit">
+            <v-window-item v-if="isBuiltinPropVisible('form_edit')" value="edit">
                 <FormDefinition ref="formDefinitionEdit" type="edit" :formId="formId" v-model="tempFormHtml" />
             </v-window-item>
-            <v-window-item value="preview">
+            <v-window-item v-if="isBuiltinPropVisible('form_preview')" value="preview">
                 <FormDefinition ref="formDefinitionPreview" type="preview" :formId="formId" v-model="tempFormHtml" />
             </v-window-item>
         </v-window>
@@ -34,12 +35,14 @@ import { useBpmnStore } from '@/stores/bpmn';
 import Description from '@/components/designer/DescriptionField.vue';
 import Instruction from '@/components/designer/InstructionField.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
 
 export default {
     name: 'gpt-ad-hoc-sub-process-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         Description,
         Instruction,

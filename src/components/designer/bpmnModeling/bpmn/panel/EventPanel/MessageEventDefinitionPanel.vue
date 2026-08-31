@@ -3,7 +3,7 @@
         <div style="height: 100%" v-if="element.$type === 'bpmn:IntermediateThrowEvent'">
             <div class="mb-2 mt-4">
                 <v-row class="ma-0 pa-0 align-center">
-                    <v-col cols="3" class="pa-0 pr-2">
+                    <v-col cols="3" class="pa-0 pr-2" v-if="isBuiltinPropVisible('method')">
                         <v-autocomplete
                             :label="$t('BpmnPropertyPanel.methodTypeUrl')"
                             :items="methodList"
@@ -13,7 +13,7 @@
                             v-model="copyUengineProperties.method"
                         ></v-autocomplete>
                     </v-col>
-                    <v-col class="pa-0">
+                    <v-col class="pa-0" v-if="isBuiltinPropVisible('uri_template')">
                         <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                     </v-col>
                     <DetailComponent
@@ -25,7 +25,7 @@
                     />
                 </v-row>
             </div>
-            <div style="height: 70%">
+            <div style="height: 70%" v-if="isBuiltinPropVisible('input_payload_template')">
                 <v-row class="ma-0 pa-0" style="height: 100%">
                     <vue-monaco-editor
                         v-model:value="copyUengineProperties.inputPayloadTemplate"
@@ -36,7 +36,7 @@
                     />
                 </v-row>
             </div>
-            <div>
+            <div v-if="isBuiltinPropVisible('selected_out')">
                 <v-row class="ma-0 pa-0 align-center mt-4">
                     <v-autocomplete
                         :label="$t('ScriptTaskPanel.return')"
@@ -60,7 +60,7 @@
         </div>
         <div v-else-if="this.element.$type === 'bpmn:IntermediateCatchEvent' || this.element.$type === 'bpmn:StartEvent'">
             <div>
-                <v-row class="ma-0 pa-0 align-center">
+                <v-row class="ma-0 pa-0 align-center" v-if="isBuiltinPropVisible('correlation_key')">
                     <v-text-field
                         class="mt-4"
                         :label="$t('MessageEventDefinitionPanel.correlationKey')"
@@ -75,7 +75,7 @@
                     />
                 </v-row>
 
-                <v-row class="ma-0 pa-0 align-center">
+                <v-row class="ma-0 pa-0 align-center" v-if="isBuiltinPropVisible('service_path')">
                     <v-text-field
                         class="mt-4"
                         :label="$t('MessageEventDefinitionPanel.servicePath')"
@@ -89,7 +89,7 @@
                     />
                 </v-row>
 
-                <v-row class="ma-0 pa-0 align-center">
+                <v-row class="ma-0 pa-0 align-center" v-if="isBuiltinPropVisible('operation_ref')">
                     <v-text-field
                         class="mt-4"
                         :label="$t('MessageEventDefinitionPanel.operationRef')"
@@ -111,10 +111,12 @@ import partialParse from 'partial-json-parser';
 import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import builtinPanelVisibilityMixin from '../builtinPanelVisibilityMixin';
 // import { setPropeties } from '@/components/designer/bpmnModelingf/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'message-event-definition-panel',
+    mixins: [builtinPanelVisibilityMixin],
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
@@ -199,7 +201,11 @@ export default {
             ];
         }
     },
-    computed: {},
+    computed: {
+        builtinPanelTaskTypeOverride() {
+            return 'bpmn:MessageEventDefinition';
+        }
+    },
     watch: {},
     methods: {
         ensureKeyExists(obj, key, defaultValue) {

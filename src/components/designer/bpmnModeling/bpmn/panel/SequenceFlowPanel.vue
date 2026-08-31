@@ -1,8 +1,11 @@
 <template>
     <div>
-        <div class="mb-1 mt-4">{{ $t('BpmnPropertyPanel.condition') }}</div>
+        <div class="mb-1 mt-4" v-if="isBuiltinPropVisible(mode == 'ProcessGPT' ? 'condition' : 'condition_legacy')">
+            {{ $t('BpmnPropertyPanel.condition') }}
+        </div>
         <div v-if="mode == 'ProcessGPT'">
             <TextConditionField
+                v-if="isBuiltinPropVisible('condition')"
                 :value="copyUengineProperties.condition"
                 @update:value="updateCondition"
                 :mode="copyUengineProperties.conditionMode"
@@ -11,6 +14,7 @@
                 @update:conditionFunction="updateConditionFunction"
             />
             <ConditionExampleField
+                v-if="isBuiltinPropVisible('examples')"
                 :value="copyUengineProperties.examples"
                 :processDefinitionId="processDefinitionId"
                 :condition="copyUengineProperties.condition"
@@ -19,9 +23,9 @@
             />
         </div>
         <div v-else>
-            <ConditionField :value="copyUengineProperties.condition" @update:value="updateCondition" />
+            <ConditionField v-if="isBuiltinPropVisible('condition_legacy')" :value="copyUengineProperties.condition" @update:value="updateCondition" />
         </div>
-        <div v-if="mode == 'ProcessGPT'" class="mt-4 d-flex justify-end">
+        <div v-if="mode == 'ProcessGPT' && isBuiltinPropVisible('condition_rule_generator')" class="mt-4 d-flex justify-end">
             <v-btn @click="generateRule" color="primary" density="compact" rounded variant="flat">
                 <span v-if="isRuleGenerating" class="thinking-wave-text">
                     <span
@@ -114,8 +118,8 @@
         </v-dialog>
 
         <br />
-        <div class="mb-1">{{ $t('BpmnPropertyPanel.priority') }}</div>
-        <div class="mb-4">
+        <div class="mb-1" v-if="isBuiltinPropVisible('priority')">{{ $t('BpmnPropertyPanel.priority') }}</div>
+        <div class="mb-4" v-if="isBuiltinPropVisible('priority')">
             <v-text-field
                 v-model="copyUengineProperties.priority"
                 :disabled="isViewMode"
@@ -137,9 +141,11 @@ import ConditionRuleGenerator from '@/components/ai/ConditionRuleGenerator.js';
 import { extractJSONFromText, parseJsonLike } from '@/utils/parsers/jsonLikeParser';
 
 import BackendFactory from '@/components/api/BackendFactory';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'sequence-flow-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         ConditionField,
         TextConditionField,

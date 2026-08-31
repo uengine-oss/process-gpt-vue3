@@ -1052,6 +1052,15 @@ export default class StorageBaseSupabase {
                     : await window.$supabase.from('users').select('*').match(filter).maybeSingle();
                 const data = isMainDomain ? (Array.isArray(rawData) && rawData.length > 0 ? rawData[0] : null) : rawData;
 
+                if (error) {
+                    // 조회 실패(커넥션 풀 고갈 503/504, statement timeout 57014, 네트워크 오류 등)는
+                    // "유저 없음"이 아니다. 여기서 signOut 하면 멀쩡한 세션을 서버에서 죽여
+                    // 로그인 → 수십 초 뒤 자동 로그아웃 → /auth/login 무한 루프가 된다.
+                    // 세션을 유지하고 다음 isConnection() 호출의 재시도에 맡긴다.
+                    console.warn('writeUserData: users 조회 실패 — 세션은 유지합니다:', error.message || error);
+                    return;
+                }
+
                 if (data && !error) {
                     // 덮어쓰기 전의 값을 잡아둔다. 아래에서 실제로 바뀌었을 때만 이벤트를 쏘기 위함이다.
                     // 값이 없으면 사이드바가 mount 시 읽는 기본값(비관리자)과 같으므로 false 로 본다.
@@ -1122,14 +1131,16 @@ export default class StorageBaseSupabase {
                         const event = new CustomEvent('localStorageChange', { detail: { key: 'isAdmin', value: nextIsAdmin } });
                         window.dispatchEvent(event);
                     }
-                } else if (!data) {
+                } else {
+                    // 정상 응답인데 행이 없음 — 이 테넌트에 users 행이 없는 유저만 로그아웃시킨다.
                     await this.signOut();
                     throw new StorageBaseError('error in writeUserData', 'user not found', arguments);
                 }
             }
         } catch (e) {
-            await this.signOut();
-            throw new StorageBaseError('error in writeUserData', e, arguments);
+            if (e instanceof StorageBaseError) throw e; // user not found — 위에서 이미 signOut 했다
+            // 토큰 미러링·user_devices 갱신 같은 부가 작업의 실패로 세션을 죽이지 않는다.
+            console.warn('writeUserData: 부가 작업 실패 — 세션은 유지합니다:', e);
         }
     }
 

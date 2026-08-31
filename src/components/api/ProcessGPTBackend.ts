@@ -1,5 +1,6 @@
 import axios from '@/utils/axios';
 import deepagentsApi from '@/utils/deepagentsApi';
+import { recordUsageEvent } from '@/services/usageAnalytics';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 
@@ -91,13 +92,19 @@ function procDefListColumns(): string {
 }
 
 /** 없는 컬럼(42703) 때문에 실패한 것이면 선택 컬럼을 빼고 한 번만 재시도한다. */
-async function listProcDefWithFallback(options: any): Promise<any[]> {
+export async function listProcDefWithFallback(options: any): Promise<any[]> {
     try {
         const rows = await storage.list('proc_def', { ...options, key: procDefListColumns() });
         if (_procDefOptionalOk === null) _procDefOptionalOk = true;
         return rows;
     } catch (e: any) {
-        const msg = String(e?.message || '');
+        // storage.list 는 원본 PostgREST 오류를 StorageBaseError 의 cause 로 감싼다
+        // (내부 throw 를 바깥 catch 가 한 번 더 감싸 깊이가 2가 될 수 있다) —
+        // 42703 판별은 cause 체인을 끝까지 봐야 한다.
+        let msg = '';
+        for (let err: any = e, depth = 0; err && depth < 4; err = err.cause, depth++) {
+            msg += ` ${err.message || ''} ${err.code || ''}`;
+        }
         if (_procDefOptionalOk !== false && /does not exist|42703/.test(msg)) {
             console.warn('[proc_def] 선택 컬럼이 없는 스키마 — 기본 컬럼으로 재시도합니다:', msg);
             _procDefOptionalOk = false;
@@ -533,6 +540,7 @@ class ProcessGPTBackend implements Backend {
                     id: defId
                 }
             }));
+            const isNewProcDef = !procDef;
 
             if (procDef) {
                 procDef.bpmn = xml;
@@ -568,6 +576,16 @@ class ProcessGPTBackend implements Backend {
                 }
             }
             await storage.putObject('proc_def', procDef, { onConflict: 'id,tenant_id' });
+
+            void recordUsageEvent(isNewProcDef ? 'model_create' : 'model_edit', {
+                procDefId: defId,
+                metadata: {
+                    source: 'ProcessGPTBackend.putRawDefinition',
+                    name: options?.name || procDef?.name || defId,
+                    version: options?.version || null,
+                    versionTag: options?.version_tag || null
+                }
+            });
 
             if (options.version) {
                 let saveVersion = options.version;
@@ -3223,6 +3241,11 @@ class ProcessGPTBackend implements Backend {
                     filter[key] = options[key];
                 });
             }
+            // 관리자 전체 조회: 참여자 필터 제거 (테넌트 내 모든 인스턴스)
+            if ((filter as any).allParticipants) {
+                delete (filter as any).allParticipants;
+                delete (filter as any).matchArray;
+            }
             return await me.getInstanceList(filter);
         } catch (error) {
             //@ts-ignore
@@ -3545,6 +3568,50 @@ class ProcessGPTBackend implements Backend {
     async getSystem(systemId: string) {
         try {
             return {};
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // 외부 API 헬스 상태 목록 조회 (테넌트별 우선 → default → 전체 순으로 폴백)
+    async getExternalApiHealthList() {
+        try {
+            const tenantId = (window as any).$tenantName || 'default';
+            const allRows = await storage.list('external_api_health');
+            if (!Array.isArray(allRows)) {
+                return [];
+            }
+
+            const tenantRows = allRows.filter((row: any) => row.tenant_id === tenantId);
+            if (tenantRows.length > 0) {
+                return tenantRows;
+            }
+
+            const defaultRows = allRows.filter((row: any) => row.tenant_id === 'default');
+            if (defaultRows.length > 0) {
+                return defaultRows;
+            }
+
+            return allRows;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // 외부 API 수동 동기화 요청 (해당 id 행의 last_manual_sync_requested_at 갱신)
+    async requestExternalApiManualSync(id: string) {
+        try {
+            return await storage.putObject(
+                'external_api_health',
+                {
+                    id,
+                    last_manual_sync_requested_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                },
+                { onConflict: 'id' }
+            );
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -10879,6 +10946,69 @@ class ProcessGPTBackend implements Backend {
             return data;
         } catch (e) {
             console.error('[ProcessGPTBackend] upsertKpiTarget error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * KPI 지표 목표 조회 (kpi_indicators 테이블, KPI 목표 - 신규)
+     */
+    async getKpiIndicators(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const { data, error } = await supabase
+                .from('kpi_indicators')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getKpiIndicators error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * KPI 지표 목표 생성/수정 (kpi_indicators 테이블 upsert)
+     */
+    async upsertKpiIndicator(indicatorData: any): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const payload: any = {
+                ...indicatorData,
+                tenant_id: window.$tenantName,
+                updated_at: new Date().toISOString()
+            };
+            // id가 없으면 insert가 되도록 키를 제거한다.
+            if (!payload.id) delete payload.id;
+            const { data, error } = await supabase.from('kpi_indicators').upsert(payload, { onConflict: 'id' }).select().maybeSingle();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] upsertKpiIndicator error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * KPI 지표 목표 삭제 (kpi_indicators 테이블)
+     */
+    async deleteKpiIndicator(id: string): Promise<void> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const { error } = await supabase.from('kpi_indicators').delete().eq('id', id).eq('tenant_id', window.$tenantName);
+            if (error) throw error;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] deleteKpiIndicator error:', e);
             throw e;
         }
     }

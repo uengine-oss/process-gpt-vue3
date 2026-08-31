@@ -2,7 +2,7 @@
     <div>
         <v-tabs v-model="activeTab" class="pl-4 pr-4">
             <v-tab value="setting">{{ $t('BpmnPropertyPanel.setting') }}</v-tab>
-            <v-tab value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
+            <v-tab v-if="isBuiltinPropVisible('reference_info')" value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
@@ -11,6 +11,7 @@
                     <h6 class="text-caption mb-2">※ {{ $t('BpmnPropertyPanel.scriptVariable') }}</h6>
                     <v-card variant="outlined" class="pa-2" style="border-radius: 8px !important">
                         <v-textarea
+                            v-if="isBuiltinPropVisible('script')"
                             v-model="copyUengineProperties.script"
                             :disabled="isViewMode"
                             :label="language"
@@ -18,6 +19,7 @@
                         ></v-textarea>
 
                         <GenerateScriptPanel
+                            v-if="isBuiltinPropVisible('generate_script')"
                             v-model="copyUengineProperties.script"
                             :language="language"
                             :processDefinition="processDefinition"
@@ -27,6 +29,7 @@
 
                     <!-- Custom Properties -->
                     <KeyValueField
+                        v-if="isBuiltinPropVisible('custom_properties')"
                         v-model="copyUengineProperties.customProperties"
                         :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
                         :readonly="isViewMode"
@@ -34,7 +37,7 @@
                     ></KeyValueField>
 
                     <!-- Task Color Picker -->
-                    <div class="mt-4">
+                    <div v-if="isBuiltinPropVisible('task_color')" class="mt-4">
                         <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <v-btn
@@ -95,7 +98,7 @@
                     </div>
                 </div>
             </v-window-item>
-            <v-window-item value="inputData" class="pa-4">
+            <v-window-item v-if="isBuiltinPropVisible('reference_info')" value="inputData" class="pa-4">
                 <ProcessGptReferenceMapper
                     v-if="activity"
                     :inputData="activity.inputData"
@@ -118,9 +121,11 @@ import BackendFactory from '@/components/api/BackendFactory';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import ProcessGptReferenceMapper from './ProcessGptReferenceMapper.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'gpt-script-task-panel',
+    mixins: [builtinPanelVisibilityMixin],
     props: {
         uengineProperties: Object,
         processDefinitionId: String,

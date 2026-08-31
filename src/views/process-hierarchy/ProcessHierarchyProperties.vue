@@ -15,7 +15,7 @@
                         <v-icon size="18" start>mdi-tune-vertical</v-icon>
                         속성
                     </v-tab>
-                    <v-tab value="governance">
+                    <v-tab v-if="isBuiltinPropVisible('process', 'governance_tab')" value="governance">
                         <v-icon size="18" start>mdi-shield-check-outline</v-icon>
                         검토의견
                     </v-tab>
@@ -69,7 +69,7 @@
                             Task
                             <v-badge v-if="activeElement" dot color="primary" inline class="ml-1" />
                         </v-tab>
-                        <v-tab v-if="isOwner" value="pi-flag" size="small">
+                        <v-tab v-if="isOwner && isBuiltinPropVisible('process', 'pi_flag_tab')" value="pi-flag" size="small">
                             <v-icon size="14" start color="error">mdi-flag</v-icon>
                             PI Flag
                         </v-tab>
@@ -82,7 +82,7 @@
                                 <!-- Process Meta Card (담당자, 메가 메이저 표시) -->
                                 <div class="process-meta-card mb-4">
                                     <!-- 담당자 정보 -->
-                                    <div class="process-meta-row" style="flex-direction: column; align-items: stretch;">
+                                    <div v-if="isBuiltinPropVisible('process', 'owner')" class="process-meta-row" style="flex-direction: column; align-items: stretch;">
                                         <div class="d-flex align-center justify-space-between mb-1">
                                             <div class="process-meta-label" style="margin-bottom: 0;">
                                                 <v-icon size="14" class="mr-1" color="blue-grey">mdi-account-group</v-icon>
@@ -270,7 +270,7 @@
                                     </div>
 
                                     <!-- Parent Hierarchy(메가 메이저 표시) -->
-                                    <div class="process-meta-row">
+                                    <div v-if="isBuiltinPropVisible('process', 'parent_hierarchy')" class="process-meta-row">
                                         <div class="process-meta-label">
                                             <v-icon size="14" class="mr-1" color="blue-grey">mdi-file-tree</v-icon>
                                             Parent
@@ -421,26 +421,30 @@
                                         일반
                                     </div>
                                     <div v-show="isOpen('general')" class="section-body">
-                                        <label class="field-label">프로세스명</label>
-                                        <v-text-field
-                                            v-model="processForm.title"
-                                            density="compact"
-                                            variant="outlined"
-                                            hide-details
-                                            class="mb-3"
-                                            placeholder="프로세스 이름 입력"
-                                        />
-                                        <label class="field-label">설명</label>
-                                        <v-textarea
-                                            v-model="processForm.description"
-                                            density="compact"
-                                            variant="outlined"
-                                            hide-details
-                                            rows="3"
-                                            auto-grow
-                                            class="mb-3"
-                                            placeholder="프로세스에 대한 설명을 입력하세요..."
-                                        />
+                                        <template v-if="isBuiltinPropVisible('process', 'title')">
+                                            <label class="field-label">프로세스명</label>
+                                            <v-text-field
+                                                v-model="processForm.title"
+                                                density="compact"
+                                                variant="outlined"
+                                                hide-details
+                                                class="mb-3"
+                                                placeholder="프로세스 이름 입력"
+                                            />
+                                        </template>
+                                        <template v-if="isBuiltinPropVisible('process', 'description')">
+                                            <label class="field-label">설명</label>
+                                            <v-textarea
+                                                v-model="processForm.description"
+                                                density="compact"
+                                                variant="outlined"
+                                                hide-details
+                                                rows="3"
+                                                auto-grow
+                                                class="mb-3"
+                                                placeholder="프로세스에 대한 설명을 입력하세요..."
+                                            />
+                                        </template>
                                         <!-- Schema fields for Process -->
                                         <template v-for="field in processFields" :key="field.id">
                                             <div class="field-label">
@@ -584,7 +588,7 @@
                                 </div>
 
                                 <!-- 메뉴얼 링크 연결 -->
-                                <div class="section-group">
+                                <div v-if="isBuiltinPropVisible('process', 'manual_links')" class="section-group">
                                     <div class="section-title" @click="toggle('manual-link')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('manual-link') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="indigo">mdi-link-variant</v-icon>
@@ -631,7 +635,7 @@
                                 </div>
 
                                 <!-- API 연동 (작업 목록에서 집계됨, 읽기 전용) -->
-                                <div class="section-group">
+                                <div v-if="isBuiltinPropVisible('process', 'api_integrations_summary')" class="section-group">
                                     <div class="section-title" @click="toggle('proc-api')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('proc-api') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="teal">mdi-api</v-icon>
@@ -689,7 +693,7 @@
                                 </div>
 
                                 <!-- 시스템 목록 (읽기 전용, 작업 목록에서 집계됨) -->
-                                <div class="section-group">
+                                <div v-if="isBuiltinPropVisible('process', 'system_list')" class="section-group">
                                     <div class="section-title" @click="toggle('proc-system')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('proc-system') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="blue">mdi-server-network</v-icon>
@@ -733,7 +737,7 @@
                                 </div>
 
                                 <!-- 연관 과제 목록 -->
-                                <div class="section-group">
+                                <div v-if="isBuiltinPropVisible('process', 'related_project_list')" class="section-group">
                                     <div class="section-title" @click="toggle('proc-related-projects')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('proc-related-projects') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="purple">mdi-clipboard-list-outline</v-icon>
@@ -924,7 +928,7 @@
                                 </div> -->
 
                                 <!-- 프로세스 전체 소요시간 Total FTE / Duration (Read-only) -->
-                                <div class="section-group">
+                                <div v-if="isBuiltinPropVisible('process', 'total_duration')" class="section-group">
                                     <div class="section-title" @click="toggle('proc-total-fte')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('proc-total-fte') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="teal">mdi-clock-outline</v-icon>
@@ -961,7 +965,7 @@
                                 </div>
 
                                 <!-- 프로세스 전체 비용 Total Cost (Read-only) -->
-                                <div class="section-group">
+                                <div v-if="isBuiltinPropVisible('process', 'total_cost')" class="section-group">
                                     <div class="section-title" @click="toggle('proc-total-cost')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('proc-total-cost') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="orange">mdi-currency-krw</v-icon>
@@ -1018,7 +1022,7 @@
                                 </div>
 
                                 <!-- Task 개수 Task Count (Read-only) -->
-                                <div class="section-group">
+                                <div v-if="isBuiltinPropVisible('process', 'task_count')" class="section-group">
                                     <div class="section-title" @click="toggle('task-count')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('task-count') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="blue">mdi-counter</v-icon>
@@ -1153,57 +1157,65 @@
                                             </v-chip>
                                         </div>
                                         <div v-show="isOpen('relation-info')" class="section-body">
-                                            <label class="field-label">이름</label>
-                                            <v-text-field
-                                                v-model="taskForm.name"
-                                                density="compact"
-                                                variant="outlined"
-                                                hide-details
-                                                class="mb-3"
-                                                placeholder="선 이름 입력"
-                                            />
-                                            <label class="field-label">선 종류</label>
-                                            <v-select
-                                                v-model="taskForm.flowType"
-                                                :items="sequenceFlowTypeOptions"
-                                                item-title="label"
-                                                item-value="value"
-                                                density="compact"
-                                                variant="outlined"
-                                                hide-details
-                                                class="mb-3"
-                                            />
-                                            <template v-if="taskForm.flowType === 'condition'">
-                                                <label class="field-label">조건식 (conditionFunction)</label>
-                                                <v-textarea
-                                                    v-model="taskForm.conditionExpression"
+                                            <template v-if="isBuiltinPropVisible('bpmn:SequenceFlow', 'name')">
+                                                <label class="field-label">이름</label>
+                                                <v-text-field
+                                                    v-model="taskForm.name"
                                                     density="compact"
                                                     variant="outlined"
                                                     hide-details
-                                                    rows="2"
-                                                    auto-grow
                                                     class="mb-3"
-                                                    placeholder="전송망여부 == '예'"
+                                                    placeholder="선 이름 입력"
                                                 />
-                                                <v-switch
-                                                    v-model="taskForm.conditionLlmMode"
-                                                    color="primary"
+                                            </template>
+                                            <template v-if="isBuiltinPropVisible('bpmn:SequenceFlow', 'flow_type')">
+                                                <label class="field-label">선 종류</label>
+                                                <v-select
+                                                    v-model="taskForm.flowType"
+                                                    :items="sequenceFlowTypeOptions"
+                                                    item-title="label"
+                                                    item-value="value"
                                                     density="compact"
+                                                    variant="outlined"
                                                     hide-details
-                                                    class="mb-1"
-                                                    label="LLM 맥락 판단으로 평가"
+                                                    class="mb-3"
                                                 />
-                                                <div class="text-caption text-medium-emphasis mb-3">
-                                                    켜면 실행 시 조건식을 그대로 매칭하지 않고, LLM이 전체 실행 데이터를
-                                                    보고 조건 충족 여부를 판단합니다(판단 사유가 로그에 남음).
-                                                    끄면 조건식(conditionFunction)을 결정적으로 평가합니다.
-                                                </div>
+                                            </template>
+                                            <template v-if="taskForm.flowType === 'condition'">
+                                                <template v-if="isBuiltinPropVisible('bpmn:SequenceFlow', 'condition_expression')">
+                                                    <label class="field-label">조건식 (conditionFunction)</label>
+                                                    <v-textarea
+                                                        v-model="taskForm.conditionExpression"
+                                                        density="compact"
+                                                        variant="outlined"
+                                                        hide-details
+                                                        rows="2"
+                                                        auto-grow
+                                                        class="mb-3"
+                                                        placeholder="전송망여부 == '예'"
+                                                    />
+                                                </template>
+                                                <template v-if="isBuiltinPropVisible('bpmn:SequenceFlow', 'condition_llm_mode')">
+                                                    <v-switch
+                                                        v-model="taskForm.conditionLlmMode"
+                                                        color="primary"
+                                                        density="compact"
+                                                        hide-details
+                                                        class="mb-1"
+                                                        label="LLM 맥락 판단으로 평가"
+                                                    />
+                                                    <div class="text-caption text-medium-emphasis mb-3">
+                                                        켜면 실행 시 조건식을 그대로 매칭하지 않고, LLM이 전체 실행 데이터를
+                                                        보고 조건 충족 여부를 판단합니다(판단 사유가 로그에 남음).
+                                                        끄면 조건식(conditionFunction)을 결정적으로 평가합니다.
+                                                    </div>
+                                                </template>
                                             </template>
                                         </div>
                                     </div>
 
                                     <!-- Pool(Participant) 실행형 지정 — 실행 기능 허용 사용자 전용, 다중 지정 가능 -->
-                                    <div v-if="isParticipantElement && isExecUser" class="section-group">
+                                    <div v-if="isParticipantElement && isExecUser && isBuiltinPropVisible('bpmn:Participant', 'exec_pool')" class="section-group">
                                         <div class="section-title" @click="toggle('pool-exec')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('pool-exec') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="teal">mdi-play-circle-outline</v-icon>
@@ -1244,6 +1256,22 @@
                                         </div>
                                     </div>
 
+                                    <!-- Pool(Participant) PPI — 프로세스 성과지표를 프로세스 레벨 uengine:json(ppi)에 저장 -->
+                                    <div v-if="isParticipantElement && isBuiltinPropVisible('bpmn:Participant', 'ppi')" class="section-group">
+                                        <div class="section-title" @click="toggle('pool-ppi')">
+                                            <v-icon size="14" class="mr-1">{{ isOpen('pool-ppi') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                            <v-icon size="14" class="mr-1" color="orange">mdi-chart-line</v-icon>
+                                            {{ $t('ppi.title') || 'PPI (프로세스 성과지표)' }}
+                                        </div>
+                                        <div v-show="isOpen('pool-ppi')" class="section-body">
+                                            <PpiField
+                                                :model-value="taskForm.ppi"
+                                                :readonly="isViewMode"
+                                                @update:model-value="taskForm.ppi = $event"
+                                            />
+                                        </div>
+                                    </div>
+
                                     <!-- Lane 속성 (name: 조직도검색, description) -->
                                     <div v-if="isLaneElement" class="section-group">
                                         <div class="section-title" @click="toggle('lane-assignee')">
@@ -1252,16 +1280,18 @@
                                             Lane 속성
                                         </div>
                                         <div v-show="isOpen('lane-assignee')" class="section-body">
-                                            <label class="field-label">Lane 이름</label>
-                                            <v-text-field
-                                                v-model="taskForm.name"
-                                                density="compact"
-                                                variant="outlined"
-                                                hide-details
-                                                class="mb-3"
-                                                placeholder="Lane 이름 입력"
-                                            />
-                                            <div class="field-label lane-description-label mt-4">
+                                            <template v-if="isBuiltinPropVisible('bpmn:Lane', 'name')">
+                                                <label class="field-label">Lane 이름</label>
+                                                <v-text-field
+                                                    v-model="taskForm.name"
+                                                    density="compact"
+                                                    variant="outlined"
+                                                    hide-details
+                                                    class="mb-3"
+                                                    placeholder="Lane 이름 입력"
+                                                />
+                                            </template>
+                                            <div v-if="isBuiltinPropVisible('bpmn:Lane', 'description')" class="field-label lane-description-label mt-4">
                                                 <span class="field-label-left">설명</span>
                                                 <v-btn
                                                     size="x-small"
@@ -1277,6 +1307,7 @@
                                                 </v-btn>
                                             </div>
                                             <v-textarea
+                                                v-if="isBuiltinPropVisible('bpmn:Lane', 'description')"
                                                 v-model="laneDescription"
                                                 density="compact"
                                                 variant="outlined"
@@ -1290,7 +1321,7 @@
                                     </div>
 
                                     <!-- Lane 담당 지정 (원가 유형 / 담당 유형 / 담당자·조직·공급업체) -->
-                                    <div v-if="isLaneElement" class="section-group">
+                                    <div v-if="isLaneElement && isBuiltinPropVisible('bpmn:Lane', 'lane_assignment')" class="section-group">
                                         <div class="section-title" @click="toggle('lane-assignment')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('lane-assignment') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="indigo">mdi-account-multiple</v-icon>
@@ -1527,7 +1558,7 @@
                                     </div>
 
                                     <!-- CallActivity / StartEvent / EndEvent: 프로세스 정의 선택 -->
-                                    <div v-if="isProcessLinkableElement" class="section-group">
+                                    <div v-if="isProcessLinkableElement && isBuiltinPropVisible('bpmn:CallActivity', 'definition_link')" class="section-group">
                                         <div class="section-title" @click="toggle('call-activity-def')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('call-activity-def') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="deep-purple">mdi-file-tree</v-icon>
@@ -1591,7 +1622,7 @@
                                     </div>
 
                                     <!-- BusinessRuleTask: DMN 룰 설정 -->
-                                    <div v-if="isBusinessRuleElement" class="section-group">
+                                    <div v-if="isBusinessRuleElement && isBuiltinPropVisible('bpmn:BusinessRuleTask', 'dmn_rule')" class="section-group">
                                         <div class="section-title" @click="toggle('business-rule-dmn')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('business-rule-dmn') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="purple">mdi-table-cog</v-icon>
@@ -1651,38 +1682,44 @@
                                             메일 발송 설정
                                         </div>
                                         <div v-show="isOpen('send-task-mail')" class="section-body">
-                                            <label class="field-label">수신자</label>
-                                            <v-combobox
-                                                v-model="sendTaskRecipients"
-                                                :items="sendTaskUserItems"
-                                                item-title="label"
-                                                item-value="email"
-                                                :return-object="false"
-                                                :loading="sendTaskUserLoading"
-                                                density="compact" variant="outlined" hide-details
-                                                multiple chips closable-chips clearable
-                                                placeholder="이메일 직접 입력 또는 사용자 선택"
-                                                :disabled="isViewMode"
-                                                class="mb-2"
-                                                @update:modelValue="taskFormDirty = true"
-                                            ></v-combobox>
-                                            <label class="field-label">메일 제목</label>
-                                            <v-text-field
-                                                v-model="sendTaskMailTitle"
-                                                density="compact" variant="outlined" hide-details
-                                                placeholder="미입력 시 태스크 이름으로 발송"
-                                                :disabled="isViewMode"
-                                                class="mb-2"
-                                                @update:modelValue="taskFormDirty = true"
-                                            ></v-text-field>
-                                            <label class="field-label">메일 내용</label>
-                                            <v-textarea
-                                                v-model="sendTaskMailContents"
-                                                density="compact" variant="outlined" hide-details rows="3" auto-grow
-                                                :disabled="isViewMode"
-                                                class="mb-2"
-                                                @update:modelValue="taskFormDirty = true"
-                                            ></v-textarea>
+                                            <template v-if="isBuiltinPropVisible('bpmn:SendTask', 'mail_recipients')">
+                                                <label class="field-label">수신자</label>
+                                                <v-combobox
+                                                    v-model="sendTaskRecipients"
+                                                    :items="sendTaskUserItems"
+                                                    item-title="label"
+                                                    item-value="email"
+                                                    :return-object="false"
+                                                    :loading="sendTaskUserLoading"
+                                                    density="compact" variant="outlined" hide-details
+                                                    multiple chips closable-chips clearable
+                                                    placeholder="이메일 직접 입력 또는 사용자 선택"
+                                                    :disabled="isViewMode"
+                                                    class="mb-2"
+                                                    @update:modelValue="taskFormDirty = true"
+                                                ></v-combobox>
+                                            </template>
+                                            <template v-if="isBuiltinPropVisible('bpmn:SendTask', 'mail_title')">
+                                                <label class="field-label">메일 제목</label>
+                                                <v-text-field
+                                                    v-model="sendTaskMailTitle"
+                                                    density="compact" variant="outlined" hide-details
+                                                    placeholder="미입력 시 태스크 이름으로 발송"
+                                                    :disabled="isViewMode"
+                                                    class="mb-2"
+                                                    @update:modelValue="taskFormDirty = true"
+                                                ></v-text-field>
+                                            </template>
+                                            <template v-if="isBuiltinPropVisible('bpmn:SendTask', 'mail_contents')">
+                                                <label class="field-label">메일 내용</label>
+                                                <v-textarea
+                                                    v-model="sendTaskMailContents"
+                                                    density="compact" variant="outlined" hide-details rows="3" auto-grow
+                                                    :disabled="isViewMode"
+                                                    class="mb-2"
+                                                    @update:modelValue="taskFormDirty = true"
+                                                ></v-textarea>
+                                            </template>
                                             <v-alert v-if="!sendTaskRecipients.length" type="warning" density="compact" variant="tonal" class="mb-2 text-caption">
                                                 수신자 미지정 시 실행에서 메일 발송 없이 태스크만 완료됩니다.
                                             </v-alert>
@@ -1693,7 +1730,7 @@
                                     </div>
 
                                     <!-- BPMN 데이터 입출력 (DataObject/DataStore 연결) -->
-                                    <div v-if="taskDataInputs.length || taskDataOutputs.length" class="section-group">
+                                    <div v-if="(taskDataInputs.length || taskDataOutputs.length) && isBuiltinPropVisible('task', 'data_io')" class="section-group">
                                         <div class="section-title" @click="toggle('task-data-io')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-data-io') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="teal">mdi-database-import-outline</v-icon>
@@ -1738,18 +1775,22 @@
                                             일반
                                         </div>
                                         <div v-show="isOpen('task-basic')" class="section-body">
-                                            <label class="field-label">요소 ID</label>
-                                            <div class="element-id-row mb-3">
-                                                <code class="element-id-value" :title="elementDisplayId">{{ elementDisplayId }}</code>
-                                                <v-btn icon variant="text" size="x-small" @click="copyElementId">
-                                                    <v-icon size="13">mdi-content-copy</v-icon>
-                                                </v-btn>
-                                            </div>
-                                            <label class="field-label">이름</label>
-                                            <v-text-field
-                                                v-model="taskForm.name"
-                                                density="compact" variant="outlined" hide-details class="mb-3"
-                                            />
+                                            <template v-if="isBuiltinPropVisible('task', 'element_id')">
+                                                <label class="field-label">요소 ID</label>
+                                                <div class="element-id-row mb-3">
+                                                    <code class="element-id-value" :title="elementDisplayId">{{ elementDisplayId }}</code>
+                                                    <v-btn icon variant="text" size="x-small" @click="copyElementId">
+                                                        <v-icon size="13">mdi-content-copy</v-icon>
+                                                    </v-btn>
+                                                </div>
+                                            </template>
+                                            <template v-if="isBuiltinPropVisible('task', 'name')">
+                                                <label class="field-label">이름</label>
+                                                <v-text-field
+                                                    v-model="taskForm.name"
+                                                    density="compact" variant="outlined" hide-details class="mb-3"
+                                                />
+                                            </template>
                                             <!-- Schema fields for Task -->
                                             <template v-for="field in taskFields" :key="field.id">
                                                 <div class="field-label">
@@ -1879,7 +1920,7 @@
                                                 />
                                             </template>
                                             <!-- Fallback if no schema -->
-                                            <template v-if="taskFields.length === 0">
+                                            <template v-if="taskFields.length === 0 && isBuiltinPropVisible('task', 'description')">
                                                 <label class="field-label">설명</label>
                                                 <v-textarea v-model="taskForm.description" density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3" placeholder="태스크 설명 입력..." />
                                             </template>
@@ -1887,7 +1928,7 @@
                                     </div>
 
                                     <!-- UserTask 계열: 폼 연결 (재사용 폼 라이브러리에서 선택) -->
-                                    <div v-if="isFormLinkableElement" class="section-group">
+                                    <div v-if="isFormLinkableElement && isBuiltinPropVisible('task', 'form_link')" class="section-group">
                                         <div class="section-title" @click="toggle('task-form-link')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-form-link') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="primary">mdi-form-select</v-icon>
@@ -1921,8 +1962,42 @@
                                         </div>
                                     </div>
 
+                                    <!-- Task RACI — 통합 매트릭스(RaciMatrixDialog)와 동일 스키마로 uengine:json(raci)에 저장.
+                                         태스크 식별은 Task명으로 하며 별도 Task 코드는 입력받지 않는다 -->
+                                    <div v-if="isRaciTaskElement && isBuiltinPropVisible('task', 'raci')" class="section-group">
+                                        <div class="section-title" @click="toggle('task-raci')">
+                                            <v-icon size="14" class="mr-1">{{ isOpen('task-raci') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                            <v-icon size="14" class="mr-1" color="deep-purple">mdi-table-account</v-icon>
+                                            {{ $t('raci.tab') || 'RACI' }}
+                                        </div>
+                                        <div v-show="isOpen('task-raci')" class="section-body">
+                                            <RaciField v-model="taskForm.raci" :readonly="isViewMode" :suggestions="raciSuggestions" />
+                                        </div>
+                                    </div>
+
+                                    <!-- 세부 업무 수행 절차 — Input/절차 단계/Output을 uengine:json(input/procedure/output)에 저장.
+                                         편집 모드는 항목 입력창, 조회 모드는 문서형 뷰로 렌더링 -->
+                                    <div v-if="isRaciTaskElement && isBuiltinPropVisible('task', 'task_io')" class="section-group">
+                                        <div class="section-title" @click="toggle('task-io')">
+                                            <v-icon size="14" class="mr-1">{{ isOpen('task-io') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                            <v-icon size="14" class="mr-1" color="blue">mdi-swap-horizontal</v-icon>
+                                            {{ $t('taskIo.tab') || '세부 업무 수행 절차' }}
+                                        </div>
+                                        <div v-show="isOpen('task-io')" class="section-body">
+                                            <TaskIoField
+                                                :input="taskForm.input"
+                                                :output="taskForm.output"
+                                                :procedure="taskForm.procedure"
+                                                :readonly="isViewMode"
+                                                @update:input="taskForm.input = $event"
+                                                @update:output="taskForm.output = $event"
+                                                @update:procedure="taskForm.procedure = $event"
+                                            />
+                                        </div>
+                                    </div>
+
                                     <!-- Task 관련자료 링크 -->
-                                    <div v-if="!isSequenceFlowElement" class="section-group">
+                                    <div v-if="!isSequenceFlowElement && isBuiltinPropVisible('task', 'manual_links')" class="section-group">
                                         <div class="section-title" @click="toggle('task-manual-link')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-manual-link') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="indigo">mdi-link-variant</v-icon>
@@ -1934,7 +2009,7 @@
                                     </div>
 
                                     <!-- API 연동 -->
-                                    <div v-if="!isLaneElement" class="section-group">
+                                    <div v-if="!isLaneElement && isBuiltinPropVisible('task', 'api_integrations')" class="section-group">
                                         <div class="section-title" @click="toggle('task-api')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-api') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="teal">mdi-api</v-icon>
@@ -2059,7 +2134,7 @@
                                     </div>
 
                                     <!-- Data Object / Data Store 전용: URL + 파일 첨부 -->
-                                    <div v-if="isDataReferenceElement" class="section-group">
+                                    <div v-if="isDataReferenceElement && isBuiltinPropVisible('bpmn:DataObjectReference', 'attachment')" class="section-group">
                                         <div class="section-title" @click="toggle('task-data-attachment')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-data-attachment') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="indigo">mdi-paperclip</v-icon>
@@ -2099,7 +2174,7 @@
                                     <!-- 원가 스키마: Lane 기반 분기 -->
                                     <!-- 내부 Lane → FTE Calculator -->
                                     <div>
-                                        <div v-if="isTaskPropertyElement && !isExternalLaneTask" class="section-group">
+                                        <div v-if="isTaskPropertyElement && !isExternalLaneTask && isBuiltinPropVisible('task', 'fte_calculator')" class="section-group">
                                             <div class="section-title" @click="toggle('task-fte')">
                                                 <v-icon size="14" class="mr-1">{{ isOpen('task-fte') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                                 <v-icon size="14" class="mr-1" color="teal">mdi-clock-outline</v-icon>
@@ -2155,7 +2230,7 @@
                                         </div>
 
                                         <!-- 외부 Lane → OPEX 입력 -->
-                                        <div v-if="isTaskPropertyElement && isExternalLaneTask" class="section-group">
+                                        <div v-if="isTaskPropertyElement && isExternalLaneTask && isBuiltinPropVisible('task', 'opex')" class="section-group">
                                             <div class="section-title" @click="toggle('task-opex')">
                                                 <v-icon size="14" class="mr-1">{{ isOpen('task-opex') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                                 <v-icon size="14" class="mr-1" color="orange">mdi-currency-krw</v-icon>
@@ -2200,7 +2275,7 @@
                                     </div>
 
                                     <!-- System Mapping (Task) -->
-                                    <div v-if="isTaskPropertyElement" class="section-group">
+                                    <div v-if="isTaskPropertyElement && isBuiltinPropVisible('task', 'system_mapping')" class="section-group">
                                         <div class="section-title" @click="toggle('task-system')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-system') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="blue">mdi-server-network</v-icon>
@@ -2254,7 +2329,7 @@
                                     </div>
 
                                     <!-- 연관 과제 매핑 (Task) -->
-                                    <div v-if="isTaskPropertyElement" class="section-group" ref="taskMappingSection">
+                                    <div v-if="isTaskPropertyElement && isBuiltinPropVisible('task', 'related_project_mapping')" class="section-group" ref="taskMappingSection">
                                         <div class="section-title" @click="toggle('task-related-projects')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-related-projects') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="purple">mdi-clipboard-list-outline</v-icon>
@@ -2401,7 +2476,7 @@
                                     </div>
 
                                     <!-- 엘리먼트 PI Flag 섹션 (owner 이상) -->
-                                    <div v-if="isOwner" class="section-group" ref="commentSection">
+                                    <div v-if="isOwner && isBuiltinPropVisible('task', 'pi_flag')" class="section-group" ref="commentSection">
                                         <div class="section-title" @click="toggle('element-comments')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('element-comments') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="red">mdi-flag-outline</v-icon>
@@ -2607,7 +2682,7 @@
                         </v-window-item>
 
                         <!-- ==================== PI Flag Tab ==================== -->
-                        <v-window-item v-if="isOwner" value="pi-flag">
+                        <v-window-item v-if="isOwner && isBuiltinPropVisible('process', 'pi_flag_tab')" value="pi-flag">
                             <div class="pa-4 pi-flag-tab-content">
                                 <!-- 상단 요약 -->
                                 <div class="pi-flag-summary mb-3 d-flex align-center">
@@ -2657,7 +2732,7 @@
                                             {{ piFlagTotalCount }}
                                         </v-chip>
                                     </v-tab>
-                                    <v-tab value="agent-analysis" size="small">
+                                    <v-tab v-if="isBuiltinPropVisible('process', 'pi_flag_agent_chat')" value="agent-analysis" size="small">
                                         <v-icon size="14" start :color="piFlagSubTab === 'agent-analysis' ? 'primary' : undefined">mdi-robot-outline</v-icon>
                                         Agent 분석
                                         <v-chip
@@ -2827,7 +2902,7 @@
                                     </v-window-item>
 
                                     <!-- (2) Agent 분석: Global Gap Analysis, Policy 등 -->
-                                    <v-window-item value="agent-analysis">
+                                    <v-window-item v-if="isBuiltinPropVisible('process', 'pi_flag_agent_chat')" value="agent-analysis">
                                         <!-- 빈 상태 -->
                                         <div v-if="piFlagAgentAnalysisEntries.length === 0" class="text-center pa-4">
                                             <v-icon size="40" color="grey-lighten-2">mdi-robot-outline</v-icon>
@@ -2991,10 +3066,10 @@
                 </v-window-item>
 
                 <!-- ==================== Governance Tab ==================== -->
-                <v-window-item value="governance">
+                <v-window-item v-if="isBuiltinPropVisible('process', 'governance_tab')" value="governance">
                     <div class="pa-4">
                         <!-- Review Guide Buttons -->
-                        <div class="review-guide-buttons mb-4">
+                        <div v-if="isBuiltinPropVisible('process', 'review_guide')" class="review-guide-buttons mb-4">
                             <div class="review-guide-buttons__label">
                                 <v-icon size="14" class="mr-1">mdi-lightbulb-outline</v-icon>
                                 가이드
@@ -3617,7 +3692,7 @@
                                 </v-btn>
                             </div>
 
-                            <div v-if="showReleaseStrategy" class="release-strategy-panel mb-4">
+                            <div v-if="showReleaseStrategy && isBuiltinPropVisible('process', 'release_strategy')" class="release-strategy-panel mb-4">
                                 <div class="d-flex align-start justify-space-between flex-wrap ga-2">
                                     <div>
                                         <div class="release-strategy-panel__title">Release Strategy</div>
@@ -4086,6 +4161,9 @@ import { userIdentityFromSearchResult, formatIdentityWithTeam } from '@/utils/us
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import OwnerSettingDialog from '@/components/ui/OwnerSettingDialog.vue';
 import ManualLinkField from '@/components/ui/ManualLinkField.vue';
+import RaciField from '@/components/designer/RaciField.vue';
+import TaskIoField from '@/components/designer/TaskIoField.vue';
+import PpiField from '@/components/designer/PpiField.vue';
 import BpmnReviewGuide from '@/components/ui/BpmnReviewGuide.vue';
 import PiFlagEditorDialog from '@/views/process-hierarchy/PiFlagEditorDialog.vue';
 import { AN_STUDIO_KEY } from '@/composables/anStudio/useAnStudio';
@@ -4264,6 +4342,9 @@ export default {
         DetailComponent,
         BpmnReviewGuide,
         ManualLinkField,
+        RaciField,
+        TaskIoField,
+        PpiField,
         PiFlagEditorDialog,
     },
     props: {
@@ -4294,7 +4375,7 @@ export default {
         return {
             topTab: 'properties',
             activeTab: 'process',
-            openSections: new Set(['strategic', 'hybrid-costing', 'competency', 'general', 'manual-link', 'task-manual-link', 'task-manual-links', 'kpi-history', 'task-basic', 'task-fte', 'task-opex', 'task-data-attachment', 'task-api', 'proc-api', 'relation-info', 'lane-assignee', 'lane-assignment', 'pool-exec', 'task-count', 'task-related-projects', 'proc-related-projects', 'proc-total-fte', 'proc-total-cost', 'call-activity-def', 'business-rule-dmn', 'task-data-io', 'service-agent', 'proc-system', 'task-system', 'element-comments']),
+            openSections: new Set(['strategic', 'hybrid-costing', 'competency', 'general', 'manual-link', 'task-manual-link', 'task-manual-links', 'kpi-history', 'task-basic', 'task-raci', 'task-io', 'pool-ppi', 'task-fte', 'task-opex', 'task-data-attachment', 'task-api', 'proc-api', 'relation-info', 'lane-assignee', 'lane-assignment', 'pool-exec', 'task-count', 'task-related-projects', 'proc-related-projects', 'proc-total-fte', 'proc-total-cost', 'call-activity-def', 'business-rule-dmn', 'task-data-io', 'service-agent', 'proc-system', 'task-system', 'element-comments']),
             closedPiFlagCards: new Set(),
             // 깃발 클릭 시 그 깃발이 가리키는 코멘트(들)가 속한 항목만 보여주기 위한 포커스 (null 이면 전체)
             piFlagFocusCommentIds: null,
@@ -4393,6 +4474,11 @@ export default {
             taskForm: {
                 name: '',
                 description: '',
+                raci: null,
+                input: null,
+                output: null,
+                procedure: null,
+                ppi: null,
                 manualLinks: [],
                 systems: [],
                 fte: defaultFte(),
@@ -4804,6 +4890,38 @@ export default {
         isFormLinkableElement() {
             const type = toSafeText(this.element?.type || this.element?.$type).trim();
             return type === 'bpmn:UserTask' || type === 'bpmn:Task' || type === 'bpmn:ManualTask';
+        },
+        // RACI 등록 대상 — 통합 매트릭스(RaciMatrixDialog)의 행 필터와 동일한 Task 계열 판정
+        isRaciTaskElement() {
+            const type = toSafeText(this.element?.type || this.element?.$type).trim();
+            return type.includes('Task');
+        },
+        // RACI 조직/역할 제안: 레인 이름 + 다른 태스크에 이미 등록된 조직명
+        raciSuggestions() {
+            void this.bpmnDataVersion;
+            try {
+                const modeler = useBpmnStore().getModeler;
+                if (!modeler) return [];
+                const out = [];
+                modeler.get('elementRegistry').getAll().forEach((el) => {
+                    if (el.type === 'bpmn:Lane') {
+                        const name = toSafeText(el.businessObject?.name).trim();
+                        if (name && !out.includes(name)) out.push(name);
+                    } else if (el.type && el.type.includes('Task')) {
+                        const raci = this.readUengineProps(el.businessObject)?.raci;
+                        if (raci && typeof raci === 'object') {
+                            ['R', 'A', 'S', 'C', 'I'].forEach((key) => {
+                                (Array.isArray(raci[key]) ? raci[key] : []).forEach((org) => {
+                                    if (org && !out.includes(org)) out.push(org);
+                                });
+                            });
+                        }
+                    }
+                });
+                return out;
+            } catch (e) {
+                return [];
+            }
         },
         // 폼 미연결 시 실행 엔진이 사용하는 네이밍 규칙 폼 ID (FormWorkItem 폴백과 동일)
         defaultFormIdForElement() {
@@ -6749,6 +6867,14 @@ export default {
                     return null;
                 })
                 .filter(Boolean);
+        },
+        // 내장 필드 노출 여부 — 관리자(속성 스키마 스튜디오)가 숨긴 필드는 렌더링하지 않는다.
+        isBuiltinPropVisible(scope, key) {
+            try {
+                return this.catalogStore.isBuiltinPropVisible(scope, key);
+            } catch (e) {
+                return true;
+            }
         },
         normalizeOwnerList(value) {
             const list = Array.isArray(value) ? value : (value ? [value] : []);
@@ -9776,6 +9902,13 @@ export default {
             this.newCommentDescription = '';
 
             this.taskForm.description = uengineProps.description || '';
+            this.taskForm.raci = uengineProps.raci && typeof uengineProps.raci === 'object'
+                ? JSON.parse(JSON.stringify(uengineProps.raci))
+                : null;
+            this.taskForm.input = Array.isArray(uengineProps.input) ? [...uengineProps.input] : null;
+            this.taskForm.output = Array.isArray(uengineProps.output) ? [...uengineProps.output] : null;
+            this.taskForm.procedure = Array.isArray(uengineProps.procedure) ? [...uengineProps.procedure] : null;
+            this.taskForm.ppi = Array.isArray(uengineProps.ppi) ? JSON.parse(JSON.stringify(uengineProps.ppi)) : null;
             const rawTaskManualLinks = Array.isArray(uengineProps.manualLinks)
                 ? uengineProps.manualLinks
                 : (uengineProps.manualLink ? [uengineProps.manualLink] : []);
@@ -10661,10 +10794,11 @@ export default {
             }
 
             const isLane = (targetElement.type || targetElement.$type || '').toLowerCase().includes('lane');
+            const isParticipant = targetType === 'bpmn:Participant';
 
             // 그룹 매핑 cascade 판정용: 저장 전 기존 relatedProjects 와 현재 폼 비교 → 제거된 그룹 항목 추출
             let removedGroupedItems = [];
-            if (!isLane) {
+            if (!isLane && !isParticipant) {
                 const existingNormalized = this.normalizeRelatedProjectsForStorage(existingProps.relatedProjects);
                 const currentNormalized = this.normalizeRelatedProjectsForStorage(this.taskForm.relatedProjects);
                 const currentKeys = new Set(currentNormalized.map(p => `${p.groupId || ''}::${p.name}`));
@@ -10675,6 +10809,9 @@ export default {
 
             const uengineProps = isLane
                 ? { ...existingProps, laneDescription: toSafeText(this.laneDescription) }
+                : isParticipant
+                // Participant(Pool)는 태스크 전용 필드(fte/opex/futureStatus 등)를 섞지 않는다 — PPI 는 아래 전용 블록에서 기록.
+                ? { ...existingProps, comments: [...this.elementComments] }
                 : {
                     ...existingProps,
                     description: toSafeText(this.taskForm.description),
@@ -10695,7 +10832,7 @@ export default {
                 };
 
             // API 연동 다중 목록 기록 (레거시 단일 필드는 첫 항목 미러링, 비면 제거)
-            if (!isLane) {
+            if (!isLane && !isParticipant) {
                 applyApiIntegrations(uengineProps, this.taskForm.apiIntegrations || []);
             }
 
@@ -10730,6 +10867,46 @@ export default {
                 } else {
                     delete uengineProps.businessRuleId;
                 }
+            }
+
+            // Task 계열: RACI 저장 (통합 매트릭스와 동일 스키마 — 태스크 식별은 Task명, 기존 taskCode는 손대지 않고 보존).
+            // 해제 시 키 삭제 대신 빈값 톰스톤을 남긴다 — 삭제하면 definition 병합이 기존 값을 부활시킨다.
+            if (targetType.includes('Task')) {
+                const raci = this.taskForm.raci;
+                const hasRaci = raci && typeof raci === 'object'
+                    && ['R', 'A', 'S', 'C', 'I'].some((key) => Array.isArray(raci[key]) && raci[key].length > 0);
+                if (hasRaci) uengineProps.raci = JSON.parse(JSON.stringify(raci));
+                else if ('raci' in uengineProps) uengineProps.raci = null;
+            }
+
+            // Task 계열: 세부 업무 수행 절차(Input/절차 단계/Output) 저장.
+            // 해제 시 키 삭제 대신 톰스톤(null)을 남긴다 — 삭제하면 definition 병합이 기존 값을 부활시킨다.
+            if (targetType.includes('Task')) {
+                const ioInput = Array.isArray(this.taskForm.input)
+                    ? this.taskForm.input.map((v) => toSafeText(v).trim()).filter(Boolean)
+                    : [];
+                const ioOutput = Array.isArray(this.taskForm.output)
+                    ? this.taskForm.output.map((v) => toSafeText(v).trim()).filter(Boolean)
+                    : [];
+                const ioProcedure = Array.isArray(this.taskForm.procedure)
+                    ? this.taskForm.procedure.map((v) => toSafeText(v).trim()).filter(Boolean)
+                    : [];
+                if (ioInput.length) uengineProps.input = ioInput;
+                else if ('input' in uengineProps) uengineProps.input = null;
+                if (ioOutput.length) uengineProps.output = ioOutput;
+                else if ('output' in uengineProps) uengineProps.output = null;
+                if (ioProcedure.length) uengineProps.procedure = ioProcedure;
+                else if ('procedure' in uengineProps) uengineProps.procedure = null;
+            }
+
+            // Participant(Pool): PPI(프로세스 성과지표) 저장 — 프로세스 레벨 uengine:json(ppi). 해제 시 톰스톤(null).
+            if (targetType === 'bpmn:Participant') {
+                const ppi = Array.isArray(this.taskForm.ppi)
+                    ? this.taskForm.ppi.filter((row) => row && typeof row === 'object'
+                        && ['name', 'unit', 'cycle', 'definition', 'formula'].some((key) => toSafeText(row[key]).trim()))
+                    : [];
+                if (ppi.length) uengineProps.ppi = JSON.parse(JSON.stringify(ppi));
+                else if ('ppi' in uengineProps) uengineProps.ppi = null;
             }
 
             // ServiceTask 실행 설정(agentEnabled/agent/http) 저장 로직은 순서도 패널에서 제거됨 —
