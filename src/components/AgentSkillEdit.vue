@@ -147,6 +147,9 @@ import CommitMessageGenerator from '@/components/ai/CommitMessageGenerator';
 import { hasInheritanceDirective } from '@/utils/skillMdParser';
 import { processGptAgent } from '@/constants/processGptAgent';
 
+// 앱 사용자 정보를 얻지 못했을 때 쓰는 requester_id (컬럼이 uuid[] NOT NULL).
+const NIL_REQUESTER_ID = '00000000-0000-0000-0000-000000000000';
+
 marked.setOptions({
     breaks: true,
     gfm: true,
@@ -437,27 +440,35 @@ export default {
                         this.deletePrBranchName,
                         this.defaultBranch
                     );
+                    // 기록을 건너뛰면 깃에는 PR 이 있는데 병합 요청 탭에는 안 보인다.
+                    // 사용자 정보를 못 얻어도 기록은 남기고, 실패는 화면에 알린다.
+                    let prRecordFailed = false;
                     try {
-                        const userInfo = await this.backend.getUserInfo();
-                        const requesterId = userInfo?.uid || userInfo?.id || null;
-                        if (requesterId) {
-                            await this.backend.createResourcePrRecord('skill', {
-                                resourceId: this.skillName,
-                                branchName: this.deletePrBranchName,
-                                baseBranch: this.defaultBranch,
-                                title: this.deletePrTitle,
-                                requesterId,
-                                gitPrNumber: pr?.number ?? undefined,
-                                gitPrUrl: pr?.html_url ?? undefined
-                            });
-                        }
-                    } catch (_) {}
+                        const userInfo = await this.backend.getUserInfo().catch(() => null);
+                        const requesterId =
+                            userInfo?.uid || userInfo?.id || localStorage.getItem('uid') || NIL_REQUESTER_ID;
+                        await this.backend.createResourcePrRecord('skill', {
+                            resourceId: this.skillName,
+                            branchName: this.deletePrBranchName,
+                            baseBranch: this.defaultBranch,
+                            title: this.deletePrTitle,
+                            requesterId,
+                            requesterName: localStorage.getItem('userName') || undefined,
+                            gitPrNumber: pr?.number ?? undefined,
+                            gitPrUrl: pr?.html_url ?? undefined
+                        });
+                    } catch (error) {
+                        console.error('[AgentSkillEdit] 병합 요청 기록 실패:', error);
+                        prRecordFailed = true;
+                    }
                     this.$try({
                         context: this,
                         action: () => {
                             this.$emit('file-deleted');
                         },
-                        successMsg: 'PR이 성공적으로 생성되었습니다.'
+                        successMsg: prRecordFailed
+                            ? 'PR은 생성했지만 병합 요청 목록에 기록하지 못했습니다. PR 링크에서 확인해 주세요.'
+                            : 'PR이 성공적으로 생성되었습니다.'
                     });
                 } else {
                     await this.backend.deleteSkillFile(
