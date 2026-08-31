@@ -1,11 +1,12 @@
 -- 패널 내장 속성을 사용자 정의 속성 목록으로 통합한다.
--- panelProperty는 RACI/FTE/폼 연결처럼 전용 위젯이 있는 행의 중복 렌더링을
--- 막기 위한 연결 메타데이터일 뿐, 관리자 UI에서 별도 내장 분류/수정 제한에
--- 사용하지 않는다.
+-- renderer=panel은 RACI/FTE/폼 연결처럼 전용 위젯이 있는 사용자 정의 속성을
+-- 일반 탭의 범용 필드가 아닌 기존 패널 UI에 연결하는 렌더링 메타데이터다.
+-- 관리자 UI에서 별도 내장 분류/수정 제한에는 사용하지 않는다.
 
 UPDATE public.task_property_schema
    SET config = (COALESCE(config, '{}'::jsonb) - 'builtin')
                 || jsonb_build_object(
+                    'renderer', 'panel',
                     'panelProperty', true,
                     'panelTaskType', COALESCE(config->>'panelTaskType', task_type)
                 )

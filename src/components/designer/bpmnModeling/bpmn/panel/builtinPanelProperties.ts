@@ -2,8 +2,8 @@
 //
 // 실사용 속성패널인 src/views/process-hierarchy/ProcessHierarchyProperties.vue 의
 // 패널 필드·섹션을 task_property_schema 에 시드하여 관리자가 일반 사용자 정의
-// 속성과 함께 노출/라벨/순서를
-// 제어할 수 있게 한다. (bpmnModeling 하위의 GPT/uEngine 패널 스택은 실행 경로에
+// 속성과 함께 관리하되, 렌더링은 기존 패널 위치와 전용 UI를 유지하게 한다.
+// (bpmnModeling 하위의 GPT/uEngine 패널 스택은 실행 경로에
 // 없으므로 이 레지스트리의 대상이 아니다.)
 //
 // taskType 스코프 규칙 — 패널 자체의 섹션 노출 조건을 그대로 따른다:

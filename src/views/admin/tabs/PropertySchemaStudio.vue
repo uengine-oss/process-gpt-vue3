@@ -22,6 +22,14 @@
                     </button>
                 </v-card-title>
                 <v-card-text class="schema-dialog-body">
+                    <div v-if="editingSchema && isDedicatedPanelSchema(editingSchema)" class="panel-renderer-notice">
+                        <v-icon size="16" color="primary">mdi-view-dashboard-outline</v-icon>
+                        <span>
+                            이 속성은 일반 영역이 아니라 기존 {{ getPanelTabLabel(editingSchema) }} 패널의
+                            {{ editingSchema.config?.widget || '전용' }} UI로 표시됩니다.
+                        </span>
+                    </div>
+
                     <!-- Row 1: property_key + property_label -->
                     <div class="form-row">
                         <div class="form-group" style="flex: 1;">
@@ -397,6 +405,9 @@
                     <span class="applies-badge" :class="getAppliesToClass(item.applies_to)">
                         {{ getAppliesToLabel(item.applies_to) }}
                     </span>
+                    <span v-if="isDedicatedPanelSchema(item)" class="panel-renderer-badge">
+                        {{ getPanelTabLabel(item) }} · 전용 UI
+                    </span>
                 </template>
                 <template #[`item.description`]="{ item }">
                     <span v-if="item.description" class="description-text" :title="item.description">
@@ -711,6 +722,22 @@ export default defineComponent({
         ];
 
         const propertyTypes = computed(() => ALL_PROPERTY_TYPES);
+
+        const isDedicatedPanelSchema = (schema) => {
+            const config = schema?.config || {};
+            return config.renderer === 'panel' || config.panelProperty === true || config.builtin === true;
+        };
+
+        const getPanelTabLabel = (schema) => {
+            const tab = schema?.config?.tab;
+            const labels = {
+                process: '프로세스',
+                task: 'Task',
+                'pi-flag': 'PI Flag',
+                governance: '검토의견',
+            };
+            return labels[tab] || '기존';
+        };
 
         const appliesToOptions = computed(() => {
             return APPLIES_TO_OPTIONS.map(item => ({
@@ -1201,6 +1228,8 @@ export default defineComponent({
             openEditForm,
             cancelForm,
             saveField,
+            isDedicatedPanelSchema,
+            getPanelTabLabel,
             addOption,
             removeOption,
             confirmSoftDelete,
@@ -1249,6 +1278,19 @@ export default defineComponent({
 
 .schema-dialog-body {
     padding: 0 20px 8px !important;
+}
+
+.panel-renderer-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 9px 11px;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 12px;
 }
 
 .form-close-btn {
@@ -1715,6 +1757,19 @@ export default defineComponent({
 .applies-badge.specific_task {
     background: #ede9fe;
     color: #5b21b6;
+}
+
+.panel-renderer-badge {
+    display: block;
+    width: fit-content;
+    margin-top: 4px;
+    padding: 1px 6px;
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 9px;
+    white-space: nowrap;
 }
 
 /* ── Center Cell ── */

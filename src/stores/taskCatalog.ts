@@ -3,7 +3,18 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
 import { BUILTIN_PANEL_PROPERTIES } from '@/components/designer/bpmnModeling/bpmn/panel/builtinPanelProperties';
 
-const isPanelPropertySchema = (schema: Partial<PropertySchema>) => schema.config?.panelProperty === true || schema.config?.builtin === true;
+// 관리 화면에서는 모두 사용자 정의 속성이지만, 렌더링 방식은 구분한다.
+// renderer=panel인 행은 기존 패널의 전용 컴포넌트/바인딩을 그대로 사용하고
+// 일반 스키마 필드 렌더러에는 넘기지 않는다. 나머지 조건은 이전 데이터 호환용이다.
+const isPanelPropertySchema = (schema: Partial<PropertySchema>) => {
+    const config = schema.config || {};
+    return (
+        config.renderer === 'panel' ||
+        config.panelProperty === true ||
+        config.builtin === true ||
+        (typeof config.panel === 'string' && typeof config.widget === 'string')
+    );
+};
 
 const panelPropertyScope = (schema: Partial<PropertySchema>) => schema.config?.panelTaskType || schema.task_type;
 
@@ -499,19 +510,29 @@ export const useTaskCatalogStore = defineStore({
         // builtin은 이전 데이터 호환을 위해 이 함수에서 제거한다.
         async syncPanelPropertySchemas() {
             await this.ensureSchemasLoaded();
-            const registryKeys = new Set(BUILTIN_PANEL_PROPERTIES.map((p) => `${p.taskType}::${p.key}`));
+            const registryByKey = new Map(BUILTIN_PANEL_PROPERTIES.map((p) => [`${p.taskType}::${p.key}`, p]));
 
-            // 기존 config.builtin 행을 사용자 정의 속성으로 승격한다. 레지스트리에서
-            // 사라진 항목은 평범한 사용자 정의 필드로 남겨 사용자가 직접 관리한다.
-            const legacyRows = this.propertySchemas.filter((s) => s.config?.builtin === true);
+            // config.builtin 행뿐 아니라 이전 이관 과정에서 렌더러 메타데이터가
+            // 누락된 행도 키가 레지스트리와 일치하면 기존 패널 UI에 다시 연결한다.
+            const legacyRows = this.propertySchemas.filter((schema) => {
+                const key = `${panelPropertyScope(schema)}::${schema.property_key}`;
+                return schema.config?.builtin === true || (!!registryByKey.get(key) && !isPanelPropertySchema(schema));
+            });
             for (const schema of legacyRows) {
                 const config = { ...(schema.config || {}) };
                 delete config.builtin;
-                const registryKey = `${schema.task_type}::${schema.property_key}`;
-                if (registryKeys.has(registryKey)) {
+                const registryKey = `${panelPropertyScope(schema)}::${schema.property_key}`;
+                const panelProperty = registryByKey.get(registryKey);
+                if (panelProperty) {
+                    config.renderer = 'panel';
                     config.panelProperty = true;
-                    config.panelTaskType = config.panelTaskType || schema.task_type;
+                    config.panelTaskType = config.panelTaskType || panelProperty.taskType;
+                    config.panel = config.panel || panelProperty.panel;
+                    config.widget = config.widget || panelProperty.widget;
+                    config.binding = config.binding ?? panelProperty.binding ?? null;
+                    config.tab = config.tab ?? panelProperty.tab ?? null;
                 } else {
+                    delete config.renderer;
                     delete config.panelProperty;
                     delete config.panelTaskType;
                 }
@@ -538,6 +559,7 @@ export const useTaskCatalogStore = defineStore({
                     is_active: true,
                     description: prop.description || `패널 연결 속성 (${prop.panel})`,
                     config: {
+                        renderer: 'panel',
                         panelProperty: true,
                         panelTaskType: prop.taskType,
                         panel: prop.panel,
