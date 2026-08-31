@@ -18,8 +18,9 @@ END $$;
 DO $$
 DECLARE r text;
 BEGIN
-  FOREACH r IN ARRAY ARRAY['authenticator','anon','authenticated','service_role','postgres',
-                           'supabase_admin','supabase_auth_admin','supabase_storage_admin'] LOOP
+  -- supabase_* internal roles are reserved and cannot be altered by the
+  -- migration runner. The database default above still applies to them.
+  FOREACH r IN ARRAY ARRAY['authenticator','anon','authenticated','service_role','postgres'] LOOP
     IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
       EXECUTE format('ALTER ROLE %I SET timezone TO ''Asia/Seoul''', r);
     END IF;
