@@ -17,7 +17,8 @@ fi
 # Supabase uses the numeric prefix before the first underscore as the
 # migration version. Candidate source names are comma-separated so this also
 # repairs repositories already renamed by an older version of this script.
-MAPPINGS='20260130_proc_def_comments_approval.sql|20260130000001_proc_def_comments_approval.sql
+MAPPINGS='00_consolidated_schema.sql|consolidated_schema.sql
+20260130_proc_def_comments_approval.sql|20260130000001_proc_def_comments_approval.sql
 20260130_standard_terminology.sql|20260130000002_standard_terminology.sql
 20260213_kpi_review_board.sql,20260213000002_kpi_review_board.sql|20260213000001_kpi_review_board.sql
 20260213_review_per_submission.sql,20260213000003_review_per_submission.sql|20260213000002_review_per_submission.sql
