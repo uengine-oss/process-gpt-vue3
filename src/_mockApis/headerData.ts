@@ -165,10 +165,6 @@ const appsLink: appsLinkType[] = [
 //
 const quickLink: quickLinksType[] = [
     {
-        title: 'Pricing Page',
-        href: '/pages/pricing'
-    },
-    {
         title: 'Authentication Design',
         href: '/auth/login'
     },
@@ -221,10 +217,6 @@ const searchSugg: searchType[] = [
     {
         title: 'Notes',
         href: '/apps/notes'
-    },
-    {
-        title: 'Pricing',
-        href: '/pages/pricing'
     },
     {
         title: 'Account Setting',

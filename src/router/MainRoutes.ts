@@ -17,11 +17,7 @@ const gsExcludedRoutes = [
     'Chats',
     'Proposals',
     'Calendar',
-    'Usage',
     'Agent Chat',
-    'Pricing',
-    'Payment Success',
-    'Payment Fail',
     'BSCard',
     'Schedule'
 ];
@@ -235,36 +231,9 @@ const allRoutes: RouteRecordRaw[] = [
         component: () => import('@/components/scheduler/ScheduleList.vue')
     },
     {
-        name: 'Usage',
-        path: '/usage',
-        component: () => import('@/components/ui/usage-billing/Usage.vue')
-    },
-
-    {
         name: 'Agent Chat',
         path: '/agent-chat/:id',
         component: () => import('@/components/AgentChat.vue')
-    },
-
-    // {
-    //     name: 'Plans',
-    //     path: '/plans',
-    //     component: () => import('@/components/ui/payment/Plans.vue')
-    // },
-    {
-        name: 'Pricing',
-        path: '/pricing',
-        component: () => import('@/components/ui/payment/Credit.vue')
-    },
-    {
-        name: 'Payment Success',
-        path: '/request-success',
-        component: () => import('@/components/ui/payment/RequestSuccess.vue')
-    },
-    {
-        name: 'Payment Fail',
-        path: '/request-fail',
-        component: () => import('@/components/ui/payment/RequestFailure.vue')
     },
 
     // {

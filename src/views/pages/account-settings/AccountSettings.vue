@@ -334,9 +334,6 @@
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>
                         </v-window-item>
-                        <v-window-item value="Bills">
-                            <BillsTab/>
-                        </v-window-item>
                         <v-window-item value="Security">
                             <SecurityTab/>
                         </v-window-item> -->
@@ -368,7 +365,6 @@ import GithubTab from '@/components/pages/account-settings/GitConfigTab.vue';
 import Customizer from '@/layouts/full/customizer/Customizer.vue';
 
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
-// import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
 // import SecurityTab from '@/components/pages/account-settings/SecurityTab.vue';
 
 export default {
