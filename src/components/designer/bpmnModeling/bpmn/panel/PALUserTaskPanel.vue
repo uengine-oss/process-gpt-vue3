@@ -3,7 +3,7 @@
         <v-btn v-if="isViewMode && isPal" @click="navigateToTask" color="primary" class="mb-4">
             {{ $t('PALUserTaskPanel.moveToTask') }}
         </v-btn>
-        <div :class="isViewMode ? 'quill-editor-view-mode' : 'quill-editor-edit-mode'">
+        <div v-if="isBuiltinPropVisible('description')" :class="isViewMode ? 'quill-editor-view-mode' : 'quill-editor-edit-mode'">
             <quill-editor
                 :content="activity.description"
                 content-type="html"
@@ -14,8 +14,8 @@
                 @update:content="onTextChange"
             ></quill-editor>
         </div>
-        <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4" :isViewMode="isViewMode"></Checkpoints>
-        <div v-if="isPal && !isViewMode" class="link-save-container mb-4">
+        <Checkpoints v-if="isBuiltinPropVisible('checkpoints')" v-model="activity.checkpoints" class="user-task-panel-check-points mb-4" :isViewMode="isViewMode"></Checkpoints>
+        <div v-if="isPal && !isViewMode && isBuiltinPropVisible('task_link')" class="link-save-container mb-4">
             <v-text-field
                 v-model="activity.taskLink"
                 :label="$t('PALUserTaskPanel.taskLink')"
@@ -26,7 +26,21 @@
                 <a :href="link" target="_blank">{{ link }}</a>
             </div>
         </div>
-        <div class="pb-10 attachment-container">
+        <!-- 세부 업무 수행 절차 (Input/절차 단계/Output) — 편집 모드는 입력창, 조회 모드는 문서형 뷰 -->
+        <v-divider v-if="isBuiltinPropVisible('task_io')" class="mb-3"></v-divider>
+        <div v-if="isBuiltinPropVisible('task_io')" class="task-io-section mb-4">
+            <h6 class="text-body-1 mb-3">{{ $t('taskIo.tab') || '세부 업무 수행 절차' }}</h6>
+            <TaskIoField
+                :input="activity.input"
+                :output="activity.output"
+                :procedure="activity.procedure"
+                :readonly="isViewMode"
+                @update:input="activity.input = $event"
+                @update:output="activity.output = $event"
+                @update:procedure="activity.procedure = $event"
+            />
+        </div>
+        <div v-if="isBuiltinPropVisible('attachments')" class="pb-10 attachment-container">
             <v-row class="ma-0 pa-0 align-center">
                 <h6 class="text-body-1">첨부파일</h6>
                 <v-spacer></v-spacer>
@@ -63,8 +77,8 @@
         </div>
 
         <!-- PI Flag -->
-        <v-divider class="mb-3"></v-divider>
-        <div class="pi-flag-section">
+        <v-divider v-if="isBuiltinPropVisible('pi_flag')" class="mb-3"></v-divider>
+        <div v-if="isBuiltinPropVisible('pi_flag')" class="pi-flag-section">
             <h6 class="text-body-1 mb-3">{{ $t('piFlagPanel.tab') || 'PI Flag' }}</h6>
             <PiFlagPanel
                 v-if="element"
@@ -81,7 +95,9 @@
 <script>
 import Instruction from '@/components/designer/InstructionField.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
+import TaskIoField from '@/components/designer/TaskIoField.vue';
 import PiFlagPanel from './PiFlagPanel.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 import { useBpmnStore } from '@/stores/bpmn';
 
 import { defineAsyncComponent } from 'vue';
@@ -93,9 +109,11 @@ import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     name: 'pal-user-task-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         Instruction,
         Checkpoints,
+        TaskIoField,
         FormDefinition,
         QuillEditor,
         PiFlagPanel
@@ -123,7 +141,10 @@ export default {
                 description: '',
                 checkpoints: [''],
                 attachments: [],
-                taskLink: ''
+                taskLink: '',
+                input: null,
+                output: null,
+                procedure: null
             },
             formId: '',
             tempFormHtml: '',
@@ -159,6 +180,15 @@ export default {
             }
             if (this.copyUengineProperties.taskLink !== undefined) {
                 this.activity.taskLink = this.copyUengineProperties.taskLink;
+            }
+            if (this.copyUengineProperties.input !== undefined) {
+                this.activity.input = this.copyUengineProperties.input;
+            }
+            if (this.copyUengineProperties.output !== undefined) {
+                this.activity.output = this.copyUengineProperties.output;
+            }
+            if (this.copyUengineProperties.procedure !== undefined) {
+                this.activity.procedure = this.copyUengineProperties.procedure;
             }
         }
 
@@ -257,6 +287,23 @@ export default {
                 attachments: me.activity ? me.activity.attachments : undefined,
                 taskLink: me.activity ? me.activity.taskLink : undefined
             };
+
+            // 세부 업무 수행 절차 Input/Output — 값이 있을 때만 키를 유지 (빈 배열·null은 키 제거)
+            if (me.activity && Array.isArray(me.activity.input) && me.activity.input.length > 0) {
+                me.copyUengineProperties.input = me.activity.input;
+            } else {
+                delete me.copyUengineProperties.input;
+            }
+            if (me.activity && Array.isArray(me.activity.output) && me.activity.output.length > 0) {
+                me.copyUengineProperties.output = me.activity.output;
+            } else {
+                delete me.copyUengineProperties.output;
+            }
+            if (me.activity && Array.isArray(me.activity.procedure) && me.activity.procedure.length > 0) {
+                me.copyUengineProperties.procedure = me.activity.procedure;
+            } else {
+                delete me.copyUengineProperties.procedure;
+            }
 
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },

@@ -18,6 +18,7 @@ export interface BpmnChange {
     name: string;
     elementType: string;
     description: string;
+    fieldChanges?: string[];
 }
 
 export interface BpmnDiffResult {
@@ -83,6 +84,57 @@ export function formatElementTypeName(type: string): string {
 }
 
 const BPMN_NS = 'http://www.omg.org/spec/BPMN/20100524/MODEL';
+const BPMNDI_NS = 'http://www.omg.org/spec/BPMN/20100524/DI';
+const DI_NS = 'http://www.omg.org/spec/DD/20100524/DI';
+
+function normalizeSerializedXml(xml: string): string {
+    return xml.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
+}
+
+function tryParseJson(text: string): any | null {
+    const trimmed = String(text || '').trim();
+    if (!trimmed) return null;
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        return null;
+    }
+}
+
+function flattenJsonPaths(value: any, prefix = ''): string[] {
+    if (value === null || value === undefined) return prefix ? [prefix] : [];
+    if (Array.isArray(value)) {
+        if (!value.length) return prefix ? [prefix] : [];
+        return value.flatMap((item, index) => flattenJsonPaths(item, prefix ? `${prefix}[${index}]` : `[${index}]`));
+    }
+    if (typeof value === 'object') {
+        const entries = Object.entries(value);
+        if (!entries.length) return prefix ? [prefix] : [];
+        return entries.flatMap(([key, child]) => flattenJsonPaths(child, prefix ? `${prefix}.${key}` : key));
+    }
+    return prefix ? [prefix] : [];
+}
+
+function extractSequenceFlowExtras(doc: Document): Record<string, { waypoints: string }> {
+    const edgeMap: Record<string, { waypoints: string }> = {};
+    const edges = doc.getElementsByTagNameNS(BPMNDI_NS, 'BPMNEdge');
+    for (let i = 0; i < edges.length; i++) {
+        const edge = edges[i];
+        const bpmnElement = edge.getAttribute('bpmnElement');
+        if (!bpmnElement) continue;
+        const waypoints = edge.getElementsByTagNameNS(DI_NS, 'waypoint');
+        const points: string[] = [];
+        for (let w = 0; w < waypoints.length; w++) {
+            const x = waypoints[w].getAttribute('x') || '';
+            const y = waypoints[w].getAttribute('y') || '';
+            points.push(`${x},${y}`);
+        }
+        edgeMap[bpmnElement] = {
+            waypoints: points.join(' -> ')
+        };
+    }
+    return edgeMap;
+}
 
 export function extractBpmnElements(xml: string): BpmnElement[] {
     if (!xml) return [];
@@ -90,6 +142,8 @@ export function extractBpmnElements(xml: string): BpmnElement[] {
     try {
         const parser = new DOMParser();
         const doc = parser.parseFromString(xml, 'text/xml');
+        const sequenceFlowExtras = extractSequenceFlowExtras(doc);
+        const serializer = new XMLSerializer();
 
         RELEVANT_SELECTORS.forEach((tag) => {
             // getElementsByTagNameNS로 네임스페이스 정확히 처리
@@ -121,6 +175,59 @@ export function extractBpmnElements(xml: string): BpmnElement[] {
                         attrs['__flowNodeRefs'] = refs.sort().join(',');
                     }
                 }
+                const extensionElements = Array.from(el.childNodes).filter(
+                    (node) => node.nodeType === Node.ELEMENT_NODE && (node as Element).localName === 'extensionElements'
+                ) as Element[];
+                if (extensionElements.length > 0) {
+                    const extensionKeys = new Set<string>();
+                    const extensionXml = extensionElements
+                        .map((ext) => normalizeSerializedXml(serializer.serializeToString(ext)))
+                        .join('|');
+                    for (const ext of extensionElements) {
+                        const descendants = ext.getElementsByTagName('*');
+                        for (let d = 0; d < descendants.length; d++) {
+                            const child = descendants[d];
+                            const childName = child.localName || child.nodeName;
+                            if (childName) extensionKeys.add(childName);
+                            for (let a = 0; a < child.attributes.length; a++) {
+                                extensionKeys.add(`${childName}.${child.attributes[a].name}`);
+                            }
+                            if (childName === 'json') {
+                                flattenJsonPaths(tryParseJson(child.textContent || '')).forEach((path) => extensionKeys.add(`json.${path}`));
+                            }
+                        }
+                    }
+                    if (extensionXml) attrs['__extensionElementsXml'] = extensionXml;
+                    if (extensionKeys.size > 0) attrs['__extensionKeys'] = Array.from(extensionKeys).sort().join(',');
+                }
+                if (tag !== 'sequenceFlow') {
+                    const childXml = Array.from(el.childNodes)
+                        .filter((node) => node.nodeType === Node.ELEMENT_NODE)
+                        .map((node) => node as Element)
+                        .filter((node) => !['incoming', 'outgoing', 'flowNodeRef', 'extensionElements'].includes(node.localName))
+                        .map((node) => normalizeSerializedXml(serializer.serializeToString(node)))
+                        .join('|');
+                    if (childXml) {
+                        attrs['__childXml'] = childXml;
+                    }
+                }
+                if (tag === 'sequenceFlow') {
+                    const conditionExpression = el.getElementsByTagNameNS(BPMN_NS, 'conditionExpression')[0];
+                    if (conditionExpression) {
+                        attrs['__conditionExpression'] = normalizeSerializedXml(serializer.serializeToString(conditionExpression));
+                    }
+                    const childXml = Array.from(el.childNodes)
+                        .filter((node) => node.nodeType === Node.ELEMENT_NODE)
+                        .map((node) => normalizeSerializedXml(serializer.serializeToString(node)))
+                        .join('|');
+                    if (childXml) {
+                        attrs['__childXml'] = childXml;
+                    }
+                    const extras = sequenceFlowExtras[id];
+                    if (extras?.waypoints) {
+                        attrs['__waypoints'] = extras.waypoints;
+                    }
+                }
                 elements.push({ id, name, elementType: tag, sourceRef, targetRef, attrs });
             }
         });
@@ -148,13 +255,115 @@ function buildDescription(type: string, el: BpmnElement): string {
 }
 
 function buildModifiedDescription(oldEl: BpmnElement, newEl: BpmnElement): string {
-    const parts: string[] = [];
-    if (oldEl.name !== newEl.name) {
-        parts.push(`Name changed: "${oldEl.name}" → "${newEl.name}"`);
-    } else {
-        parts.push(`Updated ${formatElementTypeName(newEl.elementType).toLowerCase()} properties`);
+    const fieldChanges = collectModifiedFieldChanges(oldEl, newEl);
+    if (fieldChanges.length === 0) {
+        return newEl.elementType === 'sequenceFlow'
+            ? 'Updated sequence flow properties'
+            : `Updated ${formatElementTypeName(newEl.elementType).toLowerCase()} properties`;
     }
-    return parts.join('. ');
+
+    const summary = fieldChanges.slice(0, 3);
+    if (fieldChanges.length > 3) {
+        summary.push(`${fieldChanges.length - 3} more field(s) changed`);
+    }
+    return summary.join('. ');
+}
+
+function formatFieldLabel(key: string): string {
+    const specialMap: Record<string, string> = {
+        __flowNodeRefs: 'Lane membership',
+        __conditionExpression: 'Condition',
+        __childXml: 'Internal BPMN structure',
+        __waypoints: 'Connection path',
+        __extensionElementsXml: 'Extension properties',
+        __extensionKeys: 'Extension fields',
+        sourceRef: 'Source',
+        targetRef: 'Target',
+        name: 'Name'
+    };
+    if (specialMap[key]) return specialMap[key];
+    return key
+        .replace(/^__/, '')
+        .replace(/_/g, ' ')
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function splitValueList(value: string | undefined): string[] {
+    return String(value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+function collectModifiedFieldChanges(oldEl: BpmnElement, newEl: BpmnElement): string[] {
+    const changes: string[] = [];
+
+    if (oldEl.sourceRef !== newEl.sourceRef || oldEl.targetRef !== newEl.targetRef) {
+        changes.push(`Connection changed: ${oldEl.sourceRef} -> ${oldEl.targetRef} => ${newEl.sourceRef} -> ${newEl.targetRef}`);
+    }
+
+    if (oldEl.name !== newEl.name) {
+        changes.push(`${formatFieldLabel('name')}: "${oldEl.name}" -> "${newEl.name}"`);
+    }
+
+    const allKeys = new Set([...Object.keys(oldEl.attrs), ...Object.keys(newEl.attrs)]);
+    for (const key of Array.from(allKeys).sort()) {
+        if (key === 'name') continue;
+        const oldValue = oldEl.attrs[key] || '';
+        const newValue = newEl.attrs[key] || '';
+        if (oldValue === newValue) continue;
+
+        if (key === '__extensionKeys') {
+            const before = new Set(splitValueList(oldValue));
+            const after = new Set(splitValueList(newValue));
+            const added = Array.from(after).filter((item) => !before.has(item));
+            const removed = Array.from(before).filter((item) => !after.has(item));
+            if (added.length > 0) changes.push(`Extension fields added: ${added.slice(0, 4).join(', ')}`);
+            if (removed.length > 0) changes.push(`Extension fields removed: ${removed.slice(0, 4).join(', ')}`);
+            continue;
+        }
+
+        if (key === '__extensionElementsXml') {
+            changes.push('Extension properties changed');
+            continue;
+        }
+
+        if (key === '__childXml') {
+            changes.push('Internal BPMN structure changed');
+            continue;
+        }
+
+        if (key === '__flowNodeRefs') {
+            changes.push('Lane membership changed');
+            continue;
+        }
+
+        if (key === '__conditionExpression') {
+            changes.push('Condition updated');
+            continue;
+        }
+
+        if (key === '__waypoints') {
+            changes.push('Connection path updated');
+            continue;
+        }
+
+        changes.push(`${formatFieldLabel(key)} changed`);
+    }
+
+    return Array.from(new Set(changes));
+}
+
+function serializeAttrs(attrs: Record<string, string>): string {
+    const sorted: Record<string, string> = {};
+    Object.keys(attrs)
+        .sort()
+        .forEach((key) => {
+            sorted[key] = attrs[key];
+        });
+    return JSON.stringify(sorted);
 }
 
 export function computeBpmnDiff(oldXml: string, newXml: string): BpmnDiffResult {
@@ -227,12 +436,14 @@ export function computeBpmnDiff(oldXml: string, newXml: string): BpmnDiffResult 
                 delete oldLaneAttrs['__flowNodeRefs'];
                 delete newLaneAttrs['__flowNodeRefs'];
                 if (JSON.stringify(oldLaneAttrs) !== JSON.stringify(newLaneAttrs)) {
+                    const fieldChanges = collectModifiedFieldChanges(oldEl, newEl);
                     changes.push({
                         type: 'modified',
                         id,
                         name: newEl.name || oldEl.name,
                         elementType: newEl.elementType,
-                        description: buildModifiedDescription(oldEl, newEl)
+                        description: buildModifiedDescription(oldEl, newEl),
+                        fieldChanges
                     });
                     diffActivitiesA[id] = 'modified';
                     diffActivitiesB[id] = 'modified';
@@ -240,15 +451,17 @@ export function computeBpmnDiff(oldXml: string, newXml: string): BpmnDiffResult 
                 continue;
             }
 
-            const oldAttrs = JSON.stringify(oldEl.attrs);
-            const newAttrs = JSON.stringify(newEl.attrs);
+            const oldAttrs = serializeAttrs(oldEl.attrs);
+            const newAttrs = serializeAttrs(newEl.attrs);
             if (oldAttrs !== newAttrs) {
+                const fieldChanges = collectModifiedFieldChanges(oldEl, newEl);
                 changes.push({
                     type: 'modified',
                     id,
                     name: newEl.name || oldEl.name,
                     elementType: newEl.elementType,
-                    description: buildModifiedDescription(oldEl, newEl)
+                    description: buildModifiedDescription(oldEl, newEl),
+                    fieldChanges
                 });
                 diffActivitiesA[id] = 'modified';
                 diffActivitiesB[id] = 'modified';

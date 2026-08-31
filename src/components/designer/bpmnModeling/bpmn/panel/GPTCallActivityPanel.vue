@@ -5,11 +5,11 @@
                 <v-icon start size="16">mdi-source-branch</v-icon>
                 호출 프로세스
             </v-tab>
-            <v-tab value="data">
+            <v-tab v-if="isBuiltinPropVisible('form_mapping')" value="data">
                 <v-icon start size="16">mdi-swap-horizontal</v-icon>
                 파라미터 컨텍스트
             </v-tab>
-            <v-tab value="roles">
+            <v-tab v-if="isBuiltinPropVisible('role_bindings')" value="roles">
                 <v-icon start size="16">mdi-account-switch-outline</v-icon>
                 역할 매핑
             </v-tab>
@@ -17,14 +17,15 @@
 
         <v-window v-model="activeTab">
             <v-window-item value="target" class="pa-4">
-                <div class="section-title mb-2">호출할 프로세스</div>
+                <div v-if="isBuiltinPropVisible('definition_id')" class="section-title mb-2">호출할 프로세스</div>
                 <ProcessDefinitionDisplay
+                    v-if="isBuiltinPropVisible('definition_id')"
                     v-model="copyUengineProperties.definitionId"
                     :disabled="isViewMode"
                     :options="definitionSelectOptions"
                 />
 
-                <div class="d-flex align-center mt-2">
+                <div v-if="isBuiltinPropVisible('definition_id')" class="d-flex align-center mt-2">
                     <v-chip v-if="copyUengineProperties.definitionId" size="small" variant="tonal" color="primary">
                         {{ copyUengineProperties.definitionId }}
                     </v-chip>
@@ -42,11 +43,11 @@
                     </v-btn>
                 </div>
 
-                <v-alert v-if="!copyUengineProperties.definitionId" class="mt-4" type="info" variant="tonal" density="compact">
+                <v-alert v-if="!copyUengineProperties.definitionId && isBuiltinPropVisible('definition_id')" class="mt-4" type="info" variant="tonal" density="compact">
                     호출할 프로세스를 선택하세요.
                 </v-alert>
 
-                <div class="mt-5">
+                <div v-if="isBuiltinPropVisible('for_each_variable')" class="mt-5">
                     <div class="section-title mb-2">반복 실행</div>
                     <v-autocomplete
                         v-model="selectedVariable"
@@ -64,8 +65,9 @@
 
                 <v-divider class="my-5" />
 
-                <div class="section-title mb-2">실행 옵션</div>
+                <div v-if="isBuiltinPropVisible('inherit_parent_reference_info')" class="section-title mb-2">실행 옵션</div>
                 <v-switch
+                    v-if="isBuiltinPropVisible('inherit_parent_reference_info')"
                     v-model="copyUengineProperties.inheritParentReferenceInfo"
                     color="primary"
                     density="compact"
@@ -73,12 +75,12 @@
                     :disabled="isViewMode"
                     label="부모 프로세스의 참조정보 사용"
                 />
-                <div class="text-caption text-medium-emphasis mt-1">
+                <div v-if="isBuiltinPropVisible('inherit_parent_reference_info')" class="text-caption text-medium-emphasis mt-1">
                     자식 프로세스의 첫 작업에서 부모 프로세스의 이전 산출물과 참조정보를 함께 사용할 수 있게 합니다.
                 </div>
             </v-window-item>
 
-            <v-window-item value="data" class="pa-4">
+            <v-window-item v-if="isBuiltinPropVisible('form_mapping')" value="data" class="pa-4">
                 <ProcessGptCallActivityFormMapper
                     :uengine-properties="copyUengineProperties"
                     :definition-id="copyUengineProperties.definitionId"
@@ -120,7 +122,7 @@
                 />
             </v-window-item>
 
-            <v-window-item value="roles" class="pa-4">
+            <v-window-item v-if="isBuiltinPropVisible('role_bindings')" value="roles" class="pa-4">
                 <v-alert v-if="calleeDefinitionRoles.length === 0" type="info" variant="tonal" density="compact" class="mb-4">
                     호출 프로세스의 역할 정보가 없으면 부모 역할이 그대로 상속됩니다.
                 </v-alert>
@@ -165,9 +167,11 @@ import BpmnRoleParameterContexts from '@/components/designer/bpmnModeling/bpmn/r
 import Mapper from '@/components/designer/mapper/Mapper.vue';
 import ProcessGptCallActivityFormMapper from '@/components/designer/bpmnModeling/bpmn/panel/ProcessGptCallActivityFormMapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'gpt-call-activity-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         ProcessDefinitionDisplay,
         BpmnParameterContexts,

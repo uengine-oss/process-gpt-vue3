@@ -238,6 +238,14 @@
                         </v-btn>
                     </template>
                 </v-tooltip>
+                <v-tooltip :text="$t('raci.toolbarTooltip') || '전체 태스크의 RACI 통합 매트릭스를 봅니다'" location="bottom">
+                    <template #activator="{ props: tt }">
+                        <v-btn v-bind="tt" variant="text" size="small" :disabled="!processNameText" @click="isViewRaciMatrix = true">
+                            <v-icon start size="16">mdi-table-account</v-icon>
+                            RACI
+                        </v-btn>
+                    </template>
+                </v-tooltip>
                 <v-tooltip text="현재 BPMN XML을 보거나 수정합니다" location="bottom">
                     <template #activator="{ props: tt }">
                         <v-btn v-bind="tt" variant="text" size="small" :disabled="!processNameText" @click="openXmlDialog">
@@ -561,6 +569,14 @@
         </div>
 
         <input ref="xmlFileInput" type="file" accept=".bpmn,.xml" style="display: none" @change="handleBpmnFileChange" />
+
+        <!-- RACI 통합 매트릭스 — 셀 편집은 모델러에 즉시 반영, 닫을 때 변경분이 있으면 영구 저장(persistBpmn) -->
+        <RaciMatrixDialog
+            v-model="isViewRaciMatrix"
+            :isViewMode="isViewMode || isToBePreviewing"
+            :processDefinition="processDefinition"
+            @changed="raciMatrixDirty = true"
+        />
 
         <v-dialog v-model="xmlDialog" max-width="1100">
             <v-card rounded="lg">
@@ -1045,6 +1061,7 @@ import { collectProcessRequiredViolations } from '@/utils/processSchemaValidatio
 import { useBpmnExport } from '@/composables/useBpmnExport';
 import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
 import ExecutableProcessView from '@/views/process-hierarchy/blueprint/ExecutableProcessView.vue';
+import RaciMatrixDialog from '@/components/designer/RaciMatrixDialog.vue';
 import { AN_STUDIO_KEY } from '@/composables/anStudio/useAnStudio';
 import { canUseExecFeatures } from '@/utils/execFeatureGate';
 import { processUuidForRoute } from '@/utils/processRouteId';
@@ -1077,7 +1094,7 @@ const EMPTY_TOBE_BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 
 export default {
     name: 'ProcessHierarchyDesigner',
-    components: { BpmnuEngine, ProgressBadge, OpenUiRenderer, ExecutableProcessView },
+    components: { BpmnuEngine, ProgressBadge, OpenUiRenderer, ExecutableProcessView, RaciMatrixDialog },
     // 순서도 페이지(ProcessHierarchy)가 provide 하는 공유 AN Studio — Exec(실행형) 뷰의 상태 소스
     inject: { anStudio: { from: AN_STUDIO_KEY, default: null } },
     props: {
@@ -1142,7 +1159,8 @@ export default {
         'partitionBlockAdded',
         'partitionBlockRenamed',
         'partitionCommitPreviewRequested',
-        'partitionNodeFocus'
+        'partitionNodeFocus',
+        'persistBpmn'
     ],
     beforeUnmount() {
         // 전역 상태 정리 — 다른 페이지에 영향 방지
@@ -1195,6 +1213,8 @@ export default {
             unassignedCount: 0,
             partitionCtxMenu: { show: false, x: 0, y: 0, elementId: null, elementName: '', currentBlockId: null },
             validationDialog: false,
+            isViewRaciMatrix: false,
+            raciMatrixDirty: false,
             validationResults: [],
             validationOverlayIds: [],
             validationMarkerIds: [],
@@ -1488,6 +1508,13 @@ export default {
         }
     },
     watch: {
+        // RACI 매트릭스 닫힘 → 셀 편집분이 있으면 스냅샷 영구 저장 (속성 패널 저장과 동일 경로)
+        isViewRaciMatrix(open) {
+            if (!open && this.raciMatrixDirty) {
+                this.raciMatrixDirty = false;
+                this.$emit('persistBpmn');
+            }
+        },
         // FR-003: 그룹 보기 토글 → 즉시 오버레이 렌더/클리어 (편집 모드에선 실 그룹 도형이므로 제외).
         //   renderPartitionBlocks 가 showPartitionGroups 를 자체 게이트하므로 off 시 clear 됨.
         showPartitionGroups() {

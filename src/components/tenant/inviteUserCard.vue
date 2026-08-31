@@ -189,7 +189,7 @@ export default {
                     }
                     this.isInviteLoading = false;
                     if (this.type === 'createTenant') {
-                        window.location.href = getTenantUrl(this.tenantInfo.id, '/definition-map');
+                        window.location.href = getTenantUrl(this.tenantInfo.id, '/process-architecture');
                     } else {
                         this.$emit('close', this.inviteUserlist);
                     }
@@ -202,7 +202,7 @@ export default {
             });
         },
         skipInvitation() {
-            window.location.href = getTenantUrl(this.tenantInfo.id, '/definition-map');
+            window.location.href = getTenantUrl(this.tenantInfo.id, '/process-architecture');
         }
     },
     computed: {

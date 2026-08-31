@@ -1,5 +1,5 @@
 <template>
-    <v-tooltip v-if="type === 'status' && status === 'public_review' && tooltipText" :text="tooltipText" location="top" max-width="300">
+    <v-tooltip v-if="type === 'status' && isPublicFeedbackStatus && tooltipText" :text="tooltipText" location="top" max-width="300">
         <template #activator="{ props: tooltipProps }">
             <v-chip
                 v-bind="tooltipProps"
@@ -36,6 +36,8 @@
 </template>
 
 <script>
+import { getStageDef } from '@/utils/processStages';
+
 export default {
     name: 'ProgressBadge',
     props: {
@@ -54,7 +56,21 @@ export default {
         status: {
             type: String,
             default: 'draft',
-            validator: (value) => ['draft', 'review', 'published', 'public_review', 'wip', 'sunset'].includes(value)
+            validator: (value) => {
+                const statuses = [
+                    'none',
+                    'draft',
+                    'review',
+                    'in_review',
+                    'published',
+                    'public_review',
+                    'public_feedback',
+                    'final_edit',
+                    'wip',
+                    'sunset'
+                ];
+                return statuses.includes(value);
+            }
         },
         // 아이콘 표시 여부
         showIcon: {
@@ -86,12 +102,12 @@ export default {
             type: String,
             default: ''
         },
-        // D-day 카운트다운 (public_review 상태에서 사용)
+        // D-day 카운트다운 (public_feedback 상태에서 사용)
         dDay: {
             type: Number,
             default: null
         },
-        // 검토 종료일 (public_review 상태에서 툴팁에 표시, 예: "3월 15일")
+        // 검토 종료일 (public_feedback 상태에서 툴팁에 표시, 예: "3월 15일")
         reviewEndDate: {
             type: String,
             default: ''
@@ -100,26 +116,52 @@ export default {
     emits: ['click'],
     computed: {
         statusConfig() {
+            // 5단계 색·아이콘·라벨 모두 공유 STAGE_DEFS 참조 (대시보드/리뷰보드/체계도 일관)
+            const draft = getStageDef('draft');
+            const inReview = getStageDef('in_review');
+            const publicFeedback = getStageDef('public_feedback');
+            const finalEdit = getStageDef('final_edit');
+            const published = getStageDef('published');
             return {
-                draft: {
+                none: {
                     color: 'grey',
-                    icon: 'mdi-pencil-outline',
-                    text: this.$t('progressBadge.draft') || '작성중'
+                    icon: 'mdi-minus',
+                    text: ''
+                },
+                draft: {
+                    color: draft.vuetifyColor,
+                    icon: draft.icon,
+                    text: draft.label
                 },
                 review: {
-                    color: 'orange',
-                    icon: 'mdi-eye-outline',
-                    text: this.$t('progressBadge.review') || '검토중'
+                    color: inReview.vuetifyColor,
+                    icon: inReview.icon,
+                    text: inReview.label
+                },
+                in_review: {
+                    color: inReview.vuetifyColor,
+                    icon: inReview.icon,
+                    text: inReview.label
                 },
                 published: {
-                    color: 'success',
-                    icon: 'mdi-check-circle',
-                    text: this.$t('progressBadge.published') || '완료'
+                    color: published.vuetifyColor,
+                    icon: published.icon,
+                    text: published.label
                 },
                 public_review: {
-                    color: '#1976D2',
-                    icon: 'mdi-bullhorn-outline',
+                    color: publicFeedback.vuetifyColor,
+                    icon: publicFeedback.icon,
                     text: this.publicReviewText
+                },
+                public_feedback: {
+                    color: publicFeedback.vuetifyColor,
+                    icon: publicFeedback.icon,
+                    text: this.publicReviewText
+                },
+                final_edit: {
+                    color: finalEdit.vuetifyColor,
+                    icon: finalEdit.icon,
+                    text: finalEdit.label
                 },
                 wip: {
                     color: '#7B1FA2',
@@ -134,23 +176,28 @@ export default {
             };
         },
         publicReviewText() {
-            const baseText = this.$t('progressBadge.public_review') || 'Public Review';
+            const baseText = getStageDef('public_feedback').label;
             if (this.dDay !== null && this.dDay !== undefined) {
+                if (this.dDay < 0) return `${baseText} · 만료`;
                 return `${baseText} D-${this.dDay}`;
             }
             return baseText;
         },
+        isPublicFeedbackStatus() {
+            return this.status === 'public_feedback' || this.status === 'public_review';
+        },
         tooltipText() {
-            if (this.status === 'public_review') {
-                const endDate = this.reviewEndDate || '';
-                if (endDate) {
-                    return (
-                        this.$t('progressBadge.publicReviewTooltipWithDate', { date: endDate }) ||
-                        `본사/현업 검토가 승인되었습니다. ${endDate}까지 자유롭게 의견을 남겨주세요.`
-                    );
-                }
-                return this.$t('progressBadge.publicReviewTooltip') || '본사/현업 검토가 승인되었습니다. 자유롭게 의견을 남겨주세요.';
-            }
+            // 본사 + 현업 단계에서 사용하던 공람 칩 hover 툴팁 — 본사 제거 정책으로 비활성화
+            // if (this.isPublicFeedbackStatus) {
+            //     const endDate = this.reviewEndDate || '';
+            //     if (endDate) {
+            //         return (
+            //             this.$t('progressBadge.publicReviewTooltipWithDate', { date: endDate }) ||
+            //             `본사/현업 검토가 승인되었습니다. ${endDate}까지 자유롭게 의견을 남겨주세요.`
+            //         );
+            //     }
+            //     return this.$t('progressBadge.publicReviewTooltip') || '본사/현업 검토가 승인되었습니다. 자유롭게 의견을 남겨주세요.';
+            // }
             return '';
         },
         badgeColor() {

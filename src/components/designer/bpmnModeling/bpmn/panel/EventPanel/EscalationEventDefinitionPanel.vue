@@ -1,6 +1,7 @@
 <template>
     <div>
         <v-text-field
+            v-if="isBuiltinPropVisible('expression')"
             v-model="expression"
             :label="$t('EscalationEventDefinitionPanel.expression')"
             :disabled="isViewMode"
@@ -13,10 +14,12 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
+import builtinPanelVisibilityMixin from '../builtinPanelVisibilityMixin';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'escalation-event-definition-panel',
+    mixins: [builtinPanelVisibilityMixin],
     props: {
         element: Object,
         uengineProperties: Object,
@@ -36,6 +39,9 @@ export default {
         me.expression = me.copyUengineProperties.expression;
     },
     computed: {
+        builtinPanelTaskTypeOverride() {
+            return 'bpmn:EscalationEventDefinition';
+        },
         panelName() {
             return _.kebabCase(this.eventType.split(':')[1]) + '-panel';
         }

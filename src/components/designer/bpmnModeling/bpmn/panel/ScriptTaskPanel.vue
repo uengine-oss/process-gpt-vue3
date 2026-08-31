@@ -1,9 +1,9 @@
 <template>
     <div v-if="copyUengineProperties">
         <div class="mb-6 mt-6">
-            <div>{{ $t('BpmnPropertyPanel.scriptType') }}</div>
+            <div v-if="isBuiltinPropVisible('language')">{{ $t('BpmnPropertyPanel.scriptType') }}</div>
             <v-card variant="outlined" class="pa-2" style="border-radius: 8px !important">
-                <v-radio-group v-model="copyUengineProperties.language">
+                <v-radio-group v-if="isBuiltinPropVisible('language')" v-model="copyUengineProperties.language">
                     <v-radio
                         id="Javascript"
                         name="Javascript"
@@ -14,19 +14,20 @@
                     <v-radio id="Java" name="Java" value="1" label="Java" style="margin-right: 8px !important; font-size: 15px"></v-radio>
                 </v-radio-group>
                 <v-textarea
+                    v-if="isBuiltinPropVisible('script')"
                     :label="$t('BpmnPropertyPanel.script')"
                     v-model="copyUengineProperties.script"
                     :disabled="isViewMode"
                     style="width: 100%"
                 ></v-textarea>
-                <GenerateScriptPanel v-model="copyUengineProperties.script" :language="languageLabel" />
+                <GenerateScriptPanel v-if="isBuiltinPropVisible('generate_script')" v-model="copyUengineProperties.script" :language="languageLabel" />
                 <DetailComponent
                     :title="$t('ScriptTaskPanel.scriptDescriptionTitle')"
                     :detailUrl="'https://bpm-intro.uengine.io/api-customizing/script-task/'"
                 />
             </v-card>
         </div>
-        <div>
+        <div v-if="isBuiltinPropVisible('out')">
             <v-row class="ma-0 pa-0">
                 <v-autocomplete
                     :label="$t('ScriptTaskPanel.return')"
@@ -40,12 +41,12 @@
                 ></v-autocomplete>
             </v-row>
         </div>
-        <DetailComponent style="padding-bottom: 20px" :title="$t('ScriptTaskPanel.returnTitle')" />
+        <DetailComponent v-if="isBuiltinPropVisible('out')" style="padding-bottom: 20px" :title="$t('ScriptTaskPanel.returnTitle')" />
         <!-- Lead Time -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('lead_time')" class="mt-4">
             <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
-        <div class="mt-3" v-if="mode == 'ProcessGPT'">
+        <div class="mt-3" v-if="mode == 'ProcessGPT' && isBuiltinPropVisible('custom_properties')">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
@@ -54,7 +55,7 @@
         </div>
 
         <!-- Task Color Picker -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('task_color')" class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <v-btn
@@ -120,9 +121,11 @@ import { Icon } from '@iconify/vue';
 import GenerateScriptPanel from './GenerateScriptPanel.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import LeadTimeInput from './LeadTimeInput.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'script-task-panel',
+    mixins: [builtinPanelVisibilityMixin],
     props: {
         uengineProperties: Object,
         processDefinitionId: String,

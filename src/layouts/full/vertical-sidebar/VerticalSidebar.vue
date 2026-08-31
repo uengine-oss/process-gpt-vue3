@@ -344,8 +344,19 @@
                         <v-list-item
                             v-for="item in [
                                 { title: '속성 스키마', icon: 'formList', to: '/admin-console/property-schemas' },
+                                { title: '수정 잠금', icon: 'lock', to: '/admin-console/data-freeze' },
                                 { title: '휴지통', icon: 'trash', to: '/admin-console/recycle-bin' },
-                                { title: 'Task 종류 설정', icon: 'completed-task', to: '/admin-console/task-types' }
+                                { title: '시스템 운영', icon: 'settings', to: '/admin-console/system-operations' },
+                                { title: 'KPI 목표', icon: 'target', to: '/admin-console/kpi-targets' },
+                                { title: 'KPI 목표 - 신규', icon: 'target', to: '/admin-console/kpi-targets-new' },
+                                { title: '사용 활성도', icon: 'graph-up-linear', to: '/admin-console/usage-adoption' },
+                                { title: '감사 로그', icon: 'document', to: '/admin-console/audit-trail' },
+                                { title: '실행 인스턴스', icon: 'play-outline', to: '/admin-console/exec-instances' },
+                                { title: 'PI Flag', icon: 'flag-line-duotone', to: '/admin-console/pi-flags' },
+                                { title: 'Task 종류 설정', icon: 'completed-task', to: '/admin-console/task-types' },
+                                { title: '시스템 관리', icon: 'server-line-duotone', to: '/systems' },
+                                { title: '업무분장', icon: 'users-group-rounded-line-duotone', to: '/work-assignment' },
+                                { title: '사내 정책문서', icon: 'submit-document', to: '/policy-document' }
                             ]"
                             :key="item.to"
                             :to="item.to"
@@ -750,13 +761,6 @@ export default {
                     disable: false
                 },
                 {
-                    title: 'processHierarchy.title',
-                    icon: 'file-tree',
-                    BgColor: 'primary',
-                    to: '/process-hierarchy',
-                    disable: false
-                },
-                {
                     title: 'versionComparison.title',
                     icon: 'file-document-edit-outline',
                     BgColor: 'primary',
@@ -764,7 +768,15 @@ export default {
                     disable: false
                 },
                 ...(this.pal
-                    ? []
+                    ? [
+                          {
+                              title: '프로세스 리스트',
+                              icon: 'delegation',
+                              BgColor: 'primary',
+                              to: '/call-activity-management',
+                              disable: false
+                          }
+                      ]
                     : [
                           {
                               title: 'reviewBoard.title',
@@ -874,9 +886,24 @@ export default {
                 // }
             ];
 
-            // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
+            // PAL 모드에서는 PAL 전용 분석 메뉴로 대체
             if (this.pal) {
-                this.analyticsItem = [];
+                this.analyticsItem = [
+                    {
+                        title: '분석 대시보드',
+                        icon: 'dashboard',
+                        BgColor: 'primary',
+                        to: '/analysis-dashboard',
+                        disable: false
+                    },
+                    {
+                        title: '온톨로지 익스플로러',
+                        icon: 'sitemap',
+                        BgColor: 'primary',
+                        to: '/ontology-explorer',
+                        disable: false
+                    }
+                ];
             }
 
             if (!this.JMS) {

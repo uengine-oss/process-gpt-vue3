@@ -1,13 +1,13 @@
 <template>
     <div>
         <div class="included pa-4 pt-0" style="margin-bottom: 22px">
-            <v-row class="ma-0 pa-0 align-center">
+            <v-row v-if="isBuiltinPropVisible('role_resolution_type')" class="ma-0 pa-0 align-center">
                 <div>{{ $t('LanePanel.selectRoleType') }}</div>
 
                 <DetailComponent :title="$t('LanePanel.radioDescriptionTitle')" :details="radioDescription" />
             </v-row>
             <v-card variant="outlined" class="pa-2" style="border-radius: 8px !important">
-                <v-radio-group v-model="type" row style="margin-top: 0px !important">
+                <v-radio-group v-if="isBuiltinPropVisible('role_resolution_type')" v-model="type" row style="margin-top: 0px !important">
                     <v-radio
                         v-for="option in roleOptions"
                         :key="option.value"
@@ -17,20 +17,20 @@
                     ></v-radio>
                 </v-radio-group>
                 <v-text-field
-                    v-if="role && role.resolutionRule"
+                    v-if="role && role.resolutionRule && isBuiltinPropVisible('resolution_rule')"
                     v-model="role.resolutionRule"
                     :label="$t('LanePanel.resolutionRule')"
                     class="mt-4"
                 ></v-text-field>
 
                 <v-text-field
-                    v-if="type == 'org.uengine.five.overriding.IAMRoleResolutionContext'"
+                    v-if="type == 'org.uengine.five.overriding.IAMRoleResolutionContext' && isBuiltinPropVisible('scope')"
                     v-model="copyUengineProperties.roleResolutionContext.scope"
                     :label="$t('LanePanel.scopeName')"
                     class="mt-4"
                 ></v-text-field>
 
-                <div v-if="type == 'Organization'">
+                <div v-if="type == 'Organization' && isBuiltinPropVisible('selected_organization')">
                     <v-autocomplete
                         v-model="selectedOrganization"
                         :items="organizationOptions"
@@ -61,7 +61,7 @@
                     </v-autocomplete>
                 </div>
 
-                <div v-if="isDirectUser">
+                <div v-if="isDirectUser && isBuiltinPropVisible('endpoint')">
                     <user-select-field
                         v-model="copyUengineProperties.roleResolutionContext.endpoint"
                         :name="$t('LanePanel.userID')"
@@ -81,12 +81,14 @@ import BackendFactory from '@/components/api/BackendFactory';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { writeUengineProperties } from '@/utils/bpmnUengineProperties';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 const DIRECT_ROLE_RESOLUTION_TYPE = 'org.uengine.kernel.DirectRoleResolutionContext';
 const CASCADE_ORCHESTRATION = 'langchain-react';
 
 export default {
     name: 'gpt-lane-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         UserSelectField
     },

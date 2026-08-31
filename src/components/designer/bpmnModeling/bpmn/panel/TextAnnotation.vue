@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="included" style="margin-bottom: 22px">
+        <div v-if="isBuiltinPropVisible('text')" class="included" style="margin-bottom: 22px">
             <div style="margin-bottom: 8px">Text Annotation</div>
             <v-textarea v-model="copyText"></v-textarea>
         </div>
@@ -9,8 +9,10 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import _ from 'lodash';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 export default {
     name: 'text-annotation-panel',
+    mixins: [builtinPanelVisibilityMixin],
     props: {
         element: Object,
         uengineProperties: Object,

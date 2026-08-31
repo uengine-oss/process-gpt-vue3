@@ -1,6 +1,6 @@
 <template>
     <v-row class="ma-0 pa-0">
-        <v-col cols="12" class="pa-0">
+        <v-col cols="12" class="pa-0" v-if="isBuiltinPropVisible('compensate_task')">
             <v-autocomplete
                 :label="$t('CompensateEventDefinitionPanel.selectTask')"
                 :items="formattedTaskList"
@@ -18,10 +18,12 @@
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
+import builtinPanelVisibilityMixin from '../builtinPanelVisibilityMixin';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'compensate-event-definition-panel',
+    mixins: [builtinPanelVisibilityMixin],
     props: {
         element: Object,
         uengineProperties: Object,
@@ -71,6 +73,9 @@ export default {
         this.formatTaskList(this.activities);
     },
     computed: {
+        builtinPanelTaskTypeOverride() {
+            return 'bpmn:CompensateEventDefinition';
+        },
         panelName() {
             return _.kebabCase(this.eventType.split(':')[1]) + '-panel';
         },

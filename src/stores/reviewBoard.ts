@@ -14,6 +14,7 @@ export interface ReviewItem {
     version_label?: string;
     major_version?: number;
     minor_version?: number;
+    submitted_by_id?: string;
     submitted_by?: string;
     submitted_at?: string;
     // 병렬 승인
@@ -40,6 +41,11 @@ export interface ReviewItem {
     reopen_requested_by?: string;
     reopen_requested_at?: string;
     reopen_reason?: string;
+    // 프로세스 소유자 (proc_def에서 가져온 값)
+    pi_owners?: string[];
+    hq_owners?: string[];
+    field_owners?: string[];
+    master_owner?: string | null;
     // 기타
     assigned_reviewer_id?: string;
     assigned_reviewer_name?: string;
@@ -50,6 +56,7 @@ export interface ReviewItem {
     tenant_id?: string;
     created_at?: string;
     updated_at?: string;
+    is_my_submission?: boolean;
 }
 
 export interface PipelineSummary {

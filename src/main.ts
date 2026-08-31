@@ -53,6 +53,7 @@ import vuetify from './plugins/vuetify';
 import hammerDirective from '@/components/directive/hammerDirective';
 import i18nDirective from './plugins/i18nDirective';
 import { router } from './router';
+import { startUsageTracking } from '@/services/usageAnalytics';
 import store from './store';
 import axios from 'axios';
 import Maska from 'maska';
@@ -411,6 +412,10 @@ async function initializeApp() {
     });
 
     app.use(router);
+    // 사용/도입 현황 분석(app_usage_events) — pal 모드 전용 수집
+    if (window.$pal) {
+        startUsageTracking(router);
+    }
     // app.component('EasyDataTable', Vue3EasyDataTable);
     app.component('perfect-scrollbar', PerfectScrollbar);
     app.use(createPinia());

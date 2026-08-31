@@ -7,12 +7,12 @@
         </div> -->
         <div>
             <div v-if="mode != 'ProcessGPT'">
-                <v-radio-group v-model="isForEachRole" inline>
+                <v-radio-group v-if="isBuiltinPropVisible('for_each_mode')" v-model="isForEachRole" inline>
                     <v-radio :label="$t('SubProcessPanel.forEachRole')" :value="true"></v-radio>
                     <v-radio :label="$t('SubProcessPanel.forEachVariable')" :value="false"></v-radio>
                 </v-radio-group>
                 <div v-if="isForEachRole">
-                    <v-row class="ma-0 pa-0 align-center">
+                    <v-row v-if="isBuiltinPropVisible('for_each_role')" class="ma-0 pa-0 align-center">
                         <v-autocomplete
                             :items="roles"
                             v-model="selectedRole"
@@ -36,7 +36,7 @@
                     </v-row>
                 </div>
                 <div v-else>
-                    <v-row class="ma-0 pa-0 align-center">
+                    <v-row v-if="isBuiltinPropVisible('for_each_variable')" class="ma-0 pa-0 align-center">
                         <v-autocomplete
                             v-if="mode == 'uEngine'"
                             :items="processVariables"
@@ -69,6 +69,7 @@
             <!-- ProcessGPT 전용: TextConditionField 패턴으로 텍스트/함수 모드 토글 및 입력 -->
             <div v-if="mode == 'ProcessGPT'">
                 <TextConditionField
+                    v-if="isBuiltinPropVisible('for_each_variable_condition')"
                     :value="typeof copyUengineProperties.forEachVariable === 'string' ? copyUengineProperties.forEachVariable : ''"
                     @update:value="updateForEachVariable"
                     :mode="copyUengineProperties.forEachVariableMode"
@@ -76,7 +77,7 @@
                     @update:mode="updateForEachVariableMode"
                     @update:conditionFunction="updateDeterminationCode"
                 />
-                <div class="mt-2 d-flex justify-end">
+                <div v-if="isBuiltinPropVisible('finalize_rule_generator')" class="mt-2 d-flex justify-end">
                     <v-btn @click="generateFinalizeRule" color="primary" density="compact" variant="flat" rounded>
                         <span v-if="isFinalizeRuleGenerating" class="thinking-wave-text">
                             <span
@@ -95,7 +96,7 @@
                 </div>
             </div>
 
-            <div>
+            <div v-if="isBuiltinPropVisible('sub_process_name_pattern')">
                 <v-row class="ma-0 pa-0 mt-2">
                     <v-text-field v-model="pattern" :label="$t('SubProcessPanel.subProcessNamePattern')"></v-text-field>
                 </v-row>
@@ -188,7 +189,7 @@
         </div>
 
         <!-- Task Color Picker -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('task_color')" class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <v-btn
@@ -252,9 +253,11 @@ import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import SubprocessRuleGenerator from '@/components/ai/SubprocessRuleGenerator.js';
 import TextConditionField from './TextConditionField.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'sub-process-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         TextConditionField
     },

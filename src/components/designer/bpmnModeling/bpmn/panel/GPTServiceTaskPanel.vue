@@ -2,16 +2,17 @@
     <div>
         <v-tabs v-model="activeTab" class="pl-4 pr-4">
             <v-tab value="setting">{{ $t('BpmnPropertyPanel.setting') }}</v-tab>
-            <v-tab value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
+            <v-tab v-if="isBuiltinPropVisible('reference_info')" value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
                 <div class="mb-6">
                     <!-- Duration -->
-                    <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
+                    <v-text-field v-if="isBuiltinPropVisible('duration')" v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
 
                     <!-- Future Status (Phase 2-2) -->
                     <v-select
+                        v-if="isBuiltinPropVisible('future_status')"
                         v-model="activity.futureStatus"
                         :label="$t('futureStatus.label')"
                         :items="futureStatusOptions"
@@ -26,12 +27,13 @@
                     ></v-select>
 
                     <!-- Instruction -->
-                    <Instruction v-model="activity.description" :isViewMode="isViewMode" class="mb-4"></Instruction>
+                    <Instruction v-if="isBuiltinPropVisible('description')" v-model="activity.description" :isViewMode="isViewMode" class="mb-4"></Instruction>
                     <!-- Checkpoints -->
-                    <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
+                    <Checkpoints v-if="isBuiltinPropVisible('checkpoints')" v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
 
                     <!-- Custom Properties -->
                     <KeyValueField
+                        v-if="isBuiltinPropVisible('custom_properties')"
                         v-model="activity.customProperties"
                         :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
                         :readonly="isViewMode"
@@ -39,7 +41,7 @@
                     ></KeyValueField>
 
                     <!-- Task Color Picker -->
-                    <div class="mt-4">
+                    <div v-if="isBuiltinPropVisible('task_color')" class="mt-4">
                         <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <v-btn
@@ -100,7 +102,7 @@
                     </div>
                 </div>
             </v-window-item>
-            <v-window-item value="inputData" class="pa-4">
+            <v-window-item v-if="isBuiltinPropVisible('reference_info')" value="inputData" class="pa-4">
                 <ProcessGptReferenceMapper
                     :inputData="activity.inputData"
                     :mapperIn="copyUengineProperties.mapperIn"
@@ -122,11 +124,13 @@ import Checkpoints from '@/components/designer/CheckpointsField.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import ProcessGptReferenceMapper from './ProcessGptReferenceMapper.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     name: 'gpt-service-task-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         Instruction,
         Checkpoints,

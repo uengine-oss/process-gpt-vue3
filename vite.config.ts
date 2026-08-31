@@ -60,8 +60,20 @@ export default defineConfig({
         }
     },
     optimizeDeps: {
-        include: ['@fullcalendar/core'],
-        exclude: ['vuetify'],
+        include: [
+            '@fullcalendar/core',
+            // NVL layout-workers 의 CJS 하위 의존성 — exclude 된 ESM 워커가 import 하므로 사전 번들 필요
+            '@neo4j-nvl/layout-workers > cytoscape',
+            '@neo4j-nvl/layout-workers > cytoscape-cose-bilkent',
+            '@neo4j-nvl/layout-workers > @neo4j-bloom/dagre',
+            '@neo4j-nvl/layout-workers > bin-pack',
+            '@neo4j-nvl/layout-workers > graphlib'
+        ],
+        // layout-workers: hierarchical 레이아웃이 SharedWorker(new URL(...), import.meta.url)로
+        // 실행되는데, 사전 번들을 거치면 워커 URL 이 깨져 레이아웃 결과가 도착하지 않는다
+        // (노드가 전부 원점에 뭉치는 증상). exclude 하면 Vite 가 워커 패턴을 직접 처리한다.
+        // — NVL 공식 Vite 가이드 패턴.
+        exclude: ['vuetify', '@neo4j-nvl/layout-workers'],
         entries: ['./src/**/*.vue']
     },
     server: {
@@ -152,6 +164,16 @@ export default defineConfig({
                 // 있어(troubleshooting #16) 이 저장소에서는 :8021 로 띄운다.
                 target: 'http://127.0.0.1:8099',
                 changeOrigin: true
+            },
+            // PAL 모드 시스템 관리 백엔드 (playground-pi-system-backend, FastAPI).
+            // pi-system-web 의 프록시와 동일 구성이되 SSO 헤더 주입(injectDevSsoHeaders)은
+            // 계정 연동 제외 방침에 따라 가져오지 않음 — 헤더가 없으면 백엔드가 로컬 기본 사용자를 쓴다.
+            '/pi-system-backend/': {
+                target: env.VITE_PI_SYSTEM_BACKEND_URL || 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                timeout: 0,
+                proxyTimeout: 0,
+                rewrite: (path) => path.replace(/^\/pi-system-backend/, '')
             },
             // Work Assistant Agent API
             '/agent/': {

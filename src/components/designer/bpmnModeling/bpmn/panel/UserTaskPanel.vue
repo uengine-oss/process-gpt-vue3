@@ -1,5 +1,6 @@
 <template>
     <div>
+        <template v-if="isBuiltinPropVisible('selected_activity')">
         <DetailComponent
             :title="$t('UserTaskPanel.radioSelectDescriptionTitle')"
             :details="radioSelectDescription"
@@ -11,12 +12,13 @@
             <v-radio :label="$t('UserTaskPanel.form')" value="FormActivity"></v-radio>
             <v-radio v-if="useEvent" :label="$t('UserTaskPanel.external')" value="URLActivity"></v-radio>
         </v-radio-group>
+        </template>
 
         <div v-if="copyUengineProperties.assignType === 'default'" class="mt-2">
             <DetailComponent :title="$t('UserTaskPanel.defaultInfo')" />
         </div>
 
-        <div v-if="copyUengineProperties.assignType === 'expression'" class="mt-2">
+        <div v-if="copyUengineProperties.assignType === 'expression' && isBuiltinPropVisible('assignment_expression')" class="mt-2">
             <DetailComponent :title="$t('UserTaskPanel.expressionInfo')" />
             <v-text-field
                 v-model="copyUengineProperties.assignmentExpression"
@@ -28,29 +30,32 @@
             ></v-text-field>
         </div>
 
-        <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="openFormMapper">
+        <v-btn v-if="isBuiltinPropVisible('data_mapping')" block text rounded color="primary" variant="flat" class="my-3" @click="openFormMapper">
             {{ $t('ReceiveTaskPanel.dataMapping') }}
         </v-btn>
 
         <div v-if="!isLoading && selectedActivity == 'HumanActivity'">
+            <template v-if="useEvent">
             <EventSynchronizationForm
-                v-if="useEvent"
+                v-if="isBuiltinPropVisible('event_synchronization')"
                 v-model="copyUengineProperties"
                 :roles="roles"
                 :taskName="name"
                 :definition="copyDefinition"
                 :selectedActivity="selectedActivity"
             ></EventSynchronizationForm>
+            </template>
             <div v-else>
-                <DefaultArguments v-model="copyUengineProperties"></DefaultArguments>
-                <Instruction v-model="activity.instruction" :isViewMode="isViewMode"></Instruction>
-                <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points"></Checkpoints>
+                <DefaultArguments v-if="isBuiltinPropVisible('default_arguments')" v-model="copyUengineProperties"></DefaultArguments>
+                <Instruction v-if="isBuiltinPropVisible('instruction')" v-model="activity.instruction" :isViewMode="isViewMode"></Instruction>
+                <Checkpoints v-if="isBuiltinPropVisible('checkpoints')" v-model="activity.checkpoints" class="user-task-panel-check-points"></Checkpoints>
             </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'FormActivity'">
             <div>
                 <v-row class="ma-0 pa-0">
                     <v-col class="pa-0 pb-2">
+                        <template v-if="isBuiltinPropVisible('input_form_parameters')">
                         <v-row class="ma-0 pa-0 align-center">
                             <v-col>
                                 <v-label class="font-weight-medium" for="hcpm">{{ $t('UserTaskPanel.inputForm') }}</v-label>
@@ -96,7 +101,9 @@
                                 </v-row>
                             </div>
                         </div>
+                        </template>
 
+                        <template v-if="isBuiltinPropVisible('output_form')">
                         <v-row class="ma-0 pa-0 align-center">
                             <v-col>
                                 <v-label class="font-weight-medium" for="hcpm">{{ $t('UserTaskPanel.outputForm') }}</v-label>
@@ -111,11 +118,13 @@
                             hide-details
                         >
                         </v-autocomplete>
+                        </template>
                     </v-col>
                 </v-row>
             </div>
+            <template v-if="useEvent">
             <EventSynchronizationForm
-                v-if="useEvent"
+                v-if="isBuiltinPropVisible('event_synchronization')"
                 v-model="copyUengineProperties"
                 :roles="roles"
                 :taskName="name"
@@ -123,13 +132,15 @@
                 :selectedActivity="selectedActivity"
                 :showAttributes="false"
             ></EventSynchronizationForm>
+            </template>
             <div v-else>
-                <Instruction v-model="activity.instruction" :isViewMode="isViewMode"></Instruction>
-                <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points"></Checkpoints>
+                <Instruction v-if="isBuiltinPropVisible('instruction')" v-model="activity.instruction" :isViewMode="isViewMode"></Instruction>
+                <Checkpoints v-if="isBuiltinPropVisible('checkpoints')" v-model="activity.checkpoints" class="user-task-panel-check-points"></Checkpoints>
             </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'URLActivity' && useEvent">
             <v-text-field
+                v-if="isBuiltinPropVisible('url')"
                 v-model="copyUengineProperties.url"
                 :label="$t('EventSynchronizationForm.url')"
                 variant="outlined"
@@ -138,6 +149,7 @@
                 class="mb-4"
             />
             <MultiEventSynchronizationForm
+                v-if="isBuiltinPropVisible('multi_event_synchronization')"
                 v-model="copyUengineProperties"
                 :roles="roles"
                 :taskName="name"
@@ -148,12 +160,12 @@
     </div>
 
     <!-- Lead Time -->
-    <div class="mt-4">
+    <div v-if="isBuiltinPropVisible('lead_time')" class="mt-4">
         <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
     </div>
 
     <!-- Schema-based Properties -->
-    <div class="mt-4">
+    <div v-if="isBuiltinPropVisible('schema_based_properties')" class="mt-4">
         <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.schemaProperties') || '일반 속성' }}</div>
         <SchemaBasedProperties
             task-type="bpmn:UserTask"
@@ -164,7 +176,7 @@
     </div>
 
     <!-- Task Color Picker -->
-    <div class="mt-4">
+    <div v-if="isBuiltinPropVisible('task_color')" class="mt-4">
         <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
 
         <!-- Preset Colors -->
@@ -283,9 +295,11 @@ import Instruction from '@/components/designer/InstructionField.vue';
 import { getGroups, getUsersByGroups, getAllUsers } from '@/utils/keycloak';
 import SchemaBasedProperties from './SchemaBasedProperties.vue';
 import LeadTimeInput from './LeadTimeInput.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'user-task-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         BpmnParameterContexts,
         Mapper,
