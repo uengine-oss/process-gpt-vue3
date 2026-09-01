@@ -89,6 +89,13 @@ export function resolveRole(isAdmin: boolean | undefined, role: string | null | 
     return isAdmin ? ROLES.ADMIN : ROLES.VIEWER;
 }
 
+/** 레거시/외부 인증 역할명까지 포함한 관리자 여부 판정 */
+export function isAdminRole(role: string | null | undefined): boolean {
+    if (!role) return false;
+    const normalized = role.trim().toLowerCase().replace(/[_-]/g, '');
+    return normalized === 'admin' || normalized === 'superadmin' || normalized === 'roleadmin';
+}
+
 /** 특정 역할 이상인지 확인 */
 export function hasRoleAtLeast(userRole: string | null | undefined, requiredRole: RoleType): boolean {
     return level(userRole) >= level(requiredRole);

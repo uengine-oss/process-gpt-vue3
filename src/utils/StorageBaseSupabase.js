@@ -1,5 +1,6 @@
 import { getBaseDomain, getMainDomainUrl } from './domainUtils.js';
 import { getTenantId } from './tenant';
+import { isAdminRole } from './roles';
 
 class StorageBaseError extends Error {
     constructor(message, cause, args) {
@@ -37,7 +38,7 @@ export default class StorageBaseSupabase {
 
             // 세션이 유효한 경우
             if (!sessionError && currentSession.session && currentSession.session.user) {
-                this.writeUserData(currentSession);
+                await this.writeUserData(currentSession);
                 return true;
             }
 
@@ -101,7 +102,7 @@ export default class StorageBaseSupabase {
             }
 
             if (finalSession.session && finalSession.session.user) {
-                this.writeUserData(finalSession);
+                await this.writeUserData(finalSession);
                 return true;
             }
 
@@ -1066,7 +1067,8 @@ export default class StorageBaseSupabase {
                     // 덮어쓰기 전의 값을 잡아둔다. 아래에서 실제로 바뀌었을 때만 이벤트를 쏘기 위함이다.
                     // 값이 없으면 사이드바가 mount 시 읽는 기본값(비관리자)과 같으므로 false 로 본다.
                     const prevIsAdmin = window.localStorage.getItem('isAdmin') === 'true';
-                    window.localStorage.setItem('isAdmin', data.is_admin || false);
+                    const nextIsAdmin = data.is_admin === true || data.is_admin === 'true' || isAdminRole(data.role);
+                    window.localStorage.setItem('isAdmin', String(nextIsAdmin));
                     window.localStorage.setItem('picture', data.profile || '');
                     if (data.role && data.role !== '') {
                         window.localStorage.setItem('role', data.role);
@@ -1127,7 +1129,6 @@ export default class StorageBaseSupabase {
                     // (일반 계정은 이 분기를 타지 않아 증상이 없었다 — 관리자만 느린 버그였다)
                     //
                     // 강등(true→false)도 메뉴를 다시 그려야 하므로 함께 알린다.
-                    const nextIsAdmin = !!data.is_admin;
                     if (nextIsAdmin !== prevIsAdmin) {
                         const event = new CustomEvent('localStorageChange', { detail: { key: 'isAdmin', value: nextIsAdmin } });
                         window.dispatchEvent(event);

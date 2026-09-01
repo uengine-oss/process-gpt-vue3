@@ -4,6 +4,7 @@
  */
 
 import jwtDecode from 'jwt-decode';
+import { isAdminRole } from '@/utils/roles';
 
 interface SsoUser {
     id: string;
@@ -55,7 +56,12 @@ function resolveRoleFromClaims(claims: Record<string, any> | null | undefined, f
 
 function resolveIsAdminFromClaims(claims: Record<string, any> | null | undefined, fallbackIsAdmin?: boolean): boolean {
     const appMetadata = claims?.app_metadata && typeof claims.app_metadata === 'object' ? claims.app_metadata : null;
-    return normalizeBoolean(claims?.is_admin) || normalizeBoolean(appMetadata?.is_admin) || !!fallbackIsAdmin;
+    return (
+        normalizeBoolean(claims?.is_admin) ||
+        normalizeBoolean(appMetadata?.is_admin) ||
+        isAdminRole(resolveRoleFromClaims(claims)) ||
+        !!fallbackIsAdmin
+    );
 }
 
 // SSO 토큰은 메모리에 저장 (보안)
