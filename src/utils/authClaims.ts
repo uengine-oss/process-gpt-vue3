@@ -1,7 +1,7 @@
 import { reactive, readonly } from 'vue';
 import jwtDecode from 'jwt-decode';
 import { getSsoToken, getSsoUser } from '@/utils/ssoAuth';
-import { resolveRole, hasRoleAtLeast, ROLES, type RoleType } from '@/utils/roles';
+import { resolveRole, hasRoleAtLeast, isAdminRole, ROLES, type RoleType } from '@/utils/roles';
 import { refreshCustomPermissions } from '@/utils/customPermissions';
 import { loadMenuRoleOverrides } from '@/utils/menuRoleOverrides';
 
@@ -76,7 +76,7 @@ function applyClaims(claims: Record<string, any> | null | undefined) {
     // [변경] role 이 'admin' 이면 isAdmin 도 true 로 reconcile.
     // 이렇게 하면 localStorage 시뮬레이션처럼 is_admin/role 이 불일치한 상태에서도
     // isAdmin 만 보는 가드(예: AdminConsoleLayout)가 role 을 따라가게 된다.
-    const resolvedRoleIsAdmin = typeof state.role === 'string' && state.role.toLowerCase() === 'admin';
+    const resolvedRoleIsAdmin = isAdminRole(state.role);
     state.isAdmin = explicitIsAdmin || resolvedRoleIsAdmin;
     state.tenantId =
         typeof claims?.tenant_id === 'string'
