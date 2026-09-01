@@ -95,7 +95,7 @@ const openSidebar = () => {
                         :class="
                             globalIsMobile
                                 ? 'page-wrapper bg-background'
-                                : `page-wrapper bg-background px-sm-5 px-4 ${isPalMode ? 'pt-0 pal-content-container' : 'pt-12'} rounded-xl`
+                                : `page-wrapper bg-background px-sm-5 px-4 ${isPalMode ? 'pt-5 pb-5 pal-content-container' : 'pt-12'} rounded-xl`
                         "
                     >
                         <div class="">
@@ -150,7 +150,7 @@ const openSidebar = () => {
                         :class="
                             globalIsMobile
                                 ? 'page-wrapper bg-background pa-0'
-                                : `page-wrapper bg-background px-sm-4 ${isPalMode ? 'pt-0 pal-content-container' : 'pt-9'} px-4 rounded-xl`
+                                : `page-wrapper bg-background px-sm-4 ${isPalMode ? 'pt-5 pb-5 pal-content-container' : 'pt-9'} px-4 rounded-xl`
                         "
                     >
                         <!-- 정의관련 maxWidth -->
@@ -183,6 +183,7 @@ const openSidebar = () => {
 
 .pal-content-container {
     min-height: 100vh;
+    box-sizing: border-box;
 }
 
 [dir='rtl'] .sidebar-open-floating-button {

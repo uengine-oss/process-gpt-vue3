@@ -211,8 +211,31 @@
                     </v-col>
                 </div>
 
+                <!-- PAL 프로세스 관리 메뉴 -->
+                <div v-if="pal && processItem.length > 0" class="mb-4">
+                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                        {{ $t('processHierarchy.processManagement') }}
+                    </div>
+                    <v-col class="pa-0">
+                        <v-list-item
+                            v-for="item in processItem"
+                            :key="item.title"
+                            :to="item.to"
+                            :disabled="item.disable"
+                            density="compact"
+                            class="leftPadding sidebar-list-hover-bg"
+                            :class="{ 'sidebar-list-hover-bg--active': isProcessItemActive(item) }"
+                        >
+                            <template #prepend>
+                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                            </template>
+                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                        </v-list-item>
+                    </v-col>
+                </div>
+
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
-                <v-col v-if="isAdmin" class="pa-0">
+                <v-col v-if="isAdmin && !pal" class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
@@ -299,7 +322,7 @@
                     </template>
                 </v-col>
                 <!-- 정의 목록 -->
-                <v-col v-if="isAdmin" class="pa-0">
+                <v-col v-if="isAdmin && !pal" class="pa-0">
                     <div v-if="isDefinitionListLoading" class="list-skeleton-loading">
                         <v-skeleton-loader v-for="n in 3" :key="n" type="list-item" />
                     </div>
