@@ -93,18 +93,6 @@
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <v-list-item
-                    v-if="pal"
-                    to="/organization"
-                    density="compact"
-                    class="leftPadding sidebar-list-hover-bg mb-3"
-                    :class="{ 'sidebar-list-hover-bg--active': $route?.path === '/organization' }"
-                >
-                    <template #prepend>
-                        <Icons icon="side-group" :size="20" class="mr-2" />
-                    </template>
-                    <v-list-item-title>조직도</v-list-item-title>
-                </v-list-item>
                 <VerticalHeader v-if="globalIsMobile.value && !pal" @update-noti-count="updateNotiCount" />
 
                 <!-- 프로젝트 타이틀 + 목록 -->
@@ -392,6 +380,19 @@
                         </v-list-item>
                     </v-col>
                 </div>
+
+                <v-list-item
+                    v-if="pal"
+                    to="/organization"
+                    density="compact"
+                    class="leftPadding sidebar-list-hover-bg mt-auto"
+                    :class="{ 'sidebar-list-hover-bg--active': $route?.path === '/organization' }"
+                >
+                    <template #prepend>
+                        <Icons icon="side-group" :size="20" class="mr-2" />
+                    </template>
+                    <v-list-item-title>조직도</v-list-item-title>
+                </v-list-item>
             </v-list>
             <Footer class="mt-2" />
         </div>

@@ -88,14 +88,14 @@ const openSidebar = () => {
                 <HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" />
             </div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
-            <v-main>
+            <v-main :class="{ 'pal-main-no-header': isPalMode }">
                 <div class="rtl-lyt mb-3 hr-layout">
                     <v-container
                         fluid
                         :class="
                             globalIsMobile
                                 ? 'page-wrapper bg-background'
-                                : `page-wrapper bg-background px-sm-5 px-4 ${isPalMode ? 'pt-5' : 'pt-12'} rounded-xl`
+                                : `page-wrapper bg-background px-sm-5 px-4 ${isPalMode ? 'pt-0 pal-content-container' : 'pt-12'} rounded-xl`
                         "
                     >
                         <div class="">
@@ -143,14 +143,14 @@ const openSidebar = () => {
             </div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
 
-            <v-main :style="globalIsMobile ? 'padding-top: 0px;' : ''">
+            <v-main :class="{ 'pal-main-no-header': isPalMode }" :style="globalIsMobile ? 'padding-top: 0px;' : ''">
                 <div class="hr-layout">
                     <v-container
                         fluid
                         :class="
                             globalIsMobile
                                 ? 'page-wrapper bg-background pa-0'
-                                : `page-wrapper bg-background px-sm-4 ${isPalMode ? 'pt-5' : 'pt-9'} px-4 rounded-xl`
+                                : `page-wrapper bg-background px-sm-4 ${isPalMode ? 'pt-0 pal-content-container' : 'pt-9'} px-4 rounded-xl`
                         "
                     >
                         <!-- 정의관련 maxWidth -->
@@ -175,6 +175,14 @@ const openSidebar = () => {
     z-index: 1200;
     width: 44px;
     height: 44px;
+}
+
+.pal-main-no-header {
+    padding-top: 0 !important;
+}
+
+.pal-content-container {
+    min-height: 100vh;
 }
 
 [dir='rtl'] .sidebar-open-floating-button {
