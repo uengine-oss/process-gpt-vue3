@@ -26,17 +26,13 @@
                 <a :href="link" target="_blank">{{ link }}</a>
             </div>
         </div>
-        <!-- 세부 업무 수행 절차 (Input/절차 단계/Output) — 편집 모드는 입력창, 조회 모드는 문서형 뷰 -->
+        <!-- 세부 업무 수행 절차 — 편집 모드는 입력창, 조회 모드는 문서형 뷰 -->
         <v-divider v-if="isBuiltinPropVisible('task_io')" class="mb-3"></v-divider>
         <div v-if="isBuiltinPropVisible('task_io')" class="task-io-section mb-4">
             <h6 class="text-body-1 mb-3">{{ $t('taskIo.tab') || '세부 업무 수행 절차' }}</h6>
             <TaskIoField
-                :input="activity.input"
-                :output="activity.output"
                 :procedure="activity.procedure"
                 :readonly="isViewMode"
-                @update:input="activity.input = $event"
-                @update:output="activity.output = $event"
                 @update:procedure="activity.procedure = $event"
             />
         </div>

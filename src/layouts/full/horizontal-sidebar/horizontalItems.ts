@@ -147,11 +147,6 @@ const horizontalItems: menu[] = [
         to: '#',
         children: [
             {
-                title: 'Pricing',
-                icon: CircleIcon,
-                to: '/pages/pricing'
-            },
-            {
                 title: 'Account Setting',
                 icon: CircleIcon,
                 to: '/pages/account-settings'

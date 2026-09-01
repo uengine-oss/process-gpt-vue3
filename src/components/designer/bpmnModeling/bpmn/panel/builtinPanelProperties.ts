@@ -1,8 +1,9 @@
-// 내장 패널 속성 레지스트리
+// 전용 패널 위젯에 연결되는 사용자 정의 속성 기본값 레지스트리
 //
 // 실사용 속성패널인 src/views/process-hierarchy/ProcessHierarchyProperties.vue 의
-// 내장 필드·섹션을 task_property_schema 에 시드하여 관리자가 노출/라벨/순서를
-// 제어할 수 있게 한다. (bpmnModeling 하위의 GPT/uEngine 패널 스택은 실행 경로에
+// 패널 필드·섹션을 task_property_schema 에 시드하여 관리자가 일반 사용자 정의
+// 속성과 함께 관리하되, 렌더링은 기존 패널 위치와 전용 UI를 유지하게 한다.
+// (bpmnModeling 하위의 GPT/uEngine 패널 스택은 실행 경로에
 // 없으므로 이 레지스트리의 대상이 아니다.)
 //
 // taskType 스코프 규칙 — 패널 자체의 섹션 노출 조건을 그대로 따른다:
@@ -10,9 +11,8 @@
 //   'task'                   → Task 탭에서 요소 공통(isTaskPropertyElement 계열) 섹션
 //   'bpmn:<Type>'            → 특정 요소 전용 섹션 (SequenceFlow, Lane, Participant 등)
 //
-// 행이 없으면 기본 노출(fail-open). 시드는 taskCatalog.syncBuiltinPanelSchemas()가
-// (task_type, property_key) 기준 멱등으로 수행하며, 레지스트리에서 제거된 키의
-// 잔존 행은 같은 함수가 정리한다.
+// 행이 없으면 기본 노출(fail-open). 새 테넌트의 초기 시드는
+// taskCatalog.syncPanelPropertySchemas()가 (task_type, property_key) 기준으로 수행한다.
 
 export interface BuiltinPanelProperty {
     /** 스코프 — 'process' | 'task' | 특정 BPMN 타입 (task_type/applies_to 로 사용) */
@@ -78,7 +78,7 @@ export const BUILTIN_PANEL_PROPERTIES: BuiltinPanelProperty[] = [
     { taskType: 'task', key: 'description', labelKo: '설명', propertyType: 'textarea', widget: 'textarea', binding: 'taskForm.description', tab: 'task', panel: PANEL, displayOrder: 30, description: '커스텀 스키마 필드가 없을 때 표시되는 기본 설명 입력' },
     { taskType: 'task', key: 'form_link', labelKo: '폼 연결', propertyType: 'select', widget: 'autocomplete', binding: 'taskFormLinkId', tab: 'task', panel: PANEL, displayOrder: 40, description: 'UserTask/Task/ManualTask에만 표시. 폼 디자이너 열기 포함' },
     { taskType: 'task', key: 'raci', labelKo: 'RACI', propertyType: 'multiselect', widget: 'RaciField', binding: 'taskForm.raci', tab: 'task', panel: PANEL, displayOrder: 50, description: 'Task 계열 요소에 표시' },
-    { taskType: 'task', key: 'task_io', labelKo: '세부 업무 수행 절차', labelI18n: 'taskIo.tab', propertyType: 'multiselect', widget: 'TaskIoField', binding: 'taskForm.input, taskForm.procedure, taskForm.output', tab: 'task', panel: PANEL, displayOrder: 60, description: 'Task 계열 요소에 표시 — Input/절차 단계/Output' },
+    { taskType: 'task', key: 'task_io', labelKo: '세부 업무 수행 절차', labelI18n: 'taskIo.tab', propertyType: 'multiselect', widget: 'TaskIoField', binding: 'taskForm.procedure', tab: 'task', panel: PANEL, displayOrder: 60, description: 'Task 계열 요소의 단계별 업무 수행 절차' },
     { taskType: 'task', key: 'manual_links', labelKo: '관련자료 링크', propertyType: 'url', widget: 'ManualLinkField', binding: 'taskForm.manualLinks', tab: 'task', panel: PANEL, displayOrder: 70 },
     { taskType: 'task', key: 'api_integrations', labelKo: 'API 연동', propertyType: 'multiselect', widget: 'list-editor', binding: 'taskForm.apiIntegrations', tab: 'task', panel: PANEL, displayOrder: 80, description: 'API 이름/메서드/URL/파라미터 편집 목록' },
     { taskType: 'task', key: 'data_io', labelKo: '입출력 데이터', propertyType: 'boolean', widget: 'section', tab: 'task', panel: PANEL, displayOrder: 90, description: '데이터 객체 입출력 표시 (읽기 전용 섹션)' },

@@ -1975,7 +1975,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- 세부 업무 수행 절차 — Input/절차 단계/Output을 uengine:json(input/procedure/output)에 저장.
+                                    <!-- 세부 업무 수행 절차 — 절차 단계를 uengine:json(procedure)에 저장.
                                          편집 모드는 항목 입력창, 조회 모드는 문서형 뷰로 렌더링 -->
                                     <div v-if="isRaciTaskElement && isBuiltinPropVisible('task', 'task_io')" class="section-group">
                                         <div class="section-title" @click="toggle('task-io')">
@@ -1985,12 +1985,8 @@
                                         </div>
                                         <div v-show="isOpen('task-io')" class="section-body">
                                             <TaskIoField
-                                                :input="taskForm.input"
-                                                :output="taskForm.output"
                                                 :procedure="taskForm.procedure"
                                                 :readonly="isViewMode"
-                                                @update:input="taskForm.input = $event"
-                                                @update:output="taskForm.output = $event"
                                                 @update:procedure="taskForm.procedure = $event"
                                             />
                                         </div>
@@ -4475,8 +4471,6 @@ export default {
                 name: '',
                 description: '',
                 raci: null,
-                input: null,
-                output: null,
                 procedure: null,
                 ppi: null,
                 manualLinks: [],
@@ -9905,8 +9899,6 @@ export default {
             this.taskForm.raci = uengineProps.raci && typeof uengineProps.raci === 'object'
                 ? JSON.parse(JSON.stringify(uengineProps.raci))
                 : null;
-            this.taskForm.input = Array.isArray(uengineProps.input) ? [...uengineProps.input] : null;
-            this.taskForm.output = Array.isArray(uengineProps.output) ? [...uengineProps.output] : null;
             this.taskForm.procedure = Array.isArray(uengineProps.procedure) ? [...uengineProps.procedure] : null;
             this.taskForm.ppi = Array.isArray(uengineProps.ppi) ? JSON.parse(JSON.stringify(uengineProps.ppi)) : null;
             const rawTaskManualLinks = Array.isArray(uengineProps.manualLinks)
@@ -10879,22 +10871,13 @@ export default {
                 else if ('raci' in uengineProps) uengineProps.raci = null;
             }
 
-            // Task 계열: 세부 업무 수행 절차(Input/절차 단계/Output) 저장.
+            // Task 계열: 세부 업무 수행 절차 단계 저장.
+            // 기존 input/output 값은 uengineProps에 그대로 두어 레거시 데이터는 보존한다.
             // 해제 시 키 삭제 대신 톰스톤(null)을 남긴다 — 삭제하면 definition 병합이 기존 값을 부활시킨다.
             if (targetType.includes('Task')) {
-                const ioInput = Array.isArray(this.taskForm.input)
-                    ? this.taskForm.input.map((v) => toSafeText(v).trim()).filter(Boolean)
-                    : [];
-                const ioOutput = Array.isArray(this.taskForm.output)
-                    ? this.taskForm.output.map((v) => toSafeText(v).trim()).filter(Boolean)
-                    : [];
                 const ioProcedure = Array.isArray(this.taskForm.procedure)
                     ? this.taskForm.procedure.map((v) => toSafeText(v).trim()).filter(Boolean)
                     : [];
-                if (ioInput.length) uengineProps.input = ioInput;
-                else if ('input' in uengineProps) uengineProps.input = null;
-                if (ioOutput.length) uengineProps.output = ioOutput;
-                else if ('output' in uengineProps) uengineProps.output = null;
                 if (ioProcedure.length) uengineProps.procedure = ioProcedure;
                 else if ('procedure' in uengineProps) uengineProps.procedure = null;
             }

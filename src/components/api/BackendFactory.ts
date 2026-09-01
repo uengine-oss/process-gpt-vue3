@@ -34,8 +34,6 @@ class BackendFactory extends Window {
                 getMCPLists: [],
                 fetchNotifications: [],
                 getEventList: [],
-                // objects
-                getCreditBalance: { available: 0, used: 0, total: 0 },
                 // booleans
                 enableRework: false
             };
@@ -98,7 +96,6 @@ class BackendFactory extends Window {
                                         getMCPLists: true,
                                         fetchNotifications: true,
                                         getEventList: true,
-                                        getCreditBalance: true,
                                         enableRework: true
                                     }) &&
                             (isAxiosError ? status === 404 || (typeof status === 'number' && status >= 500) : true);

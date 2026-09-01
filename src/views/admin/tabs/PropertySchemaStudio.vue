@@ -6,7 +6,7 @@
                 <h1 class="page-title">속성 스키마 관리</h1>
             </div>
             <div class="page-header-right">
-                <v-btn v-if="schemaCategory === 'custom'" color="primary" size="small" prepend-icon="mdi-plus" @click="openAddForm">
+                <v-btn color="primary" size="small" prepend-icon="mdi-plus" @click="openAddForm">
                     필드 추가
                 </v-btn>
             </div>
@@ -22,6 +22,14 @@
                     </button>
                 </v-card-title>
                 <v-card-text class="schema-dialog-body">
+                    <div v-if="editingSchema && isDedicatedPanelSchema(editingSchema)" class="panel-renderer-notice">
+                        <v-icon size="16" color="primary">mdi-view-dashboard-outline</v-icon>
+                        <span>
+                            이 속성은 일반 영역이 아니라 기존 {{ getPanelTabLabel(editingSchema) }} 패널의
+                            {{ editingSchema.config?.widget || '전용' }} UI로 표시됩니다.
+                        </span>
+                    </div>
+
                     <!-- Row 1: property_key + property_label -->
                     <div class="form-row">
                         <div class="form-group" style="flex: 1;">
@@ -76,15 +84,9 @@
                             <select
                                 v-model="formData.applies_to"
                                 class="form-select"
-                                :class="{ 'input-disabled': isBuiltinEditing }"
-                                :disabled="isBuiltinEditing"
                             >
                                 <option v-for="opt in appliesToOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                             </select>
-                            <div v-if="isBuiltinEditing" class="field-hint field-hint-warning">
-                                <v-icon size="12" color="warning">mdi-lock-outline</v-icon>
-                                내장 속성의 적용 대상은 패널에 고정되어 변경할 수 없습니다.
-                            </div>
                         </div>
                         <div class="form-group" style="flex: 0.6;">
                             <label class="form-label">{{ $t('adminConsole.propertySchema.order') }}</label>
@@ -350,24 +352,6 @@
         <v-card-text class="pa-4 pt-0 sk-page-card-text">
             <!-- Filter Row -->
             <div class="filter-row">
-                <div class="category-toggle">
-                    <button
-                        type="button"
-                        class="category-toggle-btn"
-                        :class="{ active: schemaCategory === 'custom' }"
-                        @click="schemaCategory = 'custom'"
-                    >
-                        사용자 정의 속성
-                    </button>
-                    <button
-                        type="button"
-                        class="category-toggle-btn"
-                        :class="{ active: schemaCategory === 'builtin' }"
-                        @click="schemaCategory = 'builtin'"
-                    >
-                        패널 내장 속성
-                    </button>
-                </div>
                 <div class="filter-select-wrapper">
                     <select v-model="selectedTarget" class="form-select filter-select">
                         <option v-for="opt in filterTargets" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -379,15 +363,6 @@
                         <span>{{ $t('adminConsole.propertySchema.showInactive') }}</span>
                     </label>
                 </div>
-            </div>
-
-            <!-- Builtin category hint -->
-            <div v-if="schemaCategory === 'builtin'" class="builtin-hint">
-                <v-icon size="14" color="primary">mdi-information-outline</v-icon>
-                <span>
-                    BPMN 속성 패널에 내장된 필드 목록입니다. 노출 아이콘을 클릭해 패널에서 숨기거나 다시 표시할 수 있고,
-                    라벨·순서·설명은 수정 버튼으로 변경합니다. 코드에서 생성되는 항목이므로 삭제는 지원하지 않습니다(비활성화로 대체).
-                </span>
             </div>
 
             <!-- Table -->
@@ -415,13 +390,6 @@
                 <template #[`item.property_key`]="{ item }">
                     <div class="key-cell">
                         <span class="key-text">{{ item.property_key }}</span>
-                        <span
-                            v-if="item.config && item.config.builtin"
-                            class="builtin-badge"
-                            :title="item.config.panel ? `패널: ${item.config.panel}` : '패널 내장 속성'"
-                        >
-                            내장
-                        </span>
                         <span v-if="item.deleted_at" class="deprecated-badge">
                             {{ $t('adminConsole.propertySchema.deprecated') }}
                         </span>
@@ -436,6 +404,9 @@
                 <template #[`item.applies_to`]="{ item }">
                     <span class="applies-badge" :class="getAppliesToClass(item.applies_to)">
                         {{ getAppliesToLabel(item.applies_to) }}
+                    </span>
+                    <span v-if="isDedicatedPanelSchema(item)" class="panel-renderer-badge">
+                        {{ getPanelTabLabel(item) }} · 전용 UI
                     </span>
                 </template>
                 <template #[`item.description`]="{ item }">
@@ -456,8 +427,8 @@
                     <v-icon
                         size="18"
                         :color="item.visible_by_default !== false ? 'primary' : 'grey-lighten-2'"
-                        :class="{ 'visibility-toggle': item.config && item.config.builtin && !item.deleted_at }"
-                        @click="item.config && item.config.builtin && !item.deleted_at ? toggleBuiltinVisibility(item) : null"
+                        :class="{ 'visibility-toggle': !item.deleted_at }"
+                        @click="!item.deleted_at ? toggleSchemaVisibility(item) : null"
                     >
                         {{ item.visible_by_default !== false ? 'mdi-eye' : 'mdi-eye-off' }}
                     </v-icon>
@@ -504,7 +475,7 @@
                                 />
                             </template>
                         </v-tooltip>
-                        <v-tooltip v-if="!(item.config && item.config.builtin)" :text="$t('taskCatalog.delete')" location="top">
+                        <v-tooltip :text="$t('taskCatalog.delete')" location="top">
                             <template #activator="{ props }">
                                 <v-btn
                                     v-bind="props"
@@ -716,8 +687,6 @@ export default defineComponent({
 
         const selectedTarget = ref('__all__');
         const showInactive = ref(false);
-        // 사용자 정의(custom) | 패널 내장(builtin) 카테고리 — 기본은 기존 UX와 동일한 사용자 정의
-        const schemaCategory = ref('custom');
 
         const softDeleteDialogOpen = ref(false);
         const softDeleteTarget = ref(null);
@@ -754,6 +723,22 @@ export default defineComponent({
 
         const propertyTypes = computed(() => ALL_PROPERTY_TYPES);
 
+        const isDedicatedPanelSchema = (schema) => {
+            const config = schema?.config || {};
+            return config.renderer === 'panel' || config.panelProperty === true || config.builtin === true;
+        };
+
+        const getPanelTabLabel = (schema) => {
+            const tab = schema?.config?.tab;
+            const labels = {
+                process: '프로세스',
+                task: 'Task',
+                'pi-flag': 'PI Flag',
+                governance: '검토의견',
+            };
+            return labels[tab] || '기존';
+        };
+
         const appliesToOptions = computed(() => {
             return APPLIES_TO_OPTIONS.map(item => ({
                 ...item,
@@ -763,24 +748,7 @@ export default defineComponent({
 
         const filterTargets = computed(() => {
             const all = { value: '__all__', label: locale.value === 'ko' ? '전체' : 'All' };
-            if (schemaCategory.value === 'builtin') {
-                // 내장 속성은 실제 시드된 task_type 기준으로 필터 목록 구성
-                const types = [...new Set(
-                    (schemas.value || [])
-                        .filter(s => s.config && s.config.builtin)
-                        .map(s => s.applies_to || s.task_type)
-                        .filter(Boolean)
-                )].sort();
-                return [all, ...types.map(t => ({ value: t, label: getAppliesToLabel(t) }))];
-            }
             return [all, ...appliesToOptions.value];
-        });
-
-        const isBuiltinEditing = computed(() => !!(editingSchema.value && editingSchema.value.config && editingSchema.value.config.builtin));
-
-        // 카테고리 전환 시 대상 필터 초기화 (목록이 서로 다름)
-        watch(schemaCategory, () => {
-            selectedTarget.value = '__all__';
         });
 
         // ---- Table Headers ----
@@ -805,13 +773,6 @@ export default defineComponent({
         const filteredSchemas = computed(() => {
             let list = schemas.value || [];
 
-            // 카테고리 분리: 패널 내장(config.builtin) vs 사용자 정의
-            if (schemaCategory.value === 'builtin') {
-                list = list.filter(s => s.config && s.config.builtin);
-            } else {
-                list = list.filter(s => !(s.config && s.config.builtin));
-            }
-
             // 휴지통(Soft Delete)된 스키마는 기본 목록에서 숨김
             list = list.filter(s => !s.deleted_at);
 
@@ -827,16 +788,6 @@ export default defineComponent({
                 list = list.filter(s => {
                     const at = s.applies_to || 'both';
                     return at === selectedTarget.value;
-                });
-            }
-
-            // 내장 속성은 패널 구성 순서(task_type → display_order)가 자연스러움
-            if (schemaCategory.value === 'builtin') {
-                return list.slice().sort((a, b) => {
-                    const at = a.applies_to || a.task_type || '';
-                    const bt = b.applies_to || b.task_type || '';
-                    if (at !== bt) return at.localeCompare(bt);
-                    return (a.display_order || 0) - (b.display_order || 0);
                 });
             }
 
@@ -1027,9 +978,8 @@ export default defineComponent({
             formData.value.options.splice(index, 1);
         };
 
-        // ---- Builtin visibility quick toggle ----
-        const toggleBuiltinVisibility = async (schema) => {
-            if (!(schema.config && schema.config.builtin)) return;
+        // ---- Visibility quick toggle ----
+        const toggleSchemaVisibility = async (schema) => {
             const nextVisible = schema.visible_by_default === false;
             try {
                 const backend = BackendFactory.createBackend();
@@ -1041,17 +991,16 @@ export default defineComponent({
                     target_name: schema.property_label,
                     before_value: { visible_by_default: !nextVisible },
                     after_value: { visible_by_default: nextVisible },
-                    comment: '내장 패널 속성 노출 토글',
+                    comment: '속성 패널 노출 토글',
                 });
                 await loadSchemas();
             } catch (e) {
-                console.error('[PropertySchemaStudio] toggleBuiltinVisibility error:', e);
+                console.error('[PropertySchemaStudio] toggleSchemaVisibility error:', e);
             }
         };
 
         // ---- Soft Delete ----
         const confirmSoftDelete = async (schema) => {
-            if (schema.config && schema.config.builtin) return; // 내장 속성은 삭제 불가(비활성화만 지원)
             softDeleteTarget.value = schema;
             softDeleteUsageCount.value = 0;
             softDeleteUsageProcesses.value = [];
@@ -1135,7 +1084,6 @@ export default defineComponent({
 
         // ---- Hard Delete ----
         const confirmHardDelete = async (schema) => {
-            if (schema.config && schema.config.builtin) return; // 내장 속성은 삭제 불가(비활성화만 지원)
             hardDeleteTarget.value = schema;
             hardDeleteUsageCount.value = 0;
             hardDeleteUsageProcesses.value = [];
@@ -1234,11 +1182,11 @@ export default defineComponent({
         const init = async () => {
             await loadSchemas();
             try {
-                // 코드 레지스트리(BUILTIN_PANEL_PROPERTIES)에 있으나 DB에 없는 내장 속성을 시드
-                const seeded = await taskCatalogStore.syncBuiltinPanelSchemas();
+                // 전용 패널 위젯도 사용자 정의 속성으로 통합하고 레거시 builtin 행을 변환한다.
+                const seeded = await taskCatalogStore.syncPanelPropertySchemas();
                 if (seeded > 0) await loadSchemas();
             } catch (e) {
-                console.warn('[PropertySchemaStudio] syncBuiltinPanelSchemas failed:', e);
+                console.warn('[PropertySchemaStudio] syncPanelPropertySchemas failed:', e);
             }
         };
         init();
@@ -1255,8 +1203,6 @@ export default defineComponent({
             usageCount,
             selectedTarget,
             showInactive,
-            schemaCategory,
-            isBuiltinEditing,
             softDeleteDialogOpen,
             softDeleteTarget,
             softDeleteUsageCount,
@@ -1282,11 +1228,13 @@ export default defineComponent({
             openEditForm,
             cancelForm,
             saveField,
+            isDedicatedPanelSchema,
+            getPanelTabLabel,
             addOption,
             removeOption,
             confirmSoftDelete,
             executeSoftDelete,
-            toggleBuiltinVisibility,
+            toggleSchemaVisibility,
             confirmHardDelete,
             cancelHardDelete,
             executeHardDelete,
@@ -1313,58 +1261,6 @@ export default defineComponent({
     flex: 0 0 auto !important;
 }
 
-/* ── Category Toggle (사용자 정의 | 패널 내장) ── */
-.category-toggle {
-    display: inline-flex;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    overflow: hidden;
-    margin-right: 12px;
-}
-.category-toggle-btn {
-    padding: 6px 14px;
-    font-size: 13px;
-    border: none;
-    background: #fff;
-    color: #6b7280;
-    cursor: pointer;
-    white-space: nowrap;
-}
-.category-toggle-btn + .category-toggle-btn {
-    border-left: 1px solid #d1d5db;
-}
-.category-toggle-btn.active {
-    background: #eef2ff;
-    color: #4338ca;
-    font-weight: 600;
-}
-
-.builtin-hint {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-    margin: 4px 0 10px;
-    padding: 8px 12px;
-    border-radius: 6px;
-    background: #f5f7ff;
-    color: #4b5563;
-    font-size: 12px;
-    line-height: 1.5;
-    flex: 0 0 auto;
-}
-
-.builtin-badge {
-    display: inline-block;
-    margin-left: 6px;
-    padding: 1px 6px;
-    border-radius: 4px;
-    background: #eef2ff;
-    color: #4338ca;
-    font-size: 11px;
-    font-weight: 600;
-    vertical-align: middle;
-}
-
 .visibility-toggle {
     cursor: pointer;
 }
@@ -1382,6 +1278,19 @@ export default defineComponent({
 
 .schema-dialog-body {
     padding: 0 20px 8px !important;
+}
+
+.panel-renderer-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 9px 11px;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 12px;
 }
 
 .form-close-btn {
@@ -1848,6 +1757,19 @@ export default defineComponent({
 .applies-badge.specific_task {
     background: #ede9fe;
     color: #5b21b6;
+}
+
+.panel-renderer-badge {
+    display: block;
+    width: fit-content;
+    margin-top: 4px;
+    padding: 1px 6px;
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 9px;
+    white-space: nowrap;
 }
 
 /* ── Center Cell ── */

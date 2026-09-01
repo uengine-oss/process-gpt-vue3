@@ -114,7 +114,7 @@ test('온톨로지 탐색기 스모크', async ({ page }) => {
     // 콘솔 에러 확인 — 온톨로지 뷰(OntologyExplorer / cytoscape / strategy-service) 관련만 검사.
     // getUserInfo/supabase/credit/스킬 목록 등은 백엔드 게이트웨이 미기동으로 인한 기존 환경 노이즈라 제외.
     const IGNORE =
-        /favicon|ResizeObserver|net::ERR|getUserInfo|supabase|Failed to fetch|get_credit_balance|스킬 목록|Failed to load resource|PGRST|BackendFactory|ProcessGPTBackend|SidebarUserList|ChatList|ExtraBox|Target service has some problem|정보: mounted hook|컴포넌트: Proxy|예상치 못한 에러|애플리케이션 계속 진행/i;
+        /favicon|ResizeObserver|net::ERR|getUserInfo|supabase|Failed to fetch|스킬 목록|Failed to load resource|PGRST|BackendFactory|ProcessGPTBackend|SidebarUserList|ChatList|ExtraBox|Target service has some problem|정보: mounted hook|컴포넌트: Proxy|예상치 못한 에러|애플리케이션 계속 진행/i;
     const meaningful = consoleErrors.filter((e) => !IGNORE.test(e));
     console.log('CONSOLE_ERRORS', JSON.stringify(meaningful, null, 2));
     expect(meaningful, '온톨로지 뷰 관련 콘솔 에러 없어야 함').toEqual([]);

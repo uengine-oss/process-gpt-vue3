@@ -3,6 +3,21 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
 import { BUILTIN_PANEL_PROPERTIES } from '@/components/designer/bpmnModeling/bpmn/panel/builtinPanelProperties';
 
+// 관리 화면에서는 모두 사용자 정의 속성이지만, 렌더링 방식은 구분한다.
+// renderer=panel인 행은 기존 패널의 전용 컴포넌트/바인딩을 그대로 사용하고
+// 일반 스키마 필드 렌더러에는 넘기지 않는다. 나머지 조건은 이전 데이터 호환용이다.
+const isPanelPropertySchema = (schema: Partial<PropertySchema>) => {
+    const config = schema.config || {};
+    return (
+        config.renderer === 'panel' ||
+        config.panelProperty === true ||
+        config.builtin === true ||
+        (typeof config.panel === 'string' && typeof config.widget === 'string')
+    );
+};
+
+const panelPropertyScope = (schema: Partial<PropertySchema>) => schema.config?.panelTaskType || schema.task_type;
+
 // Interfaces
 export interface TaskSystem {
     id: string;
@@ -288,12 +303,15 @@ export const APPLIES_TO_OPTIONS = [
     { value: 'both', label: 'Process + Task', labelKo: '프로세스 + Task' },
     { value: 'process', label: 'Process Only', labelKo: '프로세스만' },
     { value: 'task', label: 'All Tasks', labelKo: '모든 Task' },
-    ...AVAILABLE_TASK_TYPES.map((t) => ({ value: t.value, label: t.label, labelKo: t.labelKo }))
+    ...AVAILABLE_TASK_TYPES.map((t) => ({ value: t.value, label: t.label, labelKo: t.labelKo })),
+    ...Array.from(new Set(BUILTIN_PANEL_PROPERTIES.map((property) => property.taskType)))
+        .filter((taskType) => !['both', 'process', 'task', ...AVAILABLE_TASK_TYPES.map((type) => type.value)].includes(taskType))
+        .map((taskType) => ({
+            value: taskType,
+            label: taskType.replace(/^bpmn:/, ''),
+            labelKo: taskType.replace(/^bpmn:/, '')
+        }))
 ];
-
-// Built-in property keys that exist by default in ProcessHierarchyProperties
-// These should be hidden from the schema manager to avoid duplication
-export const BUILT_IN_PROPERTY_KEYS = ['title', 'name'];
 
 export const useTaskCatalogStore = defineStore({
     id: 'taskCatalog',
@@ -487,28 +505,47 @@ export const useTaskCatalogStore = defineStore({
             await this.loadSchemas();
         },
 
-        // 내장 패널 속성 레지스트리(builtinPanelProperties.ts)를 테넌트의
-        // task_property_schema 테이블에 등록한다. (task_type, property_key) 기준 멱등 —
-        // 이미 등록된 행은 건드리지 않으므로 관리자가 수정한 값이 보존된다.
-        async syncBuiltinPanelSchemas() {
+        // 전용 패널 위젯을 사용자 정의 속성으로 등록한다. panelProperty는 일반 동적
+        // 필드와 중복 렌더링되지 않도록 패널 연결만 표시하는 메타데이터이며,
+        // builtin은 이전 데이터 호환을 위해 이 함수에서 제거한다.
+        async syncPanelPropertySchemas() {
             await this.ensureSchemasLoaded();
-            // 레지스트리에서 빠진 내장 행은 삭제 — 패널 개편으로 사라진 필드의 행이
-            // 스튜디오에 무의미하게 남지 않도록 한다. (관리자 커스텀 행은 builtin 아님)
-            const registryKeys = new Set(BUILTIN_PANEL_PROPERTIES.map((p) => `${p.taskType}::${p.key}`));
-            const stale = this.propertySchemas.filter(
-                (s) => !!s.config?.builtin && s.id && !registryKeys.has(`${s.task_type}::${s.property_key}`)
-            );
-            for (const s of stale) {
-                try {
-                    await this.deleteSchema(s.id);
-                } catch (e) {
-                    console.warn('Failed to remove stale builtin schema row:', s.task_type, s.property_key, e);
+            const registryByKey = new Map(BUILTIN_PANEL_PROPERTIES.map((p) => [`${p.taskType}::${p.key}`, p]));
+
+            // config.builtin 행뿐 아니라 이전 이관 과정에서 렌더러 메타데이터가
+            // 누락된 행도 키가 레지스트리와 일치하면 기존 패널 UI에 다시 연결한다.
+            const legacyRows = this.propertySchemas.filter((schema) => {
+                const key = `${panelPropertyScope(schema)}::${schema.property_key}`;
+                return schema.config?.builtin === true || (!!registryByKey.get(key) && !isPanelPropertySchema(schema));
+            });
+            for (const schema of legacyRows) {
+                const config = { ...(schema.config || {}) };
+                delete config.builtin;
+                const registryKey = `${panelPropertyScope(schema)}::${schema.property_key}`;
+                const panelProperty = registryByKey.get(registryKey);
+                if (panelProperty) {
+                    config.renderer = 'panel';
+                    config.panelProperty = true;
+                    config.panelTaskType = config.panelTaskType || panelProperty.taskType;
+                    config.panel = config.panel || panelProperty.panel;
+                    config.widget = config.widget || panelProperty.widget;
+                    config.binding = config.binding ?? panelProperty.binding ?? null;
+                    config.tab = config.tab ?? panelProperty.tab ?? null;
+                } else {
+                    delete config.renderer;
+                    delete config.panelProperty;
+                    delete config.panelTaskType;
                 }
+                await this.saveSchema({ ...schema, config });
             }
-            const existing = new Set(
-                this.propertySchemas.filter((s) => s.config?.builtin).map((s) => `${s.task_type}::${s.property_key}`)
-            );
-            const missing = BUILTIN_PANEL_PROPERTIES.filter((p) => !existing.has(`${p.taskType}::${p.key}`));
+
+            const existing = new Set(this.propertySchemas.map((s) => `${panelPropertyScope(s)}::${s.property_key}`));
+            // 새 테넌트처럼 패널 연결 행이 하나도 없을 때만 기본 세트를 만든다.
+            // 사용자가 개별 행을 영구 삭제한 뒤 다음 진입에서 되살아나는 것을 막는다.
+            const hasPanelProperties = this.propertySchemas.some(isPanelPropertySchema);
+            const missing = hasPanelProperties
+                ? []
+                : BUILTIN_PANEL_PROPERTIES.filter((p) => !existing.has(`${p.taskType}::${p.key}`));
             for (const prop of missing) {
                 await this.saveSchema({
                     task_type: prop.taskType,
@@ -520,9 +557,11 @@ export const useTaskCatalogStore = defineStore({
                     applies_to: prop.taskType as any,
                     visible_by_default: true,
                     is_active: true,
-                    description: prop.description || `내장 패널 속성 (${prop.panel})`,
+                    description: prop.description || `패널 연결 속성 (${prop.panel})`,
                     config: {
-                        builtin: true,
+                        renderer: 'panel',
+                        panelProperty: true,
+                        panelTaskType: prop.taskType,
                         panel: prop.panel,
                         widget: prop.widget,
                         binding: prop.binding || null,
@@ -531,7 +570,12 @@ export const useTaskCatalogStore = defineStore({
                     }
                 });
             }
-            return missing.length;
+            return legacyRows.length + missing.length;
+        },
+
+        // 이전 호출부/플러그인 호환용 별칭.
+        async syncBuiltinPanelSchemas() {
+            return this.syncPanelPropertySchemas();
         },
 
         async deleteSchema(id: string) {
@@ -767,17 +811,17 @@ export const useTaskCatalogStore = defineStore({
         },
 
         // Get schemas by task type
-        // 내장 패널 속성(config.builtin)은 패널이 자체 UI로 렌더링하므로 동적 필드 렌더링에서 제외한다.
+        // 패널 연결 속성은 전용 UI로 렌더링하므로 일반 동적 필드에서 제외한다.
         schemasByTaskType: (state) => (taskType: string) => {
             return state.propertySchemas
-                .filter((s) => s.task_type === taskType && !s.config?.builtin)
+                .filter((s) => s.task_type === taskType && !isPanelPropertySchema(s))
                 .sort((a, b) => a.display_order - b.display_order);
         },
 
         // Get required schemas by task type
         requiredSchemasByTaskType: (state) => (taskType: string) => {
             return state.propertySchemas
-                .filter((s) => s.task_type === taskType && s.is_required && !s.config?.builtin)
+                .filter((s) => s.task_type === taskType && s.is_required && !isPanelPropertySchema(s))
                 .sort((a, b) => a.display_order - b.display_order);
         },
 
@@ -785,7 +829,7 @@ export const useTaskCatalogStore = defineStore({
         // For task: optionally pass elementType (e.g., 'bpmn:ManualTask') to include type-specific schemas
         schemasByAppliesTo: (state) => (target: 'process' | 'task', elementType?: string) => {
             return state.propertySchemas
-                .filter((s) => !s.config?.builtin)
+                .filter((s) => !isPanelPropertySchema(s))
                 .filter((s) => {
                     const at = s.applies_to || 'both';
                     if (target === 'process') {
@@ -808,7 +852,7 @@ export const useTaskCatalogStore = defineStore({
         // Get deprecated schemas by target (for read-only preservation of legacy values)
         deprecatedSchemasByAppliesTo: (state) => (target: 'process' | 'task', elementType?: string) => {
             return state.propertySchemas
-                .filter((s) => !s.config?.builtin)
+                .filter((s) => !isPanelPropertySchema(s))
                 .filter((s) => !!s.deleted_at)
                 .filter((s) => {
                     const at = s.applies_to || 'both';
@@ -825,21 +869,21 @@ export const useTaskCatalogStore = defineStore({
                 .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
         },
 
-        // ============================================
-        // 내장 패널 속성 (built-in panel properties)
-        // ============================================
+        // 전용 패널 위젯 연결 속성. 기존 getter 이름은 호출부 호환을 위해 유지한다.
         builtinSchemas: (state) => {
-            return state.propertySchemas.filter((s) => !!s.config?.builtin);
+            return state.propertySchemas.filter(isPanelPropertySchema);
         },
 
         builtinSchemaFor: (state) => (taskType: string, key: string) => {
-            return state.propertySchemas.find((s) => !!s.config?.builtin && s.task_type === taskType && s.property_key === key);
+            return state.propertySchemas.find(
+                (s) => isPanelPropertySchema(s) && panelPropertyScope(s) === taskType && s.property_key === key
+            );
         },
 
         // 패널이 내장 필드를 렌더링할지 판정. 오버라이드 행이 없으면 기본 노출.
         isBuiltinPropVisible: (state) => (taskType: string, key: string) => {
             const row = state.propertySchemas.find(
-                (s) => !!s.config?.builtin && s.task_type === taskType && s.property_key === key
+                (s) => isPanelPropertySchema(s) && panelPropertyScope(s) === taskType && s.property_key === key
             );
             if (!row) return true;
             if (row.deleted_at) return false;
@@ -850,7 +894,7 @@ export const useTaskCatalogStore = defineStore({
         // 관리자가 라벨을 바꿨으면 그 라벨을, 아니면 패널의 기본 라벨을 사용
         builtinPropLabel: (state) => (taskType: string, key: string, fallback?: string) => {
             const row = state.propertySchemas.find(
-                (s) => !!s.config?.builtin && s.task_type === taskType && s.property_key === key
+                (s) => isPanelPropertySchema(s) && panelPropertyScope(s) === taskType && s.property_key === key
             );
             return row?.property_label || fallback || key;
         },

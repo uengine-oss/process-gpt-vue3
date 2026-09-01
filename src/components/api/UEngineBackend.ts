@@ -99,20 +99,6 @@ class UEngineBackend implements Backend {
         return () => {};
     }
 
-    async getCreditBalance() {
-        // ExtraBox.vue에서 credit.available.toFixed(2)를 호출하므로 기본 구조 제공
-        return {
-            available: 0,
-            used: 0,
-            total: 0
-        };
-    }
-
-    async watchCreditUsage(callback: (payload: any) => void) {
-        // uEngine 모드에서는 크레딧 사용량 구독을 제공하지 않음
-        return () => {};
-    }
-
     /**
      * 재작업(리워크) 기능은 ProcessGPT 모드 전용.
      * 칸반/WorkItem UI에서 enableRework를 호출하므로, uEngine에서는 안전하게 false를 반환한다.

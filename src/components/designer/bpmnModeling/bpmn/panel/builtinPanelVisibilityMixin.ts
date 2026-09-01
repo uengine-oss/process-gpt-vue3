@@ -3,8 +3,9 @@ import { useTaskCatalogStore } from '@/stores/taskCatalog';
 /**
  * BPMN 속성 패널의 내장 필드 노출 제어 믹스인.
  *
- * 속성 스키마 스튜디오에서 관리하는 내장 패널 속성(task_property_schema, config.builtin=true)을
- * 읽어 필드 단위 게이팅(v-if="isBuiltinPropVisible('key')")과 라벨 오버라이드를 제공한다.
+ * 속성 스키마 스튜디오의 사용자 정의 속성 중 전용 패널 위젯에 연결된 행
+ * (task_property_schema, config.panelProperty=true)을 읽어 필드 단위 게이팅과
+ * 라벨 오버라이드를 제공한다. 메서드 이름은 기존 패널 호환을 위해 유지한다.
  *
  * - 오버라이드 행이 없는 필드는 기본 노출 — 스키마 로드 전/미등록 테넌트에서도 UI가 비지 않는다.
  * - task_type은 element.$type(bpmn:UserTask 등)을 그대로 사용한다. element prop이 없는
