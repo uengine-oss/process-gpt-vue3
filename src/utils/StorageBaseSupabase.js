@@ -328,36 +328,37 @@ export default class StorageBaseSupabase {
     }
     async signUp(userInfo) {
         try {
-            // 회원가입은 아직 테넌트에 소속되기 전이므로, 여기서의 'process-gpt' 는
-            // 테넌트 하드코딩이 아니라 users.tenant_id 의 DB 기본값(= 공용 가입 테넌트)이다.
-            // 중복 이메일 검사가 조용히 통과하지 않도록 이 기본값을 유지한다.
-            const tenantId = getTenantId() || 'process-gpt';
-            const existUser = await this.getObject('users', { match: { email: userInfo.email, tenant_id: tenantId } });
-            if (existUser && existUser.id) {
+            // 로그인 전 public.users 조회는 RLS 정책에 따라 거부될 수 있으므로
+            // 선행 중복 검사를 하지 않고 Supabase Auth의 결과를 사용한다.
+            const result = await window.$supabase.auth.signUp({
+                email: userInfo.email,
+                password: userInfo.password,
+                options: {
+                    data: {
+                        name: userInfo.username
+                    },
+                    emailRedirectTo: window.location.origin
+                }
+            });
+
+            if (result.error) {
+                result.errorMsg = result.error.message;
+                return result;
+            }
+
+            // 이메일 확인이 켜진 Supabase는 기존 계정의 존재를 노출하지 않기 위해
+            // 오류 대신 identities가 빈 user를 반환할 수 있다.
+            if (result.data?.user && Array.isArray(result.data.user.identities) && result.data.user.identities.length === 0) {
                 return {
                     error: true,
                     errorMsg: '이미 가입된 이메일입니다.'
                 };
-            } else {
-                const result = await window.$supabase.auth.signUp({
-                    email: userInfo.email,
-                    password: userInfo.password,
-                    options: {
-                        data: {
-                            name: userInfo.username
-                        },
-                        emailRedirectTo: window.location.origin
-                    }
-                });
-
-                if (!result.error) {
-                    result.data['isNewUser'] = true;
-                    return result.data;
-                } else {
-                    result.errorMsg = result.error.message;
-                    return result;
-                }
             }
+
+            // autoconfirm 환경에서는 가입 즉시 session이 발급되므로
+            // 메일 확인 안내 대신 바로 서비스로 이동한다.
+            result.data['isNewUser'] = !result.data.session;
+            return result.data;
         } catch (e) {
             throw new StorageBaseError('error in signUp', e, arguments);
         }
