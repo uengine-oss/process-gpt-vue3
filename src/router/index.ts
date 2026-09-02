@@ -130,6 +130,16 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             }
         }
 
+        // PAL 모드의 루트는 별도 랜딩 페이지로 노출하지 않고 인증 상태에 따른 시작 화면으로 보낸다.
+        // setupSupabase()에서 세션 복원을 기다린 뒤 라우터가 설치되므로 여기서는 복원된
+        // 세션을 그대로 확인할 수 있다.
+        if (window.$pal && to.path === '/') {
+            const { data, error } = (await window.$supabase?.auth?.getSession?.()) || {};
+            const isLoggedIn = !error && !!data?.session?.user;
+
+            return next(isLoggedIn ? '/process-architecture' : '/auth/login');
+        }
+
         if (window.$mode !== 'uEngine') {
             if (to.fullPath.includes('/auth') || to.fullPath.includes('/external-forms')) {
                 return next();
