@@ -1,5 +1,5 @@
 <template>
-    <v-card class="admin-console-layout rounded-xl" elevation="10">
+    <v-card :class="['admin-console-layout', 'rounded-xl', { 'admin-console-layout--pal': isPalMode }]" elevation="10">
         <div v-if="!claimsLoaded" class="loading-state">
             <v-progress-circular indeterminate color="primary" size="42" width="4" />
             <p>{{ $t('common.loading') || '로딩 중...' }}</p>
@@ -24,6 +24,7 @@ import { lookupRequiredRole } from '@/utils/routePermissions';
 import NoAccessView from '@/views/authentication/NoAccessView.vue';
 
 const route = useRoute();
+const isPalMode = !!(window as any).$pal;
 
 const claimsLoaded = computed(() => authClaimsState.loaded && customPermissionState.loaded);
 
@@ -42,6 +43,10 @@ const requiredRoleForRoute = computed(() => lookupRequiredRole(route.path));
     height: calc(100vh - 140px);
     overflow: hidden;
     position: relative;
+}
+
+.admin-console-layout--pal {
+    height: calc(100vh - 40px);
 }
 
 .loading-state,

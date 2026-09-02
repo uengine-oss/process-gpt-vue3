@@ -1,7 +1,7 @@
 import { reactive, readonly } from 'vue';
 import jwtDecode from 'jwt-decode';
 import { getSsoToken, getSsoUser } from '@/utils/ssoAuth';
-import { resolveRole, hasRoleAtLeast, ROLES, type RoleType } from '@/utils/roles';
+import { resolveRole, hasRoleAtLeast, isAdminRole, ROLES, type RoleType } from '@/utils/roles';
 import { refreshCustomPermissions } from '@/utils/customPermissions';
 import { loadMenuRoleOverrides } from '@/utils/menuRoleOverrides';
 
@@ -76,7 +76,7 @@ function applyClaims(claims: Record<string, any> | null | undefined) {
     // [변경] role 이 'admin' 이면 isAdmin 도 true 로 reconcile.
     // 이렇게 하면 localStorage 시뮬레이션처럼 is_admin/role 이 불일치한 상태에서도
     // isAdmin 만 보는 가드(예: AdminConsoleLayout)가 role 을 따라가게 된다.
-    const resolvedRoleIsAdmin = typeof state.role === 'string' && state.role.toLowerCase() === 'admin';
+    const resolvedRoleIsAdmin = isAdminRole(state.role);
     state.isAdmin = explicitIsAdmin || resolvedRoleIsAdmin;
     state.tenantId =
         typeof claims?.tenant_id === 'string'
@@ -101,10 +101,12 @@ function hasResolvedClaims(claims: Record<string, any> | null | undefined) {
 
 function hasFullAdminClaims(claims: Record<string, any> | null | undefined) {
     const role = resolveRoleClaim(claims);
-    const hasCustomRole = !!role && role !== 'authenticated' && role !== 'anon';
     const appMetadata = getAppMetadata(claims);
+    const explicitlyAdmin = normalizeBoolean(claims?.is_admin) || normalizeBoolean(appMetadata?.is_admin);
 
-    return typeof claims?.is_admin !== 'undefined' || typeof appMetadata?.is_admin !== 'undefined' || hasCustomRole;
+    // 비관리자 값이나 viewer/editor 같은 오래된 JWT role은 최신 DB role을
+    // 대체할 수 없다. 관리자임이 명시된 토큰만 즉시 신뢰한다.
+    return explicitlyAdmin || isAdminRole(role);
 }
 
 function decodeAccessToken(accessToken: string | null | undefined) {
@@ -126,6 +128,10 @@ async function loadUserClaimsFromProfile(supabase: any, userId: string | null | 
             applyClaims(data);
             return true;
         }
+
+        // 현재 테넌트 행이 없다고 다른 테넌트의 동일 사용자 행을 적용하면 권한이
+        // 페이지마다 바뀔 수 있다. 호출부의 저장된 claims fallback에 맡긴다.
+        return false;
     }
 
     const { data, error } = await supabase.from('users').select('is_admin, role, tenant_id').eq('id', userId).limit(1);
@@ -184,21 +190,22 @@ export async function refreshAuthClaims(session?: any) {
         if (session) {
             const tokenClaims = decodeAccessToken(session?.access_token);
             if (hasResolvedClaims(tokenClaims)) {
-                applyClaims(tokenClaims);
                 if (hasFullAdminClaims(tokenClaims)) {
+                    applyClaims(tokenClaims);
                     return state;
                 }
             }
 
             const appMetadata = session?.user?.app_metadata || {};
             if (hasResolvedClaims(appMetadata)) {
-                applyClaims(appMetadata);
                 if (hasFullAdminClaims(appMetadata)) {
+                    applyClaims(appMetadata);
                     return state;
                 }
             }
 
-            const tenantHint = state.tenantId || window.$tenantName || null;
+            // 현재 화면의 테넌트를 JWT에 남아 있을 수 있는 이전 tenant_id보다 우선한다.
+            const tenantHint = window.$tenantName || state.tenantId || null;
             const loaded = await loadUserClaimsFromProfile(supabase, session?.user?.id, tenantHint);
             if (!loaded) {
                 const storedClaims = getStoredClaimsFallback();
@@ -214,7 +221,7 @@ export async function refreshAuthClaims(session?: any) {
 
         if (typeof supabase.auth.getClaims === 'function') {
             const { data, error } = await supabase.auth.getClaims();
-            if (!error && hasResolvedClaims(data?.claims)) {
+            if (!error && hasResolvedClaims(data?.claims) && hasFullAdminClaims(data?.claims)) {
                 applyClaims(data.claims);
                 return state;
             }

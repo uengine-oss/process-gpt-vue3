@@ -4,9 +4,7 @@ import VerticalSidebarVue from './vertical-sidebar/VerticalSidebar.vue';
 import VerticalHeaderVue from './vertical-header/VerticalHeader.vue';
 import HorizontalHeader from './horizontal-header/HorizontalHeader.vue';
 import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
-import Footer from './Footer.vue';
 import { useCustomizerStore } from '../../stores/customizer';
-import { pl, zhHans } from 'vuetify/locale';
 import { ref, computed, getCurrentInstance, onMounted, onBeforeUnmount } from 'vue';
 const customizer = useCustomizerStore();
 
@@ -37,6 +35,23 @@ const route = useRoute();
 const isModelingTab = computed(() => {
     return route.query && route.query.modeling ? true : false;
 });
+const isPalMode = computed(() => !!(window as any).$pal);
+
+const showSidebarOpenButton = computed(() => {
+    return (
+        isPalMode.value &&
+        !globalIsMobile.value &&
+        !customizer.setHorizontalLayout &&
+        !isModelingTab.value &&
+        !customizer.Sidebar_drawer
+    );
+});
+
+const openSidebar = () => {
+    if (!customizer.Sidebar_drawer) {
+        customizer.SET_SIDEBAR_DRAWER();
+    }
+};
 </script>
 
 <template>
@@ -53,18 +68,35 @@ const isModelingTab = computed(() => {
             ]"
         >
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
-            <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
+            <div v-if="!isPalMode && !globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             </div>
+            <v-tooltip v-if="showSidebarOpenButton" text="사이드바 펼치기" location="right">
+                <template #activator="{ props }">
+                    <v-btn
+                        v-bind="props"
+                        icon="mdi-menu-open"
+                        color="primary"
+                        elevation="6"
+                        class="sidebar-open-floating-button"
+                        aria-label="사이드바 펼치기"
+                        @click="openSidebar"
+                    />
+                </template>
+            </v-tooltip>
             <div :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" />
             </div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
-            <v-main>
+            <v-main :class="{ 'pal-main-no-header': isPalMode }">
                 <div class="rtl-lyt mb-3 hr-layout">
                     <v-container
                         fluid
-                        :class="globalIsMobile ? 'page-wrapper bg-background' : 'page-wrapper bg-background px-sm-5 px-4  pt-12 rounded-xl'"
+                        :class="
+                            globalIsMobile
+                                ? 'page-wrapper bg-background'
+                                : `page-wrapper bg-background px-sm-5 px-4 ${isPalMode ? 'pt-5 pb-5 pal-content-container' : 'pt-12'} rounded-xl`
+                        "
                     >
                         <div class="">
                             <div :class="customizer.boxed ? 'maxWidth' : ''">
@@ -90,20 +122,35 @@ const isModelingTab = computed(() => {
             ]"
         >
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
-            <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
+            <div v-if="!isPalMode && !globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             </div>
+            <v-tooltip v-if="showSidebarOpenButton" text="사이드바 펼치기" location="right">
+                <template #activator="{ props }">
+                    <v-btn
+                        v-bind="props"
+                        icon="mdi-menu-open"
+                        color="primary"
+                        elevation="6"
+                        class="sidebar-open-floating-button"
+                        aria-label="사이드바 펼치기"
+                        @click="openSidebar"
+                    />
+                </template>
+            </v-tooltip>
             <div :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" />
             </div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
 
-            <v-main :style="globalIsMobile ? 'padding-top: 0px;' : ''">
+            <v-main :class="{ 'pal-main-no-header': isPalMode }" :style="globalIsMobile ? 'padding-top: 0px;' : ''">
                 <div class="hr-layout">
                     <v-container
                         fluid
                         :class="
-                            globalIsMobile ? 'page-wrapper bg-background pa-0' : 'page-wrapper bg-background px-sm-4 pt-9 px-4 rounded-xl'
+                            globalIsMobile
+                                ? 'page-wrapper bg-background pa-0'
+                                : `page-wrapper bg-background px-sm-4 ${isPalMode ? 'pt-5 pb-5 pal-content-container' : 'pt-9'} px-4 rounded-xl`
                         "
                     >
                         <!-- 정의관련 maxWidth -->
@@ -119,3 +166,28 @@ const isModelingTab = computed(() => {
         </v-app>
     </v-locale-provider>
 </template>
+
+<style scoped>
+.sidebar-open-floating-button {
+    position: fixed !important;
+    top: 20px;
+    left: 18px;
+    z-index: 1200;
+    width: 44px;
+    height: 44px;
+}
+
+.pal-main-no-header {
+    padding-top: 0 !important;
+}
+
+.pal-content-container {
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+[dir='rtl'] .sidebar-open-floating-button {
+    right: 18px;
+    left: auto;
+}
+</style>

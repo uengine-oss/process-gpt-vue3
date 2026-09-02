@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import BackendFactory from '@/components/api/BackendFactory';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
 import { BUILTIN_PANEL_PROPERTIES } from '@/components/designer/bpmnModeling/bpmn/panel/builtinPanelProperties';
+import { isPropertySchemaVisibleInPanel } from '@/utils/propertySchemaVisibility';
 
 // 관리 화면에서는 모두 사용자 정의 속성이지만, 렌더링 방식은 구분한다.
 // renderer=panel인 행은 기존 패널의 전용 컴포넌트/바인딩을 그대로 사용하고
@@ -815,6 +816,7 @@ export const useTaskCatalogStore = defineStore({
         schemasByTaskType: (state) => (taskType: string) => {
             return state.propertySchemas
                 .filter((s) => s.task_type === taskType && !isPanelPropertySchema(s))
+                .filter(isPropertySchemaVisibleInPanel)
                 .sort((a, b) => a.display_order - b.display_order);
         },
 
@@ -822,6 +824,7 @@ export const useTaskCatalogStore = defineStore({
         requiredSchemasByTaskType: (state) => (taskType: string) => {
             return state.propertySchemas
                 .filter((s) => s.task_type === taskType && s.is_required && !isPanelPropertySchema(s))
+                .filter(isPropertySchemaVisibleInPanel)
                 .sort((a, b) => a.display_order - b.display_order);
         },
 
@@ -843,9 +846,7 @@ export const useTaskCatalogStore = defineStore({
                     }
                     return false;
                 })
-                .filter((s) => !s.deleted_at)
-                .filter((s) => s.is_active !== false)
-                .filter((s) => s.visible_by_default !== false)
+                .filter(isPropertySchemaVisibleInPanel)
                 .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
         },
 

@@ -53,6 +53,19 @@
                     </v-btn>
                 </template>
             </v-tooltip>
+            <v-tooltip v-if="pal" text="사이드바 접기" location="bottom">
+                <template #activator="{ props }">
+                    <v-btn
+                        v-bind="props"
+                        icon="mdi-chevron-left"
+                        variant="text"
+                        density="comfortable"
+                        class="text-medium-emphasis"
+                        aria-label="사이드바 접기"
+                        @click.stop="customizer.SET_SIDEBAR_DRAWER"
+                    />
+                </template>
+            </v-tooltip>
         </div>
         <div class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
             <v-row class="ma-0 pa-0" align="center">
@@ -80,11 +93,7 @@
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <v-btn variant="text" class="text-medium-emphasis d-flex align-center" :to="'/definition-map'" v-if="pal && isAdmin">
-                    <Icons :icon="'write'" class="mr-2" />
-                    <span>{{ $t('processDefinitionMap.title') }}</span>
-                </v-btn>
-                <VerticalHeader v-if="globalIsMobile.value" @update-noti-count="updateNotiCount" />
+                <VerticalHeader v-if="globalIsMobile.value && !pal" @update-noti-count="updateNotiCount" />
 
                 <!-- 프로젝트 타이틀 + 목록 -->
                 <!-- <div v-if="isShowProject" class="mb-4">
@@ -113,7 +122,7 @@
                 </div> -->
 
                 <!-- 대화목록 -->
-                <ChatList v-if="!gs" />
+                <ChatList v-if="!gs && !pal" />
 
                 <!-- 인스턴스 타이틀 + 목록 -->
                 <v-col v-if="isShowInstances" class="pa-0 mb-4 mt-8">
@@ -135,7 +144,7 @@
                 </v-col>
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
-                <div v-if="mode !== 'uEngine' && isAdmin" class="mb-4 mt-4">
+                <div v-if="mode !== 'uEngine' && isAdmin && !pal" class="mb-4 mt-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
@@ -169,7 +178,7 @@
                 </div>
 
                 <!-- 사람 동료 -->
-                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs && !pal" class="mb-4">
                     <div class="d-flex align-center ml-2">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
                             {{ $t('VerticalSidebar.userList') || '유저 목록' }}
@@ -184,7 +193,7 @@
                 </div>
 
                 <!-- 스킬 타이틀 + 목록 -->
-                <div v-if="mode !== 'uEngine' && !gs && isAdmin" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs && isAdmin && !pal" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.skills') }}
@@ -202,7 +211,7 @@
                     </v-col>
                 </div>
 
-                <!-- 프로세스 관리 타이틀 + 목록 -->
+                <!-- PAL 프로세스 관리 메뉴 -->
                 <div v-if="pal && processItem.length > 0" class="mb-4">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('processHierarchy.processManagement') }}
@@ -217,7 +226,7 @@
                             class="leftPadding sidebar-list-hover-bg"
                             :class="{ 'sidebar-list-hover-bg--active': isProcessItemActive(item) }"
                         >
-                            <template v-slot:prepend>
+                            <template #prepend>
                                 <Icons :icon="item.icon" :size="20" class="mr-2" />
                             </template>
                             <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
@@ -226,7 +235,7 @@
                 </div>
 
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
-                <v-col v-if="isAdmin" class="pa-0">
+                <v-col v-if="isAdmin && !pal" class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
@@ -313,7 +322,7 @@
                     </template>
                 </v-col>
                 <!-- 정의 목록 -->
-                <v-col v-if="isAdmin" class="pa-0">
+                <v-col v-if="isAdmin && !pal" class="pa-0">
                     <div v-if="isDefinitionListLoading" class="list-skeleton-loading">
                         <v-skeleton-loader v-for="n in 3" :key="n" type="list-item" />
                     </div>
@@ -394,6 +403,19 @@
                         </v-list-item>
                     </v-col>
                 </div>
+
+                <v-list-item
+                    v-if="pal"
+                    to="/organization"
+                    density="compact"
+                    class="leftPadding sidebar-list-hover-bg mt-auto"
+                    :class="{ 'sidebar-list-hover-bg--active': $route?.path === '/organization' }"
+                >
+                    <template #prepend>
+                        <Icons icon="side-group" :size="20" class="mr-2" />
+                    </template>
+                    <v-list-item-title>조직도</v-list-item-title>
+                </v-list-item>
             </v-list>
             <Footer class="mt-2" />
         </div>
