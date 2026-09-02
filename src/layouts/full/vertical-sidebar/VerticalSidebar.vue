@@ -773,7 +773,7 @@ export default {
             }
 
             // 프로세스 관리 메뉴 (프로세스 정의/업로드/내보내기는 아래 프로세스 섹션에 표시)
-            // PAL 모드에서는 프로세스 리뷰보드·내 수신함 숨김
+            // 리뷰보드는 모든 모드에 표시하고, PAL 모드에서는 내 수신함 대신 프로세스 리스트를 표시한다.
             this.processItem = [
                 {
                     title: 'processArchitecture.title',
@@ -789,6 +789,13 @@ export default {
                     to: '/version-comparison',
                     disable: false
                 },
+                {
+                    title: 'reviewBoard.title',
+                    icon: 'submit-document',
+                    BgColor: 'primary',
+                    to: '/review-board',
+                    disable: false
+                },
                 ...(this.pal
                     ? [
                           {
@@ -800,13 +807,6 @@ export default {
                           }
                       ]
                     : [
-                          {
-                              title: 'reviewBoard.title',
-                              icon: 'submit-document',
-                              BgColor: 'primary',
-                              to: '/review-board',
-                              disable: false
-                          },
                           {
                               title: 'reviewBoard.myInbox',
                               icon: 'submit-document',
