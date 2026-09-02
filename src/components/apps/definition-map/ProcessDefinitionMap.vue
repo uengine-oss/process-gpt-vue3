@@ -1542,8 +1542,8 @@ export default {
                         file: primaryFile,
                         files: messageFiles,
                         orchestration,
-                        // 메인 화면에서 선택한 지식 베이스 문서 (sourceRef/file_id 등 포함)
-                        knowledgeDocs: Array.isArray(message?.knowledgeDocs) ? message.knowledgeDocs : [],
+                        // 지식 선택은 전역 스토어(useKnowledgeSelectionStore)가 단일 소스라 kickoff 로 안 넘긴다.
+                        // 스토어는 앱 전역이라 메인→채팅 이동에도 살아있고, 새 방이 bindRoom 으로 이월받는다.
                         createdAt: nowIso
                     })
                 );

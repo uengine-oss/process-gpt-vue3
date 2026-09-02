@@ -211,8 +211,6 @@
                                 :desktopVoiceActive="isDesktopVoiceActive"
                                 :enableDesktopVoice="isVoiceEnabled"
                                 :enableKnowledgeBase="true"
-                                :knowledgeDocs="selectedKnowledgeDocs"
-                                @update:knowledgeDocs="onKnowledgeDocsUpdate"
                                 @sendMessage="handleSendMessage"
                                 @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
                                 @desktop-voice-toggle="toggleDesktopVoice"
@@ -818,6 +816,7 @@ import ArtifactPanel from '@/components/ArtifactPanel.vue';
 import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/processArtifactPanel.js';
 import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
+import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 import agentRouterService from '@/services/AgentRouterService';
 import deepAgentRouterService from '@/services/DeepAgentRouterService';
 import FixedBaseWorkAssistantAgentService from '@/services/FixedBaseWorkAssistantAgentService';
@@ -851,6 +850,10 @@ const MAIN_PROCESS_GPT_AGENT_META = {
 
 export default {
     name: 'ChatRoomPage',
+    // 지식 선택은 전역 스토어(단일 소스). 이 페이지가 방 lifecycle(로드/저장/이월)을 이 스토어로 조율.
+    setup() {
+        return { knowledgeStore: useKnowledgeSelectionStore() };
+    },
     props: {
         embedded: { type: Boolean, default: false },
         contextAgentId: { type: String, default: null },
@@ -958,7 +961,6 @@ export default {
             artifactPanels: [], // [{ id, type, label, data: { htmlUrl, fileUrl, messageId } }]
             roomWorkspaceFilesByGroup: {}, // 프로세스 폴더(process-<uuid>)별 산출물 파일 누적 — 프로세스마다 탭
             workspaceSaveStateByGroup: {}, // 프로세스별 DB 저장 상태 { [group]: {saving,saved,error} }
-            selectedKnowledgeDocs: [], // 지식 베이스(Google Drive) RAG 컨텍스트로 선택된 문서
             activeArtifactId: null, // 현재 활성 탭 ID
             artifactSidebarVisible: false,
             artifactSidebarWidth: 820,
@@ -1011,6 +1013,13 @@ export default {
         };
     },
     computed: {
+        // 지식 선택 — 전역 스토어 프록시(읽기 전용). 쓰기는 knowledgeStore 액션 사용.
+        selectedKnowledgeDocs() {
+            return this.knowledgeStore.docs;
+        },
+        selectedKnowledgeFolders() {
+            return this.knowledgeStore.folders;
+        },
         // DB 확정 메시지 + 현재 스트리밍 중인 임시 메시지를 합쳐 Chat 컴포넌트에 전달
         displayMessages() {
             const streams = Object.values(this.activeStreams);
@@ -1420,6 +1429,12 @@ export default {
         }
     },
     watch: {
+        selectedKnowledgeDocs() {
+            this.onKnowledgeSelectionChanged();
+        },
+        selectedKnowledgeFolders() {
+            this.onKnowledgeSelectionChanged();
+        },
         roomId: {
             immediate: true,
             async handler(newRoomId, oldRoomId) {
@@ -2428,8 +2443,8 @@ export default {
             };
             this.plannedActivityById = {};
             this._activityOrder = 0;
-            // 방 전환 시 지식 베이스 선택 상태도 초기화 (kickoff에서 새로 세팅 가능)
-            this.selectedKnowledgeDocs = [];
+            // 지식 선택은 아래 restoreSideInfoFromRoomContext 의 knowledgeStore.bindRoom 이
+            // 이월/복원/초기화를 한 곳에서 결정하므로 여기서 건드리지 않는다.
             try {
                 // 방 전환 시 히스토리 페이지네이션 상태 초기화
                 this.resetHistoryPagination();
@@ -2563,11 +2578,8 @@ export default {
                 // 1회만 실행
                 sessionStorage.removeItem(`chatKickoff:${roomId}`);
 
-                // 메인 화면에서 선택한 지식 베이스 문서를 채팅방으로 인계 — 입력창 칩 + 사이드 컨텍스트 표시
-                if (Array.isArray(payload?.knowledgeDocs) && payload.knowledgeDocs.length > 0) {
-                    this.selectedKnowledgeDocs = payload.knowledgeDocs;
-                    this.upsertKnowledgePanel();
-                }
+                // 지식 선택은 전역 스토어가 단일 소스라 kickoff payload 로 인계하지 않는다.
+                // knowledgeStore.bindRoom 이 이 새 방으로 이월/저장한다.
 
                 // 메인 화면에서 전달된 raw File이 있으면 memento 경유 업로드 (임베딩 + 벡터 저장)
                 const pendingFiles = window.__pendingMementoFiles;
@@ -2750,11 +2762,17 @@ export default {
                     }
                 }
 
-                // ctx.knowledgeDocs → 지식 베이스 패널 복원
-                const knowledgeDocs = Array.isArray(ctx.knowledgeDocs) ? ctx.knowledgeDocs : [];
-                if (knowledgeDocs.length > 0) {
-                    this.selectedKnowledgeDocs = knowledgeDocs;
-                    this.upsertKnowledgePanel();
+                // 지식 선택 — 스토어가 이 방의 저장분 로드 / 메인에서 고른 이월분 채택 / 타 방 선택 비우기를 결정
+                try {
+                    const roomId = this.currentChatRoom?.id;
+                    const carried = this.knowledgeStore.bindRoom(roomId, ctx);
+                    if (this.knowledgeStore.hasSelection) {
+                        this.planSideInfoEnabled.knowledge = true;
+                        this.upsertKnowledgePanel();
+                        if (carried) this.persistSelectedKnowledge(); // 이월분을 이 방 컨텍스트에 저장
+                    }
+                } catch (e) {
+                    // 지식 선택 복원 실패가 방 로딩을 막지 않게
                 }
 
                 if (enabledSkills) {
@@ -6600,20 +6618,44 @@ export default {
         },
 
         /** ArtifactPanel의 panel-action 이벤트 중앙 처리 */
-        // 지식 베이스(Google Drive) — 입력창 칩 선택 변경
-        onKnowledgeDocsUpdate(docs) {
-            this.selectedKnowledgeDocs = Array.isArray(docs) ? docs : [];
-            this.upsertKnowledgePanel();
+        // 지식 선택(전역 스토어)이 바뀌면 호출 — 방 컨텍스트 저장 + 패널 갱신 + 이 방 소유로 표시.
+        onKnowledgeSelectionChanged() {
+            // docs·folders 가 동시에 바뀌면 watcher 가 2번 뜨므로 1틱으로 합쳐 DB 중복쓰기 방지
+            if (this._ksChangePending) return;
+            this._ksChangePending = true;
+            this.$nextTick(() => {
+                this._ksChangePending = false;
+                if (this.knowledgeStore.hasSelection) this.planSideInfoEnabled.knowledge = true;
+                this.upsertKnowledgePanel();
+                this.persistSelectedKnowledge();
+                const rid = this.currentChatRoom?.id;
+                if (rid) this.knowledgeStore.claimRoom(rid);
+            });
+        },
+        /** 현재 지식 선택(스토어)을 방 컨텍스트에 저장 → 방 재진입 시 복원. */
+        persistSelectedKnowledge() {
+            try {
+                const room = this.currentChatRoom;
+                if (!room || !room.id) return;
+                const prev = this.normalizeRoomContext(this.readChatRoomContext(room));
+                const next = { ...prev, ...this.knowledgeStore.contextPayload };
+                this.writeChatRoomContext(next, room);
+                this.putChatRoomMerged(room).catch(() => {});
+            } catch (e) {
+                // 저장 실패는 선택 동작을 막지 않음
+            }
         },
 
         /** 우측 사이드바에 지식 베이스 컨텍스트 패널 생성/갱신 */
         upsertKnowledgePanel() {
             const items = Array.isArray(this.selectedKnowledgeDocs) ? this.selectedKnowledgeDocs : [];
+            // 폴더째 선택 — 수천 파일 대신 폴더 경로 몇 개로 표시(활동탭 패널 부하 방지)
+            const folders = Array.isArray(this.selectedKnowledgeFolders) ? this.selectedKnowledgeFolders : [];
             const enabled = !!this.planSideInfoEnabled?.knowledge;
-            const data = { enabled, items };
+            const data = { enabled, items, folders };
 
             const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'knowledge');
-            if (items.length === 0) {
+            if (items.length === 0 && folders.length === 0) {
                 if (existingIdx !== -1) this.artifactPanels.splice(existingIdx, 1);
                 if (this.artifactPanels.length === 0) {
                     this.artifactSidebarVisible = false;
@@ -8404,7 +8446,9 @@ export default {
                                           source_type: d.sourceType || 'drive',
                                           file_name: d.file_name || d.name || '',
                                           mime_type: d.mimeType || '',
-                                          folder_path: d.folderPath || ''
+                                          folder_path: d.folderPath || '',
+                                          // 역할(양식/사업개요 등) — 백엔드 초안 템플릿/자료 구분에 필수
+                                          doc_role: d.docRole || d.doc_role || 'content'
                                       }))
                                 : [];
                             // 이번 메시지에 첨부·업로드된 파일도 memento file_id(=storage path)로
@@ -8424,6 +8468,10 @@ export default {
                             }
                             return picked;
                         })(),
+                        // 폴더째 선택 — 수천 file_id 나열 대신 폴더 경로로 스코프를 넘긴다.
+                        knowledge_folders: Array.isArray(this.selectedKnowledgeFolders)
+                            ? this.selectedKnowledgeFolders.filter((p) => typeof p === 'string' && p.trim())
+                            : [],
                         input_data: {
                             file: requestPrimaryFile,
                             files: requestFiles,

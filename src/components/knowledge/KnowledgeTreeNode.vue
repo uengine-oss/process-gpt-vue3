@@ -5,6 +5,7 @@
             <v-checkbox
                 :modelValue="folderState.checked"
                 :indeterminate="folderState.indeterminate"
+                :disabled="folderLocked"
                 @update:modelValue="(v) => $emit('toggle-folder-select', { node, select: !!v })"
                 @click.stop
                 density="compact"
@@ -27,6 +28,8 @@
                 :depth="depth + 1"
                 :expanded="expanded"
                 :selectedKeysSet="selectedKeysSet"
+                :selCountMap="selCountMap"
+                :folderScope="folderScope"
                 @toggle-folder="(p) => $emit('toggle-folder', p)"
                 @toggle-file="(f) => $emit('toggle-file', f)"
                 @toggle-folder-select="(p) => $emit('toggle-folder-select', p)"
@@ -36,12 +39,13 @@
                 v-for="f in node.files"
                 :key="f.key"
                 class="ktn-file-row"
-                :class="{ 'is-selected': selectedKeysSet.has(f.key) }"
+                :class="{ 'is-selected': isFileSelected(f) }"
                 :style="{ paddingLeft: `${8 + (depth + 1) * 16 + 14}px` }"
-                @click="$emit('toggle-file', f)"
+                @click="coveredByScope ? null : $emit('toggle-file', f)"
             >
                 <v-checkbox
-                    :modelValue="selectedKeysSet.has(f.key)"
+                    :modelValue="isFileSelected(f)"
+                    :disabled="coveredByScope"
                     @update:modelValue="$emit('toggle-file', f)"
                     @click.stop
                     density="compact"
@@ -99,36 +103,55 @@ function extToMime(name) {
     return map[ext] || '';
 }
 
-function collectFilesUnder(node) {
-    const out = [...node.files];
-    for (const c of node.children) out.push(...collectFilesUnder(c));
-    return out;
-}
-
 export default {
     name: 'KnowledgeTreeNode',
     props: {
         node: { type: Object, required: true },
         depth: { type: Number, default: 0 },
         expanded: { type: Set, required: true },
-        selectedKeysSet: { type: Set, required: true }
+        selectedKeysSet: { type: Set, required: true },
+        // 폴더경로 → 그 하위에서 선택된 파일 수. 부모(picker)가 한 번에 집계해 내려준다.
+        // 이게 없던 시절엔 노드마다 collectFilesUnder 로 서브트리를 재귀 순회해
+        // 전체선택 시 O(파일수 × 폴더수) 로 폭발했다. 이제 O(1) 조회.
+        selCountMap: { type: Object, required: true },
+        // 폴더째 선택된 경로들(Set). 이 안(또는 조상)에 들면 그 폴더/파일은 '폴더 스코프'로 커버됨
+        // → 개별 file_id 를 안 들고도 체크 상태 표시(재오픈 시 수천 파일 재조회 회피).
+        folderScope: { type: Set, default: () => new Set() }
     },
     emits: ['toggle-folder', 'toggle-file', 'toggle-folder-select', 'open-file'],
     computed: {
         isOpen() {
             return this.expanded.has(this.node.path);
         },
+        // 이 폴더(또는 조상)가 폴더째 선택 스코프 안인가
+        coveredByScope() {
+            const p = this.node.path;
+            for (const r of this.folderScope) {
+                if (p === r || p.startsWith(r + '/')) return true;
+            }
+            return false;
+        },
+        // 조상 폴더가 스코프라 여기선 개별 해제 불가(그 조상을 풀어야 함) → 체크박스 잠금
+        folderLocked() {
+            return this.coveredByScope && !this.folderScope.has(this.node.path);
+        },
         folderState() {
-            const all = collectFilesUnder(this.node);
-            if (all.length === 0) return { checked: false, indeterminate: false };
-            const sel = all.filter((f) => this.selectedKeysSet.has(f.key)).length;
+            // 자신 또는 조상이 폴더 스코프면 '전체 선택'으로 표시
+            if (this.coveredByScope) return { checked: true, indeterminate: false };
+            const total = this.node.descendantCount || 0;
+            if (total === 0) return { checked: false, indeterminate: false };
+            const sel = this.selCountMap[this.node.path] || 0;
             return {
-                checked: sel === all.length,
-                indeterminate: sel > 0 && sel < all.length
+                checked: sel === total,
+                indeterminate: sel > 0 && sel < total
             };
         }
     },
     methods: {
+        // 파일 체크 상태 — 개별 선택됐거나, 이 폴더가 폴더 스코프로 커버되면 체크
+        isFileSelected(f) {
+            return this.selectedKeysSet.has(f.key) || this.coveredByScope;
+        },
         iconOf(name) {
             return mimeIcon(extToMime(name));
         },
@@ -143,7 +166,7 @@ export default {
             );
         },
         roleShort(r) {
-            return { glossary: '사전', template: '양식', reference: '참조' }[r] || '';
+            return { glossary: '사전', template: '양식', reference: '참조', legal_review: '검토' }[r] || '';
         }
     }
 };

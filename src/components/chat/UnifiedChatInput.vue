@@ -55,14 +55,14 @@
                     <v-btn
                         @click="openKnowledgePicker"
                         class="ml-2 text-medium-emphasis knowledge-tool-btn"
-                        :class="{ 'has-selected': selectedKnowledgeDocs.length > 0 }"
+                        :class="{ 'has-selected': knowledgeSelectionCount > 0 }"
                         variant="outlined"
                         rounded="pill"
                         prepend-icon="mdi-bookshelf"
                     >
                         <span class="knowledge-tool-btn__label">지식 베이스</span>
-                        <span v-if="selectedKnowledgeDocs.length > 0" class="knowledge-tool-btn__count">
-                            {{ selectedKnowledgeDocs.length }}
+                        <span v-if="knowledgeSelectionCount > 0" class="knowledge-tool-btn__count">
+                            {{ knowledgeSelectionCount }}
                         </span>
                     </v-btn>
                     <!-- 폴더 통째 업로드(webkitdirectory) — 허용 확장자 파일만 첨부됨. -->
@@ -83,6 +83,8 @@
             v-if="enableKnowledgeBase"
             v-model="knowledgePickerOpen"
             :initiallySelectedIds="selectedKnowledgeIds"
+            :initiallySelectedDocs="selectedKnowledgeDocs"
+            :initiallySelectedFolders="selectedKnowledgeFolders"
             @confirm="handleKnowledgeConfirm"
         />
     </div>
@@ -92,10 +94,15 @@
 import Chat from '@/components/ui/Chat.vue';
 import KnowledgeSpacePicker from '@/components/knowledge/KnowledgeSpacePicker.vue';
 import { mimeIcon } from '@/utils/fileIcon';
+import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 
 export default {
     name: 'UnifiedChatInput',
     components: { Chat, KnowledgeSpacePicker },
+    // 지식 선택은 전역 스토어가 단일 소스 — props/emit 복사본을 두지 않는다.
+    setup() {
+        return { knowledgeStore: useKnowledgeSelectionStore() };
+    },
     props: {
         /**
          * - panel: 기존 메인/definition-map 스타일(파란 톤 배경 + 패딩/테두리)
@@ -146,14 +153,9 @@ export default {
         enableKnowledgeBase: {
             type: Boolean,
             default: false
-        },
-        // 외부에서 주입된 선택된 문서 (아티팩트 패널과 동기화)
-        knowledgeDocs: {
-            type: Array,
-            default: () => []
         }
     },
-    emits: ['sendMessage', 'recording-mode-change', 'stopMessage', 'desktop-voice-toggle', 'update:knowledgeDocs'],
+    emits: ['sendMessage', 'recording-mode-change', 'stopMessage', 'desktop-voice-toggle'],
     computed: {
         containerVariantClass() {
             return this.variant === 'inline' ? 'main-chat-input-container--inline' : 'main-chat-input-container--panel';
@@ -182,18 +184,25 @@ export default {
                 }
             ];
         },
+        // 아래 3개는 피커 바인딩용 — 전역 스토어를 그대로 참조(복사본 없음)
         selectedKnowledgeDocs() {
-            return this.knowledgeDocs && this.knowledgeDocs.length > 0 ? this.knowledgeDocs : this.internalKnowledgeDocs;
+            return this.knowledgeStore.docs;
         },
         selectedKnowledgeIds() {
-            return this.selectedKnowledgeDocs.map((d) => d.id);
+            return this.knowledgeStore.docIds;
+        },
+        selectedKnowledgeFolders() {
+            return this.knowledgeStore.folders;
+        },
+        // 버튼 배지 — 폴더 + 파일 (폴더-only 면 docs 가 비어도 폴더로 카운트)
+        knowledgeSelectionCount() {
+            return this.knowledgeStore.count;
         }
     },
     data() {
         return {
             isDragOver: false,
-            knowledgePickerOpen: false,
-            internalKnowledgeDocs: []
+            knowledgePickerOpen: false
         };
     },
     methods: {
@@ -201,14 +210,15 @@ export default {
         openKnowledgePicker() {
             this.knowledgePickerOpen = true;
         },
-        handleKnowledgeConfirm(docs) {
-            this.internalKnowledgeDocs = docs;
-            this.$emit('update:knowledgeDocs', docs);
+        handleKnowledgeConfirm(docs, folders) {
+            // 단일 소스에 기록 — 방/화면 배선 없이 전역 반영
+            this.knowledgeStore.setSelection(docs, folders);
         },
         removeKnowledgeDoc(id) {
-            const next = this.selectedKnowledgeDocs.filter((d) => d.id !== id);
-            this.internalKnowledgeDocs = next;
-            this.$emit('update:knowledgeDocs', next);
+            this.knowledgeStore.setSelection(
+                this.knowledgeStore.docs.filter((d) => d.id !== id),
+                this.knowledgeStore.folders
+            );
         },
         handleWrapperDrop(e) {
             this.isDragOver = false;
@@ -269,9 +279,8 @@ export default {
                 // mention 메타데이터 pass-through (Chat.vue -> ChatRoomPage 라우팅)
                 mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],
                 // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)
-                reply: message.reply || null,
-                // 지식 베이스에서 선택된 문서 (RAG 컨텍스트로 사용)
-                knowledgeDocs: this.selectedKnowledgeDocs
+                reply: message.reply || null
+                // 지식 선택(문서/폴더)은 전역 스토어가 단일 소스 — payload 로 배선하지 않는다.
             });
         }
     }
