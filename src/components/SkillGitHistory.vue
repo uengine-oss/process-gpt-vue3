@@ -263,7 +263,7 @@
 <script>
 import BackendFactory from './api/BackendFactory';
 import SkillPrDetail from './SkillPrDetail.vue';
-import { prStatusLabel as _prStatusLabel, prAccentClass as _prAccentClass, prBadgeClass as _prBadgeClass, getInitial, getAvatarColor, shortBranch as _shortBranch, formatRelativeTime } from '@/composables/usePrUtils';
+import { prStatusLabel as _prStatusLabel, prAccentClass as _prAccentClass, prBadgeClass as _prBadgeClass, getInitial, getAvatarColor, shortBranch as _shortBranch, formatRelativeTime, formatRequesterName } from '@/composables/usePrUtils';
 
 // 깃에만 있고 앱에는 요청자 정보가 없는 병합 요청을 복구할 때 쓰는 requester_id.
 // (컬럼이 uuid[] NOT NULL 이라 비워 둘 수 없고, 서버 측 기록 경로도 같은 값을 쓴다.)
@@ -496,25 +496,11 @@ export default {
 
         /**
          * requester_name 을 사람이 읽는 한 줄로 정규화한다.
-         * DB 컬럼이 배열이라 값이 `["홍길동"]` 처럼 들어오면 화면에 대괄호까지 그대로 찍힌다.
          * 레코드 단계에서 고쳐 두면 목록·PR 헤더 등 모든 렌더러에 함께 반영된다.
          */
         normalizeRequesterName(pr) {
             if (!pr) return;
-            let name = pr.requester_name;
-            if (typeof name === 'string') {
-                const text = name.trim();
-                // 배열이 문자열로 직렬화된 경우("[\"홍길동\"]")도 풀어준다.
-                if (text.startsWith('[')) {
-                    try {
-                        name = JSON.parse(text);
-                    } catch (_) {
-                        name = text.replace(/^\[|\]$/g, '').replace(/"/g, '');
-                    }
-                }
-            }
-            if (Array.isArray(name)) name = name.filter(Boolean).join(', ');
-            pr.requester_name = (name || '').toString().trim();
+            pr.requester_name = formatRequesterName(pr.requester_name);
         },
 
         /** Git provider 가 실제로 갖고 있는 PR 목록. 조회에 실패하면 빈 배열. */

@@ -666,6 +666,11 @@ const allRoutes: RouteRecordRaw[] = [
         name: 'My Inbox',
         path: '/my-inbox',
         component: () => import('@/views/review-board/MyInbox.vue')
+    },
+    {
+        name: 'Merge Request Board',
+        path: '/merge-requests',
+        component: () => import('@/views/review-board/MergeRequestBoard.vue')
     }
 ];
 
