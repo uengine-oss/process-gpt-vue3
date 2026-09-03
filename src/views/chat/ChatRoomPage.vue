@@ -817,8 +817,9 @@ import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/proce
 import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
+import { normalizeOrchestration } from '@/utils/orchestration';
 import agentRouterService from '@/services/AgentRouterService';
-import deepAgentRouterService from '@/services/DeepAgentRouterService';
+import deepAgentRouterService, { DeepAgentRouterService } from '@/services/DeepAgentRouterService';
 import FixedBaseWorkAssistantAgentService from '@/services/FixedBaseWorkAssistantAgentService';
 import { getValidToken } from '@/utils/supabaseAuth';
 import { getTenantId, resolveTenantId } from '@/utils/tenant';
@@ -829,6 +830,9 @@ import { PROCESS_GPT_AGENT_ID } from '@/constants/processGptAgent';
 const backend = BackendFactory.createBackend();
 const fixedLangchainMainAgentService = new FixedBaseWorkAssistantAgentService('/agent');
 const fixedDeepagentsMainAgentService = new FixedBaseWorkAssistantAgentService('/process-gpt-deepagents');
+// codex 는 deepagents 와 동일한 chat/stream 계약이라 같은 서비스 클래스를 prefix 만 바꿔 쓴다.
+const codexAgentRouterService = new DeepAgentRouterService('/process-gpt-codex', { supportsStreamAttach: false });
+const fixedCodexMainAgentService = new FixedBaseWorkAssistantAgentService('/process-gpt-codex');
 
 // 메인 에이전트(process-gpt-agent)는 별도 메타 설정이 필요함(항상 기본 파드로 실행)
 const MAIN_PROCESS_GPT_AGENT_META = {
@@ -2813,20 +2817,21 @@ export default {
         getRoomOrchestration() {
             try {
                 const ctx = this.readChatRoomContext(this.currentChatRoom);
-                const value = (ctx?.orchestration || '').toString().trim();
                 // 명시적 값이 없는 새 대화는 deepagents를 기본으로 한다 — 커스텀 스킬(예:
                 // bsc-strategy-interview)은 deepagents 오케스트레이션에서만 로드된다.
-                return value || 'deepagents';
+                return normalizeOrchestration(ctx?.orchestration);
             } catch (e) {
                 return 'deepagents';
             }
         },
         getAgentRouterForOrchestration(orchestration) {
             const o = (orchestration || '').toString().trim();
+            if (o === 'codex') return codexAgentRouterService;
             return o === 'deepagents' ? deepAgentRouterService : agentRouterService;
         },
         getMainAgentServiceForOrchestration(orchestration) {
             const o = (orchestration || '').toString().trim();
+            if (o === 'codex') return fixedCodexMainAgentService;
             return o === 'deepagents' ? fixedDeepagentsMainAgentService : fixedLangchainMainAgentService;
         },
         async setRoomOrchestration(orchestration) {
@@ -3230,7 +3235,11 @@ export default {
                     this.messages.splice(idx, 1);
                 };
 
-                await deepAgentRouterService.attachToStream(
+                // 재접속도 방의 오케스트레이션(deepagents/codex)에 맞는 서버로 붙어야 한다.
+                const attachRouter = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
+                // 재접속을 지원하지 않는 런타임(codex)은 건너뛴다 — 없는 엔드포인트로 404 를 내지 않게.
+                if (typeof attachRouter?.attachToStream !== 'function' || attachRouter.supportsStreamAttach === false) return;
+                await attachRouter.attachToStream(
                     roomId,
                     {
                         onToken: (content) => {

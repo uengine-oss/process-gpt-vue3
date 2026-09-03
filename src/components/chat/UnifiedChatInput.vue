@@ -95,6 +95,7 @@ import Chat from '@/components/ui/Chat.vue';
 import KnowledgeSpacePicker from '@/components/knowledge/KnowledgeSpacePicker.vue';
 import { mimeIcon } from '@/utils/fileIcon';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
+import { normalizeOrchestration } from '@/utils/orchestration';
 
 export default {
     name: 'UnifiedChatInput',
@@ -275,7 +276,7 @@ export default {
                 rawFiles: hasRawFiles ? message.rawFiles : null,
                 images: message.images || null,
                 // orchestration pass-through (Chat.vue -> MainChatInput/ChatRoomPage)
-                orchestration: (message?.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
+                orchestration: normalizeOrchestration(message?.orchestration),
                 // mention 메타데이터 pass-through (Chat.vue -> ChatRoomPage 라우팅)
                 mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],
                 // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)

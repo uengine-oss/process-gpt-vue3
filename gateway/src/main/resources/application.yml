@@ -65,6 +65,14 @@ spring:
                   filters:
                       - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
+                # Codex 서비스 (deepagents 와 같은 chat/stream 계약, 별도 포트)
+                - id: process-gpt-codex
+                  uri: http://localhost:8891
+                  predicates:
+                      - Path=/process-gpt-codex/**
+                  filters:
+                      - RewritePath=/process-gpt-codex/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
                 # CLI Agent 서비스 (실행 CLI/모델 가용성 조회, 스킬/스트리밍)
                 - id: process-gpt-cli-agent
                   uri: http://localhost:8890
@@ -242,6 +250,16 @@ spring:
                       - Path=/process-gpt-deepagents/**
                   filters:
                       - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
+                  order: 45
+
+                # Codex 서비스 (deepagents 와 같은 chat/stream 계약, 별도 포트)
+                - id: process-gpt-codex
+                  uri: http://process-gpt-codex:8891
+                  predicates:
+                      - Path=/process-gpt-codex/**
+                  filters:
+                      - RewritePath=/process-gpt-codex/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
                   order: 45
 

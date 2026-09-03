@@ -545,7 +545,8 @@
         "friday": "Friday",
         "saturday": "Saturday",
         "basicAgent": "Basic Agent",
-        "deepAgent": "Deep Agent"
+        "deepAgent": "Deep Agent",
+        "codexAgent": "Codex"
     },
     "AssistantChats": {
         "document": "Enter the task details you want to assign. When you provide information about the task, a preview of the task that the recipient will see is displayed on the left. Review the preview and improve any lacking areas. Once the improvements are complete, use 'Assign Task' to give the task."
