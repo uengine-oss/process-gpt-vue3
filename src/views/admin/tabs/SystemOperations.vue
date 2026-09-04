@@ -791,6 +791,13 @@ export default defineComponent({
 
 .field-input {
     width: 100%;
+    padding-top: 2px;
+    overflow: visible;
+}
+
+.field-input :deep(.v-input__control),
+.field-input :deep(.v-field) {
+    overflow: visible;
 }
 
 .field-divider {

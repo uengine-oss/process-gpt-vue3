@@ -195,7 +195,8 @@ export const MENU_DEFINITIONS: MenuDefinition[] = [
         label: '실행 인스턴스',
         section: 'admin',
         icon: 'play-outline',
-        requiredRole: 'admin'
+        requiredRole: 'admin',
+        hiddenInSidebar: true
     },
     {
         path: '/admin-console/governance-studio',
@@ -257,7 +258,8 @@ export const MENU_DEFINITIONS: MenuDefinition[] = [
         label: '시스템 관리',
         section: 'admin',
         icon: 'server-line-duotone',
-        requiredRole: 'owner'
+        requiredRole: 'owner',
+        hiddenInSidebar: true
     },
     {
         path: '/external-api-health',

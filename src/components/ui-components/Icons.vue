@@ -88,9 +88,21 @@ export default {
             }
         },
         async calculateHash(content) {
+            // Web Crypto의 subtle API는 HTTPS 또는 localhost 같은 secure context에서만
+            // 제공된다. 아이콘 캐시 무효화 용도이므로 HTTP 환경에서는 결정적인
+            // 비암호화 해시로 대체해도 충분하다.
+            if (!globalThis.crypto?.subtle) {
+                let hash = 0x811c9dc5;
+                for (let i = 0; i < content.length; i += 1) {
+                    hash ^= content.charCodeAt(i);
+                    hash = Math.imul(hash, 0x01000193);
+                }
+                return `fnv1a-${(hash >>> 0).toString(16).padStart(8, '0')}`;
+            }
+
             const encoder = new TextEncoder();
             const data = encoder.encode(content);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', data);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
             return hashHex;

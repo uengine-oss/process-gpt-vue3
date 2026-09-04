@@ -1,5 +1,5 @@
 <template>
-    <v-card :class="['admin-console-layout', 'rounded-xl', { 'admin-console-layout--pal': isPalMode }]" elevation="10">
+    <v-card :class="['admin-console-layout', { 'admin-console-layout--pal': isPalMode }]" elevation="0">
         <div v-if="!claimsLoaded" class="loading-state">
             <v-progress-circular indeterminate color="primary" size="42" width="4" />
             <p>{{ $t('common.loading') || '로딩 중...' }}</p>
@@ -40,9 +40,14 @@ const requiredRoleForRoute = computed(() => lookupRequiredRole(route.path));
 
 <style scoped>
 .admin-console-layout {
+    width: 100%;
     height: calc(100vh - 140px);
     overflow: hidden;
     position: relative;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .admin-console-layout--pal {
@@ -83,6 +88,26 @@ const requiredRoleForRoute = computed(() => lookupRequiredRole(route.path));
 
 .admin-content {
     flex: 1;
+    min-width: 0;
+    min-height: 0;
     overflow: auto;
+    background: #ffffff;
+}
+
+/* 관리자 하위 화면은 이 레이아웃을 유일한 바깥 surface로 사용한다. */
+.admin-content > :deep(*) {
+    width: 100%;
+    min-width: 0;
+    height: 100% !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background-color: #ffffff;
+}
+
+.admin-content > :deep(.v-card) {
+    --v-card-border-color: transparent;
+    --v-card-border-opacity: 0;
 }
 </style>

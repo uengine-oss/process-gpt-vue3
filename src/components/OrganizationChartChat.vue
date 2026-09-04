@@ -30,7 +30,18 @@
     </v-col> -->
 
     <!-- 기존 좌측 chat UI와 함께 동작하던 부분 다시 주석을 풀어 사용할 때 #apexTreeWrapper > svg 전체 검색 후 globalStyle.css의 768px(모바일 사이즈) 부분의 주석도 함께 풀어 사용 -->
-    <v-card elevation="10">
+    <!-- 읽기 전용(조직도-before): 좌측 관리 패널 없이 차트만 전체 폭으로 렌더 -->
+    <div v-if="readonly" class="organization-readonly-chart">
+        <OrganizationChart
+            :node="organizationChart"
+            :key="organizationChart.id"
+            :userList="userList"
+            :readonly="true"
+            ref="organizationChart"
+        ></OrganizationChart>
+    </div>
+
+    <v-card v-else elevation="10">
         <AppBaseCard>
             <template v-slot:leftpart>
                 <OrganizationManagePanel
@@ -94,6 +105,17 @@ export default {
         OrganizationChart,
         OrganizationAddDialog,
         OrganizationManagePanel
+    },
+    props: {
+        /**
+         * 읽기 전용 모드 (PAL '조직도-before' 화면 전용).
+         * 저장소는 동일한 configuration(key='organization')를 공유하되 쓰기를 전부 막는다.
+         * 기본값 false 이므로 기존 /organization 화면 동작은 그대로다.
+         */
+        readonly: {
+            type: Boolean,
+            default: false
+        }
     },
     data: () => ({
         organizationChart: {},
@@ -176,6 +198,7 @@ export default {
             this.userList = await this.backend.getUserList();
         },
         beforeSendMessage(newMessage) {
+            if (this.readonly) return;
             this.sendMessage(newMessage);
             const msgObj = this.createMessageObj(newMessage);
             const putObj = {
@@ -210,6 +233,7 @@ export default {
             }
         },
         async afterGenerationFinished(response) {
+            if (this.readonly) return;
             try {
                 let messageWriting = this.messages[this.messages.length - 1];
                 if (messageWriting.jsonContent) {
@@ -311,6 +335,8 @@ export default {
             });
         },
         async updateNode() {
+            // 읽기 전용 모드에서는 어떤 경로로 호출되든 저장하지 않는다.
+            if (this.readonly) return;
             var putObj = {
                 key: 'organization',
                 value: {
@@ -499,3 +525,12 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+/* 읽기 전용 조직도(조직도-before) — 부모 카드 높이를 그대로 채운다. */
+.organization-readonly-chart {
+    height: 100%;
+    min-height: 480px;
+    position: relative;
+}
+</style>

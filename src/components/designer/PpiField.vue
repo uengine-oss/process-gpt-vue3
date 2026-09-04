@@ -1,6 +1,8 @@
 <template>
     <div class="ppi-field">
-        <div class="d-flex align-center mb-2">
+        <!-- 자체 제목/힌트 — PAL 속성패널은 섹션 헤더(스키마 라벨)가 이미 이름을 표시하므로
+             showHeader=false 로 끈다. 비 PAL(ParticipantPanel)은 기본값 유지. -->
+        <div v-if="showHeader" class="d-flex align-center mb-2">
             <h6 class="text-body-1">{{ $t('ppi.title') || 'PPI (프로세스 성과지표)' }}</h6>
             <v-spacer />
             <span class="ppi-hint">{{ $t('ppi.hint') || '이 프로세스의 성과를 측정하는 지표(PPI)를 정의합니다.' }}</span>
@@ -111,6 +113,7 @@
 export default {
     name: 'ppi-field',
     props: {
+        showHeader: { type: Boolean, default: true },
         // [{name, unit, cycle, definition, formula}] 또는 null
         modelValue: Array,
         readonly: Boolean
@@ -171,9 +174,23 @@ export default {
     white-space: nowrap;
 }
 
+/* 속성패널처럼 좁은 컨테이너에서 5개 컬럼이 넘칠 때 가로 스크롤.
+   flex 조상 밑에서 v-table 이 수축을 거부하며 잘리는 것을 max-width 로 막는다. */
+.ppi-view-table {
+    max-width: 100%;
+}
+
+.ppi-view-table :deep(.v-table__wrapper) {
+    overflow-x: auto;
+}
+
 .ppi-view-table th {
     white-space: nowrap;
     font-size: 12px;
+}
+
+.ppi-view-table td {
+    min-width: 72px;
 }
 
 .ppi-view-text {

@@ -17,7 +17,7 @@
                     </v-tab>
                     <v-tab v-if="isBuiltinPropVisible('process', 'governance_tab')" value="governance">
                         <v-icon size="18" start>mdi-shield-check-outline</v-icon>
-                        검토의견
+                        {{ builtinLabel('process', 'governance_tab', '검토의견') }}
                     </v-tab>
                 </v-tabs>
                 <v-btn
@@ -71,7 +71,7 @@
                         </v-tab>
                         <v-tab v-if="isOwner && isBuiltinPropVisible('process', 'pi_flag_tab')" value="pi-flag" size="small">
                             <v-icon size="14" start color="error">mdi-flag</v-icon>
-                            PI Flag
+                            {{ builtinLabel('process', 'pi_flag_tab', 'PI Flag') }}
                         </v-tab>
                     </v-tabs>
 
@@ -86,7 +86,7 @@
                                         <div class="d-flex align-center justify-space-between mb-1">
                                             <div class="process-meta-label" style="margin-bottom: 0;">
                                                 <v-icon size="14" class="mr-1" color="blue-grey">mdi-account-group</v-icon>
-                                                담당자
+                                                {{ builtinLabel('process', 'owner', '프로세스 담당자') }}
                                             </div>
                                             <div class="d-flex align-center ga-1">
                                                 <v-btn
@@ -129,7 +129,7 @@
                                                 </v-chip>
                                             </div>
                                             <div class="text-caption">
-                                                <span class="text-medium-emphasis mr-1">PI팀 담당자:</span>
+                                                <span class="text-medium-emphasis mr-1">프로세스 담당자:</span>
                                                 <template v-if="ownerResolved">
                                                     <v-chip size="x-small" variant="tonal" color="grey-darken-3" class="mr-1 mb-1">{{ displayText(ownerResolved.username) }}<template v-if="ownerResolved.org_name"> ({{ displayText(ownerResolved.org_name) }})</template></v-chip>
                                                 </template>
@@ -206,7 +206,7 @@
                                                                     <span>{{ ownerHistoryActor(entry) }}</span>
                                                                 </div>
                                                                 <div>
-                                                                    <span class="text-medium-emphasis mr-1">PI팀 담당자:</span>
+                                                                    <span class="text-medium-emphasis mr-1">프로세스 담당자:</span>
                                                                     <span>{{ ownerHistorySingleOwner(entry, 'primaryOwner') }}</span>
                                                                 </div>
                                                                 <div>
@@ -273,7 +273,7 @@
                                     <div v-if="isBuiltinPropVisible('process', 'parent_hierarchy')" class="process-meta-row">
                                         <div class="process-meta-label">
                                             <v-icon size="14" class="mr-1" color="blue-grey">mdi-file-tree</v-icon>
-                                            Parent
+                                            {{ builtinLabel('process', 'parent_hierarchy', 'Parent') }}
                                         </div>
                                         <div class="process-meta-value">
                                             <template v-if="!parentEditEnabled">
@@ -421,178 +421,66 @@
                                         일반
                                     </div>
                                     <div v-show="isOpen('general')" class="section-body">
-                                        <template v-if="isBuiltinPropVisible('process', 'title')">
-                                            <label class="field-label">프로세스명</label>
-                                            <v-text-field
-                                                v-model="processForm.title"
-                                                density="compact"
-                                                variant="outlined"
-                                                hide-details
-                                                class="mb-3"
-                                                placeholder="프로세스 이름 입력"
-                                            />
-                                        </template>
-                                        <template v-if="isBuiltinPropVisible('process', 'description')">
-                                            <label class="field-label">설명</label>
-                                            <v-textarea
-                                                v-model="processForm.description"
-                                                density="compact"
-                                                variant="outlined"
-                                                hide-details
-                                                rows="3"
-                                                auto-grow
-                                                class="mb-3"
-                                                placeholder="프로세스에 대한 설명을 입력하세요..."
-                                            />
-                                        </template>
-                                        <!-- Schema fields for Process -->
-                                        <template v-for="field in processFields" :key="field.id">
-                                            <div class="field-label">
-                                                <span class="field-label-left">
-                                                    {{ field.property_label || field.property_key }}
-                                                    <v-chip label size="x-small" density="compact" color="grey" style="font-size: 9px !important;">{{ getPropertyTypeLabel(field.property_type) }}</v-chip>
-                                                    <v-chip v-if="field.is_deprecated_field" label size="x-small" density="compact" color="warning" class="ml-1" style="font-size: 9px !important;">사용 중단</v-chip>
-                                                    <v-chip v-else-if="field.is_readonly" label size="x-small" density="compact" color="primary" class="ml-1" style="font-size: 9px !important;">읽기 전용</v-chip>
-                                                    <v-chip v-if="field.is_required && !field.is_deprecated_field" label size="x-small" density="compact" color="red" class="ml-1" style="font-size: 9px !important;">필수</v-chip>
-                                                </span>
-                                                <DetailComponent
-                                                    v-if="field.description"
-                                                    :title="displayText(field.property_label || field.property_key)"
-                                                    :details="[{ title: field.description }]"
-                                                    :icon-size="14"
-                                                />
-                                            </div>
-                                            <v-text-field
-                                                v-if="field.property_type === 'string'"
-                                                v-model="processForm[field.property_key]"
-                                                density="compact" variant="outlined" hide-details class="mb-3"
-                                                :placeholder="field.placeholder"
-                                                :disabled="field.is_readonly"
-                                            />
-                                            <v-textarea
-                                                v-else-if="field.property_type === 'textarea'"
-                                                v-model="processForm[field.property_key]"
-                                                density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3"
-                                                :placeholder="field.placeholder"
-                                                :disabled="field.is_readonly"
-                                            />
-                                            <v-text-field
-                                                v-else-if="field.property_type === 'number'"
-                                                :model-value="numberFieldDisplay(processForm[field.property_key], field)"
-                                                @focus="onNumberFocus($event)"
-                                                @blur="onNumberBlur($event, field, (v) => processForm[field.property_key] = v)"
-                                                density="compact" variant="outlined" hide-details="auto" class="mb-3"
-                                                :placeholder="field.placeholder"
-                                                :suffix="field.number_unit || undefined"
-                                                :rules="numberRules(field)"
-                                                :disabled="field.is_readonly"
-                                            />
-                                            <v-text-field
-                                                v-else-if="field.property_type === 'url'"
-                                                v-model="processForm[field.property_key]"
-                                                density="compact" variant="outlined" hide-details class="mb-3"
-                                                :placeholder="field.placeholder || 'https://...'"
-                                                :disabled="field.is_readonly"
-                                            >
-                                                <template v-slot:prepend-inner>
-                                                    <v-icon size="14" color="grey">mdi-link-variant</v-icon>
-                                                </template>
-                                                <template v-slot:append-inner>
-                                                    <v-icon
-                                                        v-if="processForm[field.property_key]"
-                                                        size="16" style="cursor:pointer"
-                                                        @click="openLink(processForm[field.property_key])"
-                                                    >mdi-open-in-new</v-icon>
-                                                </template>
-                                            </v-text-field>
-                                            <div v-else-if="field.property_type === 'formula'" class="formula-display mb-3">
-                                                <span class="text-caption text-medium-emphasis">{{ field.config?.expression || '' }}</span>
-                                                <span class="text-subtitle-2 font-weight-bold ml-2">{{ processForm[field.property_key] || '-' }}</span>
-                                            </div>
-                                            <v-select
-                                                v-else-if="field.property_type === 'db-select'"
-                                                v-model="processForm[field.property_key]"
-                                                :items="getSelectFieldItems(field)"
-                                                item-title="label" item-value="value"
-                                                density="compact" variant="outlined" hide-details class="mb-3"
-                                                :placeholder="field.placeholder"
-                                                :clearable="!field.is_readonly"
-                                                :disabled="field.is_readonly"
-                                            />
-                                            <v-select
-                                                v-else-if="field.property_type === 'select'"
-                                                v-model="processForm[field.property_key]"
-                                                :items="getSelectFieldItems(field)"
-                                                item-title="label" item-value="value"
-                                                density="compact" variant="outlined" hide-details class="mb-3"
-                                                :clearable="!field.is_readonly"
-                                                :disabled="field.is_readonly"
-                                            />
-                                            <v-select
-                                                v-else-if="field.property_type === 'multiselect'"
-                                                v-model="processForm[field.property_key]"
-                                                :items="getSelectFieldItems(field)"
-                                                item-title="label" item-value="value"
-                                                density="compact" variant="outlined" hide-details class="mb-3"
-                                                :clearable="!field.is_readonly"
-                                                multiple chips
-                                                :closable-chips="!field.is_readonly"
-                                                :disabled="field.is_readonly"
-                                            />
-                                            <v-text-field
-                                                v-else-if="field.property_type === 'date'"
-                                                v-model="processForm[field.property_key]"
-                                                density="compact" variant="outlined" hide-details type="date" class="mb-3"
-                                                :placeholder="field.placeholder"
-                                                :disabled="field.is_readonly"
-                                            />
-                                            <div v-else-if="field.property_type === 'daterange'" class="daterange-row mb-3">
-                                                <v-text-field
-                                                    v-model="processForm[field.property_key + '_start']"
-                                                    density="compact" variant="outlined" hide-details type="date"
-                                                    :placeholder="field.placeholder || 'Start'"
-                                                    :disabled="field.is_readonly"
-                                                />
-                                                <span class="daterange-separator">~</span>
-                                                <v-text-field
-                                                    v-model="processForm[field.property_key + '_end']"
-                                                    density="compact" variant="outlined" hide-details type="date"
-                                                    :placeholder="'End'"
-                                                    :disabled="field.is_readonly"
-                                                />
-                                            </div>
-                                            <v-autocomplete
-                                                v-else-if="field.property_type === 'user'"
-                                                v-model="processForm[field.property_key]"
-                                                :items="userSearchResults[field.property_key] || []"
-                                                item-title="name" item-value="id"
-                                                density="compact" variant="outlined" hide-details class="mb-3"
-                                                :placeholder="field.placeholder || 'Search user... (Enter)'"
-                                                :clearable="!field.is_readonly"
-                                                :loading="userSearchLoading[field.property_key]"
-                                                :disabled="field.is_readonly"
-                                                @keydown.enter="field.is_readonly ? null : onUserSearch(field.property_key, $event.target.value)"
-                                            >
-                                                <template v-slot:prepend-inner>
-                                                    <v-icon size="14" color="grey">mdi-account-search-outline</v-icon>
-                                                </template>
-                                            </v-autocomplete>
-                                            <v-switch
-                                                v-else-if="field.property_type === 'boolean'"
-                                                v-model="processForm[field.property_key]"
-                                                density="compact" color="primary" hide-details class="mb-3"
-                                                :disabled="field.is_readonly"
-                                            />
-                                        </template>
+                                        <!-- 일반 섹션 필드: 내장(프로세스명·설명)과 커스텀 무그룹 필드를
+                                             display_order 로 통합 정렬해 하나의 루프로 렌더한다. -->
+                                        <SchemaFieldInput
+                                            v-for="field in processGeneralFields"
+                                            :key="field.id"
+                                            :field="field"
+                                            :model="processForm"
+                                        />
                                     </div>
                                 </div>
+
+                                <!-- 사용자 정의 속성 그룹 (속성 스키마 스튜디오에서 정의한 묶음) -->
+                                <div
+                                    v-for="group in processFieldGroupsNamed"
+                                    :key="'proc-schema-group-' + group.key"
+                                    class="section-group"
+                                >
+                                    <div class="section-title" @click="toggleSchemaGroup('proc-' + group.key)">
+                                        <v-icon size="14" class="mr-1">{{ isSchemaGroupOpen('proc-' + group.key) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                        <v-icon size="14" class="mr-1" color="blue-grey">mdi-shape-outline</v-icon>
+                                        {{ group.label }}
+                                    </div>
+                                    <div v-show="isSchemaGroupOpen('proc-' + group.key)" class="section-body">
+                                        <SchemaFieldInput
+                                            v-for="field in group.fields"
+                                            :key="field.id"
+                                            :field="field"
+                                            :model="processForm"
+                                        />
+                                    </div>
+                                </div>
+                                <!-- 섹션 순서는 속성 스키마의 display_order 를 따른다 (관리자 콘솔 → 속성 스키마 관리) -->
+                                <template v-for="sec in processOrderedSections" :key="'proc-sec-' + sec.id">
+                                    <template v-if="sec.id === 'ppi'">
+                                <!-- PPI (프로세스 성과지표) — 스코프를 process 로 옮긴 경우에만 여기 렌더.
+                                     값은 definition JSONB 의 ppi 에 저장한다 (Participant 스코프일 땐 요소 uengine:json). -->
+                                <div v-if="ppiPanelScope === 'process' && isBuiltinPropVisible('process', 'ppi')" class="section-group">
+                                    <div class="section-title" @click="toggle('proc-ppi')">
+                                        <v-icon size="14" class="mr-1">{{ isOpen('proc-ppi') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                        <v-icon size="14" class="mr-1" color="orange">mdi-chart-line</v-icon>
+                                        {{ builtinLabel('process', 'ppi', $t('ppi.title') || 'PPI (프로세스 성과지표)') }}
+                                    </div>
+                                    <div v-show="isOpen('proc-ppi')" class="section-body">
+                                        <PpiField
+                                            :model-value="processForm.ppi"
+                                            :readonly="isViewMode"
+                                            :show-header="false"
+                                            @update:model-value="processForm.ppi = $event"
+                                        />
+                                    </div>
+                                </div>
+                                    </template>
+                                    <template v-if="sec.id === 'manual_links'">
 
                                 <!-- 메뉴얼 링크 연결 -->
                                 <div v-if="isBuiltinPropVisible('process', 'manual_links')" class="section-group">
                                     <div class="section-title" @click="toggle('manual-link')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('manual-link') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="indigo">mdi-link-variant</v-icon>
-                                        관련자료 링크
+                                        {{ builtinLabel('process', 'manual_links', '관련자료 링크') }}
                                     </div>
                                     <div v-show="isOpen('manual-link')" class="section-body">
                                         <ManualLinkField v-model="processForm.manualLinks" :disabled="isViewMode" />
@@ -633,13 +521,15 @@
                                         </div>
                                     </div>
                                 </div>
+                                    </template>
+                                    <template v-if="sec.id === 'api_integrations_summary'">
 
                                 <!-- API 연동 (작업 목록에서 집계됨, 읽기 전용) -->
                                 <div v-if="isBuiltinPropVisible('process', 'api_integrations_summary')" class="section-group">
                                     <div class="section-title" @click="toggle('proc-api')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('proc-api') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="teal">mdi-api</v-icon>
-                                        API 연동
+                                        {{ builtinLabel('process', 'api_integrations_summary', 'API 연동') }}
                                         <v-chip size="x-small" variant="tonal" color="teal" class="ml-auto">
                                             {{ taskApiIntegrationsSummary.length }}
                                         </v-chip>
@@ -691,13 +581,15 @@
                                         </div>
                                     </div>
                                 </div>
+                                    </template>
+                                    <template v-if="sec.id === 'system_list'">
 
                                 <!-- 시스템 목록 (읽기 전용, 작업 목록에서 집계됨) -->
                                 <div v-if="isBuiltinPropVisible('process', 'system_list')" class="section-group">
                                     <div class="section-title" @click="toggle('proc-system')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('proc-system') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="blue">mdi-server-network</v-icon>
-                                        시스템 리스트
+                                        {{ builtinLabel('process', 'system_list', '시스템 리스트') }}
                                         <v-chip size="x-small" variant="tonal" color="blue" class="ml-auto">
                                             {{ systemsSummary.length }}
                                         </v-chip>
@@ -735,13 +627,15 @@
                                         </div>
                                     </div>
                                 </div>
+                                    </template>
+                                    <template v-if="sec.id === 'related_project_list'">
 
                                 <!-- 연관 과제 목록 -->
                                 <div v-if="isBuiltinPropVisible('process', 'related_project_list')" class="section-group">
                                     <div class="section-title" @click="toggle('proc-related-projects')">
                                         <v-icon size="14" class="mr-1">{{ isOpen('proc-related-projects') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                         <v-icon size="14" class="mr-1" color="purple">mdi-clipboard-list-outline</v-icon>
-                                        연관과제 리스트
+                                        {{ builtinLabel('process', 'related_project_list', '연관과제 리스트') }}
                                         <v-chip size="x-small" variant="tonal" color="purple" class="ml-auto">
                                             {{ relatedProjectsByTask.length }}
                                         </v-chip>
@@ -798,6 +692,222 @@
                                         </div>
                                     </div>
                                 </div>
+                                    </template>
+                                    <template v-if="sec.id === 'total_duration'">
+
+                                <!-- 프로세스 전체 소요시간 Total FTE / Duration (Read-only) -->
+                                <div v-if="isBuiltinPropVisible('process', 'total_duration')" class="section-group">
+                                    <div class="section-title" @click="toggle('proc-total-fte')">
+                                        <v-icon size="14" class="mr-1">{{ isOpen('proc-total-fte') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                        <v-icon size="14" class="mr-1" color="teal">mdi-clock-outline</v-icon>
+                                        {{ builtinLabel('process', 'total_duration', '프로세스 전체 소요시간') }}
+                                        <v-chip v-if="totalFteSummary.totalFte" size="x-small" variant="tonal" color="teal" class="ml-auto">
+                                            {{ totalFteSummary.totalFte }} FTE
+                                        </v-chip>
+                                    </div>
+                                    <div v-show="isOpen('proc-total-fte')" class="section-body">
+                                        <div v-if="totalFteSummary.items.length === 0" class="text-caption text-disabled">
+                                            Task에 소요시간이 입력되지 않았습니다.
+                                        </div>
+                                        <template v-else>
+                                            <div class="task-count-grid">
+                                                <div v-if="totalFteSummary.totalFte" class="task-count-row">
+                                                    <span class="task-count-label font-weight-medium">총 FTE</span>
+                                                    <span class="task-count-value font-weight-bold">{{ totalFteSummary.totalFte }}</span>
+                                                </div>
+                                                <div v-if="totalFteSummary.totalHours" class="task-count-row">
+                                                    <span class="task-count-label font-weight-medium">월간 총 시간</span>
+                                                    <span class="task-count-value font-weight-bold">{{ totalFteSummary.totalHours }}h</span>
+                                                </div>
+                                                <div v-for="item in totalFteSummary.items" :key="item.name" class="task-count-row">
+                                                    <span class="task-count-label">{{ item.name }}</span>
+                                                    <span class="task-count-value">
+                                                        <template v-if="item.fte">{{ item.fte }} FTE</template>
+                                                        <template v-if="item.fte && item.hours"> · </template>
+                                                        <template v-if="item.hours">{{ item.hours }}h/mo</template>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                                    </template>
+                                    <template v-if="sec.id === 'total_cost'">
+
+                                <!-- 프로세스 전체 비용 Total Cost (Read-only) -->
+                                <div v-if="isBuiltinPropVisible('process', 'total_cost')" class="section-group">
+                                    <div class="section-title" @click="toggle('proc-total-cost')">
+                                        <v-icon size="14" class="mr-1">{{ isOpen('proc-total-cost') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                        <v-icon size="14" class="mr-1" color="orange">mdi-currency-krw</v-icon>
+                                        {{ builtinLabel('process', 'total_cost', '프로세스 전체 비용') }}
+                                    </div>
+                                    <div v-show="isOpen('proc-total-cost')" class="section-body">
+                                        <div v-if="!totalCostSummary.hasData" class="text-caption text-disabled">
+                                            Task에 비용 정보가 입력되지 않았습니다.
+                                        </div>
+                                        <template v-else>
+                                            <!-- 내부 인건비 (FTE) -->
+                                            <div v-if="totalCostSummary.internalItems.length" class="mb-3">
+                                                <div class="d-flex align-center mb-1">
+                                                    <v-icon size="12" color="primary" class="mr-1">mdi-account</v-icon>
+                                                    <span class="text-caption font-weight-bold">내부 인건비 (FTE)</span>
+                                                    <v-chip size="x-small" variant="tonal" color="primary" class="ml-auto">
+                                                        {{ totalCostSummary.totalFte }} FTE
+                                                    </v-chip>
+                                                </div>
+                                                <div class="task-count-grid">
+                                                    <div class="task-count-row">
+                                                        <span class="task-count-label font-weight-medium">연간 총 시간</span>
+                                                        <span class="task-count-value font-weight-bold">{{ totalCostSummary.totalAnnualHours }}h</span>
+                                                    </div>
+                                                    <div class="task-count-row">
+                                                        <span class="task-count-label font-weight-medium">월간 총 시간</span>
+                                                        <span class="task-count-value font-weight-bold">{{ totalCostSummary.totalMonthlyHours }}h</span>
+                                                    </div>
+                                                    <div v-for="item in totalCostSummary.internalItems" :key="item.name" class="task-count-row">
+                                                        <span class="task-count-label">{{ item.name }}</span>
+                                                        <span class="task-count-value">{{ item.fte }} FTE · {{ item.annualHours }}h/yr</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- 외부 비용 (OPEX) -->
+                                            <div v-if="totalCostSummary.externalItems.length">
+                                                <v-divider v-if="totalCostSummary.internalItems.length" class="mb-3" />
+                                                <div class="d-flex align-center mb-1">
+                                                    <v-icon size="12" color="orange" class="mr-1">mdi-handshake</v-icon>
+                                                    <span class="text-caption font-weight-bold">외부 비용 (OPEX)</span>
+                                                    <v-chip size="x-small" variant="tonal" color="orange" class="ml-auto">
+                                                        ₩{{ totalCostSummary.totalOpex.toLocaleString() }}
+                                                    </v-chip>
+                                                </div>
+                                                <div class="task-count-grid">
+                                                    <div v-for="item in totalCostSummary.externalItems" :key="item.name" class="task-count-row">
+                                                        <span class="task-count-label">{{ item.name }}</span>
+                                                        <span class="task-count-value">₩{{ item.cost.toLocaleString() }} / {{ item.unit }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                                    </template>
+                                    <template v-if="sec.id === 'task_count'">
+
+                                <!-- Task 개수 Task Count (Read-only) -->
+                                <div v-if="isBuiltinPropVisible('process', 'task_count')" class="section-group">
+                                    <div class="section-title" @click="toggle('task-count')">
+                                        <v-icon size="14" class="mr-1">{{ isOpen('task-count') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                        <v-icon size="14" class="mr-1" color="blue">mdi-counter</v-icon>
+                                        {{ builtinLabel('process', 'task_count', 'Task 개수') }}
+                                        <v-progress-circular
+                                            v-if="isTaskCountLoading"
+                                            size="12"
+                                            width="2"
+                                            indeterminate
+                                            color="primary"
+                                            class="ml-auto mr-1"
+                                        />
+                                        <v-chip
+                                            size="x-small"
+                                            variant="tonal"
+                                            color="primary"
+                                            :class="isTaskCountLoading ? '' : 'ml-auto'"
+                                        >
+                                            {{ taskCountGrandTotal }}
+                                        </v-chip>
+                                    </div>
+                                    <div v-show="isOpen('task-count')" class="section-body">
+                                        <div v-if="taskCountSummary.total === 0" class="text-caption text-disabled">
+                                            캔버스에 Task가 없습니다.
+                                        </div>
+                                        <div v-else class="task-count-grid">
+                                            <div class="task-count-row">
+                                                <span class="task-count-label font-weight-medium">전체</span>
+                                                <span class="task-count-value font-weight-bold">
+                                                    <v-progress-circular
+                                                        v-if="isTaskCountLoading"
+                                                        size="12"
+                                                        width="2"
+                                                        indeterminate
+                                                        color="primary"
+                                                        class="mr-1"
+                                                    />
+                                                    {{ taskCountGrandTotal }}
+                                                </span>
+                                            </div>
+                                            <div v-for="item in taskCountSummary.items" :key="item.type" class="task-count-row">
+                                                <span class="task-count-label">{{ item.label }}</span>
+                                                <span class="task-count-value">
+                                                    <span class="task-count-percent">{{ item.percent }}%</span>
+                                                    <span class="task-count-number">({{ item.count }})</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div v-if="callActivityCards.length > 0" class="call-activity-cards mt-3">
+                                            <div
+                                                v-for="card in callActivityCards"
+                                                :key="card.defId"
+                                                class="call-activity-card"
+                                            >
+                                                <div class="call-activity-card-header">
+                                                    <v-icon size="14" color="grey-darken-1" class="mr-1">mdi-arrow-top-right-bold-box-outline</v-icon>
+                                                    <span class="call-activity-card-title" :title="card.name">{{ card.name }}</span>
+                                                    <v-chip
+                                                        v-if="card.status === 'loaded'"
+                                                        size="x-small"
+                                                        variant="tonal"
+                                                        color="grey-darken-1"
+                                                        class="ml-auto"
+                                                    >
+                                                        {{ card.total }}
+                                                    </v-chip>
+                                                    <v-progress-circular
+                                                        v-else-if="card.status === 'loading'"
+                                                        size="14"
+                                                        width="2"
+                                                        indeterminate
+                                                        color="grey-darken-1"
+                                                        class="ml-auto"
+                                                    />
+                                                    <v-icon
+                                                        v-else-if="card.status === 'error'"
+                                                        size="14"
+                                                        color="error"
+                                                        class="ml-auto"
+                                                    >
+                                                        mdi-alert-circle-outline
+                                                    </v-icon>
+                                                </div>
+                                                <div class="call-activity-card-body">
+                                                    <div v-if="card.status === 'loading'" class="text-caption text-disabled">
+                                                        불러오는 중...
+                                                    </div>
+                                                    <div v-else-if="card.status === 'error'" class="text-caption text-error">
+                                                        로드에 실패했습니다.
+                                                    </div>
+                                                    <div v-else-if="card.total === 0" class="text-caption text-disabled">
+                                                        참조 프로세스에 Task가 없습니다.
+                                                    </div>
+                                                    <div v-else class="task-count-grid">
+                                                        <div
+                                                            v-for="item in card.items"
+                                                            :key="item.type"
+                                                            class="task-count-row"
+                                                        >
+                                                            <span class="task-count-label">{{ item.label }}</span>
+                                                            <span class="task-count-value">
+                                                                <span class="task-count-percent">{{ item.percent }}%</span>
+                                                                <span class="task-count-number">({{ item.count }})</span>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                    </template>
+                                </template>
 
                                 <!-- 전략적 자산 -->
                                 <!-- <div class="section-group">
@@ -926,214 +1036,6 @@
                                         </div>
                                     </div>
                                 </div> -->
-
-                                <!-- 프로세스 전체 소요시간 Total FTE / Duration (Read-only) -->
-                                <div v-if="isBuiltinPropVisible('process', 'total_duration')" class="section-group">
-                                    <div class="section-title" @click="toggle('proc-total-fte')">
-                                        <v-icon size="14" class="mr-1">{{ isOpen('proc-total-fte') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
-                                        <v-icon size="14" class="mr-1" color="teal">mdi-clock-outline</v-icon>
-                                        프로세스 전체 소요시간
-                                        <v-chip v-if="totalFteSummary.totalFte" size="x-small" variant="tonal" color="teal" class="ml-auto">
-                                            {{ totalFteSummary.totalFte }} FTE
-                                        </v-chip>
-                                    </div>
-                                    <div v-show="isOpen('proc-total-fte')" class="section-body">
-                                        <div v-if="totalFteSummary.items.length === 0" class="text-caption text-disabled">
-                                            Task에 소요시간이 입력되지 않았습니다.
-                                        </div>
-                                        <template v-else>
-                                            <div class="task-count-grid">
-                                                <div v-if="totalFteSummary.totalFte" class="task-count-row">
-                                                    <span class="task-count-label font-weight-medium">총 FTE</span>
-                                                    <span class="task-count-value font-weight-bold">{{ totalFteSummary.totalFte }}</span>
-                                                </div>
-                                                <div v-if="totalFteSummary.totalHours" class="task-count-row">
-                                                    <span class="task-count-label font-weight-medium">월간 총 시간</span>
-                                                    <span class="task-count-value font-weight-bold">{{ totalFteSummary.totalHours }}h</span>
-                                                </div>
-                                                <div v-for="item in totalFteSummary.items" :key="item.name" class="task-count-row">
-                                                    <span class="task-count-label">{{ item.name }}</span>
-                                                    <span class="task-count-value">
-                                                        <template v-if="item.fte">{{ item.fte }} FTE</template>
-                                                        <template v-if="item.fte && item.hours"> · </template>
-                                                        <template v-if="item.hours">{{ item.hours }}h/mo</template>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-
-                                <!-- 프로세스 전체 비용 Total Cost (Read-only) -->
-                                <div v-if="isBuiltinPropVisible('process', 'total_cost')" class="section-group">
-                                    <div class="section-title" @click="toggle('proc-total-cost')">
-                                        <v-icon size="14" class="mr-1">{{ isOpen('proc-total-cost') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
-                                        <v-icon size="14" class="mr-1" color="orange">mdi-currency-krw</v-icon>
-                                        프로세스 전체 비용
-                                    </div>
-                                    <div v-show="isOpen('proc-total-cost')" class="section-body">
-                                        <div v-if="!totalCostSummary.hasData" class="text-caption text-disabled">
-                                            Task에 비용 정보가 입력되지 않았습니다.
-                                        </div>
-                                        <template v-else>
-                                            <!-- 내부 인건비 (FTE) -->
-                                            <div v-if="totalCostSummary.internalItems.length" class="mb-3">
-                                                <div class="d-flex align-center mb-1">
-                                                    <v-icon size="12" color="primary" class="mr-1">mdi-account</v-icon>
-                                                    <span class="text-caption font-weight-bold">내부 인건비 (FTE)</span>
-                                                    <v-chip size="x-small" variant="tonal" color="primary" class="ml-auto">
-                                                        {{ totalCostSummary.totalFte }} FTE
-                                                    </v-chip>
-                                                </div>
-                                                <div class="task-count-grid">
-                                                    <div class="task-count-row">
-                                                        <span class="task-count-label font-weight-medium">연간 총 시간</span>
-                                                        <span class="task-count-value font-weight-bold">{{ totalCostSummary.totalAnnualHours }}h</span>
-                                                    </div>
-                                                    <div class="task-count-row">
-                                                        <span class="task-count-label font-weight-medium">월간 총 시간</span>
-                                                        <span class="task-count-value font-weight-bold">{{ totalCostSummary.totalMonthlyHours }}h</span>
-                                                    </div>
-                                                    <div v-for="item in totalCostSummary.internalItems" :key="item.name" class="task-count-row">
-                                                        <span class="task-count-label">{{ item.name }}</span>
-                                                        <span class="task-count-value">{{ item.fte }} FTE · {{ item.annualHours }}h/yr</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <!-- 외부 비용 (OPEX) -->
-                                            <div v-if="totalCostSummary.externalItems.length">
-                                                <v-divider v-if="totalCostSummary.internalItems.length" class="mb-3" />
-                                                <div class="d-flex align-center mb-1">
-                                                    <v-icon size="12" color="orange" class="mr-1">mdi-handshake</v-icon>
-                                                    <span class="text-caption font-weight-bold">외부 비용 (OPEX)</span>
-                                                    <v-chip size="x-small" variant="tonal" color="orange" class="ml-auto">
-                                                        ₩{{ totalCostSummary.totalOpex.toLocaleString() }}
-                                                    </v-chip>
-                                                </div>
-                                                <div class="task-count-grid">
-                                                    <div v-for="item in totalCostSummary.externalItems" :key="item.name" class="task-count-row">
-                                                        <span class="task-count-label">{{ item.name }}</span>
-                                                        <span class="task-count-value">₩{{ item.cost.toLocaleString() }} / {{ item.unit }}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-
-                                <!-- Task 개수 Task Count (Read-only) -->
-                                <div v-if="isBuiltinPropVisible('process', 'task_count')" class="section-group">
-                                    <div class="section-title" @click="toggle('task-count')">
-                                        <v-icon size="14" class="mr-1">{{ isOpen('task-count') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
-                                        <v-icon size="14" class="mr-1" color="blue">mdi-counter</v-icon>
-                                        Task 개수
-                                        <v-progress-circular
-                                            v-if="isTaskCountLoading"
-                                            size="12"
-                                            width="2"
-                                            indeterminate
-                                            color="primary"
-                                            class="ml-auto mr-1"
-                                        />
-                                        <v-chip
-                                            size="x-small"
-                                            variant="tonal"
-                                            color="primary"
-                                            :class="isTaskCountLoading ? '' : 'ml-auto'"
-                                        >
-                                            {{ taskCountGrandTotal }}
-                                        </v-chip>
-                                    </div>
-                                    <div v-show="isOpen('task-count')" class="section-body">
-                                        <div v-if="taskCountSummary.total === 0" class="text-caption text-disabled">
-                                            캔버스에 Task가 없습니다.
-                                        </div>
-                                        <div v-else class="task-count-grid">
-                                            <div class="task-count-row">
-                                                <span class="task-count-label font-weight-medium">전체</span>
-                                                <span class="task-count-value font-weight-bold">
-                                                    <v-progress-circular
-                                                        v-if="isTaskCountLoading"
-                                                        size="12"
-                                                        width="2"
-                                                        indeterminate
-                                                        color="primary"
-                                                        class="mr-1"
-                                                    />
-                                                    {{ taskCountGrandTotal }}
-                                                </span>
-                                            </div>
-                                            <div v-for="item in taskCountSummary.items" :key="item.type" class="task-count-row">
-                                                <span class="task-count-label">{{ item.label }}</span>
-                                                <span class="task-count-value">
-                                                    <span class="task-count-percent">{{ item.percent }}%</span>
-                                                    <span class="task-count-number">({{ item.count }})</span>
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div v-if="callActivityCards.length > 0" class="call-activity-cards mt-3">
-                                            <div
-                                                v-for="card in callActivityCards"
-                                                :key="card.defId"
-                                                class="call-activity-card"
-                                            >
-                                                <div class="call-activity-card-header">
-                                                    <v-icon size="14" color="grey-darken-1" class="mr-1">mdi-arrow-top-right-bold-box-outline</v-icon>
-                                                    <span class="call-activity-card-title" :title="card.name">{{ card.name }}</span>
-                                                    <v-chip
-                                                        v-if="card.status === 'loaded'"
-                                                        size="x-small"
-                                                        variant="tonal"
-                                                        color="grey-darken-1"
-                                                        class="ml-auto"
-                                                    >
-                                                        {{ card.total }}
-                                                    </v-chip>
-                                                    <v-progress-circular
-                                                        v-else-if="card.status === 'loading'"
-                                                        size="14"
-                                                        width="2"
-                                                        indeterminate
-                                                        color="grey-darken-1"
-                                                        class="ml-auto"
-                                                    />
-                                                    <v-icon
-                                                        v-else-if="card.status === 'error'"
-                                                        size="14"
-                                                        color="error"
-                                                        class="ml-auto"
-                                                    >
-                                                        mdi-alert-circle-outline
-                                                    </v-icon>
-                                                </div>
-                                                <div class="call-activity-card-body">
-                                                    <div v-if="card.status === 'loading'" class="text-caption text-disabled">
-                                                        불러오는 중...
-                                                    </div>
-                                                    <div v-else-if="card.status === 'error'" class="text-caption text-error">
-                                                        로드에 실패했습니다.
-                                                    </div>
-                                                    <div v-else-if="card.total === 0" class="text-caption text-disabled">
-                                                        참조 프로세스에 Task가 없습니다.
-                                                    </div>
-                                                    <div v-else class="task-count-grid">
-                                                        <div
-                                                            v-for="item in card.items"
-                                                            :key="item.type"
-                                                            class="task-count-row"
-                                                        >
-                                                            <span class="task-count-label">{{ item.label }}</span>
-                                                            <span class="task-count-value">
-                                                                <span class="task-count-percent">{{ item.percent }}%</span>
-                                                                <span class="task-count-number">({{ item.count }})</span>
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </v-window-item>
 
@@ -1146,6 +1048,9 @@
                                 </div>
 
                                 <div class="pa-4">
+                                    <!-- 섹션 순서는 속성 스키마의 display_order 를 따른다 (관리자 콘솔 → 속성 스키마 관리) -->
+                                    <template v-for="sec in taskOrderedSections" :key="'task-sec-' + sec.id">
+                                        <template v-if="sec.id === 'seqflow'">
                                     <!-- Relation / SequenceFlow 속성 -->
                                     <div v-if="isSequenceFlowElement" class="section-group">
                                         <div class="section-title" @click="toggle('relation-info')">
@@ -1158,7 +1063,7 @@
                                         </div>
                                         <div v-show="isOpen('relation-info')" class="section-body">
                                             <template v-if="isBuiltinPropVisible('bpmn:SequenceFlow', 'name')">
-                                                <label class="field-label">이름</label>
+                                                <label class="field-label">{{ builtinLabel('bpmn:SequenceFlow', 'name', '이름') }}</label>
                                                 <v-text-field
                                                     v-model="taskForm.name"
                                                     density="compact"
@@ -1169,7 +1074,7 @@
                                                 />
                                             </template>
                                             <template v-if="isBuiltinPropVisible('bpmn:SequenceFlow', 'flow_type')">
-                                                <label class="field-label">선 종류</label>
+                                                <label class="field-label">{{ builtinLabel('bpmn:SequenceFlow', 'flow_type', '선 종류') }}</label>
                                                 <v-select
                                                     v-model="taskForm.flowType"
                                                     :items="sequenceFlowTypeOptions"
@@ -1183,7 +1088,7 @@
                                             </template>
                                             <template v-if="taskForm.flowType === 'condition'">
                                                 <template v-if="isBuiltinPropVisible('bpmn:SequenceFlow', 'condition_expression')">
-                                                    <label class="field-label">조건식 (conditionFunction)</label>
+                                                    <label class="field-label">{{ builtinLabel('bpmn:SequenceFlow', 'condition_expression', '조건식 (conditionFunction)') }}</label>
                                                     <v-textarea
                                                         v-model="taskForm.conditionExpression"
                                                         density="compact"
@@ -1202,7 +1107,7 @@
                                                         density="compact"
                                                         hide-details
                                                         class="mb-1"
-                                                        label="LLM 맥락 판단으로 평가"
+                                                        :label="builtinLabel('bpmn:SequenceFlow', 'condition_llm_mode', 'LLM 맥락 판단으로 평가')"
                                                     />
                                                     <div class="text-caption text-medium-emphasis mb-3">
                                                         켜면 실행 시 조건식을 그대로 매칭하지 않고, LLM이 전체 실행 데이터를
@@ -1213,13 +1118,15 @@
                                             </template>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'pool_exec'">
 
                                     <!-- Pool(Participant) 실행형 지정 — 실행 기능 허용 사용자 전용, 다중 지정 가능 -->
                                     <div v-if="isParticipantElement && isExecUser && isBuiltinPropVisible('bpmn:Participant', 'exec_pool')" class="section-group">
                                         <div class="section-title" @click="toggle('pool-exec')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('pool-exec') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="teal">mdi-play-circle-outline</v-icon>
-                                            실행형 Pool
+                                            {{ builtinLabel('bpmn:Participant', 'exec_pool', '실행형 Pool') }}
                                             <v-chip v-if="isExecPoolElement" size="x-small" variant="flat" color="teal" class="ml-auto">지정됨</v-chip>
                                         </div>
                                         <div v-show="isOpen('pool-exec')" class="section-body">
@@ -1255,22 +1162,30 @@
                                             </template>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'pool_ppi'">
 
                                     <!-- Pool(Participant) PPI — 프로세스 성과지표를 프로세스 레벨 uengine:json(ppi)에 저장 -->
-                                    <div v-if="isParticipantElement && isBuiltinPropVisible('bpmn:Participant', 'ppi')" class="section-group">
+                                    <div
+                                        v-if="ppiPanelScope === 'bpmn:Participant' && isParticipantElement && isBuiltinPropVisible('bpmn:Participant', 'ppi')"
+                                        class="section-group"
+                                    >
                                         <div class="section-title" @click="toggle('pool-ppi')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('pool-ppi') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="orange">mdi-chart-line</v-icon>
-                                            {{ $t('ppi.title') || 'PPI (프로세스 성과지표)' }}
+                                            {{ builtinLabel('bpmn:Participant', 'ppi', $t('ppi.title') || 'PPI (프로세스 성과지표)') }}
                                         </div>
                                         <div v-show="isOpen('pool-ppi')" class="section-body">
                                             <PpiField
                                                 :model-value="taskForm.ppi"
                                                 :readonly="isViewMode"
+                                                :show-header="false"
                                                 @update:model-value="taskForm.ppi = $event"
                                             />
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'lane_basic'">
 
                                     <!-- Lane 속성 (name: 조직도검색, description) -->
                                     <div v-if="isLaneElement" class="section-group">
@@ -1281,7 +1196,7 @@
                                         </div>
                                         <div v-show="isOpen('lane-assignee')" class="section-body">
                                             <template v-if="isBuiltinPropVisible('bpmn:Lane', 'name')">
-                                                <label class="field-label">Lane 이름</label>
+                                                <label class="field-label">{{ builtinLabel('bpmn:Lane', 'name', 'Lane 이름') }}</label>
                                                 <v-text-field
                                                     v-model="taskForm.name"
                                                     density="compact"
@@ -1292,7 +1207,7 @@
                                                 />
                                             </template>
                                             <div v-if="isBuiltinPropVisible('bpmn:Lane', 'description')" class="field-label lane-description-label mt-4">
-                                                <span class="field-label-left">설명</span>
+                                                <span class="field-label-left">{{ builtinLabel('bpmn:Lane', 'description', '설명') }}</span>
                                                 <v-btn
                                                     size="x-small"
                                                     variant="text"
@@ -1319,13 +1234,15 @@
                                             />
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'lane_assignment'">
 
                                     <!-- Lane 담당 지정 (원가 유형 / 담당 유형 / 담당자·조직·공급업체) -->
                                     <div v-if="isLaneElement && isBuiltinPropVisible('bpmn:Lane', 'lane_assignment')" class="section-group">
                                         <div class="section-title" @click="toggle('lane-assignment')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('lane-assignment') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="indigo">mdi-account-multiple</v-icon>
-                                            Lane 담당 지정
+                                            {{ builtinLabel('bpmn:Lane', 'lane_assignment', 'Lane 담당 지정') }}
                                         </div>
                                         <div v-show="isOpen('lane-assignment')" class="section-body">
                                             <label class="field-label">원가 유형</label>
@@ -1556,13 +1473,15 @@
                                             </template>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'call_activity'">
 
                                     <!-- CallActivity / StartEvent / EndEvent: 프로세스 정의 선택 -->
                                     <div v-if="isProcessLinkableElement && isBuiltinPropVisible('bpmn:CallActivity', 'definition_link')" class="section-group">
                                         <div class="section-title" @click="toggle('call-activity-def')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('call-activity-def') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="deep-purple">mdi-file-tree</v-icon>
-                                            {{ $t('CallActivityPanel.selectDefinition') || '프로세스 정의 선택' }}
+                                            {{ builtinLabel('bpmn:CallActivity', 'definition_link', $t('CallActivityPanel.selectDefinition') || '프로세스 정의 선택') }}
                                         </div>
                                         <div v-show="isOpen('call-activity-def')" class="section-body">
                                             <v-autocomplete
@@ -1620,13 +1539,15 @@
                                             </div>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'dmn'">
 
                                     <!-- BusinessRuleTask: DMN 룰 설정 -->
                                     <div v-if="isBusinessRuleElement && isBuiltinPropVisible('bpmn:BusinessRuleTask', 'dmn_rule')" class="section-group">
                                         <div class="section-title" @click="toggle('business-rule-dmn')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('business-rule-dmn') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="purple">mdi-table-cog</v-icon>
-                                            DMN 룰 설정
+                                            {{ builtinLabel('bpmn:BusinessRuleTask', 'dmn_rule', 'DMN 룰 설정') }}
                                         </div>
                                         <div v-show="isOpen('business-rule-dmn')" class="section-body">
                                             <v-autocomplete
@@ -1673,6 +1594,8 @@
                                             </div>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'send_mail'">
 
                                     <!-- SendTask: 메일 발송 설정 (실행 도달 시 즉시 발송 후 자동 완료) -->
                                     <div v-if="isSendTaskElement" class="section-group">
@@ -1683,7 +1606,7 @@
                                         </div>
                                         <div v-show="isOpen('send-task-mail')" class="section-body">
                                             <template v-if="isBuiltinPropVisible('bpmn:SendTask', 'mail_recipients')">
-                                                <label class="field-label">수신자</label>
+                                                <label class="field-label">{{ builtinLabel('bpmn:SendTask', 'mail_recipients', '수신자') }}</label>
                                                 <v-combobox
                                                     v-model="sendTaskRecipients"
                                                     :items="sendTaskUserItems"
@@ -1700,7 +1623,7 @@
                                                 ></v-combobox>
                                             </template>
                                             <template v-if="isBuiltinPropVisible('bpmn:SendTask', 'mail_title')">
-                                                <label class="field-label">메일 제목</label>
+                                                <label class="field-label">{{ builtinLabel('bpmn:SendTask', 'mail_title', '메일 제목') }}</label>
                                                 <v-text-field
                                                     v-model="sendTaskMailTitle"
                                                     density="compact" variant="outlined" hide-details
@@ -1711,7 +1634,7 @@
                                                 ></v-text-field>
                                             </template>
                                             <template v-if="isBuiltinPropVisible('bpmn:SendTask', 'mail_contents')">
-                                                <label class="field-label">메일 내용</label>
+                                                <label class="field-label">{{ builtinLabel('bpmn:SendTask', 'mail_contents', '메일 내용') }}</label>
                                                 <v-textarea
                                                     v-model="sendTaskMailContents"
                                                     density="compact" variant="outlined" hide-details rows="3" auto-grow
@@ -1728,13 +1651,15 @@
                                             </div>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'data_io'">
 
                                     <!-- BPMN 데이터 입출력 (DataObject/DataStore 연결) -->
                                     <div v-if="(taskDataInputs.length || taskDataOutputs.length) && isBuiltinPropVisible('task', 'data_io')" class="section-group">
                                         <div class="section-title" @click="toggle('task-data-io')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-data-io') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="teal">mdi-database-import-outline</v-icon>
-                                            입출력 데이터
+                                            {{ builtinLabel('task', 'data_io', '입출력 데이터') }}
                                         </div>
                                         <div v-show="isOpen('task-data-io')" class="section-body">
                                             <template v-if="taskDataInputs.length">
@@ -1766,6 +1691,8 @@
                                             </div>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'task_basic'">
 
                                     <!-- Basic -->
                                     <div v-if="isTaskPropertyElement" class="section-group">
@@ -1776,7 +1703,7 @@
                                         </div>
                                         <div v-show="isOpen('task-basic')" class="section-body">
                                             <template v-if="isBuiltinPropVisible('task', 'element_id')">
-                                                <label class="field-label">요소 ID</label>
+                                                <label class="field-label">{{ builtinLabel('task', 'element_id', '요소 ID') }}</label>
                                                 <div class="element-id-row mb-3">
                                                     <code class="element-id-value" :title="elementDisplayId">{{ elementDisplayId }}</code>
                                                     <v-btn icon variant="text" size="x-small" @click="copyElementId">
@@ -1784,155 +1711,49 @@
                                                     </v-btn>
                                                 </div>
                                             </template>
-                                            <template v-if="isBuiltinPropVisible('task', 'name')">
-                                                <label class="field-label">이름</label>
-                                                <v-text-field
-                                                    v-model="taskForm.name"
-                                                    density="compact" variant="outlined" hide-details class="mb-3"
-                                                />
-                                            </template>
-                                            <!-- Schema fields for Task -->
-                                            <template v-for="field in taskFields" :key="field.id">
-                                                <div class="field-label">
-                                                    <span class="field-label-left">
-                                                        {{ field.property_label || field.property_key }}
-                                                        <v-chip label rounded="0" size="x-small" density="compact" color="grey" class="ml-1" style="font-size: 7px;">{{ getPropertyTypeLabel(field.property_type) }}</v-chip>
-                                                        <v-chip v-if="field.is_deprecated_field" label rounded="0" size="x-small" density="compact" color="warning" class="ml-1" style="font-size: 7px;">사용 중단</v-chip>
-                                                        <v-chip v-else-if="field.is_readonly" label rounded="0" size="x-small" density="compact" color="primary" class="ml-1" style="font-size: 7px;">읽기 전용</v-chip>
-                                                        <v-chip v-if="field.is_required && !field.is_deprecated_field" label rounded="0" size="x-small" density="compact" color="red" class="ml-1" style="font-size: 7px;">필수</v-chip>
-                                                    </span>
-                                                    <DetailComponent
-                                                        v-if="field.description"
-                                                        :title="displayText(field.property_label || field.property_key)"
-                                                        :details="[{ title: field.description }]"
-                                                        :icon-size="14"
-                                                    />
-                                                </div>
-                                                <v-text-field
-                                                    v-if="field.property_type === 'string'"
-                                                    v-model="taskForm.schemaProps[field.property_key]"
-                                                    density="compact" variant="outlined" hide-details class="mb-3"
-                                                    :placeholder="field.placeholder"
-                                                    :disabled="field.is_readonly"
-                                                />
-                                                <v-textarea
-                                                    v-else-if="field.property_type === 'textarea'"
-                                                    v-model="taskForm.schemaProps[field.property_key]"
-                                                    density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3"
-                                                    :placeholder="field.placeholder"
-                                                    :disabled="field.is_readonly"
-                                                />
-                                                <v-text-field
-                                                    v-else-if="field.property_type === 'number'"
-                                                    :model-value="numberFieldDisplay(taskForm.schemaProps[field.property_key], field)"
-                                                    @focus="onNumberFocus($event)"
-                                                    @blur="onNumberBlur($event, field, (v) => taskForm.schemaProps[field.property_key] = v)"
-                                                    density="compact" variant="outlined" hide-details="auto" class="mb-3"
-                                                    :placeholder="field.placeholder"
-                                                    :suffix="field.number_unit || undefined"
-                                                    :rules="numberRules(field)"
-                                                    :disabled="field.is_readonly"
-                                                />
-                                                <v-text-field
-                                                    v-else-if="field.property_type === 'url'"
-                                                    v-model="taskForm.schemaProps[field.property_key]"
-                                                    density="compact" variant="outlined" hide-details class="mb-3"
-                                                    :placeholder="field.placeholder || 'https://...'"
-                                                    :disabled="field.is_readonly"
-                                                >
-                                                    <template v-slot:prepend-inner>
-                                                        <v-icon size="14" color="grey">mdi-link-variant</v-icon>
-                                                    </template>
-                                                </v-text-field>
-                                                    <v-select
-                                                        v-else-if="field.property_type === 'db-select'"
-                                                        v-model="taskForm.schemaProps[field.property_key]"
-                                                        :items="getSelectFieldItems(field)"
-                                                        item-title="label" item-value="value"
-                                                        density="compact" variant="outlined" hide-details class="mb-3"
-                                                        :placeholder="field.placeholder"
-                                                        :clearable="!field.is_readonly"
-                                                        :disabled="field.is_readonly"
-                                                />
-                                                <v-select
-                                                    v-else-if="field.property_type === 'select'"
-                                                    v-model="taskForm.schemaProps[field.property_key]"
-                                                    :items="getSelectFieldItems(field)"
-                                                    item-title="label" item-value="value"
-                                                    density="compact" variant="outlined" hide-details class="mb-3"
-                                                    :clearable="!field.is_readonly"
-                                                    :disabled="field.is_readonly"
-                                                />
-                                                <v-select
-                                                    v-else-if="field.property_type === 'multiselect'"
-                                                    v-model="taskForm.schemaProps[field.property_key]"
-                                                    :items="getSelectFieldItems(field)"
-                                                    item-title="label" item-value="value"
-                                                    density="compact" variant="outlined" hide-details class="mb-3"
-                                                    :clearable="!field.is_readonly"
-                                                    multiple chips
-                                                    :closable-chips="!field.is_readonly"
-                                                    :disabled="field.is_readonly"
-                                                />
-                                                <v-text-field
-                                                    v-else-if="field.property_type === 'date'"
-                                                    v-model="taskForm.schemaProps[field.property_key]"
-                                                    density="compact" variant="outlined" hide-details type="date" class="mb-3"
-                                                    :placeholder="field.placeholder"
-                                                    :disabled="field.is_readonly"
-                                                />
-                                                <div v-else-if="field.property_type === 'daterange'" class="daterange-row mb-3">
-                                                    <v-text-field
-                                                        v-model="taskForm.schemaProps[field.property_key + '_start']"
-                                                        density="compact" variant="outlined" hide-details type="date"
-                                                        :placeholder="field.placeholder || 'Start'"
-                                                        :disabled="field.is_readonly"
-                                                    />
-                                                    <span class="daterange-separator">~</span>
-                                                    <v-text-field
-                                                        v-model="taskForm.schemaProps[field.property_key + '_end']"
-                                                        density="compact" variant="outlined" hide-details type="date"
-                                                        :placeholder="'End'"
-                                                        :disabled="field.is_readonly"
-                                                    />
-                                                </div>
-                                                <v-autocomplete
-                                                    v-else-if="field.property_type === 'user'"
-                                                    v-model="taskForm.schemaProps[field.property_key]"
-                                                    :items="userSearchResults[field.property_key] || []"
-                                                    item-title="name" item-value="id"
-                                                    density="compact" variant="outlined" hide-details class="mb-3"
-                                                    :placeholder="field.placeholder || 'Search user... (Enter)'"
-                                                    :clearable="!field.is_readonly"
-                                                    :loading="userSearchLoading[field.property_key]"
-                                                    :disabled="field.is_readonly"
-                                                    @keydown.enter="field.is_readonly ? null : onUserSearch(field.property_key, $event.target.value)"
-                                                >
-                                                    <template v-slot:prepend-inner>
-                                                        <v-icon size="14" color="grey">mdi-account-search-outline</v-icon>
-                                                    </template>
-                                                </v-autocomplete>
-                                                <v-switch
-                                                    v-else-if="field.property_type === 'boolean'"
-                                                    v-model="taskForm.schemaProps[field.property_key]"
-                                                    density="compact" color="primary" hide-details class="mb-3"
-                                                    :disabled="field.is_readonly"
-                                                />
-                                            </template>
-                                            <!-- Fallback if no schema -->
-                                            <template v-if="taskFields.length === 0 && isBuiltinPropVisible('task', 'description')">
-                                                <label class="field-label">설명</label>
-                                                <v-textarea v-model="taskForm.description" density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3" placeholder="태스크 설명 입력..." />
-                                            </template>
+                                            <!-- 일반 섹션 필드: 내장(이름·설명 폴백)과 커스텀 무그룹 필드를
+                                                 display_order 로 통합 정렬. 내장 필드는 taskForm, 커스텀은 schemaProps 에 저장. -->
+                                            <SchemaFieldInput
+                                                v-for="field in taskGeneralFields"
+                                                :key="field.id"
+                                                :field="field"
+                                                :model="field.__builtin ? taskForm : taskForm.schemaProps"
+                                                @dirty="taskFormDirty = true"
+                                            />
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'custom_groups'">
+                                    <!-- 사용자 정의 속성 그룹 (속성 스키마 스튜디오에서 정의한 묶음) -->
+                                    <div
+                                        v-for="group in taskFieldGroupsNamed"
+                                        :key="'task-schema-group-' + group.key"
+                                        class="section-group"
+                                    >
+                                        <div class="section-title" @click="toggleSchemaGroup('task-' + group.key)">
+                                            <v-icon size="14" class="mr-1">{{ isSchemaGroupOpen('task-' + group.key) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                            <v-icon size="14" class="mr-1" color="blue-grey">mdi-shape-outline</v-icon>
+                                            {{ group.label }}
+                                        </div>
+                                        <div v-show="isSchemaGroupOpen('task-' + group.key)" class="section-body">
+                                            <SchemaFieldInput
+                                                v-for="field in group.fields"
+                                                :key="field.id"
+                                                :field="field"
+                                                :model="taskForm.schemaProps"
+                                                @dirty="taskFormDirty = true"
+                                            />
+                                        </div>
+                                    </div>
+                                        </template>
+                                        <template v-if="sec.id === 'form_link'">
 
                                     <!-- UserTask 계열: 폼 연결 (재사용 폼 라이브러리에서 선택) -->
                                     <div v-if="isFormLinkableElement && isBuiltinPropVisible('task', 'form_link')" class="section-group">
                                         <div class="section-title" @click="toggle('task-form-link')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-form-link') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="primary">mdi-form-select</v-icon>
-                                            폼 연결
+                                            {{ builtinLabel('task', 'form_link', '폼 연결') }}
                                         </div>
                                         <div v-show="isOpen('task-form-link')" class="section-body">
                                             <v-autocomplete
@@ -1961,27 +1782,25 @@
                                             </v-btn>
                                         </div>
                                     </div>
-
-                                    <!-- Task RACI — 통합 매트릭스(RaciMatrixDialog)와 동일 스키마로 uengine:json(raci)에 저장.
-                                         태스크 식별은 Task명으로 하며 별도 Task 코드는 입력받지 않는다 -->
+                                        </template>
+                                        <template v-if="sec.id === 'raci'">
                                     <div v-if="isRaciTaskElement && isBuiltinPropVisible('task', 'raci')" class="section-group">
                                         <div class="section-title" @click="toggle('task-raci')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-raci') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="deep-purple">mdi-table-account</v-icon>
-                                            {{ $t('raci.tab') || 'RACI' }}
+                                            {{ builtinLabel('task', 'raci', $t('raci.tab') || 'RACI') }}
                                         </div>
                                         <div v-show="isOpen('task-raci')" class="section-body">
                                             <RaciField v-model="taskForm.raci" :readonly="isViewMode" :suggestions="raciSuggestions" />
                                         </div>
                                     </div>
-
-                                    <!-- 세부 업무 수행 절차 — 절차 단계를 uengine:json(procedure)에 저장.
-                                         편집 모드는 항목 입력창, 조회 모드는 문서형 뷰로 렌더링 -->
+                                        </template>
+                                        <template v-if="sec.id === 'task_io'">
                                     <div v-if="isRaciTaskElement && isBuiltinPropVisible('task', 'task_io')" class="section-group">
                                         <div class="section-title" @click="toggle('task-io')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-io') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="blue">mdi-swap-horizontal</v-icon>
-                                            {{ $t('taskIo.tab') || '세부 업무 수행 절차' }}
+                                            {{ builtinLabel('task', 'task_io', $t('taskIo.tab') || '세부 업무 수행 절차') }}
                                         </div>
                                         <div v-show="isOpen('task-io')" class="section-body">
                                             <TaskIoField
@@ -1991,25 +1810,29 @@
                                             />
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'manual_links_t'">
 
                                     <!-- Task 관련자료 링크 -->
                                     <div v-if="!isSequenceFlowElement && isBuiltinPropVisible('task', 'manual_links')" class="section-group">
                                         <div class="section-title" @click="toggle('task-manual-link')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-manual-link') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="indigo">mdi-link-variant</v-icon>
-                                            관련자료 링크
+                                            {{ builtinLabel('task', 'manual_links', '관련자료 링크') }}
                                         </div>
                                         <div v-show="isOpen('task-manual-link')" class="section-body">
                                             <ManualLinkField v-model="taskForm.manualLinks" :disabled="isViewMode" />
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'api_integrations'">
 
                                     <!-- API 연동 -->
                                     <div v-if="!isLaneElement && isBuiltinPropVisible('task', 'api_integrations')" class="section-group">
                                         <div class="section-title" @click="toggle('task-api')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-api') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="teal">mdi-api</v-icon>
-                                            API 연동
+                                            {{ builtinLabel('task', 'api_integrations', 'API 연동') }}
                                         </div>
                                         <div v-show="isOpen('task-api')" class="section-body">
                                             <div v-if="!(taskForm.apiIntegrations || []).length" class="text-caption text-medium-emphasis mb-2">
@@ -2128,13 +1951,15 @@
                                             >API 추가</v-btn>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'attachment'">
 
                                     <!-- Data Object / Data Store 전용: URL + 파일 첨부 -->
                                     <div v-if="isDataReferenceElement && isBuiltinPropVisible('bpmn:DataObjectReference', 'attachment')" class="section-group">
                                         <div class="section-title" @click="toggle('task-data-attachment')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-data-attachment') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="indigo">mdi-paperclip</v-icon>
-                                            첨부 자료
+                                            {{ builtinLabel('bpmn:DataObjectReference', 'attachment', '첨부 자료') }}
                                             <span class="ml-auto" @click.stop>
                                                 <DetailComponent
                                                     title="첨부 자료"
@@ -2166,6 +1991,8 @@
                                             </v-btn>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'costing'">
 
                                     <!-- 원가 스키마: Lane 기반 분기 -->
                                     <!-- 내부 Lane → FTE Calculator -->
@@ -2174,7 +2001,7 @@
                                             <div class="section-title" @click="toggle('task-fte')">
                                                 <v-icon size="14" class="mr-1">{{ isOpen('task-fte') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                                 <v-icon size="14" class="mr-1" color="teal">mdi-clock-outline</v-icon>
-                                                FTE 계산기
+                                                {{ builtinLabel('task', 'fte_calculator', 'FTE 계산기') }}
                                                 <v-chip v-if="taskFteValue" size="x-small" variant="tonal" color="primary" class="ml-auto">
                                                     FTE {{ taskFteValue }}
                                                 </v-chip>
@@ -2230,7 +2057,7 @@
                                             <div class="section-title" @click="toggle('task-opex')">
                                                 <v-icon size="14" class="mr-1">{{ isOpen('task-opex') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                                 <v-icon size="14" class="mr-1" color="orange">mdi-currency-krw</v-icon>
-                                                OPEX (외부 비용)
+                                                {{ builtinLabel('task', 'opex', 'OPEX (외부 비용)') }}
                                                 <v-chip v-if="taskForm.opexCost" size="x-small" variant="tonal" color="orange" class="ml-auto">
                                                     {{ Number(taskForm.opexCost).toLocaleString() }}원
                                                 </v-chip>
@@ -2269,13 +2096,15 @@
                                             </div>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'system_mapping'">
 
                                     <!-- System Mapping (Task) -->
                                     <div v-if="isTaskPropertyElement && isBuiltinPropVisible('task', 'system_mapping')" class="section-group">
                                         <div class="section-title" @click="toggle('task-system')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-system') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="blue">mdi-server-network</v-icon>
-                                            시스템 매핑
+                                            {{ builtinLabel('task', 'system_mapping', '시스템 매핑') }}
                                         </div>
                                         <div v-show="isOpen('task-system')" class="section-body">
                                             <v-autocomplete
@@ -2323,13 +2152,15 @@
                                             </v-autocomplete>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'related_projects'">
 
                                     <!-- 연관 과제 매핑 (Task) -->
                                     <div v-if="isTaskPropertyElement && isBuiltinPropVisible('task', 'related_project_mapping')" class="section-group" ref="taskMappingSection">
                                         <div class="section-title" @click="toggle('task-related-projects')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('task-related-projects') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="purple">mdi-clipboard-list-outline</v-icon>
-                                            연관 과제 매핑
+                                            {{ builtinLabel('task', 'related_project_mapping', '연관 과제 매핑') }}
                                             <v-chip v-if="taskForm.relatedProjects && taskForm.relatedProjects.length" size="x-small" variant="tonal" color="purple" class="ml-auto">
                                                 {{ taskForm.relatedProjects.length }}
                                             </v-chip>
@@ -2470,13 +2301,15 @@
                                             </v-autocomplete>
                                         </div>
                                     </div>
+                                        </template>
+                                        <template v-if="sec.id === 'pi_flag'">
 
                                     <!-- 엘리먼트 PI Flag 섹션 (owner 이상) -->
                                     <div v-if="isOwner && isBuiltinPropVisible('task', 'pi_flag')" class="section-group" ref="commentSection">
                                         <div class="section-title" @click="toggle('element-comments')">
                                             <v-icon size="14" class="mr-1">{{ isOpen('element-comments') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
                                             <v-icon size="14" class="mr-1" color="red">mdi-flag-outline</v-icon>
-                                            PI Flag
+                                            {{ builtinLabel('task', 'pi_flag', 'PI Flag') }}
                                             <v-chip v-if="elementComments.length" size="x-small" variant="tonal" color="red" class="ml-2">{{ elementComments.length }}</v-chip>
                                         </div>
                                         <div v-show="isOpen('element-comments')" class="section-body">
@@ -2659,6 +2492,14 @@
                                             </div>
                                         </div>
                                     </div>
+                                        </template>
+                                    </template>
+
+                                    <!-- Task RACI — 통합 매트릭스(RaciMatrixDialog)와 동일 스키마로 uengine:json(raci)에 저장.
+                                         태스크 식별은 Task명으로 하며 별도 Task 코드는 입력받지 않는다 -->
+
+                                    <!-- 세부 업무 수행 절차 — 절차 단계를 uengine:json(procedure)에 저장.
+                                         편집 모드는 항목 입력창, 조회 모드는 문서형 뷰로 렌더링 -->
 
                                 </div>
                             </div>
@@ -4150,7 +3991,13 @@
 
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-import { useTaskCatalogStore, PROPERTY_TYPES } from '@/stores/taskCatalog';
+import {
+    useTaskCatalogStore,
+    PROPERTY_TYPES,
+    groupSchemaFields,
+    PROCESS_PANEL_SECTION_DEFS,
+    TASK_PANEL_SECTION_DEFS
+} from '@/stores/taskCatalog';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
 import BackendFactory from '@/components/api/BackendFactory';
 import { userIdentityFromSearchResult, formatIdentityWithTeam } from '@/utils/userIdentity';
@@ -4162,6 +4009,7 @@ import TaskIoField from '@/components/designer/TaskIoField.vue';
 import PpiField from '@/components/designer/PpiField.vue';
 import BpmnReviewGuide from '@/components/ui/BpmnReviewGuide.vue';
 import PiFlagEditorDialog from '@/views/process-hierarchy/PiFlagEditorDialog.vue';
+import SchemaFieldInput from '@/components/ui/SchemaFieldInput.vue';
 import { AN_STUDIO_KEY } from '@/composables/anStudio/useAnStudio';
 import { readConditionExpressionBody } from '@/utils/bpmnSequenceFlowCondition';
 import { readElementUuid } from '@/utils/bpmnElementUuid';
@@ -4328,6 +4176,7 @@ const GAP_SEVERITY_LABELS = {
     high: '높음',
 };
 
+
 export default {
     name: 'ProcessHierarchyProperties',
     inject: {
@@ -4342,6 +4191,7 @@ export default {
         TaskIoField,
         PpiField,
         PiFlagEditorDialog,
+        SchemaFieldInput,
     },
     props: {
         processDefinition: { type: Object, default: null },
@@ -4371,8 +4221,9 @@ export default {
         return {
             topTab: 'properties',
             activeTab: 'process',
-            openSections: new Set(['strategic', 'hybrid-costing', 'competency', 'general', 'manual-link', 'task-manual-link', 'task-manual-links', 'kpi-history', 'task-basic', 'task-raci', 'task-io', 'pool-ppi', 'task-fte', 'task-opex', 'task-data-attachment', 'task-api', 'proc-api', 'relation-info', 'lane-assignee', 'lane-assignment', 'pool-exec', 'task-count', 'task-related-projects', 'proc-related-projects', 'proc-total-fte', 'proc-total-cost', 'call-activity-def', 'business-rule-dmn', 'task-data-io', 'service-agent', 'proc-system', 'task-system', 'element-comments']),
+            openSections: new Set(['strategic', 'hybrid-costing', 'competency', 'general', 'manual-link', 'task-manual-link', 'task-manual-links', 'kpi-history', 'task-basic', 'task-raci', 'task-io', 'pool-ppi', 'proc-ppi', 'task-fte', 'task-opex', 'task-data-attachment', 'task-api', 'proc-api', 'relation-info', 'lane-assignee', 'lane-assignment', 'pool-exec', 'task-count', 'task-related-projects', 'proc-related-projects', 'proc-total-fte', 'proc-total-cost', 'call-activity-def', 'business-rule-dmn', 'task-data-io', 'service-agent', 'proc-system', 'task-system', 'element-comments']),
             closedPiFlagCards: new Set(),
+            closedSchemaGroups: new Set(),
             // 깃발 클릭 시 그 깃발이 가리키는 코멘트(들)가 속한 항목만 보여주기 위한 포커스 (null 이면 전체)
             piFlagFocusCommentIds: null,
             closedPiFlagAgentCards: new Set(),
@@ -4466,6 +4317,7 @@ export default {
                 hitlRequired: false,
                 manualLinks: [],
                 kpiEnabled: false,
+                ppi: null,
             },
             taskForm: {
                 name: '',
@@ -5090,6 +4942,75 @@ export default {
             const deprecatedWithValue = this.collectDeprecatedSchemaFieldsWithValue('task', elementType);
             return [...active, ...deprecatedWithValue];
         },
+        // 사용자 정의 속성의 그룹(묶음) 뷰 — 무그룹은 일반 섹션, 그룹은 별도 섹션으로 렌더
+        processFieldGroups() {
+            return groupSchemaFields(this.processFields);
+        },
+        processFieldGroupsDefault() {
+            const base = this.processFieldGroups.find((g) => !g.key);
+            return base ? base.fields : [];
+        },
+        processFieldGroupsNamed() {
+            return this.processFieldGroups.filter((g) => g.key);
+        },
+        taskFieldGroups() {
+            return groupSchemaFields(this.taskFields);
+        },
+        taskFieldGroupsDefault() {
+            const base = this.taskFieldGroups.find((g) => !g.key);
+            return base ? base.fields : [];
+        },
+        taskFieldGroupsNamed() {
+            return this.taskFieldGroups.filter((g) => g.key);
+        },
+        // 일반 섹션 필드 목록 — 내장 단순 입력 + 커스텀 무그룹 필드를 display_order 통합 정렬.
+        // 순서를 지정하지 않은(0) 커스텀 필드는 내장 필드 뒤(500)로 보낸다.
+        processGeneralFields() {
+            const items = [];
+            if (this.isBuiltinPropVisible('process', 'title')) {
+                items.push(this.generalBuiltinItem('process', 'title', { type: 'string', label: '프로세스명', placeholder: '프로세스 이름 입력' }, 30));
+            }
+            if (this.isBuiltinPropVisible('process', 'description')) {
+                items.push(
+                    this.generalBuiltinItem('process', 'description', { type: 'textarea', label: '설명', placeholder: '프로세스에 대한 설명을 입력하세요...' }, 40)
+                );
+            }
+            for (const f of this.processFieldGroupsDefault) {
+                items.push({ ...f, __order: Number(f.display_order) > 0 ? Number(f.display_order) : 500 });
+            }
+            return items.sort((a, b) => a.__order - b.__order);
+        },
+        taskGeneralFields() {
+            const items = [];
+            if (this.isBuiltinPropVisible('task', 'name')) {
+                items.push(this.generalBuiltinItem('task', 'name', { type: 'string', label: '이름' }, 20));
+            }
+            if (this.taskFields.length === 0 && this.isBuiltinPropVisible('task', 'description')) {
+                // 커스텀 스키마 필드가 없을 때만 표시되는 기본 설명 입력 (기존 규칙 유지)
+                items.push(this.generalBuiltinItem('task', 'description', { type: 'textarea', label: '설명', placeholder: '태스크 설명 입력...' }, 30));
+            }
+            for (const f of this.taskFieldGroupsDefault) {
+                items.push({ ...f, __order: Number(f.display_order) > 0 ? Number(f.display_order) : 500 });
+            }
+            return items.sort((a, b) => a.__order - b.__order);
+        },
+        // PPI 섹션의 현재 스코프 — 관리자가 process 스코프 행을 만들면(대상 변경) 프로세스 탭으로 이동
+        ppiPanelScope() {
+            try {
+                const row = this.catalogStore.builtinProp('process', 'ppi');
+                if (row && !row.deleted_at) return 'process';
+            } catch (e) {
+                /* fall through */
+            }
+            return 'bpmn:Participant';
+        },
+        // 섹션 순서: 스키마 행의 display_order → 없으면 기본 순서. 같은 값이면 정의 순서 유지.
+        processOrderedSections() {
+            return this.orderPanelSections(PROCESS_PANEL_SECTION_DEFS);
+        },
+        taskOrderedSections() {
+            return this.orderPanelSections(TASK_PANEL_SECTION_DEFS);
+        },
         processFteValue() {
             return calcFte(this.processForm.fte);
         },
@@ -5117,16 +5038,22 @@ export default {
                         alerts.push(`${f.property_label || f.property_key} is required.`);
                     }
                 });
-                // FR-009: User Task 는 시스템 맵핑값(taskForm.systems)이 필수
-                if (toSafeText(this.element.type).trim() === 'bpmn:UserTask'
-                    && !(Array.isArray(this.taskForm.systems) && this.taskForm.systems.length)) {
-                    alerts.push('시스템 맵핑값은 필수입니다.');
-                }
+                // (제거) FR-009 시스템 맵핑 필수 하드코딩 — 필수 여부는 속성 스키마(system_mapping 행의
+                // 필수 체크)로 관리한다. 2026-09-03 사용자 요청으로 알림 삭제.
             }
             if (this.activeTab === 'process') {
                 const title = toSafeText(this.processForm.title).trim();
                 if (!title) {
                     alerts.push(this.$t('validation.processNameRequired') || 'Process name is required.');
+                }
+                // 스튜디오에서 필수로 지정한 내장 필드 반영
+                if (this.builtinField('process', 'description').is_required && !toSafeText(this.processForm.description).trim()) {
+                    alerts.push(`${this.builtinLabel('process', 'description', '설명')} is required.`);
+                }
+            }
+            if (this.activeTab === 'task' && this.element && this.taskFields.length === 0) {
+                if (this.builtinField('task', 'description').is_required && !toSafeText(this.taskForm.description).trim()) {
+                    alerts.push(`${this.builtinLabel('task', 'description', '설명')} is required.`);
                 }
             }
             return alerts;
@@ -6447,6 +6374,8 @@ export default {
                     this.processForm.wilTask = toSafeText(val.wilTask || val.wil_task);
                     this.processForm.fteHoursPerMonth = val.fteHoursPerMonth ?? val.fte_hours_per_month ?? null;
                     this.processForm.hitlRequired = val.hitlRequired ?? val.hitl_required ?? false;
+                    const ppiSource = val.ppi ?? val.definition?.ppi;
+                    this.processForm.ppi = Array.isArray(ppiSource) ? JSON.parse(JSON.stringify(ppiSource)) : null;
                     const manualLinksSource = val.manualLinks
                         ?? val.manual_links
                         ?? val.definition?.manualLinks
@@ -6863,6 +6792,63 @@ export default {
                 .filter(Boolean);
         },
         // 내장 필드 노출 여부 — 관리자(속성 스키마 스튜디오)가 숨긴 필드는 렌더링하지 않는다.
+        generalBuiltinItem(scope, key, defaults, fallbackOrder) {
+            let row = null;
+            try {
+                row = this.catalogStore.builtinProp(scope, key);
+            } catch (e) {
+                row = null;
+            }
+            const rowOrder = Number(row?.display_order);
+            return {
+                ...this.builtinField(scope, key, defaults),
+                __builtin: true,
+                __order: Number.isFinite(rowOrder) && row ? rowOrder : fallbackOrder
+            };
+        },
+        orderPanelSections(defs) {
+            return defs
+                .map((def, idx) => {
+                    let row = null;
+                    try {
+                        row = this.catalogStore.builtinProp(def.scope, def.key);
+                    } catch (e) {
+                        row = null;
+                    }
+                    const rowOrder = Number(row?.display_order);
+                    return { id: def.id, idx, order: Number.isFinite(rowOrder) && row ? rowOrder : def.fallbackOrder };
+                })
+                .sort((a, b) => a.order - b.order || a.idx - b.idx);
+        },
+        // 내장 필드 라벨 — 스튜디오에서 바꾼 라벨이 있으면 그것을 쓴다
+        builtinLabel(scope, key, fallback) {
+            try {
+                return this.catalogStore.builtinPropLabel(scope, key, fallback);
+            } catch (e) {
+                return fallback || key;
+            }
+        },
+        // 내장 단순 입력 필드를 SchemaFieldInput 이 읽는 스키마 행 형태로 변환.
+        // 스튜디오의 라벨·설명·placeholder·필수·읽기전용 설정이 그대로 입혀진다.
+        builtinField(scope, key, defaults = {}) {
+            let row = null;
+            try {
+                row = this.catalogStore.builtinProp(scope, key);
+            } catch (e) {
+                row = null;
+            }
+            return {
+                id: `builtin::${scope}::${key}`,
+                property_key: key,
+                property_label: row?.property_label || defaults.label || key,
+                property_type: defaults.type || 'string',
+                placeholder: row?.placeholder || defaults.placeholder || '',
+                description: row?.description || '',
+                is_required: row?.is_required === true,
+                is_readonly: row?.is_readonly === true,
+                options: defaults.options || []
+            };
+        },
         isBuiltinPropVisible(scope, key) {
             try {
                 return this.catalogStore.isBuiltinPropVisible(scope, key);
@@ -6989,6 +6975,15 @@ export default {
             if (type === 'formula') {
                 return toSafeText(value);
             }
+            if (type === 'table') {
+                // 행 객체 배열 그대로 유지
+                return Array.isArray(value) ? value.filter((r) => r && typeof r === 'object') : [];
+            }
+            if (type === 'file') {
+                // 파일 값은 {fileName, path, publicUrl} 객체(또는 multiple 배열) 그대로 유지
+                if (Array.isArray(value)) return value.filter((f) => f && typeof f === 'object');
+                return value && typeof value === 'object' ? value : null;
+            }
             return value === null || value === undefined ? '' : toSafeText(value);
         },
         getPropertyTypeLabel(type) {
@@ -7022,7 +7017,7 @@ export default {
                 hqOwners: payload.hqOwners || [],
                 masterOwner: payload.masterOwner || null
             };
-            // PI팀 담당자를 비운 경우(payload.owner 빈 값)도 즉시 반영해야 하므로 가드 없이 갱신한다.
+            // 프로세스 담당자를 비운 경우(payload.owner 빈 값)도 즉시 반영해야 하므로 가드 없이 갱신한다.
             // resolveOwnerInfo 는 빈 값이면 ownerResolved/ownerSelected 를 null 로 비운다.
             this.processForm.owner = payload.owner || null;
             this.resolveOwnerInfo(payload.owner || '');
@@ -7379,6 +7374,17 @@ export default {
             } else {
                 this.openSections.add(name);
             }
+        },
+        // 스키마 그룹 섹션은 키가 동적이라 기본 열림(closed set 방식)으로 관리한다
+        toggleSchemaGroup(key) {
+            if (this.closedSchemaGroups.has(key)) {
+                this.closedSchemaGroups.delete(key);
+            } else {
+                this.closedSchemaGroups.add(key);
+            }
+        },
+        isSchemaGroupOpen(key) {
+            return !this.closedSchemaGroups.has(key);
         },
         isOpen(name) {
             return this.openSections.has(name);
@@ -10594,6 +10600,7 @@ export default {
                 hitlRequired: this.processForm.hitlRequired,
                 manualLinks: [...(this.processForm.manualLinks || [])],
                 kpiEnabled: this.processForm.kpiEnabled,
+                ppi: Array.isArray(this.processForm.ppi) && this.processForm.ppi.length ? JSON.parse(JSON.stringify(this.processForm.ppi)) : null,
             };
             // Include schema-based props (active + deprecated-with-value merged via processFields)
             this.processFields.forEach(f => {

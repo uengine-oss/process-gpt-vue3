@@ -1,25 +1,36 @@
 <template>
     <div class="pi-flag-board">
-        <!-- Header -->
+        <!-- Summary / actions -->
         <div class="section-header">
-            <div class="section-title-group">
-                <v-chip class="ml-2" size="small" variant="tonal" color="default">전체 {{ allFlags.length }}건</v-chip>
-                <v-chip class="ml-1" size="small" variant="tonal" color="error">즉시 개선 {{ resolvedCount }}</v-chip>
-                <v-chip class="ml-1" size="small" variant="tonal" color="success">향후 과제 {{ openCount }}</v-chip>
-            </div>
-            <div class="section-actions">
-                <button class="action-btn" :disabled="loading" @click="reload">
-                    <v-icon size="16">mdi-refresh</v-icon>
-                    <span>새로고침</span>
+            <div class="summary-cards" aria-label="PI Flag 요약">
+                <button class="summary-card" :class="{ 'summary-card--active': !filters.status }" @click="setTimingFilter('')">
+                    <span class="summary-card__label">전체 PI Flag</span>
+                    <strong>{{ allFlags.length }}</strong>
+                    <span>{{ processOptions.length }}개 프로세스</span>
                 </button>
-                <button class="action-btn" :disabled="filteredFlags.length === 0" @click="exportCsv">
-                    <v-icon size="16">mdi-download</v-icon>
-                    <span>CSV 내보내기</span>
+                <button
+                    class="summary-card summary-card--urgent"
+                    :class="{ 'summary-card--active': filters.status === 'resolved' }"
+                    @click="setTimingFilter('resolved')"
+                >
+                    <span class="summary-card__label">즉시 개선</span>
+                    <strong>{{ resolvedCount }}</strong>
+                    <span>우선 검토 대상</span>
                 </button>
-                <button class="action-btn" :disabled="filteredFlags.length === 0" @click="exportIssueJson">
-                    <v-icon size="16">mdi-code-json</v-icon>
-                    <span>이슈 JSON</span>
+                <button
+                    class="summary-card summary-card--future"
+                    :class="{ 'summary-card--active': filters.status === 'open' }"
+                    @click="setTimingFilter('open')"
+                >
+                    <span class="summary-card__label">향후 과제</span>
+                    <strong>{{ openCount }}</strong>
+                    <span>중장기 검토 대상</span>
                 </button>
+                <div class="summary-card summary-card--neutral">
+                    <span class="summary-card__label">유형 미지정</span>
+                    <strong>{{ unclassifiedCount }}</strong>
+                    <span>분류가 필요합니다</span>
+                </div>
             </div>
         </div>
 
@@ -63,7 +74,7 @@
                     variant="outlined"
                     hide-details
                     clearable
-                    placeholder="전체 상태"
+                    placeholder="전체 개선 시점"
                     class="filter-compact filter-compact--narrow"
                 />
                 <v-btn
@@ -81,15 +92,30 @@
                     <v-icon end size="16">{{ advancedFilterOpen ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
                 </v-btn>
                 <v-btn
-                    variant="text"
+                    variant="outlined"
                     color="default"
                     size="small"
+                    prepend-icon="mdi-filter-remove-outline"
                     :disabled="!hasActiveFilter"
                     class="filter-reset-btn"
                     @click="resetFilters"
                 >
                     초기화
                 </v-btn>
+                <div class="section-actions">
+                    <button class="action-btn" :disabled="loading" @click="reload">
+                        <v-icon size="16">mdi-refresh</v-icon>
+                        <span>새로고침</span>
+                    </button>
+                    <button class="action-btn" :disabled="filteredFlags.length === 0" @click="exportCsv">
+                        <v-icon size="16">mdi-download</v-icon>
+                        <span>CSV 내보내기</span>
+                    </button>
+                    <button class="action-btn" :disabled="filteredFlags.length === 0" @click="exportIssueJson">
+                        <v-icon size="16">mdi-code-json</v-icon>
+                        <span>이슈 JSON</span>
+                    </button>
+                </div>
             </div>
 
             <v-expand-transition>
@@ -170,6 +196,23 @@
                 <span class="state-text">{{
                     allFlags.length === 0 ? '등록된 PI Flag가 없습니다.' : '조건에 맞는 PI Flag가 없습니다.'
                 }}</span>
+                <span class="empty-hint">
+                    {{
+                        allFlags.length === 0
+                            ? '프로세스 순서도에서 개선이 필요한 태스크에 PI Flag를 등록해 보세요.'
+                            : '필터를 초기화하거나 검색 조건을 변경해 보세요.'
+                    }}
+                </span>
+                <v-btn
+                    v-if="allFlags.length === 0"
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    @click="$router.push('/process-architecture')"
+                >
+                    프로세스 체계도로 이동
+                </v-btn>
+                <v-btn v-else size="small" variant="text" @click="resetFilters">필터 초기화</v-btn>
             </div>
         </div>
 
@@ -314,7 +357,7 @@ export default defineComponent({
                 { title: '도메인', key: 'domainName', sortable: true, width: 140 },
                 { title: '프로세스', key: 'procDefName', sortable: true, width: 200 },
                 { title: '태스크', key: 'elementName', sortable: false, width: 180 },
-                { title: '상태', key: 'status', sortable: true, width: 110 },
+                { title: '개선 시점', key: 'status', sortable: true, width: 130 },
                 { title: '유형', key: 'type', sortable: true, width: 140 },
                 { title: '사유', key: 'description', sortable: false, minWidth: 240 },
                 { title: '', key: 'data-table-expand', sortable: false, width: 56, align: 'end' }
@@ -327,6 +370,9 @@ export default defineComponent({
         },
         openCount() {
             return this.allFlags.filter((f) => f.status !== 'resolved').length;
+        },
+        unclassifiedCount() {
+            return this.allFlags.filter((f) => !f.type).length;
         },
         domainOptions() {
             const seen = new Map();
@@ -724,6 +770,10 @@ export default defineComponent({
             this.filters.keyword = '';
         },
 
+        setTimingFilter(status) {
+            this.filters.status = this.filters.status === status ? '' : status;
+        },
+
         goToProcess(row) {
             if (!row?.procDefId) return;
             const id = String(row.procDefId).trim();
@@ -839,18 +889,76 @@ export default defineComponent({
 
 .section-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    gap: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 20px;
+    gap: 12px;
+    overflow: visible;
 }
 
-.section-title-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(132px, 1fr));
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
+}
+
+.summary-card {
+    appearance: none;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 10px;
+    min-width: 0;
+    padding: 12px 14px;
+    text-align: left;
+    color: #475569;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #94a3b8;
+    border-radius: 10px;
+}
+
+button.summary-card {
+    cursor: pointer;
+    transition: none;
+}
+
+.summary-card--active {
+    background: #f8fafc;
+}
+
+.summary-card--urgent {
+    border-left-color: #ef4444;
+}
+
+.summary-card--future {
+    border-left-color: #3b82f6;
+}
+
+.summary-card--neutral {
+    border-left-color: #f59e0b;
+}
+
+.summary-card__label {
+    overflow: hidden;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.summary-card strong {
+    grid-row: span 2;
+    color: #0f172a;
+    font-size: 24px;
+    line-height: 1;
+}
+
+.summary-card > span:last-child {
+    color: #94a3b8;
+    font-size: 10px;
 }
 
 .section-icon {
@@ -868,6 +976,9 @@ export default defineComponent({
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    white-space: nowrap;
 }
 
 .action-btn {
@@ -897,30 +1008,43 @@ export default defineComponent({
 
 .filter-bar {
     margin-bottom: 16px;
+    padding: 2px;
     background: #ffffff;
     border-radius: 10px;
 }
 
+/* 전역의 0.5px 분할 outline(start/notch/end)은 비활성 상태에서 상단선이 끊겨
+   보일 수 있다. 이 화면에서는 분할 outline을 끄고 단일 연속 테두리를 사용한다. */
+.filter-bar :deep(.v-field--variant-outlined) {
+    border: 1px solid #cbd5e1;
+}
+
+.filter-bar :deep(.v-field--variant-outlined .v-field__outline) {
+    display: none;
+}
+
+.filter-bar :deep(.v-field--focused.v-field--variant-outlined) {
+    border-color: hsl(var(--accent-100));
+    box-shadow: inset 0 0 0 1px hsl(var(--accent-100));
+}
+
 .filter-bar__primary {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(200px, 1fr) 180px 150px auto auto auto;
     align-items: center;
     gap: 8px;
-    flex-wrap: wrap;
 }
 
 .filter-keyword {
-    flex: 1 1 320px;
-    min-width: 240px;
+    min-width: 0;
 }
 
 .filter-compact {
-    flex: 0 1 200px;
-    min-width: 160px;
+    min-width: 0;
 }
 
 .filter-compact--narrow {
-    flex: 0 1 150px;
-    min-width: 130px;
+    min-width: 0;
 }
 
 .select-summary-text {
@@ -944,12 +1068,15 @@ export default defineComponent({
 .filter-reset-btn {
     text-transform: none;
     letter-spacing: 0;
-    font-weight: 500;
-    color: #6b7280 !important;
+    font-weight: 600;
+    color: #334155 !important;
+    border-color: #94a3b8 !important;
+    background: #ffffff;
 }
 
 .filter-reset-btn:disabled {
     color: #cbd5e1 !important;
+    border-color: #e2e8f0 !important;
 }
 
 .filter-bar__advanced {
@@ -1247,6 +1374,24 @@ export default defineComponent({
 }
 
 @media (max-width: 1100px) {
+    .summary-cards {
+        grid-template-columns: repeat(2, minmax(132px, 1fr));
+    }
+
+    .filter-bar__primary {
+        grid-template-columns: minmax(240px, 1fr) 180px 150px;
+    }
+
+    .filter-toggle-btn,
+    .filter-reset-btn {
+        justify-self: start;
+    }
+
+    .section-actions {
+        grid-column: 1 / -1;
+        justify-self: end;
+    }
+
     .advanced-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1275,6 +1420,19 @@ export default defineComponent({
 }
 
 @media (max-width: 720px) {
+    .summary-cards {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .filter-bar__primary {
+        grid-template-columns: 1fr;
+    }
+
+    .section-actions {
+        grid-column: auto;
+        justify-self: start;
+    }
+
     .advanced-grid {
         grid-template-columns: 1fr;
     }
