@@ -4630,14 +4630,17 @@ class ProcessGPTBackend implements Backend {
                 // email/username을 넣지 않으면 upsert 시 새 행은 null로 들어가 유령 레코드가 됨 (setTenant가 원인)
                 const putObj: any = {
                     id: user_id,
-                    role: isOwner ? 'superAdmin' : 'user',
                     tenant_id: tenantId,
                     email: user.email ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('email') : null) ?? undefined,
                     username: user.name ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null) ?? undefined
                 };
                 if (isOwner) {
+                    putObj.role = 'superAdmin';
                     putObj.is_admin = true;
                 }
+                // 일반 구성원의 role/is_admin은 가입 trigger가 사전등록 정보를 기준으로
+                // 이미 설정한다. 여기서 'user'로 upsert하면 admin/reviewer 등의 예약 권한을
+                // 로그인 직후 덮어쓰므로, tenant 소유자가 아닌 경우 권한 컬럼을 보내지 않는다.
                 await storage.putObject('users', putObj);
                 return await storage.isConnection();
             } else {
@@ -10001,6 +10004,37 @@ class ProcessGPTBackend implements Backend {
     // 프로세스 승인 워크플로우 API
     // =====================================================
 
+    /** 승인 row에 프로세스 담당 역할을 결합해 상세 화면과 목록의 권한 판정을 동일하게 한다. */
+    private async _withProcessReviewOwners(state: any): Promise<any> {
+        if (!state?.proc_def_id) return state;
+        const supabase = window.$supabase;
+        if (!supabase) return state;
+
+        try {
+            const { data: procDef, error } = await supabase
+                .from('proc_def')
+                .select('owner, definition')
+                .eq('id', state.proc_def_id)
+                .eq('tenant_id', state.tenant_id || window.$tenantName)
+                .maybeSingle();
+            if (error) throw error;
+
+            const owners = procDef?.definition?.meta?.owners || {};
+            const primaryOwner = owners.primaryOwner || procDef?.owner || null;
+            return {
+                ...state,
+                owner: procDef?.owner || primaryOwner,
+                pi_owners: primaryOwner ? [primaryOwner] : [],
+                hq_owners: Array.isArray(owners.hqOwners) ? owners.hqOwners : [],
+                field_owners: Array.isArray(owners.fieldOwners) ? owners.fieldOwners : [],
+                master_owner: owners.masterOwner || null
+            };
+        } catch (error) {
+            console.warn('[ProcessGPTBackend] Failed to resolve process review owners:', error);
+            return state;
+        }
+    }
+
     /**
      * 프로세스 정의의 최신 승인 상태 조회
      */
@@ -10018,7 +10052,7 @@ class ProcessGPTBackend implements Backend {
                 .maybeSingle();
 
             if (error) throw error;
-            return data;
+            return this._withProcessReviewOwners(data);
         } catch (e) {
             console.error('[ProcessGPTBackend] getApprovalState error:', e);
             return null;
@@ -10036,7 +10070,7 @@ class ProcessGPTBackend implements Backend {
             const { data, error } = await supabase.from('proc_def_approval_state').select('*').eq('id', reviewId).maybeSingle();
 
             if (error) throw error;
-            return data;
+            return this._withProcessReviewOwners(data);
         } catch (e) {
             console.error('[ProcessGPTBackend] getApprovalStateById error:', e);
             return null;
@@ -10560,18 +10594,18 @@ class ProcessGPTBackend implements Backend {
                         }
                         break;
 
-                    // === 병렬 승인 (Field) ===
+                    // === 1단계 승인 (Field) ===
+                    // 본사 + 현업 병렬 승인에서 사용하던 hq_status === 'approved' 게이트 제거.
+                    // 본사 단계가 UI에서 빠지면서 hq_status 가 영구 'pending' 으로 남아
+                    // 1단계 승인 후 2단계(공람)로 넘어가지 못하던 문제 수정 — 현업 승인만으로 진입한다.
                     case 'approve_field':
                         updateData.field_status = 'approved';
                         updateData.field_reviewed_at = now;
                         updateData.field_review_comment = comment || null;
-                        // 양측 모두 승인 완료 시 → 자동 공람 진입
-                        if (currentState.hq_status === 'approved') {
-                            updateData.state = 'public_feedback';
-                            updateData.public_feedback_started_at = now;
-                            updateData.public_feedback_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-                            toState = 'public_feedback';
-                        }
+                        updateData.state = 'public_feedback';
+                        updateData.public_feedback_started_at = now;
+                        updateData.public_feedback_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                        toState = 'public_feedback';
                         break;
 
                     // === 공람 조기 종료 ===
@@ -11060,7 +11094,7 @@ class ProcessGPTBackend implements Backend {
     }
 
     /**
-     * KPI 지표 목표 조회 (kpi_indicators 테이블, KPI 목표 - 신규)
+     * KPI 지표 목표 조회 (kpi_indicators 테이블)
      */
     async getKpiIndicators(): Promise<any[]> {
         const supabase = window.$supabase;

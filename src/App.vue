@@ -206,8 +206,11 @@ export default {
                 await ensureTenantAppMetadata();
                 this.loadScreen = true;
             } else {
-                // 비밀번호 재설정 화면(recovery 해시)에 있는 동안 테넌트/로그인 리디렉션 수행하지 않음
-                if (window.location.pathname === '/auth/reset-password' && window.location.hash.includes('type=recovery')) {
+                // 로그인·회원가입 전에는 users/tenants 조회가 anon RLS에 막힐 수 있다.
+                // 인증 화면을 먼저 렌더링해야 정상 테넌트를 "존재하지 않음"으로
+                // 오판하여 테넌트 관리 페이지로 보내는 alert 무한 루프를 막을 수 있다.
+                if (window.location.pathname === '/' || window.location.pathname.startsWith('/auth/')) {
+                    await ensureTenantAppMetadata();
                     this.loadScreen = true;
                     return;
                 }

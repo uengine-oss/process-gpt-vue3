@@ -933,7 +933,7 @@ function resolvedUserLabel(...values: unknown[]) {
 }
 
 function resolvedAuthorLabel(item: any) {
-    // 기안자 컬럼에서 사용하던 표시 기준 — PI팀 담당자 컬럼으로 변경되어 담당자 설정값(pi_owners)을 우선 표시
+    // 기안자 컬럼에서 사용하던 표시 기준 — 프로세스 담당자 설정값(pi_owners)을 우선 표시
     // const mapped = [item?.submitted_by_id, item?.submitted_by, item?.owner]
     //     .map((value) => toSafeText(value).trim())
     //     .find((key) => key && ownerNameMap.value[key]);
@@ -1292,7 +1292,7 @@ onBeforeUnmount(cleanupRealtime);
                                         />
                                     </th>
                                     <th class="th-process">프로세스</th>
-                                    <th class="th-author">PI팀 담당자</th>
+                                    <th class="th-author">프로세스 담당자</th>
                                     <th class="th-hq-owners">검토담당자</th>
                                     <th class="th-field-owners">현업담당자</th>
                                     <th class="th-domain">도메인</th>

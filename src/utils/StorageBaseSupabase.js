@@ -335,7 +335,10 @@ export default class StorageBaseSupabase {
                 password: userInfo.password,
                 options: {
                     data: {
-                        name: userInfo.username
+                        name: userInfo.username,
+                        // 조직도 사전등록 매칭 시 어느 테넌트의 배치를 적용할지 식별한다.
+                        // 실제 권한 부여는 DB trigger가 pending_org_members를 기준으로 수행한다.
+                        tenant_id: window.$tenantName
                     },
                     emailRedirectTo: window.location.origin
                 }

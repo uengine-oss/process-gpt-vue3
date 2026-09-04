@@ -904,7 +904,8 @@
                 "domain": "Domain",
                 "mega": "Mega Process",
                 "major": "Major Process",
-                "sub": "Sub Process"
+                "sub": "Sub Process",
+                "published": "Published"
             }
         },
         "mermaid": {
@@ -3973,12 +3974,12 @@
         "duplicatePartialSuccess": "Process has been duplicated, but details were not copied."
     },
     "ownerSettingDialog": {
-        "title": "Approval Status",
-        "owner": "Owner",
-        "placeholder": "Write a comment (Ctrl+Enter to send)",
+        "title": "Owner Settings",
+        "owner": "Process Owner",
+        "placeholder": "Select an owner",
         "cancel": "Cancel",
         "save": "Save",
-        "saveSuccess": "Owner has been set successfully."
+        "saveSuccess": "Owner settings have been saved."
     },
     "elementComment": {
         "title": "Comments",

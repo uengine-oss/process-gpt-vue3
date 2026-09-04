@@ -4,6 +4,7 @@ import VerticalSidebarVue from './vertical-sidebar/VerticalSidebar.vue';
 import VerticalHeaderVue from './vertical-header/VerticalHeader.vue';
 import HorizontalHeader from './horizontal-header/HorizontalHeader.vue';
 import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
+import GlobalNoticeBanner from './GlobalNoticeBanner.vue';
 import { useCustomizerStore } from '../../stores/customizer';
 import { ref, computed, getCurrentInstance, onMounted, onBeforeUnmount } from 'vue';
 const customizer = useCustomizerStore();
@@ -75,7 +76,7 @@ const openSidebar = () => {
                 <template #activator="{ props }">
                     <v-btn
                         v-bind="props"
-                        icon="mdi-menu-open"
+                        icon="mdi-chevron-right"
                         color="primary"
                         elevation="6"
                         class="sidebar-open-floating-button"
@@ -92,14 +93,16 @@ const openSidebar = () => {
                 <div class="rtl-lyt mb-3 hr-layout">
                     <v-container
                         fluid
-                        :class="
+                        :class="[
                             globalIsMobile
                                 ? 'page-wrapper bg-background'
-                                : `page-wrapper bg-background px-sm-5 px-4 ${isPalMode ? 'pt-5 pb-5 pal-content-container' : 'pt-12'} rounded-xl`
-                        "
+                                : `page-wrapper bg-background px-sm-5 px-4 ${isPalMode ? 'pt-5 pb-5' : 'pt-12'} rounded-xl`,
+                            { 'pal-content-container': isPalMode }
+                        ]"
                     >
-                        <div class="">
-                            <div :class="customizer.boxed ? 'maxWidth' : ''">
+                        <div :class="{ 'pal-page-shell': isPalMode }">
+                            <div :class="[customizer.boxed ? 'maxWidth' : '', { 'pal-page-frame': isPalMode }]">
+                                <GlobalNoticeBanner />
                                 <RouterView />
                             </div>
                         </div>
@@ -129,7 +132,7 @@ const openSidebar = () => {
                 <template #activator="{ props }">
                     <v-btn
                         v-bind="props"
-                        icon="mdi-menu-open"
+                        icon="mdi-chevron-right"
                         color="primary"
                         elevation="6"
                         class="sidebar-open-floating-button"
@@ -147,14 +150,16 @@ const openSidebar = () => {
                 <div class="hr-layout">
                     <v-container
                         fluid
-                        :class="
+                        :class="[
                             globalIsMobile
                                 ? 'page-wrapper bg-background pa-0'
-                                : `page-wrapper bg-background px-sm-4 ${isPalMode ? 'pt-5 pb-5 pal-content-container' : 'pt-9'} px-4 rounded-xl`
-                        "
+                                : `page-wrapper bg-background px-sm-4 ${isPalMode ? 'pt-5 pb-5' : 'pt-9'} px-4 rounded-xl`,
+                            { 'pal-content-container': isPalMode }
+                        ]"
                     >
                         <!-- 정의관련 maxWidth -->
-                        <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">
+                        <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize, { 'pal-page-frame': isPalMode }]">
+                            <GlobalNoticeBanner />
                             <RouterView />
                         </div>
                     </v-container>
@@ -168,13 +173,27 @@ const openSidebar = () => {
 </template>
 
 <style scoped>
+/* 사이드바 펼치기 — 좌측 가장자리 중앙의 드로어 핸들.
+   이전에는 top:20/left:18 원형 FAB 였는데, 사이드바를 닫으면 모든 페이지의
+   좌상단 컨트롤(예: 프로세스 순서도의 트리 패널 접기/펼치기 버튼, 페이지 제목)을
+   정확히 덮었다. 콘텐츠가 없는 화면 좌측 중앙 가장자리에 붙여 충돌을 없앤다. */
 .sidebar-open-floating-button {
     position: fixed !important;
-    top: 20px;
-    left: 18px;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
     z-index: 1200;
-    width: 44px;
-    height: 44px;
+    width: 22px !important;
+    min-width: 0 !important;
+    height: 64px !important;
+    border-radius: 0 10px 10px 0 !important;
+    opacity: 0.85;
+    transition: width 0.15s ease, opacity 0.15s ease;
+}
+
+.sidebar-open-floating-button:hover {
+    width: 30px !important;
+    opacity: 1;
 }
 
 .pal-main-no-header {
@@ -182,12 +201,46 @@ const openSidebar = () => {
 }
 
 .pal-content-container {
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    max-height: 100vh;
+    max-height: 100dvh;
     box-sizing: border-box;
+    overflow: hidden;
+}
+
+.pal-page-shell,
+.pal-page-frame {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.pal-page-shell {
+    overflow: hidden;
+}
+
+.pal-page-frame {
+    position: relative;
+    overflow: auto;
+}
+
+.pal-page-frame > :deep(:not(.global-notice-banner)) {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 [dir='rtl'] .sidebar-open-floating-button {
-    right: 18px;
+    right: 0;
     left: auto;
+    border-radius: 10px 0 0 10px !important;
 }
 </style>

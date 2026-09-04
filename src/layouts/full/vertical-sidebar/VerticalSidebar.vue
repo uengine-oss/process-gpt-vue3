@@ -36,7 +36,7 @@
         width="275"
     >
         <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc">
-            <Logo sidebar :style="logoPadding" />
+            <Logo :style="logoPadding" />
             <v-spacer></v-spacer>
             <v-tooltip v-if="!pal && isAdmin" :text="$t('processDefinitionMap.title')" location="bottom">
                 <template v-slot:activator="{ props }">
@@ -69,7 +69,7 @@
         </div>
         <div class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
             <v-row class="ma-0 pa-0" align="center">
-                <Logo sidebar />
+                <Logo />
                 <v-spacer></v-spacer>
                 <Icons @click.stop="customizer.SET_SIDEBAR_DRAWER" style="margin-top: -8px; cursor: pointer" :icon="'close'" :size="16" />
             </v-row>

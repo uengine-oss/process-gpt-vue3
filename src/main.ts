@@ -287,47 +287,16 @@ async function setupSupabase() {
 }
 
 async function setupTenant() {
-    const subdomain = window.location.hostname.split('.')[0];
-
-    if (subdomain == 'www' || subdomain == 'process-gpt') {
-        Object.defineProperty(window, '$isTenantServer', {
-            value: true,
-            writable: false,
-            configurable: true
-        });
-    } else if (
-        window.location.host.includes('localhost') ||
-        window.location.host.includes('192.168') ||
-        window.location.host.includes('127.0.0.1')
-    ) {
-        Object.defineProperty(window, '$isTenantServer', {
-            value: false,
-            // value: true,
-            writable: false,
-            configurable: true
-        });
-        Object.defineProperty(window, '$tenantName', {
-            // 로컬에서 운영 Supabase 에 붙어 특정 테넌트로 진단할 때 쓴다.
-            // (.env 의 VITE_TENANT_OVERRIDE=uengine 등)
-            // 기본값은 반드시 'localhost' — 실제 테넌트명을 하드코딩하면 App.vue 의
-            // 테넌트 존재 검사가 로컬에서도 실행되고, anon 세션에선 RLS 때문에
-            // tenants 행이 안 보여 "존재하지 않는 경로" alert 무한 루프에 빠진다.
-            value: import.meta.env.VITE_TENANT_OVERRIDE || 'localhost',
-            writable: false,
-            configurable: false
-        });
-    } else {
-        Object.defineProperty(window, '$isTenantServer', {
-            value: false,
-            writable: false,
-            configurable: true
-        });
-        Object.defineProperty(window, '$tenantName', {
-            value: subdomain,
-            writable: false,
-            configurable: false
-        });
-    }
+    Object.defineProperty(window, '$isTenantServer', {
+        value: false,
+        writable: false,
+        configurable: true
+    });
+    Object.defineProperty(window, '$tenantName', {
+        value: 'tym',
+        writable: false,
+        configurable: false
+    });
 }
 
 async function initializeApp() {

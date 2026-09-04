@@ -92,7 +92,21 @@ const allRoutes: RouteRecordRaw[] = [
     {
         name: 'organization',
         path: '/organization',
-        component: () => import('@/components/OrganizationChartChat.vue')
+        // 개편된 조직도는 PAL 모드 전용. 비 PAL 모드는 기존 화면을 그대로 사용한다.
+        component: () =>
+            window.$pal ? import('@/views/organization/OrganizationChartView.vue') : import('@/components/OrganizationChartChat.vue')
+    },
+    {
+        name: 'organization-before',
+        path: '/organization-before',
+        // 개편 전 조직도 화면(읽기 전용). 사이드바 메뉴에는 노출하지 않고 URL 직접 접근만 지원한다.
+        // PAL 모드 전용이며 비 PAL 모드는 기존 /organization 으로 보낸다.
+        component: () =>
+            window.$pal ? import('@/views/organization/OrganizationChartBeforeView.vue') : import('@/components/OrganizationChartChat.vue'),
+        beforeEnter: (to: any, from: any, next: any) => {
+            if (window.$pal) next();
+            else next('/organization');
+        }
     },
     {
         name: 'definitions-with-tree',
@@ -525,18 +539,9 @@ const allRoutes: RouteRecordRaw[] = [
                       {
                           name: 'Admin KPI Targets',
                           path: 'kpi-targets',
-                          component: () => import('@/views/admin/tabs/KpiTargetManager.vue'),
-                          meta: {
-                              adminTitle: 'adminConsole.tabKpi',
-                              adminDescription: 'adminConsole.description'
-                          }
-                      },
-                      {
-                          name: 'Admin KPI Indicators',
-                          path: 'kpi-targets-new',
                           component: () => import('@/views/admin/tabs/KpiIndicatorManager.vue'),
                           meta: {
-                              adminTitle: 'KPI 목표 - 신규',
+                              adminTitle: 'KPI 목표',
                               adminDescription: '지표 기반 KPI 성과지표 목표 관리'
                           }
                       },

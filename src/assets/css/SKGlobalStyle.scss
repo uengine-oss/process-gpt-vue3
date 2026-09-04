@@ -312,3 +312,76 @@
     background: transparent;
     text-decoration: none;
 }
+
+/* ── N. 프로세스 단계 배지 (ProgressBadge) 가독성
+   ============================================================
+   문제: ProgressBadge 는 Vuetify v-chip variant="tonal" 이다. tonal 은
+         "글자색 = 배경색(12% 불투명도)" 구조라, 밝은 색이 배정된 단계에서
+         대비가 무너진다 — 특히 3단계 amber(#ffc107)와 초안 grey(#9e9e9e).
+         체계도처럼 노드 배경까지 같은 계열로 옅게 칠한 화면에서는 글자가 거의 사라진다.
+
+   처리: 칩의 채도 높은 색은 배경(12% 틴트)에만 남기고, 글자는 같은 색상의
+         어두운 잉크(700 계열)로 내린다. 배경 틴트도 currentColor 를 따라가므로
+         색상(hue) 정체성은 유지되고 대비만 올라간다.
+
+   주의: v-chip 이 붙이는 .text-<color> 가 `color: … !important` 라서
+         컴포넌트 scoped CSS 로는 못 덮는다. 훅 클래스(.progress-badge--*)는
+         ProgressBadge.vue 가 붙이고, 색은 Pal 모드에서만 로드되는 이 파일에서 지정한다.
+         (비 Pal 화면은 이 규칙이 없으므로 기존 색 그대로 — 동작 변화 없음)
+   ============================================================ */
+.progress-badge {
+    font-weight: 700 !important;
+}
+.progress-badge.progress-badge--none,
+.progress-badge.progress-badge--draft {
+    color: #475569 !important;
+}
+.progress-badge.progress-badge--review,
+.progress-badge.progress-badge--in-review {
+    color: #1d4ed8 !important;
+}
+.progress-badge.progress-badge--public-review,
+.progress-badge.progress-badge--public-feedback {
+    color: #6d28d9 !important;
+}
+.progress-badge.progress-badge--final-edit {
+    color: #b45309 !important;
+}
+.progress-badge.progress-badge--published {
+    color: #047857 !important;
+}
+.progress-badge.progress-badge--wip {
+    color: #6b21a8 !important;
+}
+.progress-badge.progress-badge--sunset {
+    color: #b91c1c !important;
+}
+
+/* 다크 테마에서는 어두운 잉크가 그대로 안 보이므로 같은 색상의 밝은 단계(300 계열)로 뒤집는다.
+   Pal 다크 테마 이름은 전부 DARK_ 접두사다 (src/theme/DarkTheme.ts). */
+[class*='v-theme--DARK_'] {
+    .progress-badge.progress-badge--none,
+    .progress-badge.progress-badge--draft {
+        color: #cbd5e1 !important;
+    }
+    .progress-badge.progress-badge--review,
+    .progress-badge.progress-badge--in-review {
+        color: #93c5fd !important;
+    }
+    .progress-badge.progress-badge--public-review,
+    .progress-badge.progress-badge--public-feedback {
+        color: #c4b5fd !important;
+    }
+    .progress-badge.progress-badge--final-edit {
+        color: #fcd34d !important;
+    }
+    .progress-badge.progress-badge--published {
+        color: #6ee7b7 !important;
+    }
+    .progress-badge.progress-badge--wip {
+        color: #e9d5ff !important;
+    }
+    .progress-badge.progress-badge--sunset {
+        color: #fca5a5 !important;
+    }
+}

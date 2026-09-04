@@ -45,7 +45,7 @@ export const BUILTIN_PANEL_PROPERTIES: BuiltinPanelProperty[] = [
     // ============================================================
     // Process 탭 (프로세스 수준)
     // ============================================================
-    { taskType: 'process', key: 'owner', labelKo: '담당자', propertyType: 'user', widget: 'dialog', binding: 'OwnerSettingDialog', tab: 'process', panel: PANEL, displayOrder: 10, description: '담당자 설정·변경 이력 (관리자만 편집 가능)' },
+    { taskType: 'process', key: 'owner', labelKo: '프로세스 담당자', propertyType: 'user', widget: 'dialog', binding: 'OwnerSettingDialog', tab: 'process', panel: PANEL, displayOrder: 10, description: '프로세스·현업·검토·최종검토 담당자 설정 및 변경 이력 (관리자만 편집 가능)' },
     { taskType: 'process', key: 'parent_hierarchy', labelKo: '상위 체계', propertyType: 'select', widget: 'select-group', binding: 'parentForm.domainId/megaId/majorId', tab: 'process', panel: PANEL, displayOrder: 20, description: 'Domain/Mega/Major 상위 체계 지정 및 모듈 전환 (관리자만 편집 가능)' },
     { taskType: 'process', key: 'title', labelKo: '프로세스명', propertyType: 'string', widget: 'text', binding: 'processForm.title', tab: 'process', panel: PANEL, displayOrder: 30 },
     { taskType: 'process', key: 'description', labelKo: '설명', propertyType: 'textarea', widget: 'textarea', binding: 'processForm.description', tab: 'process', panel: PANEL, displayOrder: 40 },

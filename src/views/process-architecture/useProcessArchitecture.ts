@@ -15,7 +15,7 @@ export type ViewMode = 'card' | 'matrix' | 'tree' | 'mermaid';
 /** 도메인 표시 순서: Access > Core > IP > 유선 > 설비 > 공통 */
 export const DOMAIN_SORT_ORDER = ['Access', 'Core', 'IP', '유선', '설비', '공통'];
 
-/** 최초 진입 시 기본 선택 도메인 필터 — Cross Domain, SKO 는 기본 선택에서 제외 */
+/** 이전 버전이 최초 진입 시 URL에 자동 기록하던 기본 도메인 필터 */
 export const DEFAULT_SELECTED_DOMAINS = [...DOMAIN_SORT_ORDER];
 
 export function getDomainSortIndex(name: string): number {
@@ -1402,9 +1402,13 @@ export function useProcessArchitecture() {
 
         const routeDomains = readQueryList(query[FILTER_QUERY_KEYS.domains]);
         const routeSingleDomain = readQueryString(query[FILTER_QUERY_KEYS.domain]) || null;
-        if (!hasAppliedInitialRouteQuery && routeDomains.length === 0 && !routeSingleDomain) {
-            // 최초 진입 + URL에 도메인 지정이 없으면 기본 6개 도메인(Cross Domain/SKO 제외) 선택
-            selectedDomains.value = [...DEFAULT_SELECTED_DOMAINS];
+        const isLegacyDefaultDomainFilter =
+            routeDomains.length === DEFAULT_SELECTED_DOMAINS.length &&
+            DEFAULT_SELECTED_DOMAINS.every((domain) => routeDomains.includes(domain));
+        if (!hasAppliedInitialRouteQuery && !routeSingleDomain && (routeDomains.length === 0 || isLegacyDefaultDomainFilter)) {
+            // 최초 진입은 도메인을 제한하지 않는 전체뷰가 기본이다.
+            // 이전 버전이 자동으로 URL에 기록한 6개 도메인 조합도 전체뷰로 정리한다.
+            selectedDomains.value = [];
             selectedDomain.value = null;
         } else {
             selectedDomains.value = routeDomains;
