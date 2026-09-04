@@ -36,6 +36,18 @@ function describeApiError(error: any): string {
  * 실제 존재하는 컬럼만 나열해야 한다 — 없는 컬럼을 넣으면 PostgREST 가 42703 으로 실패한다.
  */
 export const PROC_DEF_LIST_COLUMNS = 'id, name, type, owner, isdeleted, is_draft, tenant_id, prod_version';
+
+/**
+ * 결정론적 코드 편집 화면이 읽는 mcp_python_code 컬럼.
+ *
+ * code/compensation 은 본문이라 크지만 편집 화면이 곧바로 쓰므로 함께 가져온다.
+ * parameters 는 코드가 `${이름}` 으로 받는 입력의 정의라, 코드만 고치고 이쪽을 두면 실행이
+ * KeyError 로 죽는다 — 함께 편집해야 하므로 같이 읽는다.
+ * work_history / output_template 은 생성 단계의 산물이고 화면에서 손대지 않으므로 뺀다.
+ * 이 테이블에는 updated_at 이 없다 — 쓰기 payload 에 넣으면 PostgREST 가 PGRST204 로 거절한다.
+ */
+const MCP_PYTHON_CODE_COLUMNS =
+    'id, proc_def_id, activity_id, code, compensation, parameters, deactivated_at, deactivated_reason, created_at';
 import type { Backend } from './Backend';
 import defaultProcessesData from './defaultProcesses.json';
 import { useDefaultSetting } from '@/stores/defaultSetting';
@@ -7159,6 +7171,112 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+
+    /**
+     * 결정론적 코드 / 보상(undo) 코드 목록. 프로세스명·액티비티명까지 붙여 돌려준다.
+     *
+     * 같은 (proc_def_id, activity_id) 로 비활성 이력 행이 여러 개 쌓인다. 실행 런타임
+     * (deepagents `try_deterministic_execution`, completion `fetch_mcp_python_code`) 과 같은 기준으로
+     * **가장 최근 행 한 건**만 남긴다. 양쪽이 서로 다른 행을 보면 화면에서 고친 코드가 실행되지 않는다.
+     */
+    async getDeterministicCodeList() {
+        const supabase = window.$supabase;
+        const { data, error } = await supabase
+            .from('mcp_python_code')
+            .select(MCP_PYTHON_CODE_COLUMNS)
+            .eq('tenant_id', window.$tenantName)
+            .order('created_at', { ascending: false });
+        if (error) throw new Error(error.message);
+
+        const latestByKey = new Map<string, any>();
+        (data || []).forEach((row: any) => {
+            const key = `${row.proc_def_id}::${row.activity_id}`;
+            if (!latestByKey.has(key)) latestByKey.set(key, row);
+        });
+        const rows = [...latestByKey.values()];
+
+        const { processNames, activityNames, activityList } = await this.getProcessActivityNames(rows.map((row) => row.proc_def_id));
+        return rows.map((row) => ({
+            id: row.id,
+            procDefId: row.proc_def_id,
+            procDefName: processNames[row.proc_def_id] || row.proc_def_id,
+            activityId: row.activity_id,
+            activityName: activityNames[`${row.proc_def_id}::${row.activity_id}`] || row.activity_id,
+            code: row.code || '',
+            compensation: row.compensation || '',
+            parameters: row.parameters || null,
+            deactivatedAt: row.deactivated_at,
+            deactivatedReason: row.deactivated_reason,
+            createdAt: row.created_at,
+            // 같은 프로세스의 다른 액티비티들. 자기 자신은 앞 단계가 될 수 없어 뺀다.
+            activityOptions: (activityList[row.proc_def_id] || []).filter((activity) => activity.id !== row.activity_id)
+        }));
+    }
+
+    /**
+     * 결정론적 코드 / 보상 코드 / 파라미터 스펙 수정.
+     *
+     * 빈 문자열은 null 로 넣는다 — 실행 런타임이 `code` 의 truthy 여부로 활성 판정을 하므로,
+     * 빈 문자열을 남기면 "코드는 있는데 아무 일도 하지 않는" 행이 되어 조용히 폴백이 막힌다.
+     */
+    async updateDeterministicCode(id: string, values: { code?: string; compensation?: string; parameters?: any }) {
+        const supabase = window.$supabase;
+        const payload: Record<string, any> = {};
+        if (values.code !== undefined) payload.code = values.code.trim() ? values.code : null;
+        if (values.compensation !== undefined) payload.compensation = values.compensation.trim() ? values.compensation : null;
+        // parameters 는 jsonb 다. 호출부가 파싱을 마친 객체를 넘긴다 — 문자열을 그대로 넣으면
+        // jsonb 문자열 스칼라로 저장되어, 런타임의 `specification.get("parameters")` 가 빈 목록이 된다.
+        if (values.parameters !== undefined) payload.parameters = values.parameters ?? null;
+
+        const { error } = await supabase.from('mcp_python_code').update(payload).eq('id', id).eq('tenant_id', window.$tenantName);
+        if (error) throw new Error(error.message);
+        return { ok: true, ...payload };
+    }
+
+    /** proc_def 에서 프로세스명과 액티비티명을 모아 온다. 조회가 실패해도 호출부는 id 로 폴백한다. */
+    private async getProcessActivityNames(procDefIds: string[]) {
+        const processNames: Record<string, string> = {};
+        const activityNames: Record<string, string> = {};
+        // 프로세스별 액티비티 목록. 파라미터 편집에서 "앞 액티비티"를 고르는 후보가 된다.
+        const activityList: Record<string, { id: string; name: string }[]> = {};
+        const uniqueIds = [...new Set(procDefIds.filter(Boolean))];
+        if (uniqueIds.length === 0) return { processNames, activityNames, activityList };
+
+        try {
+            const supabase = window.$supabase;
+            const { data, error } = await supabase
+                .from('proc_def')
+                .select('id, name, definition')
+                .eq('tenant_id', window.$tenantName)
+                .in('id', uniqueIds);
+            if (error) throw new Error(error.message);
+
+            (data || []).forEach((def: any) => {
+                processNames[def.id] = def.name || def.id;
+                // 정의 하나가 깨져도 나머지 이름까지 잃지 않도록 행 단위로 막는다.
+                try {
+                    const definition = typeof def.definition === 'string' ? JSON.parse(def.definition) : def.definition;
+                    if (!definition) return;
+                    // 서브프로세스 자체도 activity_id 로 지정될 수 있어 함께 담는다.
+                    const activities = [
+                        ...this.getAllActivitiesFromDefinition(definition),
+                        ...(Array.isArray(definition.subProcesses) ? definition.subProcesses : [])
+                    ];
+                    activityList[def.id] = [];
+                    activities.forEach((activity: any) => {
+                        if (!activity?.id) return;
+                        activityNames[`${def.id}::${activity.id}`] = activity.name || activity.id;
+                        activityList[def.id].push({ id: activity.id, name: activity.name || activity.id });
+                    });
+                } catch (e) {
+                    console.warn('[ProcessGPTBackend] 액티비티명 추출 실패(id 로 표시):', def.id, e);
+                }
+            });
+        } catch (e) {
+            console.warn('[ProcessGPTBackend] 프로세스 정의 조회 실패(id 로 표시):', e);
+        }
+        return { processNames, activityNames, activityList };
     }
 
     async setSchedule(json: any) {
