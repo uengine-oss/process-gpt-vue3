@@ -47,6 +47,7 @@ import { getTenantId, setCachedJwtTenantId } from '@/utils/tenant';
 import { EventBus } from '@/utils/eventBus';
 
 import { formatDistanceToNowStrict } from 'date-fns';
+import { formatRequesterName } from '@/composables/usePrUtils';
 
 enum ErrorCode {
     TableNotFound = '42P01'
@@ -8988,6 +8989,122 @@ class ProcessGPTBackend implements Backend {
             const requesterName = requesterNames.get(requesterId);
             return requesterName ? { ...record, requester_name: requesterName } : record;
         });
+    }
+
+    /**
+     * 로그인 사용자와 관련된 병합 요청을 리소스 타입을 가리지 않고 한 번에 모은다.
+     * 리소스마다 이력 화면을 찾아다니지 않고 밀린 검토를 한 화면에서 처리하기 위한 목록이라,
+     * 목록 단계에서 이미 소유자(= 검토 담당자)·리소스 표시 이름·요청자 이름까지 채워 돌려준다.
+     * 조회는 레코드 수와 무관하게 리소스 타입별로 한 번씩만 나간다.
+     */
+    async getResourcePrInbox(userId?: string): Promise<any[]> {
+        const tenantId = window.$tenantName;
+        const rows = await storage.list('resource_pull_requests', {
+            match: { tenant_id: tenantId },
+            orderBy: 'updated_at',
+            sort: 'desc'
+        });
+        const records: any[] = Array.isArray(rows) ? rows : [];
+        if (!records.length) return [];
+
+        let currentUserId: string | null = userId || null;
+        if (!currentUserId) {
+            try {
+                const user: any = await this.getUserInfo();
+                currentUserId = user?.uid || null;
+            } catch {
+                currentUserId = null;
+            }
+        }
+
+        const skillIds = [...new Set(records.filter((r) => r.resource_type === 'skill').map((r) => r.resource_id).filter(Boolean))];
+        const defIds = [...new Set(records.filter((r) => r.resource_type !== 'skill').map((r) => r.resource_id).filter(Boolean))];
+
+        const [skillOwnerRows, defRows] = await Promise.all([
+            skillIds.length ? this.getTenantSkillOwners(tenantId).catch(() => []) : Promise.resolve([]),
+            defIds.length
+                ? storage
+                      .list('proc_def', {
+                          match: { tenant_id: tenantId },
+                          inArray: { column: 'id', values: defIds },
+                          key: 'id,name,owner'
+                      })
+                      .catch(() => [])
+                : Promise.resolve([])
+        ]);
+
+        const skillOwnerById = new Map<string, string | null>(
+            (skillOwnerRows as any[]).map((row: any) => [row.skill_name, row.owner_id ?? null])
+        );
+        const defById = new Map<string, any>((Array.isArray(defRows) ? defRows : []).map((row: any) => [row.id, row]));
+
+        const ownerIdOf = (record: any): string | null => {
+            if (record.resource_type === 'skill') return skillOwnerById.get(record.resource_id) ?? null;
+            return defById.get(record.resource_id)?.owner ?? null;
+        };
+        const requesterIdsOf = (record: any): string[] => {
+            const ids = Array.isArray(record.requester_id) ? record.requester_id : record.requester_id ? [record.requester_id] : [];
+            return ids.filter(Boolean);
+        };
+
+        // 요청자·소유자·리뷰어 이름을 한 번의 조회로 채운다. (목록마다 사용자 조회를 반복하면 카드 수만큼 왕복이 생긴다)
+        const personIds = [
+            ...new Set(
+                records
+                    .flatMap((record) => [...requesterIdsOf(record), ownerIdOf(record), record.reviewer_id])
+                    .filter((id): id is string => !!id)
+            )
+        ];
+        const userRows = personIds.length
+            ? await storage
+                  .list('users', {
+                      match: { tenant_id: tenantId },
+                      inArray: { column: 'id', values: personIds },
+                      key: 'id,username,email,profile'
+                  })
+                  .catch(() => [])
+            : [];
+        const userById = new Map<string, any>((Array.isArray(userRows) ? userRows : []).map((row: any) => [row.id, row]));
+        const displayName = (id: string | null): string => {
+            if (!id) return '';
+            const user = userById.get(id);
+            return user?.username || user?.email || '';
+        };
+
+        return records.map((record) => {
+            const ownerId = ownerIdOf(record);
+            const requesterIds = requesterIdsOf(record);
+            const primaryRequesterId = requesterIds[0] || null;
+            const requester = primaryRequesterId ? userById.get(primaryRequesterId) : null;
+            const profile = requester?.profile;
+            return {
+                ...record,
+                resource_name: record.resource_type === 'skill' ? record.resource_id : defById.get(record.resource_id)?.name || record.resource_id,
+                requester_name: formatRequesterName(record.requester_name) || displayName(primaryRequesterId),
+                requester_profile: profile && !String(profile).includes('defaultUser') ? profile : null,
+                owner_id: ownerId,
+                owner_name: displayName(ownerId),
+                is_requester: !!currentUserId && requesterIds.includes(currentUserId),
+                is_reviewer: !!currentUserId && (ownerId === currentUserId || record.reviewer_id === currentUserId),
+                // 소유자가 지정되지 않은 리소스는 아무도 검토할 수 없게 되면 요청이 영영 묶이므로,
+                // 리소스 화면과 같은 규칙으로 누구나 검토할 수 있게 둔다.
+                can_review: !ownerId || ownerId === currentUserId
+            };
+        });
+    }
+
+    /** 여러 PR 의 리뷰 이력을 한 번에 읽어 pr_id 별로 묶어 준다. */
+    async getResourcePrReviewsByPrIds(prIds: string[]): Promise<Record<string, any[]>> {
+        if (!prIds.length) return {};
+        const rows = await storage.list('resource_pr_reviews', {
+            inArray: { column: 'pr_id', values: prIds },
+            orderBy: 'created_at'
+        });
+        const grouped: Record<string, any[]> = {};
+        for (const row of Array.isArray(rows) ? rows : []) {
+            (grouped[row.pr_id] ||= []).push(row);
+        }
+        return grouped;
     }
 
     async updateResourcePrStatus(pr: any, status: string, fields: { reviewerId?: string; mergedAt?: string } = {}): Promise<void> {
