@@ -36,7 +36,7 @@
         width="275"
     >
         <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc">
-            <Logo :style="logoPadding" />
+            <Logo sidebar :style="logoPadding" />
             <v-spacer></v-spacer>
             <v-tooltip v-if="!pal && isAdmin" :text="$t('processDefinitionMap.title')" location="bottom">
                 <template v-slot:activator="{ props }">
@@ -69,7 +69,7 @@
         </div>
         <div class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
             <v-row class="ma-0 pa-0" align="center">
-                <Logo />
+                <Logo sidebar />
                 <v-spacer></v-spacer>
                 <Icons @click.stop="customizer.SET_SIDEBAR_DRAWER" style="margin-top: -8px; cursor: pointer" :icon="'close'" :size="16" />
             </v-row>
@@ -357,13 +357,10 @@
                                 { title: '휴지통', icon: 'trash', to: '/admin-console/recycle-bin' },
                                 { title: '시스템 운영', icon: 'settings', to: '/admin-console/system-operations' },
                                 { title: 'KPI 목표', icon: 'target', to: '/admin-console/kpi-targets' },
-                                { title: 'KPI 목표 - 신규', icon: 'target', to: '/admin-console/kpi-targets-new' },
                                 { title: '사용 활성도', icon: 'graph-up-linear', to: '/admin-console/usage-adoption' },
                                 { title: '감사 로그', icon: 'document', to: '/admin-console/audit-trail' },
-                                { title: '실행 인스턴스', icon: 'play-outline', to: '/admin-console/exec-instances' },
                                 { title: 'PI Flag', icon: 'flag-line-duotone', to: '/admin-console/pi-flags' },
                                 { title: 'Task 종류 설정', icon: 'completed-task', to: '/admin-console/task-types' },
-                                { title: '시스템 관리', icon: 'server-line-duotone', to: '/systems' },
                                 { title: '업무분장', icon: 'users-group-rounded-line-duotone', to: '/work-assignment' },
                                 { title: '사내 정책문서', icon: 'submit-document', to: '/policy-document' }
                             ]"
