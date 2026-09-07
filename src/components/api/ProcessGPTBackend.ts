@@ -8867,6 +8867,67 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * 병합 요청의 병합 전 검증 상태를 가져온다.
+     *
+     * "이 병합 요청을 병합하면 기존 동작이 깨지는가" 를 base(변경 전)/head(변경 후)
+     * 비교로 답한다. 아직 실행 전이면 run 이 null 이고, 검증에 쓰일 시나리오(cases)만 온다.
+     */
+    async getPrVerification(skillName: string, prNumber: number): Promise<any> {
+        try {
+            const params = new URLSearchParams();
+            if (window.$tenantName) params.set('tenant_id', window.$tenantName);
+            const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests/${prNumber}/verification?${params}`;
+            const response = await deepagentsApi.get(url);
+            if (response.status === 200) return response.data;
+            return null;
+        } catch (error: any) {
+            console.error('병합 전 검증 조회 실패:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 병합 전 검증을 실행한다(백그라운드). 이미 돌고 있으면 그 회차를 그대로 돌려준다.
+     *
+     * 검증할 시나리오가 없는 스킬이면 409 와 함께 사유가 오므로, 화면이 그대로 보여준다.
+     */
+    async startPrVerification(skillName: string, prNumber: number): Promise<any> {
+        const params = new URLSearchParams();
+        if (window.$tenantName) params.set('tenant_id', window.$tenantName);
+        const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests/${prNumber}/verification?${params}`;
+        try {
+            const response = await deepagentsApi.post(url, {});
+            return response.data;
+        } catch (error: any) {
+            // 인터셉터가 상태코드를 버리고 본문만 reject 한다 — 사유를 그대로 화면에 올린다.
+            if (error && typeof error === 'object' && 'error' in error) return error;
+            throw error;
+        }
+    }
+
+    /**
+     * 회귀 테스트 시나리오를 만들어 붙인다(백그라운드). options.replace 면 기존 것을 대체한다.
+     *
+     * 기준은 PR 의 base(변경 전) 버전이다. 진행 상태는 별도 엔드포인트가 아니라
+     * 기존 검증 조회(getPrVerification)의 `backfill` 필드로 따라간다.
+     */
+    async startEvalBackfill(skillName: string, prNumber: number, options?: { replace?: boolean }): Promise<any> {
+        const params = new URLSearchParams();
+        if (window.$tenantName) params.set('tenant_id', window.$tenantName);
+        const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests/${prNumber}/verification/scenarios?${params}`;
+        try {
+            // replace=true 는 이미 있는 시나리오를 버리고 다시 뽑으라는 뜻이다. 교체는 새
+            // 시나리오가 확정된 뒤에 일어나므로, 실패하면 기존 시나리오가 그대로 남는다.
+            const response = await deepagentsApi.post(url, { replace: !!options?.replace });
+            return response.data;
+        } catch (error: any) {
+            // 인터셉터가 상태코드를 버리고 본문만 reject 한다 — 사유를 그대로 화면에 올린다.
+            if (error && typeof error === 'object' && 'error' in error) return error;
+            throw error;
+        }
+    }
+
     async createSkillRepo(skillName: string, options?: { initialContent?: string; filePath?: string }) {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/repo`;
         const body: Record<string, string> = { tenant_id: window.$tenantName };
