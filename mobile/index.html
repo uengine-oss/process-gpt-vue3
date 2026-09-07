@@ -14,9 +14,106 @@
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#1F6F5C" />
+
+    <!--
+      색을 첫 프레임 전에 정한다.
+
+      테마는 lib/appearance.js 가 정하는데 그것은 번들 안에 있다. 즉 자바스크립트를
+      다 받고 나서야 색이 잡힌다. 다크를 쓰는 사람은 앱을 켤 때마다 밝은 화면이
+      번쩍인 뒤 어두워진다.
+
+      그래서 그 규칙만 여기에 한 번 더 적는다 — 키(pg-appearance), 아는 값 셋,
+      기본값, 그리고 "고른 적이 없으면 기기 설정을 따른다"까지 같다.
+      저장은 하지 않는다. 그건 번들의 restore() 가 곧 이어서 한다.
+    -->
+    <script>
+        (function () {
+            var KNOWN = ['light', 'sky', 'dark'];
+            var value;
+            try {
+                value = localStorage.getItem('pg-appearance');
+            } catch (e) {
+                value = null;
+            }
+            // normalize() 와 같게 — 앞뒤 공백을 떼고 본다.
+            value = (value === null || value === undefined ? '' : String(value)).trim();
+            if (KNOWN.indexOf(value) < 0) {
+                var dark = window.matchMedia
+                    && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                value = dark ? 'dark' : 'sky';
+            }
+            document.documentElement.setAttribute('data-appearance', value);
+        })();
+    </script>
+
+    <!--
+      켜지는 동안 보여 줄 화면.
+
+      알림을 눌러 들어오면 앱이 꺼진 상태에서 시작한다. 그때 #app 이 비어 있으면
+      번들을 받고 Vue 가 붙을 때까지 **아무것도 없는 흰 화면**이 十초 가까이
+      남는다. 화면이 멈춘 것과 구분되지 않아서 사용자는 앱을 다시 누른다.
+
+      여기 규칙은 base.css 를 기다리지 않는다. 스타일시트도 번들과 같이 오므로,
+      그것을 기다리면 이 화면 자체가 늦는다. 그래서 필요한 색만 직접 적는다.
+
+      Vue 가 #app 에 붙는 순간 이 내용은 통째로 교체된다 — 지우는 코드가 없어도 된다.
+    -->
+    <style>
+        :root { --boot-ground: hsl(206 41% 97%); --boot-ink: hsl(206 6% 47%); }
+        :root[data-appearance='light'] { --boot-ground: hsl(60 14.29% 97.25%); --boot-ink: hsl(42.86 2.93% 46.86%); }
+        :root[data-appearance='dark']  { --boot-ground: hsl(60 2.7% 14.5%);   --boot-ink: hsl(48 4.8% 59.2%); }
+
+        html, body { margin: 0; height: 100%; background: var(--boot-ground); }
+
+        .boot {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            color: var(--boot-ink);
+            font: 0.9rem/1.4 -apple-system, BlinkMacSystemFont, 'Malgun Gothic', system-ui, sans-serif;
+
+            /*
+              바로 보이게 둔다.
+
+              처음에는 "곧바로 켜지면 굳이 보여 줄 것 없다" 는 생각으로 opacity 를
+              0 에서 시작해 0.4초 뒤 서서히 나타나게 했다. 그런데 이 화면이 뜨는
+              때는 WebView 가 막 만들어진 직후라, 그 애니메이션이 실행되지 않아
+              **끝까지 투명한 채로 남았다.** 즉 고치려던 빈 화면이 그대로였다.
+
+              보이는 것을 애니메이션에 맡기지 않는다. 잠깐 스쳐 지나가는 것이
+              아무것도 없는 화면보다 낫다.
+            */
+        }
+
+        .boot__spinner {
+            width: 26px;
+            height: 26px;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            opacity: 0.55;
+            animation: boot-spin 0.8s linear infinite;
+        }
+
+        @keyframes boot-spin { to { transform: rotate(360deg); } }
+
+        /* 움직임을 줄여 달라고 한 기기에서는 돌리지 않는다. */
+        @media (prefers-reduced-motion: reduce) {
+            .boot__spinner { animation: none; border-top-color: currentColor; opacity: 0.35; }
+        }
+    </style>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app">
+        <div class="boot" role="status" aria-live="polite">
+            <span class="boot__spinner" aria-hidden="true"></span>
+            <span>불러오는 중…</span>
+        </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
