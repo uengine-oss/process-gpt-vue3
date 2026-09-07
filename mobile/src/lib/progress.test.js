@@ -8,7 +8,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { activeStep, currentHolder, holderText, isActionable, stateLabel, stepState, summarize, toSteps } from './progress.js';
+import {
+    activeStep,
+    activityIdOf,
+    activityNameOf,
+    currentHolder,
+    holderText,
+    isActionable,
+    stateLabel,
+    stepState,
+    summarize,
+    toSteps
+} from './progress.js';
 
 const T = (h) => `2026-09-01T0${h}:00:00Z`;
 
@@ -180,4 +191,40 @@ test('다 끝난 건은 끝났다고 말한다 — "단계 없음" 은 멈춘 �
 
 test('단계 자체가 없으면 그렇게 말한다', () => {
     assert.equal(holderText([]), '진행 중인 단계가 없습니다');
+});
+
+/**
+ * 활동 식별.
+ *
+ * 데이터 계층은 원본 행을 `task` 안에 넣어 돌려준다. 바깥에서 activity_id 를
+ * 찾으면 언제나 비어 있어, 흐름도의 "지금 여기" 표시가 통째로 사라졌었다.
+ */
+test('원본 행이 task 안에 있어도 활동 id 를 찾는다', () => {
+    assert.equal(activityIdOf({ raw: { task: { activity_id: 'A1' } } }), 'A1');
+    assert.equal(activityIdOf({ task: { activity_id: 'A1' } }), 'A1');
+    assert.equal(activityIdOf({ activityId: 'A1' }), 'A1');
+    assert.equal(activityIdOf({ activity_id: 'A1' }), 'A1');
+});
+
+test('활동 id 가 없으면 빈 값 — 억지로 만들지 않는다', () => {
+    assert.equal(activityIdOf({}), '');
+    assert.equal(activityIdOf(null), '');
+});
+
+test('활동 id 를 사람이 읽는 이름으로 바꾼다', () => {
+    const items = [
+        { task: { activity_id: 'A1', activity_name: '출장 계획 등록' } },
+        { task: { activity_id: 'A2', activity_name: '숙소 검색' } }
+    ];
+    assert.equal(activityNameOf('A2', items), '숙소 검색');
+});
+
+test('이름을 못 찾으면 받은 id 를 그대로 돌려준다 — 부르는 쪽이 판단한다', () => {
+    assert.equal(activityNameOf('A9', [{ task: { activity_id: 'A1', activity_name: '가' } }]), 'A9');
+    assert.equal(activityNameOf('A9', []), 'A9');
+});
+
+test('id 가 없으면 빈 값', () => {
+    assert.equal(activityNameOf('', [{ task: { activity_id: 'A1', activity_name: '가' } }]), '');
+    assert.equal(activityNameOf(null, null), '');
 });

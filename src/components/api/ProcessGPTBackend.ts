@@ -2,6 +2,8 @@ import axios from '@/utils/axios';
 import deepagentsApi from '@/utils/deepagentsApi';
 import { recordUsageEvent } from '@/services/usageAnalytics';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+// 웹과 앱이 같은 규칙으로 기기를 구분한다. 자세한 이유는 그 파일에.
+import { deviceId, deviceType } from '@/shared/deviceIdentity/index.js';
 const storage = StorageBaseFactory.getStorage();
 
 // getFieldValue 의 참조정보 조회를 폼 단위로 합치기 위한 짧은 in-flight 캐시.
@@ -8139,25 +8141,33 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * 지금 이 브라우저가 어느 화면을 보고 있는지 남긴다.
+     *
+     * 두 가지에 쓰인다.
+     *   1. 보고 있는 채팅방의 알림은 만들지 않는다(handle_chat_insert 트리거).
+     *   2. `last_active_at` 으로 "지금 쓰고 있는 기기" 를 가린다. 알림을 어느
+     *      기기로 보낼지가 이 값으로 정해진다 — PC 앞에 앉아 있는데 이것이
+     *      낡아 있으면 알림이 휴대폰으로만 간다.
+     *
+     * **이 기기 줄만** 고친다. 이메일로만 찾으면 휴대폰 줄까지 함께 덮어써
+     * 휴대폰 알림이 조용히 끊긴다.
+     */
     async saveAccessPage(user_email: string, access_page: string) {
         try {
-            const response = await storage.getObject('user_devices', {
-                match: {
-                    user_email: user_email
-                }
-            });
-            if (response) {
-                response.access_page = access_page;
-                response.last_access_at = new Date().toISOString();
-                await storage.putObject('user_devices', response);
-            } else {
-                await storage.putObject('user_devices', {
-                    user_email: user_email,
-                    access_page: access_page,
-                    device_token: null,
-                    last_access_at: new Date().toISOString()
-                });
-            }
+            const now = new Date().toISOString();
+            await storage.putObject(
+                'user_devices',
+                {
+                    user_email,
+                    device_id: deviceId(window),
+                    device_type: deviceType(window),
+                    access_page,
+                    last_access_at: now,
+                    last_active_at: now
+                },
+                { onConflict: 'user_email,device_id' }
+            );
         } catch (error) {
             throw new Error(error.message);
         }

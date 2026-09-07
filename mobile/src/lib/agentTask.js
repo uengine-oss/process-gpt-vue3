@@ -54,14 +54,37 @@ const STATE_TEXT = {
     CANCELLED: '취소되었습니다.'
 };
 
+/**
+ * 에이전트 실행이 실패로 끝났는가.
+ *
+ * 실패는 `status` 가 아니라 `draft_status` 에 남는다. 업무 자체는 IN_PROGRESS
+ * 그대로다. 그래서 status 만 보면 **실패한 일이 영원히 "처리하고 있습니다" 로
+ * 보인다** — 사용자는 오지 않을 결과를 계속 기다린다. 운영에 그런 업무가
+ * 117건 있었다.
+ */
+export function agentFailed(task) {
+    return (task?.draft_status || '').toString().toUpperCase() === 'FAILED';
+}
+
 /** 지금 어떤 상태인지 한 문장. 기다리는 사람에게 필요한 것은 이것뿐이다. */
 export function agentStatusText(task) {
+    // 포털의 실행 화면과 같은 말을 쓴다. 같은 일을 두 곳이 다르게 말하면
+    // 사용자는 둘 중 무엇을 믿어야 할지 모른다.
+    if (agentFailed(task)) return '처리에 실패했습니다.';
+
+    const draft = (task?.draft_status || '').toString().toUpperCase();
+    if (draft === 'CANCELLED') return '취소되었습니다.';
+
     const status = (task?.status || '').toString().toUpperCase();
     return STATE_TEXT[status] || '진행 중입니다.';
 }
 
 /** 아직 진행 중인가. 그렇다면 화면이 스스로 다시 확인해야 한다. */
 export function stillRunning(task) {
+    // 실패하거나 취소된 것을 계속 "진행 중" 으로 두면 화면이 영원히 기다린다.
+    const draft = (task?.draft_status || '').toString().toUpperCase();
+    if (draft === 'FAILED' || draft === 'CANCELLED') return false;
+
     const status = (task?.status || '').toString().toUpperCase();
     return status !== 'DONE' && status !== 'COMPLETED' && status !== 'CANCELLED';
 }

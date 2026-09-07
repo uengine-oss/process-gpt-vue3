@@ -8,6 +8,7 @@
         "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vue-tsc --noEmit && cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build",
         "build:mobile": "vite build --config vite.mobile.config.ts",
         "build:mobile:emulator": "vite build --config vite.mobile.config.ts --mode emulator",
+        "build:mobile:prod": "vite build --config vite.mobile.config.ts --mode prod",
         "preview": "vite preview --port 5050",
         "typecheck": "vue-tsc --noEmit",
         "test:unit": "node --test \"src/**/*.test.js\" \"mobile/**/*.test.js\"",

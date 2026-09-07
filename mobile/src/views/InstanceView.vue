@@ -83,7 +83,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { backend } from '../lib/backend.js';
 import ProcessFlow from '../components/ProcessFlow.vue';
 import { flattenOutput } from '../lib/outputs.js';
-import { holderText, isActionable, stateLabel, summarize, toSteps } from '../lib/progress.js';
+import {
+    activityIdOf,
+    holderText,
+    isActionable,
+    stateLabel,
+    summarize,
+    toSteps
+} from '../lib/progress.js';
 import { assignedTo } from '../lib/tasks.js';
 
 const route = useRoute();
@@ -103,12 +110,12 @@ const definition = ref<any>(null);
 /** 지금 진행 중인 단계의 활동 id. 흐름도에서 그 자리를 짚어 준다. */
 const currentActivityId = computed(() => {
     const now = steps.value.find((s: any) => s.state === 'current' || s.state === 'waiting');
-    return now?.raw?.activity_id || '';
+    return activityIdOf(now);
 });
 
 /** 이미 끝난 단계들. */
 const doneIds = computed(() =>
-    steps.value.filter((s: any) => s.state === 'done').map((s: any) => s.raw?.activity_id).filter(Boolean)
+    steps.value.filter((s: any) => s.state === 'done').map(activityIdOf).filter(Boolean)
 );
 const summary = computed(() => summarize(steps.value));
 const holder = computed(() => holderText(steps.value));
