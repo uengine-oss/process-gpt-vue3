@@ -1,16 +1,24 @@
 {
-    // "module": "esnext",
-    // "target": "ESNext",
-    // "moduleResolution": "Node",
-    "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "public/plugins/keditor.js"],
+    "include": [
+        "env.d.ts",
+        "src/**/*",
+        "src/**/*.vue",
+        "public/plugins/keditor.js",
+        "mobile/**/*",
+        "mobile/**/*.vue"
+    ],
     "compilerOptions": {
         "module": "esnext",
         "baseUrl": ".",
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": [
+                "./src/*"
+            ],
+            "@mobile/*": [
+                "./mobile/src/*"
+            ]
         },
         "allowJs": true,
-        // "verbatimModuleSyntax": true, // 추가된 옵션 - disabled due to diagram-js compatibility
         "ignoreDeprecations": "5.0",
         "target": "ESNext",
         "moduleResolution": "Node",
