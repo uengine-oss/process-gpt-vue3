@@ -71,6 +71,8 @@ acebase/package-lock.json
 .env.local
 .env.*.local
 .env.playwright
+# 운영 앱 빌드용. 주소만 담은 .env.emulator 와 달리 접속 키가 들어 있다.
+.env.prod
 
 # Playwright 테스트 결과 및 캐시
 playwright/.auth/

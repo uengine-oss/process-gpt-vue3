@@ -43,6 +43,44 @@ function timeOf(value) {
 }
 
 /**
+ * 이 업무가 정의의 어느 활동인가.
+ *
+ * 데이터 계층은 원본 행을 `task` 안에 넣어 돌려준다. 그래서 바깥에서
+ * `item.activity_id` 를 찾으면 언제나 비어 있다 — 흐름도에서 "지금 여기" 표시가
+ * 통째로 사라졌던 이유가 이것이었다. 오류가 아니라 그냥 아무 데도 안 켜진다.
+ *
+ * 어느 모양으로 오든 찾도록 세 자리를 모두 본다.
+ */
+export function activityIdOf(item) {
+    const raw = item?.raw ?? item;
+    return String(raw?.task?.activity_id || raw?.activityId || raw?.activity_id || '').trim();
+}
+
+/**
+ * 활동 id 를 사람이 읽는 이름으로.
+ *
+ * 인스턴스 행에는 `current_activity_ids` 로 id 만 들어 있다. 그대로 내면
+ * "현재 단계: Activity_0ijzbru" 가 된다 — 사용자에게 아무 뜻이 없다.
+ * 그 건의 업무 목록에 같은 id 의 활동 이름이 이미 있으므로 그것을 쓴다.
+ *
+ * @param {string} id            활동 id
+ * @param {Array}  items         그 건(또는 전체)의 업무 목록
+ * @returns {string} 찾으면 활동 이름, 못 찾으면 받은 id 그대로
+ */
+export function activityNameOf(id, items) {
+    const key = String(id || '').trim();
+    if (!key) return '';
+
+    for (const item of Array.isArray(items) ? items : []) {
+        if (activityIdOf(item) !== key) continue;
+        const raw = item?.raw ?? item;
+        const name = String(raw?.task?.activity_name || raw?.name || raw?.activity_name || '').trim();
+        if (name) return name;
+    }
+    return key;
+}
+
+/**
  * 단계들을 시간 순으로 세운다.
  *
  * 시작 시각이 있는 것부터, 없으면 뒤로. 같은 시각이면 원래 순서를 지킨다 —

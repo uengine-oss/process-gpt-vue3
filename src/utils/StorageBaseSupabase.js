@@ -1,6 +1,9 @@
 import { getBaseDomain, getMainDomainUrl } from './domainUtils.js';
 import { getTenantId } from './tenant';
 import { isAdminRole } from './roles';
+// 웹과 앱이 같은 규칙으로 기기를 구분해야 한다. 다르면 같은 사람의 기기가
+// 서로 다른 방식으로 등록돼 알림이 엉뚱한 곳으로 간다.
+import { deviceId, deviceType } from '@/shared/deviceIdentity/index.js';
 
 class StorageBaseError extends Error {
     constructor(message, cause, args) {
@@ -1096,29 +1099,35 @@ export default class StorageBaseSupabase {
 
                     const userEmail = data.email || '';
 
-                    // user_devices 테이블에서 해당 유저 정보 확인
+                    // 이 브라우저를 알림 받을 기기 중 하나로 등록·갱신한다.
+                    //
+                    // 예전에는 이메일 하나로 한 줄만 두었다. 그래서 회사 PC 에서
+                    // 웹을 켜면 휴대폰 앱의 토큰이 덮어써져 **휴대폰 알림이
+                    // 조용히 끊겼다.** 끊긴 줄도 모른다. 지금은 기기마다 한 줄이고,
+                    // 이 브라우저는 자기 줄만 고친다.
+                    //
+                    // last_active_at 을 함께 찍는 것이 중요하다. 알림을 어느 기기로
+                    // 보낼지는 서버가 이 시각으로 정한다 — 이 값이 없으면 PC 앞에
+                    // 앉아 있어도 PC 는 "안 쓰는 기기" 가 된다.
                     if (userEmail) {
-                        const { data: deviceData, error: deviceError } = await window.$supabase
-                            .from('user_devices')
-                            .select('*')
-                            .eq('user_email', userEmail)
-                            .maybeSingle();
-
-                        if (deviceError && deviceError.code !== 'PGRST116') {
-                            console.error('user_devices 테이블 조회 오류:', deviceError);
-                        } else if (!deviceData) {
-                            // 해당 유저 정보가 없으면 새로 생성 (device_token은 null로 설정)
-                            await window.$supabase.from('user_devices').insert({
+                        try {
+                            const row = {
                                 user_email: userEmail,
-                                device_token: null
-                            });
-                            console.log('user_devices 테이블에 새 유저 정보 생성:', userEmail);
-                        }
+                                device_id: deviceId(window),
+                                device_type: deviceType(window),
+                                last_active_at: new Date().toISOString()
+                            };
+                            // 토큰을 못 받는 브라우저도 있다. 그때는 줄만 두어
+                            // "지금 여기를 보고 있다" 는 사실을 남긴다.
+                            if (fcm_token) row.device_token = fcm_token;
 
-                        // FCM 토큰이 있고, 기존 토큰과 다르면 업데이트
-                        if (fcm_token && (!deviceData?.device_token || deviceData.device_token !== fcm_token)) {
-                            await window.$supabase.from('user_devices').update({ device_token: fcm_token }).eq('user_email', userEmail);
-                            console.log('user_devices 테이블에 FCM 토큰 업데이트:', fcm_token);
+                            const { error: deviceError } = await window.$supabase
+                                .from('user_devices')
+                                .upsert(row, { onConflict: 'user_email,device_id' });
+                            if (deviceError) console.error('user_devices 갱신 오류:', deviceError);
+                        } catch (e) {
+                            // 알림 등록 실패가 로그인을 막을 이유는 없다.
+                            console.warn('user_devices 갱신 실패:', e);
                         }
                     }
 

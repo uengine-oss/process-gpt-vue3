@@ -37,12 +37,44 @@ export function displayValue(value) {
 /**
  * 필드 이름을 읽을 만하게.
  *
- * `customer_email` 같은 기계 이름이 그대로 보이면 무엇을 뜻하는지 알기 어렵다.
- * 폼 정의를 따로 불러오면 진짜 라벨을 쓸 수 있지만, 그것 하나 때문에 화면이
- * 늦어진다. 밑줄만 풀어 주는 것으로도 대부분 읽힌다.
+ * 폼 정의에 적힌 이름(`출장 종료일`)이 있으면 그것이 정답이다. 없을 때만
+ * 기계 이름의 밑줄을 풀어 쓴다 — `end_date` 를 "end date" 로 내는 것은
+ * 최선이 아니라 차선이다. 폼은 화면을 그린 뒤에 따로 불러오므로, 처음에는
+ * 차선으로 보이다가 이름이 도착하면 제자리를 찾는다.
+ *
+ * @param {string} key
+ * @param {Record<string,string>} [labels] 필드 키 → 폼에 적힌 이름
  */
-export function fieldLabel(key) {
+export function fieldLabel(key, labels) {
+    const named = labels && typeof labels === 'object' ? labels[key] : '';
+    if (named && String(named).trim()) return String(named).trim();
     return (key || '').toString().replace(/[_.]+/g, ' ').trim() || '항목';
+}
+
+/**
+ * 폼 정의(fields_json)에서 필드 키 → 이름 표를 만든다.
+ *
+ * 되풀이되는 묶음(repeating) 안쪽 필드까지 훑는다. 안쪽만 이름이 없으면
+ * 그 부분만 기계 이름으로 남아 더 어색하다.
+ *
+ * @returns {Record<string, string>}
+ */
+export function labelsFromFields(fieldsJson) {
+    /** @type {Record<string, string>} */
+    const out = {};
+
+    const walk = (list) => {
+        for (const f of Array.isArray(list) ? list : []) {
+            if (!f || typeof f !== 'object') continue;
+            const key = String(f.key || f.name || '').trim();
+            const text = String(f.text || f.label || '').trim();
+            if (key && text) out[key] = text;
+            walk(f.fields || f.__fields || f.children);
+        }
+    };
+
+    walk(fieldsJson);
+    return out;
 }
 
 /**
@@ -50,7 +82,7 @@ export function fieldLabel(key) {
  *
  * 폼이 여러 개 담겨 있을 수도 있어 모두 훑는다.
  */
-export function flattenOutput(output) {
+export function flattenOutput(output, labels) {
     if (!output || typeof output !== 'object') return [];
 
     const rows = [];
@@ -69,7 +101,7 @@ export function flattenOutput(output) {
             const text = displayValue(value);
             if (!text || seen.has(key)) continue;
             seen.add(key);
-            rows.push({ key, label: fieldLabel(key), value: text });
+            rows.push({ key, label: fieldLabel(key, labels), value: text });
         }
     };
 
@@ -78,12 +110,27 @@ export function flattenOutput(output) {
 }
 
 /**
+ * 이 업무가 쓰는 폼의 식별자. `formHandler:<폼>` 모양으로 들어 있다.
+ *
+ * 앞 단계의 필드 이름을 그 폼에서 가져오기 위해 필요하다.
+ */
+export function formIdOf(item) {
+    const tool = String(item?.tool || item?.task?.tool || '').trim();
+    return tool.startsWith('formHandler:') ? tool.replace('formHandler:', '').trim() : '';
+}
+
+/**
  * 이 단계 앞에 끝난 단계들의 산출물.
  *
  * 순서를 지킨다 — 사람은 진행 순서대로 읽는다.
  * 산출물이 없는 단계는 넣지 않는다. "없음" 만 늘어놓으면 훑기 어렵다.
+ *
+ * @param {Array} items      그 건의 업무들(진행 순)
+ * @param {string} currentId 지금 보고 있는 업무. 그 앞까지만 본다.
+ * @param {Record<string, Record<string,string>>} [labelsByForm]
+ *   폼 식별자 → (필드 키 → 폼에 적힌 이름). 없으면 기계 이름으로 보인다.
  */
-export function previousOutputs(items, currentId) {
+export function previousOutputs(items, currentId, labelsByForm) {
     const list = Array.isArray(items) ? items : [];
     const stop = list.findIndex((i) => i && (i.taskId || i.id) === currentId);
     const before = stop >= 0 ? list.slice(0, stop) : list;
@@ -94,7 +141,10 @@ export function previousOutputs(items, currentId) {
             name: (item?.name || item?.activity_name || '').trim() || '이전 단계',
             who: (item?.username || '').trim(),
             endedAt: item?.endDate || item?.end_date || null,
-            fields: flattenOutput(item?.output ?? item?.raw?.output)
+            fields: flattenOutput(
+                item?.output ?? item?.raw?.output,
+                labelsByForm?.[formIdOf(item?.raw ?? item)]
+            )
         }))
         .filter((step) => step.fields.length > 0);
 }

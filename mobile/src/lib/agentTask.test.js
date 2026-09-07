@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { agentStatusText, readableDescription, runsByAgent, stillRunning, taskTitle } from './agentTask.js';
+import {
+    agentFailed,
+    agentStatusText,
+    readableDescription,
+    runsByAgent,
+    stillRunning,
+    taskTitle
+} from './agentTask.js';
 
 const REAL = '[Description] 컨설팅 결과를 바탕으로 BPMN 프로세스를 생성합니다. (업로드 문서 없음) '
     + '[Instruction] 1. 컨설팅 내용을 분석하세요. [InputData] {"input_mode": "consulting"}';
@@ -56,5 +63,42 @@ describe('agentStatusText / stillRunning', () => {
         assert.equal(stillRunning({ status: 'IN_PROGRESS' }), true);
         assert.equal(stillRunning({ status: 'DONE' }), false);
         assert.equal(stillRunning({ status: 'CANCELLED' }), false);
+    });
+});
+
+/**
+ * 실패한 에이전트 업무.
+ *
+ * 실패는 status 가 아니라 draft_status 에 남는다. 업무 자체는 IN_PROGRESS
+ * 그대로여서, status 만 보면 실패한 일이 영원히 "처리하고 있습니다" 로 보인다.
+ * 운영에 그런 업무가 117건 있었다 — 그 사람들은 오지 않을 결과를 기다린다.
+ */
+describe('에이전트 실패', () => {
+    const failed = { status: 'IN_PROGRESS', draft_status: 'FAILED' };
+
+    it('실패를 알아본다', () => {
+        assert.equal(agentFailed(failed), true);
+        assert.equal(agentFailed({ status: 'IN_PROGRESS', draft_status: 'STARTED' }), false);
+        assert.equal(agentFailed({}), false);
+    });
+
+    it('실패했다고 말한다 — 처리 중이라고 하지 않는다', () => {
+        assert.equal(agentStatusText(failed), '처리에 실패했습니다.');
+    });
+
+    it('실패했으면 더 기다리지 않는다', () => {
+        assert.equal(stillRunning(failed), false);
+    });
+
+    it('초안이 취소돼도 마찬가지다', () => {
+        const cancelled = { status: 'IN_PROGRESS', draft_status: 'CANCELLED' };
+        assert.equal(agentStatusText(cancelled), '취소되었습니다.');
+        assert.equal(stillRunning(cancelled), false);
+    });
+
+    it('정상 진행은 그대로 진행 중이다', () => {
+        const running = { status: 'IN_PROGRESS', draft_status: 'STARTED' };
+        assert.equal(agentStatusText(running), '에이전트가 처리하고 있습니다.');
+        assert.equal(stillRunning(running), true);
     });
 });

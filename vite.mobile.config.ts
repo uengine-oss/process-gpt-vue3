@@ -20,7 +20,7 @@ import vue from '@vitejs/plugin-vue';
 
 const here = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
     // 진입 HTML 이 있는 곳. 이렇게 두면 산출물이 dist-mobile/index.html 로 나와
     // Capacitor 가 따로 손대지 않고 그대로 연다.
     root: here('./mobile'),
@@ -45,8 +45,12 @@ export default defineConfig({
     build: {
         outDir: here('./dist-mobile'),
         emptyOutDir: true,
-        // 휴대폰에서 원인을 볼 수 있어야 한다. 소스맵이 없으면 압축된 한 줄만 남는다.
-        sourcemap: true
+        // 개발·에뮬레이터 빌드에는 소스맵을 넣는다. 없으면 휴대폰에서 나는 오류가
+        // 압축된 한 줄로만 남아 원인을 찾을 수 없다.
+        //
+        // 배포판(prod)에는 넣지 않는다. 소스맵은 APK 안에 원본 코드를 통째로
+        // 싣는 것이고(5MB 가까이), 그 APK 는 우리 손을 떠나 남의 기기로 간다.
+        sourcemap: mode !== 'prod'
     },
 
     server: {
@@ -54,4 +58,4 @@ export default defineConfig({
         port: 5174,
         host: true
     }
-});
+}));

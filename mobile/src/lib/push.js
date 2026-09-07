@@ -10,11 +10,18 @@
  *   실패로 처리하면 사용자는 자기가 뭘 잘못한 줄 알게 된다. 그냥 "이 환경에서는
  *   해당 없음" 이라고 말한다.
  *
- * 한 사용자당 기기 하나
- *   표의 기본키가 이메일이라 그렇다. 휴대폰과 태블릿을 함께 쓰면 나중에
- *   로그인한 쪽만 알림을 받는다. 여러 대를 받으려면 표와 발송 쪽을 함께 고쳐야
- *   하므로 여기서는 다루지 않는다.
+ * 기기마다 한 줄
+ *   예전에는 표의 열쇠가 이메일 하나여서 사람당 기기가 하나였다. 회사 PC 에서
+ *   웹을 켜면 휴대폰 토큰이 덮어써져 **휴대폰 알림이 조용히 끊겼다.** 반대도
+ *   같다. 지금은 기기가 스스로 만든 식별자(@/shared/deviceIdentity)로 자기
+ *   줄만 갱신한다.
+ *
+ *   어느 기기로 보낼지는 보내는 쪽이 정한다 — 지금 쓰고 있는 기기가 있으면
+ *   거기로만, 아무 기기도 안 쓰고 있으면 가진 기기 모두로. 그래서 앱은 쓰이고
+ *   있는 동안 자기가 살아 있다고 알려야 한다(touchDevice).
  */
+
+import { deviceId, deviceType } from '../../../src/shared/deviceIdentity/index.js';
 
 export const TABLE = 'user_devices';
 
@@ -37,14 +44,20 @@ export function isNativeApp(win = globalThis) {
  * 알림을 가로채게 되기 때문이다. 데이터베이스도 같은 것을 막고 있지만(RLS),
  * 여기서도 세션에서 읽은 값만 쓰도록 좁혀 둔다.
  */
-export function deviceRow(session, token, at = new Date().toISOString()) {
+export function deviceRow(session, token, at = new Date().toISOString(), win = globalThis) {
     const email = session?.user?.email;
     const value = (token || '').toString().trim();
     if (!email || !value) return null;
 
     return {
         user_email: email,
+        // 기기를 가리키는 열쇠. 토큰이 갱신돼도 같은 줄을 고친다 — 토큰으로
+        // 구분하면 갱신될 때마다 죽은 줄이 하나씩 쌓인다.
+        device_id: deviceId(win),
+        device_type: deviceType(win),
         device_token: value,
+        // 보내는 쪽이 "지금 쓰고 있는 기기" 를 고르는 근거.
+        last_active_at: at,
         last_access_at: at
     };
 }
@@ -52,36 +65,100 @@ export function deviceRow(session, token, at = new Date().toISOString()) {
 /**
  * 이 기기를 알림 받을 곳으로 등록한다.
  *
- * 같은 사용자가 다시 등록하면 덮어쓴다 — 기기를 바꾸거나 토큰이 갱신되면
- * 옛 토큰으로 계속 보내다 아무 데도 닿지 않게 된다.
+ * 자기 줄만 고친다(`user_email` + `device_id`). 예전에는 이메일만으로 덮어써서
+ * PC 에서 웹을 켜면 휴대폰 줄이 사라졌다 — 휴대폰 알림이 조용히 끊겼다.
  */
-export async function registerDevice({ supabase, session, token, at = undefined }) {
-    const row = deviceRow(session, token, at);
+export async function registerDevice({ supabase, session, token, at = undefined, win = globalThis }) {
+    const row = deviceRow(session, token, at, win);
     if (!row) return { ok: false, reason: 'invalid' };
 
-    const { error } = await supabase.from(TABLE).upsert(row, { onConflict: 'user_email' });
+    const { error } = await supabase.from(TABLE).upsert(row, { onConflict: 'user_email,device_id' });
     if (error) return { ok: false, reason: 'rejected', error };
     return { ok: true };
 }
 
-/** 알림을 끈다. 행을 지우면 보낼 곳이 없어져 발송이 멈춘다. */
-export async function unregisterDevice({ supabase, session }) {
+/**
+ * 알림을 끈다.
+ *
+ * **이 기기 줄만** 지운다. 이메일로 지우면 사용자가 휴대폰에서 알림을 끄는 순간
+ * 회사 PC 의 알림까지 함께 꺼진다 — 끈 적도 없는데 안 오게 된다.
+ */
+export async function unregisterDevice({ supabase, session, win = globalThis }) {
     const email = session?.user?.email;
     if (!email) return { ok: false, reason: 'invalid' };
 
-    const { error } = await supabase.from(TABLE).delete().eq('user_email', email);
+    const { error } = await supabase
+        .from(TABLE)
+        .delete()
+        .eq('user_email', email)
+        .eq('device_id', deviceId(win));
     if (error) return { ok: false, reason: 'rejected', error };
     return { ok: true };
 }
 
-/** 지금 이 계정으로 알림이 켜져 있는가. */
-export async function isRegistered({ supabase, session }) {
+/**
+ * 지금 **이 기기로** 알림이 오게 돼 있는가.
+ *
+ * 이 기기 줄에 토큰이 들어 있어야 켜진 것이다. 표에 아무 줄이나 있는지만 보면
+ * 안 된다 — 포털은 로그인할 때마다 토큰 없는 빈 줄을 만들고, 그것을 내 것으로
+ * 세면 "알림 켜짐" 으로 보여 사용자가 켤 생각을 하지 않는다. 실제로 운영
+ * 192줄 중 184줄이 그런 빈 줄이었다.
+ *
+ * 잘못 꺼졌다고 말하면 한 번 더 누를 뿐이지만, 잘못 켜졌다고 말하면 알림은
+ * 영영 오지 않는다. 그래서 확신이 없으면 꺼진 쪽으로 답한다.
+ */
+export async function isRegistered({ supabase, session, win = globalThis }) {
     const email = session?.user?.email;
     if (!email) return false;
 
-    const { data, error } = await supabase.from(TABLE).select('device_token').eq('user_email', email).limit(1);
+    const { data, error } = await supabase
+        .from(TABLE)
+        .select('device_token')
+        .eq('user_email', email)
+        .eq('device_id', deviceId(win))
+        .limit(1);
     if (error) return false;
-    return Array.isArray(data) && data.length > 0;
+
+    return (Array.isArray(data) ? data : []).some((r) => Boolean((r?.device_token || '').trim()));
+}
+
+/**
+ * 이 기기를 지금 쓰고 있다고 알린다.
+ *
+ * 보내는 쪽은 이 시각 하나로 어디에 보낼지 정한다. 쓰고 있는 기기가 있으면
+ * 거기로만, 아무 데도 없으면 가진 기기 모두로. 이것을 갱신하지 않으면 앱은
+ * 언제나 "안 쓰는 기기" 라서, PC 를 켜 둔 사람은 휴대폰 알림을 받지 못한다.
+ *
+ * 등록하지 않은 기기에는 아무 일도 하지 않는다 — 없는 줄을 만들지 않는다.
+ */
+export async function touchDevice({
+    supabase,
+    session,
+    at = undefined,
+    accessPage = undefined,
+    win = globalThis
+}) {
+    const email = session?.user?.email;
+    if (!email) return { ok: false, reason: 'invalid' };
+
+    const now = at || new Date().toISOString();
+    const patch = { last_active_at: now };
+
+    // 지금 보고 있는 화면. 대화방을 보고 있는 동안에는 그 방의 알림을 만들지
+    // 않는다(데이터베이스 트리거가 이 값을 본다) — 읽고 있는 화면에 대고
+    // 알림을 울리는 것은 방해일 뿐이다.
+    if (accessPage !== undefined) {
+        patch.access_page = accessPage || null;
+        patch.last_access_at = now;
+    }
+
+    const { error } = await supabase
+        .from(TABLE)
+        .update(patch)
+        .eq('user_email', email)
+        .eq('device_id', deviceId(win));
+    if (error) return { ok: false, reason: 'rejected', error };
+    return { ok: true };
 }
 
 /**
@@ -94,7 +171,8 @@ export async function enablePush({
     supabase,
     session,
     loadPlugin = defaultLoadPlugin,
-    checkAvailable = pushConfigured
+    checkAvailable = pushConfigured,
+    win = globalThis
 }) {
     if (!isNativeApp()) return { ok: false, reason: 'not-an-app' };
 
@@ -120,7 +198,7 @@ export async function enablePush({
     });
 
     if (!token) return { ok: false, reason: 'no-token' };
-    return registerDevice({ supabase, session, token });
+    return registerDevice({ supabase, session, token, win });
 }
 
 /**

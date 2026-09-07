@@ -20,12 +20,13 @@
                     에이전트가 맡은 업무. 사람이 채울 폼도, 제출 버튼도 필요 없다.
                     필요한 것은 "지금 어떻게 되고 있는가" 하나뿐이다.
                 -->
-                <section v-if="byAgent" class="agent">
+                <section v-if="byAgent" class="agent" :class="{ 'agent--failed': failed }">
                     <span
                         class="agent__dot"
                         :class="{
                             'agent__dot--run': running && progressState !== 'waiting',
-                            'agent__dot--wait': progressState === 'waiting'
+                            'agent__dot--wait': progressState === 'waiting',
+                            'agent__dot--failed': failed
                         }"
                         aria-hidden="true"
                     ></span>
@@ -33,6 +34,13 @@
                         <strong>{{ progressState === 'waiting' ? '내 확인을 기다리고 있습니다.' : statusText }}</strong>
                         <span v-if="progressState === 'waiting'" class="m-muted">
                             대화로 돌아가 답해 주셔야 이어집니다.
+                        </span>
+                        <!--
+                            실패는 반드시 말해야 한다. "처리하고 있습니다" 로 두면
+                            사용자는 오지 않을 결과를 계속 기다린다.
+                        -->
+                        <span v-else-if="failed" class="m-muted">
+                            잠시 후 다시 시도해 주세요. 계속 실패하면 웹에서 확인해 주세요.
                         </span>
                         <span v-else class="m-muted">에이전트가 대신 처리합니다. 끝나면 알림으로 알려 드립니다.</span>
                     </span>
@@ -182,10 +190,17 @@ import { useRoute, useRouter } from 'vue-router';
 
 import MobileForm from '../components/MobileForm.vue';
 import { completionFailed, failureText } from '../lib/completion.js';
-import { agentStatusText, readableDescription, runsByAgent, stillRunning, taskTitle } from '../lib/agentTask.js';
+import {
+    agentFailed,
+    agentStatusText,
+    readableDescription,
+    runsByAgent,
+    stillRunning,
+    taskTitle
+} from '../lib/agentTask.js';
 import { feedState, isFinished, toFeed } from '../lib/agentEvents.js';
 import { emptyQuestionIds, originRoomId, submitAnswer, toQuestions } from '../lib/hitlTask.js';
-import { previousOutputs } from '../lib/outputs.js';
+import { formIdOf, labelsFromFields, previousOutputs } from '../lib/outputs.js';
 import { draftText, feedbackPatch } from '../lib/approval.js';
 import { backend } from '../lib/backend.js';
 import { canSubmitOnMobile, initialValues, toMobileFields } from '../lib/formSchema.js';
@@ -210,6 +225,7 @@ const priorSteps = ref<any[]>([]);
 // 에이전트가 맡은 업무는 보여 줄 것이 다르다 — 폼이 아니라 진행 상태다.
 const byAgent = computed(() => runsByAgent(item.value?.task));
 const running = computed(() => stillRunning(item.value?.task));
+const failed = computed(() => agentFailed(item.value?.task));
 const statusText = computed(() => agentStatusText(item.value?.task));
 const headline = computed(() => taskTitle(item.value?.task, item.value?.name || '업무'));
 // 설명에는 에이전트에게 주는 지시문이 통째로 들어 있다. 사람이 읽을 부분만.
@@ -332,12 +348,6 @@ const overdue = computed(() => (item.value ? isOverdue(item.value.dueDate) : fal
 const submittable = computed(() => canSubmitOnMobile(fields.value));
 const draft = computed(() => (item.value ? draftText(item.value) : ''));
 
-/** `formHandler:주문서` 같은 값에서 폼 이름만 꺼낸다. */
-function formIdOf(task: any): string {
-    const tool = (task?.tool || '').toString();
-    return tool.startsWith('formHandler:') ? tool.slice('formHandler:'.length) : '';
-}
-
 async function load() {
     loading.value = true;
     error.value = '';
@@ -388,6 +398,10 @@ async function loadPriorSteps() {
             .sort((a: any, b: any) => String(a.start_date || '').localeCompare(String(b.start_date || '')));
         priorSteps.value = previousOutputs(ordered, item.value?.taskId);
 
+        // 필드 이름은 폼 정의에 있다. 먼저 그려 놓고 뒤따라 채운다 — 이것 하나
+        // 때문에 앞 단계 내용이 늦게 뜨면 손해가 더 크다.
+        void loadPriorLabels(ordered);
+
         // 에이전트가 맡은 업무면 진행 기록을 함께 본다.
         if (byAgent.value && !eventChannel) void watchProgress(String(item.value?.taskId || ''));
 
@@ -396,6 +410,41 @@ async function loadPriorSteps() {
     } catch (e) {
         console.warn('[task] 이전 단계 조회 실패', e);
     }
+}
+
+/**
+ * 앞 단계의 필드 이름을 그 단계의 폼 정의에서 가져온다.
+ *
+ * 없으면 `end_date` 가 "end date" 로 보인다. 값은 맞지만 무엇을 뜻하는지는
+ * 폼에 적힌 이름("출장 종료일")을 봐야 안다 — 승인 판단의 근거로 쓰는 화면이라
+ * 이름이 어긋나면 곤란하다.
+ *
+ * 같은 폼을 여러 단계가 쓰기도 하므로 폼 하나당 한 번만 부른다.
+ */
+async function loadPriorLabels(ordered: any[]) {
+    const wanted = new Map<string, any>();
+    for (const step of priorSteps.value) {
+        const row = ordered.find((o: any) => (o?.id || o?.taskId) === step.id);
+        const formId = formIdOf(row);
+        if (formId && !wanted.has(formId)) wanted.set(formId, row);
+    }
+    if (!wanted.size) return;
+
+    const found: Record<string, Record<string, string>> = {};
+    await Promise.all(
+        [...wanted.entries()].map(async ([formId, row]) => {
+            try {
+                // 위치 인자다(formId, activityId, procDefId).
+                const form = await backend().getFormFields(formId, row?.activity_id, row?.proc_def_id);
+                const labels: Record<string, string> = labelsFromFields(form?.fields_json);
+                if (Object.keys(labels).length) found[formId] = labels;
+            } catch (_e) {
+                // 이름을 못 가져와도 값은 이미 보인다. 조용히 둔다.
+            }
+        })
+    );
+
+    if (Object.keys(found).length) priorSteps.value = previousOutputs(ordered, item.value?.taskId, found);
 }
 
 async function submit() {
@@ -587,6 +636,16 @@ onMounted(load);
 }
 
 /* 사람을 기다리는 중 — 깜빡이지 않는다. 진행 중처럼 보이면 안 된다. */
+.agent--failed {
+    border-color: var(--danger, #c0392b);
+}
+
+.agent__dot--failed {
+    background: var(--danger, #c0392b);
+    box-shadow: none;
+    animation: none;
+}
+
 .agent__dot--wait {
     background: var(--danger);
 }

@@ -76,6 +76,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { backend } from '../lib/backend.js';
 import { visibleInstances } from '../lib/instances.js';
+import { activityNameOf } from '../lib/progress.js';
 import { currentSession } from '../lib/session.js';
 import { assignedTo, cardLines, isDone, isOpen, isOverdue, needsMe, sortForMobile } from '../lib/tasks.js';
 
@@ -123,12 +124,24 @@ function statusLabel(status: string) {
     return STATUS[(status || '').toUpperCase()] || status || '상태 없음';
 }
 
-/** 지금 어느 단계인지. 여러 갈래로 갈렸으면 개수로 말한다. */
+/**
+ * 지금 어느 단계인지. 여러 갈래로 갈렸으면 개수로 말한다.
+ *
+ * 인스턴스 행에는 활동 **id** 만 들어 있다. 그대로 내면
+ * "현재 단계: Activity_0ijzbru" 가 되어 사용자에게 아무 뜻이 없다 — 실제로
+ * 그렇게 보였다. 그 건의 업무 목록에 같은 id 의 이름이 있으면 그것을 쓰고,
+ * 없으면 기계 이름을 보여 주느니 이 줄을 통째로 비운다.
+ */
 function stepLabel(inst: any) {
     const ids = Array.isArray(inst.currentActivityIds) ? inst.currentActivityIds.filter(Boolean) : [];
-    if (!ids.length) return '단계 정보 없음';
-    if (ids.length === 1) return `현재 단계: ${ids[0]}`;
-    return `동시에 ${ids.length}개 단계 진행 중`;
+    if (!ids.length) return '';
+    if (ids.length > 1) return `동시에 ${ids.length}개 단계 진행 중`;
+
+    const ofThisInstance = items.value.filter(
+        (i: any) => (i?.task?.proc_inst_id || i?.instId) === inst.instId
+    );
+    const name = activityNameOf(ids[0], ofThisInstance);
+    return name && name !== ids[0] ? `현재 단계: ${name}` : '';
 }
 
 async function load() {

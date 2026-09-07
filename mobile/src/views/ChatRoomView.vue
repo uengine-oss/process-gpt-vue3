@@ -181,6 +181,7 @@ import { backend } from '../lib/backend.js';
 import { take } from '../lib/handoff.js';
 import { render as renderMarkdown } from '../lib/markdown.js';
 import { outgoingMessage, pendingPanel, toConversation } from '../lib/chat.js';
+import { touchDevice } from '../lib/push.js';
 import { withPreview } from '../lib/rooms.js';
 import { isFirstUserMessage, shouldGenerateChatRoomName } from '@/shared/chatRoom/index.js';
 import { currentSession } from '../lib/session.js';
@@ -422,6 +423,19 @@ function safeParse(text: string) {
  * 없으면 사용자가 직접 새로고침해야 한다. 스트리밍이 끝난 뒤 서버가 저장한
  * 최종본도 이 경로로 들어온다.
  */
+/**
+ * 한 줄을 목록에 넣는다. 같은 uuid 가 이미 있으면 갈아 끼운다.
+ *
+ * 실시간으로 들어온 것과 내가 방금 올린 것이 같은 줄일 수 있다. 그때 두 번
+ * 쌓이면 같은 말이 두 번 보인다.
+ */
+function showLocally(row: any) {
+    if (!row?.uuid) return;
+    const at = rows.value.findIndex((r) => r.uuid && r.uuid === row.uuid);
+    if (at >= 0) rows.value.splice(at, 1, row);
+    else rows.value.push(row);
+}
+
 async function watch() {
     try {
         subscription = await backend().watchChats(
@@ -500,6 +514,14 @@ async function send({
         if (!message) return;
 
         await backend().updateInstanceChat(roomId, message, null, messageUuid);
+
+        // 내가 쓴 것을 바로 화면에 올린다.
+        //
+        // 실시간 구독으로도 같은 줄이 들어오지만, 방을 막 만들고 첫 마디를 보낼
+        // 때는 구독이 붙기 전에 저장이 끝나 그 알림을 놓친다. 그러면 **내가 보낸
+        // 말이 화면에서 사라지고** 답만 떠 있다가, 방을 나갔다 들어와야 보였다.
+        // 같은 uuid 로 다시 들어오면 아래 구독이 이 줄을 갈아 끼운다.
+        showLocally({ uuid: messageUuid, id: roomId, messages: message });
         await scrollToEnd();
 
         // 목록은 방의 message 칸을 읽는다. 갱신하지 않으면 대화가 쌓여도
@@ -566,8 +588,26 @@ function stop() {
     controller?.abort();
 }
 
+/**
+ * 이 방을 보고 있다고 남긴다.
+ *
+ * 데이터베이스 트리거(handle_chat_insert)가 이 값을 보고 알림을 만들지 정한다.
+ * 남기지 않으면 **읽고 있는 화면의 답변에 대고 알림이 울린다** — 실제로
+ * 그랬다. 방을 떠날 때는 비워야 한다. 안 그러면 떠난 뒤에도 그 방의 알림이
+ * 영영 오지 않는다.
+ */
+async function markViewing(page: string) {
+    try {
+        if (!session) return;
+        await touchDevice({ supabase: (window as any).$supabase, session, accessPage: page });
+    } catch (_e) {
+        // 알림 억제는 부가 기능이다. 실패해도 대화를 막지 않는다.
+    }
+}
+
 onMounted(async () => {
     session = await currentSession();
+    void markViewing(`chat:${roomId}`);
     await load();
     await watch();
 
@@ -586,6 +626,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+    void markViewing('');
     controller?.abort();
     // 구독을 끊지 않으면 방을 옮길 때마다 쌓여 한 메시지가 여러 번 들어온다.
     try {

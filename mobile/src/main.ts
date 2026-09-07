@@ -29,6 +29,8 @@ import {
     consumeLaunchNotification,
     routeForNotification
 } from './lib/native.js';
+import { appStateSource, startPresence } from './lib/presence.js';
+import { touchDevice } from './lib/push.js';
 import { showBanner } from './lib/pushBannerHost.js';
 import { configure as configureHttp } from './lib/http.js';
 import { applyTenant, portalOriginFor, tenantFromSession } from './lib/tenant.js';
@@ -136,6 +138,21 @@ async function boot() {
     });
 
     createApp(App).use(router).mount('#app');
+
+    // 이 기기를 쓰고 있다고 서버에 알린다.
+    //
+    // 알림을 어느 기기로 보낼지는 서버가 이 시각 하나로 정한다 — 쓰고 있는
+    // 기기가 있으면 거기로만, 아무 데도 없으면 가진 기기 모두로. 알리지 않으면
+    // 앱은 언제나 "안 쓰는 기기" 라서, PC 로 웹을 켜 둔 사람은 휴대폰 알림을
+    // 영영 받지 못한다.
+    startPresence({
+        touch: async () => {
+            const { data } = await supabase.auth.getSession();
+            if (!data?.session) return;
+            await touchDevice({ supabase, session: data.session });
+        },
+        onAppState: appStateSource(window)
+    });
 
     // 알림을 눌러 앱이 처음 켜진 경우. 이벤트는 화면이 뜨기 전에 지나가 버리므로
     // 네이티브가 실행 인텐트에 담아 둔 것을 직접 꺼내 그 건으로 보낸다.
