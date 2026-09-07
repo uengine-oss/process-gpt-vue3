@@ -286,7 +286,8 @@ const UNASSIGNED_DOMAIN_ID = '__unassigned__';
 const unassignedDomain = {
     id: UNASSIGNED_DOMAIN_ID,
     name: '미분류',
-    color: '#78909C'
+    // 디자인 시스템의 뉴트럴 뮤트 톤 (tokens.css TEXT_MUTED)
+    color: '#898781'
 };
 let resizeObserver: ResizeObserver | null = null;
 let resizeFrame: number | null = null;
@@ -336,20 +337,17 @@ const statusLegendItems = computed(() => [
         className: 'legend-pill--final-edit'
     },
     {
+        // 라벨은 체계도 전용 키를 쓴다. 공용 progressBadge.published('완료')는
+        // 정의도(definition-map)의 ProcessTooltip 도 함께 쓰므로 여기서 바꾸면 비 PAL 화면까지 영향을 준다.
         key: 'published',
-        label: t('progressBadge.published') || '완료',
+        label: t('processArchitecture.hierarchy.legendItems.published') || '배포됨',
         className: 'legend-pill--published'
-    },
-    {
-        key: 'wip',
-        label: t('progressBadge.wip') || '차세대 기획 중',
-        className: 'legend-pill--wip'
-    },
-    {
-        key: 'sunset',
-        label: t('progressBadge.sunset') || '폐기 예정',
-        className: 'legend-pill--sunset'
     }
+    // 'wip'(차세대 기획 중) / 'sunset'(폐기 예정) 은 범례에서 제외한다.
+    // 두 상태를 프로세스에 지정하는 UI 가 현재 존재하지 않아(설계 화면의 toggleWip 은 emit 되는 곳이
+    // 없고, sunset 은 BPMN 태스크의 futureStatus 속성일 뿐 프로세스로 롤업되지 않는다)
+    // 체계도에서는 도달할 수 없는 항목이었다. 설정 UI 가 생기면 노드 색(.sub-node--wip/--sunset)과
+    // 함께 되살린다.
 ]);
 
 function clamp(value: number, min: number, max: number): number {
@@ -381,9 +379,8 @@ const zoomCanvasStyle = computed(() => ({
 
 function getDomainNodeStyle(domain: any): Record<string, string> {
     const color = String(domain?.color || '').trim();
-    return {
-        '--domain-color': color || '#004d40'
-    };
+    // 도메인 고유 색이 없으면 CSS 쪽 기본값(브랜드 컬러)이 쓰이도록 변수를 비워 둔다.
+    return color ? { '--domain-color': color } : {};
 }
 
 function isUnassignedDomain(domain: any): boolean {
@@ -632,7 +629,29 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/*
+ * 색상 토큰
+ *
+ * 계층(도메인 > 메가 > 메이저 > 서브)은 색상(hue)이 아니라 **브랜드 색 한 가지의 농도**로
+ * 구분한다. 노드를 색으로 칠하지 않고 서피스 위에 브랜드 틴트를 얇게 얹는 방식이라,
+ * 어느 단계도 화면을 지배하지 않고 계층만 조용히 읽힌다.
+ * (예전: teal/deep-orange/green Material 원색 → 잉크+브랜드 solid → 현재: 저농도 틴트 램프)
+ *
+ *   도메인 20%  →  메가 12%  →  메이저 6%  →  서브 0%(서피스)
+ *
+ * 글자색은 모든 단계에서 --hier-text 로 동일하다. 배경이 전부 서피스 기반이라
+ * 흰 글자 / 대비 반전이 필요 없고, 다크 테마에서도 같은 규칙이 그대로 성립한다.
+ * 값은 전부 Vuetify 테마 토큰이다. (토큰 출처: src/ds/vuetify-bridge/theme.ts)
+ */
 .hierarchy-view-container {
+    --hier-brand: rgb(var(--v-theme-primary));
+    --hier-surface: rgb(var(--v-theme-surface));
+    --hier-panel: rgb(var(--v-theme-background));
+    --hier-border: rgb(var(--v-theme-borderColor));
+    --hier-line: rgba(var(--v-theme-textPrimary), 0.18);
+    --hier-text: rgb(var(--v-theme-textPrimary));
+    --hier-text-soft: rgb(var(--v-theme-textSecondary));
+
     height: 100%;
     min-height: 0;
     border-radius: 16px;
@@ -654,7 +673,7 @@ onBeforeUnmount(() => {
 .hierarchy-zoom-level {
     min-width: 48px;
     text-align: center;
-    color: #475569;
+    color: var(--hier-text-soft);
     font-weight: 700;
 }
 
@@ -707,7 +726,7 @@ onBeforeUnmount(() => {
 }
 
 .domain-section {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--hier-border);
     padding-bottom: 16px;
 }
 
@@ -717,7 +736,7 @@ onBeforeUnmount(() => {
 
 .domain-section-title {
     margin-bottom: 12px;
-    color: #475569;
+    color: var(--hier-text-soft);
     font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 0.03em;
@@ -763,7 +782,7 @@ onBeforeUnmount(() => {
     left: 50%;
     width: 0;
     height: 12px;
-    border-left: 2px solid #bdbdbd;
+    border-left: 2px solid var(--hier-line);
 }
 
 .tree-children > .tree-node-wrapper {
@@ -777,7 +796,7 @@ onBeforeUnmount(() => {
     left: 50%;
     width: 0;
     height: 12px;
-    border-left: 2px solid #bdbdbd;
+    border-left: 2px solid var(--hier-line);
 }
 
 /* Horizontal connector between siblings */
@@ -787,7 +806,7 @@ onBeforeUnmount(() => {
     top: -12px;
     width: 100%;
     height: 0;
-    border-top: 2px solid #bdbdbd;
+    border-top: 2px solid var(--hier-line);
 }
 
 .tree-children > .tree-node-wrapper:first-child:not(:only-child)::after {
@@ -812,16 +831,21 @@ onBeforeUnmount(() => {
     border-radius: 8px;
     text-align: center;
     min-width: 100px;
-    max-width: 160px;
+    max-width: 176px;
     box-sizing: border-box;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 0.15s ease, background 0.15s ease;
     position: relative;
 }
 
+/*
+ * 호버는 "색이 한 단계 진해지는" 정도로만 표현한다.
+ * 예전에는 translateY(-1px) + 12px 그림자로 노드가 떠올랐는데, 트리처럼 노드가 촘촘한
+ * 화면에서는 커서를 옮길 때마다 레이아웃이 흔들리는 것처럼 보여 산만했다.
+ * 배경/테두리만 바뀌므로 리페인트만 발생하고 노드 위치는 고정된다.
+ */
 .tree-node:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(var(--node-fill-hover), var(--node-fill-hover)), var(--hier-surface);
+    border-color: var(--node-line-hover);
 }
 
 .node-collapsible {
@@ -848,7 +872,8 @@ onBeforeUnmount(() => {
     top: 3px;
     opacity: 0;
     cursor: pointer;
-    color: rgba(255,255,255,0.7);
+    /* 노드 배경 밝기에 따라 글자색을 따라가야 하므로 고정색을 쓰지 않는다. */
+    color: inherit;
     transition: opacity 0.15s ease;
 }
 
@@ -870,12 +895,20 @@ onBeforeUnmount(() => {
     opacity: 1;
 }
 
+/*
+ * 노드 타이포그래피
+ *
+ * 기본 12.8px / 부제 10.4px 는 한글 두 줄 클램프와 겹치면서 읽기 힘들었다.
+ * 본문을 14px 로 올리고 상위 계층일수록 한 단계씩 키워 계층이 크기로도 읽히게 한다.
+ * 글자가 커진 만큼 노드 폭(160→176px)과 도메인/메가 높이(72→80px)도 함께 늘려
+ * 두 줄 클램프에 들어가는 글자 수가 줄지 않도록 했다.
+ */
 .node-name {
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     font-weight: 600;
     word-break: keep-all;
     overflow-wrap: break-word;
-    line-height: 1.25;
+    line-height: 1.3;
     max-width: 100%;
     overflow: hidden;
     display: -webkit-box;
@@ -884,8 +917,8 @@ onBeforeUnmount(() => {
 }
 
 .node-sub {
-    font-size: 0.65rem;
-    opacity: 0.8;
+    font-size: 0.725rem;
+    opacity: 0.78;
     margin-top: 2px;
 }
 
@@ -894,20 +927,39 @@ onBeforeUnmount(() => {
     line-height: 1.45;
 }
 
+/*
+ * 계층 노드 3종은 --node-fill / --node-line 두 변수만 바꿔 농도를 단계화한다.
+ * 배경·테두리·호버 규칙은 아래 공통 블록 하나에서만 정의된다.
+ */
 .domain-node {
-    background: #00695c !important;
-    color: #ffffff !important;
-    border: 2px solid var(--domain-color, #004d40);
-    box-shadow: 0 0 0 2px rgba(0, 105, 92, 0.16), 0 3px 10px rgba(15, 23, 42, 0.22);
+    --node-fill: rgba(var(--v-theme-primary), 0.2);
+    --node-fill-hover: rgba(var(--v-theme-primary), 0.28);
+    --node-line: rgba(var(--v-theme-primary), 0.4);
+    --node-line-hover: rgba(var(--v-theme-primary), 0.62);
+    /* 도메인 고유 색(--domain-color)은 상단 액센트 바로만 노출한다.
+       배경까지 도메인 색으로 칠하면 도메인 수만큼 색이 늘어나 계층 램프가 무너진다. */
+    box-shadow: inset 0 3px 0 0 var(--domain-color, var(--hier-brand));
     z-index: 2;
+}
+
+.domain-node .node-name {
+    font-size: 0.9375rem;
+    font-weight: 700;
+}
+
+.mega-node .node-name {
+    font-size: 0.9rem;
 }
 
 .domain-node,
 .mega-node,
 .major-node {
-    width: 160px;
-    min-width: 160px;
-    max-width: 160px;
+    background: linear-gradient(var(--node-fill), var(--node-fill)), var(--hier-surface);
+    color: var(--hier-text);
+    border: 1px solid var(--node-line);
+    width: 176px;
+    min-width: 176px;
+    max-width: 176px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -916,11 +968,11 @@ onBeforeUnmount(() => {
 
 .domain-node,
 .mega-node {
-    height: 72px;
+    height: 80px;
 }
 
 .major-node {
-    min-height: 84px;
+    min-height: 92px;
     height: auto;
     gap: 2px;
 }
@@ -930,28 +982,48 @@ onBeforeUnmount(() => {
 }
 
 .mega-node {
-    background: #e65100;
-    color: white;
+    --node-fill: rgba(var(--v-theme-primary), 0.12);
+    --node-fill-hover: rgba(var(--v-theme-primary), 0.19);
+    --node-line: rgba(var(--v-theme-primary), 0.28);
+    --node-line-hover: rgba(var(--v-theme-primary), 0.48);
 }
 
 .major-node {
-    background: #2e7d32;
-    color: white;
+    --node-fill: rgba(var(--v-theme-primary), 0.06);
+    --node-fill-hover: rgba(var(--v-theme-primary), 0.12);
+    --node-line: rgba(var(--v-theme-primary), 0.18);
+    --node-line-hover: rgba(var(--v-theme-primary), 0.36);
 }
 
+/*
+ * 서브 노드는 상위 계층과 달리 브랜드 틴트가 아니라 **프로세스 상태 색**으로 배경을 칠한다.
+ * 계층은 브랜드 한 색의 농도로, 잎 노드는 상태 색으로 — 두 축이 색상(hue)으로 갈려
+ * 서로 간섭하지 않는다.
+ *
+ * 상위 계층과 같은 --node-fill / --node-fill-hover 변수를 쓰므로 호버 규칙
+ * (.tree-node:hover) 하나가 네 단계를 모두 처리한다. 여기서는 --stage-rgb 만 상태별로 바꾼다.
+ * (값 = 공유 5단계 팔레트 src/utils/processStages.ts STAGE_DEFS)
+ *
+ * 틴트는 10% → 호버 20%. 노드 안 ProgressBadge 가 이미 상태를 글자로 적고 있어
+ * 배경은 훑을 때의 스캔 단서 정도만 담당하면 되고, 진하게 칠하면 그 위의 배지·별표·
+ * 갱신 도트가 묻힌다.
+ */
 .sub-node {
-    background: #ffffff;
-    color: #1f2937;
-    border: 1px solid #d1d5db;
-    min-width: 156px;
-    max-width: 190px;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    --stage-rgb: 148, 163, 184;
+    --node-fill: rgba(var(--stage-rgb), 0.1);
+    --node-fill-hover: rgba(var(--stage-rgb), 0.2);
+    --node-line-hover: rgba(var(--stage-rgb), 0.5);
+    background: linear-gradient(var(--node-fill), var(--node-fill)), var(--hier-surface);
+    color: var(--hier-text);
+    border: 1px solid rgba(var(--stage-rgb), 0.3);
+    min-width: 168px;
+    max-width: 204px;
 }
 
 .node-code {
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.25;
     color: inherit;
     opacity: 0.82;
     word-break: keep-all;
@@ -961,90 +1033,48 @@ onBeforeUnmount(() => {
     content: '';
     position: absolute;
     inset: 0 auto 0 0;
-    width: 6px;
+    width: 5px;
     border-radius: 8px 0 0 8px;
-    background: #cbd5e1;
+    background: rgb(var(--stage-rgb));
 }
 
-.sub-node:hover {
-    background: #f8fafc;
-    border-color: #1976d2;
-}
-
+/*
+ * 상태별 색 = 공유 5단계 팔레트 (src/utils/processStages.ts STAGE_DEFS)
+ *   0단계 초안 #94a3b8 · 1단계 검토 #3B82F6 · 2단계 공람 #8B5CF6
+ *   3단계 최종수정 #F59E0B · 4단계 배포완료 #10B981
+ * 예전 값은 검토=주황 / 공람=파랑 / 최종수정=보라 로 순서가 뒤섞여 있어
+ * 대시보드 · 리뷰보드 · ProgressBadge 와 같은 상태가 다른 색으로 보였다.
+ * wip / sunset 은 STAGE_DEFS 밖이라 ProgressBadge 값을 따른다.
+ */
 .sub-node--none,
 .sub-node--draft {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    color: #334155;
-}
-
-.sub-node--none::before,
-.sub-node--draft::before {
-    background: #94a3b8;
+    --stage-rgb: 148, 163, 184;
 }
 
 .sub-node--review,
 .sub-node--in-review {
-    background: #fff7ed;
-    border-color: #fdba74;
-    color: #9a3412;
-}
-
-.sub-node--review::before,
-.sub-node--in-review::before {
-    background: #f59e0b;
+    --stage-rgb: 59, 130, 246;
 }
 
 .sub-node--public-review,
 .sub-node--public-feedback {
-    background: #eff6ff;
-    border-color: #93c5fd;
-    color: #1d4ed8;
-}
-
-.sub-node--public-review::before,
-.sub-node--public-feedback::before {
-    background: #2563eb;
+    --stage-rgb: 139, 92, 246;
 }
 
 .sub-node--final-edit {
-    background: #faf5ff;
-    border-color: #d8b4fe;
-    color: #6b21a8;
-}
-
-.sub-node--final-edit::before {
-    background: #9333ea;
+    --stage-rgb: 245, 158, 11;
 }
 
 .sub-node--published {
-    background: #f0fdf4;
-    border-color: #86efac;
-    color: #166534;
-}
-
-.sub-node--published::before {
-    background: #22c55e;
+    --stage-rgb: 16, 185, 129;
 }
 
 .sub-node--wip {
-    background: #faf5ff;
-    border-color: #d8b4fe;
-    color: #7e22ce;
-}
-
-.sub-node--wip::before {
-    background: #9333ea;
+    --stage-rgb: 123, 31, 162;
 }
 
 .sub-node--sunset {
-    background: #fef2f2;
-    border-color: #fca5a5;
-    color: #b91c1c;
-}
-
-.sub-node--sunset::before {
-    background: #ef4444;
+    --stage-rgb: 198, 40, 40;
 }
 
 .sub-node .fav-btn {
@@ -1088,8 +1118,8 @@ onBeforeUnmount(() => {
 .hierarchy-legend {
     flex-shrink: 0;
     padding: 12px 16px;
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
+    background: var(--hier-panel);
+    border: 1px solid var(--hier-border);
     border-radius: 12px;
     overflow-x: auto;
 }
@@ -1112,11 +1142,11 @@ onBeforeUnmount(() => {
 .legend-inline__title {
     font-size: 12px;
     font-weight: 700;
-    color: #475569;
+    color: var(--hier-text-soft);
 }
 
 .legend-inline__divider {
-    color: #94a3b8;
+    color: var(--hier-border);
     font-size: 12px;
     font-weight: 700;
 }
@@ -1127,65 +1157,57 @@ onBeforeUnmount(() => {
     border-radius: 4px;
 }
 
+/* 범례 계층 스와치는 노드와 같은 틴트 농도를 그대로 쓴다. */
 .domain-node-color {
-    background: #00695c;
+    background: linear-gradient(rgba(var(--v-theme-primary), 0.2), rgba(var(--v-theme-primary), 0.2)), var(--hier-surface);
+    border: 1px solid rgba(var(--v-theme-primary), 0.4);
 }
 
 .mega-node-color {
-    background: #e65100;
+    background: linear-gradient(rgba(var(--v-theme-primary), 0.12), rgba(var(--v-theme-primary), 0.12)), var(--hier-surface);
+    border: 1px solid rgba(var(--v-theme-primary), 0.28);
 }
 
 .major-node-color {
-    background: #2e7d32;
+    background: linear-gradient(rgba(var(--v-theme-primary), 0.06), rgba(var(--v-theme-primary), 0.06)), var(--hier-surface);
+    border: 1px solid rgba(var(--v-theme-primary), 0.18);
 }
 
 .sub-node-color {
-    background: #ffffff;
-    border: 1px solid #d1d5db;
+    background: var(--hier-surface);
+    border: 1px solid var(--hier-border);
 }
 
+/* 상태 범례는 서브 노드의 좌측 레일과 같은 색을 쓴다 (색 정의는 --stage-rgb 한 곳). */
 .legend-pill {
-    width: 18px;
-    height: 18px;
+    --stage-rgb: 148, 163, 184;
+    width: 14px;
+    height: 14px;
     border-radius: 999px;
-    border: 1px solid transparent;
+    background: rgb(var(--stage-rgb));
 }
 
 .legend-pill--draft {
-    background: #f8fafc;
-    border-color: #cbd5e1;
+    --stage-rgb: 148, 163, 184;
 }
 
 .legend-pill--review {
-    background: #fff7ed;
-    border-color: #fdba74;
+    --stage-rgb: 59, 130, 246;
 }
 
 .legend-pill--public-review,
 .legend-pill--public-feedback {
-    background: #eff6ff;
-    border-color: #93c5fd;
+    --stage-rgb: 139, 92, 246;
 }
 
 .legend-pill--final-edit {
-    background: #faf5ff;
-    border-color: #d8b4fe;
+    --stage-rgb: 245, 158, 11;
 }
 
 .legend-pill--published {
-    background: #f0fdf4;
-    border-color: #86efac;
+    --stage-rgb: 16, 185, 129;
 }
 
-.legend-pill--wip {
-    background: #faf5ff;
-    border-color: #d8b4fe;
-}
-
-.legend-pill--sunset {
-    background: #fef2f2;
-    border-color: #fca5a5;
-}
 
 @media (max-width: 960px) {
     .hierarchy-view-container {

@@ -21,7 +21,7 @@ export type Products = {
     rank?: number;
 };
 
-// checkout-cart billing address
+// checkout-cart shipping address
 export type Address = {
     id?: string | any | Date;
     name: string;

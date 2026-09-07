@@ -1,3 +1,5 @@
+import type { RouteRecordRaw } from 'vue-router';
+
 const isGsMode = (window as any)._env_?.VITE_GS_MODE === 'true' || import.meta.env.VITE_GS_MODE === 'true';
 
 const gsExcludedRoutes = [
@@ -15,16 +17,12 @@ const gsExcludedRoutes = [
     'Chats',
     'Proposals',
     'Calendar',
-    'Usage',
     'Agent Chat',
-    'Pricing',
-    'Payment Success',
-    'Payment Fail',
     'BSCard',
     'Schedule'
 ];
 
-const allRoutes = [
+const allRoutes: RouteRecordRaw[] = [
     {
         name: 'Todolist',
         path: '/todolist',
@@ -94,7 +92,21 @@ const allRoutes = [
     {
         name: 'organization',
         path: '/organization',
-        component: () => import('@/components/OrganizationChartChat.vue')
+        // 개편된 조직도는 PAL 모드 전용. 비 PAL 모드는 기존 화면을 그대로 사용한다.
+        component: () =>
+            window.$pal ? import('@/views/organization/OrganizationChartView.vue') : import('@/components/OrganizationChartChat.vue')
+    },
+    {
+        name: 'organization-before',
+        path: '/organization-before',
+        // 개편 전 조직도 화면(읽기 전용). 사이드바 메뉴에는 노출하지 않고 URL 직접 접근만 지원한다.
+        // PAL 모드 전용이며 비 PAL 모드는 기존 /organization 으로 보낸다.
+        component: () =>
+            window.$pal ? import('@/views/organization/OrganizationChartBeforeView.vue') : import('@/components/OrganizationChartChat.vue'),
+        beforeEnter: (to: any, from: any, next: any) => {
+            if (window.$pal) next();
+            else next('/organization');
+        }
     },
     {
         name: 'definitions-with-tree',
@@ -233,36 +245,9 @@ const allRoutes = [
         component: () => import('@/components/scheduler/ScheduleList.vue')
     },
     {
-        name: 'Usage',
-        path: '/usage',
-        component: () => import('@/components/ui/usage-billing/Usage.vue')
-    },
-
-    {
         name: 'Agent Chat',
         path: '/agent-chat/:id',
         component: () => import('@/components/AgentChat.vue')
-    },
-
-    // {
-    //     name: 'Plans',
-    //     path: '/plans',
-    //     component: () => import('@/components/ui/payment/Plans.vue')
-    // },
-    {
-        name: 'Pricing',
-        path: '/pricing',
-        component: () => import('@/components/ui/payment/Credit.vue')
-    },
-    {
-        name: 'Payment Success',
-        path: '/request-success',
-        component: () => import('@/components/ui/payment/RequestSuccess.vue')
-    },
-    {
-        name: 'Payment Fail',
-        path: '/request-fail',
-        component: () => import('@/components/ui/payment/RequestFailure.vue')
     },
 
     // {
@@ -466,6 +451,50 @@ const allRoutes = [
                   component: () => import('@/views/process-hierarchy/ProcessHierarchy.vue')
               },
               {
+                  name: 'Analysis Dashboard',
+                  path: '/analysis-dashboard',
+                  component: () => import('@/views/analytics/AnalysisDashboard.vue')
+              },
+              {
+                  name: 'Ontology Explorer',
+                  path: '/ontology-explorer',
+                  component: () => import('@/views/ontology-explorer/OntologyExplorer.vue')
+              },
+              {
+                  name: 'Ontology Explorer New',
+                  path: '/ontology-explorer-new',
+                  component: () => import('@/views/ontology-explorer-new/OntologyExplorerNew.vue')
+              },
+              {
+                  name: 'SystemManagement',
+                  path: '/systems',
+                  component: () => import('@/views/system-management/SystemManagement.vue')
+              },
+              {
+                  path: '/system',
+                  redirect: '/systems'
+              },
+              {
+                  name: 'ExternalApiHealth',
+                  path: '/external-api-health',
+                  component: () => import('@/views/system-management/ExternalApiHealth.vue')
+              },
+              {
+                  name: 'Policy Document Manager',
+                  path: '/policy-document',
+                  component: () => import('@/views/policy-document/PolicyDocumentManager.vue')
+              },
+              {
+                  name: 'Process Module Management',
+                  path: '/call-activity-management',
+                  component: () => import('@/views/admin/tabs/CallActivityManagement.vue')
+              },
+              {
+                  name: 'WorkAssignment',
+                  path: '/work-assignment',
+                  component: () => import('@/views/work-assignment/WorkAssignment.vue')
+              },
+              {
                   name: 'Admin Console',
                   path: '/admin-console',
                   component: () => import('@/views/admin/AdminConsoleLayout.vue'),
@@ -481,12 +510,84 @@ const allRoutes = [
                           }
                       },
                       {
+                          name: 'Admin Data Freeze',
+                          path: 'data-freeze',
+                          component: () => import('@/views/admin/tabs/DataFreezeManager.vue'),
+                          meta: {
+                              adminTitle: 'adminConsole.tabFreeze',
+                              adminDescription: 'adminConsole.description'
+                          }
+                      },
+                      {
                           name: 'Admin Recycle Bin',
                           path: 'recycle-bin',
                           component: () => import('@/views/admin/tabs/RecycleBin.vue'),
                           meta: {
                               adminTitle: 'adminConsole.tabRecycle',
                               adminDescription: 'adminConsole.description'
+                          }
+                      },
+                      {
+                          name: 'Admin System Operations',
+                          path: 'system-operations',
+                          component: () => import('@/views/admin/tabs/SystemOperations.vue'),
+                          meta: {
+                              adminTitle: 'adminConsole.tabSysOps',
+                              adminDescription: 'adminConsole.description'
+                          }
+                      },
+                      {
+                          name: 'Admin KPI Targets',
+                          path: 'kpi-targets',
+                          component: () => import('@/views/admin/tabs/KpiIndicatorManager.vue'),
+                          meta: {
+                              adminTitle: 'KPI 목표',
+                              adminDescription: '지표 기반 KPI 성과지표 목표 관리'
+                          }
+                      },
+                      {
+                          name: 'Admin Usage Adoption',
+                          path: 'usage-adoption',
+                          component: () => import('@/views/admin/tabs/UsageAdoptionDashboard.vue'),
+                          meta: {
+                              adminTitle: 'adminConsole.tabUsageAdoption',
+                              adminDescription: 'usageAdoption.subtitle'
+                          }
+                      },
+                      {
+                          name: 'Admin Audit Trail',
+                          path: 'audit-trail',
+                          component: () => import('@/views/admin/tabs/AuditTrail.vue'),
+                          meta: {
+                              adminTitle: 'adminConsole.tabAudit',
+                              adminDescription: 'adminConsole.description'
+                          }
+                      },
+                      {
+                          name: 'Admin Exec Instances',
+                          path: 'exec-instances',
+                          component: () => import('@/views/admin/tabs/ExecInstanceAdmin.vue'),
+                          meta: {
+                              adminTitle: '실행 인스턴스 관리',
+                              adminDescription: '테넌트 전체 프로세스 인스턴스 조회'
+                          }
+                      },
+                      {
+                          name: 'Admin Governance Studio',
+                          path: 'governance-studio',
+                          component: () => import('@/views/governance-studio/DataGovernanceStudio.vue'),
+                          meta: {
+                              adminTitle: 'adminConsole.tabGovernance',
+                              adminDescription: 'adminConsole.description'
+                          }
+                      },
+                      {
+                          name: 'Admin PI Flag Board',
+                          path: 'pi-flags',
+                          component: () => import('@/views/admin/tabs/PiFlagPage.vue'),
+                          meta: {
+                              adminTitle: 'PI Flag',
+                              adminDescription: 'PI Flag 모아보기 / 구분값 관리'
                           }
                       },
                       {
@@ -547,6 +648,20 @@ const allRoutes = [
         path: '/review-board',
         component: () => import('@/views/review-board/ProcessReviewBoard.vue')
     },
+    ...(window.$pal
+        ? [
+              {
+                  name: 'Restructure Approval Board',
+                  path: '/review-board/restructure',
+                  component: () => import('@/views/review-board/RestructureApprovalBoard.vue')
+              },
+              {
+                  name: 'Review Board Submission Debug',
+                  path: '/review-board-debug',
+                  component: () => import('@/views/review-board/ReviewBoardSubmissionDebug.vue')
+              }
+          ]
+        : []),
     {
         name: 'Review Detail',
         path: '/review-board/:reviewId',
@@ -556,6 +671,11 @@ const allRoutes = [
         name: 'My Inbox',
         path: '/my-inbox',
         component: () => import('@/views/review-board/MyInbox.vue')
+    },
+    {
+        name: 'Merge Request Board',
+        path: '/merge-requests',
+        component: () => import('@/views/review-board/MergeRequestBoard.vue')
     }
 ];
 
@@ -566,7 +686,7 @@ const MainRoutes = {
     },
     redirect: '/main',
     component: () => import('@/layouts/full/FullLayout.vue'),
-    children: isGsMode ? allRoutes.filter((route) => !gsExcludedRoutes.includes(route.name)) : allRoutes
+    children: isGsMode ? allRoutes.filter((route) => !gsExcludedRoutes.includes(route.name as string)) : allRoutes
 };
 
 export default MainRoutes;

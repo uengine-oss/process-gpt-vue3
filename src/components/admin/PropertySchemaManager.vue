@@ -397,8 +397,7 @@ import {
     useTaskCatalogStore,
     AVAILABLE_TASK_TYPES,
     PROPERTY_TYPES,
-    APPLIES_TO_OPTIONS,
-    BUILT_IN_PROPERTY_KEYS
+    APPLIES_TO_OPTIONS
 } from '@/stores/taskCatalog';
 
 export default defineComponent({
@@ -453,7 +452,6 @@ export default defineComponent({
 
         const filteredSchemas = computed(() => {
             let schemas = store.propertySchemas || [];
-            schemas = schemas.filter((s) => !BUILT_IN_PROPERTY_KEYS.includes(s.property_key));
             if (selectedTarget.value && selectedTarget.value !== '__all__') {
                 schemas = schemas.filter((s) => {
                     const at = s.applies_to || 'both';

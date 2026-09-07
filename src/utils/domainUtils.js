@@ -33,10 +33,10 @@ export function getBaseDomain() {
 /**
  * 테넌트 도메인 URL을 생성합니다.
  * @param {string} tenantId - 테넌트 ID
- * @param {string} path - 경로 (기본값: '/definition-map')
+ * @param {string} path - 경로 (기본값: '/process-architecture')
  * @returns {string} 완전한 테넌트 URL
  */
-export function getTenantUrl(tenantId, path = '/definition-map') {
+export function getTenantUrl(tenantId, path = '/process-architecture') {
     const baseDomain = getBaseDomain();
     const protocol = window.location.protocol;
     const port = window.location.port;

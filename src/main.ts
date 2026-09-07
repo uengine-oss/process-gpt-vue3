@@ -1,5 +1,5 @@
 // 개발 환경에서 콘솔 워닝 메시지 비활성화 (크롬 개발자 도구 렉 방지)
-window.console.warn = () => {};
+window.console.warn = () => { };
 // 필요시 다른 콘솔도 비활성화
 // window.console.log = () => {};
 // window.console.error = () => {};
@@ -53,6 +53,7 @@ import vuetify from './plugins/vuetify';
 import hammerDirective from '@/components/directive/hammerDirective';
 import i18nDirective from './plugins/i18nDirective';
 import { router } from './router';
+import { startUsageTracking } from '@/services/usageAnalytics';
 import store from './store';
 import axios from 'axios';
 import Maska from 'maska';
@@ -411,6 +412,10 @@ async function initializeApp() {
     });
 
     app.use(router);
+    // 사용/도입 현황 분석(app_usage_events) — pal 모드 전용 수집
+    if (window.$pal) {
+        startUsageTracking(router);
+    }
     // app.component('EasyDataTable', Vue3EasyDataTable);
     app.component('perfect-scrollbar', PerfectScrollbar);
     app.use(createPinia());

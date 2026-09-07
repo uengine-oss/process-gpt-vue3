@@ -741,7 +741,7 @@ $$) AS (process agtype, kpi agtype, quant_curr agtype, quant_target agtype, avg_
 | strategy-service surveys | `SURVEYED` 엣지 (응답 원문·측정 시계열은 미적재) |
 | `configuration('strategy')` 레거시 BSC 카드 | 미적재 — `/import-bscard`로 strategy-service 이관 후 소멸 예정 |
 | `standard_terminology` | `Terminology`(선택) |
-| **미적재(관계형/벡터 유지)** | `chats` 메시지, `events` 스트림, `documents`/`chat_vector_memory` 임베딩, `notifications`, 결제(`payment/usage/credit*`), `kpi_targets`/뷰(집계), `calendar`, `user_devices`, `lock`, `export_log` |
+| **미적재(관계형/벡터 유지)** | `chats` 메시지, `events` 스트림, `documents`/`chat_vector_memory` 임베딩, `notifications`, `kpi_targets`/뷰(집계), `calendar`, `user_devices`, `lock`, `export_log` |
 
 ## 부록 B. 미해결 질문 (구현 전 확인)
 

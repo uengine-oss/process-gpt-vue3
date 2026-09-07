@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="included" style="margin-bottom: 22px">
+        <div v-if="isBuiltinPropVisible('definition_id')" class="included" style="margin-bottom: 22px">
             <div style="margin-bottom: 8px">
                 {{ $t('CallActivityPanel.selectDefinition') }}
                 <v-btn @click="moveDefinition()" text rounded color="secondary" variant="flat" density="compact" class="ml-2">
@@ -15,7 +15,7 @@
             ></ProcessDefinitionDisplay>
         </div>
         <div :key="definitionCnt" v-if="copyUengineProperties.definitionId">
-            <div>
+            <div v-if="isBuiltinPropVisible('for_each_variable')">
                 <v-row class="ma-0 pa-0">
                     <div class="mb-1 mt-4">{{ $t('SubProcessPanel.forEachVariable') }}</div>
                 </v-row>
@@ -38,7 +38,7 @@
                     />
                 </v-row>
             </div>
-            <div>
+            <div v-if="isBuiltinPropVisible('variable_bindings')">
                 <v-row class="ma-0 pa-0">
                     <div>{{ $t('CallActivityPanel.parameterContext') }}</div>
                     <v-spacer></v-spacer>
@@ -52,7 +52,7 @@
                     ></bpmn-parameter-contexts>
                 </v-row>
             </div>
-            <div>
+            <div v-if="isBuiltinPropVisible('role_bindings')">
                 <v-row class="ma-0 pa-0">
                     <div>{{ $t('CallActivityPanel.roleMapping') }}</div>
                 </v-row>
@@ -69,7 +69,7 @@
         <div v-else>
             <v-row> {{ $t('CallActivityPanel.noDefinitionSelected') }} </v-row>
         </div>
-        <div class="mt-3">
+        <div v-if="isBuiltinPropVisible('custom_properties')" class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
@@ -78,7 +78,7 @@
         </div>
 
         <!-- Task Color Picker -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('task_color')" class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <v-btn
@@ -141,9 +141,11 @@ import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'call-activity-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         ProcessDefinitionDisplay,
         KeyValueField

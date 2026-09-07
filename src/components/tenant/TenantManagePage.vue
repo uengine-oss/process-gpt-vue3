@@ -480,7 +480,7 @@ export default {
                 }
 
                 // 일반 웹 브라우저인 경우 기존 로직 실행
-                location.href = getTenantUrl(tenantId, '/definition-map');
+                location.href = getTenantUrl(tenantId, '/process-architecture');
             } catch (error) {
                 console.error('테넌트 선택 중 오류가 발생했습니다:', error);
                 this.isNavigating = false;

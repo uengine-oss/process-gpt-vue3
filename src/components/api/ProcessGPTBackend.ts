@@ -1,4 +1,6 @@
 import axios from '@/utils/axios';
+import deepagentsApi from '@/utils/deepagentsApi';
+import { recordUsageEvent } from '@/services/usageAnalytics';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 
@@ -6,6 +8,22 @@ const storage = StorageBaseFactory.getStorage();
 // (_fetchDoneWorkitemsForFieldLookup 주석 참고 — 폼 1개를 열 때 필드 수만큼 반복되던 동일 쿼리를 1회로 줄인다.)
 const DONE_WORKITEM_LOOKUP_TTL_MS = 2000;
 const DONE_WORKITEM_LOOKUP_CACHE = new Map<string, { at: number; promise: Promise<any[]> }>();
+
+/**
+ * deepagentsApi 는 Error 가 아니라 **응답 본문**(객체 또는 문자열)으로 reject 한다.
+ * 그대로 화면에 쓰면 "[object Object]" 만 남아 사용자도 개발자도 원인을 알 수 없다.
+ */
+function describeApiError(error: any): string {
+    if (!error) return 'unknown error';
+    if (typeof error === 'string') return error;
+    return (
+        error.error ||
+        error.detail ||
+        error.message ||
+        error.response?.data?.error ||
+        JSON.stringify(error).slice(0, 300)
+    );
+}
 
 /**
  * 목록/드롭다운 화면에서 proc_def 를 읽을 때 쓰는 컬럼 목록.
@@ -18,6 +36,18 @@ const DONE_WORKITEM_LOOKUP_CACHE = new Map<string, { at: number; promise: Promis
  * 실제 존재하는 컬럼만 나열해야 한다 — 없는 컬럼을 넣으면 PostgREST 가 42703 으로 실패한다.
  */
 export const PROC_DEF_LIST_COLUMNS = 'id, name, type, owner, isdeleted, is_draft, tenant_id, prod_version';
+
+/**
+ * 결정론적 코드 편집 화면이 읽는 mcp_python_code 컬럼.
+ *
+ * code/compensation 은 본문이라 크지만 편집 화면이 곧바로 쓰므로 함께 가져온다.
+ * parameters 는 코드가 `${이름}` 으로 받는 입력의 정의라, 코드만 고치고 이쪽을 두면 실행이
+ * KeyError 로 죽는다 — 함께 편집해야 하므로 같이 읽는다.
+ * work_history / output_template 은 생성 단계의 산물이고 화면에서 손대지 않으므로 뺀다.
+ * 이 테이블에는 updated_at 이 없다 — 쓰기 payload 에 넣으면 PostgREST 가 PGRST204 로 거절한다.
+ */
+const MCP_PYTHON_CODE_COLUMNS =
+    'id, proc_def_id, activity_id, code, compensation, parameters, deactivated_at, deactivated_reason, created_at';
 import type { Backend } from './Backend';
 import defaultProcessesData from './defaultProcesses.json';
 import { useDefaultSetting } from '@/stores/defaultSetting';
@@ -29,6 +59,7 @@ import { getTenantId, setCachedJwtTenantId } from '@/utils/tenant';
 import { EventBus } from '@/utils/eventBus';
 
 import { formatDistanceToNowStrict } from 'date-fns';
+import { formatRequesterName } from '@/composables/usePrUtils';
 
 enum ErrorCode {
     TableNotFound = '42P01'
@@ -90,13 +121,19 @@ function procDefListColumns(): string {
 }
 
 /** 없는 컬럼(42703) 때문에 실패한 것이면 선택 컬럼을 빼고 한 번만 재시도한다. */
-async function listProcDefWithFallback(options: any): Promise<any[]> {
+export async function listProcDefWithFallback(options: any): Promise<any[]> {
     try {
         const rows = await storage.list('proc_def', { ...options, key: procDefListColumns() });
         if (_procDefOptionalOk === null) _procDefOptionalOk = true;
         return rows;
     } catch (e: any) {
-        const msg = String(e?.message || '');
+        // storage.list 는 원본 PostgREST 오류를 StorageBaseError 의 cause 로 감싼다
+        // (내부 throw 를 바깥 catch 가 한 번 더 감싸 깊이가 2가 될 수 있다) —
+        // 42703 판별은 cause 체인을 끝까지 봐야 한다.
+        let msg = '';
+        for (let err: any = e, depth = 0; err && depth < 4; err = err.cause, depth++) {
+            msg += ` ${err.message || ''} ${err.code || ''}`;
+        }
         if (_procDefOptionalOk !== false && /does not exist|42703/.test(msg)) {
             console.warn('[proc_def] 선택 컬럼이 없는 스키마 — 기본 컬럼으로 재시도합니다:', msg);
             _procDefOptionalOk = false;
@@ -532,6 +569,7 @@ class ProcessGPTBackend implements Backend {
                     id: defId
                 }
             }));
+            const isNewProcDef = !procDef;
 
             if (procDef) {
                 procDef.bpmn = xml;
@@ -567,6 +605,16 @@ class ProcessGPTBackend implements Backend {
                 }
             }
             await storage.putObject('proc_def', procDef, { onConflict: 'id,tenant_id' });
+
+            void recordUsageEvent(isNewProcDef ? 'model_create' : 'model_edit', {
+                procDefId: defId,
+                metadata: {
+                    source: 'ProcessGPTBackend.putRawDefinition',
+                    name: options?.name || procDef?.name || defId,
+                    version: options?.version || null,
+                    versionTag: options?.version_tag || null
+                }
+            });
 
             if (options.version) {
                 let saveVersion = options.version;
@@ -3228,6 +3276,11 @@ class ProcessGPTBackend implements Backend {
                     filter[key] = options[key];
                 });
             }
+            // 관리자 전체 조회: 참여자 필터 제거 (테넌트 내 모든 인스턴스)
+            if ((filter as any).allParticipants) {
+                delete (filter as any).allParticipants;
+                delete (filter as any).matchArray;
+            }
             return await me.getInstanceList(filter);
         } catch (error) {
             //@ts-ignore
@@ -3550,6 +3603,50 @@ class ProcessGPTBackend implements Backend {
     async getSystem(systemId: string) {
         try {
             return {};
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // 외부 API 헬스 상태 목록 조회 (테넌트별 우선 → default → 전체 순으로 폴백)
+    async getExternalApiHealthList() {
+        try {
+            const tenantId = (window as any).$tenantName || 'default';
+            const allRows = await storage.list('external_api_health');
+            if (!Array.isArray(allRows)) {
+                return [];
+            }
+
+            const tenantRows = allRows.filter((row: any) => row.tenant_id === tenantId);
+            if (tenantRows.length > 0) {
+                return tenantRows;
+            }
+
+            const defaultRows = allRows.filter((row: any) => row.tenant_id === 'default');
+            if (defaultRows.length > 0) {
+                return defaultRows;
+            }
+
+            return allRows;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // 외부 API 수동 동기화 요청 (해당 id 행의 last_manual_sync_requested_at 갱신)
+    async requestExternalApiManualSync(id: string) {
+        try {
+            return await storage.putObject(
+                'external_api_health',
+                {
+                    id,
+                    last_manual_sync_requested_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                },
+                { onConflict: 'id' }
+            );
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -4539,14 +4636,17 @@ class ProcessGPTBackend implements Backend {
                 // email/username을 넣지 않으면 upsert 시 새 행은 null로 들어가 유령 레코드가 됨 (setTenant가 원인)
                 const putObj: any = {
                     id: user_id,
-                    role: isOwner ? 'superAdmin' : 'user',
                     tenant_id: tenantId,
                     email: user.email ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('email') : null) ?? undefined,
                     username: user.name ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null) ?? undefined
                 };
                 if (isOwner) {
+                    putObj.role = 'superAdmin';
                     putObj.is_admin = true;
                 }
+                // 일반 구성원의 role/is_admin은 가입 trigger가 사전등록 정보를 기준으로
+                // 이미 설정한다. 여기서 'user'로 upsert하면 admin/reviewer 등의 예약 권한을
+                // 로그인 직후 덮어쓰므로, tenant 소유자가 아닌 경우 권한 컬럼을 보내지 않는다.
                 await storage.putObject('users', putObj);
                 return await storage.isConnection();
             } else {
@@ -5892,7 +5992,7 @@ class ProcessGPTBackend implements Backend {
     /** 스킬 파일을 zip(ArrayBuffer)으로 받아온다(백엔드 /skills/{name}/export). */
     async fetchSkillExportZip(skillName: string): Promise<ArrayBuffer | null> {
         try {
-            const resp = await axios.get(`/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/export`, {
+            const resp = await deepagentsApi.get(`/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/export`, {
                 params: { tenant_id: window.$tenantName },
                 responseType: 'arraybuffer',
                 // deepagents 미기동/지연 시 export 전체가 멈추지 않도록 타임아웃.
@@ -6817,42 +6917,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getUsage(options?: any) {
-        try {
-            if (!options) options = {};
-            if (!options.match) options.match = {};
-            if (!options.match['tenant_id']) options.match['tenant_id'] = window.$tenantName;
-
-            const lists = await storage.list('usage', options);
-            if (lists && lists.length > 0) {
-                return lists.map((item: any) => {
-                    return this.convertKeysToCamelCase(item);
-                });
-            }
-            return [];
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-
-    async getUsageWithService(options?: any) {
-        try {
-            if (!options) options = {};
-            if (!options.startAt)
-                options.startAt = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replace(/-/g, '-');
-            if (!options.endAt) options.endAt = `${new Date().toISOString().slice(0, 10).replace(/-/g, '-')} 23:59:59`;
-
-            return await storage.callProcedure('get_usage_with_service', {
-                p_tenant_id: window.$tenantName,
-                p_start_time: options.startAt,
-                p_end_time: options.endAt
-            });
-        } catch (error) {
-            throw new Error(error.message);
-        }
-    }
-
     async watchOff(ref: any) {
         try {
             return await storage._watch_off(ref);
@@ -7092,145 +7156,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getCredits(options?: any) {
-        try {
-            if (!options) options = {};
-            if (!options.match) options.match = {};
-            if (!options.match['tenant_id']) options.match['tenant_id'] = window.$tenantName;
-
-            const lists = await storage.list('credit', options);
-            if (lists && lists.length > 0) {
-                return lists.map((item: any) => {
-                    return this.convertKeysToCamelCase(item);
-                });
-            }
-            return [];
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-
-    async getService(options?: any) {
-        try {
-            if (!options) options = {};
-            if (!options.match) options.match = {};
-            if (!options.match['tenant_id']) options.match['tenant_id'] = window.$tenantName;
-
-            const lists = await storage.list('credit', options);
-            if (lists && lists.length > 0) {
-                return lists.map((item: any) => {
-                    return this.convertKeysToCamelCase(item);
-                });
-            }
-            return [];
-        } catch (error) {
-            throw new Error(error.message);
-        }
-    }
-
-    async getCurrentServiceCatalog() {
-        try {
-            return await storage.callProcedure('get_current_service_catalog', {
-                p_tenant_id: window.$tenantName
-            });
-        } catch (error) {
-            throw new Error(error.message);
-        }
-    }
-
-    async getCreditBalance() {
-        try {
-            return await storage.callProcedure('get_credit_balance', {
-                p_tenant_id: window.$tenantName
-            });
-        } catch (error) {
-            throw new Error(error.message);
-        }
-    }
-
-    async getValidCreditPurchase(options?: any) {
-        try {
-            if (!options.startAt) options.startAt = new Date().toISOString().slice(0, 10).replace(/-/g, '-');
-
-            return await storage.callProcedure('get_valid_credit_purchases', {
-                p_tenant_id: window.$tenantName,
-                p_date: options.startAt
-            });
-        } catch (error) {
-            throw new Error(error.message);
-        }
-    }
-
-    async watchCreditUsage(callback: (payload: any) => void) {
-        try {
-            return await storage._watch(
-                {
-                    channel: 'credit_usage',
-                    table: 'credit_usage',
-                    filter: `tenant_id=eq.(${window.$tenantName})`
-                },
-                (payload) => {
-                    callback(payload);
-                }
-            );
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-
-    async getPlans(options?: any) {
-        try {
-            if (!options) options = {};
-
-            const lists = await storage.list('plan', options);
-            if (lists && lists.length > 0) {
-                return lists.map((item: any) => {
-                    return this.convertKeysToCamelCase(item);
-                });
-            }
-            return [];
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-
-    async getCurrentPlan() {
-        const me = this;
-        try {
-            // if(!options) options = {}
-            // window.$tenantName;
-
-            return {
-                id: '1',
-                tenant_id: window.$tenantName,
-                plan_id: '7fb2d603-59ab-4365-948b-68c62d6622a5',
-                user_id: 'sooheon45@uengine.org',
-                start_at: '',
-                end_at: '',
-                created_at: null,
-                plan: {
-                    type: 'free',
-                    status: 'active'
-                }
-            };
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-
-    async putRequestPayment(item: any) {
-        try {
-            return await storage.putObject('payment', item);
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-
     convertKeysToCamelCase(obj: any): any {
         if (typeof obj !== 'object' || obj === null) {
             return obj;
@@ -7255,6 +7180,112 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+
+    /**
+     * 결정론적 코드 / 보상(undo) 코드 목록. 프로세스명·액티비티명까지 붙여 돌려준다.
+     *
+     * 같은 (proc_def_id, activity_id) 로 비활성 이력 행이 여러 개 쌓인다. 실행 런타임
+     * (deepagents `try_deterministic_execution`, completion `fetch_mcp_python_code`) 과 같은 기준으로
+     * **가장 최근 행 한 건**만 남긴다. 양쪽이 서로 다른 행을 보면 화면에서 고친 코드가 실행되지 않는다.
+     */
+    async getDeterministicCodeList() {
+        const supabase = window.$supabase;
+        const { data, error } = await supabase
+            .from('mcp_python_code')
+            .select(MCP_PYTHON_CODE_COLUMNS)
+            .eq('tenant_id', window.$tenantName)
+            .order('created_at', { ascending: false });
+        if (error) throw new Error(error.message);
+
+        const latestByKey = new Map<string, any>();
+        (data || []).forEach((row: any) => {
+            const key = `${row.proc_def_id}::${row.activity_id}`;
+            if (!latestByKey.has(key)) latestByKey.set(key, row);
+        });
+        const rows = [...latestByKey.values()];
+
+        const { processNames, activityNames, activityList } = await this.getProcessActivityNames(rows.map((row) => row.proc_def_id));
+        return rows.map((row) => ({
+            id: row.id,
+            procDefId: row.proc_def_id,
+            procDefName: processNames[row.proc_def_id] || row.proc_def_id,
+            activityId: row.activity_id,
+            activityName: activityNames[`${row.proc_def_id}::${row.activity_id}`] || row.activity_id,
+            code: row.code || '',
+            compensation: row.compensation || '',
+            parameters: row.parameters || null,
+            deactivatedAt: row.deactivated_at,
+            deactivatedReason: row.deactivated_reason,
+            createdAt: row.created_at,
+            // 같은 프로세스의 다른 액티비티들. 자기 자신은 앞 단계가 될 수 없어 뺀다.
+            activityOptions: (activityList[row.proc_def_id] || []).filter((activity) => activity.id !== row.activity_id)
+        }));
+    }
+
+    /**
+     * 결정론적 코드 / 보상 코드 / 파라미터 스펙 수정.
+     *
+     * 빈 문자열은 null 로 넣는다 — 실행 런타임이 `code` 의 truthy 여부로 활성 판정을 하므로,
+     * 빈 문자열을 남기면 "코드는 있는데 아무 일도 하지 않는" 행이 되어 조용히 폴백이 막힌다.
+     */
+    async updateDeterministicCode(id: string, values: { code?: string; compensation?: string; parameters?: any }) {
+        const supabase = window.$supabase;
+        const payload: Record<string, any> = {};
+        if (values.code !== undefined) payload.code = values.code.trim() ? values.code : null;
+        if (values.compensation !== undefined) payload.compensation = values.compensation.trim() ? values.compensation : null;
+        // parameters 는 jsonb 다. 호출부가 파싱을 마친 객체를 넘긴다 — 문자열을 그대로 넣으면
+        // jsonb 문자열 스칼라로 저장되어, 런타임의 `specification.get("parameters")` 가 빈 목록이 된다.
+        if (values.parameters !== undefined) payload.parameters = values.parameters ?? null;
+
+        const { error } = await supabase.from('mcp_python_code').update(payload).eq('id', id).eq('tenant_id', window.$tenantName);
+        if (error) throw new Error(error.message);
+        return { ok: true, ...payload };
+    }
+
+    /** proc_def 에서 프로세스명과 액티비티명을 모아 온다. 조회가 실패해도 호출부는 id 로 폴백한다. */
+    private async getProcessActivityNames(procDefIds: string[]) {
+        const processNames: Record<string, string> = {};
+        const activityNames: Record<string, string> = {};
+        // 프로세스별 액티비티 목록. 파라미터 편집에서 "앞 액티비티"를 고르는 후보가 된다.
+        const activityList: Record<string, { id: string; name: string }[]> = {};
+        const uniqueIds = [...new Set(procDefIds.filter(Boolean))];
+        if (uniqueIds.length === 0) return { processNames, activityNames, activityList };
+
+        try {
+            const supabase = window.$supabase;
+            const { data, error } = await supabase
+                .from('proc_def')
+                .select('id, name, definition')
+                .eq('tenant_id', window.$tenantName)
+                .in('id', uniqueIds);
+            if (error) throw new Error(error.message);
+
+            (data || []).forEach((def: any) => {
+                processNames[def.id] = def.name || def.id;
+                // 정의 하나가 깨져도 나머지 이름까지 잃지 않도록 행 단위로 막는다.
+                try {
+                    const definition = typeof def.definition === 'string' ? JSON.parse(def.definition) : def.definition;
+                    if (!definition) return;
+                    // 서브프로세스 자체도 activity_id 로 지정될 수 있어 함께 담는다.
+                    const activities = [
+                        ...this.getAllActivitiesFromDefinition(definition),
+                        ...(Array.isArray(definition.subProcesses) ? definition.subProcesses : [])
+                    ];
+                    activityList[def.id] = [];
+                    activities.forEach((activity: any) => {
+                        if (!activity?.id) return;
+                        activityNames[`${def.id}::${activity.id}`] = activity.name || activity.id;
+                        activityList[def.id].push({ id: activity.id, name: activity.name || activity.id });
+                    });
+                } catch (e) {
+                    console.warn('[ProcessGPTBackend] 액티비티명 추출 실패(id 로 표시):', def.id, e);
+                }
+            });
+        } catch (e) {
+            console.warn('[ProcessGPTBackend] 프로세스 정의 조회 실패(id 로 표시):', e);
+        }
+        return { processNames, activityNames, activityList };
     }
 
     async setSchedule(json: any) {
@@ -8517,12 +8548,15 @@ class ProcessGPTBackend implements Backend {
                 const form = new FormData();
                 form.append('file', options.file, options.file.name);
                 form.append('tenant_id', window.$tenantName);
+                // overwrite: 이미 등록된 스킬이면 내용을 교체한다(사용자가 저장 버튼을 눌러 수정을
+                // 반영하는 경우). 없으면 서버가 409 로 거부해 수정이 조용히 유실된다.
+                if (options.overwrite) form.append('overwrite', 'true');
 
-                response = await axios.post('/process-gpt-deepagents/skills/upload', form, {
+                response = await deepagentsApi.post('/process-gpt-deepagents/skills/upload', form, {
                     headers: header
                 });
             } else if (options.type == 'url') {
-                response = await axios.post(
+                response = await deepagentsApi.post(
                     '/process-gpt-deepagents/skills/upload-from-git',
                     {
                         repo_url: options.url,
@@ -8574,7 +8608,7 @@ class ProcessGPTBackend implements Backend {
     async deleteSkills(options: any) {
         try {
             const skillName = options.skillName;
-            const response = await axios.delete(`/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}`, {
+            const response = await deepagentsApi.delete(`/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}`, {
                 data: { tenant_id: window.$tenantName, mode: 'local' }
             });
             if (response.status === 200 && response.data && response.data.skill_name) {
@@ -8600,7 +8634,7 @@ class ProcessGPTBackend implements Backend {
 
     async getTenantSkills(tenantId: string) {
         try {
-            const response = await axios.get(`/process-gpt-deepagents/skills?tenant_id=${encodeURIComponent(tenantId)}`);
+            const response = await deepagentsApi.get(`/process-gpt-deepagents/skills?tenant_id=${encodeURIComponent(tenantId)}`);
             if (response.status === 200) {
                 return response.data;
             } else {
@@ -8614,7 +8648,7 @@ class ProcessGPTBackend implements Backend {
 
     async getTenantBuiltinSkills() {
         try {
-            const response = await axios.get('/process-gpt-deepagents/skills-builtin');
+            const response = await deepagentsApi.get('/process-gpt-deepagents/skills-builtin');
             if (response.status === 200) {
                 return response.data;
             } else {
@@ -8705,7 +8739,7 @@ class ProcessGPTBackend implements Backend {
             if (tenantId) {
                 url += `?tenant_id=${encodeURIComponent(tenantId)}`;
             }
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) {
                 return response.data;
             } else {
@@ -8714,6 +8748,25 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             return false;
         }
+    }
+
+    /**
+     * Git 없이 스킬 파일 하나를 테넌트 스킬 디렉터리에 직접 저장한다.
+     * Git 공급자가 연결되지 않은 테넌트는 커밋 경로(putSkillFile)를 쓸 수 없으므로 이 경로를 쓴다.
+     * 버전·병합 관리는 제공되지 않는다(git 연결 시에만 가능).
+     */
+    async putSkillFileLocal(skillName: string, filePath: string, content: string) {
+        const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/files/${filePath
+            .split('/')
+            .map((seg) => encodeURIComponent(seg))
+            .join('/')}`;
+        const response = await deepagentsApi.put(
+            url,
+            { tenant_id: window.$tenantName, content },
+            { headers: { 'Content-Type': 'application/json' } }
+        );
+        if (response.status === 200 || response.status === 201) return response.data;
+        throw new Error(response.data?.error || 'Failed to save skill file');
     }
 
     async putSkillFile(
@@ -8738,7 +8791,7 @@ class ProcessGPTBackend implements Backend {
                 body.author_email = localStorage.getItem('email');
             }
 
-            const response = await axios.post(url, body, {
+            const response = await deepagentsApi.post(url, body, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -8763,22 +8816,27 @@ class ProcessGPTBackend implements Backend {
         return this.putSkillFile(skillName, filePath, content, commitMessage, branchName);
     }
 
-    async getSkillBranches(skillName: string): Promise<{ branches: { name: string; sha: string }[]; default_branch: string }> {
+    /**
+     * 스킬 레포의 브랜치 목록. 조회 자체가 실패하면 `error` 에 사유를 담아 돌려준다 —
+     * 실패를 빈 목록으로만 알리면 호출부가 "레포가 없다"로 오해해, 이미 있는 레포를
+     * 다시 만들라고 권하거나 병합 요청 목록을 통째로 감추게 된다.
+     */
+    async getSkillBranches(skillName: string): Promise<{ branches: { name: string; sha: string }[]; default_branch: string; error?: string }> {
         try {
             const params = new URLSearchParams();
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) {
                 return {
                     branches: response.data.branches ?? [],
                     default_branch: response.data.default_branch || 'main'
                 };
             }
-            return { branches: [], default_branch: 'main' };
-        } catch (error) {
+            return { branches: [], default_branch: 'main', error: `HTTP ${response.status}` };
+        } catch (error: any) {
             console.error('스킬 브랜치 목록 조회 실패:', error);
-            return { branches: [], default_branch: 'main' };
+            return { branches: [], default_branch: 'main', error: describeApiError(error) };
         }
     }
 
@@ -8788,7 +8846,7 @@ class ProcessGPTBackend implements Backend {
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
             if (branch) params.set('branch', branch);
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/commits?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) {
                 return response.data.commits ?? [];
             }
@@ -8806,7 +8864,7 @@ class ProcessGPTBackend implements Backend {
         if (uid) body.owner_id = uid;
         if (options?.initialContent !== undefined) body.initial_content = options.initialContent;
         if (options?.filePath !== undefined) body.file_path = options.filePath;
-        const response = await axios.post(url, body);
+        const response = await deepagentsApi.post(url, body);
         if (response.status === 200 || response.status === 201) {
             return response.data;
         }
@@ -8815,7 +8873,7 @@ class ProcessGPTBackend implements Backend {
 
     async createSkillBranch(skillName: string, branch: string, from = 'main') {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches`;
-        const response = await axios.post(url, {
+        const response = await deepagentsApi.post(url, {
             tenant_id: window.$tenantName,
             branch,
             from
@@ -8828,7 +8886,7 @@ class ProcessGPTBackend implements Backend {
 
     async createSkillPullRequest(skillName: string, title: string, description: string, head: string, base = 'main') {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests`;
-        const response = await axios.post(url, {
+        const response = await deepagentsApi.post(url, {
             tenant_id: window.$tenantName,
             title,
             description,
@@ -8846,7 +8904,7 @@ class ProcessGPTBackend implements Backend {
         if (window.$tenantName) params.set('tenant_id', window.$tenantName);
         params.set('state', state);
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests?${params}`;
-        const response = await axios.get(url);
+        const response = await deepagentsApi.get(url);
         if (response.status === 200) return response.data;
         throw new Error(response.data?.message || 'Failed to fetch pull requests');
     }
@@ -8859,7 +8917,7 @@ class ProcessGPTBackend implements Backend {
             const params = new URLSearchParams();
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests/${prNumber}/files?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) return response.data?.files ?? response.data ?? [];
             return [];
         } catch {
@@ -8869,7 +8927,7 @@ class ProcessGPTBackend implements Backend {
 
     async mergeSkillPullRequest(skillName: string, prNumber: number, message?: string) {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/pull-requests/${prNumber}/merge`;
-        const response = await axios.post(url, {
+        const response = await deepagentsApi.post(url, {
             tenant_id: window.$tenantName,
             message: message || `Merge pull request #${prNumber}`,
             auto_sync: true
@@ -8884,7 +8942,7 @@ class ProcessGPTBackend implements Backend {
             params.set('branch', branch);
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches/files?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) {
                 return response.data;
             }
@@ -8903,7 +8961,7 @@ class ProcessGPTBackend implements Backend {
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/branches/files/${encodeURIComponent(
                 filePath
             )}?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) {
                 return response.data;
             }
@@ -8921,7 +8979,7 @@ class ProcessGPTBackend implements Backend {
             const params = new URLSearchParams();
             if (window.$tenantName) params.set('tenant_id', window.$tenantName);
             const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/inheritance?${params}`;
-            const response = await axios.get(url);
+            const response = await deepagentsApi.get(url);
             if (response.status === 200) return response.data;
             return null;
         } catch {
@@ -8931,7 +8989,7 @@ class ProcessGPTBackend implements Backend {
 
     async syncSkill(skillName: string) {
         const url = `/process-gpt-deepagents/skills/${encodeURIComponent(skillName)}/sync`;
-        const response = await axios.post(url, { tenant_id: window.$tenantName });
+        const response = await deepagentsApi.post(url, { tenant_id: window.$tenantName });
         if (response.status === 200) {
             return response.data;
         }
@@ -8983,6 +9041,10 @@ class ProcessGPTBackend implements Backend {
             gitPrNumber?: number;
             gitPrUrl?: string;
             gitRepoUrl?: string;
+            // 깃에만 있던 PR 을 목록에 복구할 때, 실제 생성 시각을 그대로 남긴다.
+            // 생략하면 DB 기본값(now())이 들어가 "방금 올라온 요청"처럼 보인다.
+            createdAt?: string;
+            updatedAt?: string;
         }
     ): Promise<any> {
         const tenantId = window.$tenantName;
@@ -9001,7 +9063,9 @@ class ProcessGPTBackend implements Backend {
             requester_name: data.requesterName || null,
             git_pr_number: data.gitPrNumber ?? null,
             git_pr_url: data.gitPrUrl ?? null,
-            git_repo_url: data.gitRepoUrl ?? null
+            git_repo_url: data.gitRepoUrl ?? null,
+            ...(data.createdAt ? { created_at: data.createdAt } : {}),
+            ...(data.updatedAt ? { updated_at: data.updatedAt } : {})
         };
         await storage.putObject('resource_pull_requests', record, { onConflict: 'id' });
 
@@ -9049,6 +9113,122 @@ class ProcessGPTBackend implements Backend {
             const requesterName = requesterNames.get(requesterId);
             return requesterName ? { ...record, requester_name: requesterName } : record;
         });
+    }
+
+    /**
+     * 로그인 사용자와 관련된 병합 요청을 리소스 타입을 가리지 않고 한 번에 모은다.
+     * 리소스마다 이력 화면을 찾아다니지 않고 밀린 검토를 한 화면에서 처리하기 위한 목록이라,
+     * 목록 단계에서 이미 소유자(= 검토 담당자)·리소스 표시 이름·요청자 이름까지 채워 돌려준다.
+     * 조회는 레코드 수와 무관하게 리소스 타입별로 한 번씩만 나간다.
+     */
+    async getResourcePrInbox(userId?: string): Promise<any[]> {
+        const tenantId = window.$tenantName;
+        const rows = await storage.list('resource_pull_requests', {
+            match: { tenant_id: tenantId },
+            orderBy: 'updated_at',
+            sort: 'desc'
+        });
+        const records: any[] = Array.isArray(rows) ? rows : [];
+        if (!records.length) return [];
+
+        let currentUserId: string | null = userId || null;
+        if (!currentUserId) {
+            try {
+                const user: any = await this.getUserInfo();
+                currentUserId = user?.uid || null;
+            } catch {
+                currentUserId = null;
+            }
+        }
+
+        const skillIds = [...new Set(records.filter((r) => r.resource_type === 'skill').map((r) => r.resource_id).filter(Boolean))];
+        const defIds = [...new Set(records.filter((r) => r.resource_type !== 'skill').map((r) => r.resource_id).filter(Boolean))];
+
+        const [skillOwnerRows, defRows] = await Promise.all([
+            skillIds.length ? this.getTenantSkillOwners(tenantId).catch(() => []) : Promise.resolve([]),
+            defIds.length
+                ? storage
+                      .list('proc_def', {
+                          match: { tenant_id: tenantId },
+                          inArray: { column: 'id', values: defIds },
+                          key: 'id,name,owner'
+                      })
+                      .catch(() => [])
+                : Promise.resolve([])
+        ]);
+
+        const skillOwnerById = new Map<string, string | null>(
+            (skillOwnerRows as any[]).map((row: any) => [row.skill_name, row.owner_id ?? null])
+        );
+        const defById = new Map<string, any>((Array.isArray(defRows) ? defRows : []).map((row: any) => [row.id, row]));
+
+        const ownerIdOf = (record: any): string | null => {
+            if (record.resource_type === 'skill') return skillOwnerById.get(record.resource_id) ?? null;
+            return defById.get(record.resource_id)?.owner ?? null;
+        };
+        const requesterIdsOf = (record: any): string[] => {
+            const ids = Array.isArray(record.requester_id) ? record.requester_id : record.requester_id ? [record.requester_id] : [];
+            return ids.filter(Boolean);
+        };
+
+        // 요청자·소유자·리뷰어 이름을 한 번의 조회로 채운다. (목록마다 사용자 조회를 반복하면 카드 수만큼 왕복이 생긴다)
+        const personIds = [
+            ...new Set(
+                records
+                    .flatMap((record) => [...requesterIdsOf(record), ownerIdOf(record), record.reviewer_id])
+                    .filter((id): id is string => !!id)
+            )
+        ];
+        const userRows = personIds.length
+            ? await storage
+                  .list('users', {
+                      match: { tenant_id: tenantId },
+                      inArray: { column: 'id', values: personIds },
+                      key: 'id,username,email,profile'
+                  })
+                  .catch(() => [])
+            : [];
+        const userById = new Map<string, any>((Array.isArray(userRows) ? userRows : []).map((row: any) => [row.id, row]));
+        const displayName = (id: string | null): string => {
+            if (!id) return '';
+            const user = userById.get(id);
+            return user?.username || user?.email || '';
+        };
+
+        return records.map((record) => {
+            const ownerId = ownerIdOf(record);
+            const requesterIds = requesterIdsOf(record);
+            const primaryRequesterId = requesterIds[0] || null;
+            const requester = primaryRequesterId ? userById.get(primaryRequesterId) : null;
+            const profile = requester?.profile;
+            return {
+                ...record,
+                resource_name: record.resource_type === 'skill' ? record.resource_id : defById.get(record.resource_id)?.name || record.resource_id,
+                requester_name: formatRequesterName(record.requester_name) || displayName(primaryRequesterId),
+                requester_profile: profile && !String(profile).includes('defaultUser') ? profile : null,
+                owner_id: ownerId,
+                owner_name: displayName(ownerId),
+                is_requester: !!currentUserId && requesterIds.includes(currentUserId),
+                is_reviewer: !!currentUserId && (ownerId === currentUserId || record.reviewer_id === currentUserId),
+                // 소유자가 지정되지 않은 리소스는 아무도 검토할 수 없게 되면 요청이 영영 묶이므로,
+                // 리소스 화면과 같은 규칙으로 누구나 검토할 수 있게 둔다.
+                can_review: !ownerId || ownerId === currentUserId
+            };
+        });
+    }
+
+    /** 여러 PR 의 리뷰 이력을 한 번에 읽어 pr_id 별로 묶어 준다. */
+    async getResourcePrReviewsByPrIds(prIds: string[]): Promise<Record<string, any[]>> {
+        if (!prIds.length) return {};
+        const rows = await storage.list('resource_pr_reviews', {
+            inArray: { column: 'pr_id', values: prIds },
+            orderBy: 'created_at'
+        });
+        const grouped: Record<string, any[]> = {};
+        for (const row of Array.isArray(rows) ? rows : []) {
+            (grouped[row.pr_id] ||= []).push(row);
+        }
+        return grouped;
     }
 
     async updateResourcePrStatus(pr: any, status: string, fields: { reviewerId?: string; mergedAt?: string } = {}): Promise<void> {
@@ -9126,7 +9306,7 @@ class ProcessGPTBackend implements Backend {
                 data.author_name = localStorage.getItem('userName');
                 data.author_email = localStorage.getItem('email');
             }
-            const response = await axios.delete(url, { data });
+            const response = await deepagentsApi.delete(url, { data });
             if (response.status === 200) {
                 return response.data;
             } else {
@@ -9830,6 +10010,37 @@ class ProcessGPTBackend implements Backend {
     // 프로세스 승인 워크플로우 API
     // =====================================================
 
+    /** 승인 row에 프로세스 담당 역할을 결합해 상세 화면과 목록의 권한 판정을 동일하게 한다. */
+    private async _withProcessReviewOwners(state: any): Promise<any> {
+        if (!state?.proc_def_id) return state;
+        const supabase = window.$supabase;
+        if (!supabase) return state;
+
+        try {
+            const { data: procDef, error } = await supabase
+                .from('proc_def')
+                .select('owner, definition')
+                .eq('id', state.proc_def_id)
+                .eq('tenant_id', state.tenant_id || window.$tenantName)
+                .maybeSingle();
+            if (error) throw error;
+
+            const owners = procDef?.definition?.meta?.owners || {};
+            const primaryOwner = owners.primaryOwner || procDef?.owner || null;
+            return {
+                ...state,
+                owner: procDef?.owner || primaryOwner,
+                pi_owners: primaryOwner ? [primaryOwner] : [],
+                hq_owners: Array.isArray(owners.hqOwners) ? owners.hqOwners : [],
+                field_owners: Array.isArray(owners.fieldOwners) ? owners.fieldOwners : [],
+                master_owner: owners.masterOwner || null
+            };
+        } catch (error) {
+            console.warn('[ProcessGPTBackend] Failed to resolve process review owners:', error);
+            return state;
+        }
+    }
+
     /**
      * 프로세스 정의의 최신 승인 상태 조회
      */
@@ -9847,7 +10058,7 @@ class ProcessGPTBackend implements Backend {
                 .maybeSingle();
 
             if (error) throw error;
-            return data;
+            return this._withProcessReviewOwners(data);
         } catch (e) {
             console.error('[ProcessGPTBackend] getApprovalState error:', e);
             return null;
@@ -9865,7 +10076,7 @@ class ProcessGPTBackend implements Backend {
             const { data, error } = await supabase.from('proc_def_approval_state').select('*').eq('id', reviewId).maybeSingle();
 
             if (error) throw error;
-            return data;
+            return this._withProcessReviewOwners(data);
         } catch (e) {
             console.error('[ProcessGPTBackend] getApprovalStateById error:', e);
             return null;
@@ -10389,18 +10600,18 @@ class ProcessGPTBackend implements Backend {
                         }
                         break;
 
-                    // === 병렬 승인 (Field) ===
+                    // === 1단계 승인 (Field) ===
+                    // 본사 + 현업 병렬 승인에서 사용하던 hq_status === 'approved' 게이트 제거.
+                    // 본사 단계가 UI에서 빠지면서 hq_status 가 영구 'pending' 으로 남아
+                    // 1단계 승인 후 2단계(공람)로 넘어가지 못하던 문제 수정 — 현업 승인만으로 진입한다.
                     case 'approve_field':
                         updateData.field_status = 'approved';
                         updateData.field_reviewed_at = now;
                         updateData.field_review_comment = comment || null;
-                        // 양측 모두 승인 완료 시 → 자동 공람 진입
-                        if (currentState.hq_status === 'approved') {
-                            updateData.state = 'public_feedback';
-                            updateData.public_feedback_started_at = now;
-                            updateData.public_feedback_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-                            toState = 'public_feedback';
-                        }
+                        updateData.state = 'public_feedback';
+                        updateData.public_feedback_started_at = now;
+                        updateData.public_feedback_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                        toState = 'public_feedback';
                         break;
 
                     // === 공람 조기 종료 ===
@@ -10884,6 +11095,69 @@ class ProcessGPTBackend implements Backend {
             return data;
         } catch (e) {
             console.error('[ProcessGPTBackend] upsertKpiTarget error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * KPI 지표 목표 조회 (kpi_indicators 테이블)
+     */
+    async getKpiIndicators(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const { data, error } = await supabase
+                .from('kpi_indicators')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getKpiIndicators error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * KPI 지표 목표 생성/수정 (kpi_indicators 테이블 upsert)
+     */
+    async upsertKpiIndicator(indicatorData: any): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const payload: any = {
+                ...indicatorData,
+                tenant_id: window.$tenantName,
+                updated_at: new Date().toISOString()
+            };
+            // id가 없으면 insert가 되도록 키를 제거한다.
+            if (!payload.id) delete payload.id;
+            const { data, error } = await supabase.from('kpi_indicators').upsert(payload, { onConflict: 'id' }).select().maybeSingle();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] upsertKpiIndicator error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * KPI 지표 목표 삭제 (kpi_indicators 테이블)
+     */
+    async deleteKpiIndicator(id: string): Promise<void> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const { error } = await supabase.from('kpi_indicators').delete().eq('id', id).eq('tenant_id', window.$tenantName);
+            if (error) throw error;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] deleteKpiIndicator error:', e);
             throw e;
         }
     }

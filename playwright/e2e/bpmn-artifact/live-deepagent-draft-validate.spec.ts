@@ -155,7 +155,7 @@ test.describe('LIVE: 생성 → HITL(resume) → 검증/draft → 산출물(프�
                     })
                     .catch(() => {});
             }
-            if (r.status() >= 400 && !/\/validate-and-improve|get_credit_balance/.test(r.url()))
+            if (r.status() >= 400 && !/\/validate-and-improve/.test(r.url()))
                 console.log('[http]', r.status(), r.request().method(), r.url().slice(0, 110));
         });
         await page.setViewportSize({ width: 1920, height: 1080 });

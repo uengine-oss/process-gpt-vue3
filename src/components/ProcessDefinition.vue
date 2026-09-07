@@ -97,6 +97,20 @@
                                                 : $t('piFlagPanel.show') || 'PI Flag 표시'
                                         }}</span>
                                     </v-tooltip>
+                                    <!-- RACI 통합 매트릭스 버튼 -->
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-icon
+                                                v-bind="props"
+                                                @click="isViewRaciMatrix = true"
+                                                style="color: var(--cds-text-secondary); cursor: pointer"
+                                                size="small"
+                                                class="cp-raci-matrix"
+                                                >mdi-table-account</v-icon
+                                            >
+                                        </template>
+                                        <span>{{ $t('raci.toolbarTooltip') || 'RACI 매트릭스' }}</span>
+                                    </v-tooltip>
                                     <!-- 채팅창 열기/닫기 토글 버튼 -->
                                     <v-tooltip v-if="!isMobile" location="bottom">
                                         <template v-slot:activator="{ props }">
@@ -375,6 +389,7 @@
                 </v-card-text>
             </v-card>
         </v-dialog>
+        <RaciMatrixDialog v-model="isViewRaciMatrix" :isViewMode="isViewMode" :processDefinition="processDefinition" />
     </div>
 </template>
 
@@ -393,6 +408,7 @@ import XmlViewer from 'vue3-xml-viewer';
 import XMLEditor from './ui/XMLEditor.vue';
 
 import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue';
+import RaciMatrixDialog from '@/components/designer/RaciMatrixDialog.vue';
 import TaskCatalogSection from '@/components/designer/TaskCatalogSection.vue';
 import SaveToCatalogDialog from '@/components/designer/SaveToCatalogDialog.vue';
 import BackendFactory from '@/components/api/BackendFactory';
@@ -415,6 +431,7 @@ export default {
         VDataTable,
         // ProcessExecuteDialog,
         InstanceNamePatternForm,
+        RaciMatrixDialog,
         TaskCatalogSection,
         SaveToCatalogDialog,
         'process-gpt-execute': ProcessGPTExecute,
@@ -457,6 +474,7 @@ export default {
         element: null,
         definitions: null,
         isViewProcessVariables: false,
+        isViewRaciMatrix: false,
         processVariableTab: 'variable',
         copyProcessDefinition: null,
         processVariablesWindow: false,

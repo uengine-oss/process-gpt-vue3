@@ -1,8 +1,8 @@
 <template>
     <div>
-        <v-checkbox v-model="isEmailActivity" :label="$t('ReceiveTaskPanel.emailActivity')"></v-checkbox>
+        <v-checkbox v-if="isBuiltinPropVisible('is_email_activity')" v-model="isEmailActivity" :label="$t('ReceiveTaskPanel.emailActivity')"></v-checkbox>
         <div v-if="!isEmailActivity">
-            <div v-if="inputData.length > 0" style="margin-bottom: 20px">
+            <div v-if="inputData.length > 0 && isBuiltinPropVisible('input_data')" style="margin-bottom: 20px">
                 <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.inputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(inputData, idx) in inputData" :key="idx" class="mr-2 mt-2">
@@ -23,7 +23,7 @@
                     </div>
                 </v-row>
             </div>
-            <div v-if="outputData.length > 0" style="margin-bottom: 20px">
+            <div v-if="outputData.length > 0 && isBuiltinPropVisible('output_data')" style="margin-bottom: 20px">
                 <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.outputData') }}</div>
                 <v-row class="ma-0 pa-0">
                     <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
@@ -45,17 +45,17 @@
                 </v-row>
             </div>
             <div>
-                <v-row class="ma-0 pa-0">
+                <v-row v-if="isBuiltinPropVisible('uri_template')" class="ma-0 pa-0">
                     <v-text-field v-model="copyUengineProperties.uriTemplate" :label="$t('ReceiveTaskPanel.callUri')"></v-text-field>
                 </v-row>
-                <v-row class="ma-0 pa-0 mb-4">
+                <v-row v-if="isBuiltinPropVisible('no_validation_for_ssl')" class="ma-0 pa-0 mb-4">
                     <v-checkbox
                         v-if="copyUengineProperties.uriTemplate && copyUengineProperties.uriTemplate.indexOf('https://') == 0"
                         v-model="copyUengineProperties.noValidationForSSL"
                         :label="$t('ReceiveTaskPanel.noValidationForSSL')"
                     ></v-checkbox>
                 </v-row>
-                <v-row class="ma-0 pa-0 mb-4">
+                <v-row v-if="isBuiltinPropVisible('select_service')" class="ma-0 pa-0 mb-4">
                     <v-select
                         v-if="links"
                         v-model="copyUengineProperties.uriTemplate"
@@ -65,10 +65,10 @@
                         :label="$t('ReceiveTaskPanel.selectService')"
                     ></v-select>
                 </v-row>
-                <v-row class="ma-0 pa-0 mb-4">
+                <v-row v-if="isBuiltinPropVisible('method')" class="ma-0 pa-0 mb-4">
                     <v-select v-model="copyUengineProperties.method" :items="methodList" label="호출 메서드"></v-select>
                 </v-row>
-                <v-row class="ma-0 pa-0 mb-4">
+                <v-row v-if="isBuiltinPropVisible('input_payload_template')" class="ma-0 pa-0 mb-4">
                     <v-textarea
                         v-if="'GET,DELETE'.indexOf(copyUengineProperties.method) == -1"
                         v-model="copyUengineProperties.inputPayloadTemplate"
@@ -80,41 +80,49 @@
                     <div>{{ $t('BpmnPropertyPanel.checkPoints') }}</div>
                     <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
                 </v-row> -->
-                <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{
+                <v-btn v-if="isBuiltinPropVisible('data_mapping')" block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{
                     $t('ReceiveTaskPanel.dataMapping')
                 }}</v-btn>
-                <v-row class="ma-0 pa-0 mb-4">
+                <v-row v-if="isBuiltinPropVisible('skip_if_not_found')" class="ma-0 pa-0 mb-4">
                     <v-checkbox v-model="copyUengineProperties.skipIfNotFound" :label="$t('ReceiveTaskPanel.skipIfNotFound')"></v-checkbox>
                 </v-row>
             </div>
         </div>
         <div v-else>
-            <div>{{ $t('ReceiveTaskPanel.title') }}</div>
-            <v-row class="ma-0 pa-0 mb-2 mb-4">
-                <v-text-field v-model="copyUengineProperties.title" :label="$t('ReceiveTaskPanel.descriptionTitle')"></v-text-field>
-            </v-row>
-            <div>{{ $t('ReceiveTaskPanel.content') }}</div>
-            <v-row class="ma-0 pa-0 mb-4">
-                <v-textarea v-model="copyUengineProperties.contents" :label="$t('ReceiveTaskPanel.descriptionContent')"></v-textarea>
-            </v-row>
-            <div>{{ $t('ReceiveTaskPanel.to') }}</div>
-            <v-row class="ma-0 pa-0 mb-4">
-                <v-text-field v-model="copyUengineProperties.to" :label="$t('ReceiveTaskPanel.descriptionTo')"></v-text-field>
-            </v-row>
-            <div>{{ $t('ReceiveTaskPanel.from') }}</div>
-            <v-row class="ma-0 pa-0 mb-4">
-                <v-text-field v-model="copyUengineProperties.from" :label="$t('ReceiveTaskPanel.descriptionFrom')"></v-text-field>
-            </v-row>
-            <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{
+            <template v-if="isBuiltinPropVisible('title')">
+                <div>{{ $t('ReceiveTaskPanel.title') }}</div>
+                <v-row class="ma-0 pa-0 mb-2 mb-4">
+                    <v-text-field v-model="copyUengineProperties.title" :label="$t('ReceiveTaskPanel.descriptionTitle')"></v-text-field>
+                </v-row>
+            </template>
+            <template v-if="isBuiltinPropVisible('contents')">
+                <div>{{ $t('ReceiveTaskPanel.content') }}</div>
+                <v-row class="ma-0 pa-0 mb-4">
+                    <v-textarea v-model="copyUengineProperties.contents" :label="$t('ReceiveTaskPanel.descriptionContent')"></v-textarea>
+                </v-row>
+            </template>
+            <template v-if="isBuiltinPropVisible('to')">
+                <div>{{ $t('ReceiveTaskPanel.to') }}</div>
+                <v-row class="ma-0 pa-0 mb-4">
+                    <v-text-field v-model="copyUengineProperties.to" :label="$t('ReceiveTaskPanel.descriptionTo')"></v-text-field>
+                </v-row>
+            </template>
+            <template v-if="isBuiltinPropVisible('from')">
+                <div>{{ $t('ReceiveTaskPanel.from') }}</div>
+                <v-row class="ma-0 pa-0 mb-4">
+                    <v-text-field v-model="copyUengineProperties.from" :label="$t('ReceiveTaskPanel.descriptionFrom')"></v-text-field>
+                </v-row>
+            </template>
+            <v-btn v-if="isBuiltinPropVisible('data_mapping')" block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{
                 $t('ReceiveTaskPanel.dataMapping')
             }}</v-btn>
         </div>
         <!-- Lead Time -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('lead_time')" class="mt-4">
             <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
 
-        <div class="mt-3">
+        <div v-if="isBuiltinPropVisible('custom_properties')" class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
@@ -123,7 +131,7 @@
         </div>
 
         <!-- Task Color Picker -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('task_color')" class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <v-btn
@@ -207,10 +215,12 @@ import { Icon } from '@iconify/vue';
 import Mapper from '@/components/designer/mapper/Mapper.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import LeadTimeInput from './LeadTimeInput.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 import yaml from 'yamljs';
 
 export default {
     name: 'receive-task-panel',
+    mixins: [builtinPanelVisibilityMixin],
     props: {
         uengineProperties: Object,
         processDefinitionId: String,

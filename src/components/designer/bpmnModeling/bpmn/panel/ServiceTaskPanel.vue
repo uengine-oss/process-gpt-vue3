@@ -1,7 +1,7 @@
 <template>
     <div>
         <div class="mb-2 mt-4">
-            <v-col class="pa-0 pr-2" style="margin-bottom: 10px">
+            <v-col v-if="isBuiltinPropVisible('headers')" class="pa-0 pr-2" style="margin-bottom: 10px">
                 <div>Headers</div>
                 <v-row v-for="(header, idx) in copyUengineProperties.headers" :key="idx" style="margin-left: 13px; margin-top: 10px">
                     <v-row style="align-self: center">
@@ -25,7 +25,7 @@
             </v-col>
 
             <v-row class="ma-0 pa-0">
-                <v-col cols="3" class="pa-0 pr-2">
+                <v-col v-if="isBuiltinPropVisible('method')" cols="3" class="pa-0 pr-2">
                     <v-autocomplete
                         :label="$t('BpmnPropertyPanel.methodTypeUrl')"
                         :items="methodList"
@@ -35,13 +35,13 @@
                         v-model="copyUengineProperties.method"
                     ></v-autocomplete>
                 </v-col>
-                <v-col cols="9" class="pa-0">
+                <v-col v-if="isBuiltinPropVisible('uri_template')" cols="9" class="pa-0">
                     <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                 </v-col>
             </v-row>
             <DetailComponent :title="$t('ServiceTaskPanel.methodTypeDescriptionTitle')" :details="methodTypeDescription" />
         </div>
-        <div style="height: 40%" v-if="copyUengineProperties.method != 'GET'">
+        <div style="height: 40%" v-if="copyUengineProperties.method != 'GET' && isBuiltinPropVisible('input_payload_template')">
             <v-row class="ma-0 pa-0" style="height: 100%">
                 <vue-monaco-editor
                     v-model:value="copyUengineProperties.inputPayloadTemplate"
@@ -52,7 +52,7 @@
                 />
             </v-row>
         </div>
-        <div align="right" @click="generateAPI">
+        <div v-if="isBuiltinPropVisible('generate_api')" align="right" @click="generateAPI">
             <v-btn prepend-icon rounded color="primary">
                 <template v-slot:prepend>
                     <Icons :icon="'magic'" />
@@ -60,19 +60,19 @@
                 {{ $t('ServiceTaskPanel.generation') }}
             </v-btn>
         </div>
-        <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="openFieldMapper">
+        <v-btn v-if="isBuiltinPropVisible('data_mapping')" block text rounded color="primary" variant="flat" class="my-3" @click="openFieldMapper">
             {{ $t('ServiceTaskPanel.dataMapping') }}
         </v-btn>
-        <div v-if="!isLoading">
+        <div v-if="!isLoading && isBuiltinPropVisible('output_mapping')">
             <EventSynchronizationForm v-model="tempOutputMapping" :definition="copyDefinition" />
         </div>
         <!-- Lead Time -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('lead_time')" class="mt-4">
             <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
 
         <!-- Schema-based Properties -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('schema_based_properties')" class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.schemaProperties') || '일반 속성' }}</div>
             <SchemaBasedProperties
                 task-type="bpmn:ServiceTask"
@@ -82,7 +82,7 @@
             />
         </div>
 
-        <div class="mt-3">
+        <div v-if="isBuiltinPropVisible('custom_properties')" class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 정의 속성'"
@@ -91,7 +91,7 @@
         </div>
 
         <!-- Task Color Picker -->
-        <div class="mt-4">
+        <div v-if="isBuiltinPropVisible('task_color')" class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
 
             <!-- Preset Colors -->
@@ -203,10 +203,12 @@ import EventSynchronizationForm from '@/components/designer/EventSynchronization
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import SchemaBasedProperties from './SchemaBasedProperties.vue';
 import LeadTimeInput from './LeadTimeInput.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'service-task-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         Mapper,
         EventSynchronizationForm,

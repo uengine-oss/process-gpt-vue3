@@ -93,6 +93,11 @@ export default {
                 height: 700,
                 itemsPerPage: 1
             }
+        },
+        // true 면 참여자 필터 없이 테넌트 전체 인스턴스 조회 (관리자 전용 화면에서 사용)
+        allUsers: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -177,6 +182,7 @@ export default {
                         secondarySort: 'asc',
                         range: { from: 0, to: itemsPerPage - 1 }
                     };
+                    if (me.allUsers) me.currentOptions.allParticipants = true;
                     if (me.filter.period.startDate) me.currentOptions.startAt = me.filter.period.startDate;
                     if (me.filter.period.endDate) me.currentOptions.endAt = `${me.filter.period.endDate} 23:59:59`;
 
@@ -265,6 +271,7 @@ export default {
                             range: { from: 0, to: itemsPerPage - 1 },
                             like: { key: 'proc_inst_name', value: `%${searchWord}%` }
                         };
+                        if (me.allUsers) me.currentOptions.allParticipants = true;
                         if (me.filter.period.startDate) me.currentOptions.startAt = me.filter.period.startDate;
                         if (me.filter.period.endDate) me.currentOptions.endAt = `${me.filter.period.endDate} 23:59:59`;
                         me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
@@ -313,6 +320,7 @@ export default {
                         secondarySort: 'asc',
                         range: { from: 0, to: itemsPerPage - 1 }
                     };
+                    if (me.allUsers) me.currentOptions.allParticipants = true;
                     if (filter.period.startDate) me.currentOptions.startAt = filter.period.startDate;
                     if (filter.period.endDate) me.currentOptions.endAt = `${filter.period.endDate} 23:59:59`;
                     me.filter = filter;

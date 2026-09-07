@@ -4,6 +4,7 @@
  */
 
 import jwtDecode from 'jwt-decode';
+import { isAdminRole } from '@/utils/roles';
 
 interface SsoUser {
     id: string;
@@ -53,9 +54,18 @@ function resolveRoleFromClaims(claims: Record<string, any> | null | undefined, f
     );
 }
 
-function resolveIsAdminFromClaims(claims: Record<string, any> | null | undefined, fallbackIsAdmin?: boolean): boolean {
+function resolveIsAdminFromClaims(
+    claims: Record<string, any> | null | undefined,
+    fallbackIsAdmin?: boolean,
+    fallbackRole?: string | null
+): boolean {
     const appMetadata = claims?.app_metadata && typeof claims.app_metadata === 'object' ? claims.app_metadata : null;
-    return normalizeBoolean(claims?.is_admin) || normalizeBoolean(appMetadata?.is_admin) || !!fallbackIsAdmin;
+    return (
+        normalizeBoolean(claims?.is_admin) ||
+        normalizeBoolean(appMetadata?.is_admin) ||
+        isAdminRole(resolveRoleFromClaims(claims, fallbackRole)) ||
+        !!fallbackIsAdmin
+    );
 }
 
 // SSO 토큰은 메모리에 저장 (보안)
@@ -170,7 +180,8 @@ export function hydrateSsoFromLocalStorage(): boolean {
     const userMetadata = claims.user_metadata && typeof claims.user_metadata === 'object' ? claims.user_metadata : {};
     const appMetadata = claims.app_metadata && typeof claims.app_metadata === 'object' ? claims.app_metadata : {};
     const resolvedRole = resolveRoleFromClaims(claims, window.localStorage.getItem('role'));
-    const resolvedIsAdmin = resolveIsAdminFromClaims(claims, window.localStorage.getItem('isAdmin') === 'true');
+    const storedRole = window.localStorage.getItem('role');
+    const resolvedIsAdmin = resolveIsAdminFromClaims(claims, window.localStorage.getItem('isAdmin') === 'true', storedRole);
 
     ssoUser = {
         id: typeof claims.sub === 'string' ? claims.sub : window.localStorage.getItem('uid') || '',
@@ -226,7 +237,7 @@ export async function exchangeSsoToken(): Promise<SsoExchangeResponse> {
 
     const tokenClaims = decodeAccessTokenClaims(data.access_token);
     const resolvedRole = resolveRoleFromClaims(tokenClaims, data.user.role);
-    const resolvedIsAdmin = resolveIsAdminFromClaims(tokenClaims, data.user.is_admin);
+    const resolvedIsAdmin = resolveIsAdminFromClaims(tokenClaims, data.user.is_admin, data.user.role);
 
     // 메모리에 토큰 저장
     ssoAccessToken = data.access_token;
@@ -320,7 +331,7 @@ export async function refreshRoleToken(): Promise<SsoUser | null> {
 
         const tokenClaims = decodeAccessTokenClaims(data.access_token);
         const resolvedRole = resolveRoleFromClaims(tokenClaims, data.user.role);
-        const resolvedIsAdmin = resolveIsAdminFromClaims(tokenClaims, data.user.is_admin);
+        const resolvedIsAdmin = resolveIsAdminFromClaims(tokenClaims, data.user.is_admin, data.user.role);
 
         const normalizedUser = {
             ...data.user,

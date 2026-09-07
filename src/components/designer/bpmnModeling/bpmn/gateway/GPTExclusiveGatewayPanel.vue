@@ -6,7 +6,7 @@
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
-                <DetailComponent :title="$t('GatewayPanel.gatewayDescriptionTitle')" :details="gatewayDescription" />
+                <DetailComponent v-if="isBuiltinPropVisible('gateway_description')" :title="$t('GatewayPanel.gatewayDescriptionTitle')" :details="gatewayDescription" />
             </v-window-item>
 
             <v-window-item value="conditionData" class="pa-4">
@@ -16,7 +16,7 @@
                         '이 게이트웨이의 분기 판단에 사용할 참조 폼/필드를 선택합니다. 선택된 값만 우선 컨텍스트로 LLM/식 평가에 전달됩니다.'
                     }}
                 </div>
-                <div class="my-4">
+                <div v-if="isBuiltinPropVisible('selected_forms')" class="my-4">
                     <v-select
                         v-model="selectedForms"
                         :items="availableForms"
@@ -31,6 +31,7 @@
                     ></v-select>
                 </div>
                 <div v-if="selectedForms.length > 0">
+                    <template v-if="isBuiltinPropVisible('condition_data')">
                     <v-card v-for="formId in selectedForms" :key="formId" class="mb-4" variant="outlined">
                         <v-card-text class="pa-4">
                             <div class="mb-3 text-subtitle-1">{{ getFormTitle(formId) }}</div>
@@ -53,9 +54,12 @@
                             </v-row>
                         </v-card-text>
                     </v-card>
+                    </template>
                 </div>
                 <div v-else class="text-center text-grey-500 py-8">
+                    <template v-if="isBuiltinPropVisible('condition_data')">
                     {{ $t('BpmnPropertyPanel.noFormSelected') }}
+                    </template>
                 </div>
             </v-window-item>
         </v-window>
@@ -65,9 +69,11 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
+import builtinPanelVisibilityMixin from '../panel/builtinPanelVisibilityMixin';
 
 export default {
     name: 'gpt-exclusive-gateway-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         DetailComponent
     },

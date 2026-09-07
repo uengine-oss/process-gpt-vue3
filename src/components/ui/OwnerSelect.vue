@@ -7,6 +7,9 @@
         :loading="loading"
         :disabled="disabled"
         :clearable="clearable"
+        :multiple="multiple"
+        :chips="multiple"
+        :closable-chips="multiple"
         :hide-details="hideDetails"
         :density="density"
         item-title="name"
@@ -55,7 +58,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, watch, onMounted } from 'vue';
+import { defineComponent, ref, computed, watch, onMounted, type PropType } from 'vue';
 import { getOrganizationProvider, type OrganizationMember } from '@/providers/organization';
 
 export default defineComponent({
@@ -63,7 +66,7 @@ export default defineComponent({
     props: {
         // v-model 바인딩
         modelValue: {
-            type: String,
+            type: [String, Array] as PropType<string | string[]>,
             default: ''
         },
         // 라벨
@@ -85,6 +88,10 @@ export default defineComponent({
         clearable: {
             type: Boolean,
             default: true
+        },
+        multiple: {
+            type: Boolean,
+            default: false
         },
         // 상세 숨기기
         hideDetails: {
@@ -116,7 +123,7 @@ export default defineComponent({
     setup(props, { emit }) {
         const loading = ref(false);
         const members = ref<OrganizationMember[]>([]);
-        const selectedOwner = ref<string>(props.modelValue);
+        const selectedOwner = ref<string | string[]>(props.modelValue);
         const searchQuery = ref('');
 
         const provider = getOrganizationProvider();
@@ -158,10 +165,11 @@ export default defineComponent({
                 }
 
                 // 선택된 값이 있는데 목록에 없으면 해당 멤버 추가
-                if (selectedOwner.value && !members.value.find((m) => m.id === selectedOwner.value)) {
-                    const selectedMember = await provider.getMember(selectedOwner.value);
-                    if (selectedMember) {
-                        members.value = [selectedMember, ...members.value];
+                const selectedIds = Array.isArray(selectedOwner.value) ? selectedOwner.value : [selectedOwner.value].filter(Boolean);
+                for (const selectedId of selectedIds) {
+                    if (!members.value.find((m) => m.id === selectedId)) {
+                        const selectedMember = await provider.getMember(selectedId);
+                        if (selectedMember) members.value = [selectedMember, ...members.value];
                     }
                 }
             } catch (error) {
@@ -191,11 +199,13 @@ export default defineComponent({
         };
 
         // 선택 처리
-        const onSelect = (value: string | null) => {
-            emit('update:modelValue', value || '');
+        const onSelect = (value: string | string[] | null) => {
+            emit('update:modelValue', value || (props.multiple ? [] : ''));
 
-            const selectedMember = members.value.find((m) => m.id === value);
-            emit('select', selectedMember || null);
+            const selectedMembers = Array.isArray(value)
+                ? members.value.filter((m) => value.includes(m.id))
+                : members.value.find((m) => m.id === value) || null;
+            emit('select', selectedMembers);
         };
 
         // modelValue 변경 감지
@@ -204,14 +214,16 @@ export default defineComponent({
             async (newVal) => {
                 selectedOwner.value = newVal;
                 // 새 값이 목록에 없으면 해당 멤버 로드
-                if (newVal && !members.value.find((m) => m.id === newVal)) {
+                const newIds = Array.isArray(newVal) ? newVal : [newVal].filter(Boolean);
+                if (newIds.some((id) => !members.value.find((m) => m.id === id))) {
                     try {
                         if (provider.initialize) {
                             await provider.initialize();
                         }
-                        const member = await provider.getMember(newVal);
-                        if (member) {
-                            members.value = [member, ...members.value];
+                        for (const id of newIds) {
+                            if (members.value.find((m) => m.id === id)) continue;
+                            const member = await provider.getMember(id);
+                            if (member) members.value = [member, ...members.value];
                         }
                     } catch (error) {
                         console.warn('[OwnerSelect] 멤버 로드 실패:', error);

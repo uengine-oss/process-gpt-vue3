@@ -1,8 +1,15 @@
 <template>
     <div>
+        <!-- PPI(프로세스 성과지표) — 프로세스 레벨 uengine:json(ppi)에 저장 -->
+        <div class="mt-4 mb-6">
+            <PpiField :model-value="copyUengineProperties.ppi" :readonly="isViewMode" @update:model-value="onPpiUpdate" />
+        </div>
+
+        <v-divider class="mb-2" />
+
         <div class="included" style="margin-bottom: 22px; height: 100%">
             <div class="mb-1 mt-4">{{}}</div>
-            <v-row class="ma-0 pa-0 align-center pb-2">
+            <v-row v-if="isBuiltinPropVisible('selected_system')" class="ma-0 pa-0 align-center pb-2">
                 <v-autocomplete
                     v-model="copyUengineProperties.selectedSystem"
                     :items="systemList"
@@ -19,7 +26,7 @@
                 />
             </v-row>
 
-            <v-row class="ma-0 pa-0 align-center pb-2">
+            <v-row v-if="isBuiltinPropVisible('service_url')" class="ma-0 pa-0 align-center pb-2">
                 <v-text-field :label="$t('ParticipantPanel.apiUrl')" v-model="copyUengineProperties.serviceURL"></v-text-field>
                 <DetailComponent
                     class="ml-2"
@@ -30,8 +37,8 @@
                 />
             </v-row>
 
-            <div class="mb-1 mt-4">{{ $t('ParticipantPanel.openAPISpec') }}</div>
-            <v-row class="ma-0 pa-0" style="height: 50vh">
+            <div v-if="isBuiltinPropVisible('open_api')" class="mb-1 mt-4">{{ $t('ParticipantPanel.openAPISpec') }}</div>
+            <v-row v-if="isBuiltinPropVisible('open_api')" class="ma-0 pa-0" style="height: 50vh">
                 <vue-monaco-editor
                     v-model:value="copyUengineProperties.openAPI"
                     theme="vs-dark"
@@ -46,9 +53,15 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
+import PpiField from '@/components/designer/PpiField.vue';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'participant-panel',
+    mixins: [builtinPanelVisibilityMixin],
+    components: {
+        PpiField
+    },
     props: {
         element: Object,
         uengineProperties: Object,
@@ -174,6 +187,14 @@ export default {
         }
     },
     methods: {
+        onPpiUpdate(value) {
+            // 비어 있으면 키 자체를 제거해 프로세스 JSON에 null이 남지 않게 한다.
+            if (value && value.length > 0) {
+                this.copyUengineProperties.ppi = value;
+            } else {
+                delete this.copyUengineProperties.ppi;
+            }
+        },
         handleMount(editor) {
             this.editorRef.value = editor;
         },

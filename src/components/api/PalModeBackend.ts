@@ -1,7 +1,7 @@
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 
-import ProcessGPTBackend from './ProcessGPTBackend';
+import ProcessGPTBackend, { listProcDefWithFallback } from './ProcessGPTBackend';
 import axios from 'axios';
 import { streamSse } from '@/services/sseClient';
 const axiosInstance = axios.create();
@@ -56,10 +56,16 @@ class PalModeBackend extends ProcessGPTBackend {
         return response.data;
     }
 
-    async listDefinition(path: string) {
+    async listDefinition(path: string, options?: any) {
         try {
-            // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
-            const procDefs = await storage.list('proc_def', path ? { like: `${path}%` } : undefined);
+            // 목록에는 definition(JSONB)·bpmn(XML 원문)이 필요 없다. select * 는 행당 평균 34KB 로
+            // 한 번에 수 MB 를 당겨 PostgREST 커넥션 풀을 점유하고 statement timeout(8s)을 유발한다 —
+            // 이 풀 고갈이 users 단건 조회까지 실패시켜 자동 로그아웃 루프의 부하 원인이었다.
+            // 컬럼 선택과 배포별로 없는 컬럼(42703) 처리는 listProcDefWithFallback 이 담당한다.
+            const procDefs = await listProcDefWithFallback({
+                ...(options || {}),
+                ...(path ? { like: `${path}%` } : {})
+            });
             procDefs.map((item: any) => {
                 item.path = `${item.id}`;
                 item.name = item.name || item.path;
@@ -718,6 +724,15 @@ class PalModeBackend extends ProcessGPTBackend {
         }
     }
 
+    async getGroupById(id: string) {
+        try {
+            const response = await axiosInstance.get(`/pi-system-backend/organization/groups/${id}`);
+            return response.data;
+        } catch {
+            return null;
+        }
+    }
+
     async searchSuppliers(keyword: string, page: number = 0, limit: number = 20) {
         try {
             const response = await axiosInstance.get('/pi-system-backend/suppliers/search', { params: { keyword, page, limit } });
@@ -979,39 +994,132 @@ class PalModeBackend extends ProcessGPTBackend {
         return new Set((data || []).map((item: any) => item.proc_def_id));
     }
 
+    // systems CRUD — pi-system-web 과 동일하게 /pi-system-backend/systems REST 를 1차로 사용한다
+    // (pi-system-backend 도 함께 이관되어 있음: system_api.py).
+    // 백엔드 미기동 등으로 REST 가 실패하면 Supabase systems 테이블 직접 접근으로 폴백
+    // (searchUsersByName/searchSuppliers 와 같은 관례).
+    async getSystemList() {
+        try {
+            const response = await axiosInstance.get('/pi-system-backend/systems');
+            return response.data;
+        } catch {
+            const { data, error } = await this.supabase
+                .from('systems')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .is('deleted_at', null)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        }
+    }
+
+    async getSystem(systemId: string) {
+        try {
+            const response = await axiosInstance.get(`/pi-system-backend/systems/${systemId}`);
+            return response.data;
+        } catch {
+            const { data, error } = await this.supabase
+                .from('systems')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .eq('id', systemId)
+                .maybeSingle();
+            if (error) throw error;
+            return data;
+        }
+    }
+
+    async putSystem(system: any) {
+        try {
+            let response;
+            if (system.id) {
+                response = await axiosInstance.put(`/pi-system-backend/systems/${system.id}`, system);
+            } else {
+                response = await axiosInstance.post('/pi-system-backend/systems', system);
+            }
+            return response.data;
+        } catch {
+            const row: any = { ...system, tenant_id: window.$tenantName, updated_at: new Date().toISOString() };
+            if (!row.id) delete row.id;
+            const { data, error } = await this.supabase.from('systems').upsert(row, { onConflict: 'id' }).select('*').single();
+            if (error) throw error;
+            return data;
+        }
+    }
+
+    async deleteSystem(system: any) {
+        return await this.softDeleteSystem(system);
+    }
+
+    async softDeleteSystem(system: any, deletedBy?: string) {
+        try {
+            const response = await axiosInstance.delete(`/pi-system-backend/systems/${system.id}`, {
+                data: { deleted_by: deletedBy }
+            });
+            return response.data;
+        } catch {
+            const now = new Date().toISOString();
+            const { data, error } = await this.supabase
+                .from('systems')
+                .update({ deleted_at: now, deleted_by: deletedBy || null, updated_at: now })
+                .eq('tenant_id', window.$tenantName)
+                .eq('id', system.id)
+                .select('*')
+                .single();
+            if (error) throw error;
+            return data;
+        }
+    }
+
     async getDeletedSystemList(): Promise<any[]> {
-        const { data, error } = await this.supabase
-            .from('systems')
-            .select('*')
-            .eq('tenant_id', window.$tenantName)
-            .not('deleted_at', 'is', null)
-            .order('deleted_at', { ascending: false });
-        if (error) throw error;
-        return data || [];
+        try {
+            const response = await axiosInstance.get('/pi-system-backend/systems/deleted');
+            return response.data;
+        } catch {
+            const { data, error } = await this.supabase
+                .from('systems')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .not('deleted_at', 'is', null)
+                .order('deleted_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        }
     }
 
     async restoreSystem(systemId: string) {
-        const { data, error } = await this.supabase
-            .from('systems')
-            .update({ deleted_at: null, deleted_by: null, updated_at: new Date().toISOString() })
-            .eq('tenant_id', window.$tenantName)
-            .eq('id', systemId)
-            .select('*')
-            .single();
-        if (error) throw error;
-        return data;
+        try {
+            const response = await axiosInstance.post(`/pi-system-backend/systems/${systemId}/restore`);
+            return response.data;
+        } catch {
+            const { data, error } = await this.supabase
+                .from('systems')
+                .update({ deleted_at: null, deleted_by: null, updated_at: new Date().toISOString() })
+                .eq('tenant_id', window.$tenantName)
+                .eq('id', systemId)
+                .select('*')
+                .single();
+            if (error) throw error;
+            return data;
+        }
     }
 
     async hardDeleteSystem(systemId: string) {
-        const { data, error } = await this.supabase
-            .from('systems')
-            .delete()
-            .eq('tenant_id', window.$tenantName)
-            .eq('id', systemId)
-            .select('*')
-            .single();
-        if (error) throw error;
-        return data;
+        try {
+            const response = await axiosInstance.delete(`/pi-system-backend/systems/${systemId}/permanent`);
+            return response.data;
+        } catch {
+            const { data, error } = await this.supabase
+                .from('systems')
+                .delete()
+                .eq('tenant_id', window.$tenantName)
+                .eq('id', systemId)
+                .select('*')
+                .single();
+            if (error) throw error;
+            return data;
+        }
     }
 }
 

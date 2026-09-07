@@ -53,6 +53,19 @@
                     </v-btn>
                 </template>
             </v-tooltip>
+            <v-tooltip v-if="pal" text="사이드바 접기" location="bottom">
+                <template #activator="{ props }">
+                    <v-btn
+                        v-bind="props"
+                        icon="mdi-chevron-left"
+                        variant="text"
+                        density="comfortable"
+                        class="text-medium-emphasis"
+                        aria-label="사이드바 접기"
+                        @click.stop="customizer.SET_SIDEBAR_DRAWER"
+                    />
+                </template>
+            </v-tooltip>
         </div>
         <div class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
             <v-row class="ma-0 pa-0" align="center">
@@ -80,11 +93,7 @@
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <v-btn variant="text" class="text-medium-emphasis d-flex align-center" :to="'/definition-map'" v-if="pal && isAdmin">
-                    <Icons :icon="'write'" class="mr-2" />
-                    <span>{{ $t('processDefinitionMap.title') }}</span>
-                </v-btn>
-                <VerticalHeader v-if="globalIsMobile.value" @update-noti-count="updateNotiCount" />
+                <VerticalHeader v-if="globalIsMobile.value && !pal" @update-noti-count="updateNotiCount" />
 
                 <!-- 프로젝트 타이틀 + 목록 -->
                 <!-- <div v-if="isShowProject" class="mb-4">
@@ -113,7 +122,7 @@
                 </div> -->
 
                 <!-- 대화목록 -->
-                <ChatList v-if="!gs" />
+                <ChatList v-if="!gs && !pal" />
 
                 <!-- 인스턴스 타이틀 + 목록 -->
                 <v-col v-if="isShowInstances" class="pa-0 mb-4 mt-8">
@@ -135,7 +144,7 @@
                 </v-col>
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
-                <div v-if="mode !== 'uEngine' && isAdmin" class="mb-4 mt-4">
+                <div v-if="mode !== 'uEngine' && isAdmin && !pal" class="mb-4 mt-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
@@ -169,7 +178,7 @@
                 </div>
 
                 <!-- 사람 동료 -->
-                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs && !pal" class="mb-4">
                     <div class="d-flex align-center ml-2">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
                             {{ $t('VerticalSidebar.userList') || '유저 목록' }}
@@ -184,7 +193,7 @@
                 </div>
 
                 <!-- 스킬 타이틀 + 목록 -->
-                <div v-if="mode !== 'uEngine' && !gs && isAdmin" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs && isAdmin && !pal" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.skills') }}
@@ -202,7 +211,7 @@
                     </v-col>
                 </div>
 
-                <!-- 프로세스 관리 타이틀 + 목록 -->
+                <!-- PAL 프로세스 관리 메뉴 -->
                 <div v-if="pal && processItem.length > 0" class="mb-4">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('processHierarchy.processManagement') }}
@@ -217,7 +226,7 @@
                             class="leftPadding sidebar-list-hover-bg"
                             :class="{ 'sidebar-list-hover-bg--active': isProcessItemActive(item) }"
                         >
-                            <template v-slot:prepend>
+                            <template #prepend>
                                 <Icons :icon="item.icon" :size="20" class="mr-2" />
                             </template>
                             <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
@@ -226,7 +235,7 @@
                 </div>
 
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
-                <v-col v-if="isAdmin" class="pa-0">
+                <v-col v-if="isAdmin && !pal" class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
@@ -313,7 +322,7 @@
                     </template>
                 </v-col>
                 <!-- 정의 목록 -->
-                <v-col v-if="isAdmin" class="pa-0">
+                <v-col v-if="isAdmin && !pal" class="pa-0">
                     <div v-if="isDefinitionListLoading" class="list-skeleton-loading">
                         <v-skeleton-loader v-for="n in 3" :key="n" type="list-item" />
                     </div>
@@ -344,8 +353,16 @@
                         <v-list-item
                             v-for="item in [
                                 { title: '속성 스키마', icon: 'formList', to: '/admin-console/property-schemas' },
+                                { title: '수정 잠금', icon: 'lock', to: '/admin-console/data-freeze' },
                                 { title: '휴지통', icon: 'trash', to: '/admin-console/recycle-bin' },
-                                { title: 'Task 종류 설정', icon: 'completed-task', to: '/admin-console/task-types' }
+                                { title: '시스템 운영', icon: 'settings', to: '/admin-console/system-operations' },
+                                { title: 'KPI 목표', icon: 'target', to: '/admin-console/kpi-targets' },
+                                { title: '사용 활성도', icon: 'graph-up-linear', to: '/admin-console/usage-adoption' },
+                                { title: '감사 로그', icon: 'document', to: '/admin-console/audit-trail' },
+                                { title: 'PI Flag', icon: 'flag-line-duotone', to: '/admin-console/pi-flags' },
+                                { title: 'Task 종류 설정', icon: 'completed-task', to: '/admin-console/task-types' },
+                                { title: '업무분장', icon: 'users-group-rounded-line-duotone', to: '/work-assignment' },
+                                { title: '사내 정책문서', icon: 'submit-document', to: '/policy-document' }
                             ]"
                             :key="item.to"
                             :to="item.to"
@@ -383,6 +400,19 @@
                         </v-list-item>
                     </v-col>
                 </div>
+
+                <v-list-item
+                    v-if="pal"
+                    to="/organization"
+                    density="compact"
+                    class="leftPadding sidebar-list-hover-bg mt-auto"
+                    :class="{ 'sidebar-list-hover-bg--active': $route?.path === '/organization' }"
+                >
+                    <template #prepend>
+                        <Icons icon="side-group" :size="20" class="mr-2" />
+                    </template>
+                    <v-list-item-title>조직도</v-list-item-title>
+                </v-list-item>
             </v-list>
             <Footer class="mt-2" />
         </div>
@@ -740,7 +770,7 @@ export default {
             }
 
             // 프로세스 관리 메뉴 (프로세스 정의/업로드/내보내기는 아래 프로세스 섹션에 표시)
-            // PAL 모드에서는 프로세스 리뷰보드·내 수신함 숨김
+            // 리뷰보드는 모든 모드에 표시하고, PAL 모드에서는 내 수신함 대신 프로세스 리스트를 표시한다.
             this.processItem = [
                 {
                     title: 'processArchitecture.title',
@@ -750,29 +780,30 @@ export default {
                     disable: false
                 },
                 {
-                    title: 'processHierarchy.title',
-                    icon: 'file-tree',
-                    BgColor: 'primary',
-                    to: '/process-hierarchy',
-                    disable: false
-                },
-                {
                     title: 'versionComparison.title',
                     icon: 'file-document-edit-outline',
                     BgColor: 'primary',
                     to: '/version-comparison',
                     disable: false
                 },
+                {
+                    title: 'reviewBoard.title',
+                    icon: 'submit-document',
+                    BgColor: 'primary',
+                    to: '/review-board',
+                    disable: false
+                },
                 ...(this.pal
-                    ? []
-                    : [
+                    ? [
                           {
-                              title: 'reviewBoard.title',
-                              icon: 'submit-document',
+                              title: '프로세스 리스트',
+                              icon: 'delegation',
                               BgColor: 'primary',
-                              to: '/review-board',
+                              to: '/call-activity-management',
                               disable: false
-                          },
+                          }
+                      ]
+                    : [
                           {
                               title: 'reviewBoard.myInbox',
                               icon: 'submit-document',
@@ -874,9 +905,24 @@ export default {
                 // }
             ];
 
-            // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
+            // PAL 모드에서는 PAL 전용 분석 메뉴로 대체
             if (this.pal) {
-                this.analyticsItem = [];
+                this.analyticsItem = [
+                    {
+                        title: '분석 대시보드',
+                        icon: 'dashboard',
+                        BgColor: 'primary',
+                        to: '/analysis-dashboard',
+                        disable: false
+                    },
+                    {
+                        title: '온톨로지 익스플로러',
+                        icon: 'sitemap',
+                        BgColor: 'primary',
+                        to: '/ontology-explorer',
+                        disable: false
+                    }
+                ];
             }
 
             if (!this.JMS) {

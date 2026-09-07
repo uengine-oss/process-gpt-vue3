@@ -5,7 +5,7 @@
             <div class="text-subtitle-2 mb-2">Task Definition</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-row class="ma-0 pa-0">
-                    <v-col cols="8" class="pa-0 pr-2">
+                    <v-col cols="8" class="pa-0 pr-2" v-if="isBuiltinPropVisible('task_definition_type')">
                         <v-text-field
                             v-model="copyUengineProperties.zeebe.taskDefinition.type"
                             label="Job Type"
@@ -15,7 +15,7 @@
                             :disabled="isViewMode"
                         />
                     </v-col>
-                    <v-col cols="4" class="pa-0">
+                    <v-col cols="4" class="pa-0" v-if="isBuiltinPropVisible('task_definition_retries')">
                         <v-text-field
                             v-model="copyUengineProperties.zeebe.taskDefinition.retries"
                             label="Retries"
@@ -35,6 +35,7 @@
             <div class="text-subtitle-2 mb-2">Form Definition</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-text-field
+                    v-if="isBuiltinPropVisible('form_id')"
                     v-model="copyUengineProperties.zeebe.formDefinition.formId"
                     label="Form ID"
                     variant="outlined"
@@ -44,6 +45,7 @@
                     :disabled="isViewMode"
                 />
                 <v-text-field
+                    v-if="isBuiltinPropVisible('form_key')"
                     v-model="copyUengineProperties.zeebe.formDefinition.formKey"
                     label="Form Key"
                     variant="outlined"
@@ -59,6 +61,7 @@
             <div class="text-subtitle-2 mb-2">Assignment</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-text-field
+                    v-if="isBuiltinPropVisible('assignee')"
                     :model-value="stripEqual(copyUengineProperties.zeebe.assignmentDefinition.assignee)"
                     @update:model-value="(v) => (copyUengineProperties.zeebe.assignmentDefinition.assignee = addEqual(v))"
                     label="Assignee"
@@ -70,6 +73,7 @@
                     :disabled="isViewMode"
                 />
                 <v-text-field
+                    v-if="isBuiltinPropVisible('candidate_groups')"
                     :model-value="stripEqual(copyUengineProperties.zeebe.assignmentDefinition.candidateGroups)"
                     @update:model-value="(v) => (copyUengineProperties.zeebe.assignmentDefinition.candidateGroups = addEqual(v))"
                     label="Candidate Groups"
@@ -81,6 +85,7 @@
                     :disabled="isViewMode"
                 />
                 <v-text-field
+                    v-if="isBuiltinPropVisible('candidate_users')"
                     :model-value="stripEqual(copyUengineProperties.zeebe.assignmentDefinition.candidateUsers)"
                     @update:model-value="(v) => (copyUengineProperties.zeebe.assignmentDefinition.candidateUsers = addEqual(v))"
                     label="Candidate Users"
@@ -98,6 +103,7 @@
             <div class="text-subtitle-2 mb-2">Called Decision (DMN)</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-text-field
+                    v-if="isBuiltinPropVisible('decision_id')"
                     v-model="copyUengineProperties.zeebe.calledDecision.decisionId"
                     label="Decision ID"
                     variant="outlined"
@@ -107,6 +113,7 @@
                     :disabled="isViewMode"
                 />
                 <v-text-field
+                    v-if="isBuiltinPropVisible('called_decision_result_variable')"
                     v-model="copyUengineProperties.zeebe.calledDecision.resultVariable"
                     label="Result Variable"
                     variant="outlined"
@@ -122,6 +129,7 @@
             <div class="text-subtitle-2 mb-2">Called Element</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-text-field
+                    v-if="isBuiltinPropVisible('process_id')"
                     v-model="copyUengineProperties.zeebe.calledElement.processId"
                     label="Process ID"
                     variant="outlined"
@@ -131,6 +139,7 @@
                     :disabled="isViewMode"
                 />
                 <v-checkbox
+                    v-if="isBuiltinPropVisible('propagate_all_child_variables')"
                     v-model="copyUengineProperties.zeebe.calledElement.propagateAllChildVariables"
                     label="Propagate All Child Variables"
                     density="compact"
@@ -145,6 +154,7 @@
             <div class="text-subtitle-2 mb-2">Script (FEEL)</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-textarea
+                    v-if="isBuiltinPropVisible('script_expression')"
                     :model-value="stripEqual(copyUengineProperties.zeebe.script.expression)"
                     @update:model-value="(v) => (copyUengineProperties.zeebe.script.expression = addEqual(v))"
                     label="Expression"
@@ -157,6 +167,7 @@
                     :disabled="isViewMode"
                 />
                 <v-text-field
+                    v-if="isBuiltinPropVisible('script_result_variable')"
                     v-model="copyUengineProperties.zeebe.script.resultVariable"
                     label="Result Variable"
                     variant="outlined"
@@ -172,7 +183,7 @@
             <div class="text-subtitle-2 mb-2">Input/Output Mapping</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <!-- Input Parameters -->
-                <div class="mb-3">
+                <div class="mb-3" v-if="isBuiltinPropVisible('io_mapping_inputs')">
                     <div class="text-caption mb-2">Input Parameters</div>
                     <div v-for="(input, index) in copyUengineProperties.zeebe.ioMapping.inputs" :key="'input-' + index" class="mb-2">
                         <v-row class="ma-0 pa-0 align-center">
@@ -216,10 +227,10 @@
                     </v-btn>
                 </div>
 
-                <v-divider class="my-3" />
+                <v-divider class="my-3" v-if="isBuiltinPropVisible('io_mapping_inputs') && isBuiltinPropVisible('io_mapping_outputs')" />
 
                 <!-- Output Parameters -->
-                <div>
+                <div v-if="isBuiltinPropVisible('io_mapping_outputs')">
                     <div class="text-caption mb-2">Output Parameters</div>
                     <div v-for="(output, index) in copyUengineProperties.zeebe.ioMapping.outputs" :key="'output-' + index" class="mb-2">
                         <v-row class="ma-0 pa-0 align-center">
@@ -266,7 +277,7 @@
         </div>
 
         <!-- Task Headers -->
-        <div v-if="showTaskHeaders" class="mb-4 mt-4">
+        <div v-if="showTaskHeaders && isBuiltinPropVisible('task_headers')" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Task Headers</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <div v-for="(header, index) in copyUengineProperties.zeebe.taskHeaders" :key="'header-' + index" class="mb-2">
@@ -311,7 +322,7 @@
         </div>
 
         <!-- Execution Listeners -->
-        <div v-if="showExecutionListeners" class="mb-4 mt-4">
+        <div v-if="showExecutionListeners && isBuiltinPropVisible('execution_listeners')" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Execution Listeners</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <div
@@ -372,7 +383,7 @@
         </div>
 
         <!-- Task Listeners (User Task) -->
-        <div v-if="showTaskListeners" class="mb-4 mt-4">
+        <div v-if="showTaskListeners && isBuiltinPropVisible('task_listeners')" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Task Listeners</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <div
@@ -433,7 +444,7 @@
         </div>
 
         <!-- Zeebe Properties -->
-        <div v-if="showZeebeProperties" class="mb-4 mt-4">
+        <div v-if="showZeebeProperties && isBuiltinPropVisible('zeebe_properties')" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Zeebe Properties</div>
             <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <div v-for="(prop, index) in copyUengineProperties.zeebe.properties" :key="'prop-' + index" class="mb-2">
@@ -480,8 +491,11 @@
 </template>
 
 <script>
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
+
 export default {
     name: 'zeebe-properties-panel',
+    mixins: [builtinPanelVisibilityMixin],
     props: {
         uengineProperties: {
             type: Object,
@@ -530,6 +544,9 @@ export default {
         }
     },
     computed: {
+        builtinPanelTaskTypeOverride() {
+            return 'bpmn:ZeebeProperties';
+        },
         isUserTask() {
             return this.elementType.includes('UserTask');
         },

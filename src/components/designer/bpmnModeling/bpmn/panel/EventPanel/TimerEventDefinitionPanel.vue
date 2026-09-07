@@ -3,7 +3,7 @@
         <!-- <cron-vuetify v-model="cron" :chip-props="{ color: 'success', textColor: 'white' }" @error="error = $event" /> -->
         <!-- <v-text-field class="mt-4" v-model="copyUengineProperties.expression" :label="$t('TimerEventDefinitionPanel.cron')"></v-text-field> -->
 
-        <cron-core v-model="expression" :format="mode ? 'default' : 'quartz'" v-slot="{ fields, period, error }">
+        <cron-core v-if="isBuiltinPropVisible('cron_builder')" v-model="expression" :format="mode ? 'default' : 'quartz'" v-slot="{ fields, period, error }">
             <div>
                 <!-- period selection -->
                 {{ period.prefix }}
@@ -44,7 +44,7 @@
                 </template>
 
                 <!-- editable cron expression -->
-                <v-row class="ma-0 pa-0 align-center">
+                <v-row class="ma-0 pa-0 align-center" v-if="isBuiltinPropVisible('cron_expression')">
                     <v-text-field
                         class="mt-4"
                         :modelValue="expression"
@@ -65,6 +65,7 @@
     </div>
     <div v-else>
         <TextConditionField
+            v-if="isBuiltinPropVisible('expression_nl')"
             :value="typeof copyUengineProperties.expressionNL === 'string' ? copyUengineProperties.expressionNL : ''"
             @update:value="updateExpression"
             :mode="copyUengineProperties.expressionMode"
@@ -72,7 +73,7 @@
             @update:mode="updateExpressionMode"
             @update:conditionFunction="updateExpressionFunction"
         />
-        <div class="mt-2 d-flex justify-end">
+        <div class="mt-2 d-flex justify-end" v-if="isBuiltinPropVisible('cron_rule_generator')">
             <v-btn @click="generateCronRule" color="primary" density="compact" variant="flat" rounded :disabled="isCronGenerating">
                 <span v-if="isCronGenerating">{{ $t('TimerEventDefinitionPanel.ruleGenerating') }}</span>
                 <span v-else>{{ $t('TimerEventDefinitionPanel.ruleGenerator') }}</span>
@@ -116,9 +117,11 @@ import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
 import TextConditionField from '../TextConditionField.vue';
 import CronRuleGenerator from '@/components/ai/CronRuleGenerator.js';
+import builtinPanelVisibilityMixin from '../builtinPanelVisibilityMixin';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 export default {
     name: 'timer-event-definition-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         CronCore,
         TextConditionField
@@ -202,6 +205,9 @@ export default {
         }
     },
     computed: {
+        builtinPanelTaskTypeOverride() {
+            return 'bpmn:TimerEventDefinition';
+        },
         mode() {
             return window.$mode === 'ProcessGPT';
         }

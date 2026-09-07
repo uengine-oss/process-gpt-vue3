@@ -113,6 +113,10 @@ export interface Backend {
     getMCPTools(): Promise<any>;
     getMCPByTenant(): Promise<any>;
     setMCPByTenant(mcp: any): Promise<any>;
+    /** 결정론적 코드 / 보상(undo) 코드 목록 (프로세스명·액티비티명 포함) */
+    getDeterministicCodeList(): Promise<any>;
+    /** 결정론적 코드 / 보상(undo) 코드 / 파라미터 스펙 수정 */
+    updateDeterministicCode(id: string, values: { code?: string; compensation?: string; parameters?: any }): Promise<any>;
     getBSCard(): Promise<any>;
     putBSCard(card: any): Promise<any>;
     fetchAgentData(agentUrl: string): Promise<any>;

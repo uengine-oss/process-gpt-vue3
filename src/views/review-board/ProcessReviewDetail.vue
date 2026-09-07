@@ -1,11 +1,28 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { formatDistanceToNowStrict, format } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns';
+import { formatKST, toKst } from '@/utils/datetime';
 import BackendFactory from '@/components/api/BackendFactory';
 import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
-import OwnerSelect from '@/components/ui/OwnerSelect.vue';
 import { computeBpmnDiff, type BpmnChange } from '@/utils/bpmnDiff';
+import { getResolvedRole, refreshAuthClaims } from '@/utils/authClaims';
+import {
+    canApproveFieldReview,
+    canApproveHQReview,
+    canEndPublicFeedbackReview,
+    canManageReview,
+    canPublishReview,
+    canRejectReview,
+    isSelfReviewSubmission
+} from '@/utils/reviewPermissions';
+import {
+    buildProcessHierarchyQuery,
+    PROCESS_HIERARCHY_ENTRY,
+    PROCESS_HIERARCHY_MODE,
+    PROCESS_HIERARCHY_PANEL_STATE,
+    PROCESS_HIERARCHY_RIGHT_TAB
+} from '@/views/process-hierarchy/navigation';
 
 const route = useRoute();
 const router = useRouter();
@@ -44,16 +61,10 @@ const previousVersion = ref('');
 // Current user
 const currentUserId = ref('');
 const currentUserName = ref('');
+const currentUserEmployeeNo = ref('');
+const currentUserRole = ref('viewer');
 
 // Dialogs
-const showReviewerDialog = ref(false);
-const selectedReviewerId = ref('');
-const selectedReviewerObj = ref<any>(null);
-
-const showReassignDialog = ref(false);
-const reassignReviewerId = ref('');
-const reassignReviewerObj = ref<any>(null);
-
 const showCancelDialog = ref(false);
 
 // Resolve dialog
@@ -88,7 +99,7 @@ const isRejected = computed(() => currentState.value === 'rejected');
 const isCancelled = computed(() => currentState.value === 'cancelled');
 const isFinished = computed(() => isCompleted.value || isRejected.value || isCancelled.value);
 
-// 병렬 승인 필드 (HQ / Field)
+// 병렬 승인 필드 (본사 / 현업)
 const hqStatus = computed(() => approvalState.value?.hq_status || 'pending');
 const fieldStatus = computed(() => approvalState.value?.field_status || 'pending');
 const hqReviewerName = computed(() => approvalState.value?.hq_reviewer_name || '');
@@ -98,37 +109,33 @@ const hasParallelApproval = computed(
 );
 
 // Self-approval block
-const isSelfSubmitter = computed(() => {
-    const submittedById = approvalState.value?.submitted_by_id || approvalState.value?.owner_id || '';
-    return !!currentUserId.value && currentUserId.value === submittedById;
-});
-
-// 담당자 권한
-const assignedReviewerId = computed(() => approvalState.value?.assigned_reviewer_id || '');
-const assignedReviewerName = computed(() => approvalState.value?.assigned_reviewer_name || '');
-const hasAssignedReviewer = computed(() => !!assignedReviewerId.value);
+const reviewActor = computed(() => ({
+    role: currentUserRole.value,
+    userId: currentUserId.value,
+    userName: currentUserName.value,
+    employeeNo: currentUserEmployeeNo.value
+}));
+const isSelfSubmitter = computed(() => isSelfReviewSubmission(approvalState.value, reviewActor.value));
 
 const canApproveOrReject = computed(() => {
-    if (isFinished.value) return false;
-    if (isSelfSubmitter.value) return false;
-    if (!hasAssignedReviewer.value) return true;
-    return currentUserId.value === assignedReviewerId.value;
+    return canManageReview(approvalState.value, reviewActor.value);
 });
 
-const isInReview = computed(() => ['in_review', 'review'].includes(currentState.value));
 const canPublishState = computed(() => ['final_edit', 'approved_level2'].includes(currentState.value));
-const canApproveHQ = computed(() => isInReview.value && hqStatus.value === 'pending');
-const canApproveFieldBtn = computed(() => isInReview.value && fieldStatus.value === 'pending');
+const canApproveHQ = computed(() => canApproveHQReview(approvalState.value, reviewActor.value));
+const canApproveFieldBtn = computed(() => canApproveFieldReview(approvalState.value, reviewActor.value));
+const canEndPublicFeedbackAction = computed(() => canEndPublicFeedbackReview(approvalState.value, reviewActor.value));
+const canRejectAction = computed(() => canRejectReview(approvalState.value, reviewActor.value));
 
 // 4.2: Publish 버튼 활성화 조건 (미해결 피드백 0 + 권한 충족)
 const canPublish = computed(() => {
     if (!canPublishState.value) return false;
-    if (!canApproveOrReject.value) return false;
+    if (!canPublishReview(approvalState.value, reviewActor.value)) return false;
     if (unresolvedCount.value > 0) return false;
     return true;
 });
 const publishDisabledReason = computed((): string => {
-    if (!canApproveOrReject.value) return '승인 권한이 없습니다';
+    if (!canPublishReview(approvalState.value, reviewActor.value)) return '배포 권한이 없습니다';
     if (unresolvedCount.value > 0) return `미해결 피드백 ${unresolvedCount.value}건을 해결해야 배포할 수 있습니다`;
     return '';
 });
@@ -167,13 +174,12 @@ function showStageToast(message: string, color = 'success') {
     }, 4000);
 }
 
-// Resolution progress (reject 이력 기반)
-const rejectEntries = computed(() => history.value.filter((h) => h.action === 'reject' && h.comment));
-const totalFeedbackCount = computed(() => rejectEntries.value.length);
-const resolvedCount = computed(() => rejectEntries.value.filter((h) => h.resolved).length);
-const unresolvedCount = computed(() => totalFeedbackCount.value - resolvedCount.value);
+// Resolution progress (proc_def_comments 기준)
+const totalFeedbackCount = ref(0);
+const unresolvedCount = ref(0);
+const resolvedCount = computed(() => Math.max(totalFeedbackCount.value - unresolvedCount.value, 0));
 const resolutionProgress = computed(() => {
-    if (totalFeedbackCount.value === 0) return 100;
+    if (totalFeedbackCount.value <= 0) return 100;
     return Math.round((resolvedCount.value / totalFeedbackCount.value) * 100);
 });
 
@@ -194,10 +200,10 @@ const snapshotStageLabel = computed((): string => {
     const s = selectedSnapshot.value?.stage || '';
     const map: Record<string, string> = {
         submit: '검토 요청',
-        approve_hq: 'HQ 승인',
-        approve_field: 'Field 승인',
-        public_feedback: '전사 공람',
-        final_edit: '최종 편집',
+        approve_hq: '본사 승인',
+        approve_field: '현업 승인',
+        public_feedback: '공람',
+        final_edit: '최종수정',
         publish: '배포'
     };
     return map[s] || s;
@@ -262,6 +268,10 @@ function getActionColorHex(action: string): string {
         reassign: '#3b82f6',
         cancel: '#f59e0b',
         comment: '#9ca3af',
+        approve_hq: '#10b981',
+        approve_field: '#10b981',
+        reject_hq: '#ef4444',
+        reject_field: '#ef4444',
         approveHQ: '#10b981',
         approveField: '#10b981',
         rejectHQ: '#ef4444',
@@ -282,6 +292,10 @@ function getActionIcon(action: string): string {
         reassign: 'mdi-account-switch',
         cancel: 'mdi-cancel',
         comment: 'mdi-comment-outline',
+        approve_hq: 'mdi-check-circle',
+        approve_field: 'mdi-check-circle',
+        reject_hq: 'mdi-close-circle',
+        reject_field: 'mdi-close-circle',
         approveHQ: 'mdi-check-circle',
         approveField: 'mdi-check-circle',
         rejectHQ: 'mdi-close-circle',
@@ -293,20 +307,24 @@ function getActionIcon(action: string): string {
 
 function getActionLabel(action: string): string {
     const map: Record<string, string> = {
-        submit: 'Submitted',
-        approve_level1: 'Approved version',
-        approve_level2: 'Approved (L2)',
-        confirm: 'Published',
-        reject: 'Requested changes',
-        reopen: 'Re-opened',
-        reassign: 'Reassigned',
-        cancel: 'Cancelled',
-        comment: 'Added comment',
-        approveHQ: 'Approved (HQ)',
-        approveField: 'Approved (Field)',
-        rejectHQ: 'Rejected (HQ)',
-        rejectField: 'Rejected (Field)',
-        publish: 'Published'
+        submit: '검토 요청',
+        approve_level1: '버전 승인',
+        approve_level2: '2차 승인',
+        confirm: '배포',
+        reject: '반려',
+        reopen: '재작성',
+        reassign: '담당자 변경',
+        cancel: '취소',
+        comment: '코멘트',
+        approve_hq: '본사 승인',
+        approve_field: '현업 승인',
+        reject_hq: '본사 반려',
+        reject_field: '현업 반려',
+        approveHQ: '본사 승인',
+        approveField: '현업 승인',
+        rejectHQ: '본사 반려',
+        rejectField: '현업 반려',
+        publish: '배포'
     };
     return map[action] || action;
 }
@@ -318,7 +336,7 @@ function getActorRole(entry: any): string {
 function formatTimeAgo(dateStr: string): string {
     if (!dateStr) return '';
     try {
-        return formatDistanceToNowStrict(new Date(dateStr), { addSuffix: true });
+        return formatDistanceToNowStrict(toKst(dateStr)?.toDate() ?? new Date(dateStr), { addSuffix: true });
     } catch {
         return dateStr;
     }
@@ -327,7 +345,7 @@ function formatTimeAgo(dateStr: string): string {
 function formatExactTime(dateStr: string): string {
     if (!dateStr) return '';
     try {
-        return format(new Date(dateStr), 'yyyy-MM-dd HH:mm:ss');
+        return formatKST(dateStr, 'YYYY-MM-DD HH:mm:ss');
     } catch {
         return dateStr;
     }
@@ -336,14 +354,14 @@ function formatExactTime(dateStr: string): string {
 function getStateLabel(state: string): string {
     const map: Record<string, string> = {
         draft: '초안',
-        review: '검토중',
-        in_review: '검토중',
+        review: '검토',
+        in_review: '검토',
         approved_level1: '1차 승인',
         approved_level2: '2차 승인',
-        public_feedback: '전사 공람',
-        final_edit: '최종 편집',
-        confirmed: '배포 완료',
-        published: '배포 완료',
+        public_feedback: '공람',
+        final_edit: '최종수정',
+        confirmed: '완료',
+        published: '완료',
         rejected: '반려',
         cancelled: '취소',
         archived: '아카이브'
@@ -373,19 +391,62 @@ async function loadCurrentUser() {
     const supabase = (window as any).$supabase;
     if (!supabase) return;
     try {
+        await refreshAuthClaims();
+        currentUserRole.value = getResolvedRole();
+        currentUserId.value = localStorage.getItem('uid') || currentUserId.value;
+        currentUserName.value =
+            localStorage.getItem('userName') || localStorage.getItem('email') || (window as any).$userName || currentUserName.value;
+        currentUserEmployeeNo.value = localStorage.getItem('employeeNo') || currentUserEmployeeNo.value;
         const { data: authData } = await supabase.auth.getUser();
         if (authData?.user) {
             currentUserId.value = authData.user.id;
             const { data: userData } = await supabase
                 .from('users')
-                .select('username, email')
+                .select('username, email, role, is_admin, employee_no')
                 .eq('id', authData.user.id)
                 .limit(1)
                 .maybeSingle();
             currentUserName.value = userData?.username || authData.user.email || 'Anonymous';
+            currentUserEmployeeNo.value = userData?.employee_no || currentUserEmployeeNo.value;
+            currentUserRole.value = userData?.role || currentUserRole.value;
         }
     } catch (e) {
         console.warn('Failed to get current user:', e);
+    }
+}
+
+async function loadFeedbackCounts(procDefId: string) {
+    const supabase = (window as any).$supabase;
+    if (!supabase || !procDefId) {
+        totalFeedbackCount.value = 0;
+        unresolvedCount.value = 0;
+        return;
+    }
+
+    try {
+        const tenantId = (window as any).$tenantName;
+        const [{ count: totalCount }, { count: unresolvedCountValue }] = await Promise.all([
+            supabase
+                .from('proc_def_comments')
+                .select('id', { count: 'exact', head: true })
+                .eq('proc_def_id', procDefId)
+                .eq('tenant_id', tenantId)
+                .is('parent_comment_id', null),
+            supabase
+                .from('proc_def_comments')
+                .select('id', { count: 'exact', head: true })
+                .eq('proc_def_id', procDefId)
+                .eq('tenant_id', tenantId)
+                .eq('is_resolved', false)
+                .is('parent_comment_id', null)
+        ]);
+
+        totalFeedbackCount.value = totalCount || 0;
+        unresolvedCount.value = unresolvedCountValue || 0;
+    } catch (e) {
+        console.warn('Failed to load feedback counts:', e);
+        totalFeedbackCount.value = 0;
+        unresolvedCount.value = 0;
     }
 }
 
@@ -412,7 +473,12 @@ async function loadData(silent = false) {
         metricsMap.value = metrics;
         reviewVersion.value = approvalState.value?.version || approvalState.value?.version_label || '';
 
-        if (procDefId) await loadBpmnData(procDefId);
+        if (procDefId) {
+            await Promise.all([loadBpmnData(procDefId), loadFeedbackCounts(procDefId)]);
+        } else {
+            totalFeedbackCount.value = 0;
+            unresolvedCount.value = 0;
+        }
 
         // Load snapshots for Phase 3.4
         const rid = approvalState.value?.id;
@@ -436,7 +502,7 @@ async function loadBpmnData(procDefId: string) {
         const supabase = (window as any).$supabase;
         if (!supabase) return;
 
-        const { data: procDef } = await supabase.from('proc_def').select('*').eq('id', procDefId).maybeSingle();
+        const { data: procDef } = await supabase.from('proc_def').select('id, bpmn, name').eq('id', procDefId).maybeSingle();
 
         currentXml.value = procDef?.bpmn || '';
         prevXml.value = '';
@@ -444,7 +510,7 @@ async function loadBpmnData(procDefId: string) {
 
         const { data: versions } = await supabase
             .from('proc_def_version')
-            .select('*')
+            .select('version, snapshot, version_tag')
             .eq('proc_def_id', procDefId)
             .eq('tenant_id', (window as any).$tenantName)
             .order('timeStamp', { ascending: false })
@@ -466,7 +532,7 @@ async function loadBpmnData(procDefId: string) {
             const publishedVer = versions.find((v: any) => v.version_tag === 'published');
             if (publishedVer?.snapshot) {
                 publishedXml.value = publishedVer.snapshot;
-                publishedVersion.value = publishedVer.version + ' (Published)';
+                publishedVersion.value = publishedVer.version + ' (배포완료)';
             } else {
                 // 최초 제정: Published 버전 없음
                 publishedXml.value = '';
@@ -520,8 +586,9 @@ async function handleApproveHQ() {
         comment.value = '';
         await loadData(true);
         const newState = approvalState.value?.state || '';
-        if (newState === 'public_feedback') showStageToast('전사 공람 단계로 이동했습니다', 'success');
-        else showStageToast('HQ 승인 완료', 'success');
+        if (newState === 'public_feedback') showStageToast('공람 단계로 이동했습니다', 'success');
+        // 본사 + 현업 단계에서 사용하던 본사 승인 토스트 — 본사 제거로 1단계 표현 통일 (자동 통과되어 호출 안 됨)
+        else showStageToast('1단계 승인 완료', 'success');
     } catch (e: any) {
         console.error('approveHQ error:', e);
     } finally {
@@ -538,8 +605,9 @@ async function handleApproveField() {
         comment.value = '';
         await loadData(true);
         const newState = approvalState.value?.state || '';
-        if (newState === 'public_feedback') showStageToast('전사 공람 단계로 이동했습니다', 'success');
-        else showStageToast('Field 승인 완료', 'success');
+        if (newState === 'public_feedback') showStageToast('공람 단계로 이동했습니다', 'success');
+        // 본사 + 현업 단계에서 사용하던 '현업 승인 완료' 토스트 — 본사 제거로 1단계 표현 통일
+        else showStageToast('1단계 승인 완료', 'success');
     } catch (e: any) {
         console.error('approveField error:', e);
     } finally {
@@ -555,7 +623,7 @@ async function handleEndPublicFeedback() {
         await backend.endPublicFeedback(id, c);
         comment.value = '';
         await loadData(true);
-        showStageToast('최종 편집 단계로 이동했습니다', 'success');
+        showStageToast('최종수정 단계로 이동했습니다', 'success');
     } catch (e: any) {
         console.error('endPublicFeedback error:', e);
     } finally {
@@ -571,16 +639,17 @@ async function handlePublish() {
         await backend.publishDefinition(id, c);
         comment.value = '';
         await loadData(true);
-        showStageToast('배포 완료되었습니다', 'success');
+        showStageToast('배포완료되었습니다', 'success');
     } catch (e: any) {
         console.error('publish error:', e);
+        showStageToast(e?.message || '배포 처리에 실패했습니다', 'error');
     } finally {
         actionLoading.value = false;
     }
 }
 
 async function handleReject() {
-    if (!comment.value) return;
+    if (!comment.value || !canRejectAction.value) return;
     actionLoading.value = true;
     try {
         const id = approvalState.value?.id || reviewId.value;
@@ -589,50 +658,6 @@ async function handleReject() {
         await loadData(true);
     } catch (e) {
         console.error('handleReject error:', e);
-    } finally {
-        actionLoading.value = false;
-    }
-}
-
-async function handleComment() {
-    if (!comment.value) return;
-    actionLoading.value = true;
-    try {
-        const supabase = (window as any).$supabase;
-        if (!supabase) return;
-        let actorId = 'anonymous',
-            actorName = 'Anonymous';
-        try {
-            const { data: authData } = await supabase.auth.getUser();
-            if (authData?.user) {
-                actorId = authData.user.id;
-                const { data: userData } = await supabase
-                    .from('users')
-                    .select('username, email')
-                    .eq('id', authData.user.id)
-                    .limit(1)
-                    .maybeSingle();
-                actorName = userData?.username || authData.user.email || 'Anonymous';
-            }
-        } catch {
-            /* ignore */
-        }
-
-        await supabase.from('proc_def_approval_history').insert({
-            proc_def_id: approvalState.value?.proc_def_id || reviewId.value,
-            review_id: approvalState.value?.id || null,
-            action: 'comment',
-            from_state: approvalState.value?.state || 'draft',
-            to_state: approvalState.value?.state || 'draft',
-            actor_id: actorId,
-            actor_name: actorName,
-            comment: comment.value,
-            tenant_id: (window as any).$tenantName
-        });
-        comment.value = '';
-        await loadData(true);
-    } catch (e) {
-        console.error('handleComment error:', e);
     } finally {
         actionLoading.value = false;
     }
@@ -648,49 +673,6 @@ async function handleCancel() {
         await loadData(true);
     } catch (e) {
         console.error('handleCancel error:', e);
-    } finally {
-        actionLoading.value = false;
-    }
-}
-
-function openReassignDialog() {
-    reassignReviewerId.value = '';
-    reassignReviewerObj.value = null;
-    showReassignDialog.value = true;
-}
-
-async function confirmReassign() {
-    if (!reassignReviewerObj.value) return;
-    actionLoading.value = true;
-    try {
-        const rid = approvalState.value?.id;
-        if (!rid) return;
-        const supabase = (window as any).$supabase;
-        if (!supabase) return;
-        const newReviewer = { id: reassignReviewerObj.value.id, name: reassignReviewerObj.value.name };
-        await supabase
-            .from('proc_def_approval_state')
-            .update({
-                assigned_reviewer_id: newReviewer.id,
-                assigned_reviewer_name: newReviewer.name,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', rid);
-        await supabase.from('proc_def_approval_history').insert({
-            proc_def_id: approvalState.value?.proc_def_id,
-            review_id: rid,
-            action: 'reassign',
-            from_state: approvalState.value?.state,
-            to_state: approvalState.value?.state,
-            actor_id: currentUserId.value,
-            actor_name: currentUserName.value,
-            comment: `Reassigned to ${newReviewer.name}`,
-            tenant_id: (window as any).$tenantName
-        });
-        showReassignDialog.value = false;
-        await loadData(true);
-    } catch (e) {
-        console.error('reassign error:', e);
     } finally {
         actionLoading.value = false;
     }
@@ -728,13 +710,32 @@ async function confirmResolve() {
     }
 }
 
+function openInEditor() {
+    const procDefId = approvalState.value?.proc_def_id;
+    if (!procDefId) return;
+
+    router.push({
+        name: 'Process Hierarchy',
+        query: buildProcessHierarchyQuery({
+            id: procDefId,
+            name: processName.value || procDefId,
+            entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
+            mode: PROCESS_HIERARCHY_MODE.VIEW,
+            left: PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED,
+            right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
+            rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
+            reviewId: approvalState.value?.id || reviewId.value
+        })
+    });
+}
+
 // ── Supabase Realtime: 상태 변경 감지 ──
 let realtimeChannel: any = null;
 
 const stateTransitionMessages: Record<string, string> = {
-    public_feedback: '전문가 검토 완료. 전사 30일 공람 기간이 시작되었습니다.',
-    final_edit: '공람 기간이 종료되어 최종 편집 단계로 이동했습니다.',
-    published: '프로세스가 배포 완료되었습니다.',
+    public_feedback: '전문가 검토 완료. 30일 공람 기간이 시작되었습니다.',
+    final_edit: '공람 기간이 종료되어 최종수정 단계로 이동했습니다.',
+    published: '프로세스가 배포완료되었습니다.',
     rejected: '프로세스가 반려되었습니다.',
     reopen_requested: '현장 개선 요청이 등록되었습니다.',
     draft: '새 버전 초안이 생성되었습니다.'
@@ -813,16 +814,18 @@ function setupRealtimeSubscription() {
                     const newField = payload.new?.field_status;
                     const oldField = hasOldState ? payload.old?.field_status : approvalState.value?.field_status;
                     if (newHq === 'approved' && oldHq !== 'approved') {
-                        showStageToast('HQ(본사) 검토가 승인되었습니다.', 'success');
+                        // 본사 + 현업 단계에서 사용하던 본사 승인 realtime 토스트 — 본사 제거로 1단계 표현 통일
+                        showStageToast('1단계 검토가 승인되었습니다.', 'success');
                     }
                     if (newField === 'approved' && oldField !== 'approved') {
-                        showStageToast('Field(현업) 검토가 승인되었습니다.', 'success');
+                        showStageToast('1단계 검토가 승인되었습니다.', 'success');
                     }
                     if (newHq === 'rejected' && oldHq !== 'rejected') {
-                        showStageToast('HQ(본사) 검토가 반려되었습니다.', 'info');
+                        // 본사 + 현업 단계에서 사용하던 본사 반려 realtime 토스트 — 본사 제거로 1단계 표현 통일
+                        showStageToast('1단계 검토가 반려되었습니다.', 'info');
                     }
                     if (newField === 'rejected' && oldField !== 'rejected') {
-                        showStageToast('Field(현업) 검토가 반려되었습니다.', 'info');
+                        showStageToast('1단계 검토가 반려되었습니다.', 'info');
                     }
                 }
 
@@ -886,9 +889,9 @@ onBeforeUnmount(cleanupRealtime);
                     <v-chip size="small" :color="getStateColor(currentState)" variant="tonal">
                         {{ getStateLabel(currentState) }}
                     </v-chip>
-                    <v-btn v-if="!isFinished" size="small" variant="tonal" color="grey" @click="openReassignDialog">
-                        <v-icon start size="14">mdi-account-switch</v-icon>
-                        Reassign
+                    <v-btn size="small" variant="tonal" color="primary" @click="openInEditor">
+                        <v-icon start size="14">mdi-file-document-edit-outline</v-icon>
+                        Open in Editor
                     </v-btn>
                     <v-btn v-if="!isFinished" size="small" variant="text" color="grey" @click="showCancelDialog = true">
                         Cancel Review
@@ -925,10 +928,11 @@ onBeforeUnmount(cleanupRealtime);
                 </div>
             </div>
 
-            <!-- ── Parallel Approval Status (HQ / Field) ── -->
+            <!-- ── 검토 의견 패널 / 결재 진행 영역 (본사 + 현업 단계에서 사용하던 병렬 승인 표시 — 본사 제거로 1단계 단일 표시) ── -->
             <div v-if="hasParallelApproval" class="rd-parallel-bar">
-                <span class="rd-parallel-label">병렬 승인:</span>
-                <div class="rd-parallel-item" :class="`rd-parallel--${hqStatus}`">
+                <span class="rd-parallel-label">1단계:</span>
+                <!-- 본사 + 현업 단계에서 사용하던 본사 결재 표시 — 본사 제거로 주석 처리 -->
+                <!-- <div class="rd-parallel-item" :class="`rd-parallel--${hqStatus}`">
                     <v-icon size="14" :color="hqStatus === 'approved' ? 'success' : hqStatus === 'rejected' ? 'error' : 'grey'">
                         {{
                             hqStatus === 'approved'
@@ -938,9 +942,9 @@ onBeforeUnmount(cleanupRealtime);
                                 : 'mdi-clock-outline'
                         }}
                     </v-icon>
-                    <span>HQ</span>
+                    <span>본사</span>
                     <span v-if="hqReviewerName" class="rd-parallel-name">{{ hqReviewerName }}</span>
-                </div>
+                </div> -->
                 <div class="rd-parallel-item" :class="`rd-parallel--${fieldStatus}`">
                     <v-icon size="14" :color="fieldStatus === 'approved' ? 'success' : fieldStatus === 'rejected' ? 'error' : 'grey'">
                         {{
@@ -951,7 +955,8 @@ onBeforeUnmount(cleanupRealtime);
                                 : 'mdi-clock-outline'
                         }}
                     </v-icon>
-                    <span>Field</span>
+                    <!-- 본사 + 현업 단계에서 사용하던 '현업' 라벨 — 본사 제거로 단계 라벨 사용 -->
+                    <!-- <span>현업</span> -->
                     <span v-if="fieldReviewerName" class="rd-parallel-name">{{ fieldReviewerName }}</span>
                 </div>
             </div>
@@ -960,7 +965,7 @@ onBeforeUnmount(cleanupRealtime);
             <div v-if="isPublicFeedback" class="rd-public-banner" :class="{ 'rd-public-banner--urgent': publicFeedbackIsUrgent }">
                 <div class="rd-public-banner-left">
                     <v-icon size="16" :color="publicFeedbackIsUrgent ? '#dc2626' : '#0284c7'" class="mr-2">mdi-bullhorn-outline</v-icon>
-                    <span class="rd-public-banner-text">전사 공람 중</span>
+                    <span class="rd-public-banner-text">공람중(Public-Feedback)</span>
                     <span v-if="publicFeedbackEndsAt" class="rd-public-banner-end">
                         · 종료일 {{ formatExactTime(publicFeedbackEndsAt).substring(0, 10) }}
                     </span>
@@ -977,7 +982,7 @@ onBeforeUnmount(cleanupRealtime);
                         {{ unresolvedCount > 0 ? 'mdi-alert-circle-outline' : 'mdi-check-circle-outline' }}
                     </v-icon>
                     미해결 피드백
-                    <strong :style="{ color: unresolvedCount > 0 ? 'var(--cds-text-warning)' : 'var(--cds-text-success)'}">{{ unresolvedCount }}건</strong>
+                    <strong :style="{ color: unresolvedCount > 0 ? '#d97706' : '#059669' }">{{ unresolvedCount }}건</strong>
                     / 전체 {{ totalFeedbackCount }}건
                 </div>
                 <v-progress-linear
@@ -1004,7 +1009,7 @@ onBeforeUnmount(cleanupRealtime);
                                 @click="switchCompareMode('published')"
                             >
                                 <v-icon size="13" class="mr-1">mdi-publish</v-icon>
-                                As-Is (Published) vs Draft
+                                As-Is (배포완료) vs 초안
                             </button>
                             <button
                                 v-if="previousXml"
@@ -1013,7 +1018,7 @@ onBeforeUnmount(cleanupRealtime);
                                 @click="switchCompareMode('previous')"
                             >
                                 <v-icon size="13" class="mr-1">mdi-compare</v-icon>
-                                직전 버전 vs Draft
+                                직전 버전 vs 초안
                             </button>
                             <button
                                 v-if="snapshots.length > 0"
@@ -1121,6 +1126,11 @@ onBeforeUnmount(cleanupRealtime);
                                     }}</span>
                                     {{ change.description }}
                                 </span>
+                                <div v-if="change.fieldChanges?.length" class="rd-change-fields">
+                                    <span v-for="fieldChange in change.fieldChanges" :key="`${change.id}-${fieldChange}`" class="rd-change-field-chip">
+                                        {{ fieldChange }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1131,14 +1141,13 @@ onBeforeUnmount(cleanupRealtime);
                     <div class="rd-right-inner">
                         <!-- Panel header (Figma) -->
                         <div class="rd-panel-header">
-                            <div class="rd-panel-title">Approval History</div>
-                            <div class="rd-panel-subtitle">Review timeline and add your feedback</div>
+                            <div class="rd-panel-title">승인 이력</div>
                         </div>
 
                         <!-- Status banners -->
                         <div v-if="isCompleted" class="rd-banner rd-banner--success">
                             <v-icon size="16" color="success" class="mr-2">mdi-check-decagram</v-icon>
-                            배포 완료되었습니다.
+                            배포완료되었습니다.
                         </div>
                         <div v-else-if="isRejected" class="rd-banner rd-banner--error">
                             <v-icon size="16" color="error" class="mr-2">mdi-close-circle</v-icon>
@@ -1154,13 +1163,9 @@ onBeforeUnmount(cleanupRealtime);
                             <v-icon size="14" class="mr-1">mdi-account-cancel-outline</v-icon>
                             본인이 기안한 프로세스는 직접 승인할 수 없습니다
                         </div>
-                        <div v-else-if="hasAssignedReviewer && !canApproveOrReject && !isFinished" class="rd-notice rd-notice--warning">
+                        <div v-else-if="!canApproveOrReject && !isFinished" class="rd-notice rd-notice--warning">
                             <v-icon size="14" class="mr-1">mdi-lock-outline</v-icon>
-                            담당자: <strong class="ml-1">{{ assignedReviewerName }}</strong>
-                        </div>
-                        <div v-else-if="approvalState?.assigned_reviewer_name && !isCompleted" class="rd-notice rd-notice--info">
-                            <v-icon size="14" class="mr-1">mdi-account-arrow-right</v-icon>
-                            다음 담당자: <strong class="ml-1">{{ approvalState.assigned_reviewer_name }}</strong>
+                            현재 역할로는 이 리뷰의 승인/반려를 처리할 수 없습니다
                         </div>
 
                         <!-- History list (Figma 카드형) -->
@@ -1213,7 +1218,7 @@ onBeforeUnmount(cleanupRealtime);
 
                                     <div v-if="entry.resolved" class="rd-he-resolved">
                                         <v-icon size="12" color="success">mdi-check-circle</v-icon>
-                                        Resolved: {{ entry.resolve_action_text }}
+                                        <span class="rd-he-resolved-text">조치 완료: {{ entry.resolve_action_text }}</span>
                                     </div>
                                     <div
                                         v-else-if="entry.action === 'reject' && entry.comment && !entry.resolved && !isFinished"
@@ -1221,21 +1226,22 @@ onBeforeUnmount(cleanupRealtime);
                                     >
                                         <button class="rd-resolve-btn" @click="openResolveDialog(entry)">
                                             <v-icon size="12">mdi-check</v-icon>
-                                            Resolve
+                                            조치
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- ── Add Comment + Action Buttons (Figma 하단) ── -->
+                        <!-- ── Action Buttons ── -->
                         <div class="rd-action-area">
-                            <div class="rd-action-label">Add Comment</div>
+                            <div class="rd-action-label">결재</div>
                             <textarea
                                 v-model="comment"
-                                placeholder="Share your feedback or approval decision..."
+                                placeholder="상세 내용을 입력해주세요..."
                                 class="rd-comment-textarea"
                                 rows="3"
+                                @keydown.shift.enter.stop
                             ></textarea>
 
                             <div v-if="isSelfSubmitter && !isFinished" class="rd-selfblock-hint">
@@ -1253,9 +1259,9 @@ onBeforeUnmount(cleanupRealtime);
                                     @click="handleApproveHQ"
                                 >
                                     <v-icon size="15" color="white">mdi-domain</v-icon>
-                                    Approve (HQ)
+                                    본사 승인
                                 </button>
-                                <!-- Field 승인 (in_review 상태, field pending) -->
+                                <!-- 현업 승인 (in_review 상태, field pending) -->
                                 <button
                                     v-if="canApproveFieldBtn"
                                     class="rd-btn rd-btn--approve-field"
@@ -1264,14 +1270,14 @@ onBeforeUnmount(cleanupRealtime);
                                     @click="handleApproveField"
                                 >
                                     <v-icon size="15" color="white">mdi-account-hard-hat</v-icon>
-                                    Approve (Field)
+                                    현업 승인
                                 </button>
                                 <!-- 공람 조기 종료 (public_feedback 상태) -->
                                 <button
-                                    v-if="isPublicFeedback"
+                                    v-if="canEndPublicFeedbackAction"
                                     class="rd-btn rd-btn--end-feedback"
-                                    :class="{ 'rd-btn--disabled': actionLoading }"
-                                    :disabled="actionLoading"
+                                    :class="{ 'rd-btn--disabled': actionLoading || !canApproveOrReject }"
+                                    :disabled="actionLoading || !canApproveOrReject"
                                     @click="handleEndPublicFeedback"
                                 >
                                     <v-icon size="15" color="white">mdi-fast-forward</v-icon>
@@ -1297,25 +1303,15 @@ onBeforeUnmount(cleanupRealtime);
                                         </button>
                                     </template>
                                 </v-tooltip>
-                                <!-- Request Changes: 빨강 outline -->
+                                <!-- 반려: 빨강 outline -->
                                 <button
                                     class="rd-btn rd-btn--reject"
-                                    :class="{ 'rd-btn--disabled': actionLoading || !comment || !canApproveOrReject }"
-                                    :disabled="actionLoading || !comment || !canApproveOrReject"
+                                    :class="{ 'rd-btn--disabled': actionLoading || !comment || !canRejectAction }"
+                                    :disabled="actionLoading || !comment || !canRejectAction"
                                     @click="handleReject"
                                 >
                                     <v-icon size="15" color="#ef4444">mdi-alert-circle-outline</v-icon>
-                                    Request Changes
-                                </button>
-                                <!-- Comment: 회색 outline -->
-                                <button
-                                    class="rd-btn rd-btn--comment"
-                                    :class="{ 'rd-btn--disabled': actionLoading || !comment }"
-                                    :disabled="actionLoading || !comment"
-                                    @click="handleComment"
-                                >
-                                    <v-icon size="15" color="#475569">mdi-send-outline</v-icon>
-                                    Comment
+                                    반려
                                 </button>
                             </div>
                         </div>
@@ -1331,39 +1327,6 @@ onBeforeUnmount(cleanupRealtime);
                 {{ stageToast.message }}
             </div>
         </transition>
-
-        <!-- ── Reassign Dialog ── -->
-        <v-dialog v-model="showReassignDialog" max-width="440" persistent>
-            <v-card rounded="lg" elevation="8">
-                <div class="dlg-header">
-                    <v-icon size="20" color="primary" class="mr-2">mdi-account-switch</v-icon>
-                    <span class="text-subtitle-1 font-weight-bold">담당자 변경</span>
-                </div>
-                <v-card-text class="pt-3">
-                    <p class="text-body-2 text-medium-emphasis mb-3">승인/반려 권한을 다른 사람에게 위임합니다.</p>
-                    <OwnerSelect
-                        v-model="reassignReviewerId"
-                        placeholder="담당자를 선택하세요"
-                        density="compact"
-                        hide-details
-                        @select="(m: any) => reassignReviewerObj = m"
-                    />
-                </v-card-text>
-                <v-card-actions class="px-4 pb-4">
-                    <v-spacer />
-                    <v-btn variant="text" size="small" @click="showReassignDialog = false">취소</v-btn>
-                    <v-btn
-                        color="primary"
-                        variant="flat"
-                        size="small"
-                        :loading="actionLoading"
-                        :disabled="!reassignReviewerObj"
-                        @click="confirmReassign"
-                        >확인</v-btn
-                    >
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
 
         <!-- ── Cancel Dialog ── -->
         <v-dialog v-model="showCancelDialog" max-width="440" persistent>
@@ -1381,6 +1344,7 @@ onBeforeUnmount(cleanupRealtime);
                         variant="outlined"
                         density="compact"
                         hide-details
+                        @keydown.shift.enter.stop
                     />
                 </v-card-text>
                 <v-card-actions class="px-4 pb-4">
@@ -1396,7 +1360,7 @@ onBeforeUnmount(cleanupRealtime);
             <v-card rounded="lg" elevation="8">
                 <div class="dlg-header">
                     <v-icon size="20" color="success" class="mr-2">mdi-check-circle-outline</v-icon>
-                    <span class="text-subtitle-1 font-weight-bold">피드백 Resolve</span>
+                    <span class="text-subtitle-1 font-weight-bold">피드백 조치</span>
                 </div>
                 <v-card-text class="pt-3">
                     <div v-if="resolveTargetEntry" class="rd-resolve-original">
@@ -1411,6 +1375,7 @@ onBeforeUnmount(cleanupRealtime);
                         variant="outlined"
                         density="compact"
                         hide-details
+                        @keydown.shift.enter.stop
                     />
                 </v-card-text>
                 <v-card-actions class="px-4 pb-4">
@@ -1424,7 +1389,7 @@ onBeforeUnmount(cleanupRealtime);
                         :disabled="!resolveActionText.trim()"
                         @click="confirmResolve"
                     >
-                        <v-icon start size="16">mdi-check</v-icon>Resolve 완료
+                        <v-icon start size="16">mdi-check</v-icon>조치 완료
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -1436,8 +1401,8 @@ onBeforeUnmount(cleanupRealtime);
 .rd-root {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    background: var(--cds-bg-neutral);
+    min-height: calc(100dvh - var(--v-layout-top, 0px) - 56px);
+    background: #f8fafc;
     overflow: hidden;
 }
 .rd-loading {
@@ -1453,8 +1418,8 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     justify-content: space-between;
     padding: 14px 24px;
-    background: var(--cds-surface-2);
-    border-bottom: 1px solid var(--cds-border);
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
     flex-shrink: 0;
     gap: 16px;
 }
@@ -1470,7 +1435,7 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     gap: 4px;
     font-size: 13px;
-    color: var(--cds-text-secondary);
+    color: #64748b;
     background: none;
     border: none;
     cursor: pointer;
@@ -1479,7 +1444,7 @@ onBeforeUnmount(cleanupRealtime);
     transition: color 0.15s;
 }
 .rd-back-btn:hover {
-    color: var(--cds-text-primary);
+    color: #1e293b;
 }
 .rd-title-row {
     display: flex;
@@ -1490,14 +1455,14 @@ onBeforeUnmount(cleanupRealtime);
 .rd-title {
     font-size: 18px;
     font-weight: 700;
-    color: var(--cds-text-primary);
+    color: #0f172a;
     margin: 0;
     line-height: 1.3;
 }
 .rd-title-version {
     font-size: 16px;
     font-weight: 400;
-    color: var(--cds-text-secondary);
+    color: #64748b;
     margin-left: 4px;
 }
 .rd-access-badge {
@@ -1522,8 +1487,8 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     justify-content: space-between;
     padding: 8px 24px;
-    background: var(--cds-surface-2);
-    border-bottom: 1px solid var(--cds-border);
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
     flex-shrink: 0;
     gap: 16px;
 }
@@ -1532,10 +1497,10 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    color: var(--cds-text-secondary);
+    color: #475569;
 }
 .rd-diff-comparing strong {
-    color: var(--cds-text-primary);
+    color: #1e293b;
 }
 .rd-diff-legend {
     display: flex;
@@ -1550,13 +1515,13 @@ onBeforeUnmount(cleanupRealtime);
     font-weight: 500;
 }
 .rd-diff-pill--added {
-    color: var(--cds-text-success);
+    color: #059669;
 }
 .rd-diff-pill--removed {
-    color: var(--cds-text-danger);
+    color: #dc2626;
 }
 .rd-diff-pill--modified {
-    color: var(--cds-text-warning);
+    color: #d97706;
 }
 .rd-diff-dot {
     width: 8px;
@@ -1565,13 +1530,13 @@ onBeforeUnmount(cleanupRealtime);
     flex-shrink: 0;
 }
 .rd-diff-dot--added {
-    background: var(--cds-text-success);
+    background: #10b981;
 }
 .rd-diff-dot--removed {
-    background: var(--cds-text-danger);
+    background: #ef4444;
 }
 .rd-diff-dot--modified {
-    background: var(--cds-text-warning);
+    background: #f59e0b;
 }
 
 /* ── Parallel Bar ── */
@@ -1579,15 +1544,15 @@ onBeforeUnmount(cleanupRealtime);
     display: flex;
     align-items: center;
     padding: 8px 24px;
-    background: var(--cds-bg-neutral);
-    border-bottom: 1px solid var(--cds-border);
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
     gap: 12px;
     flex-shrink: 0;
 }
 .rd-parallel-label {
     font-size: 12px;
     font-weight: 600;
-    color: var(--cds-text-secondary);
+    color: #64748b;
 }
 .rd-parallel-item {
     display: inline-flex;
@@ -1600,19 +1565,19 @@ onBeforeUnmount(cleanupRealtime);
     border: 1px solid;
 }
 .rd-parallel--approved {
-    background: var(--cds-bg-success);
-    border-color: var(--cds-bg-success);
+    background: #d1fae5;
+    border-color: #a7f3d0;
     color: #065f46;
 }
 .rd-parallel--rejected {
-    background: var(--cds-bg-danger);
+    background: #fee2e2;
     border-color: #fca5a5;
     color: #991b1b;
 }
 .rd-parallel--pending {
-    background: var(--cds-bg-neutral);
-    border-color: var(--cds-border);
-    color: var(--cds-text-secondary);
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #64748b;
 }
 .rd-parallel-name {
     opacity: 0.75;
@@ -1625,7 +1590,7 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     gap: 16px;
     padding: 8px 24px;
-    background: var(--cds-bg-warning);
+    background: #fffbeb;
     border-bottom: 1px solid #fde68a;
     flex-shrink: 0;
 }
@@ -1634,7 +1599,7 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     gap: 5px;
     font-size: 12px;
-    color: var(--cds-text-secondary);
+    color: #555;
     white-space: nowrap;
     flex-shrink: 0;
 }
@@ -1647,6 +1612,7 @@ onBeforeUnmount(cleanupRealtime);
 .rd-body {
     display: flex;
     flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -1654,6 +1620,7 @@ onBeforeUnmount(cleanupRealtime);
 .rd-left {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -1664,28 +1631,32 @@ onBeforeUnmount(cleanupRealtime);
     display: flex;
     flex-direction: column;
     gap: 14px;
+    flex: 1;
+    min-height: 0;
 }
 .rd-bpmn-panel {
-    border: 1px solid var(--cds-border);
+    border: 1px solid #e2e8f0;
     border-radius: 16px;
     overflow: hidden;
-    background: var(--cds-surface-2);
+    background: #fff;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 .rd-bpmn-bar {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    border-bottom: 1px solid var(--cds-border);
+    border-bottom: 1px solid #f0f0f0;
     flex-shrink: 0;
 }
 .rd-bpmn-bar--before {
     background: #fff5f5;
 }
 .rd-bpmn-bar--after {
-    background: var(--cds-bg-success);
+    background: #f0fdf4;
 }
 .rd-bpmn-badge {
     font-size: 11px;
@@ -1695,29 +1666,29 @@ onBeforeUnmount(cleanupRealtime);
 }
 .rd-bpmn-badge--before {
     background: #fce4ec;
-    color: var(--cds-text-danger);
+    color: #c62828;
 }
 .rd-bpmn-badge--after {
-    background: var(--cds-bg-success);
-    color: var(--cds-text-success);
+    background: #e8f5e9;
+    color: #2e7d32;
 }
 .rd-bpmn-ver {
     font-size: 11px;
-    color: var(--cds-text-muted);
+    color: #94a3b8;
 }
 .rd-bpmn-canvas {
-    height: 350px;
+    min-height: 220px;
     position: relative;
     overflow: hidden;
-    background: var(--cds-bg-neutral);
+    background: #fafafa;
     flex: 1;
 }
 .rd-bpmn-single {
-    border: 1px solid var(--cds-border);
+    border: 1px solid #e2e8f0;
     border-radius: 16px;
     overflow: hidden;
-    background: var(--cds-surface-2);
-    height: 420px;
+    background: #fff;
+    height: clamp(280px, 42vh, 400px);
     position: relative;
 }
 .rd-bpmn-empty {
@@ -1730,17 +1701,17 @@ onBeforeUnmount(cleanupRealtime);
 
 /* Change Summary */
 .rd-change-summary {
-    background: var(--cds-surface-2);
-    border: 1px solid var(--cds-border);
+    background: #fff;
+    border: 1px solid #e2e8f0;
     border-radius: 10px;
     overflow: hidden;
 }
 .rd-change-summary-title {
     font-size: 13px;
     font-weight: 700;
-    color: var(--cds-text-primary);
+    color: #1e293b;
     padding: 12px 16px 10px;
-    border-bottom: 1px solid var(--cds-bg-neutral);
+    border-bottom: 1px solid #f1f5f9;
 }
 .rd-change-list {
     padding: 10px 16px 12px;
@@ -1753,6 +1724,7 @@ onBeforeUnmount(cleanupRealtime);
 .rd-change-item {
     display: flex;
     align-items: flex-start;
+    flex-wrap: wrap;
     gap: 8px;
 }
 .rd-change-icon {
@@ -1761,25 +1733,44 @@ onBeforeUnmount(cleanupRealtime);
 }
 .rd-change-text {
     font-size: 13px;
-    color: var(--cds-text-secondary);
+    color: #374151;
     line-height: 1.5;
 }
 .rd-change-text--removed {
     text-decoration: line-through;
-    color: var(--cds-text-danger);
+    color: #ef4444;
     opacity: 0.8;
 }
 .rd-change-type {
     font-weight: 600;
     margin-right: 4px;
 }
+.rd-change-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    padding-left: 22px;
+}
+.rd-change-field-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #475569;
+}
 
 /* ── Right ── */
 .rd-right {
     width: 420px;
     flex-shrink: 0;
-    background: var(--cds-surface-2);
-    border-left: 1px solid var(--cds-border);
+    min-height: 0;
+    background: #fff;
+    border-left: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1787,22 +1778,23 @@ onBeforeUnmount(cleanupRealtime);
 .rd-right-inner {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 .rd-panel-header {
     padding: 16px 20px 12px;
-    border-bottom: 1px solid var(--cds-bg-neutral);
+    border-bottom: 1px solid #f1f5f9;
     flex-shrink: 0;
 }
 .rd-panel-title {
     font-size: 16px;
     font-weight: 700;
-    color: var(--cds-text-primary);
+    color: #0f172a;
 }
 .rd-panel-subtitle {
     font-size: 12px;
-    color: var(--cds-text-muted);
+    color: #94a3b8;
     margin-top: 2px;
 }
 
@@ -1816,17 +1808,17 @@ onBeforeUnmount(cleanupRealtime);
     flex-shrink: 0;
 }
 .rd-banner--success {
-    background: var(--cds-bg-success);
+    background: #d1fae5;
     color: #065f46;
-    border-bottom: 1px solid var(--cds-bg-success);
+    border-bottom: 1px solid #a7f3d0;
 }
 .rd-banner--error {
-    background: var(--cds-bg-danger);
+    background: #fee2e2;
     color: #991b1b;
     border-bottom: 1px solid #fca5a5;
 }
 .rd-banner--warning {
-    background: var(--cds-bg-warning);
+    background: #fef3c7;
     color: #92400e;
     border-bottom: 1px solid #fde68a;
 }
@@ -1845,13 +1837,13 @@ onBeforeUnmount(cleanupRealtime);
     border-bottom: 1px solid #fecdd3;
 }
 .rd-notice--warning {
-    background: var(--cds-bg-warning);
-    color: var(--cds-text-warning);
+    background: #fffbeb;
+    color: #b45309;
     border-bottom: 1px solid #fde68a;
 }
 .rd-notice--info {
-    background: var(--cds-bg-accent);
-    color: hsl(var(--accent-brand));
+    background: #eff6ff;
+    color: #1d4ed8;
     border-bottom: 1px solid #bfdbfe;
 }
 
@@ -1894,7 +1886,7 @@ onBeforeUnmount(cleanupRealtime);
 .rd-he-connector {
     width: 2px;
     flex: 1;
-    background: var(--cds-border);
+    background: #e2e8f0;
     margin: 3px 0;
     min-height: 12px;
 }
@@ -1928,17 +1920,17 @@ onBeforeUnmount(cleanupRealtime);
 .rd-he-name {
     font-size: 13px;
     font-weight: 600;
-    color: var(--cds-text-primary);
+    color: #1e293b;
     line-height: 1.3;
 }
 .rd-he-role {
     font-size: 11px;
-    color: var(--cds-text-muted);
+    color: #94a3b8;
     line-height: 1.3;
 }
 .rd-he-time {
     font-size: 11px;
-    color: var(--cds-text-muted);
+    color: #94a3b8;
     white-space: nowrap;
     margin-left: auto;
     flex-shrink: 0;
@@ -1956,21 +1948,27 @@ onBeforeUnmount(cleanupRealtime);
 }
 .rd-he-comment {
     font-size: 13px;
-    color: var(--cds-text-secondary);
-    background: var(--cds-bg-neutral);
+    color: #475569;
+    background: #f8fafc;
     border-radius: 8px;
     padding: 8px 12px;
     line-height: 1.6;
-    border-left: 3px solid var(--cds-border);
+    border-left: 3px solid #e2e8f0;
     margin-top: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 .rd-he-resolved {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 4px;
     font-size: 11px;
-    color: var(--cds-text-success);
+    color: #059669;
     margin-top: 6px;
+}
+.rd-he-resolved-text {
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 .rd-he-resolve-row {
     margin-top: 6px;
@@ -1981,39 +1979,39 @@ onBeforeUnmount(cleanupRealtime);
     gap: 4px;
     font-size: 11px;
     font-weight: 600;
-    color: var(--cds-text-success);
-    background: var(--cds-bg-success);
-    border: 1px solid var(--cds-bg-success);
+    color: #059669;
+    background: #d1fae5;
+    border: 1px solid #a7f3d0;
     border-radius: 6px;
     padding: 3px 10px;
     cursor: pointer;
     transition: background 0.15s;
 }
 .rd-resolve-btn:hover {
-    background: var(--cds-bg-success);
+    background: #a7f3d0;
 }
 
 /* ── Action Area (Figma 하단) ── */
 .rd-action-area {
     padding: 16px 20px;
-    border-top: 1px solid var(--cds-border);
-    background: var(--cds-surface-2);
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
     flex-shrink: 0;
 }
 .rd-action-label {
     font-size: 13px;
     font-weight: 600;
-    color: var(--cds-text-secondary);
+    color: #374151;
     margin-bottom: 8px;
 }
 .rd-comment-textarea {
     width: 100%;
     min-height: 72px;
     padding: 10px 12px;
-    border: 1px solid var(--cds-border);
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
     font-size: 13px;
-    color: var(--cds-text-secondary);
+    color: #374151;
     resize: none;
     outline: none;
     transition: border-color 0.15s;
@@ -2022,17 +2020,17 @@ onBeforeUnmount(cleanupRealtime);
     box-sizing: border-box;
 }
 .rd-comment-textarea:focus {
-    border-color: var(--cds-text-muted);
+    border-color: #94a3b8;
 }
 .rd-comment-textarea::placeholder {
-    color: var(--cds-text-muted);
+    color: #94a3b8;
 }
 .rd-selfblock-hint {
     display: flex;
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: var(--cds-text-danger);
+    color: #dc2626;
     margin: 6px 0;
 }
 
@@ -2064,22 +2062,22 @@ onBeforeUnmount(cleanupRealtime);
 /* Approve HQ: 파랑 solid */
 .rd-btn--approve-hq {
     flex: 1;
-    background: hsl(var(--accent-brand));
+    background: #3b82f6;
     color: #fff;
-    border-color: hsl(var(--accent-brand));
+    border-color: #2563eb;
 }
 .rd-btn--approve-hq:not(.rd-btn--disabled):hover {
-    background: hsl(var(--accent-brand));
+    background: #2563eb;
 }
 /* Approve Field: 초록 solid */
 .rd-btn--approve-field {
     flex: 1;
-    background: var(--cds-text-success);
+    background: #10b981;
     color: #fff;
-    border-color: var(--cds-text-success);
+    border-color: #059669;
 }
 .rd-btn--approve-field:not(.rd-btn--disabled):hover {
-    background: var(--cds-text-success);
+    background: #059669;
 }
 /* 공람 조기 종료: 보라 solid */
 .rd-btn--end-feedback {
@@ -2094,18 +2092,18 @@ onBeforeUnmount(cleanupRealtime);
 /* Publish: 초록 solid */
 .rd-btn--approve {
     flex: 1;
-    background: var(--cds-text-success);
+    background: #10b981;
     color: #fff;
-    border-color: var(--cds-text-success);
+    border-color: #059669;
 }
 .rd-btn--approve:not(.rd-btn--disabled):hover {
-    background: var(--cds-text-success);
+    background: #059669;
 }
 /* Request Changes: 빨강 outline */
 .rd-btn--reject {
     flex: 1;
-    background: var(--cds-surface-2);
-    color: var(--cds-text-danger);
+    background: #fff;
+    color: #ef4444;
     border-color: #fca5a5;
 }
 .rd-btn--reject:not(.rd-btn--disabled):hover {
@@ -2113,13 +2111,13 @@ onBeforeUnmount(cleanupRealtime);
 }
 /* Comment: 회색 outline */
 .rd-btn--comment {
-    background: var(--cds-surface-2);
-    color: var(--cds-text-secondary);
-    border-color: var(--cds-border);
+    background: #fff;
+    color: #475569;
+    border-color: #e2e8f0;
     padding: 9px 14px;
 }
 .rd-btn--comment:not(.rd-btn--disabled):hover {
-    background: var(--cds-bg-neutral);
+    background: #f8fafc;
 }
 
 /* ── Dialog ── */
@@ -2131,22 +2129,22 @@ onBeforeUnmount(cleanupRealtime);
 
 /* Resolve dialog */
 .rd-resolve-original {
-    background: var(--cds-bg-neutral);
-    border: 1px solid var(--cds-border);
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 10px 12px;
 }
 .rd-resolve-original-label {
     font-size: 11px;
     font-weight: 600;
-    color: var(--cds-text-muted);
+    color: #94a3b8;
     margin-bottom: 4px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 .rd-resolve-original-text {
     font-size: 13px;
-    color: var(--cds-text-secondary);
+    color: #374151;
     line-height: 1.5;
 }
 
@@ -2159,7 +2157,7 @@ onBeforeUnmount(cleanupRealtime);
 .rd-left::-webkit-scrollbar-thumb,
 .rd-history-list::-webkit-scrollbar-thumb,
 .rd-change-list::-webkit-scrollbar-thumb {
-    background: var(--cds-border);
+    background: #cbd5e1;
     border-radius: 4px;
 }
 
@@ -2173,7 +2171,7 @@ onBeforeUnmount(cleanupRealtime);
 .rd-snap-toggle {
     display: flex;
     gap: 4px;
-    background: var(--cds-bg-neutral);
+    background: #f1f5f9;
     padding: 3px;
     border-radius: 8px;
     width: fit-content;
@@ -2183,7 +2181,7 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     font-size: 12px;
     font-weight: 500;
-    color: var(--cds-text-secondary);
+    color: #64748b;
     background: transparent;
     border: none;
     padding: 5px 12px;
@@ -2193,8 +2191,8 @@ onBeforeUnmount(cleanupRealtime);
     white-space: nowrap;
 }
 .rd-snap-btn--active {
-    background: var(--cds-surface-2);
-    color: var(--cds-text-primary);
+    background: #fff;
+    color: #1e293b;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 .rd-snap-count {
@@ -2203,8 +2201,8 @@ onBeforeUnmount(cleanupRealtime);
     justify-content: center;
     width: 18px;
     height: 18px;
-    background: var(--cds-border);
-    color: var(--cds-text-secondary);
+    background: #e2e8f0;
+    color: #475569;
     border-radius: 50%;
     font-size: 10px;
     font-weight: 700;
@@ -2223,16 +2221,16 @@ onBeforeUnmount(cleanupRealtime);
     font-weight: 500;
     padding: 3px 10px;
     border-radius: 20px;
-    border: 1px solid var(--cds-border);
-    background: var(--cds-surface-2);
-    color: var(--cds-text-secondary);
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
     cursor: pointer;
     transition: all 0.15s;
 }
 .rd-snap-chip--active {
-    background: var(--cds-bg-accent);
+    background: #eff6ff;
     border-color: #bfdbfe;
-    color: hsl(var(--accent-brand));
+    color: #1d4ed8;
 }
 .rd-snap-ver {
     font-weight: 400;
@@ -2255,7 +2253,7 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     justify-content: space-between;
     padding: 10px 24px;
-    background: var(--cds-bg-accent);
+    background: #eff6ff;
     border-bottom: 1px solid #bfdbfe;
     flex-shrink: 0;
 }
@@ -2283,15 +2281,15 @@ onBeforeUnmount(cleanupRealtime);
 .rd-public-banner-dday {
     font-size: 15px;
     font-weight: 800;
-    color: hsl(var(--accent-brand));
-    background: var(--cds-bg-accent);
+    color: #1d4ed8;
+    background: #dbeafe;
     padding: 3px 14px;
     border-radius: 20px;
     letter-spacing: -0.5px;
 }
 .rd-dday--urgent {
-    color: var(--cds-text-danger);
-    background: var(--cds-bg-danger);
+    color: #dc2626;
+    background: #fee2e2;
 }
 
 /* ── Stage Transition Toast ── */
@@ -2311,12 +2309,12 @@ onBeforeUnmount(cleanupRealtime);
     white-space: nowrap;
 }
 .rd-stage-toast--success {
-    background: var(--cds-bg-success);
+    background: #d1fae5;
     color: #065f46;
-    border: 1px solid var(--cds-bg-success);
+    border: 1px solid #a7f3d0;
 }
 .rd-stage-toast--info {
-    background: var(--cds-bg-accent);
+    background: #eff6ff;
     color: #1e40af;
     border: 1px solid #bfdbfe;
 }
@@ -2332,6 +2330,9 @@ onBeforeUnmount(cleanupRealtime);
 
 /* Responsive */
 @media (max-width: 1024px) {
+    .rd-root {
+        min-height: calc(100dvh - var(--v-layout-top, 0px));
+    }
     .rd-body {
         flex-direction: column;
         overflow-y: auto;
@@ -2342,10 +2343,16 @@ onBeforeUnmount(cleanupRealtime);
     .rd-right {
         width: 100%;
         border-left: none;
-        border-top: 1px solid var(--cds-border);
+        border-top: 1px solid #e2e8f0;
     }
     .rd-bpmn-compare {
         grid-template-columns: 1fr;
+    }
+    .rd-bpmn-canvas {
+        height: 260px;
+    }
+    .rd-bpmn-single {
+        height: 320px;
     }
 }
 </style>

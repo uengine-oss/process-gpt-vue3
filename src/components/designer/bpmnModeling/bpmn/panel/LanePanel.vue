@@ -1,13 +1,13 @@
 <template>
     <div>
         <div class="included pa-4 pt-0" style="margin-bottom: 22px">
-            <v-row class="ma-0 pa-0 align-center">
+            <v-row v-if="isBuiltinPropVisible('role_resolution_type')" class="ma-0 pa-0 align-center">
                 <div>{{ $t('LanePanel.selectRoleType') }}</div>
 
                 <DetailComponent :title="$t('LanePanel.radioDescriptionTitle')" :details="radioDescription" />
             </v-row>
             <v-card variant="outlined" class="pa-2" style="border-radius: 8px !important">
-                <v-radio-group v-model="type" row style="margin-top: 0px !important">
+                <v-radio-group v-if="isBuiltinPropVisible('role_resolution_type')" v-model="type" row style="margin-top: 0px !important">
                     <v-radio
                         v-for="option in roleOptions"
                         :key="option.value"
@@ -17,7 +17,7 @@
                     ></v-radio>
                 </v-radio-group>
                 <v-text-field
-                    v-if="role && role.resolutionRule"
+                    v-if="role && role.resolutionRule && isBuiltinPropVisible('resolution_rule')"
                     v-model="role.resolutionRule"
                     :label="$t('LanePanel.resolutionRule')"
                     class="mt-4"
@@ -25,7 +25,7 @@
 
                 <!-- Dispatching Option 선택 -->
                 <v-autocomplete
-                    v-if="type != 'org.uengine.kernel.ExternalCustomerRoleResolutionContext' && showDispatchingOption"
+                    v-if="type != 'org.uengine.kernel.ExternalCustomerRoleResolutionContext' && showDispatchingOption && isBuiltinPropVisible('dispatching_option')"
                     v-model="dispatchingOption"
                     persistent-hint
                     :items="availableDispatchingOptions"
@@ -47,7 +47,7 @@
                 </v-autocomplete>
 
                 <!-- DirectRoleResolutionContext 입력 필드 -->
-                <div v-if="type == 'org.uengine.kernel.DirectRoleResolutionContext'">
+                <div v-if="type == 'org.uengine.kernel.DirectRoleResolutionContext' && isBuiltinPropVisible('endpoint')">
                     <v-autocomplete
                         v-model="userRoleContext.endpoint"
                         :label="$t('LanePanel.userIds')"
@@ -73,7 +73,7 @@
                 </div>
 
                 <!-- GroupRoleResolutionContext 입력 필드 -->
-                <div v-if="type == 'org.uengine.five.overriding.GroupRoleResolutionContext'">
+                <div v-if="type == 'org.uengine.five.overriding.GroupRoleResolutionContext' && isBuiltinPropVisible('group')">
                     <v-autocomplete
                         v-model="roleContext.group"
                         :label="$t('LanePanel.groupName')"
@@ -88,7 +88,7 @@
                 </div>
 
                 <!-- IAMRoleResolutionContext 입력 필드 -->
-                <div v-if="type == 'org.uengine.five.overriding.IAMRoleResolutionContext'">
+                <div v-if="type == 'org.uengine.five.overriding.IAMRoleResolutionContext' && isBuiltinPropVisible('scope')">
                     <v-autocomplete
                         v-model="roleContext.scope"
                         :label="$t('LanePanel.scopeName')"
@@ -110,9 +110,11 @@ import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import { getAllUsers, getAllGroups, getAllRoles, getAllDepartments } from '@/utils/keycloak';
+import builtinPanelVisibilityMixin from './builtinPanelVisibilityMixin';
 
 export default {
     name: 'lane-panel',
+    mixins: [builtinPanelVisibilityMixin],
     components: {
         UserSelectField
     },

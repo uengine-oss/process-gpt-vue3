@@ -1,8 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { differenceInDays } from 'date-fns';
 import BackendFactory from '@/components/api/BackendFactory';
+import { getResolvedRole, refreshAuthClaims } from '@/utils/authClaims';
+import { formatKST } from '@/utils/datetime';
+import { canAccessApprovalInbox, canManageReopenRequest, isSelfReviewSubmission } from '@/utils/reviewPermissions';
+import { groupReviewItemsByProcess, type ReviewVersionGroup } from '@/utils/reviewVersionGrouping';
+import {
+    buildProcessHierarchyQuery,
+    PROCESS_HIERARCHY_ENTRY,
+    PROCESS_HIERARCHY_MODE,
+    PROCESS_HIERARCHY_PANEL_STATE,
+    PROCESS_HIERARCHY_RIGHT_TAB
+} from '@/views/process-hierarchy/navigation';
 
 const backend = BackendFactory.createBackend() as any;
 const router = useRouter();
@@ -10,16 +21,32 @@ const router = useRouter();
 const loading = ref(false);
 const boardData = ref<any[]>([]);
 const metricsMap = ref<any>(null);
+const procDomainMap = ref<Record<string, string>>({});
 const activeTab = ref('approval');
 const reopenActionLoading = ref<string | null>(null);
+const currentUserId = ref('');
+const currentUserName = ref('');
+const currentUserEmployeeNo = ref('');
+const currentUserRole = ref('viewer');
+const expandedApprovalGroups = ref<Set<string>>(new Set());
+const expandedSubmissionGroups = ref<Set<string>>(new Set());
+
+const reviewActor = computed(() => ({
+    role: currentUserRole.value,
+    userId: currentUserId.value,
+    userName: currentUserName.value,
+    employeeNo: currentUserEmployeeNo.value
+}));
 
 const enrichedData = computed(() => {
     const domains = metricsMap.value?.domains || [];
     return boardData.value.map((item) => {
-        const domain = domains.find((d: any) => d.id === item.domain_id);
+        const domainId = item.domain_id || procDomainMap.value[item.proc_def_id] || '';
+        const domain = domainId ? domains.find((d: any) => d.id === domainId) : null;
         return {
             ...item,
-            domain_name: domain?.name || item.domain_id || '',
+            domain_id: domainId,
+            domain_name: domain?.name || domainId || '',
             domain_color: domain?.color || '#0085db'
         };
     });
@@ -27,21 +54,66 @@ const enrichedData = computed(() => {
 
 // 탭별 데이터
 const approvalItems = computed(() =>
-    enrichedData.value.filter((i) =>
-        ['review', 'in_review', 'approved_level1', 'approved_level2', 'public_feedback', 'final_edit'].includes(i.state)
+    enrichedData.value.filter(
+        (i) => ['review', 'in_review', 'public_feedback', 'final_edit'].includes(i.state) && canAccessApprovalInbox(i, reviewActor.value)
     )
 );
-const reopenItems = computed(() => enrichedData.value.filter((i) => i.state === 'reopen_requested'));
-const submissionItems = computed(() => enrichedData.value.filter((i) => i.state !== 'cancelled'));
+const reopenItems = computed(() =>
+    enrichedData.value.filter((i) => i.state === 'reopen_requested' && canManageReopenRequest(i, currentUserRole.value))
+);
+const submissionItems = computed(() =>
+    enrichedData.value.filter((i) => i.is_my_submission ?? isSelfReviewSubmission(i, reviewActor.value))
+);
+const approvalGroups = computed(() => groupReviewItemsByProcess(approvalItems.value));
+const submissionGroups = computed(() => groupReviewItemsByProcess(submissionItems.value));
+
+function getExpandedGroupState(tab: 'approval' | 'submissions') {
+    return tab === 'approval' ? expandedApprovalGroups : expandedSubmissionGroups;
+}
+
+function pruneExpandedGroups(source: typeof expandedApprovalGroups, groups: ReviewVersionGroup<any>[]) {
+    const validKeys = new Set(groups.map((group) => group.key));
+    source.value = new Set(Array.from(source.value).filter((key) => validKeys.has(key)));
+}
+
+function isVersionGroupExpanded(tab: 'approval' | 'submissions', groupKey: string): boolean {
+    return getExpandedGroupState(tab).value.has(groupKey);
+}
+
+function toggleVersionGroup(tab: 'approval' | 'submissions', groupKey: string) {
+    const target = getExpandedGroupState(tab);
+    const next = new Set(target.value);
+    if (next.has(groupKey)) {
+        next.delete(groupKey);
+    } else {
+        next.add(groupKey);
+    }
+    target.value = next;
+}
+
+function getExpandedHistoryItems(tab: 'approval' | 'submissions', group: ReviewVersionGroup<any>): any[] {
+    return isVersionGroupExpanded(tab, group.key) ? group.previousVersions : [];
+}
+
+function getVersionText(item: any): string {
+    const versionLabel = String(item?.version_label || '').trim();
+    if (versionLabel) return versionLabel;
+    const version = String(item?.version || '').trim();
+    return version ? `v${version}` : '';
+}
+
+function getVersionToggleLabel(group: ReviewVersionGroup<any>, expanded: boolean): string {
+    return expanded ? '이전 버전 접기' : `이전 버전 ${group.previousVersions.length}개 보기`;
+}
 
 function getStateLabel(state: string): string {
     const map: Record<string, string> = {
         draft: '초안',
-        in_review: '검토중',
-        review: '검토중',
-        public_feedback: '공람중',
-        final_edit: '최종편집',
-        published: '배포완료',
+        in_review: '검토',
+        review: '검토',
+        public_feedback: '공람',
+        final_edit: '최종수정',
+        published: '완료',
         reopen_requested: '개선요청',
         rejected: '반려',
         archived: '아카이빙',
@@ -68,15 +140,21 @@ function getStateColor(state: string): string {
     return map[state] || 'grey';
 }
 
+function getReviewStatusLabel(status: string): string {
+    switch (status) {
+        case 'approved':
+            return '승인';
+        case 'rejected':
+            return '반려';
+        default:
+            return '대기';
+    }
+}
+
 function formatTime(dateStr: string): string {
     if (!dateStr) return '';
     try {
-        return new Date(dateStr).toLocaleString('ko-KR', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return formatKST(dateStr, 'M월 D일 HH:mm');
     } catch {
         return dateStr;
     }
@@ -102,9 +180,20 @@ function openDetail(item: any) {
 
 function openInReviewMode(item: any) {
     const procDefId = item.proc_def_id;
-    const reviewId = item.review_id || item.id;
     if (!procDefId) return;
-    window.open(`/definitions/chat?id=${procDefId}&reviewMode=true&reviewId=${reviewId}&modeling=true`, '_blank');
+    router.push({
+        name: 'Process Hierarchy',
+        query: buildProcessHierarchyQuery({
+            id: procDefId,
+            name: item.process_name || procDefId,
+            entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
+            mode: PROCESS_HIERARCHY_MODE.VIEW,
+            left: PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED,
+            right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
+            rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
+            reviewId: item.review_id || item.id
+        })
+    });
 }
 
 async function handleApproveReopen(item: any) {
@@ -112,8 +201,23 @@ async function handleApproveReopen(item: any) {
     if (!rid) return;
     reopenActionLoading.value = rid;
     try {
-        await backend.approveReopen(rid);
+        const newDraft = await backend.approveReopen(rid);
         await loadData();
+        if (newDraft?.proc_def_id) {
+            router.push({
+                name: 'Process Hierarchy',
+                query: buildProcessHierarchyQuery({
+                    id: newDraft.proc_def_id,
+                    name: item.process_name || newDraft.proc_def_id,
+                    entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
+                    mode: PROCESS_HIERARCHY_MODE.EDIT,
+                    left: PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED,
+                    right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
+                    rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
+                    reviewId: newDraft.id
+                })
+            });
+        }
     } catch (e) {
         console.error('approveReopen error:', e);
     } finally {
@@ -135,18 +239,88 @@ async function handleRejectReopen(item: any) {
     }
 }
 
+function buildProcDomainMap(procMap: any): Record<string, string> {
+    const map: Record<string, string> = {};
+    for (const mega of procMap?.mega_proc_list || []) {
+        for (const major of mega.major_proc_list || []) {
+            const domainId = major.domain || major.domain_id || '';
+            if (domainId) {
+                map[major.id] = domainId;
+                for (const sub of major.sub_proc_list || major.proc_def_list || []) {
+                    map[sub.id] = domainId;
+                }
+            }
+        }
+    }
+    return map;
+}
+
 async function loadData() {
     loading.value = true;
     try {
-        const [data, metrics] = await Promise.all([backend.getReviewBoardData(), backend.getMetricsMap()]);
+        await loadCurrentUser();
+        const [data, metrics, procMapData] = await Promise.all([
+            backend.getReviewBoardData(),
+            backend.getMetricsMap(),
+            backend.getProcessDefinitionMap({ skipPermissionFilter: true })
+        ]);
         boardData.value = data || [];
         metricsMap.value = metrics;
+        procDomainMap.value = buildProcDomainMap(procMapData);
     } catch (e) {
         console.error('Failed to load inbox:', e);
     } finally {
         loading.value = false;
     }
 }
+
+async function loadCurrentUser() {
+    const supabase = (window as any).$supabase;
+    if (!supabase) return;
+
+    try {
+        await refreshAuthClaims();
+        currentUserRole.value = getResolvedRole();
+        currentUserId.value = localStorage.getItem('uid') || currentUserId.value;
+        currentUserName.value =
+            localStorage.getItem('userName') || localStorage.getItem('email') || (window as any).$userName || currentUserName.value;
+        currentUserEmployeeNo.value = localStorage.getItem('employeeNo') || currentUserEmployeeNo.value;
+
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user;
+        if (!user) return;
+
+        currentUserId.value = user.id || '';
+        const { data: userData } = await supabase
+            .from('users')
+            .select('username, email, role, employee_no')
+            .eq('id', user.id)
+            .limit(1)
+            .maybeSingle();
+
+        currentUserName.value = userData?.username || userData?.email || user.email || '';
+        currentUserEmployeeNo.value = userData?.employee_no || currentUserEmployeeNo.value;
+        currentUserRole.value = userData?.role || currentUserRole.value;
+    } catch (e) {
+        console.warn('[MyInbox] 현재 사용자 조회 실패:', e);
+    }
+}
+
+watch(
+    approvalGroups,
+    (groups) => {
+        pruneExpandedGroups(expandedApprovalGroups, groups);
+    },
+    { immediate: true }
+);
+
+watch(
+    submissionGroups,
+    (groups) => {
+        pruneExpandedGroups(expandedSubmissionGroups, groups);
+    },
+    { immediate: true }
+);
 
 // ── Realtime: 상태 변경 감지 ──
 let realtimeChannel: any = null;
@@ -160,9 +334,9 @@ function showGlobalToast(message: string, color = 'success') {
 }
 
 const stateMessages: Record<string, (name: string) => string> = {
-    public_feedback: (n) => `"${n}" 전문가 검토 완료. 전사 30일 공람 기간이 시작되었습니다.`,
-    final_edit: (n) => `"${n}" 공람 종료. 최종 편집 단계로 이동했습니다.`,
-    published: (n) => `"${n}" 프로세스가 배포 완료되었습니다.`,
+    public_feedback: (n) => `"${n}" 전문가 검토 완료. 30일 공람 기간이 시작되었습니다.`,
+    final_edit: (n) => `"${n}" 공람 종료. 최종수정 단계로 이동했습니다.`,
+    published: (n) => `"${n}" 프로세스가 배포완료되었습니다.`,
     rejected: (n) => `"${n}" 프로세스가 반려되었습니다.`
 };
 
@@ -211,6 +385,19 @@ onBeforeUnmount(cleanupRealtime);
 
 <template>
     <div class="inbox-root">
+        <!-- Global Toast -->
+        <transition name="toast-slide">
+            <div v-if="globalToast" class="global-toast" :class="`global-toast--${globalToast.color}`">
+                <v-icon size="16" class="mr-2">
+                    {{ globalToast.color === 'success' ? 'mdi-check-circle' : 'mdi-alert-circle' }}
+                </v-icon>
+                {{ globalToast.message }}
+                <button class="global-toast-close" @click="globalToast = null">
+                    <v-icon size="14">mdi-close</v-icon>
+                </button>
+            </div>
+        </transition>
+
         <!-- Header -->
         <div class="inbox-header">
             <div class="inbox-header-left">
@@ -222,6 +409,7 @@ onBeforeUnmount(cleanupRealtime);
                     <p class="inbox-subtitle">승인 요청, 개선 요청, 내 상신 현황을 관리합니다</p>
                 </div>
             </div>
+            <!-- <v-btn variant="outlined" color="primary" size="small" @click="router.push('/review-board-debug')">Submission Debug</v-btn> -->
         </div>
 
         <!-- Tabs -->
@@ -230,8 +418,8 @@ onBeforeUnmount(cleanupRealtime);
                 <v-tab value="approval" class="inbox-tab-item">
                     <v-icon start size="16">mdi-inbox-arrow-down-outline</v-icon>
                     내 승인함
-                    <v-chip size="x-small" :color="approvalItems.length > 0 ? 'warning' : 'grey'" variant="flat" class="ml-2">
-                        {{ approvalItems.length }}
+                    <v-chip size="x-small" :color="approvalGroups.length > 0 ? 'warning' : 'grey'" variant="flat" class="ml-2">
+                        {{ approvalGroups.length }}
                     </v-chip>
                 </v-tab>
                 <v-tab value="reopen" class="inbox-tab-item">
@@ -245,7 +433,7 @@ onBeforeUnmount(cleanupRealtime);
                     <v-icon start size="16">mdi-send-outline</v-icon>
                     내 상신함
                     <v-chip size="x-small" color="grey" variant="flat" class="ml-2">
-                        {{ submissionItems.length }}
+                        {{ submissionGroups.length }}
                     </v-chip>
                 </v-tab>
             </v-tabs>
@@ -260,56 +448,111 @@ onBeforeUnmount(cleanupRealtime);
             <template v-else>
                 <!-- ── 승인함 탭 ── -->
                 <div v-if="activeTab === 'approval'">
-                    <div v-if="approvalItems.length === 0" class="inbox-empty">
+                    <div v-if="approvalGroups.length === 0" class="inbox-empty">
                         <v-icon size="48" color="grey-lighten-2">mdi-inbox-outline</v-icon>
                         <div class="text-body-2 text-medium-emphasis mt-3">승인 대기 항목이 없습니다</div>
                     </div>
                     <div v-else class="inbox-list">
-                        <div
-                            v-for="item in approvalItems"
-                            :key="item.review_id || item.proc_def_id"
-                            class="inbox-card"
-                            @click="openDetail(item)"
-                        >
-                            <div class="inbox-card-top">
-                                <div class="inbox-card-left">
-                                    <v-chip size="x-small" :color="item.domain_color" variant="flat" class="inbox-domain">
-                                        {{ item.domain_name || 'N/A' }}
-                                    </v-chip>
-                                    <span class="inbox-proc-name">{{ item.process_name }}</span>
-                                    <v-chip
-                                        v-if="item.version_label || item.version"
-                                        size="x-small"
-                                        variant="tonal"
-                                        color="grey"
-                                        class="ml-1"
-                                    >
-                                        {{ item.version_label || 'v' + item.version }}
-                                    </v-chip>
-                                    <v-chip v-if="getDueAlertLabel(item)" size="x-small" color="error" variant="tonal" class="ml-1">
-                                        {{ getDueAlertLabel(item) }}
-                                    </v-chip>
+                        <div v-for="group in approvalGroups" :key="group.key" class="inbox-card-stack">
+                            <div class="inbox-card" @click="openDetail(group.latest)">
+                                <div class="inbox-card-top">
+                                    <div class="inbox-card-left">
+                                        <v-chip size="x-small" :color="group.latest.domain_color" variant="flat" class="inbox-domain">
+                                            {{ group.latest.domain_name || 'N/A' }}
+                                        </v-chip>
+                                        <span class="inbox-proc-name">{{ group.latest.process_name }}</span>
+                                        <v-chip
+                                            v-if="getVersionText(group.latest)"
+                                            size="x-small"
+                                            variant="tonal"
+                                            color="grey"
+                                            class="ml-1"
+                                        >
+                                            {{ getVersionText(group.latest) }}
+                                        </v-chip>
+                                        <v-chip
+                                            v-if="getDueAlertLabel(group.latest)"
+                                            size="x-small"
+                                            color="error"
+                                            variant="tonal"
+                                            class="ml-1"
+                                        >
+                                            {{ getDueAlertLabel(group.latest) }}
+                                        </v-chip>
+                                    </div>
+                                    <div class="inbox-card-right">
+                                        <v-chip size="x-small" :color="getStateColor(group.latest.state)" variant="tonal">
+                                            {{ getStateLabel(group.latest.state) }}
+                                        </v-chip>
+                                    </div>
                                 </div>
-                                <div class="inbox-card-right">
-                                    <v-chip size="x-small" :color="getStateColor(item.state)" variant="tonal">
-                                        {{ getStateLabel(item.state) }}
-                                    </v-chip>
+                                <div class="inbox-card-meta">
+                                    <span v-if="group.latest.submitted_by" class="meta-item">
+                                        <v-icon size="12" class="mr-1">mdi-account-outline</v-icon>{{ group.latest.submitted_by }}
+                                    </span>
+                                    <span v-if="group.latest.submitted_at" class="meta-item">
+                                        <v-icon size="12" class="mr-1">mdi-clock-outline</v-icon>{{ formatTime(group.latest.submitted_at) }}
+                                    </span>
+                                </div>
+                                <div class="inbox-card-actions" @click.stop>
+                                    <v-btn size="x-small" variant="flat" color="primary" @click="openInReviewMode(group.latest)">
+                                        <v-icon start size="12">mdi-magnify</v-icon>
+                                        Review
+                                    </v-btn>
+                                    <v-btn size="x-small" variant="tonal" color="grey" @click="openDetail(group.latest)">상세</v-btn>
                                 </div>
                             </div>
-                            <div class="inbox-card-meta">
-                                <span v-if="item.submitted_by" class="meta-item">
-                                    <v-icon size="12" class="mr-1">mdi-account-outline</v-icon>{{ item.submitted_by }}
-                                </span>
-                                <span v-if="item.submitted_at" class="meta-item">
-                                    <v-icon size="12" class="mr-1">mdi-clock-outline</v-icon>{{ formatTime(item.submitted_at) }}
-                                </span>
-                            </div>
-                            <div class="inbox-card-actions" @click.stop>
-                                <v-btn size="x-small" variant="flat" color="primary" @click="openInReviewMode(item)">
-                                    <v-icon start size="12">mdi-magnify</v-icon>
-                                    Review
-                                </v-btn>
-                                <v-btn size="x-small" variant="tonal" color="grey" @click="openDetail(item)">상세</v-btn>
+                            <button
+                                v-if="group.previousVersions.length > 0"
+                                class="version-toggle-btn"
+                                @click="toggleVersionGroup('approval', group.key)"
+                            >
+                                <v-icon size="14">
+                                    {{ isVersionGroupExpanded('approval', group.key) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                                </v-icon>
+                                {{ getVersionToggleLabel(group, isVersionGroupExpanded('approval', group.key)) }}
+                            </button>
+                            <div
+                                v-for="item in getExpandedHistoryItems('approval', group)"
+                                :key="item.review_id || item.proc_def_id"
+                                class="inbox-card inbox-card--historical"
+                                @click="openDetail(item)"
+                            >
+                                <div class="inbox-card-top">
+                                    <div class="inbox-card-left">
+                                        <v-chip size="x-small" :color="item.domain_color" variant="flat" class="inbox-domain">
+                                            {{ item.domain_name || 'N/A' }}
+                                        </v-chip>
+                                        <span class="inbox-proc-name inbox-proc-name--historical">{{ item.process_name }}</span>
+                                        <v-chip v-if="getVersionText(item)" size="x-small" variant="tonal" color="grey" class="ml-1">
+                                            {{ getVersionText(item) }}
+                                        </v-chip>
+                                        <v-chip size="x-small" variant="flat" color="blue-grey-lighten-2" class="ml-1">이전 버전</v-chip>
+                                        <v-chip v-if="getDueAlertLabel(item)" size="x-small" color="error" variant="tonal" class="ml-1">
+                                            {{ getDueAlertLabel(item) }}
+                                        </v-chip>
+                                    </div>
+                                    <div class="inbox-card-right">
+                                        <v-chip size="x-small" :color="getStateColor(item.state)" variant="tonal">
+                                            {{ getStateLabel(item.state) }}
+                                        </v-chip>
+                                    </div>
+                                </div>
+                                <div class="inbox-card-meta">
+                                    <span v-if="item.submitted_by" class="meta-item">
+                                        <v-icon size="12" class="mr-1">mdi-account-outline</v-icon>{{ item.submitted_by }}
+                                    </span>
+                                    <span v-if="item.submitted_at" class="meta-item">
+                                        <v-icon size="12" class="mr-1">mdi-clock-outline</v-icon>{{ formatTime(item.submitted_at) }}
+                                    </span>
+                                </div>
+                                <div class="inbox-card-actions" @click.stop>
+                                    <v-btn size="x-small" variant="flat" color="primary" @click="openInReviewMode(item)">
+                                        <v-icon start size="12">mdi-magnify</v-icon>
+                                        Review
+                                    </v-btn>
+                                    <v-btn size="x-small" variant="tonal" color="grey" @click="openDetail(item)">상세</v-btn>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -376,103 +619,181 @@ onBeforeUnmount(cleanupRealtime);
 
                 <!-- ── 내 상신함 탭 ── -->
                 <div v-if="activeTab === 'submissions'">
-                    <div v-if="submissionItems.length === 0" class="inbox-empty">
+                    <div v-if="submissionGroups.length === 0" class="inbox-empty">
                         <v-icon size="48" color="grey-lighten-2">mdi-send-outline</v-icon>
                         <div class="text-body-2 text-medium-emphasis mt-3">상신 항목이 없습니다</div>
                     </div>
                     <div v-else class="inbox-list">
-                        <div
-                            v-for="item in submissionItems"
-                            :key="item.review_id || item.proc_def_id"
-                            class="inbox-card"
-                            @click="openDetail(item)"
-                        >
-                            <div class="inbox-card-top">
-                                <div class="inbox-card-left">
-                                    <v-chip size="x-small" :color="item.domain_color" variant="flat" class="inbox-domain">
-                                        {{ item.domain_name || 'N/A' }}
-                                    </v-chip>
-                                    <span class="inbox-proc-name">{{ item.process_name }}</span>
-                                    <v-chip
-                                        v-if="item.version_label || item.version"
-                                        size="x-small"
-                                        variant="tonal"
-                                        color="grey"
-                                        class="ml-1"
-                                    >
-                                        {{ item.version_label || 'v' + item.version }}
+                        <div v-for="group in submissionGroups" :key="group.key" class="inbox-card-stack">
+                            <div class="inbox-card" @click="openDetail(group.latest)">
+                                <div class="inbox-card-top">
+                                    <div class="inbox-card-left">
+                                        <v-chip size="x-small" :color="group.latest.domain_color" variant="flat" class="inbox-domain">
+                                            {{ group.latest.domain_name || 'N/A' }}
+                                        </v-chip>
+                                        <span class="inbox-proc-name">{{ group.latest.process_name }}</span>
+                                        <v-chip
+                                            v-if="getVersionText(group.latest)"
+                                            size="x-small"
+                                            variant="tonal"
+                                            color="grey"
+                                            class="ml-1"
+                                        >
+                                            {{ getVersionText(group.latest) }}
+                                        </v-chip>
+                                    </div>
+                                    <v-chip size="x-small" :color="getStateColor(group.latest.state)" variant="tonal">
+                                        {{ getStateLabel(group.latest.state) }}
                                     </v-chip>
                                 </div>
-                                <v-chip size="x-small" :color="getStateColor(item.state)" variant="tonal">
-                                    {{ getStateLabel(item.state) }}
-                                </v-chip>
-                            </div>
-                            <div class="inbox-card-meta">
-                                <span v-if="item.submitted_at" class="meta-item">
-                                    <v-icon size="12" class="mr-1">mdi-clock-outline</v-icon>상신: {{ formatTime(item.submitted_at) }}
-                                </span>
-                                <span v-if="item.hq_status" class="meta-item">
-                                    HQ:
-                                    <v-chip
-                                        size="x-small"
-                                        :color="
-                                            item.hq_status === 'approved' ? 'success' : item.hq_status === 'rejected' ? 'error' : 'grey'
-                                        "
-                                        variant="tonal"
-                                        class="mx-1"
-                                        >{{ item.hq_status }}</v-chip
+                                <div class="inbox-card-meta">
+                                    <span v-if="group.latest.submitted_at" class="meta-item">
+                                        <v-icon size="12" class="mr-1">mdi-clock-outline</v-icon>상신:
+                                        {{ formatTime(group.latest.submitted_at) }}
+                                    </span>
+                                    <span v-if="group.latest.hq_status" class="meta-item">
+                                        본사:
+                                        <v-chip
+                                            size="x-small"
+                                            :color="
+                                                group.latest.hq_status === 'approved'
+                                                    ? 'success'
+                                                    : group.latest.hq_status === 'rejected'
+                                                    ? 'error'
+                                                    : 'grey'
+                                            "
+                                            variant="tonal"
+                                            class="mx-1"
+                                        >
+                                            {{ getReviewStatusLabel(group.latest.hq_status) }}
+                                        </v-chip>
+                                    </span>
+                                    <span v-if="group.latest.field_status" class="meta-item">
+                                        현업:
+                                        <v-chip
+                                            size="x-small"
+                                            :color="
+                                                group.latest.field_status === 'approved'
+                                                    ? 'success'
+                                                    : group.latest.field_status === 'rejected'
+                                                    ? 'error'
+                                                    : 'grey'
+                                            "
+                                            variant="tonal"
+                                            class="mx-1"
+                                        >
+                                            {{ getReviewStatusLabel(group.latest.field_status) }}
+                                        </v-chip>
+                                    </span>
+                                    <span
+                                        v-if="group.latest.reject_comment && group.latest.state === 'rejected'"
+                                        class="meta-item meta-item--error"
                                     >
-                                </span>
-                                <span v-if="item.field_status" class="meta-item">
-                                    Field:
-                                    <v-chip
+                                        <v-icon size="12" class="mr-1" color="error">mdi-alert-circle-outline</v-icon>
+                                        {{ group.latest.reject_comment }}
+                                    </span>
+                                </div>
+                                <div class="inbox-card-actions" @click.stop>
+                                    <v-btn
+                                        v-if="['in_review', 'public_feedback', 'final_edit'].includes(group.latest.state)"
                                         size="x-small"
-                                        :color="
-                                            item.field_status === 'approved'
-                                                ? 'success'
-                                                : item.field_status === 'rejected'
-                                                ? 'error'
-                                                : 'grey'
-                                        "
-                                        variant="tonal"
-                                        class="mx-1"
-                                        >{{ item.field_status }}</v-chip
+                                        variant="flat"
+                                        color="primary"
+                                        @click="openInReviewMode(group.latest)"
                                     >
-                                </span>
-                                <span v-if="item.reject_comment && item.state === 'rejected'" class="meta-item meta-item--error">
-                                    <v-icon size="12" class="mr-1" color="error">mdi-alert-circle-outline</v-icon>{{ item.reject_comment }}
-                                </span>
+                                        <v-icon start size="12">mdi-magnify</v-icon>Review
+                                    </v-btn>
+                                    <v-btn size="x-small" variant="tonal" color="grey" @click="openDetail(group.latest)">상세</v-btn>
+                                </div>
                             </div>
-                            <div class="inbox-card-actions" @click.stop>
-                                <v-btn
-                                    v-if="['in_review', 'public_feedback', 'final_edit'].includes(item.state)"
-                                    size="x-small"
-                                    variant="flat"
-                                    color="primary"
-                                    @click="openInReviewMode(item)"
-                                >
-                                    <v-icon start size="12">mdi-magnify</v-icon>Review
-                                </v-btn>
-                                <v-btn size="x-small" variant="tonal" color="grey" @click="openDetail(item)">상세</v-btn>
+                            <button
+                                v-if="group.previousVersions.length > 0"
+                                class="version-toggle-btn"
+                                @click="toggleVersionGroup('submissions', group.key)"
+                            >
+                                <v-icon size="14">
+                                    {{ isVersionGroupExpanded('submissions', group.key) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                                </v-icon>
+                                {{ getVersionToggleLabel(group, isVersionGroupExpanded('submissions', group.key)) }}
+                            </button>
+                            <div
+                                v-for="item in getExpandedHistoryItems('submissions', group)"
+                                :key="item.review_id || item.proc_def_id"
+                                class="inbox-card inbox-card--historical"
+                                @click="openDetail(item)"
+                            >
+                                <div class="inbox-card-top">
+                                    <div class="inbox-card-left">
+                                        <v-chip size="x-small" :color="item.domain_color" variant="flat" class="inbox-domain">
+                                            {{ item.domain_name || 'N/A' }}
+                                        </v-chip>
+                                        <span class="inbox-proc-name inbox-proc-name--historical">{{ item.process_name }}</span>
+                                        <v-chip v-if="getVersionText(item)" size="x-small" variant="tonal" color="grey" class="ml-1">
+                                            {{ getVersionText(item) }}
+                                        </v-chip>
+                                        <v-chip size="x-small" variant="flat" color="blue-grey-lighten-2" class="ml-1">이전 버전</v-chip>
+                                    </div>
+                                    <v-chip size="x-small" :color="getStateColor(item.state)" variant="tonal">
+                                        {{ getStateLabel(item.state) }}
+                                    </v-chip>
+                                </div>
+                                <div class="inbox-card-meta">
+                                    <span v-if="item.submitted_at" class="meta-item">
+                                        <v-icon size="12" class="mr-1">mdi-clock-outline</v-icon>상신: {{ formatTime(item.submitted_at) }}
+                                    </span>
+                                    <span v-if="item.hq_status" class="meta-item">
+                                        본사:
+                                        <v-chip
+                                            size="x-small"
+                                            :color="
+                                                item.hq_status === 'approved' ? 'success' : item.hq_status === 'rejected' ? 'error' : 'grey'
+                                            "
+                                            variant="tonal"
+                                            class="mx-1"
+                                        >
+                                            {{ getReviewStatusLabel(item.hq_status) }}
+                                        </v-chip>
+                                    </span>
+                                    <span v-if="item.field_status" class="meta-item">
+                                        현업:
+                                        <v-chip
+                                            size="x-small"
+                                            :color="
+                                                item.field_status === 'approved'
+                                                    ? 'success'
+                                                    : item.field_status === 'rejected'
+                                                    ? 'error'
+                                                    : 'grey'
+                                            "
+                                            variant="tonal"
+                                            class="mx-1"
+                                        >
+                                            {{ getReviewStatusLabel(item.field_status) }}
+                                        </v-chip>
+                                    </span>
+                                    <span v-if="item.reject_comment && item.state === 'rejected'" class="meta-item meta-item--error">
+                                        <v-icon size="12" class="mr-1" color="error">mdi-alert-circle-outline</v-icon
+                                        >{{ item.reject_comment }}
+                                    </span>
+                                </div>
+                                <div class="inbox-card-actions" @click.stop>
+                                    <v-btn
+                                        v-if="['in_review', 'public_feedback', 'final_edit'].includes(item.state)"
+                                        size="x-small"
+                                        variant="flat"
+                                        color="primary"
+                                        @click="openInReviewMode(item)"
+                                    >
+                                        <v-icon start size="12">mdi-magnify</v-icon>Review
+                                    </v-btn>
+                                    <v-btn size="x-small" variant="tonal" color="grey" @click="openDetail(item)">상세</v-btn>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </template>
         </div>
-
-        <!-- Global Toast -->
-        <transition name="toast-slide">
-            <div v-if="globalToast" class="global-toast" :class="`global-toast--${globalToast.color}`">
-                <v-icon size="16" class="mr-2">
-                    {{ globalToast.color === 'success' ? 'mdi-check-circle' : 'mdi-alert-circle' }}
-                </v-icon>
-                {{ globalToast.message }}
-                <button class="global-toast-close" @click="globalToast = null">
-                    <v-icon size="14">mdi-close</v-icon>
-                </button>
-            </div>
-        </transition>
     </div>
 </template>
 
@@ -490,7 +811,7 @@ onBeforeUnmount(cleanupRealtime);
     align-items: center;
     justify-content: space-between;
     padding: 16px 24px 14px;
-    background: var(--cds-surface-2);
+    background: #fff;
     border-radius: 16px 16px 0 0;
     flex-shrink: 0;
 }
@@ -501,17 +822,17 @@ onBeforeUnmount(cleanupRealtime);
 .inbox-title {
     font-size: 18px;
     font-weight: 700;
-    color: var(--cds-text-primary);
+    color: #0f172a;
     margin: 0;
 }
 .inbox-subtitle {
     font-size: 12px;
-    color: var(--cds-text-secondary);
+    color: #64748b;
     margin: 0;
 }
 
 .inbox-tabs-wrap {
-    background: var(--cds-surface-2);
+    background: #fff;
     border-bottom: 1px solid #e8ecf0;
     flex-shrink: 0;
     padding: 0 16px;
@@ -547,8 +868,14 @@ onBeforeUnmount(cleanupRealtime);
     gap: 8px;
 }
 
+.inbox-card-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .inbox-card {
-    background: var(--cds-surface-2);
+    background: #fff;
     border-radius: 12px;
     padding: 14px 16px;
     cursor: pointer;
@@ -560,7 +887,11 @@ onBeforeUnmount(cleanupRealtime);
     transform: translateY(-1px);
 }
 .inbox-card--reopen {
-    border-left: 3px solid var(--cds-text-warning);
+    border-left: 3px solid #f59e0b;
+}
+.inbox-card--historical {
+    background: #f8fafc;
+    border-style: dashed;
 }
 
 .inbox-card-top {
@@ -590,12 +921,15 @@ onBeforeUnmount(cleanupRealtime);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.inbox-proc-name--historical {
+    color: #475569;
+}
 
 .inbox-reopen-reason {
     font-size: 12px;
-    color: var(--cds-text-secondary);
+    color: #475569;
     padding: 6px 10px;
-    background: var(--cds-bg-warning);
+    background: #fffbeb;
     border-radius: 8px;
     margin-top: 8px;
     line-height: 1.5;
@@ -618,10 +952,10 @@ onBeforeUnmount(cleanupRealtime);
     display: flex;
     align-items: center;
     font-size: 11px;
-    color: var(--cds-text-secondary);
+    color: #64748b;
 }
 .meta-item--error {
-    color: var(--cds-text-danger);
+    color: #dc2626;
 }
 
 .inbox-card-actions {
@@ -632,11 +966,28 @@ onBeforeUnmount(cleanupRealtime);
     justify-content: flex-end;
 }
 
+.version-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 0;
+    margin-left: 8px;
+    font-size: 12px;
+    color: #475569;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.version-toggle-btn:hover {
+    color: #1d4ed8;
+}
+
 .inbox-content::-webkit-scrollbar {
     width: 4px;
 }
 .inbox-content::-webkit-scrollbar-thumb {
-    background: var(--cds-border);
+    background: #d0d7de;
     border-radius: 4px;
 }
 
@@ -658,12 +1009,12 @@ onBeforeUnmount(cleanupRealtime);
     max-width: 90vw;
 }
 .global-toast--success {
-    background: var(--cds-bg-success);
+    background: #d1fae5;
     color: #065f46;
-    border: 1px solid var(--cds-bg-success);
+    border: 1px solid #a7f3d0;
 }
 .global-toast--error {
-    background: var(--cds-bg-danger);
+    background: #fee2e2;
     color: #991b1b;
     border: 1px solid #fecaca;
 }

@@ -69,6 +69,17 @@ class UEngineBackend implements Backend {
         return { ok: false };
     }
 
+    async getDeterministicCodeList() {
+        // 호출부가 목록을 순회하므로 null 대신 빈 배열 반환
+        __warnUnsupported('getDeterministicCodeList');
+        return [];
+    }
+
+    async updateDeterministicCode(id: string, values: { code?: string; compensation?: string; parameters?: any }) {
+        __warnUnsupported('updateDeterministicCode');
+        return { ok: false };
+    }
+
     async watchNotifications(callback: (notification: any) => void) {
         // 호출부에서 unsubscribe 함수를 기대할 수 있어 noop 반환
         __warnUnsupported('watchNotifications');
@@ -96,20 +107,6 @@ class UEngineBackend implements Backend {
     async watchInstanceList(callback: (payload: any) => void, options?: any) {
         // uEngine 모드에서는 실시간 구독을 제공하지 않음
         // 호출 측에서 watchRef를 저장하므로, 해제 함수 형태로 반환
-        return () => {};
-    }
-
-    async getCreditBalance() {
-        // ExtraBox.vue에서 credit.available.toFixed(2)를 호출하므로 기본 구조 제공
-        return {
-            available: 0,
-            used: 0,
-            total: 0
-        };
-    }
-
-    async watchCreditUsage(callback: (payload: any) => void) {
-        // uEngine 모드에서는 크레딧 사용량 구독을 제공하지 않음
         return () => {};
     }
 

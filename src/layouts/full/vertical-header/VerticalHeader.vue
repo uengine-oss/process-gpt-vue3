@@ -38,6 +38,15 @@ function goToKnowledgeBase() {
     }
 }
 
+function goToMergeRequests() {
+    if (router.currentRoute.value.path !== '/merge-requests') {
+        router.push('/merge-requests');
+    }
+    if (window.innerWidth <= 768) {
+        customizer.SET_SIDEBAR_DRAWER();
+    }
+}
+
 interface SidebarItem {
     title: string;
     icon: string;
@@ -268,6 +277,12 @@ function handleNotificationBadgeUpdate(event: Event) {
                             {{ $t('headerMenu.knowledgeBase') }}
                         </v-btn>
                     </div>
+                    <div class="mr-2">
+                        <v-btn @click="goToMergeRequests" class="mobile-nav-btn pr-2 pl-2" variant="text">
+                            <v-icon class="mr-2">mdi-source-pull</v-icon>
+                            {{ $t('headerMenu.mergeRequests') }}
+                        </v-btn>
+                    </div>
                 </v-row>
             </v-container>
             <v-divider></v-divider>
@@ -306,6 +321,13 @@ function handleNotificationBadgeUpdate(event: Event) {
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon @click="goToKnowledgeBase">
                                 <v-icon>mdi-bookshelf</v-icon>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                    <v-tooltip :text="$t('headerMenu.mergeRequests')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon @click="goToMergeRequests">
+                                <v-icon>mdi-source-pull</v-icon>
                             </v-btn>
                         </template>
                     </v-tooltip>

@@ -10,6 +10,7 @@
  */
 
 import BpmnModdle from 'bpmn-moddle';
+import { recordUsageEvent } from '@/services/usageAnalytics';
 
 // Types
 export interface BpmnModel {
@@ -461,6 +462,11 @@ export class BpmnModelService {
             .single();
 
         if (error) throw new Error(`모델 생성 실패: ${error.message}`);
+        void recordUsageEvent('model_create', {
+            procDefId: data.proc_def_id,
+            modelId: data.id,
+            metadata: { source: 'BpmnModelService.createModel', name: data.name }
+        });
         return data;
     }
 
@@ -556,6 +562,16 @@ export class BpmnModelService {
             .single();
 
         if (updateError) throw new Error(`모델 업데이트 실패: ${updateError.message}`);
+        void recordUsageEvent('model_edit', {
+            procDefId,
+            modelId: updatedModel.id,
+            metadata: {
+                source: 'BpmnModelService.saveModel',
+                nodeCount: parsed.nodes.length,
+                linkCount: parsed.links.length,
+                laneCount: parsed.lanes.length
+            }
+        });
         return updatedModel;
     }
 

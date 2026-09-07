@@ -1,5 +1,5 @@
 <template>
-    <v-dialog v-model="isOpen" max-width="400" persistent>
+    <v-dialog v-model="isOpen" max-width="560" persistent>
         <v-card>
             <v-card-title class="d-flex align-center pa-4 pb-2">
                 <v-icon class="mr-2">mdi-account-edit</v-icon>
@@ -16,13 +16,12 @@
                     {{ processName }}
                 </div>
 
-                <!-- 담당자 선택 -->
-                <OwnerSelect
-                    v-model="selectedOwner"
-                    :label="$t('ownerSettingDialog.owner')"
-                    :placeholder="$t('ownerSettingDialog.placeholder')"
-                    hide-details
-                />
+                <div class="d-flex flex-column ga-3">
+                    <OwnerSelect v-model="primaryOwner" label="프로세스 담당자" placeholder="프로세스 담당자를 선택하세요" hide-details />
+                    <OwnerSelect v-model="fieldOwners" label="현업 담당자" placeholder="현업 담당자를 선택하세요" multiple hide-details />
+                    <OwnerSelect v-model="hqOwners" label="검토담당자" placeholder="검토담당자를 선택하세요" multiple hide-details />
+                    <OwnerSelect v-model="masterOwner" label="최종검토자" placeholder="최종검토자를 선택하세요" hide-details />
+                </div>
             </v-card-text>
 
             <v-card-actions class="pa-4 pt-0">
@@ -63,7 +62,10 @@ export default defineComponent({
     emits: ['update:modelValue', 'saved'],
     setup(props, { emit }) {
         const isOpen = ref(false);
-        const selectedOwner = ref('');
+        const primaryOwner = ref('');
+        const fieldOwners = ref<string[]>([]);
+        const hqOwners = ref<string[]>([]);
+        const masterOwner = ref('');
         const saving = ref(false);
         const backend = BackendFactory.createBackend();
 
@@ -92,20 +94,27 @@ export default defineComponent({
         const loadCurrentOwner = async () => {
             try {
                 const procDef = await backend.getRawDefinition(props.process.id);
-                if (procDef && procDef.owner) {
-                    selectedOwner.value = procDef.owner;
-                } else {
-                    selectedOwner.value = '';
-                }
+                const owners = procDef?.definition?.meta?.owners || {};
+                primaryOwner.value = owners.primaryOwner || procDef?.owner || '';
+                fieldOwners.value = Array.isArray(owners.fieldOwners) ? owners.fieldOwners : [];
+                hqOwners.value = Array.isArray(owners.hqOwners) ? owners.hqOwners : [];
+                masterOwner.value = owners.masterOwner || '';
             } catch (error) {
                 console.error('Owner 로드 실패:', error);
-                selectedOwner.value = '';
+                resetOwners();
             }
+        };
+
+        const resetOwners = () => {
+            primaryOwner.value = '';
+            fieldOwners.value = [];
+            hqOwners.value = [];
+            masterOwner.value = '';
         };
 
         const close = () => {
             isOpen.value = false;
-            selectedOwner.value = '';
+            resetOwners();
         };
 
         const save = async () => {
@@ -113,20 +122,34 @@ export default defineComponent({
 
             saving.value = true;
             try {
-                // proc_def 테이블의 owner 필드 업데이트
+                // 네 역할을 proc_def.definition.meta.owners의 단일 모델로 저장한다.
                 const supabase = window.$supabase;
                 if (supabase) {
+                    const procDef = await backend.getRawDefinition(props.process.id);
+                    const definition = { ...(procDef?.definition || {}) };
+                    definition.meta = { ...(definition.meta || {}) };
+                    definition.meta.owners = {
+                        ...(definition.meta.owners || {}),
+                        primaryOwner: primaryOwner.value || null,
+                        fieldOwners: [...fieldOwners.value],
+                        hqOwners: [...hqOwners.value],
+                        masterOwner: masterOwner.value || null
+                    };
                     const { error } = await supabase
                         .from('proc_def')
-                        .update({ owner: selectedOwner.value || null })
-                        .eq('id', props.process.id);
+                        .update({ owner: primaryOwner.value || null, definition })
+                        .eq('id', props.process.id)
+                        .eq('tenant_id', window.$tenantName);
 
                     if (error) throw error;
                 }
 
                 emit('saved', {
                     processId: props.process.id,
-                    owner: selectedOwner.value
+                    owner: primaryOwner.value,
+                    fieldOwners: [...fieldOwners.value],
+                    hqOwners: [...hqOwners.value],
+                    masterOwner: masterOwner.value
                 });
 
                 close();
@@ -139,7 +162,10 @@ export default defineComponent({
 
         return {
             isOpen,
-            selectedOwner,
+            primaryOwner,
+            fieldOwners,
+            hqOwners,
+            masterOwner,
             processName,
             saving,
             close,

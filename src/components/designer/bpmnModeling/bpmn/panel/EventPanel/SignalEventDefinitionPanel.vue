@@ -1,6 +1,7 @@
 <template>
     <div>
         <v-text-field
+            v-if="isBuiltinPropVisible('event_key')"
             v-model="eventKey"
             :label="$t('SignalEventDefinitionPanel.eventKey')"
             :disabled="isViewMode"
@@ -13,10 +14,12 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
+import builtinPanelVisibilityMixin from '../builtinPanelVisibilityMixin';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'signal-event-definition-panel',
+    mixins: [builtinPanelVisibilityMixin],
     props: {
         element: Object,
         uengineProperties: Object,
@@ -38,6 +41,9 @@ export default {
         me.eventKey = me.copyUengineProperties.eventKey;
     },
     computed: {
+        builtinPanelTaskTypeOverride() {
+            return 'bpmn:SignalEventDefinition';
+        },
         panelName() {
             return _.kebabCase(this.eventType.split(':')[1]) + '-panel';
         }
