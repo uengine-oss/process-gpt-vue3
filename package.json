@@ -4,9 +4,13 @@
     "version": "1.4.0",
     "scripts": {
         "dev": "vite --host",
+        "dev:mobile": "vite --config vite.mobile.config.ts",
         "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vue-tsc --noEmit && cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build",
+        "build:mobile": "vite build --config vite.mobile.config.ts",
+        "build:mobile:emulator": "vite build --config vite.mobile.config.ts --mode emulator",
         "preview": "vite preview --port 5050",
         "typecheck": "vue-tsc --noEmit",
+        "test:unit": "node --test \"src/**/*.test.js\" \"mobile/**/*.test.js\"",
         "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
         "sast:vue:report": "node scripts/sast-vue-report.mjs",
         "license:check": "npx --yes license-checker --production --summary",

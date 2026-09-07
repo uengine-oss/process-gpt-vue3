@@ -3138,7 +3138,13 @@ class ProcessGPTBackend implements Backend {
                 me.updateInstanceChat(workItem.proc_inst_id, newMessage);
             }
 
-            const formId = inputData.formId || inputData.tool?.replace('formHandler:', '') || workItem.tool.replace('formHandler:', '');
+            // 입력 폼이 없는 업무(승인만 하는 단계 등)는 tool 이 비어 있다. 실데이터에도
+            // 흔하다. 여기서 옵셔널 체이닝 없이 부르면 완료 요청이 통째로 실패한다.
+            const formId =
+                inputData.formId ||
+                inputData.tool?.replace('formHandler:', '') ||
+                workItem.tool?.replace('formHandler:', '') ||
+                null;
             const formValues = {};
             if (formId && inputData.parameterValues) {
                 formValues[formId] = inputData.parameterValues;

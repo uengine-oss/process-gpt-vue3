@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>Process-GPT</title>
+    <!--
+      viewport-fit=cover: 노치·홈 인디케이터가 있는 기기에서 화면 끝까지 그린다.
+      그 대신 안전 영역은 CSS 의 env(safe-area-inset-*) 로 직접 확보한다.
+
+      maximum-scale=1: 입력창을 누를 때 iOS 가 화면을 확대해 버리는 것을 막는다.
+      확대되면 사용자가 직접 축소해야 하고, 그 뒤 레이아웃이 어긋난 채로 남는다.
+    -->
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#1F6F5C" />
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
