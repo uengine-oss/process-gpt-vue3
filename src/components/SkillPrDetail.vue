@@ -41,6 +41,10 @@
                 리뷰 이력
                 <span v-if="reviews.length" class="pd-cnt">{{ reviews.length }}</span>
             </button>
+            <button v-if="canVerify" :class="['pd-tab', { on: activeTab === 'verify' }]" @click="activeTab = 'verify'">
+                병합 전 검증
+                <span v-if="verification.brokenCount" class="pd-cnt danger">{{ verification.brokenCount }}</span>
+            </button>
         </div>
 
         <!-- ── 변경사항 탭 ── -->
@@ -86,8 +90,18 @@
         </template>
 
         <!-- ── 리뷰 이력 탭 ── -->
-        <div v-else class="pd-reviews-pane overflow-y-auto flex-grow-1">
+        <div v-else-if="activeTab === 'reviews'" class="pd-reviews-pane overflow-y-auto flex-grow-1">
             <PrReviewTimeline :reviews="reviews" />
+        </div>
+
+        <!-- ── 병합 전 검증 탭 ── -->
+        <div v-else class="pd-verify-pane overflow-y-auto flex-grow-1">
+            <PrVerification
+                ref="verifier"
+                :skill-name="skillName || pr.resource_id"
+                :pr-number="pr.git_pr_number"
+                @status="verification = $event"
+            />
         </div>
 
         <!-- ── 리뷰 / 코멘트 제출 폼 ── -->
@@ -99,6 +113,13 @@
             class="flex-shrink-0"
             @submit="handleFormSubmit"
         />
+
+        <!-- ── 병합 전 검증 경고 ── -->
+        <!-- 병합 버튼 바로 위에 둔다: 리뷰어가 병합을 누르기 직전에 보게 하는 것이 요점이다. -->
+        <div v-if="canMerge && verifyNotice" :class="['pd-verify-notice', verifyNotice.tone]" @click="activeTab = 'verify'">
+            <span class="pd-vn-text">{{ verifyNotice.text }}</span>
+            <span class="pd-vn-link">자세히</span>
+        </div>
 
         <!-- ── 병합 폼 ── -->
         <PrMergeSection
@@ -118,12 +139,14 @@ import PrHeader from '@/components/pr/PrHeader.vue';
 import PrReviewTimeline from '@/components/pr/PrReviewTimeline.vue';
 import PrReviewForm from '@/components/pr/PrReviewForm.vue';
 import PrMergeSection from '@/components/pr/PrMergeSection.vue';
+import PrVerification from '@/components/pr/PrVerification.vue';
 
 export default {
     name: 'SkillPrDetail',
-    components: { PrHeader, PrReviewTimeline, PrReviewForm, PrMergeSection },
+    components: { PrHeader, PrReviewTimeline, PrReviewForm, PrMergeSection, PrVerification },
     props: {
         pr: { type: Object, required: true },
+        skillName: { type: String, default: '' },
         files: { type: Array, default: () => [] },
         filesLoading: Boolean,
         reviews: { type: Array, default: () => [] },
@@ -140,7 +163,8 @@ export default {
     data() {
         return {
             activeTab: 'changes',
-            activeFile: null
+            activeFile: null,
+            verification: { hasSuite: false, status: null, brokenCount: 0, incomparableCount: 0, noSignalCount: 0, backfillStatus: null }
         };
     },
     watch: {
@@ -153,6 +177,7 @@ export default {
         pr() {
             this.activeTab = 'changes';
             this.activeFile = null;
+            this.verification = { hasSuite: false, status: null, brokenCount: 0, incomparableCount: 0, noSignalCount: 0, backfillStatus: null };
         }
     },
     computed: {
@@ -164,6 +189,42 @@ export default {
         },
         canMerge() {
             return this.isOwner && this.pr.status === 'APPROVED';
+        },
+        /** 병합 전 검증은 스킬 PR 이면서 깃 PR 번호가 있을 때만 돌릴 수 있다. */
+        canVerify() {
+            const type = this.pr.resource_type || 'skill';
+            return type === 'skill' && !!this.pr.git_pr_number && !!(this.skillName || this.pr.resource_id);
+        },
+        /**
+         * 병합 버튼 옆에 띄울 한 줄. 검증 결과를 병합 직전에 보게 하는 것이 목적이므로,
+         * "아직 안 돌렸다" 도 알려준다 — 침묵은 "이상 없음" 으로 오해된다.
+         */
+        verifyNotice() {
+            if (!this.canVerify) return null;
+            const v = this.verification;
+            if (v.status === 'running') {
+                return { tone: 'info', text: '병합 전 검증이 진행 중입니다.' };
+            }
+            if (v.status === 'succeeded') {
+                if (v.brokenCount) {
+                    return { tone: 'bad', text: `이 병합은 기존 동작 ${v.brokenCount}개 단계를 깨뜨립니다.` };
+                }
+                const unknown = (v.noSignalCount || 0) + (v.incomparableCount || 0);
+                if (unknown) {
+                    return { tone: 'warn', text: `시나리오 ${unknown}건은 깨졌는지 판단할 수 없습니다.` };
+                }
+                return { tone: 'ok', text: '병합 전 검증 통과 — 깨지는 단계가 없습니다.' };
+            }
+            if (v.status === 'failed') {
+                return { tone: 'warn', text: '병합 전 검증이 완료되지 못했습니다.' };
+            }
+            if (!v.hasSuite) {
+                if (v.backfillStatus === 'running') {
+                    return { tone: 'info', text: '검증에 쓸 시나리오를 만드는 중입니다.' };
+                }
+                return { tone: 'warn', text: '비교할 시나리오가 없어 자동 검증을 할 수 없습니다.' };
+            }
+            return { tone: 'warn', text: '아직 병합 전 검증을 실행하지 않았습니다.' };
         },
         activeFileObj() {
             return this.files.find((f) => f.filename === this.activeFile) || null;
@@ -416,5 +477,57 @@ export default {
 .minus {
     color: #a32d2d;
     font-weight: 600;
+}
+
+/* ── 병합 전 검증 알림 ── */
+.pd-verify-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 16px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    font-size: 12.5px;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+.pd-verify-notice.ok {
+    background: rgba(var(--v-theme-success), 0.09);
+    border-color: rgba(var(--v-theme-success), 0.25);
+    color: rgba(var(--v-theme-on-surface), 0.75);
+}
+.pd-verify-notice.bad {
+    background: rgba(var(--v-theme-error), 0.09);
+    border-color: rgba(var(--v-theme-error), 0.32);
+    color: rgb(var(--v-theme-error));
+    font-weight: 600;
+}
+.pd-verify-notice.warn {
+    background: rgba(var(--v-theme-warning), 0.1);
+    border-color: rgba(var(--v-theme-warning), 0.3);
+    color: rgba(var(--v-theme-on-surface), 0.75);
+}
+.pd-verify-notice.info {
+    background: rgba(var(--v-theme-primary), 0.08);
+    border-color: rgba(var(--v-theme-primary), 0.22);
+    color: rgba(var(--v-theme-on-surface), 0.7);
+}
+.pd-vn-text {
+    flex: 1;
+}
+.pd-vn-link {
+    font-size: 11.5px;
+    text-decoration: underline;
+    opacity: 0.75;
+    white-space: nowrap;
+}
+
+.pd-cnt.danger {
+    background: rgba(var(--v-theme-error), 0.15);
+    color: rgb(var(--v-theme-error));
+}
+
+.pd-verify-pane {
+    min-height: 0;
 }
 </style>
