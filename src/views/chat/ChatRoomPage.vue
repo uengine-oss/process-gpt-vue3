@@ -1976,7 +1976,7 @@ export default {
             for (const f of list) {
                 try {
                     // eslint-disable-next-line no-await-in-loop
-                    const uploadResult = await backend.uploadFileToStorage(f, roomId ? { room_id: roomId } : {});
+                    const uploadResult = await backend.uploadFileToStorage(f, this.roomUploadOptions(roomId));
                     const resolvedUrl =
                         uploadResult?.public_url ||
                         uploadResult?.publicUrl ||
@@ -2606,7 +2606,7 @@ export default {
                     for (const f of pendingFiles.files) {
                         try {
                             // eslint-disable-next-line no-await-in-loop
-                            const uploadResult = await backend.uploadFileToStorage(f, { room_id: roomId });
+                            const uploadResult = await backend.uploadFileToStorage(f, this.roomUploadOptions(roomId));
                             const resolvedUrl = uploadResult?.public_url || uploadResult?.publicUrl || '';
                             if (resolvedUrl) {
                                 uploadedKickoffFiles.push({
@@ -2816,6 +2816,29 @@ export default {
                 return '';
             }
         },
+        /**
+         * 이 대화의 첨부 업로드 옵션.
+         *
+         * codex 는 첨부를 워크스페이스의 원본 파일로 직접 연다 — 폴더 업로드가
+         * 이미 그렇게 동작한다. 검색용 청킹·임베딩·VLM 판독은 아무도 쓰지 않으면서
+         * 업로드를 수십 초 늦추고, 임베딩 서버가 흔들리면 첨부까지 실패시킨다.
+         */
+        roomUploadOptions(roomId) {
+            const options = roomId ? { room_id: roomId } : {};
+            // 첫 메시지로 방을 여는 흐름에서는 방 설정이 아직 저장되기 전이라
+            // 입력창의 현재 선택도 함께 본다.
+            let selected = '';
+            try {
+                selected = (this.$refs.composer?.$refs?.inputChat?.orchestration || '').toString().trim();
+            } catch (e) {
+                selected = '';
+            }
+            if (this.getRoomOrchestration() === 'codex' || selected === 'codex') {
+                options.raw_only = true;
+            }
+            return options;
+        },
+
         getRoomOrchestration() {
             try {
                 const ctx = this.readChatRoomContext(this.currentChatRoom);
