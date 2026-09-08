@@ -362,12 +362,20 @@
                             density="compact"
                             hide-details
                             clearable
+                            :no-data-text="
+                                form.creationType === 'template'
+                                    ? translate(
+                                          'processArchitecture.newProcessDialog.noTemplates',
+                                          '등록된 템플릿이 없습니다. 프로세스 목록에서 템플릿으로 지정할 수 있습니다.'
+                                      )
+                                    : undefined
+                            "
                         >
                             <template #item="{ item, props }">
                                 <v-list-item v-bind="props" :title="undefined">
                                     <div class="d-flex align-center">
-                                        <span :class="item.raw.isCallActivitySub ? 'text-purple' : 'text-primary'" class="rg-type-text mr-1">
-                                            {{ item.raw.isCallActivitySub ? '모듈' : '체계도' }}
+                                        <span :class="sourceBadgeClass(item.raw)" class="rg-type-text mr-1">
+                                            {{ sourceBadgeLabel(item.raw) }}
                                         </span>
                                         <span>{{ item.raw.name }}</span>
                                     </div>
@@ -375,8 +383,8 @@
                             </template>
                             <template #selection="{ item }">
                                 <div class="d-flex align-center">
-                                    <span :class="item.raw.isCallActivitySub ? 'text-purple' : 'text-primary'" class="rg-type-text mr-1">
-                                        {{ item.raw.isCallActivitySub ? '모듈' : '체계도' }}
+                                    <span :class="sourceBadgeClass(item.raw)" class="rg-type-text mr-1">
+                                        {{ sourceBadgeLabel(item.raw) }}
                                     </span>
                                     <span>{{ item.raw.name }}</span>
                                 </div>
@@ -481,7 +489,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { generateProcessId, isPidInUse } from './processIdUtils';
 import { getMajorBusinessDomain } from './processClassification';
 import { userIdentityFromSearchResult, formatIdentityWithTeam } from '@/utils/userIdentity';
-import { isCallActivitySubModule } from '@/utils/processStages';
+import { isCallActivitySubModule, isTemplateDefinition } from '@/utils/processStages';
 
 const props = defineProps<{
     modelValue: boolean;
@@ -548,7 +556,8 @@ async function collectBpmnDefinitionsOnly(): Promise<{ id: string; name: string;
         return (list || []).map((item: any) => ({
             id: String(item.id || ''),
             name: item.name || item.id || '',
-            isCallActivitySub: isCallActivitySubModule(item)
+            isCallActivitySub: isCallActivitySubModule(item),
+            isTemplate: isTemplateDefinition(item)
         }));
     } catch (e) {
         console.error('Failed to collect BPMN definitions:', e);
@@ -740,10 +749,15 @@ const procMapActiveProcessIds = computed<Set<string>>(() => {
 });
 
 // 템플릿/복제/소스 매핑 드롭다운에 표시할 대상:
+// - 템플릿(template) 인 경우: definition.type === 'template' 로 지정된 정의만
+//   (프로세스 목록 화면에서 지정/해제, proc_map 등록 여부와 무관)
 // - 기본: proc_def(deleted_at IS NULL) AND proc_map에 존재하는 것만
 // - 복제(clone) 인 경우: CA 서브 프로세스(프로세스 모듈, type: 'call-activity-sub')는 proc_map에
 //   등록되지 않지만 복제 소스로는 허용되어야 하므로 함께 노출
 const selectableExistingProcesses = computed(() => {
+    if (form.value.creationType === 'template') {
+        return existingProcesses.value.filter((p: any) => p?.isTemplate);
+    }
     const activeIds = procMapActiveProcessIds.value;
     const isClone = form.value.creationType === 'clone';
     return existingProcesses.value.filter((p: any) => {
@@ -752,6 +766,17 @@ const selectableExistingProcesses = computed(() => {
         return false;
     });
 });
+
+// 템플릿/복제 드롭다운의 구분 배지 (템플릿 > 모듈 > 체계도)
+function sourceBadgeLabel(item: any): string {
+    if (item?.isTemplate) return '템플릿';
+    return item?.isCallActivitySub ? '모듈' : '체계도';
+}
+
+function sourceBadgeClass(item: any): string {
+    if (item?.isTemplate) return 'text-warning';
+    return item?.isCallActivitySub ? 'text-purple' : 'text-primary';
+}
 
 const megaOptions = computed(() => {
     if (!props.procMap?.mega_proc_list) return [];
@@ -1077,8 +1102,8 @@ async function createProcess() {
 
         if (isCloneFlow) {
             // Clone/Template: duplicate an existing local process definition.
-            // proc_map 등록은 backend(duplicateLocalProcess)에서 일괄 처리하며,
-            // 사용자가 선택한 Mega/Major 위치 및 추가 필드(pid/owners/type 등)를 옵션으로 전달한다.
+            // duplicateLocalProcess 는 정의 복제만 담당하고(4개 인자, 옵션 없음),
+            // proc_map 등록은 scratch 경로와 동일하게 아래 updateProcMap 공통 경로에서 처리한다.
             // '프로세스 모듈(계층도 미등록)' 체크 시에는 proc_map 등록을 스킵하고 모듈 마커를 부여한다.
             const sourceId = form.value.sourceProcessId;
             const sourceDef = await backend.getRawDefinition(sourceId);
@@ -1102,34 +1127,12 @@ async function createProcess() {
             }
             if (form.value.isCallActivitySub) {
                 cloneDefinition.type = 'call-activity-sub';
-            } else if (cloneDefinition.type === 'call-activity-sub') {
+            } else if (cloneDefinition.type === 'call-activity-sub' || cloneDefinition.type === 'template') {
+                // 템플릿에서 생성한 프로세스는 일반 프로세스 — 템플릿 마커를 물려받지 않는다
                 delete cloneDefinition.type;
             }
 
-            let subEntryExtras: Record<string, any> | null = null;
-            if (!form.value.isCallActivitySub) {
-                const currentMap = await backend.getProcessDefinitionMap();
-                const workingMap = currentMap && currentMap.mega_proc_list ? currentMap : { mega_proc_list: [] };
-                subEntryExtras = buildSubEntryExtrasForProcMap(
-                    workingMap,
-                    form.value.mega,
-                    form.value.major,
-                    description
-                );
-            }
-
-            const result = await backend.duplicateLocalProcess(
-                sourceId,
-                name,
-                sourceDef.bpmn,
-                cloneDefinition,
-                {
-                    targetMegaId: form.value.mega,
-                    targetMajorId: form.value.major,
-                    subEntryExtras: subEntryExtras || undefined,
-                    skipProcMap: form.value.isCallActivitySub
-                }
-            );
+            const result = await backend.duplicateLocalProcess(sourceId, name, sourceDef.bpmn, cloneDefinition);
             newId = result?.newId || result?.id || result;
         } else {
             // Create new process: build initial BPMN with Lane + StartEvent -> ManualTask -> EndEvent
@@ -1239,9 +1242,8 @@ async function createProcess() {
 
         if (newId) {
             await syncProcessDefinitionMetadata(newId, name, description, ownerModel, coOwners, sourceLineage);
-            // Clone/Template 경로는 backend(duplicateLocalProcess)에서 proc_map 등록을 마쳤으므로 스킵
-            // Call Activity 서브프로세스는 계층도에 등록하지 않음
-            if (!isCloneFlow && !form.value.isCallActivitySub) {
+            // Call Activity 서브프로세스는 계층도에 등록하지 않음 (scratch/clone/template 공통)
+            if (!form.value.isCallActivitySub) {
                 await updateProcMap(newId, name, description);
             }
             emit('created', { id: newId, name, description });
@@ -1309,7 +1311,7 @@ async function syncProcessDefinitionMetadata(
 
 // 주어진 map 상태 기준으로 target 위치의 PID를 계산하고
 // sub_proc_list entry의 추가 필드(owners/type/source 등)를 구성해 반환.
-// id/name은 backend(duplicateLocalProcess) 또는 updateProcMap에서 병합한다.
+// id/name은 updateProcMap에서 병합한다.
 function buildSubEntryExtrasForProcMap(
     map: any,
     targetMegaId: string | null | undefined,

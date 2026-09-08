@@ -621,7 +621,7 @@ export default defineComponent({
             public_feedback_starts_at: '공개 피드백 시작일',
             fte: 'FTE',
             owner: '담당자',
-            primaryOwner: 'PI팀 담당자',
+            primaryOwner: '프로세스 담당자',
             masterOwner: '최종검토자',
             fieldOwners: '현업담당자',
             hqOwners: '검토담당자',

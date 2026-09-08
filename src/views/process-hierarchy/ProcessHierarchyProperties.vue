@@ -6436,7 +6436,7 @@ export default {
                     this.procDefOwners = {
                         fieldOwners: this.normalizeOwnerList(metaOwners.fieldOwners),
                         hqOwners: this.normalizeOwnerList(metaOwners.hqOwners),
-                        masterOwner: toSafeText(metaOwners.masterOwner).trim() || null
+                        masterOwner: this.normalizeOwnerList(metaOwners.masterOwner)[0] || null
                     };
                     this.resolveOwnerNames();
                     this.applyProcessSchemaFieldsFromDefinition(val.definition || val);
@@ -7081,10 +7081,10 @@ export default {
             }
             if (!raw || typeof raw !== 'object') raw = {};
             return {
-                primaryOwner: toSafeText(raw.primaryOwner || raw.owner).trim() || null,
+                primaryOwner: this.normalizeOwnerList(raw.primaryOwner || raw.owner)[0] || null,
                 fieldOwners: this.normalizeOwnerList(raw.fieldOwners),
                 hqOwners: this.normalizeOwnerList(raw.hqOwners),
-                masterOwner: toSafeText(raw.masterOwner).trim() || null
+                masterOwner: this.normalizeOwnerList(raw.masterOwner)[0] || null
             };
         },
         isOwnerHistoryEntry(entry) {
@@ -9375,6 +9375,9 @@ export default {
 
             this.bpmnDataVersion++;
             this.$emit('taskMappingChanged');
+            if (applied > 0) {
+                this.$emit('persistBpmn', { notifyOnSuccess: false, successMessage: 'PI Flag가 저장되었습니다.' });
+            }
             return { applied, unmatched };
         },
 
@@ -9394,6 +9397,7 @@ export default {
             this.writeCommentsToElement(root.id, [comment]);
             this.bpmnDataVersion++;
             this.$emit('taskMappingChanged');
+            this.$emit('persistBpmn', { notifyOnSuccess: false, successMessage: 'PI Flag가 저장되었습니다.' });
             return true;
         },
 
@@ -9479,6 +9483,7 @@ export default {
             }
             this.bpmnDataVersion++;
             this.$emit('taskMappingChanged');
+            this.$emit('persistBpmn', { notifyOnSuccess: false, successMessage: 'PI Flag 반영 상태가 저장되었습니다.' });
         },
 
         async deleteElementComment(commentId) {
@@ -9626,6 +9631,13 @@ export default {
                 );
                 if (requestId !== this.piFlagChatSeq) return;
 
+                // null-skip 프록시가 미지원 백엔드에서 null 을 반환하는 경우 — 실패 메시지로 오인하지 않게 구분
+                if ((response === null || response === undefined) && !accumulated) {
+                    this.piFlagChatLog = this.piFlagChatLog.filter(e => e.id !== entryId);
+                    this.piFlagChatError = '현재 백엔드 모드에서는 PI Flag AI 챗(qdrantChat)을 사용할 수 없습니다.';
+                    return;
+                }
+
                 const answerText = toSafeText(response?.answer || accumulated || '').trim();
                 const target = this.piFlagChatLog.find(e => e.id === entryId);
                 if (target) {
@@ -9743,6 +9755,7 @@ export default {
 
             this.bpmnDataVersion++;
             this.$emit('taskMappingChanged');
+            this.$emit('persistBpmn', { notifyOnSuccess: false, successMessage: 'PI Flag가 삭제되었습니다.' });
         },
 
         // 묶음(groupId) 코멘트를 연관된 모든 요소에서 한 번에 삭제
@@ -9787,6 +9800,7 @@ export default {
 
             this.bpmnDataVersion++;
             this.$emit('taskMappingChanged');
+            this.$emit('persistBpmn', { notifyOnSuccess: false, successMessage: 'PI Flag 묶음이 삭제되었습니다.' });
         },
 
         formatCommentTime(timestamp) {

@@ -6661,6 +6661,10 @@ class ProcessGPTBackend implements Backend {
         return report;
     }
 
+    /**
+     * proc_def 행 복제만 담당한다 — proc_map(체계도) 등록은 하지 않으므로
+     * 계층도 반영이 필요하면 호출부에서 별도로 처리해야 한다 (예: NewProcessDialog.updateProcMap).
+     */
     async duplicateLocalProcess(
         sourceId: string,
         newName: string,

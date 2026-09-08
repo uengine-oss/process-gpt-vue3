@@ -142,8 +142,15 @@
             <input ref="fileInput" type="file" style="display: none" :accept="fileAccept || undefined" :multiple="fileMultiple" @change="onFilePicked" />
             <div v-for="(f, idx) in fileList" :key="f.path || idx" class="file-row">
                 <v-icon size="15" color="indigo">mdi-paperclip</v-icon>
-                <a v-if="f.publicUrl" class="file-name" :href="f.publicUrl" target="_blank" rel="noopener">{{ f.fileName || f.path }}</a>
-                <span v-else class="file-name">{{ f.fileName || f.path }}</span>
+                <button type="button" class="file-name file-download-name" @click="downloadFile(f)">{{ f.fileName || f.path }}</button>
+                <v-btn
+                    icon variant="text" size="x-small"
+                    :loading="fileDownloadingPath === (f.path || f.publicUrl)"
+                    title="파일 다운로드"
+                    @click="downloadFile(f)"
+                >
+                    <v-icon size="14">mdi-download</v-icon>
+                </v-btn>
                 <v-btn v-if="!isDisabled" icon variant="text" size="x-small" @click="removeFile(idx)">
                     <v-icon size="13">mdi-close</v-icon>
                 </v-btn>
@@ -258,6 +265,20 @@ function toSafeText(value) {
     return String(value);
 }
 
+/** randomUUID가 없는 브라우저/비보안 컨텍스트에서도 충돌 방지용 파일 suffix를 만든다. */
+function createFileId() {
+    const webCrypto = typeof window !== 'undefined' ? window.crypto : null;
+    if (typeof webCrypto?.randomUUID === 'function') {
+        return webCrypto.randomUUID().replace(/-/g, '').substring(0, 8);
+    }
+    if (typeof webCrypto?.getRandomValues === 'function') {
+        const bytes = new Uint8Array(4);
+        webCrypto.getRandomValues(bytes);
+        return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    }
+    return Math.random().toString(36).slice(2, 10).padEnd(8, '0');
+}
+
 export default {
     name: 'SchemaFieldInput',
     props: {
@@ -284,6 +305,7 @@ export default {
             apiSearchText: '',
             _apiSearchTimer: null,
             fileUploading: false,
+            fileDownloadingPath: '',
             fileError: ''
         };
     },
@@ -615,8 +637,10 @@ export default {
                 const result = await backend.searchUsersByName(normalized);
                 const current = toSafeText(this.value).trim();
                 const preserved = current ? this.userItems.filter((it) => toSafeText(it?.id).trim() === current) : [];
-                const items = (Array.isArray(result) ? result : []).map((u) => ({
-                    id: toSafeText(u.id ?? u.email ?? u.uid).trim(),
+                // searchUsersByName 은 { users, page } 형태로 응답한다 (구형 배열 응답도 방어)
+                const users = Array.isArray(result) ? result : Array.isArray(result?.users) ? result.users : [];
+                const items = users.map((u) => ({
+                    id: toSafeText(u.id ?? u.email ?? u.user_id ?? u.uid).trim(),
                     name: toSafeText(u.name ?? u.username ?? u.email).trim()
                 }));
                 this.userItems = [...preserved, ...items.filter((it) => toSafeText(it.id).trim() !== current)];
@@ -699,9 +723,10 @@ export default {
             const base =
                 cfg.name_strategy === 'original'
                     ? file.name.replace(/[^\w.\-가-힣]/g, '_')
-                    : `${Date.now()}_${crypto.randomUUID().substring(0, 8)}${ext}`;
+                    : `${Date.now()}_${createFileId()}${ext}`;
             const path = `${prefix}/${base}`;
             const supabase = window.$supabase;
+            if (!supabase?.storage) throw new Error('Supabase Storage client is not available.');
             const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
                 cacheControl: '3600',
                 upsert: cfg.name_strategy === 'original',
@@ -710,6 +735,42 @@ export default {
             if (error) throw error;
             const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
             return { fileName: file.name, path: data.path, bucket, publicUrl: urlData?.publicUrl || '' };
+        },
+        async downloadFile(file) {
+            if (this.preview || !file) return;
+            const downloadKey = file.path || file.publicUrl;
+            if (!downloadKey || this.fileDownloadingPath) return;
+            this.fileError = '';
+            this.fileDownloadingPath = downloadKey;
+            try {
+                if (file.path) {
+                    const supabase = window.$supabase;
+                    if (!supabase?.storage) throw new Error('Supabase Storage client is not available.');
+                    const bucket = toSafeText(file.bucket).trim() || toSafeText(this.fileConfig.bucket).trim() || 'files';
+                    const { data, error } = await supabase.storage.from(bucket).download(file.path);
+                    if (error) throw error;
+                    const objectUrl = URL.createObjectURL(data);
+                    const anchor = document.createElement('a');
+                    anchor.href = objectUrl;
+                    anchor.download = file.fileName || file.path.split('/').pop() || 'download';
+                    document.body.appendChild(anchor);
+                    anchor.click();
+                    anchor.remove();
+                    URL.revokeObjectURL(objectUrl);
+                } else if (file.publicUrl) {
+                    const anchor = document.createElement('a');
+                    anchor.href = file.publicUrl;
+                    anchor.download = file.fileName || 'download';
+                    anchor.target = '_blank';
+                    anchor.rel = 'noopener';
+                    anchor.click();
+                }
+            } catch (e) {
+                console.error('[SchemaFieldInput] 파일 다운로드 실패:', e);
+                this.fileError = '파일을 다운로드할 수 없습니다.';
+            } finally {
+                this.fileDownloadingPath = '';
+            }
         },
         // ── table 행 편집 ─────────────────────────────────
         addTableRow() {
@@ -840,6 +901,8 @@ export default {
 }
 
 .file-name {
+    flex: 1;
+    min-width: 0;
     font-size: 12px;
     color: rgb(var(--v-theme-textPrimary));
     overflow: hidden;
@@ -848,7 +911,15 @@ export default {
     text-decoration: none;
 }
 
-a.file-name:hover {
+button.file-download-name {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+
+button.file-download-name:hover {
     text-decoration: underline;
 }
 

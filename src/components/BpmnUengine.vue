@@ -87,8 +87,7 @@ import paletteProvider from './customPalette/PaletteProvider';
 import customContextPadModule from './customContextPad';
 import customReplaceElement from './customReplaceElement';
 import customPopupMenu from './customPopupMenu';
-// skt 마이그레이션 요소 변경 비활성화
-// import customReplaceModule from './customReplace';
+import customReplaceModule from './customReplace';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
@@ -110,6 +109,7 @@ import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 import { BPMN_AUTO_ORIENTATION_MODES, getAutoOrientationRotateOptions, getBpmnAutoOrientationMode } from '@/utils/bpmnAutoOrientationMode';
 
 const backend = BackendFactory.createBackend();
+const MINIMAP_OPEN_STORAGE_KEY = 'process-gpt:bpmn:minimap-open';
 
 const WARNING = 0,
     ERROR = 1;
@@ -202,6 +202,7 @@ export default {
         return {
             diagramXML: null,
             bpmnXML: null,
+            acceptedCurrentBpmnSnapshot: null,
             openPanel: false,
             moddle: null,
             bpmnStore: null,
@@ -317,8 +318,6 @@ export default {
             .finally(() => {
                 try {
                     this.onLoadEnd();
-                    const minimap = this.bpmnViewer.get('minimap');
-                    if (minimap) minimap.open();
                 } catch (_) {}
             });
         this.initResizeObserver();
@@ -363,6 +362,15 @@ export default {
                     if (!this.bpmnViewer) return;
 
                     const normalizedNewVal = newVal.trim();
+
+                    // 현재 modeler에서 export해 영구 저장한 XML이 prop으로 돌아온 경우다.
+                    // 이미 캔버스에 반영된 상태이므로 importXML을 다시 실행하지 않는다.
+                    if (this.acceptedCurrentBpmnSnapshot === normalizedNewVal) {
+                        this.acceptedCurrentBpmnSnapshot = null;
+                        this.bpmnXML = newVal;
+                        this.diagramXML = newVal;
+                        return;
+                    }
 
                     // registerToStore 모드에서는 내부 편집(changeElement)로 올라온 동일 XML은 다시 import하지 않는다.
                     // 단, 외부(생성/로드/롤백 등)에서 변경된 BPMN은 import해서 화면을 동기화한다.
@@ -493,6 +501,9 @@ export default {
         }
     },
     methods: {
+        acceptCurrentBpmnSnapshot(xml) {
+            this.acceptedCurrentBpmnSnapshot = typeof xml === 'string' ? xml.trim() : null;
+        },
         /**
          * 색상 테마 변경 시 캔버스 도형을 다시 그린다.
          *
@@ -874,17 +885,18 @@ export default {
                 // Load new table-based palette task types
                 await catalogStore.loadPaletteTaskTypes();
 
-                // Set enabled palette task types to window for PaletteProvider access
-                window.$enabledPaletteTaskTypes = catalogStore.enabledPaletteTaskTypes;
-
                 // Legacy support: also load old palette settings
                 await catalogStore.loadPaletteSettings();
-                window.$paletteSettings = catalogStore.paletteSettings;
+
+                // 팔레트·변경 메뉴가 읽는 window 전역(실효 노출 목록 포함) 발행
+                catalogStore.publishPaletteSettingsToWindow();
             } catch (error) {
                 console.error('Failed to load palette settings:', error);
                 // Set default settings
                 window.$enabledPaletteTaskTypes = [];
                 window.$paletteSettings = { visibleTaskTypes: ['bpmn:UserTask'] };
+                window.$visibleTaskTypes = null;
+                window.$visibleEventTypes = null;
             }
         },
         applyAutoLayout() {
@@ -2018,8 +2030,8 @@ export default {
                         customContextPadModule,
                         customReplaceElement,
                         customPopupMenu,
-                        // skt 마이그레이션 요소 변경 비활성화
-                        // customReplaceModule,
+                        // 변경(replace) 메뉴를 관리자 'Task/Event 종류 설정'과 동기화 — PAL 모드에만 적용
+                        ...(window.$pal ? [customReplaceModule] : []),
                         ZoomScroll,
                         MoveCanvas,
                         minimapModule
@@ -2028,9 +2040,37 @@ export default {
                 self.bpmnViewer = markRaw(new BpmnModeler(_options));
             }
 
+            self.setupMinimapPreference();
+
             if (self.registerToStore) {
                 self.bpmnStore = useBpmnStore();
                 self.bpmnStore.setModeler(self.bpmnViewer);
+            }
+        },
+        setupMinimapPreference() {
+            if (!this.bpmnViewer) return;
+
+            let shouldOpen = true;
+            try {
+                const storedValue = window.localStorage.getItem(MINIMAP_OPEN_STORAGE_KEY);
+                shouldOpen = storedValue === null ? true : storedValue === 'true';
+            } catch (_) {
+                // 저장소 접근이 제한된 환경에서는 기존 기본값(열림)을 사용한다.
+            }
+
+            try {
+                const minimap = this.bpmnViewer.get('minimap');
+                const eventBus = this.bpmnViewer.get('eventBus');
+                minimap.toggle(shouldOpen);
+                eventBus.on('minimap.toggle', ({ open }) => {
+                    try {
+                        window.localStorage.setItem(MINIMAP_OPEN_STORAGE_KEY, String(open));
+                    } catch (_) {
+                        // 저장소 접근이 제한된 환경에서는 현재 화면의 토글만 유지한다.
+                    }
+                });
+            } catch (_) {
+                // minimap 모듈을 사용할 수 없는 임베드 환경은 기존 동작을 유지한다.
             }
         },
         extendUEngineProperties(businessObject) {

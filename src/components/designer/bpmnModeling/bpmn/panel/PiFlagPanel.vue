@@ -22,14 +22,17 @@
                 </v-btn>
             </v-btn-toggle>
 
-            <v-text-field
+            <!-- 유형: 관리자 유형 카탈로그(pi_flag_types) 제안 + 자유 입력 허용 -->
+            <v-combobox
                 v-model="form.type"
+                :items="typeOptions"
                 :label="$t('piFlagPanel.type') || '유형 (선택사항)'"
                 density="compact"
                 variant="outlined"
                 hide-details
+                clearable
                 class="mb-2"
-            ></v-text-field>
+            ></v-combobox>
 
             <v-textarea
                 v-model="form.description"
@@ -177,6 +180,7 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
+import { getActivePiFlagTypeLabels, PI_FLAG_TYPES_CHANGE_EVENT } from '@/utils/piFlagTypes';
 
 export default {
     name: 'pi-flag-panel',
@@ -195,6 +199,7 @@ export default {
             comments: [],
             currentUser: null,
             listCollapsed: false,
+            typeOptions: [],
             form: {
                 status: 'open',
                 type: '',
@@ -229,6 +234,14 @@ export default {
             this.currentUser = null;
         }
         this.loadComments();
+        this.loadTypeOptions();
+        this._onPiFlagTypesChanged = () => this.loadTypeOptions();
+        window.addEventListener(PI_FLAG_TYPES_CHANGE_EVENT, this._onPiFlagTypesChanged);
+    },
+    beforeUnmount() {
+        if (this._onPiFlagTypesChanged) {
+            window.removeEventListener(PI_FLAG_TYPES_CHANGE_EVENT, this._onPiFlagTypesChanged);
+        }
     },
     methods: {
         // ---- 확장 읽기/쓰기 (values[0] 가정 금지: $type 으로 find) ----
@@ -280,6 +293,14 @@ export default {
         loadComments() {
             this.comments = this.readCommentsOf(this.element);
         },
+        // 관리자 유형 카탈로그(pi_flag_types) 로드 — 실패해도 자유 입력은 그대로 가능
+        async loadTypeOptions() {
+            try {
+                this.typeOptions = await getActivePiFlagTypeLabels();
+            } catch (e) {
+                this.typeOptions = [];
+            }
+        },
         // 현재 요소의 comments 를 패널 uengineProperties 에 동기화 (저장 시 덮어쓰기 방지)
         syncToPanel() {
             this.$emit('update:uengineProperties', { ...(this.uengineProperties || {}), comments: this.comments });
@@ -294,7 +315,7 @@ export default {
             const comment = {
                 id: this.generateId(),
                 status: this.form.status === 'resolved' ? 'resolved' : 'open',
-                type: this.form.type.trim(),
+                type: String(this.form.type || '').trim(),
                 description: desc,
                 authorId: this.currentUser?.id || this.currentUser?.uid || '',
                 authorName: this.currentUser?.username || this.currentUser?.email || '',

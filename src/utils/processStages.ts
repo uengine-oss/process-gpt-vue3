@@ -187,6 +187,31 @@ export function isCallActivitySubModule(def: any): boolean {
 }
 
 /**
+ * proc_def 가 "프로세스 템플릿" 인지 판별.
+ *
+ * 템플릿은 definition.type === 'template' 로 마킹된다(모듈 마커와 동일 규약 —
+ * type 컬럼은 duplicateLocalProcess 등이 'bpmn' 으로 덮어쓸 수 있어 definition 이 정본).
+ * 프로세스 목록의 템플릿 지정/필터와 새 프로세스 등록의 '템플릿' 생성 방식이 이 마커를 사용한다.
+ */
+export function isTemplateDefinition(def: any): boolean {
+    if (!def) return false;
+    if (String(def.type ?? '').trim() === 'template') return true;
+
+    const raw = def.definition;
+    let type = '';
+    if (raw && typeof raw === 'object') {
+        type = String(raw.type ?? '');
+    } else if (typeof raw === 'string') {
+        try {
+            type = String(JSON.parse(raw)?.type ?? '');
+        } catch {
+            return false;
+        }
+    }
+    return type === 'template';
+}
+
+/**
  * proc_def 목록에서 "프로세스 모듈"(call-activity-sub) id 집합을 수집한다.
  * 체계도 모집단(collectHierarchyProcIds)에서 차감해 리뷰보드/대시보드/체계도
  * 카운트에서 모듈을 제외하는 용도. (모듈이 모집단에 없으면 차감은 no-op)
