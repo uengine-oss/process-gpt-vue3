@@ -30,7 +30,8 @@ class FixedBaseWorkAssistantAgentService {
             onProcessPatch,
             onProcessResult,
             onOpenUi,
-            onFileArtifact
+            onFileArtifact,
+            onDraft
         } = callbacks;
 
         try {
@@ -137,6 +138,11 @@ class FixedBaseWorkAssistantAgentService {
                                 break;
                             case 'file_artifact':
                                 if (onFileArtifact) onFileArtifact(parsed);
+                                break;
+                            // 작성 중인 문서의 현재 모습. Process GPT 에이전트는 이 서비스를
+                            // 타므로, 라우터에만 넣으면 초안이 화면에 도달하지 못한다.
+                            case 'draft':
+                                if (onDraft) onDraft(parsed.file || parsed);
                                 break;
                             case 'openui':
                                 if (onOpenUi) onOpenUi(parsed);
