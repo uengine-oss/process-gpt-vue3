@@ -5888,10 +5888,16 @@ export default {
          * DeepAgent may first write a selected skill under the room root and
          * later copy it under the single process-* directory. Those are the
          * same artifact and must not create a second tab or duplicate row.
+         *
+         * 방 초안(.bpmn/<room>/)과 체크아웃(.checkouts/<room>/)도 같은 산출물로 본다.
+         * 스킬을 만든 방에서 이어서 고치면 생성분은 초안 경로로, 수정분은 체크아웃 경로로
+         * 오는데 둘을 다른 파일로 취급하면 작업 폴더에 같은 SKILL.md 가 '생성'·'수정' 두 줄로
+         * 쌓인다. 사용자는 무엇을 저장하는지 분간할 수 없고, 저장 시 두 벌이 함께 패키징되어
+         * 낡은 초안이 방금 한 수정을 덮어쓸 수 있다.
          */
         _workspaceLogicalPath(path) {
             const normalized = (path || '').toString().replace(/\\/g, '/');
-            const matched = normalized.match(/\/\.bpmn\/[^/]+\/(?:process-[^/]+\/)?(.+)$/);
+            const matched = normalized.match(/\/\.(?:bpmn|checkouts)\/[^/]+\/(?:process-[^/]+\/)?(.+)$/);
             return (matched ? matched[1] : normalized).toLowerCase();
         },
         /**
