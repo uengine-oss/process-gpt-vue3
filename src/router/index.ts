@@ -29,6 +29,16 @@ export const retryDynamicImport = (importFn: () => Promise<any>, retries = 3, de
     });
 };
 
+// 개발·데모 라우트 게이트 (VITE_FF_DEV_ROUTES) — 인증 게이트 밖 공개 라우트이므로 기본 OFF.
+// vite dev 서버(로컬 개발·playwright e2e)는 항상 노출하고,
+// 프로덕션 빌드는 VITE_FF_DEV_ROUTES=true 를 명시한 배포에서만 등록한다.
+const devRoutesEnabled = (() => {
+    if (import.meta.env.DEV) return true;
+    const runtime = (window as any)._env_?.VITE_FF_DEV_ROUTES;
+    const raw = runtime !== undefined && runtime !== '' ? runtime : import.meta.env.VITE_FF_DEV_ROUTES;
+    return raw === true || raw === 'true';
+})();
+
 export const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
@@ -38,62 +48,72 @@ export const router = createRouter({
             path: '/external-forms/:formId',
             component: () => retryDynamicImport(() => import('@/components/ui/ExternalForms.vue'))
         },
-        {
-            name: 'Design System',
-            path: '/design-system',
-            component: () => retryDynamicImport(() => import('@/views/ds/DesignSystem.vue'))
-        },
-        {
-            // 로그인 화면은 App.vue 의 테넌트 게이트 뒤에 있어 백엔드 없이는 렌더되지 않는다.
-            // 디자인 확인용으로 게이트가 열려 있는 /design-system 경로 아래에 미리보기를 둔다.
-            name: 'Design System Login Preview',
-            path: '/design-system/login',
-            component: () => retryDynamicImport(() => import('@/views/authentication/SideLogin.vue'))
-        },
-        {
-            name: 'BPMN Auto Layout E2E',
-            path: '/bpmn-auto-layout-e2e',
-            component: () => retryDynamicImport(() => import('@/views/e2e/BpmnAutoLayoutE2E.vue'))
-        },
-        {
-            name: 'ProcessGPT Mapper UI E2E',
-            path: '/processgpt-mapper-ui-e2e',
-            component: () => retryDynamicImport(() => import('@/views/e2e/ProcessGptMapperUiE2E.vue'))
-        },
-        {
-            name: 'ProcessGPT CallActivity Form Mapping E2E',
-            path: '/processgpt-callactivity-form-mapping-e2e',
-            component: () => retryDynamicImport(() => import('@/views/e2e/ProcessGptCallActivityFormMappingE2E.vue'))
-        },
+        ...(devRoutesEnabled
+            ? [
+                  {
+                      name: 'Design System',
+                      path: '/design-system',
+                      component: () => retryDynamicImport(() => import('@/views/ds/DesignSystem.vue'))
+                  },
+                  {
+                      // 로그인 화면은 App.vue 의 테넌트 게이트 뒤에 있어 백엔드 없이는 렌더되지 않는다.
+                      // 디자인 확인용으로 게이트가 열려 있는 /design-system 경로 아래에 미리보기를 둔다.
+                      name: 'Design System Login Preview',
+                      path: '/design-system/login',
+                      component: () => retryDynamicImport(() => import('@/views/authentication/SideLogin.vue'))
+                  },
+                  {
+                      name: 'BPMN Auto Layout E2E',
+                      path: '/bpmn-auto-layout-e2e',
+                      component: () => retryDynamicImport(() => import('@/views/e2e/BpmnAutoLayoutE2E.vue'))
+                  },
+                  {
+                      name: 'ProcessGPT Mapper UI E2E',
+                      path: '/processgpt-mapper-ui-e2e',
+                      component: () => retryDynamicImport(() => import('@/views/e2e/ProcessGptMapperUiE2E.vue'))
+                  },
+                  {
+                      name: 'ProcessGPT CallActivity Form Mapping E2E',
+                      path: '/processgpt-callactivity-form-mapping-e2e',
+                      component: () => retryDynamicImport(() => import('@/views/e2e/ProcessGptCallActivityFormMappingE2E.vue'))
+                  }
+              ]
+            : []),
         MainRoutes,
         AuthRoutes,
         TenantRoutes,
-        {
-            name: 'Markdown Editor',
-            path: '/markdown-editor',
-            component: () => retryDynamicImport(() => import('@/views/markdown/MarkdownEditor.vue'))
-        },
-        {
-            // 공개 데모 라우트(인증 불필요) — 인스턴스 자동분류 · Top List · 유사 사례.
-            name: 'Instance Classifier Demo',
-            path: '/instance-classifier-demo',
-            component: () => retryDynamicImport(() => import('@/views/demo/InstanceClassifierDemo.vue'))
-        },
-        {
-            name: 'Slide',
-            path: '/slide-editor',
-            component: () => retryDynamicImport(() => import('@/views/markdown/SlideEditor.vue'))
-        },
-        {
-            path: '/present',
-            name: 'presentation',
-            component: () => retryDynamicImport(() => import('@/views/markdown/SlidePresentation.vue')),
-            props: (route) => ({
-                printPdf: route.query['print-pdf'] !== undefined,
-                showNotes: route.query.showNotes,
-                pdfSeparateFragments: route.query.pdfSeparateFragments
-            })
-        },
+        ...(devRoutesEnabled
+            ? [
+                  {
+                      // 순서도/폼의 마크다운·슬라이드 필드는 컴포넌트를 직접 임베드하므로
+                      // 아래 라우트를 꺼도 폼 렌더링에는 영향이 없다 (단독 편집 화면 전용).
+                      name: 'Markdown Editor',
+                      path: '/markdown-editor',
+                      component: () => retryDynamicImport(() => import('@/views/markdown/MarkdownEditor.vue'))
+                  },
+                  {
+                      // 공개 데모 라우트(인증 불필요) — 인스턴스 자동분류 · Top List · 유사 사례.
+                      name: 'Instance Classifier Demo',
+                      path: '/instance-classifier-demo',
+                      component: () => retryDynamicImport(() => import('@/views/demo/InstanceClassifierDemo.vue'))
+                  },
+                  {
+                      name: 'Slide',
+                      path: '/slide-editor',
+                      component: () => retryDynamicImport(() => import('@/views/markdown/SlideEditor.vue'))
+                  },
+                  {
+                      path: '/present',
+                      name: 'presentation',
+                      component: () => retryDynamicImport(() => import('@/views/markdown/SlidePresentation.vue')),
+                      props: (route: any) => ({
+                          printPdf: route.query['print-pdf'] !== undefined,
+                          showNotes: route.query.showNotes,
+                          pdfSeparateFragments: route.query.pdfSeparateFragments
+                      })
+                  }
+              ]
+            : []),
         // 404 등 미매칭 경로는 마지막에 매칭되도록 catch-all을 맨 뒤에 둠 (예: /auth/reset-password가 Error로 떨어지지 않도록)
         {
             path: '/:pathMatch(.*)*',

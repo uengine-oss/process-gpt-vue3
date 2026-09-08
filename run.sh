@@ -33,6 +33,7 @@ if [ -f /opt/www/index.html ]; then
     VITE_FF_AI_COPILOT: "'$VITE_FF_AI_COPILOT'",\
     VITE_FF_AI_DESIGNER: "'$VITE_FF_AI_DESIGNER'",\
     VITE_FF_AI_FORM: "'$VITE_FF_AI_FORM'",\
+    VITE_FF_DEV_ROUTES: "'$VITE_FF_DEV_ROUTES'",\
   };\
   window.$mode = window._env_.VITE_MODE || window.$mode;\
   </script>' /opt/www/index.html
