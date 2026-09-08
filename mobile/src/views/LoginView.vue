@@ -30,6 +30,15 @@
             <button class="m-btn m-btn--primary m-btn--block" type="submit" :disabled="busy">
                 {{ busy ? '확인 중…' : '로그인' }}
             </button>
+
+            <!--
+              앱에는 가입도 조직 만들기도 없다. 처음 온 사람이 이 화면에서
+              할 수 있는 것이 로그인뿐인데 그 말이 없으면, 가입 버튼을 찾다가
+              앱이 덜 만들어진 것으로 여긴다.
+            -->
+            <p class="m-muted login__note">
+                처음이라면 웹 포털에서 가입하고 조직을 만든 뒤 이곳에서 로그인하세요.
+            </p>
         </form>
     </div>
 </template>
@@ -110,5 +119,12 @@ async function submit() {
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+
+/* 안내일 뿐이라 버튼과 붙어 보이지 않게 띄우고, 가운데로 모은다. */
+.login__note {
+    margin-top: 4px;
+    text-align: center;
+    font-size: 0.82rem;
 }
 </style>
