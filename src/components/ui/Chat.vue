@@ -6521,6 +6521,12 @@ export default {
                         // memento /save-to-storage 경유 (임베딩 + 벡터 저장)
                         const options = {};
                         if (roomId) options.room_id = roomId;
+                        // codex 는 첨부를 워크스페이스의 원본 파일로 직접 연다 — 폴더 업로드와
+                        // 같은 원칙이다. 검색용 청킹·임베딩·VLM 판독은 아무도 쓰지 않으면서
+                        // 업로드를 수십 초 늦추고, 임베딩 서버가 흔들리면 첨부까지 실패시킨다.
+                        if ((this.orchestration || '').toString().trim() === 'codex') {
+                            options.raw_only = true;
+                        }
                         uploadResult = await backend.uploadFileToStorage(f, options);
                         const resolvedUrl =
                             uploadResult?.public_url ||
