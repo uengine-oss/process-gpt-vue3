@@ -56,7 +56,12 @@
 
                 <!-- 내가 쓴 글은 그대로, 답변은 마크다운을 그려서. -->
                 <p v-if="msg.mine && msg.text" class="bubble__text">{{ msg.text }}</p>
-                <div v-else-if="msg.text" class="bubble__text md" v-html="renderMarkdown(msg.text)"></div>
+                <div
+                    v-else-if="msg.text"
+                    class="bubble__text md"
+                    @click="openLink"
+                    v-html="renderMarkdown(msg.text)"
+                ></div>
 
                 <!--
                     대화 속 입력 양식(OpenUI). 포털과 **같은 컴포넌트**를 쓴다 —
@@ -113,11 +118,31 @@
             :participants="participants"
             :docs="docs"
             :busy="busy"
+            :can-talk="canTalk"
+            :talking="talking"
             @send="send"
             @pick-knowledge="knowledgeOpen = true"
             @remove-doc="removeDoc"
             @stop="stop"
+            @toggle-voice="talking = !talking"
             @voice-error="(m: string) => (error = m)"
+        />
+
+        <!--
+            말로 하는 대화. 오디오·연결은 포털과 같은 부품을 그대로 쓰고,
+            화면만 휴대폰에 맞춘다.
+        -->
+        <VoiceSession
+            :active="talking"
+            :origin="apiBase.origin"
+            :room-id="roomId"
+            :agent="voiceAgent"
+            :history="voiceContext"
+            @user-said="onVoiceUser"
+            @agent-delta="onVoiceAgentDelta"
+            @agent-said="onVoiceAgentDone"
+            @agent-interrupted="onVoiceAgentInterrupted"
+            @close="talking = false"
         />
 
         <!-- 대화 설정. 포털의 설정 메뉴와 같은 것들이다. -->
@@ -173,6 +198,7 @@ import HitlPanel from '../components/HitlPanel.vue';
 import Icon from '../components/Icon.vue';
 import KnowledgePicker from '../components/KnowledgePicker.vue';
 import MobileComposer from '../components/MobileComposer.vue';
+import VoiceSession from '../components/VoiceSession.vue';
 import { buildParams, streamUrl } from '../lib/agentChat.js';
 import { sizeText, uploadAll } from '../lib/attachments.js';
 import { download, reasonText } from '../lib/download.js';
@@ -182,6 +208,13 @@ import { take } from '../lib/handoff.js';
 import { render as renderMarkdown } from '../lib/markdown.js';
 import { outgoingMessage, pendingPanel, toConversation } from '../lib/chat.js';
 import { touchDevice } from '../lib/push.js';
+import {
+    canUseVoice,
+    placeUserMessage,
+    voiceAgentMessage,
+    voiceHistory,
+    voiceUserMessage
+} from '@/shared/voice/index.js';
 import { withPreview } from '../lib/rooms.js';
 import { isFirstUserMessage, shouldGenerateChatRoomName } from '@/shared/chatRoom/index.js';
 import { currentSession } from '../lib/session.js';
@@ -238,6 +271,121 @@ const participants = computed(() => {
         .filter((p: any) => p && (p.is_agent === true || p.agent_type === 'agent' || p.id === 'process_gpt_agent'))
         .map((p: any) => ({ id: p.id, username: p.username || p.email || p.id, alias: p.alias || '' }));
 });
+
+/**
+ * 말로 대화할 수 있는 방인가.
+ *
+ * 나와 에이전트 단둘일 때만 연다 — 포털과 같은 규칙이다. 사람이 여럿인 방에서는
+ * 마이크가 잡은 말이 누구 것인지 모호해지고, 남의 발화까지 내 이름으로 남는다.
+ */
+const canTalk = computed(() => canUseVoice(room.value?.participants));
+
+/** 지금 말로 대화하는 중인가. */
+const talking = ref(false);
+
+/** 이 세션에서 말을 주고받을 상대. 방에 있는 에이전트다. */
+const voiceAgent = computed(() => participants.value[0] || null);
+
+/** 세션을 시작할 때 넘길 지난 대화. 없으면 같은 설명을 두 번 하게 된다. */
+const voiceContext = computed(() => voiceHistory(messages.value));
+
+// 지금 만들어지는 중인 에이전트 말. 조각으로 오므로 한 줄을 잡아 두고 이어 붙인다.
+const voiceAgentRow = ref<any>(null);
+
+/** 말로 오간 것도 글로 남긴다. 안 남기면 대화를 다시 열었을 때 빈 방이 된다. */
+async function saveVoiceMessage(message: any) {
+    try {
+        await backend().putObject(`db://chats/${message.uuid}`, {
+            uuid: message.uuid,
+            id: roomId,
+            messages: message
+        });
+    } catch (e) {
+        // 저장에 실패해도 대화는 이어져야 한다. 화면에는 이미 보인다.
+        console.warn('[voice] 저장 실패', e);
+    }
+}
+
+/** 사용자가 한 말. */
+async function onVoiceUser(text: string) {
+    const message = voiceUserMessage({
+        text,
+        user: { email: session?.user?.email, username: localStorage.getItem('userName') },
+        uuid: uuid()
+    });
+    if (!message) return;
+
+    // 에이전트 말이 먼저 들어와 있으면 그 앞에 끼운다 — OpenAI 는 답변 전사가
+    // 질문 전사보다 먼저 온다. 그대로 붙이면 대화가 뒤집혀 보인다.
+    rows.value = placeUserMessage(rows.value, voiceRow(message), voiceAgentRow.value?.uuid);
+    await scrollToEnd();
+
+    void savePreview(message.content);
+    void saveVoiceMessage(message);
+}
+
+/** 에이전트 말이 조각으로 온다. 오는 대로 이어 붙여 보여 준다. */
+function onVoiceAgentDelta(delta: string) {
+    if (!delta) return;
+
+    if (!voiceAgentRow.value) {
+        const message = voiceAgentMessage({ text: delta, agent: voiceAgent.value, uuid: uuid() });
+        if (!message) return;
+        voiceAgentRow.value = message;
+        rows.value = [...rows.value, voiceRow(message)];
+    } else {
+        voiceAgentRow.value = {
+            ...voiceAgentRow.value,
+            content: (voiceAgentRow.value.content || '') + delta
+        };
+        replaceVoiceRow(voiceAgentRow.value);
+    }
+    void scrollToEnd();
+}
+
+/** 에이전트 말이 끝났다. 최종 글로 확정하고 남긴다. */
+async function onVoiceAgentDone(text: string) {
+    const finalText = (text || '').trim() || voiceAgentRow.value?.content || '';
+    if (!finalText) {
+        voiceAgentRow.value = null;
+        return;
+    }
+
+    // 사용자 말(먼저 저장됨)보다 뒤 시각이어야 다시 열었을 때 순서가 유지된다.
+    const message = voiceAgentRow.value
+        ? { ...voiceAgentRow.value, content: finalText, timeStamp: new Date().toISOString() }
+        : voiceAgentMessage({ text: finalText, agent: voiceAgent.value, uuid: uuid() });
+    if (!message) return;
+
+    replaceVoiceRow(message);
+    voiceAgentRow.value = null;
+
+    void savePreview(finalText);
+    await saveVoiceMessage(message);
+}
+
+/**
+ * 사용자가 말을 끊어 에이전트 응답이 중단됐다.
+ *
+ * 여기까지 온 말은 실제로 들린 말이므로 그대로 남긴다. 지우면 대화 기록에
+ * 구멍이 생겨, 왜 이런 대답이 나왔는지 나중에 알 수 없다.
+ */
+function onVoiceAgentInterrupted() {
+    if (!voiceAgentRow.value) return;
+    void onVoiceAgentDone(voiceAgentRow.value.content || '');
+}
+
+/** 화면 목록은 `chats` 행 모양을 다룬다. 말로 만든 메시지도 같은 옷을 입힌다. */
+function voiceRow(message: any) {
+    return { uuid: message.uuid, id: roomId, messages: message };
+}
+
+function replaceVoiceRow(message: any) {
+    const at = rows.value.findIndex((r: any) => r.uuid === message.uuid);
+    const row = voiceRow(message);
+    if (at >= 0) rows.value.splice(at, 1, row);
+    else rows.value.push(row);
+}
 
 const sessionFiles = computed(() =>
     messages.value.filter((m: any) => m.mine).flatMap((m: any) => m.files || [])
@@ -343,6 +491,26 @@ function onOpenUiAction(_msg: any, event: any) {
     const label = String(event?.label || event?.value || event?.action || '').trim();
     if (!label) return;
     void send({ text: label, orchestration: orchestration.value });
+}
+
+/**
+ * 답변 속 링크를 기기 브라우저로 넘긴다.
+ *
+ * 딥 에이전트가 만든 문서는 답변에 내려받기 링크로 실려 온다. 앱 화면은
+ * Capacitor 의 내부 서버 위에 있어서, 그냥 두면 눌러도 앱 안에서 열리려다
+ * 아무 일도 일어나지 않는다 — 실패조차 조용하다.
+ *
+ * 첨부 파일 내려받기와 **같은 길**로 보낸다(기기 브라우저). 그쪽은 이미
+ * 동작을 확인한 경로다.
+ */
+function openLink(event: MouseEvent) {
+    const target = (event.target as HTMLElement)?.closest?.('a') as HTMLAnchorElement | null;
+    const href = target?.getAttribute('href') || '';
+    if (!href || href.startsWith('#')) return;
+
+    event.preventDefault();
+    const result = download({ url: href, name: target?.textContent || '' });
+    if (!result.ok) error.value = reasonText(result.reason);
 }
 
 function saveFile(file: any) {

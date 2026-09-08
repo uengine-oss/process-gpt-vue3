@@ -151,7 +151,7 @@ async function boot() {
             if (!data?.session) return;
             await touchDevice({ supabase, session: data.session });
         },
-        onAppState: appStateSource(window)
+        onActiveChange: appStateSource(window)
     });
 
     // 알림을 눌러 앱이 처음 켜진 경우. 이벤트는 화면이 뜨기 전에 지나가 버리므로

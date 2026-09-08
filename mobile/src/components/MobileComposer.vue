@@ -74,6 +74,24 @@
 
                 <span class="composer__spacer"></span>
 
+                <!--
+                    말로 대화하기. 마이크(받아쓰기)와 다르다 — 받아쓰기는 내 말을
+                    글로 옮겨 입력창에 넣어 주고, 이것은 에이전트와 서로 말을
+                    주고받는다. 나와 에이전트 단둘일 때만 보인다.
+                -->
+                <button
+                    v-if="canTalk"
+                    type="button"
+                    class="composer__tool"
+                    :class="{ 'composer__tool--on': talking }"
+                    :aria-label="talking ? '음성 대화 끝내기' : '음성으로 대화하기'"
+                    :aria-pressed="talking"
+                    :disabled="busy"
+                    @click="$emit('toggle-voice')"
+                >
+                    <Icon :name="talking ? 'stop' : 'waveform'" :size="18" />
+                </button>
+
                 <VoiceButton v-model="text" :busy="busy" @error="onVoiceError" />
 
                 <button
@@ -199,6 +217,10 @@ const props = defineProps<{
     placeholder?: string;
     /** 이 방에 들어와 있는 에이전트들. @ 후보로 쓴다. */
     participants?: any[];
+    /** 말로 대화할 수 있는 방인가(나와 에이전트 단둘). */
+    canTalk?: boolean;
+    /** 지금 말로 대화 중인가. */
+    talking?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -213,6 +235,7 @@ const emit = defineEmits<{
     (e: 'stop'): void;
     (e: 'update:modelValue', value: string): void;
     (e: 'voice-error', message: string): void;
+    (e: 'toggle-voice'): void;
 }>();
 
 const text = ref(props.modelValue || '');

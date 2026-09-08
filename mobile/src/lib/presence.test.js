@@ -71,7 +71,7 @@ test('배경으로 내려가면 멈춘다', () => {
 
     startPresence({
         touch: () => beats++,
-        onAppState: (fn) => {
+        onActiveChange: (fn) => {
             notify = fn;
             return () => {};
         },
@@ -92,7 +92,7 @@ test('다시 열면 곧바로 알리고 이어 간다', () => {
 
     startPresence({
         touch: () => beats++,
-        onAppState: (fn) => {
+        onActiveChange: (fn) => {
             notify = fn;
             return () => {};
         },
@@ -113,7 +113,7 @@ test('이미 켜져 있으면 두 번 걸지 않는다', () => {
 
     startPresence({
         touch: () => {},
-        onAppState: (fn) => {
+        onActiveChange: (fn) => {
             notify = fn;
             return () => {};
         },
@@ -144,7 +144,7 @@ test('멈출 때 앱 상태 구독도 떼어낸다', () => {
 
     const stop = startPresence({
         touch: () => {},
-        onAppState: () => () => {
+        onActiveChange: () => () => {
             detached = true;
         },
         ...clock
