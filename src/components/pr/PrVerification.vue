@@ -527,12 +527,18 @@ export default {
     font-size: 13.5px;
     font-weight: 700;
     color: rgba(var(--v-theme-on-surface), 0.87);
-    flex: 1;
+    /* 좁은 패널(병합 요청함 상세)에서는 옆의 브랜치 표기가 길어 제목이 한 글자씩
+       세로로 접히곤 했다. 최소 폭을 줘서, 자리가 없으면 제목이 쪼개지는 대신
+       브랜치 표기가 아랫줄로 내려가게 한다. */
+    flex: 1 1 auto;
+    min-width: 12em;
 }
 .pv-verdict-ref {
     font-size: 11px;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     color: rgba(var(--v-theme-on-surface), 0.5);
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 .pv-verdict-sub {
     margin-top: 4px;
@@ -612,8 +618,9 @@ export default {
     font-size: 12.5px;
     font-weight: 600;
     color: rgba(var(--v-theme-on-surface), 0.85);
-    flex: 1;
-    min-width: 0;
+    /* 같은 이유 — 옆의 통과 수 칩에 밀려 이름이 한 글자씩 접히지 않게 한다. */
+    flex: 1 1 auto;
+    min-width: 9em;
     word-break: break-word;
 }
 .pv-case-n {

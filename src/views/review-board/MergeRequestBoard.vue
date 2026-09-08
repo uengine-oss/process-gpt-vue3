@@ -6,6 +6,7 @@ import PrHeader from '@/components/pr/PrHeader.vue';
 import PrReviewTimeline from '@/components/pr/PrReviewTimeline.vue';
 import PrReviewForm from '@/components/pr/PrReviewForm.vue';
 import PrMergeSection from '@/components/pr/PrMergeSection.vue';
+import PrVerification from '@/components/pr/PrVerification.vue';
 import {
     prStatusLabel,
     prStatusColor,
@@ -39,8 +40,13 @@ const snackbar = ref<{ show: boolean; message: string; color: string }>({ show: 
 
 const ACTIVE_STATUSES = ['OPEN', 'CHANGES_REQUESTED', 'APPROVED'];
 
-/** 내가 검토 담당인 요청만 모은다. 내가 올린 요청은 내 검토 대상이 아니므로 제외한다. */
-const myReviewPrs = computed(() => prs.value.filter((pr) => pr.can_review && !pr.is_requester));
+/**
+ * 내가 검토 담당인 요청만 모은다. 내가 올린 요청은 보통 내 검토 대상이 아니라 제외하지만,
+ * **내가 그 리소스의 검토자(소유자·지정 리뷰어)이기도 하면 남긴다** — 채팅으로 내 스킬을
+ * 고쳐 올린 요청이 그런 경우다. 나 말고 볼 사람이 없는데 여기서까지 숨기면 그 요청은
+ * 아무 목록에도 뜨지 않고 묶인다.
+ */
+const myReviewPrs = computed(() => prs.value.filter((pr) => pr.can_review && (!pr.is_requester || pr.is_reviewer)));
 
 const typeOptions = computed(() => {
     const counts = new Map<string, number>();
@@ -80,6 +86,36 @@ const selectedReviews = computed(() => (selectedPr.value ? reviewsByPr.value[sel
 const canReviewSelected = computed(
     () => !!selectedPr.value && selectedPr.value.can_review && ACTIVE_STATUSES.includes(selectedPr.value.status)
 );
+/**
+ * 병합 전 검증은 스킬 병합 요청이면서 깃 PR 번호가 있을 때만 돌릴 수 있다.
+ * (검증은 base/head 두 브랜치를 실제로 펼쳐 실행하므로 깃에 올라간 요청이어야 한다.)
+ */
+const canVerifySelected = computed(
+    () =>
+        !!selectedPr.value &&
+        (selectedPr.value.resource_type || 'skill') === 'skill' &&
+        !!selectedPr.value.git_pr_number &&
+        !!selectedPr.value.resource_id
+);
+
+/**
+ * 병합 버튼 위에 띄울 한 줄. 리소스 화면과 같은 기준으로, "아직 안 돌렸다" 도 알려준다 —
+ * 침묵은 "이상 없음" 으로 오해된다.
+ */
+const verifyNotice = computed(() => {
+    if (!canVerifySelected.value) return null;
+    const v = verification.value;
+    if (v.status === 'running') return { tone: 'info', text: '병합 전 검증이 진행 중입니다.' };
+    if (v.status === 'succeeded') {
+        if (v.brokenCount) return { tone: 'bad', text: `이 병합은 기존 동작 ${v.brokenCount}개 단계를 깨뜨립니다.` };
+        const unknown = (v.noSignalCount || 0) + (v.incomparableCount || 0);
+        if (unknown) return { tone: 'warn', text: `시나리오 ${unknown}건은 판단할 수 없습니다.` };
+        return { tone: 'ok', text: '기존 동작이 깨지지 않습니다.' };
+    }
+    if (!v.hasSuite) return { tone: 'warn', text: '비교할 시나리오가 없어 기존 동작이 깨지는지 확인되지 않았습니다.' };
+    return { tone: 'warn', text: '병합 전 검증을 아직 실행하지 않았습니다.' };
+});
+
 /** 병합 버튼은 승인된 요청에만, 그리고 앱에서 실제로 병합까지 할 수 있는 스킬에만 노출한다. */
 const canMergeSelected = computed(
     () =>
@@ -127,10 +163,25 @@ async function load() {
     }
 }
 
+const EMPTY_VERIFICATION = {
+    hasSuite: false,
+    status: null as string | null,
+    brokenCount: 0,
+    incomparableCount: 0,
+    noSignalCount: 0,
+    backfillStatus: null as string | null
+};
+
+const detailTab = ref<'reviews' | 'verify'>('reviews');
+const verification = ref({ ...EMPTY_VERIFICATION });
+
 function selectPr(pr: any) {
     selectedPrId.value = pr.id;
     reviewError.value = '';
     mergeError.value = '';
+    // 다른 요청의 판정이 잠깐이라도 남아 보이면 병합 직전 판단을 흐린다.
+    detailTab.value = 'reviews';
+    verification.value = { ...EMPTY_VERIFICATION };
 }
 
 function openResource(pr: any) {
@@ -290,6 +341,10 @@ onMounted(load);
                                                 <v-chip size="x-small" :color="prStatusColor(pr.status)" variant="tonal">
                                                     {{ prStatusLabel(pr.status) }}
                                                 </v-chip>
+                                                <!-- 내가 올렸는데 검토도 내 몫인 요청 — 왜 여기 있는지 알 수 있게 표시한다. -->
+                                                <v-chip v-if="pr.is_requester" size="x-small" variant="tonal" color="grey">
+                                                    내 요청
+                                                </v-chip>
                                             </div>
                                             <div class="d-flex align-center flex-wrap ga-1 mt-1 text-caption text-medium-emphasis">
                                                 <v-chip size="x-small" variant="tonal" color="primary">
@@ -351,10 +406,34 @@ onMounted(load);
                                     </template>
                                 </PrHeader>
 
+                                <!-- 리소스 화면까지 가지 않고 이 자리에서 병합 전 검증을 보고 돌린다. -->
+                                <div v-if="canVerifySelected" class="mrb-tabbar flex-shrink-0">
+                                    <button :class="['mrb-tab', { on: detailTab === 'reviews' }]" @click="detailTab = 'reviews'">
+                                        리뷰 이력
+                                    </button>
+                                    <button :class="['mrb-tab', { on: detailTab === 'verify' }]" @click="detailTab = 'verify'">
+                                        병합 전 검증
+                                        <span v-if="verification.brokenCount" class="mrb-tab-cnt">{{ verification.brokenCount }}</span>
+                                    </button>
+                                </div>
+
                                 <div class="mrb-detail-scroll">
-                                    <div v-if="selectedPr.description" class="mrb-desc text-body-2">{{ selectedPr.description }}</div>
-                                    <div class="text-caption text-medium-emphasis font-weight-bold px-4 pt-3 pb-1">리뷰 이력</div>
-                                    <PrReviewTimeline :reviews="selectedReviews" />
+                                    <template v-if="detailTab === 'verify' && canVerifySelected">
+                                        <PrVerification
+                                            :key="selectedPr.id"
+                                            :skill-name="selectedPr.resource_id"
+                                            :pr-number="selectedPr.git_pr_number"
+                                            class="pa-3"
+                                            @status="verification = $event"
+                                        />
+                                    </template>
+                                    <template v-else>
+                                        <div v-if="selectedPr.description" class="mrb-desc text-body-2">{{ selectedPr.description }}</div>
+                                        <div v-if="!canVerifySelected" class="text-caption text-medium-emphasis font-weight-bold px-4 pt-3 pb-1">
+                                            리뷰 이력
+                                        </div>
+                                        <PrReviewTimeline :reviews="selectedReviews" />
+                                    </template>
                                 </div>
 
                                 <div class="mrb-detail-foot">
@@ -382,6 +461,16 @@ onMounted(load);
                                         :error="reviewError"
                                         @submit="submitReview"
                                     />
+
+                                    <!-- 병합 버튼 바로 위 — 누르기 직전에 보게 하는 것이 요점이다. -->
+                                    <div
+                                        v-if="canMergeSelected && verifyNotice"
+                                        :class="['mrb-verify-notice', verifyNotice.tone]"
+                                        @click="detailTab = 'verify'"
+                                    >
+                                        <span class="mrb-vn-text">{{ verifyNotice.text }}</span>
+                                        <span class="mrb-vn-link">자세히</span>
+                                    </div>
 
                                     <PrMergeSection
                                         :can-merge="canMergeSelected"
@@ -444,6 +533,88 @@ onMounted(load);
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+}
+
+/* ── 리뷰 이력 / 병합 전 검증 탭 (리소스 화면과 같은 생김새) ── */
+.mrb-tabbar {
+    display: flex;
+    padding: 0 16px;
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+.mrb-tab {
+    border: none;
+    background: none;
+    padding: 10px 4px;
+    margin-right: 18px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.mrb-tab.on {
+    color: rgba(var(--v-theme-on-surface), 0.87);
+    border-bottom-color: rgb(var(--v-theme-primary));
+}
+.mrb-tab-cnt {
+    background: rgba(var(--v-theme-error), 0.15);
+    color: rgb(var(--v-theme-error));
+    font-size: 11px;
+    border-radius: 9px;
+    padding: 0 7px;
+    min-width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── 병합 버튼 위 한 줄 판정 ── */
+.mrb-verify-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 12px 8px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    font-size: 12.5px;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+.mrb-verify-notice.ok {
+    background: rgba(var(--v-theme-success), 0.09);
+    border-color: rgba(var(--v-theme-success), 0.25);
+    color: rgba(var(--v-theme-on-surface), 0.75);
+}
+.mrb-verify-notice.bad {
+    background: rgba(var(--v-theme-error), 0.09);
+    border-color: rgba(var(--v-theme-error), 0.32);
+    color: rgb(var(--v-theme-error));
+    font-weight: 600;
+}
+.mrb-verify-notice.warn {
+    background: rgba(var(--v-theme-warning), 0.1);
+    border-color: rgba(var(--v-theme-warning), 0.3);
+    color: rgba(var(--v-theme-on-surface), 0.75);
+}
+.mrb-verify-notice.info {
+    background: rgba(var(--v-theme-primary), 0.08);
+    border-color: rgba(var(--v-theme-primary), 0.22);
+    color: rgba(var(--v-theme-on-surface), 0.7);
+}
+.mrb-vn-text {
+    flex: 1;
+}
+.mrb-vn-link {
+    font-size: 11.5px;
+    text-decoration: underline;
+    opacity: 0.75;
+    white-space: nowrap;
 }
 .mrb-detail-foot {
     flex-shrink: 0;
