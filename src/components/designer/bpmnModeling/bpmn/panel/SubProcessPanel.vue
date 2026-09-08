@@ -77,7 +77,7 @@
                     @update:mode="updateForEachVariableMode"
                     @update:conditionFunction="updateDeterminationCode"
                 />
-                <div v-if="isBuiltinPropVisible('finalize_rule_generator')" class="mt-2 d-flex justify-end">
+                <div v-if="aiDesignerEnabled && isBuiltinPropVisible('finalize_rule_generator')" class="mt-2 d-flex justify-end">
                     <v-btn @click="generateFinalizeRule" color="primary" density="compact" variant="flat" rounded>
                         <span v-if="isFinalizeRuleGenerating" class="thinking-wave-text">
                             <span

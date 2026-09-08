@@ -10,7 +10,9 @@
 - 이 프로젝트는 이미 **3계층 설정 체계**를 갖고 있음: ① 빌드타임 `VITE_*` env → ② 런타임 `window._env_` 주입(run.sh) → ③ Supabase `configuration` 테이블(테넌트별). 새 feature flag는 이 체계 위에 얹으면 되며, 새 메커니즘을 발명할 필요가 없음.
 - 모드 분기 선례가 이미 3종 존재: **PAL 모드**(`window.$pal`, 라우트 스프레드+컴포넌트 스왑), **GS 모드**(라우트 name 블랙리스트), **엔진 모드**(`window.$mode`). GS 모드가 사실상 "기능 제외 플래그"의 프로토타입.
 - AI 기능은 **약 60개 파일, 17개 기능군**에 분산되어 있으나, 호출 경로가 2개 지점으로 수렴함: `src/components/ai/AIGenerator.js`(레거시 49개 생성기의 기반 클래스)와 `PalModeBackend.qdrantChat()`(PAL 모드 AI 전부). **이 2곳에 가드를 넣으면 AI 호출의 대부분을 일괄 차단 가능.**
-- 페이지 단위 플래그 **14개 + AI 세부 플래그 9개** 체계를 제안(§4). 각 플래그의 OFF 시 영향도는 §5, §6에 상세 기술.
+- 페이지 단위 플래그 **14개 + AI 세부 플래그 9개 + 실행 기능 플래그 1개** 체계를 제안(§4). 각 플래그의 OFF 시 영향도는 §5, §6에 상세 기술.
+- **실행 기능(Exec 뷰·실행 버튼·실행 ID)은 엔진 모드(`window.$mode === 'uEngine'`)에서만 ON**이어야 하나, 현재 게이트(`execFeatureGate.ts`)는 `isAdmin`만 보고 엔진 모드를 확인하지 않음 — 게이트 함수 1곳 수정으로 해결 가능(§5.15).
+- **AI OFF 시 버튼 숨김은 현재 코드에 준비되어 있지 않음** — 순서도 화면 계열에서만 32개 지점에 조건 추가가 필요함을 코드 검증으로 확인(§6.4).
 - 단, 플래그를 깨끗하게 걸려면 먼저 정리해야 할 **구조적 결합/부채**가 있음(§7): 사이드바 메뉴 3중 분산, `adminConsole` 스토어의 광범위 결합, `/completion` 서비스에 AI·비AI 혼재, 죽은 플래그(`$gs`, `$jms`)와 죽은 코드 등.
 
 ---
@@ -113,6 +115,14 @@
 | `VITE_FF_AI_CLASSIFIER` | 인스턴스 자동분류/유사 인스턴스(ML) | true | `instanceClassifier.ts`, `/instance-toplist` 라우트 |
 
 판정 규칙: `enabled(X) = FF_AI && FF_AI_X` (마스터 OFF면 세부 전부 OFF).
+
+### 4.4 실행 기능 플래그 (엔진 모드 종속)
+
+| 환경변수 | 대상 | 기본값 | 유효 판정 |
+|---|---|---|---|
+| `VITE_FF_EXECUTION` | 실행 기능 일체 — Exec 뷰, 실행 버튼, 실행 ID, 실행형 Pool, `/executable` 명령 | true | `$mode === 'uEngine' && FF_EXECUTION && isAdmin` — **엔진 모드가 아니면 플래그 값과 무관하게 OFF** |
+
+실행 기능은 페이지 도메인이 아니라 엔진 연동 여부에 종속되는 축이므로, 독립 플래그가 아니라 기존 엔진 모드(`window.$mode`)에 AND로 결합한다. 상세 영향도와 구현 지점은 §5.15.
 
 **AI 플래그에 포함하면 안 되는 것**: `/completion/complete`·`/vision-complete`는 **프로세스 인스턴스 실행 경로 자체**이고, `/completion/set-tenant`·`/invite-user`·`/create-user`·`/role-binding`은 AI가 아닌 CRUD임. `/completion` 프록시를 통째로 끄면 실행/온보딩이 죽음 → **프록시 단위가 아니라 함수(생성기) 단위로 차단해야 함.**
 
@@ -228,6 +238,50 @@
 - **파급**: ⚠️ `/markdown-editor`·`/slide-editor`·`/present`는 공개 라우트이지만, **`MarkdownField`/`ReportField`/`SlideField` 폼 필드가 `views/markdown/*` 컴포넌트를 역임베드**함 → 라우트만 제거하고 **컴포넌트는 번들에 유지**해야 워크아이템 폼이 깨지지 않음.
 - **리스크**: 라우트 제거 자체는 안전하고 보안상 이득(현재 인증 게이트 밖 노출). **프로덕션 적용 1순위.**
 
+### 5.15 `VITE_FF_EXECUTION` — 실행 기능 (엔진 모드 종속)
+
+프로세스 순서도(계층 스튜디오) 기준으로 Exec 뷰·실행 버튼·실행 ID는 실행 기능이므로 **엔진 모드에서만 ON**이어야 한다. 코드 확인 결과:
+
+**현황 — 게이트는 이미 있으나 엔진 모드를 보지 않음**
+
+실행 UI는 이미 단일 게이트 `src/utils/execFeatureGate.ts`의 `canUseExecFeatures()`로 전부 묶여 있다. 그러나 현재 판정은 `authClaimsState.isAdmin`뿐이라, **엔진이 없는 배포에서도 admin에게 실행 버튼이 노출**된다(클릭 후 `getExecutionDefinition()` 결과가 비었을 때 토스트로 거부되는 사후 검증만 존재 — `ProcessHierarchy.vue:3468-3473`). 별도의 "BPMN 모드" 상태는 코드에 존재하지 않으며, 기준 축은 기존 엔진 모드(`window.$mode`)가 맞다.
+
+**권장 수정 — 게이트 함수 1곳**
+
+```ts
+// src/utils/execFeatureGate.ts
+export function canUseExecFeatures(): boolean {
+    return window.$mode === 'uEngine'
+        && window.$features.EXECUTION   // env 오버라이드, 기본 true
+        && authClaimsState.isAdmin;
+}
+```
+
+**이 한 곳으로 자동 커버되는 요소 (기존 호출부 14곳)**
+
+| 요소 | 위치 |
+|---|---|
+| 실행 버튼 (`@run`) | `ProcessHierarchyDesigner.vue:347-366` (`v-if="isExecUser"`) |
+| 실행 ID 버튼 (`@execInfo`) | `ProcessHierarchyDesigner.vue:367-375` (`v-if="isExecUser"`) |
+| As-Is/To-Be/**Exec** pill의 Exec 옵션 | `ProcessHierarchyDesigner.vue:1478-1486` |
+| Exec Mode 칩 / Exec 뷰어 pane (`ExecutableProcessView`) | `ProcessHierarchyDesigner.vue:69-71`, `:402-416` (`execMode` 경유) |
+| Properties "실행형 Pool" 지정 섹션 | `ProcessHierarchyProperties.vue:1124-1163` |
+| Blueprint Studio "실행형" 탭 | `ProcessBlueprintStudio.vue:31` (`canExec`) |
+| `/executable`(`/실행형`, `/exec`) 슬래시 명령 + 자연어 의도 | `anIntentRouter.ts:108, 189` |
+| 진입 핸들러 3종 (버튼 우회 방지) | `ProcessHierarchy.vue:1314, 3462(handleRun), 3634(openExecInfo)` |
+
+**게이트 미적용 — `v-if="isExecUser"` 추가 필요 3곳**
+
+1. `ExecInstancePanel` 마운트 — `ProcessHierarchy.vue:581` (v-model만 있음. Supabase `bpm_proc_inst`/`todolist` 4초 폴링 포함 — 숨기면 인스턴스/태스크 ID 표시와 `/instancelist`·`/todolist` 이동 링크도 함께 소멸)
+2. `StartEventSelectDialog` 마운트 — `ProcessHierarchy.vue:589`
+3. 시작 폼 다이얼로그(`ProcessGPTExecute`) — `ProcessHierarchy.vue:598`. ⚠️ 이 컴포넌트는 `ProcessDefinition.vue`, `ProcessDefinitionChat.vue`, `ProjectCard.vue` 등 5개 화면에서 재사용되므로 **게이트는 컴포넌트 내부가 아니라 ProcessHierarchy 호출부에만** 넣어야 함
+
+**참고 사항**
+
+- "실행 ID" 값 표시는 Properties 패널이 아니라 전부 `ExecInstancePanel` 내부(`proc_def_id`/`proc_inst_id`/`taskId`) — 패널만 게이트하면 됨.
+- Admin Console의 `ExecInstanceAdmin`(`/admin-console/exec-instances`)은 코드 공유가 없는 별개 화면 — 이 게이트의 영향 밖이며 F13(`FF_ADMIN_CONSOLE`) 소관.
+- dead code: `onStartFormStarted`(`ProcessHierarchy.vue:3578`)는 `ProcessGPTExecute`가 `started`를 emit하지 않아 호출 불가 — §7 정리 대상에 추가.
+
 ### 참고: 계정설정 허브 (플래그 교차 지점)
 
 `AccountSettings.vue`는 15개 탭의 허브로, 탭들이 여러 도메인에 속함: Knowledge/Drive→F14, Skills→F6, MCPServer/MCPEnvSecret→AI 인프라, GlossaryManageTab→외부 API(`VITE_ROBO_API_BASE_URL`), TaskCatalog→F13 인접. **탭 표시 여부를 도메인 플래그에서 파생**시키는 구현이 필요(탭 전용 플래그 신설보다 파생이 유지보수에 유리).
@@ -283,6 +337,51 @@
 2. 슬래시 커맨드(`/partition`, `/gap`, `/tobe` 등 `anIntentRouter`)는 도움말 목록에서도 제거.
 3. 가드에 걸린 호출은 조용히 무시하지 말고 **명시적 에러**("이 배포에서는 AI 기능이 비활성화되어 있습니다")를 반환 — 잔여 진입점 탐지에 도움.
 
+### 6.4 검증 결과: AI OFF 시 버튼이 실제로 숨겨지는가 — **현재는 아니오**
+
+코드 전수 확인 결과, **AI 여부를 보는 렌더 조건은 현재 코드에 사실상 존재하지 않는다.** 플래그만 만들어서는 버튼이 숨지 않으며, 순서도 화면 계열에서만 **총 32개 지점**에 조건 추가가 필요하다.
+
+**① AI 조건이 전혀 없는 완전 무조건 렌더 — 14지점**
+
+| 요소 | 위치 |
+|---|---|
+| Copilot 토글 버튼 (툴바) | `ProcessHierarchyDesigner.vue:154-171` |
+| "AI 생성" 툴바 버튼 + 생성 다이얼로그 | `ProcessHierarchyDesigner.vue:280-294`, `:735` |
+| AnOrchestratorDialog / AnRoadmapDialog | `ProcessHierarchy.vue:480`, `:481` |
+| Blueprint "생성/재생성하기" + 빈 상태 "생성하기" | `ProcessBlueprintStudio.vue:37-48`, `:158-170` |
+| Exec 실행형 AI 변환 버튼 2곳 | `ExecutableProcessView.vue:35-47`, `:99-102` |
+| Copilot 패널 내부 (답변 생성·바로 실행·추천 칩·슬래시 메뉴) | `ProcessHierarchyAIGuide.vue:120, 154-165, 174-190, 215` |
+| Lane 설명 AI 생성 버튼 + 재생성 다이얼로그 | `ProcessHierarchyProperties.vue:1211-1222`, `:3816` |
+| PI Flag 기반 AI 질문 챗 블록 | `ProcessHierarchyProperties.vue:2806-2896` |
+| 조건 예시 생성 버튼 | `ConditionExampleField.vue:5-17` |
+
+**② 다른 조건(권한·모드·스키마)만 있어 `&& aiEnabled` AND 추가 필요 — 15지점**
+
+| 요소 | 위치 | 현재 조건 |
+|---|---|---|
+| Copilot 패널 마운트 | `ProcessHierarchy.vue:161-199` | `v-if="selectedProcessId"` + `v-show="showCopilotPanel"` — ⚠️ **v-show가 아니라 v-if를 바꿔야** 채팅에서 `$refs.copilotGuide`를 직접 호출하는 경로까지 차단됨 |
+| TeamChat 패널 / `/agent` 커맨드 | `ProcessHierarchy.vue:203`, `:213` | `agentCommandEnabled` prop(기본 false)에 AND — **prop 하나로 커맨드+핸들러 동시 차단되는 가장 깔끔한 지점** |
+| Blueprint Studio 마운트 | `ProcessHierarchy.vue:468` | `selectedProcessId && processDefinition` |
+| BPMN 속성 패널 생성 버튼 8곳 | `SequenceFlowPanel.vue:28`, `TimerEventDefinitionPanel.vue:76`, `ScriptTaskPanel.vue:23`, `GPTScriptTaskPanel.vue:21`, `GenerateScriptPanel.vue:4`, `SendTaskPanel.vue:119`, `ServiceTaskPanel.vue:55`, `SubProcessPanel.vue:80` | `isBuiltinPropVisible(...)` — 테넌트 스키마 게이트(기본 true)라 AI 은닉 용도 불가 |
+| Task AI 요약 생성 | `GPTUserTaskPanel.vue:30-42` | `!isViewMode` |
+| 워크아이템 AI 예시 생성 2곳 | `WorkItem.vue:385-397`, `:451-467` | `!isMobile && !gs` / `isMobile` |
+| 프로세스 이름/ID AI 재생성 | `ProcessDefinitionVersionDialog.vue:44-61`, `:78-96` | `isNew && mode === 'ProcessGPT'` |
+
+**③ 버튼 없이 자동 실행 — v-if로 못 막고 런타임 가드 필요 — 3지점**
+
+1. 버전 diff 요약 자동 생성 — `ProcessDefinitionVersionDialog.vue:747, 896` (저장 시 자동 호출)
+2. 이름 입력 2초 후 자동 ID 추천 watch — `ProcessDefinitionVersionDialog.vue:397-414`
+3. URL `rightTab=ai-guide` 상태 복원 — `ProcessHierarchy.vue:1499-1502` (딥링크로 Copilot 패널이 다시 열림)
+
+**④ 작업 불필요 (죽은 코드, §7 정리 대상) — 4지점**
+
+FormInterviewChat 탭(`FormWorkItem.vue:88-136` 전체 주석), OrganizationChartChat 챗 UI(`OrganizationChartChat.vue:2-32` 전체 주석), `collapsedMenuItems`(`ProcessHierarchy.vue:925` 미렌더 computed), Properties의 `openToBeDialog` 리스너(`ProcessHierarchy.vue:144` — emit하는 곳 없음).
+
+**구현 권장**
+
+- `execFeatureGate.ts`와 동형의 **`src/utils/aiFeatureGate.ts`** 신설: `canUseAiFeatures(sub?: 'COPILOT' | 'DESIGNER' | ...)` → 각 컴포넌트에서 computed `aiEnabled`로 노출. 기존 코드 관례와 일관됨.
+- 우선순위: `Designer.vue:280`(AI 생성 버튼) + `ProcessHierarchy.vue:162`(Copilot 패널 v-if) **2곳만 막아도 Blueprint Studio / Orchestrator / Roadmap 다이얼로그 진입 경로 전체가 연쇄 차단**됨(여는 버튼이 Copilot 내부에만 존재) → 이후 BPMN 패널 8곳 → 나머지 순.
+
 ---
 
 ## 7. 플래그 도입 전 정리 필요한 결합·부채
@@ -296,7 +395,7 @@
 | 3 | `adminConsole` 스토어 광범위 결합 | Admin 밖 13곳이 공유 | 플래그는 라우트/메뉴만 제어, 스토어는 유지. 장기적으로 스토어 분리 |
 | 4 | `/completion`에 AI·비AI 혼재 | 프록시 단위 차단 불가 | 함수 단위 가드(§6). 장기적으로 백엔드 서비스 분리 |
 | 5 | 죽은 플래그 | `window.$gs` 할당 없음(11개 파일이 읽음), `window.$jms` 하드코딩 false | `$gs`는 `isGsMode`와 통합하거나 제거, `$jms` 제거 |
-| 6 | 죽은 코드·스토어 | `reviewBoard.ts`·`authUser.ts` 스토어 소비처 0, `sidebarItem` 렌더 루프, `ReviewBoardCard.vue`, `KpiTargetManager.vue`(구버전), `JsonAIGenerator.js`, `SequenceFlowPanel copy.vue`, 템플릿 잔재 뷰 다수 | 삭제 (플래그 대상에서 제외) |
+| 6 | 죽은 코드·스토어 | `reviewBoard.ts`·`authUser.ts` 스토어 소비처 0, `sidebarItem` 렌더 루프, `ReviewBoardCard.vue`, `KpiTargetManager.vue`(구버전), `JsonAIGenerator.js`, `SequenceFlowPanel copy.vue`, `onStartFormStarted`(`ProcessHierarchy.vue:3578` — emit 없음), FormInterviewChat 탭·OrganizationChartChat 챗 UI(전체 주석), `collapsedMenuItems`, Properties `openToBeDialog` 리스너, 템플릿 잔재 뷰 다수 | 삭제 (플래그 대상에서 제외) |
 | 7 | 라우트 중복·유령 | `TaskCatalogAdmin` 2중 등록, `Ontology Explorer` name 중복, `MENU_DEFINITIONS` 유령 경로 5개 | 정리 후 플래그 적용 |
 | 8 | run.sh 주입 목록 하드코딩 | `VITE_PAL_MODE`조차 미주입 — 런타임 토글 불가 | 신규 `VITE_FF_*` 전체 + `VITE_PAL_MODE`를 주입 목록에 추가 |
 | 9 | env 타입 부재 | `ImportMetaEnv` 미선언 → `PROCESS_GPT_OFFICE_MCP_URL` 접두사 누락 버그 존재 | `env.d.ts`에 전 변수 타입 선언 |
@@ -318,6 +417,7 @@ const FLAG_KEYS = [
   'KNOWLEDGE', 'DEV_ROUTES',
   'AI', 'AI_COPILOT', 'AI_DESIGNER', 'AI_FORM', 'AI_VOICE',
   'AI_IMAGE', 'AI_DOC_PARSING', 'AI_BROWSER_AGENT', 'AI_CLASSIFIER',
+  'EXECUTION', // 유효 판정은 $mode==='uEngine' AND — execFeatureGate.ts에서 결합 (§5.15)
 ] as const;
 
 const DEFAULT_OFF = new Set(['DEV_ROUTES']);
@@ -346,7 +446,8 @@ Object.defineProperty(window, '$features', {
 1. **라우트 등록**: PAL 스프레드 패턴 재사용 — `...(window.$features.CHAT ? [chatRoutes] : [])`. 등록 자체를 제외하면 URL 진입이 404로 떨어져 가드 없이도 차단됨.
 2. **사이드바**: `MENU_DEFINITIONS`에 `feature?: FlagKey` 추가 → 사이드바 빌드 시 공통 필터. 인라인 하드코딩 블록(PAL 관리자 메뉴)도 같은 필터를 통과하도록 수정.
 3. **페이지 내 진입 버튼/패널**: 교차 링크(§5의 파급 항목)와 AI 버튼은 `v-if="$features.X"`.
-4. **호출부 가드**: `AIGenerator.generate()`, `qdrantChat()` 등 §6.1의 5개 경로 진입 함수.
+4. **호출부 가드**: `AIGenerator.generate()`, `qdrantChat()` 등 §6.1의 5개 경로 진입 함수 + 자동 실행 3지점(§6.4-③).
+5. **게이트 유틸**: 실행 기능은 `execFeatureGate.ts` 판정식 수정(§5.15), AI 버튼은 동형의 `aiFeatureGate.ts` 신설 후 §6.4의 29개 v-if 지점에 적용.
 
 ### 8.3 배포 체크리스트
 
@@ -354,7 +455,8 @@ Object.defineProperty(window, '$features', {
 - [ ] `run.sh` 주입 목록에 `VITE_FF_*` 전체 추가 (런타임 토글용)
 - [ ] `env.d.ts`에 `ImportMetaEnv` 선언
 - [ ] PAL 랜딩 폴백: `FF_PROCESS_ARCHITECTURE=false`일 때 대체 랜딩 지정
-- [ ] 조합 매트릭스 최소 검증: `AI=false` 전체, `CHAT=false`+`SKILLS=true`, `PROCESS_HIERARCHY=false`+`PROCESS_ARCHITECTURE=true`, `DEV_ROUTES=false`(프로덕션 기본)
+- [ ] 조합 매트릭스 최소 검증: `AI=false` 전체, `CHAT=false`+`SKILLS=true`, `PROCESS_HIERARCHY=false`+`PROCESS_ARCHITECTURE=true`, `DEV_ROUTES=false`(프로덕션 기본), **비엔진 모드(`$mode!=='uEngine'`)에서 실행 UI 완전 은닉**
+- [ ] `AI=false` 상태에서 §6.4의 32개 지점 육안 확인 (특히 Copilot 패널이 v-show가 아닌 v-if로 차단되는지, URL 딥링크 복원 3종)
 - [ ] 알림/딥링크 핸들러의 플래그 분기 (채팅·리뷰보드)
 
 ### 8.4 단계별 로드맵 제안

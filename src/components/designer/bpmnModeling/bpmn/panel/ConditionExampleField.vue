@@ -1,7 +1,7 @@
 <template>
     <div>
         <!-- 예시 생성 버튼 -->
-        <div class="d-flex justify-end mt-4">
+        <div v-if="aiDesignerEnabled" class="d-flex justify-end mt-4">
             <v-btn @click="generateExamples" color="primary" density="compact" rounded variant="flat" :disabled="isGenerating">
                 <span v-if="isGenerating" class="thinking-wave-text">
                     <span
@@ -42,6 +42,7 @@
 <script>
 import ChatModule from '@/components/ChatModule.vue';
 import ConditionExampleGenenrator from '@/components/ai/ConditionExampleGenenrator';
+import { canUseAiFeatures } from '@/utils/aiFeatureGate';
 import BackendFactory from '@/components/api/BackendFactory';
 import ExampleTable from './ExampleTable.vue';
 
@@ -89,6 +90,11 @@ export default {
         });
 
         await this.getExamples();
+    },
+    computed: {
+        aiDesignerEnabled() {
+            return canUseAiFeatures('DESIGNER');
+        }
     },
     methods: {
         async getExamples() {

@@ -4,6 +4,7 @@ const storage = StorageBaseFactory.getStorage();
 import ProcessGPTBackend, { listProcDefWithFallback } from './ProcessGPTBackend';
 import axios from 'axios';
 import { streamSse } from '@/services/sseClient';
+import { assertAiEnabled } from '@/utils/aiFeatureGate';
 const axiosInstance = axios.create();
 
 class PalModeBackend extends ProcessGPTBackend {
@@ -839,6 +840,7 @@ class PalModeBackend extends ProcessGPTBackend {
     }
 
     async qdrantChat(payload: any, opts: { onDelta?: (text: string) => void; signal?: AbortSignal } = {}) {
+        assertAiEnabled();
         let accumulated = '';
         const done = await streamSse(
             '/pi-system-backend/langchain-chat/qdrant-chat/stream',

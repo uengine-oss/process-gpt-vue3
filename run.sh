@@ -27,6 +27,12 @@ if [ -f /opt/www/index.html ]; then
     VITE_UPSTAGE_API_KEY: "'$VITE_UPSTAGE_API_KEY'",\
     VITE_GS_MODE: "'$VITE_GS_MODE'",\
     VITE_MODE: "'$VITE_MODE'",\
+    VITE_PAL_MODE: "'$VITE_PAL_MODE'",\
+    VITE_FF_EXECUTION: "'$VITE_FF_EXECUTION'",\
+    VITE_FF_AI: "'$VITE_FF_AI'",\
+    VITE_FF_AI_COPILOT: "'$VITE_FF_AI_COPILOT'",\
+    VITE_FF_AI_DESIGNER: "'$VITE_FF_AI_DESIGNER'",\
+    VITE_FF_AI_FORM: "'$VITE_FF_AI_FORM'",\
   };\
   window.$mode = window._env_.VITE_MODE || window.$mode;\
   </script>' /opt/www/index.html

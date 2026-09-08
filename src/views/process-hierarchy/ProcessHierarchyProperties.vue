@@ -1209,6 +1209,7 @@
                                             <div v-if="isBuiltinPropVisible('bpmn:Lane', 'description')" class="field-label lane-description-label mt-4">
                                                 <span class="field-label-left">{{ builtinLabel('bpmn:Lane', 'description', '설명') }}</span>
                                                 <v-btn
+                                                    v-if="aiCopilotEnabled"
                                                     size="x-small"
                                                     variant="text"
                                                     color="primary"
@@ -1975,20 +1976,13 @@
                                             <v-text-field v-model="taskForm.dataAttachmentUrl" density="compact" variant="outlined" hide-details placeholder="https://..." class="mb-3">
                                                 <template v-slot:prepend-inner><v-icon size="14" color="grey">mdi-link-variant</v-icon></template>
                                             </v-text-field>
-                                            <label class="field-label">파일 첨부</label>
-                                            <input ref="dataAttachmentFileInput" type="file" style="display: none" @change="onDataAttachmentFileChange" />
-                                            <div v-if="taskForm.dataAttachmentFile && taskForm.dataAttachmentFile.path" class="data-attachment-file-row mb-3">
-                                                <v-icon size="14" color="grey" class="mr-2">mdi-file-document-outline</v-icon>
-                                                <span class="data-attachment-file-name" @click="openDataAttachmentFile">
-                                                    {{ taskForm.dataAttachmentFile.fileName || taskForm.dataAttachmentFile.path }}
-                                                </span>
-                                                <v-spacer />
-                                                <v-btn icon="mdi-close" size="x-small" variant="text" density="compact" :disabled="isViewMode" @click="removeDataAttachmentFile" />
-                                            </div>
-                                            <v-btn v-else size="small" variant="outlined" :disabled="isViewMode || dataAttachmentUploading" :loading="dataAttachmentUploading" class="mb-3" @click="triggerDataAttachmentFilePicker">
-                                                <v-icon size="14" start>mdi-paperclip</v-icon>
-                                                파일 선택
-                                            </v-btn>
+                                            <SchemaFieldInput
+                                                :field="dataAttachmentFileField"
+                                                :model="taskForm"
+                                                model-key="dataAttachmentFile"
+                                                :disabled="isViewMode"
+                                                @dirty="taskFormDirty = true"
+                                            />
                                         </div>
                                     </div>
                                         </template>
@@ -2569,7 +2563,7 @@
                                             {{ piFlagTotalCount }}
                                         </v-chip>
                                     </v-tab>
-                                    <v-tab v-if="isBuiltinPropVisible('process', 'pi_flag_agent_chat')" value="agent-analysis" size="small">
+                                    <v-tab v-if="aiCopilotEnabled && isBuiltinPropVisible('process', 'pi_flag_agent_chat')" value="agent-analysis" size="small">
                                         <v-icon size="14" start :color="piFlagSubTab === 'agent-analysis' ? 'primary' : undefined">mdi-robot-outline</v-icon>
                                         Agent 분석
                                         <v-chip
@@ -2804,7 +2798,7 @@
                                         </div>
 
                                         <!-- PI Flag 기반 AI 질문 (qdrantChat 스트리밍) -->
-                                        <div class="pi-flag-chat mt-3">
+                                        <div v-if="aiCopilotEnabled" class="pi-flag-chat mt-3">
                                             <div class="pi-flag-chat__head">
                                                 <v-icon size="14" color="primary" class="mr-1">mdi-message-text-outline</v-icon>
                                                 <span class="pi-flag-chat__title">PI Flag 기반 AI 질문</span>
@@ -3814,7 +3808,7 @@
         </v-dialog>
 
         <!-- Lane 설명 AI 재생성 확인 다이얼로그 -->
-        <v-dialog v-model="laneDescriptionConfirmDialog" max-width="420" persistent>
+        <v-dialog v-if="aiCopilotEnabled" v-model="laneDescriptionConfirmDialog" max-width="420" persistent>
             <v-card>
                 <v-card-title class="text-subtitle-1 font-weight-bold pa-4 pb-2">
                     <v-icon size="18" color="primary" class="mr-2">mdi-creation</v-icon>
@@ -4020,6 +4014,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ko, enUS } from 'date-fns/locale';
 import { getResolvedRole, refreshAuthClaims } from '@/utils/authClaims';
 import { canUseExecFeatures } from '@/utils/execFeatureGate';
+import { canUseAiFeatures } from '@/utils/aiFeatureGate';
 import { getMajorBusinessDomain, majorMatchesDomain } from '@/views/process-architecture/processClassification';
 import { mergeDomainLists, deriveDomainsFromProcMap, sortDomains } from '@/views/process-architecture/useProcessArchitecture';
 import { toSafeText } from '@/utils/safeText';
@@ -4687,6 +4682,9 @@ export default {
         isExecUser() {
             return canUseExecFeatures();
         },
+        aiCopilotEnabled() {
+            return canUseAiFeatures('COPILOT');
+        },
         /** 지정된 실행형 Pool 목록 (공유 studio 의 executable 작업본, 다중 지정 가능). */
         execPoolList() {
             const exec = this.anStudio?.studio?.executable?.value;
@@ -4722,6 +4720,34 @@ export default {
         isDataReferenceElement() {
             const type = toSafeText(this.element?.type || this.element?.$type).trim();
             return type === 'bpmn:DataObjectReference' || type === 'bpmn:DataStoreReference';
+        },
+        dataAttachmentFileField() {
+            let row = null;
+            try {
+                row = this.catalogStore.builtinProp('bpmn:DataObjectReference', 'attachment');
+            } catch (e) {
+                row = null;
+            }
+            return {
+                id: row?.id || 'builtin::bpmn:DataObjectReference::attachment',
+                property_key: 'attachment',
+                property_label: row?.property_label || '첨부 파일',
+                property_type: 'file',
+                placeholder: row?.placeholder || '',
+                description: row?.description || '',
+                is_required: row?.is_required === true,
+                is_readonly: row?.is_readonly === true,
+                config: {
+                    ...(row?.config || {}),
+                    file: {
+                        bucket: 'files',
+                        path_prefix: 'data-objects',
+                        name_strategy: 'uuid',
+                        multiple: false,
+                        ...(row?.config?.file || {})
+                    }
+                }
+            };
         },
         isProcessLinkableElement() {
             return this.isCallActivityElement || this.isStartEventElement || this.isEndEventElement;
@@ -6528,6 +6554,14 @@ export default {
         }
     },
     methods: {
+        showAppSnackbar(message, color = 'success') {
+            const app = window.$app_;
+            if (!app) return;
+            app.snackbarMessage = message;
+            app.snackbarColor = color;
+            app.snackbarSuccessStatus = color === 'success';
+            app.snackbar = true;
+        },
         /**
          * 외부(AI 생성 등)에서 프로세스 관련자료 링크(processForm.manualLinks)를 병합 추가한다.
          * url 기준 중복 제거. 저장 시 processForm.manualLinks가 정의에 반영된다.
@@ -9930,9 +9964,11 @@ export default {
             this.taskForm.fte = { ...defaultFte(), ...(uengineProps.fte || {}) };
             this.taskForm.futureStatus = toSafeText(uengineProps.futureStatus || 'maintain') || 'maintain';
             this.taskForm.dataAttachmentUrl = toSafeText(uengineProps.dataAttachmentUrl || '');
-            this.taskForm.dataAttachmentFile = uengineProps.dataAttachmentFile && typeof uengineProps.dataAttachmentFile === 'object'
-                ? { ...uengineProps.dataAttachmentFile }
-                : null;
+            this.taskForm.dataAttachmentFile = Array.isArray(uengineProps.dataAttachmentFile)
+                ? uengineProps.dataAttachmentFile.map((file) => ({ ...file }))
+                : uengineProps.dataAttachmentFile && typeof uengineProps.dataAttachmentFile === 'object'
+                    ? { ...uengineProps.dataAttachmentFile }
+                    : null;
             
             // API 연동: 신형 apiIntegrations 배열 우선, 레거시 단일 필드(apiName/...)는 1개 항목으로 승격.
             this.taskForm.apiIntegrations = readApiIntegrations(uengineProps).map((a) => ({
@@ -10787,8 +10823,11 @@ export default {
                 this.bpmnDataVersion++;
                 this.taskFormDirty = false;
                 this.$emit('taskMappingChanged');
-                this.$emit('persistBpmn');
-                this.$toast?.success('선 정보가 저장되었습니다.');
+                this.$emit('persistBpmn', {
+                    notifyOnSuccess: false,
+                    successMessage: '선 정보가 저장되었습니다.'
+                });
+                this.showAppSnackbar('선 정보가 저장되었습니다.');
                 return;
             }
 
@@ -10823,9 +10862,11 @@ export default {
                     opexUnit: toSafeText(this.taskForm.opexUnit),
                     opexNote: toSafeText(this.taskForm.opexNote),
                     dataAttachmentUrl: toSafeText(this.taskForm.dataAttachmentUrl),
-                    dataAttachmentFile: this.taskForm.dataAttachmentFile && this.taskForm.dataAttachmentFile.path
-                        ? { ...this.taskForm.dataAttachmentFile }
-                        : null,
+                    dataAttachmentFile: Array.isArray(this.taskForm.dataAttachmentFile)
+                        ? this.taskForm.dataAttachmentFile.map((file) => ({ ...file }))
+                        : this.taskForm.dataAttachmentFile?.path
+                            ? { ...this.taskForm.dataAttachmentFile }
+                            : null,
                     ...this.taskForm.schemaProps,
                     comments: [...this.elementComments],
                 };
@@ -11028,15 +11069,16 @@ export default {
                 .filter(id => id != null && id !== '');
             this.$emit('persistBpmn', {
                 projectIds: [...new Set([...relatedProjectIdsBeforeSave, ...relatedProjectIdsAfterSave])],
+                notifyOnSuccess: false,
+                successMessage: removedGroupedItems.length
+                    ? `Task 속성이 저장되었습니다. 그룹 매핑 ${removedGroupedItems.length}건이 동일 그룹 Task 에서도 함께 제거되었습니다.`
+                    : '속성값이 저장되었습니다.'
             });
-
-            if (this.$toast) {
-                if (removedGroupedItems.length) {
-                    this.$toast.success(`Task 속성이 저장되었습니다. 그룹 매핑 ${removedGroupedItems.length}건이 동일 그룹 Task 에서도 함께 제거되었습니다.`);
-                } else {
-                    this.$toast.success('Task 속성이 저장되었습니다.');
-                }
-            }
+            this.showAppSnackbar(
+                removedGroupedItems.length
+                    ? `Task 속성이 저장되었습니다. 그룹 매핑 ${removedGroupedItems.length}건이 동일 그룹 Task 에서도 함께 제거되었습니다.`
+                    : '속성값이 저장되었습니다.'
+            );
         },
     },
 };
@@ -11471,6 +11513,11 @@ export default {
 }
 .properties-content--readonly .manual-link-field :deep(.manual-link-row__link),
 .properties-content--readonly .task-manual-links-aggregate :deep(.manual-link-row__link) {
+    pointer-events: auto;
+}
+/* 파일 다운로드는 조회 동작이다. 읽기 모드의 섹션 입력 차단보다 우선 허용한다.
+   업로드/삭제 버튼은 SchemaFieldInput에서 읽기 모드일 때 렌더링하지 않는다. */
+.properties-content--readonly :deep(.schema-field-input .file-row) {
     pointer-events: auto;
 }
 

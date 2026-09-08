@@ -7,6 +7,7 @@
 const DEEP_AGENT_ROUTER_BASE_URL = '/process-gpt-deepagents';
 
 import { buildAgentHeaders } from './agentRequestHeaders';
+import { assertAiEnabled } from '@/utils/aiFeatureGate';
 
 class DeepAgentRouterService {
     constructor() {
@@ -22,6 +23,7 @@ class DeepAgentRouterService {
     }
 
     async routeAgents(payload) {
+        assertAiEnabled();
         await this.healthCheck();
         const selected = payload.room_participant_ids.filter((id) => id !== payload.user_uid && payload.candidate_agent_ids.includes(id));
         return {
@@ -37,6 +39,7 @@ class DeepAgentRouterService {
     }
 
     async sendMessageStream(agentId, params, callbacks = {}, options = {}) {
+        assertAiEnabled();
         const { onAbort, onError } = callbacks;
 
         try {

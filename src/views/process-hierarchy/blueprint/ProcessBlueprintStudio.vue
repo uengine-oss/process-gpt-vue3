@@ -36,6 +36,7 @@
 
                 <div class="studio__bar-right">
                     <v-btn
+                        v-if="aiEnabled"
                         :color="hasBlueprint ? 'purple' : 'primary'"
                         variant="flat"
                         size="small"
@@ -156,6 +157,7 @@
                                 선택한 솔루션이 없어도 As-Is를 기반으로 개선안을 생성합니다.
                             </div>
                             <v-btn
+                                v-if="aiEnabled"
                                 color="primary"
                                 variant="flat"
                                 size="large"
@@ -203,6 +205,7 @@ import { useBlueprintStudio } from '@/composables/blueprint/useBlueprintStudio';
 import { AN_STUDIO_KEY, type AnStudio } from '@/composables/anStudio/useAnStudio';
 import { toBeMarkers } from '@/utils/asisTobeTaskMap';
 import { canUseExecFeatures } from '@/utils/execFeatureGate';
+import { canUseAiFeatures } from '@/utils/aiFeatureGate';
 
 const props = defineProps<{
     modelValue: boolean;
@@ -248,6 +251,7 @@ const hasAnContext = computed(() => !!an);
 const viewMode = ref<'tobe' | 'compare' | 'partition' | 'executable'>('tobe');
 // 실행형 뷰는 관리자 전용 — 권한 claims 가 비동기 로드되므로 computed 로 추적
 const canExec = computed(() => canUseExecFeatures());
+const aiEnabled = computed(() => canUseAiFeatures('COPILOT'));
 const proposingAll = ref(false);
 
 const processName = computed(() => props.processDefinition?.name || props.defId || '프로세스');

@@ -382,7 +382,7 @@
                                         <span class="ms-2">{{ $t('WorkItem.researchMethod') }}</span>
                                     </v-btn>
                                     <v-btn
-                                        v-if="!isMobile && !gs"
+                                        v-if="!isMobile && !gs && aiFormEnabled"
                                         class="mr-1"
                                         color="gray"
                                         variant="flat"
@@ -449,7 +449,7 @@
                                     </v-btn>
 
                                     <v-btn
-                                        v-if="isMobile"
+                                        v-if="isMobile && aiFormEnabled"
                                         @click="beforeGenerateExample"
                                         :loading="isGeneratingExample"
                                         :disabled="isGeneratingExample"
@@ -526,6 +526,7 @@
 <script>
 import FormDefinition from '@/components/FormDefinition.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import { canUseAiFeatures } from '@/utils/aiFeatureGate';
 // import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import DefaultWorkItem from './DefaultWorkItem.vue';
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
@@ -844,6 +845,9 @@ export default {
     computed: {
         gs() {
             return window.$gs;
+        },
+        aiFormEnabled() {
+            return canUseAiFeatures('FORM');
         },
         currentRunningResearchMethod() {
             // 에이전트가 진행 중이고 workItem에 orchestration 정보가 있는 경우

@@ -152,6 +152,7 @@
                 </div>
                 <v-divider vertical class="mx-1" />
                 <v-tooltip
+                    v-if="aiCopilotEnabled"
                     :text="showCopilotPanel ? 'AI Copilot 패널을 닫습니다' : 'AI Copilot 패널을 열어 프로세스 설계를 도와줍니다'"
                     location="bottom"
                 >
@@ -277,7 +278,7 @@
                         </v-btn>
                     </template>
                 </v-tooltip>
-                <v-tooltip text="텍스트·파일·Confluence 문서를 기반으로 AI가 BPMN을 자동 생성합니다" location="bottom">
+                <v-tooltip v-if="aiCopilotEnabled" text="텍스트·파일·Confluence 문서를 기반으로 AI가 BPMN을 자동 생성합니다" location="bottom">
                     <template #activator="{ props: tt }">
                         <v-btn
                             v-bind="tt"
@@ -732,7 +733,7 @@
         </v-dialog>
 
         <!-- AI BPMN 생성 다이얼로그 (텍스트 / 파일 / Confluence) -->
-        <v-dialog v-model="genDialog" max-width="640" persistent>
+        <v-dialog v-if="aiCopilotEnabled" v-model="genDialog" max-width="640" persistent>
             <v-card rounded="lg">
                 <v-card-title class="d-flex align-center pa-4 pb-2">
                     <v-icon class="mr-2" color="primary">mdi-auto-fix</v-icon>
@@ -1064,6 +1065,7 @@ import ExecutableProcessView from '@/views/process-hierarchy/blueprint/Executabl
 import RaciMatrixDialog from '@/components/designer/RaciMatrixDialog.vue';
 import { AN_STUDIO_KEY } from '@/composables/anStudio/useAnStudio';
 import { canUseExecFeatures } from '@/utils/execFeatureGate';
+import { canUseAiFeatures } from '@/utils/aiFeatureGate';
 import { processUuidForRoute } from '@/utils/processRouteId';
 import {
     generateBpmnMulti,
@@ -1201,6 +1203,7 @@ export default {
         return {
             previewingVersion: '',
             bpmnKey: 0,
+            acceptedCurrentBpmnSnapshot: null,
             // 툴바 표기용 프로세스 영구 UUID (proc_def.uuid) — 조회 실패 시 legacy id 폴백
             definitionUuid: '',
             // As-Is 파티셔닝 그룹 편집 상태
@@ -1324,6 +1327,9 @@ export default {
         /** 실행 기능(실행 버튼·Exec 뷰) 노출 대상 사용자인지 — execFeatureGate 참조. */
         isExecUser() {
             return canUseExecFeatures();
+        },
+        aiCopilotEnabled() {
+            return canUseAiFeatures('COPILOT');
         },
         execMode() {
             return this.activeMode === 'exec' && this.isExecUser;
@@ -1537,6 +1543,12 @@ export default {
         },
         async bpmn(newVal, oldVal) {
             if (newVal !== oldVal && newVal) {
+                // 속성 패널은 현재 모델러를 직접 수정한 뒤 서버 스냅샷과 부모 prop만
+                // 동기화한다. 이 경우 XML 재-import는 캔버스/선택 상태만 초기화하므로 생략한다.
+                if (this.acceptedCurrentBpmnSnapshot === newVal) {
+                    this.acceptedCurrentBpmnSnapshot = null;
+                    return;
+                }
                 // 프로세스 전환 전에 To-Be 편집 중이었으면 persist (미리보기 중에는 제외 — 과거 버전 덮어쓰기 방지)
                 if (this.toBeMode && this.toBeBlueprintXml && oldVal && !this.previewingToBeVersion) {
                     const currentXml = await this.getCurrentXml();
@@ -1610,6 +1622,11 @@ export default {
         }
     },
     methods: {
+        /** 현재 모델러에서 export한 XML을 부모 prop에 반영하되 캔버스를 재마운트하지 않는다. */
+        acceptCurrentBpmnSnapshot(xml) {
+            this.acceptedCurrentBpmnSnapshot = xml && xml !== this.bpmn ? xml : null;
+            this.$refs.bpmnVue?.acceptCurrentBpmnSnapshot?.(xml);
+        },
         formatKST(value, pattern, fallback) {
             return formatKSTUtil(value, pattern, fallback);
         },
@@ -1844,6 +1861,7 @@ export default {
         // ===== AI BPMN 생성 (텍스트 / 파일 / Confluence) =====
 
         openGenDialog() {
+            if (!this.aiCopilotEnabled) return;
             this.genInputText = '';
             this.genFiles = [];
             this.genConfluenceUrls = [];
