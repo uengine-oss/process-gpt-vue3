@@ -142,7 +142,9 @@ class FixedBaseWorkAssistantAgentService {
                                 if (onOpenUi) onOpenUi(parsed);
                                 break;
                             case 'done':
-                                if (onDone) onDone(parsed.content);
+                                // parsed 를 통째로 넘긴다 — done.files(산출물 다운로드 링크)가
+                                // content 만 넘기던 시절에 조용히 버려지고 있었다.
+                                if (onDone) onDone(parsed.content, parsed);
                                 break;
                             case 'error':
                                 if (onError) onError(new Error(parsed.error || parsed.message || 'Agent error'));

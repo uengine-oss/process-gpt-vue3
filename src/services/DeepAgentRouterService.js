@@ -4,8 +4,8 @@
  * - deepagents 서버(별도 포트/서비스)로 라우팅/웜업/스트리밍 요청을 보낸다.
  * - gateway `process-gpt-deepagents` 라우트와 동일한 고정 prefix만 사용한다.
  * - codex 서버도 같은 chat/stream 계약이라 baseUrl 만 바꿔 이 클래스를 재사용한다.
- *   다만 codex 는 진행 중 스트림 재접속(/chat/stream/attach)을 제공하지 않으므로
- *   supportsStreamAttach=false 로 만들어 헛요청(404)을 보내지 않게 한다.
+ *   (codex 도 /chat/stream/attach · /chat/stop 을 제공한다. 없는 런타임을 붙일 때만
+ *   supportsStreamAttach=false 로 재접속 호출을 끈다.)
  */
 const DEEP_AGENT_ROUTER_BASE_URL = '/process-gpt-deepagents';
 
@@ -249,7 +249,9 @@ class DeepAgentRouterService {
                                 if (onFileArtifact) onFileArtifact(parsed);
                                 break;
                             case 'done':
-                                if (onDone) onDone(parsed.content);
+                                // parsed 를 통째로 넘긴다 — done.files(산출물 다운로드 링크)가
+                                // content 만 넘기던 시절에 조용히 버려지고 있었다.
+                                if (onDone) onDone(parsed.content, parsed);
                                 break;
                             case 'error':
                                 if (onError) onError(new Error(parsed.content || parsed.error || parsed.message || 'Agent error'));

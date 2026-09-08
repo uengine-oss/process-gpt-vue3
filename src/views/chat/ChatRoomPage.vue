@@ -817,6 +817,7 @@ import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/proce
 import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
+import { useCodexFolderStore } from '@/stores/codexFolder';
 import { normalizeOrchestration } from '@/utils/orchestration';
 import agentRouterService from '@/services/AgentRouterService';
 import deepAgentRouterService, { DeepAgentRouterService } from '@/services/DeepAgentRouterService';
@@ -831,7 +832,7 @@ const backend = BackendFactory.createBackend();
 const fixedLangchainMainAgentService = new FixedBaseWorkAssistantAgentService('/agent');
 const fixedDeepagentsMainAgentService = new FixedBaseWorkAssistantAgentService('/process-gpt-deepagents');
 // codex 는 deepagents 와 동일한 chat/stream 계약이라 같은 서비스 클래스를 prefix 만 바꿔 쓴다.
-const codexAgentRouterService = new DeepAgentRouterService('/process-gpt-codex', { supportsStreamAttach: false });
+const codexAgentRouterService = new DeepAgentRouterService('/process-gpt-codex');
 const fixedCodexMainAgentService = new FixedBaseWorkAssistantAgentService('/process-gpt-codex');
 
 // 메인 에이전트(process-gpt-agent)는 별도 메타 설정이 필요함(항상 기본 파드로 실행)
@@ -856,7 +857,11 @@ export default {
     name: 'ChatRoomPage',
     // 지식 선택은 전역 스토어(단일 소스). 이 페이지가 방 lifecycle(로드/저장/이월)을 이 스토어로 조율.
     setup() {
-        return { knowledgeStore: useKnowledgeSelectionStore() };
+        return {
+            knowledgeStore: useKnowledgeSelectionStore(),
+            // 원본 폴더 업로드 게이트 — 덜 올라온 상태로 턴이 시작되지 않게 한다.
+            codexFolderStore: useCodexFolderStore()
+        };
     },
     props: {
         embedded: { type: Boolean, default: false },
@@ -1880,12 +1885,9 @@ export default {
                     //   (사용자가 직접 rename 한 이름은 placeholder 가 아니므로 그대로 유지된다.)
                     const dbName = String(existing?.name || '').trim();
                     const localName = String(r.name || '').trim();
-                    const placeholders = [
-                        String(this.$t('chatListing.newChat') || '').trim(),
-                        '새 대화',
-                        '새 채팅',
-                        'New Chat'
-                    ].filter(Boolean);
+                    const placeholders = [String(this.$t('chatListing.newChat') || '').trim(), '새 대화', '새 채팅', 'New Chat'].filter(
+                        Boolean
+                    );
                     if (dbName && dbName !== localName && (!localName || placeholders.includes(localName))) {
                         r.name = existing.name;
                         // 이름이 이미 확정됐다면 자동 네이밍 대기 플래그도 되살리지 않는다.
@@ -4128,11 +4130,7 @@ export default {
          */
         restoreDeepagentHitlFromAssistantContent(msg) {
             if (!msg || msg.__humanFeedback || (msg.role || '').toString() !== 'assistant') return;
-            const roomOrchestration = (
-                this.currentChatRoom?.context?.orchestration ||
-                this.currentChatRoom?.orchestration ||
-                ''
-            )
+            const roomOrchestration = (this.currentChatRoom?.context?.orchestration || this.currentChatRoom?.orchestration || '')
                 .toString()
                 .toLowerCase();
             if (roomOrchestration && !roomOrchestration.includes('deepagent')) return;
@@ -4145,18 +4143,14 @@ export default {
             const isCandidateRequestUnicode =
                 hasCandidateSectionsUnicode && /(?:\uC120\uD0DD|\uACE0\uB974|\uCD94\uAC00|\uD6C4\uBCF4)/i.test(content);
             const isConsultingRequestUnicode =
-                /(?:\uC774\uB300\uB85C\s*\uC9C4\uD589\uD560\uAE4C\uC694|\uCD94\uAC00\uD558\uAC70\uB098\s*\uBC14\uAFC0\s*\uB2E8\uACC4|\uCD08\uC548.*(?:\uC2B9\uC778|\uC9C4\uD589))/i.test(content);
+                /(?:\uC774\uB300\uB85C\s*\uC9C4\uD589\uD560\uAE4C\uC694|\uCD94\uAC00\uD558\uAC70\uB098\s*\uBC14\uAFC0\s*\uB2E8\uACC4|\uCD08\uC548.*(?:\uC2B9\uC778|\uC9C4\uD589))/i.test(
+                    content
+                );
 
             const hasCandidateSections = /\[(?:스킬|에이전트|DMN|skill|agent)\]/i.test(content);
             const isCandidateRequest = hasCandidateSections && /(선택|골라|추가할|안 고르면|후보)/i.test(content);
             const isConsultingRequest = /(이대로 진행할까요|초안.*(?:승인|진행)|추가하거나 바꿀 단계)/i.test(content);
-            if (
-                !isCandidateRequest &&
-                !isConsultingRequest &&
-                !isCandidateRequestUnicode &&
-                !isConsultingRequestUnicode
-            )
-                return;
+            if (!isCandidateRequest && !isConsultingRequest && !isCandidateRequestUnicode && !isConsultingRequestUnicode) return;
 
             const firstLine = content.split(/\r?\n/).find((line) => line.trim()) || '';
             this._buildDeepagentHitlPanel(msg, {
@@ -4238,15 +4232,16 @@ export default {
             };
             // request_human_input의 options 파라미터(구조화, 신규)가 있으면 프로즈 파싱보다
             // 우선한다 — 모델이 `[카테고리]`+불릿 텍스트 컨벤션을 안 지켜도 항상 정확히 렌더링된다.
-            const structuredItems = Array.isArray(options) && options.length
-                ? options
-                      .map((o, idx) => ({
-                          id: `opt::${idx}::${(o?.label || '').toString()}`,
-                          label: (o?.label || '').toString(),
-                          description: (o?.description || '').toString()
-                      }))
-                      .filter((it) => it.label)
-                : [];
+            const structuredItems =
+                Array.isArray(options) && options.length
+                    ? options
+                          .map((o, idx) => ({
+                              id: `opt::${idx}::${(o?.label || '').toString()}`,
+                              label: (o?.label || '').toString(),
+                              description: (o?.description || '').toString()
+                          }))
+                          .filter((it) => it.label)
+                    : [];
             // select_items 는 (a) 구조화된 options 가 있거나, (b) **2단계 후보(스킬/에이전트/DMN) 형식**
             // 프로즈일 때만. 컨설팅 초안처럼 카테고리 없는 불릿/번호는 선택지가 아니라 본문이므로
             // approve_reject 로 보여준다.
@@ -4259,8 +4254,7 @@ export default {
                 return !!k && CANDIDATE_CATEGORIES.some((cc) => k === cc || k.includes(cc));
             };
             const hasCategorizedItems =
-                structuredItems.length > 0 ||
-                (parsed.items.length > 0 && parsed.items.some((it) => isCandidateCategory(it.category)));
+                structuredItems.length > 0 || (parsed.items.length > 0 && parsed.items.some((it) => isCandidateCategory(it.category)));
             if (hasCategorizedItems) {
                 const items = structuredItems.length
                     ? structuredItems
@@ -5032,6 +5026,7 @@ export default {
             )
                 return;
             if (!this.currentChatRoom?.id) return;
+
             const text = (payload.text || '').trim();
             const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
             const hasFile = initialFiles.length > 0 || hasRawFiles;
@@ -5733,12 +5728,9 @@ export default {
                 // 첨부만 보낸 메시지는 text 가 비어 라우터가 empty_input 으로 판단해 아무도 응답하지 않았다.
                 // 라우터가 의도를 추정할 수 있도록 첨부 정보를 요약해 함께 싣는다.
                 const routingFiles = this.normalizePayloadFiles(payload);
-                const routingFileNames = routingFiles
-                    .map((f) => (f?.name || f?.fileName || '').toString().trim())
-                    .filter(Boolean);
+                const routingFileNames = routingFiles.map((f) => (f?.name || f?.fileName || '').toString().trim()).filter(Boolean);
                 const routingUserMessage =
-                    (text || '').toString().trim() ||
-                    (routingFileNames.length > 0 ? `[첨부 파일] ${routingFileNames.join(', ')}` : '');
+                    (text || '').toString().trim() || (routingFileNames.length > 0 ? `[첨부 파일] ${routingFileNames.join(', ')}` : '');
 
                 const routed = await router.routeAgents({
                     user_message: routingUserMessage,
@@ -5763,9 +5755,7 @@ export default {
                     // 첨부가 있으면 기본 에이전트가 "이 파일로 무엇을 할지" 되묻도록 폴백한다.
                     if (routingFiles.length > 0) {
                         const fallbackAgent =
-                            (inRoomAgentsRaw || []).find((a) => a?.id === PROCESS_GPT_AGENT_ID) ||
-                            (inRoomAgentsRaw || [])[0] ||
-                            null;
+                            (inRoomAgentsRaw || []).find((a) => a?.id === PROCESS_GPT_AGENT_ID) || (inRoomAgentsRaw || [])[0] || null;
                         if (fallbackAgent) {
                             return [{ ...fallbackAgent, policy: 'must_reply', __routingLoadingUuid: routingLoadingUuid }];
                         }
@@ -6079,7 +6069,8 @@ export default {
                     p.type === type &&
                     (type === 'slide' || type === 'process' || type === 'files'
                         ? p.data?.messageId === data?.messageId
-                        : p.data?.htmlUrl === data?.htmlUrl)
+                        : (p.data?.artifactKey || p.data?.fileUrl || p.data?.htmlUrl) ===
+                          (data?.artifactKey || data?.fileUrl || data?.htmlUrl))
             );
             if (existingIdx !== -1) {
                 this.artifactPanels[existingIdx] = { ...this.artifactPanels[existingIdx], label, data };
@@ -6234,9 +6225,7 @@ export default {
             const arr = this.roomWorkspaceFilesByGroup[group];
             if (entry && entry.path) {
                 const logicalPath = this._workspaceLogicalPath(entry.path);
-                const i = arr.findIndex(
-                    (f) => f.path === entry.path || this._workspaceLogicalPath(f.path) === logicalPath
-                );
+                const i = arr.findIndex((f) => f.path === entry.path || this._workspaceLogicalPath(f.path) === logicalPath);
                 // 병합(spread)으로 갱신해 savedHash 같은 저장 표식이 살아남게 한다.
                 // 표식은 남기고 content 만 바뀌면 아래 _isWorkspaceGroupSaved 가 해시 불일치로
                 // '저장됨' 을 자동 해제한다 — 턴 종료 시 동일 내용이 재전송되는 경로에서는
@@ -7440,6 +7429,7 @@ export default {
         },
 
         pushDocxArtifact(parsed, msgIdxOrRef) {
+            if (this.pushRenderedDocxArtifact(parsed, msgIdxOrRef)) return;
             const url = this.extractHwpxHtmlUrl(parsed);
             if (!url) return;
             const name = (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
@@ -7478,8 +7468,39 @@ export default {
         isDocxPayload(parsed) {
             if (!parsed || typeof parsed !== 'object') return false;
             const ct = (parsed.content_type || parsed.contentType || '').toString();
-            const fn = (parsed.file_name || parsed.fileName || '').toString();
-            return ct.includes('wordprocessingml') || fn.toLowerCase().endsWith('.docx');
+            const fn = (parsed.file_name || parsed.fileName || parsed.name || '').toString();
+            return parsed.artifact_type === 'docx' || ct.includes('wordprocessingml') || fn.toLowerCase().endsWith('.docx');
+        },
+
+        /** done.files와 저장된 pdfFiles 모두 같은 서버 PDF 미리보기 계약을 사용한다. */
+        pushRenderedDocxArtifact(file, msgIdxOrRef) {
+            if (!this.isDocxPayload(file) || file.preview?.kind !== 'pdf' || !file.preview.url) return false;
+            const fileUrl = file.file_url || file.fileUrl || file.url || '';
+            if (!fileUrl) return false;
+            const fileName = file.file_name || file.fileName || file.name || 'document.docx';
+            const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
+            this.pushArtifactPanel({
+                type: 'docx',
+                label: fileName,
+                data: {
+                    fileUrl, fileName, previewUrl: file.preview.url, messageId: msg?.uuid || null,
+                    artifactKey: file.artifact_id || file.file_id || fileUrl,
+                    fileId: file.file_id || '', sha256: file.sha256 || '', turnId: file.turn_id || ''
+                }
+            });
+            return true;
+        },
+
+        activeDocumentContext() {
+            if (!this.artifactSidebarVisible) return null;
+            const panel = this.artifactPanels.find((p) => p.id === this.activeArtifactId);
+            if (panel?.type !== 'docx' || !panel.data?.fileUrl) return null;
+            const data = panel.data;
+            return {
+                fileName: data.fileName || panel.label,
+                file_id: data.fileId || '', artifact_id: data.artifactKey || data.fileUrl,
+                sha256: data.sha256 || '', turn_id: data.turnId || ''
+            };
         },
 
         startArtifactSidebarResize(event) {
@@ -7536,6 +7557,15 @@ export default {
         },
 
         checkExistingArtifactPanels() {
+            // 최신 AI 산출물의 PDF를 새로고침/방 재진입 때도 복원한다.
+            for (let i = this.messages.length - 1; i >= 0; i--) {
+                const msg = this.messages[i];
+                if (!msg || !['assistant', 'agent'].includes(msg.role)) continue;
+                const files = [...(Array.isArray(msg.pdfFiles) ? msg.pdfFiles : []), ...(msg.pdfFile ? [msg.pdfFile] : [])];
+                let restored = false;
+                for (const file of files) restored = this.pushRenderedDocxArtifact(file, msg) || restored;
+                if (restored) return;
+            }
             // deepagent 산출물 파일 복원 — 방 내 모든 메시지의 workspaceFiles 를 by-path 병합 후,
             // 프로세스 폴더(process-<uuid>)별로 그룹핑해 프로세스마다 탭으로 복원한다.
             const mergedByPath = {};
@@ -8227,6 +8257,15 @@ export default {
         },
 
         async streamAgents(agentTargets, userText, payload) {
+            // codex 원본 폴더가 아직 올라가는 중이면 다 올라간 뒤에 턴을 시작한다.
+            // 게이트를 여기(턴 시작의 단일 관문)에 두는 이유: definition-map kickoff 은
+            // handleSendMessage 를 거치지 않고 여기로 바로 온다. 첫 메시지가 정확히 그
+            // 경로라, 상위에 두면 정작 중요한 첫 턴이 게이트를 건너뛴다.
+            // (실측: 877개 폴더인데 매니페스트에 40개만 잡힌 채 턴이 시작됐다.)
+            if (this.codexFolderStore.blocksSend) {
+                await this.codexFolderStore.waitForUpload();
+            }
+
             const userJwt = (await getValidToken()) || '';
             // 스트림 경로는 테넌트가 반드시 정확해야 한다(잘못된 테넌트 → 401/빈 결과).
             // 서브도메인으로 확정되지 않으면 세션 JWT 의 app_metadata.tenant_id 까지 조회한다.
@@ -8436,6 +8475,7 @@ export default {
                     file_count: requestFiles.length,
                     metadata: {
                         ...(payload?.metadata && typeof payload.metadata === 'object' ? payload.metadata : {}),
+                        ...(orchestration === 'codex' ? { active_document: this.activeDocumentContext() } : {}),
                         ...(agentTarget?.__routingDecision ? { routing: agentTarget.__routingDecision } : {}),
                         room_recent_history,
                         assigned_skills: assignedSkills,
@@ -8923,7 +8963,7 @@ export default {
                             this.setAgentStatus(agentId, { state: 'ready', message: '' });
                         }
                     },
-                    onDone: async (content) => {
+                    onDone: async (content, doneEvent) => {
                         // 60ms 배칭으로 아직 반영되지 않은 마지막 토큰들을 먼저 확정한다.
                         flushStreamedContentNow();
                         const finalContent = (content || full || '').toString().trim();
@@ -8943,6 +8983,24 @@ export default {
 
                         const msg = this.activeStreams[agentId];
                         if (msg) {
+                            // 스트리밍 버블은 요청 시작 때 만들어지지만, 완료된 assistant 답변의
+                            // 표시 시각은 실제 응답 완료 시각이어야 한다. 이 객체는 아래
+                            // persistMessageFrontendState(force)에서 서버가 저장한 row를 통째로
+                            // 갱신하므로 시작 시각을 그대로 두면 백엔드의 완료 시각까지 덮어쓴다.
+                            msg.timeStamp = new Date().toISOString();
+                            // 산출물 다운로드 링크. 서버도 chats row 에 pdfFiles 를 넣지만,
+                            // persistMessageFrontendState 가 messages 를 통째로 덮어쓰므로
+                            // 여기서 메시지에 실어두지 않으면 서버가 쓴 링크가 지워진다.
+                            const doneFiles = Array.isArray(doneEvent?.files) ? doneEvent.files : [];
+                            for (const file of doneFiles) this.pushRenderedDocxArtifact(file, msg);
+                            if (doneFiles.length) {
+                                const existing = Array.isArray(msg.pdfFiles) ? msg.pdfFiles : [];
+                                const seen = new Set(existing.map((f) => (f?.url || f?.fileUrl || f?.name || '').toString()));
+                                msg.pdfFiles = [
+                                    ...existing,
+                                    ...doneFiles.filter((f) => f && !seen.has((f.url || f.fileUrl || f.name || '').toString()))
+                                ];
+                            }
                             const msgToolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
                             msg.toolCalls = msgToolCalls.map((toolCall) =>
                                 toolCall?.status === 'running'
@@ -9146,6 +9204,7 @@ export default {
                             : `⚠️ 오류가 발생했습니다: ${errText || '에이전트 응답 오류'}`;
                         const msg = this.activeStreams[agentId];
                         if (msg) {
+                            msg.timeStamp = new Date().toISOString();
                             msg.content = display;
                             msg.isLoading = false;
                             msg.openuiIsStreaming = false;
@@ -9187,6 +9246,7 @@ export default {
                     const msg = this.activeStreams[agentId];
                     if (msg) {
                         if (!this._isPlaceholderContent(msg.content)) {
+                            msg.timeStamp = new Date().toISOString();
                             msg.isLoading = false;
                             msg.openuiIsStreaming = false;
                             this.messages.push(this.normalizeAssistantMessageForDisplay(msg));
@@ -11022,6 +11082,8 @@ export default {
                 const hasOpenuiLang = typeof msg.openuiLang === 'string' && msg.openuiLang.length > 0;
                 const hasAgentLogs = Array.isArray(msg.agentLogs) && msg.agentLogs.length > 0;
                 const hasAgentPlan = !!msg.agentPlan;
+                const pdfFilesArr = Array.isArray(msg.pdfFiles) ? msg.pdfFiles : [];
+                const hasPdfFiles = pdfFilesArr.length > 0;
                 if (
                     !hasFeedback &&
                     !hasToolCalls &&
@@ -11033,7 +11095,8 @@ export default {
                     !hasRunState &&
                     !hasOpenuiLang &&
                     !hasAgentLogs &&
-                    !hasAgentPlan
+                    !hasAgentPlan &&
+                    !hasPdfFiles
                 ) {
                     return;
                 }
@@ -11066,7 +11129,8 @@ export default {
                     rs: hasRunState ? 1 : 0,
                     ol: hasOpenuiLang ? msg.openuiLang.length || 0 : 0,
                     al: hasAgentLogs ? msg.agentLogs.length : 0,
-                    ap: hasAgentPlan ? 1 : 0
+                    ap: hasAgentPlan ? 1 : 0,
+                    pf: hasPdfFiles ? pdfFilesArr.map((f) => f?.url || f?.fileUrl || f?.name || '').join('|') : ''
                 });
                 if (!force && msg.__feStateKey === stateKey) return;
                 msg.__feStateKey = stateKey;
