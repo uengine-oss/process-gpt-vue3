@@ -7479,6 +7479,10 @@ export default {
             if (!fileUrl) return false;
             const fileName = file.file_name || file.fileName || file.name || 'document.docx';
             const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
+            // 완성본은 자기 초안 탭을 대신한다 — 남겨두면 '작성 중' 카드가 계속 붙어 있다.
+            this.artifactPanels = this.artifactPanels.filter(
+                (panel) => !(panel.data?.draft === true && panel.data?.fileName === fileName)
+            );
             this.pushArtifactPanel({
                 type: 'docx',
                 label: fileName,
@@ -7486,6 +7490,37 @@ export default {
                     fileUrl, fileName, previewUrl: file.preview.url, messageId: msg?.uuid || null,
                     artifactKey: file.artifact_id || file.file_id || fileUrl,
                     fileId: file.file_id || '', sha256: file.sha256 || '', turnId: file.turn_id || ''
+                }
+            });
+            return true;
+        },
+
+        /**
+         * 작성 중인 문서의 현재 렌더를 같은 탭에 갱신한다.
+         *
+         * 제안서 턴은 10분 넘게 돈다. 최종본이 나올 때까지 스피너만 보이면
+         * 진행 중인지 멈춘 건지 알 수 없다. 서버의 렌더 채널이 중간 페이지를
+         * 이미 만들고 있으므로 그걸 그대로 보여준다.
+         *
+         * artifactKey 가 렌더마다 같아서 pushArtifactPanel 이 카드를 쌓지 않고
+         * 교체한다. 검수를 통과하지 않은 문서이므로 다운로드는 주지 않는다.
+         */
+        pushDraftDocxArtifact(file, msgIdxOrRef) {
+            if (!file || file.preview?.kind !== 'pdf' || !file.preview.url) return false;
+            const fileName = file.file_name || file.fileName || 'document.docx';
+            const pages = file.preview.page_count || 0;
+            const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
+            this.pushArtifactPanel({
+                type: 'docx',
+                label: pages ? `${fileName} (작성 중 · ${pages}쪽)` : `${fileName} (작성 중)`,
+                data: {
+                    fileUrl: '',
+                    fileName,
+                    previewUrl: file.preview.url,
+                    messageId: msg?.uuid || null,
+                    artifactKey: file.artifact_id,
+                    draft: true,
+                    pageCount: pages
                 }
             });
             return true;
@@ -8664,6 +8699,11 @@ export default {
                             this.upsertWorkspaceFilesPanel(entry);
                             // file_artifact는 서버의 기본 chat INSERT에 포함되지 않으므로 별도 병합 저장한다.
                             this.scheduleMessageFrontendStatePersist(msg);
+                        } catch (e) {}
+                    },
+                    onDraft: (file) => {
+                        try {
+                            this.pushDraftDocxArtifact(file, this.activeStreams[agentId]);
                         } catch (e) {}
                     },
                     onToolStart: (tool, input, rawEvent) => {

@@ -46,6 +46,7 @@
                         :downloadUrl="panel.data.fileUrl"
                         :downloadFileName="panel.data.fileName || panel.label"
                         downloadTitle="원본 DOCX 다운로드"
+                        :draft="panel.data.draft === true"
                         @close="$emit('close-panel', panel.id)"
                     />
                     <!-- 기존 HTML DOCX 미리보기 -->

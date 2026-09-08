@@ -185,7 +185,8 @@ class DeepAgentRouterService {
             onMetadata,
             onOpenUi,
             onProcessResult,
-            onFileArtifact
+            onFileArtifact,
+            onDraft
         } = callbacks;
 
         const reader = response.body.getReader();
@@ -247,6 +248,11 @@ class DeepAgentRouterService {
                                 break;
                             case 'file_artifact':
                                 if (onFileArtifact) onFileArtifact(parsed);
+                                break;
+                            // 작성 중인 문서의 현재 모습. 최종 산출물이 아니므로
+                            // done.files 와 달리 다운로드 링크를 싣지 않는다.
+                            case 'draft':
+                                if (onDraft) onDraft(parsed.file || parsed);
                                 break;
                             case 'done':
                                 // parsed 를 통째로 넘긴다 — done.files(산출물 다운로드 링크)가
