@@ -4,7 +4,7 @@
         <div class="page-header">
             <div class="page-header-left">
                 <div class="d-flex align-center ga-2">
-                    <h1 class="page-title">KPI 목표 - 신규</h1>
+                    <h1 class="page-title">KPI 목표</h1>
                 </div>
                 <div class="page-subtitle text-medium-emphasis">
                     지표명 · 단위 · 측정주기 · 운영정의 · 산출식 기반의 KPI 성과지표 목표를 관리합니다.
@@ -127,14 +127,25 @@
                             />
                         </v-col>
                         <v-col cols="6">
-                            <v-text-field
+                            <v-combobox
                                 v-model="form.proc_name"
+                                :items="procOptions"
+                                :loading="procLoading"
+                                item-title="name"
+                                item-value="name"
+                                :return-object="false"
                                 label="관련 프로세스"
-                                placeholder="예: P5.4.3 내부심사 프로세스"
+                                placeholder="프로세스 목록에서 선택 (직접 입력 가능)"
                                 density="compact"
                                 variant="outlined"
                                 hide-details="auto"
-                            />
+                                clearable
+                                no-data-text="일치하는 프로세스가 없습니다. 직접 입력할 수 있습니다."
+                            >
+                                <template v-slot:item="{ props: itemProps, item }">
+                                    <v-list-item v-bind="itemProps" :subtitle="item.raw.path" />
+                                </template>
+                            </v-combobox>
                         </v-col>
                     </v-row>
                 </v-card-text>
@@ -198,10 +209,22 @@ export default defineComponent({
         });
         const form = ref(emptyForm());
 
+        // v-combobox 는 목록에서 고르면 문자열, 자유 입력이면 문자열을 주지만
+        // 슬롯/객체 items 조합에서 객체가 들어오는 경우가 있어 방어적으로 정규화한다.
+        function procNameText(value) {
+            if (value == null) return '';
+            if (typeof value === 'object') return String(value.name ?? value.title ?? '').trim();
+            return String(value).trim();
+        }
+
         const deleteDialog = ref(false);
         const deleteTarget = ref(null);
 
         const cycleOptions = ['1회/월', '1회/분기', '1회/반기', '1회/년'];
+
+        // 관련 프로세스 선택용 — 프로세스 체계도(proc_map)의 sub 프로세스 목록
+        const procOptions = ref([]);
+        const procLoading = ref(false);
 
         const headers = computed(() => {
             const base = [
@@ -226,6 +249,47 @@ export default defineComponent({
                 [item.name, item.proc_name].some((v) => (v || '').toString().toLowerCase().includes(keyword))
             );
         });
+
+        /**
+         * 프로세스 목록 로드 — KpiProcessPicker 와 동일하게 proc_map 을 사용한다.
+         * window.$procMap 캐시가 있으면 재조회하지 않는다.
+         */
+        async function loadProcOptions() {
+            procLoading.value = true;
+            try {
+                const cached = window.$procMap;
+                let procMap = cached?.mega_proc_list ? cached : null;
+                if (!procMap) {
+                    const result = await backend.getProcessDefinitionMap();
+                    procMap = result?.value || result || null;
+                }
+                const safeText = (v) => (v == null ? '' : String(v).trim());
+                const options = [];
+                const seen = new Set();
+                for (const mega of procMap?.mega_proc_list || []) {
+                    const megaName = safeText(mega?.name);
+                    for (const major of mega?.major_proc_list || []) {
+                        const majorName = safeText(major?.name);
+                        for (const sub of major?.sub_proc_list || []) {
+                            const name = safeText(sub?.name) || safeText(sub?.id);
+                            if (!name || seen.has(name)) continue;
+                            seen.add(name);
+                            options.push({
+                                id: safeText(sub?.id),
+                                name,
+                                path: [megaName, majorName].filter(Boolean).join(' > ')
+                            });
+                        }
+                    }
+                }
+                procOptions.value = options;
+            } catch (e) {
+                console.error('[KpiIndicatorManager] loadProcOptions error:', e);
+                procOptions.value = [];
+            } finally {
+                procLoading.value = false;
+            }
+        }
 
         async function load() {
             loading.value = true;
@@ -278,7 +342,7 @@ export default defineComponent({
                     definition: (form.value.definition || '').trim(),
                     formula: (form.value.formula || '').trim(),
                     target_value: form.value.target_value === '' || form.value.target_value == null ? null : Number(form.value.target_value),
-                    proc_name: (form.value.proc_name || '').trim(),
+                    proc_name: procNameText(form.value.proc_name),
                     created_by: localStorage.getItem('uid') || ''
                 });
                 closeDialog();
@@ -313,7 +377,10 @@ export default defineComponent({
             }
         }
 
-        onMounted(load);
+        onMounted(() => {
+            load();
+            loadProcOptions();
+        });
 
         return {
             isAdmin,
@@ -328,6 +395,8 @@ export default defineComponent({
             deleteDialog,
             deleteTarget,
             cycleOptions,
+            procOptions,
+            procLoading,
             headers,
             filteredIndicators,
             openAddDialog,

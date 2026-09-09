@@ -101,3 +101,41 @@ export function formatDate(ts: string | null | undefined): string {
         return String(ts);
     }
 }
+
+const RESOURCE_TYPE_LABELS: Record<string, string> = {
+    skill: '스킬',
+    bpmn: '프로세스',
+    dmn: '의사결정'
+};
+
+export function resourceTypeLabel(resourceType: string | null | undefined): string {
+    return RESOURCE_TYPE_LABELS[resourceType || ''] || resourceType || '리소스';
+}
+
+/** 병합 요청이 가리키는 리소스의 화면 경로. (알림 URL 과 같은 규칙) */
+export function resourcePath(resourceType: string | null | undefined, resourceId: string): string {
+    if (resourceType === 'skill') return `/skills/${resourceId}`;
+    if (resourceType === 'dmn') return `/dmn/${resourceId}`;
+    return `/definitions/${resourceId}`;
+}
+
+/**
+ * 요청자 이름을 사람이 읽는 한 줄로 정규화한다.
+ * requester_id 가 uuid[] 라 이름도 `["홍길동"]` 이나 그 문자열 직렬화 형태로 들어오는 경우가 있어,
+ * 그대로 렌더링하면 대괄호와 따옴표가 화면에 그대로 찍힌다.
+ */
+export function formatRequesterName(value: unknown): string {
+    let name: any = value;
+    if (typeof name === 'string') {
+        const text = name.trim();
+        if (text.startsWith('[')) {
+            try {
+                name = JSON.parse(text);
+            } catch {
+                name = text.replace(/^\[|\]$/g, '').replace(/"/g, '');
+            }
+        }
+    }
+    if (Array.isArray(name)) name = name.filter(Boolean).join(', ');
+    return (name || '').toString().trim();
+}

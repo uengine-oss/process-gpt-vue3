@@ -1,0 +1,411 @@
+/*
+ * 모바일 앱 기본 스타일.
+ *
+ * 포털의 스타일 시트를 가져오지 않는다. 그쪽은 넓은 화면과 마우스를 전제로
+ * 만들어졌고, 통째로 들여오면 쓰지도 않을 규칙 수백 KB 를 함께 받는다.
+ *
+ * 다만 **색은 포털과 같은 값**을 쓴다. 앱만 다른 색이면 같은 제품으로 보이지
+ * 않는다. 아래 값은 포털의 토큰(src/ds/styles/tokens.css)에서 그대로 옮겨 왔다.
+ *   sky    흰 배경 + 파랑 (포털 기본값)
+ *   light  종이빛 배경 + 클로드 오렌지
+ *   dark   어두운 배경 + 클로드 오렌지
+ *
+ * 포털은 이 선택을 브라우저에만 저장한다(localStorage). 앱은 그 저장소를 볼 수
+ * 없으므로 [내 정보]에서 직접 고르고, 고른 값은 이 기기에 남는다.
+ *
+ * 그 밖에 지키는 것
+ *   - 손가락으로 누를 수 있는 크기 (최소 44px)
+ *   - 노치와 홈 인디케이터를 피한 안전 영역
+ */
+
+:root,
+:root[data-appearance='sky'] {
+    --brand: hsl(202 100% 43%);
+    --brand-ink: #ffffff;
+    --brand-wash: hsl(202 100% 43% / 0.1);
+
+    --ground: hsl(206 41% 97%);
+    --surface: hsl(0 0% 100%);
+    --sunk: hsl(206 33% 93%);
+    --ink: hsl(218 26% 22%);
+    --ink-soft: hsl(218 20% 35%);
+    --ink-faint: hsl(206 6% 47%);
+    --rule: hsl(210 25% 92%);
+
+    --danger: #b24a32;
+    --danger-wash: #fae9e4;
+    --warn: #8a6516;
+    --warn-wash: #f7eeda;
+
+    --tap: 44px;
+    --radius: 10px;
+    --gap: 12px;
+
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+    --font: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', system-ui, sans-serif;
+}
+
+:root[data-appearance='light'] {
+    --brand: hsl(14.77 63.11% 59.61%);
+    --brand-ink: #ffffff;
+    --brand-wash: hsl(14.77 63.11% 59.61% / 0.12);
+
+    --ground: hsl(60 14.29% 97.25%);
+    --surface: hsl(0 0% 100%);
+    --sunk: hsl(45 11.76% 93.33%);
+    --ink: hsl(0 0% 7.45%);
+    --ink-soft: hsl(60 2.75% 21.37%);
+    --ink-faint: hsl(42.86 2.93% 46.86%);
+    --rule: hsl(50 11.11% 89.41%);
+}
+
+:root[data-appearance='dark'] {
+    --brand: hsl(15 63.1% 59.6%);
+    --brand-ink: #1a1a18;
+    --brand-wash: hsl(15 63.1% 59.6% / 0.16);
+
+    --ground: hsl(60 2.7% 14.5%);
+    --surface: hsl(60 2.1% 18.4%);
+    --sunk: hsl(30 3.3% 11.8%);
+    --ink: hsl(48 33.3% 97.1%);
+    --ink-soft: hsl(50 9% 73.7%);
+    --ink-faint: hsl(48 4.8% 59.2%);
+    --rule: hsl(51 16.5% 84.5% / 0.18);
+
+    --danger: #e08c74;
+    --danger-wash: #2b1a15;
+    --warn: #d2a852;
+    --warn-wash: #2a2214;
+}
+
+/* 아무것도 고르지 않았는데 기기가 다크면 다크로 맞춘다. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-appearance]) {
+        --brand: hsl(15 63.1% 59.6%);
+        --brand-ink: #1a1a18;
+        --brand-wash: hsl(15 63.1% 59.6% / 0.16);
+        --ground: hsl(60 2.7% 14.5%);
+        --surface: hsl(60 2.1% 18.4%);
+        --sunk: hsl(30 3.3% 11.8%);
+        --ink: hsl(48 33.3% 97.1%);
+        --ink-soft: hsl(50 9% 73.7%);
+        --ink-faint: hsl(48 4.8% 59.2%);
+        --rule: hsl(51 16.5% 84.5% / 0.18);
+        --danger: #e08c74;
+        --danger-wash: #2b1a15;
+    }
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overscroll-behavior-y: none; /* 당겨서 새로고침이 앱 화면을 끌어당기지 않게 */
+}
+
+body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 16px; /* 16px 미만이면 iOS 가 입력할 때 화면을 확대한다 */
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+#app {
+    /*
+     * min-height 가 아니라 height 다.
+     *
+     * min-height 로 두면 목록이 길어질 때 #app 자체가 화면보다 커지고, 하단 탭이
+     * 화면 밖으로 밀려 사라진다. 사용자는 다른 탭으로 갈 방법을 잃는다.
+     * 높이를 화면에 못 박아야 안쪽의 .m-body 가 대신 스크롤한다.
+     */
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+}
+
+a {
+    color: var(--brand);
+    text-decoration: none;
+}
+
+/* --- 공통 조각 ---------------------------------------------------------- */
+
+.m-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    /* min-height:0 이 없으면 flex 자식이 내용만큼 늘어나 부모를 밀어낸다. */
+    min-height: 0;
+    overflow: hidden;
+}
+
+.m-appbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+    padding: calc(var(--safe-top) + 10px) 16px 10px;
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    min-height: calc(var(--safe-top) + var(--tap));
+}
+
+.m-appbar h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    flex: 1;
+    letter-spacing: -0.01em;
+}
+
+.m-appbar button {
+    min-width: var(--tap);
+    min-height: var(--tap);
+    display: grid;
+    place-items: center;
+    color: var(--ink-soft);
+    border-radius: 8px;
+    margin: -8px;
+}
+
+.m-body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--gap);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+}
+
+.m-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    text-align: left;
+}
+
+.m-btn {
+    min-height: var(--tap);
+    border-radius: var(--radius);
+    padding: 0 18px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--sunk);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+}
+
+.m-btn--primary {
+    background: var(--brand);
+    color: var(--brand-ink);
+    border-color: transparent;
+}
+
+.m-btn--danger {
+    background: var(--danger-wash);
+    color: var(--danger);
+    border-color: transparent;
+}
+
+.m-btn--block {
+    width: 100%;
+}
+
+.m-btn:disabled {
+    opacity: 0.5;
+}
+
+.m-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.m-field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+}
+
+.m-field input,
+.m-field textarea,
+.m-field select {
+    min-height: var(--tap);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 10px 12px;
+    width: 100%;
+}
+
+.m-field input:focus-visible,
+.m-field textarea:focus-visible,
+.m-btn:focus-visible,
+.m-card:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.m-empty {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: var(--ink-faint);
+    padding: 40px 20px;
+    gap: 8px;
+}
+
+.m-note {
+    background: var(--sunk);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+}
+
+.m-note--danger {
+    background: var(--danger-wash);
+    color: var(--danger);
+}
+
+.m-muted {
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+}
+
+/* --- 하단 탭 ------------------------------------------------------------ */
+
+.m-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--surface);
+    border-top: 1px solid var(--rule);
+    flex: none;
+    /*
+     * 안전 영역 여백을 컨테이너에 주지 않는다. 그러면 탭 아래에 아무것도 없는
+     * 띠가 생겨 빈 공간처럼 보인다. 대신 탭 하나하나가 그 자리까지 내려가
+     * 눌리는 영역으로 채운다.
+     */
+}
+
+.m-tab {
+    min-height: var(--tap);
+    /* 아래쪽은 홈 인디케이터를 피하되, 눌리는 영역은 거기까지 이어진다. */
+    padding: 8px 4px calc(8px + var(--safe-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--ink-faint);
+}
+
+.m-tab--on {
+    color: var(--brand);
+}
+
+.m-tab svg {
+    opacity: 0.55;
+}
+
+.m-tab--on svg {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .m-tab,
+    .m-btn {
+        transition: color 0.15s ease, background-color 0.15s ease;
+    }
+}
+
+
+/* ---------------------------------------------------------------------------
+ * 아래에서 올라오는 시트
+ *
+ * 여러 화면이 쓴다(입력창의 첨부·에이전트 고르기, 대화 설정 …). 한 화면의
+ * scoped 스타일 안에 두면 다른 화면에서는 모양이 통째로 빠져 본문에 그냥
+ * 붙어 버린다 — 실제로 대화 설정이 그렇게 보였다.
+ * ------------------------------------------------------------------------- */
+.sheet {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: flex-end;
+    z-index: 50;
+}
+
+.sheet__panel {
+    width: 100%;
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    padding: 16px 16px calc(16px + var(--safe-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.sheet__title {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.sheet__item {
+    text-align: left;
+    padding: 12px;
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: var(--tap);
+}
+
+.sheet__item--on {
+    background: var(--brand-wash);
+    color: var(--brand);
+}
+

@@ -69,6 +69,17 @@ class UEngineBackend implements Backend {
         return { ok: false };
     }
 
+    async getDeterministicCodeList() {
+        // 호출부가 목록을 순회하므로 null 대신 빈 배열 반환
+        __warnUnsupported('getDeterministicCodeList');
+        return [];
+    }
+
+    async updateDeterministicCode(id: string, values: { code?: string; compensation?: string; parameters?: any }) {
+        __warnUnsupported('updateDeterministicCode');
+        return { ok: false };
+    }
+
     async watchNotifications(callback: (notification: any) => void) {
         // 호출부에서 unsubscribe 함수를 기대할 수 있어 noop 반환
         __warnUnsupported('watchNotifications');

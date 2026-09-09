@@ -43,7 +43,21 @@ export interface PropertySchema {
     task_type: string;
     property_key: string;
     property_label: string;
-    property_type: 'string' | 'number' | 'boolean' | 'select' | 'multiselect' | 'textarea' | 'url' | 'db-select' | 'formula' | 'date' | 'daterange' | 'user';
+    property_type:
+        | 'string'
+        | 'number'
+        | 'boolean'
+        | 'select'
+        | 'multiselect'
+        | 'textarea'
+        | 'url'
+        | 'db-select'
+        | 'formula'
+        | 'date'
+        | 'daterange'
+        | 'user'
+        | 'file'
+        | 'table';
     is_required: boolean;
     default_value?: string;
     options?: { label: string; value: any }[];
@@ -63,6 +77,10 @@ export interface PropertySchema {
     select_api_endpoint?: string;
     select_api_label_field?: string;
     select_api_value_field?: string;
+    /** 사용자 정의 속성 묶음(그룹). 없으면 기본 "일반" 섹션에 표시된다. */
+    group_key?: string | null;
+    group_label?: string | null;
+    group_order?: number | null;
     row_index?: number;
     col_span?: number;
     section_name?: string;
@@ -297,8 +315,52 @@ export const PROPERTY_TYPES = [
     { value: 'user', label: 'User' },
     { value: 'url', label: 'URL' },
     { value: 'db-select', label: 'DB-Select' },
-    { value: 'formula', label: 'Formula' }
+    { value: 'formula', label: 'Formula' },
+    { value: 'file', label: 'File' },
+    { value: 'table', label: 'Table' }
 ];
+
+/**
+ * 사용자 정의 속성을 그룹(묶음) 단위로 정렬해 돌려준다.
+ * group_key 가 없는 필드는 key='' 인 기본 그룹(속성패널의 "일반" 섹션)에 모인다.
+ * 그룹 순서는 group_order → 그룹 내 첫 필드의 display_order 순.
+ */
+export interface SchemaFieldGroup {
+    key: string;
+    label: string;
+    order: number;
+    fields: PropertySchema[];
+}
+
+export function groupSchemaFields(fields: Array<PropertySchema & Record<string, any>>): SchemaFieldGroup[] {
+    const groups = new Map<string, SchemaFieldGroup>();
+    for (const field of fields || []) {
+        const key = String(field?.group_key || '').trim();
+        const label = String(field?.group_label || '').trim();
+        const orderRaw = Number(field?.group_order);
+        const existing = groups.get(key);
+        if (existing) {
+            existing.fields.push(field);
+            if (!existing.label && label) existing.label = label;
+            if (Number.isFinite(orderRaw) && orderRaw !== 0 && existing.order === 0) existing.order = orderRaw;
+        } else {
+            groups.set(key, {
+                key,
+                label: key ? label || key : '',
+                order: Number.isFinite(orderRaw) ? orderRaw : 0,
+                fields: [field]
+            });
+        }
+    }
+    return Array.from(groups.values()).sort((a, b) => {
+        // 기본 그룹(무그룹)이 항상 먼저 — 기존 "일반" 섹션 위치를 유지한다.
+        if (!a.key !== !b.key) return a.key ? 1 : -1;
+        if (a.order !== b.order) return a.order - b.order;
+        const aFirst = a.fields[0]?.display_order || 0;
+        const bFirst = b.fields[0]?.display_order || 0;
+        return aFirst - bFirst;
+    });
+}
 
 export const APPLIES_TO_OPTIONS = [
     { value: 'both', label: 'Process + Task', labelKo: '프로세스 + Task' },
@@ -312,6 +374,56 @@ export const APPLIES_TO_OPTIONS = [
             label: taskType.replace(/^bpmn:/, ''),
             labelKo: taskType.replace(/^bpmn:/, '')
         }))
+];
+
+/**
+ * 속성패널 섹션 dispatch 정의 — 패널(ProcessHierarchyProperties)과 스튜디오 미리보기가 공유한다.
+ * scope/key = 섹션 위치를 결정하는 anchor 스키마 행, fallbackOrder = 행이 없을 때 기본 위치,
+ * contentKeys = 섹션 안에 렌더되는 같은 scope 의 행 키 목록 (생략 시 anchor 행 하나).
+ */
+export interface PanelSectionDef {
+    id: string;
+    scope: string;
+    key: string;
+    fallbackOrder: number;
+    contentKeys?: string[];
+}
+
+export const PROCESS_PANEL_SECTION_DEFS: PanelSectionDef[] = [
+    // PPI 는 관리자가 스코프를 옮길 수 있는 섹션 — process 스코프 행이 있을 때만 렌더된다
+    { id: 'ppi', scope: 'process', key: 'ppi', fallbackOrder: 45 },
+    { id: 'manual_links', scope: 'process', key: 'manual_links', fallbackOrder: 50 },
+    { id: 'api_integrations_summary', scope: 'process', key: 'api_integrations_summary', fallbackOrder: 60 },
+    { id: 'system_list', scope: 'process', key: 'system_list', fallbackOrder: 70 },
+    { id: 'related_project_list', scope: 'process', key: 'related_project_list', fallbackOrder: 80 },
+    { id: 'total_duration', scope: 'process', key: 'total_duration', fallbackOrder: 90 },
+    { id: 'total_cost', scope: 'process', key: 'total_cost', fallbackOrder: 100 },
+    { id: 'task_count', scope: 'process', key: 'task_count', fallbackOrder: 110 }
+];
+
+export const TASK_PANEL_SECTION_DEFS: PanelSectionDef[] = [
+    { id: 'seqflow', scope: 'bpmn:SequenceFlow', key: 'name', fallbackOrder: 10, contentKeys: ['name', 'flow_type', 'condition_expression', 'condition_llm_mode'] },
+    { id: 'pool_exec', scope: 'bpmn:Participant', key: 'exec_pool', fallbackOrder: 10 },
+    { id: 'pool_ppi', scope: 'bpmn:Participant', key: 'ppi', fallbackOrder: 20 },
+    { id: 'lane_basic', scope: 'bpmn:Lane', key: 'name', fallbackOrder: 10, contentKeys: ['name', 'description'] },
+    { id: 'lane_assignment', scope: 'bpmn:Lane', key: 'lane_assignment', fallbackOrder: 30 },
+    { id: 'call_activity', scope: 'bpmn:CallActivity', key: 'definition_link', fallbackOrder: 10 },
+    { id: 'dmn', scope: 'bpmn:BusinessRuleTask', key: 'dmn_rule', fallbackOrder: 10 },
+    { id: 'send_mail', scope: 'bpmn:SendTask', key: 'mail_recipients', fallbackOrder: 10, contentKeys: ['mail_recipients', 'mail_title', 'mail_contents'] },
+    { id: 'data_io', scope: 'task', key: 'data_io', fallbackOrder: 90 },
+    { id: 'task_basic', scope: 'task', key: 'name', fallbackOrder: 20 },
+    // 사용자 정의 그룹 섹션은 일반(task_basic) 바로 뒤에 고정 (같은 order, 정의 순서로 뒤)
+    { id: 'custom_groups', scope: 'task', key: 'name', fallbackOrder: 20 },
+    { id: 'form_link', scope: 'task', key: 'form_link', fallbackOrder: 40 },
+    { id: 'raci', scope: 'task', key: 'raci', fallbackOrder: 50 },
+    { id: 'task_io', scope: 'task', key: 'task_io', fallbackOrder: 60 },
+    { id: 'manual_links_t', scope: 'task', key: 'manual_links', fallbackOrder: 70 },
+    { id: 'api_integrations', scope: 'task', key: 'api_integrations', fallbackOrder: 80 },
+    { id: 'attachment', scope: 'bpmn:DataObjectReference', key: 'attachment', fallbackOrder: 10 },
+    { id: 'costing', scope: 'task', key: 'fte_calculator', fallbackOrder: 100 },
+    { id: 'system_mapping', scope: 'task', key: 'system_mapping', fallbackOrder: 120 },
+    { id: 'related_projects', scope: 'task', key: 'related_project_mapping', fallbackOrder: 130 },
+    { id: 'pi_flag', scope: 'task', key: 'pi_flag', fallbackOrder: 140 }
 ];
 
 export const useTaskCatalogStore = defineStore({
@@ -890,6 +1002,15 @@ export const useTaskCatalogStore = defineStore({
             if (row.deleted_at) return false;
             if (row.is_active === false) return false;
             return row.visible_by_default !== false;
+        },
+
+        // 내장(panel) 속성 행 자체를 돌려준다 — 라벨/placeholder/필수/읽기전용 커스텀에 사용
+        builtinProp: (state) => (taskType: string, key: string) => {
+            return (
+                state.propertySchemas.find(
+                    (s) => isPanelPropertySchema(s) && panelPropertyScope(s) === taskType && s.property_key === key
+                ) || null
+            );
         },
 
         // 관리자가 라벨을 바꿨으면 그 라벨을, 아니면 패널의 기본 라벨을 사용

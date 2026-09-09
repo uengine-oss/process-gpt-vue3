@@ -357,13 +357,10 @@
                                 { title: '휴지통', icon: 'trash', to: '/admin-console/recycle-bin' },
                                 { title: '시스템 운영', icon: 'settings', to: '/admin-console/system-operations' },
                                 { title: 'KPI 목표', icon: 'target', to: '/admin-console/kpi-targets' },
-                                { title: 'KPI 목표 - 신규', icon: 'target', to: '/admin-console/kpi-targets-new' },
                                 { title: '사용 활성도', icon: 'graph-up-linear', to: '/admin-console/usage-adoption' },
                                 { title: '감사 로그', icon: 'document', to: '/admin-console/audit-trail' },
-                                { title: '실행 인스턴스', icon: 'play-outline', to: '/admin-console/exec-instances' },
                                 { title: 'PI Flag', icon: 'flag-line-duotone', to: '/admin-console/pi-flags' },
                                 { title: 'Task 종류 설정', icon: 'completed-task', to: '/admin-console/task-types' },
-                                { title: '시스템 관리', icon: 'server-line-duotone', to: '/systems' },
                                 { title: '업무분장', icon: 'users-group-rounded-line-duotone', to: '/work-assignment' },
                                 { title: '사내 정책문서', icon: 'submit-document', to: '/policy-document' }
                             ]"
@@ -773,7 +770,7 @@ export default {
             }
 
             // 프로세스 관리 메뉴 (프로세스 정의/업로드/내보내기는 아래 프로세스 섹션에 표시)
-            // PAL 모드에서는 프로세스 리뷰보드·내 수신함 숨김
+            // 리뷰보드는 모든 모드에 표시하고, PAL 모드에서는 내 수신함 대신 프로세스 리스트를 표시한다.
             this.processItem = [
                 {
                     title: 'processArchitecture.title',
@@ -789,6 +786,13 @@ export default {
                     to: '/version-comparison',
                     disable: false
                 },
+                {
+                    title: 'reviewBoard.title',
+                    icon: 'submit-document',
+                    BgColor: 'primary',
+                    to: '/review-board',
+                    disable: false
+                },
                 ...(this.pal
                     ? [
                           {
@@ -800,13 +804,6 @@ export default {
                           }
                       ]
                     : [
-                          {
-                              title: 'reviewBoard.title',
-                              icon: 'submit-document',
-                              BgColor: 'primary',
-                              to: '/review-board',
-                              disable: false
-                          },
                           {
                               title: 'reviewBoard.myInbox',
                               icon: 'submit-document',

@@ -93,7 +93,7 @@ export default defineConfig({
             // 여기서 대신한다 (/completion/langchain-chat/x -> /langchain-chat/x).
             // (반드시 아래 '/complete' 보다 먼저 매칭되도록 최상단에 둔다.)
             '/completion/': {
-                target: 'http://127.0.0.1:8099',
+                target: 'http://127.0.0.1:8000',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/completion/, '')
             },

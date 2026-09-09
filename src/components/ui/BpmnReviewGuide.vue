@@ -252,7 +252,7 @@
         <div class="callout-icon">🎉</div>
         <div class="callout-body">
           <h4>체크리스트를 다 확인하셨나요? 수고하셨어요!</h4>
-          <p>'<strong>검토의견</strong>' 패널에서 <strong>피드백 등록</strong> 버튼을 눌러 의견을 남겨주세요. 어디서부터 써야 할지 모르겠다면, PI팀 담당자에게 편하게 물어봐 주세요. 😊</p>
+          <p>'<strong>검토의견</strong>' 패널에서 <strong>피드백 등록</strong> 버튼을 눌러 의견을 남겨주세요. 어디서부터 써야 할지 모르겠다면, 프로세스 담당자에게 편하게 물어봐 주세요. 😊</p>
         </div>
       </div>
 

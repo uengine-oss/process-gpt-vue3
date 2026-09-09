@@ -814,6 +814,9 @@ import BPMNXmlGenerator from '@/components/BPMNXmlGenerator.vue';
 import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import ArtifactPanel from '@/components/ArtifactPanel.vue';
 import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/processArtifactPanel.js';
+import { buildHitlPanel, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
+import { shouldGenerateChatRoomName as sharedShouldGenerateChatRoomName } from '@/shared/chatRoom/index.js';
+import { formatToolName as sharedFormatToolName } from '@/shared/toolNames/index.js';
 import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
@@ -3999,141 +4002,6 @@ export default {
             });
         },
 
-        /**
-         * deepagent `request_human_input` 의 자유텍스트 질문을 선택 패널용 구조로 파싱.
-         * 스킬(03 elicit-artifacts) 포맷을 인식한다:
-         *   [프로세스] 질문...            ← 질문 헤더(대괄호 뒤 텍스트 있음)
-         *   [스킬 — ...]                  ← 섹션(대괄호만)
-         *   • 라벨: 설명                  ← 선택 항목
-         * 항목이 하나도 없으면 items=[] 로 두고 자유입력(allow_other)만으로 응답하게 한다.
-         */
-        /**
-         * 멀티프로세스 일괄 HITL 페이로드 파싱.
-         * 에이전트가 request_human_input 의 question/context 에 아래 JSON 을 넣으면 프로세스별 페이지 질문으로 변환.
-         *  consult:    {"multi_process":true,"stage":"consult","processes":[{"name","draft"},...]}
-         *  candidates: {"multi_process":true,"stage":"candidates","processes":[{"name","skills":[{label,desc}],"agents":[...],"dmn":[...]},...]}
-         */
-        _parseMultiProcessHitl(text) {
-            const raw = (text || '').toString();
-            if (raw.indexOf('multi_process') === -1) return null;
-            // "multi_process" 를 감싸는 첫 번째 '균형 잡힌' { ... } 객체만 추출(배열 래핑·중복 출력에도 견고).
-            let obj = null;
-            const key = raw.indexOf('"multi_process"');
-            const start = key >= 0 ? raw.lastIndexOf('{', key) : -1;
-            if (start >= 0) {
-                let depth = 0;
-                let end = -1;
-                let inStr = false;
-                let esc = false;
-                for (let j = start; j < raw.length; j++) {
-                    const c = raw[j];
-                    if (inStr) {
-                        if (esc) esc = false;
-                        else if (c === '\\') esc = true;
-                        else if (c === '"') inStr = false;
-                    } else if (c === '"') inStr = true;
-                    else if (c === '{') depth++;
-                    else if (c === '}') {
-                        depth--;
-                        if (depth === 0) {
-                            end = j;
-                            break;
-                        }
-                    }
-                }
-                if (end > start) {
-                    try {
-                        obj = JSON.parse(raw.slice(start, end + 1));
-                    } catch (e) {
-                        obj = null;
-                    }
-                }
-            }
-            if (!obj || !obj.multi_process || !Array.isArray(obj.processes) || obj.processes.length < 2) return null;
-            const stage = obj.stage === 'candidates' ? 'candidates' : 'consult';
-            const questions = [];
-            obj.processes.forEach((p, pi) => {
-                const name = (p?.name || `프로세스 ${pi + 1}`).toString().trim();
-                if (stage === 'consult') {
-                    questions.push({
-                        question_id: `mp-${pi}-consult`,
-                        process: name,
-                        prompt: `[${name}] 초안 검토`,
-                        context: (p?.draft || '').toString(),
-                        feedback_type: 'approve_reject_with_edit',
-                        target_type: 'consult'
-                    });
-                } else {
-                    const addKind = (kind, label, arr) => {
-                        const items = (Array.isArray(arr) ? arr : [])
-                            .map((c, ci) => {
-                                const lab = (typeof c === 'string' ? c : c?.label || c?.name || '').toString().trim();
-                                if (!lab) return null;
-                                return {
-                                    id: `${name}::${kind}::${ci}::${lab}`,
-                                    label: lab,
-                                    description: (typeof c === 'object' ? c?.desc || c?.description || '' : '').toString()
-                                };
-                            })
-                            .filter(Boolean);
-                        if (!items.length) return;
-                        questions.push({
-                            question_id: `mp-${pi}-${kind}`,
-                            process: name,
-                            prompt: `[${name}] ${label}`,
-                            feedback_type: 'select_items',
-                            items,
-                            allow_multiple: true,
-                            min_select: 0,
-                            allow_other: true,
-                            target_type: kind
-                        });
-                    };
-                    addKind('skills', '스킬', p?.skills);
-                    addKind('agents', '에이전트', p?.agents);
-                    addKind('dmn', 'DMN', p?.dmn);
-                }
-            });
-            if (!questions.length) return null;
-            return { stage, questions };
-        },
-
-        parseHumanInputQuestion(raw) {
-            const text = String(raw || '');
-            const lines = text.split('\n');
-            let question = '';
-            let category = '';
-            const items = [];
-            for (const line of lines) {
-                const t = (line || '').trim();
-                if (!t) continue;
-                if (/^[•\-*]\s+/.test(t)) {
-                    const body = t.replace(/^[•\-*]\s+/, '');
-                    const ci = body.indexOf(':');
-                    const label = (ci >= 0 ? body.slice(0, ci) : body).trim();
-                    const desc = ci >= 0 ? body.slice(ci + 1).trim() : '';
-                    if (label) {
-                        // id 에 인덱스를 포함해 라벨이 같아도 항상 고유하게(같은 이름이면 한 번에 다 선택되던 버그 방지).
-                        items.push({
-                            id: `${category || 'opt'}::${items.length}::${label}`,
-                            label,
-                            description: category ? (desc ? `${desc}` : '') : desc,
-                            category
-                        });
-                    }
-                    continue;
-                }
-                // 섹션 헤더: `[스킬]`, `[스킬]:`, `[에이전트] :` 등 뒤따르는 콜론/공백 허용.
-                const secMatch = t.match(/^\[([^\]]+)\]\s*:?\s*$/);
-                if (secMatch) {
-                    category = secMatch[1].split(/[—\-:]/)[0].trim();
-                    continue;
-                }
-                if (!question) question = t; // 첫 일반/질문 라인
-            }
-            return { question: question || text.trim(), items };
-        },
-
         /** request_human_input 호출을 스트리밍 중인 어시스턴트 메시지에 HITL 패널로 부착(plan_tools 경로). */
         attachDeepagentHitlPanel(agentId, args) {
             const msg = this.activeStreams?.[agentId];
@@ -4160,20 +4028,9 @@ export default {
             const content = (msg.content || '').toString().trim();
             if (!content) return;
 
-            // Keep these matchers ASCII-only: this legacy SFC has previously been
-            // saved through non-UTF8 tooling, which can corrupt literal Korean regexes.
-            const hasCandidateSectionsUnicode = /\[(?:\uC2A4\uD0AC|\uC5D0\uC774\uC804\uD2B8|DMN|skill|agent)\]/i.test(content);
-            const isCandidateRequestUnicode =
-                hasCandidateSectionsUnicode && /(?:\uC120\uD0DD|\uACE0\uB974|\uCD94\uAC00|\uD6C4\uBCF4)/i.test(content);
-            const isConsultingRequestUnicode =
-                /(?:\uC774\uB300\uB85C\s*\uC9C4\uD589\uD560\uAE4C\uC694|\uCD94\uAC00\uD558\uAC70\uB098\s*\uBC14\uAFC0\s*\uB2E8\uACC4|\uCD08\uC548.*(?:\uC2B9\uC778|\uC9C4\uD589))/i.test(
-                    content
-                );
-
-            const hasCandidateSections = /\[(?:스킬|에이전트|DMN|skill|agent)\]/i.test(content);
-            const isCandidateRequest = hasCandidateSections && /(선택|골라|추가할|안 고르면|후보)/i.test(content);
-            const isConsultingRequest = /(이대로 진행할까요|초안.*(?:승인|진행)|추가하거나 바꿀 단계)/i.test(content);
-            if (!isCandidateRequest && !isConsultingRequest && !isCandidateRequestUnicode && !isConsultingRequestUnicode) return;
+            // 승인 대기였는지 판별하는 규칙도 @/shared/hitl 에 있다. 여기에 따로 두면
+            // 모바일과 갈라져, 한쪽에서만 답할 곳이 사라진다.
+            if (!shouldRestoreFromAssistantContent(content)) return;
 
             const firstLine = content.split(/\r?\n/).find((line) => line.trim()) || '';
             this._buildDeepagentHitlPanel(msg, {
@@ -4206,7 +4063,7 @@ export default {
             const bodyText = (context || '').toString().trim();
             // 모델이 초안/후보를 question 또는 context 어디에 넣든 잡을 수 있게 둘을 합쳐 파싱한다.
             const combined = [headerQ, bodyText].filter(Boolean).join('\n\n');
-            const parsed = this.parseHumanInputQuestion(combined);
+            const panel = buildHitlPanel({ question: headerQ, context: bodyText, options, multiSelect });
             msg.runState = {
                 ...(msg.runState || {}),
                 tool_name: 'request_human_input',
@@ -4219,21 +4076,17 @@ export default {
             if (convId) this.pendingHitlRunState[convId] = msg.runState;
 
             // 멀티프로세스 일괄 HITL: 프로세스별 페이지네이션(컨설팅/후보)을 multi-question 패널로 구성.
-            const mp = this._parseMultiProcessHitl(combined);
-            if (mp) {
+            if (panel.kind === 'multi_process') {
                 msg.__humanFeedback = {
                     user_request_type: 'ask_user',
                     context: '',
                     allow_skip: false,
                     question_id: `${msg.uuid || 'hitl'}-mp`,
                     __submittedText: '',
-                    question:
-                        mp.stage === 'consult'
-                            ? '각 프로세스 초안을 검토해 주세요 (다음으로 페이지 이동)'
-                            : '각 프로세스에 추가할 스킬·에이전트·DMN을 선택해 주세요 (다음으로 페이지 이동)',
-                    questions: mp.questions,
+                    question: panel.question,
+                    questions: panel.questions,
                     __groupBy: 'process',
-                    __mpStage: mp.stage,
+                    __mpStage: panel.stage,
                     __deepagentHitl: true,
                     __submitted: false
                 };
@@ -4245,7 +4098,7 @@ export default {
 
             const baseFeedback = {
                 user_request_type: 'ask_user',
-                question: headerQ || parsed.question || '확인이 필요합니다.',
+                question: panel.question,
                 context: '',
                 allow_skip: true,
                 question_id: `${msg.uuid || 'hitl'}-deepagent`,
@@ -4253,61 +4106,26 @@ export default {
                 __submitted: false,
                 __submittedText: ''
             };
-            // request_human_input의 options 파라미터(구조화, 신규)가 있으면 프로즈 파싱보다
-            // 우선한다 — 모델이 `[카테고리]`+불릿 텍스트 컨벤션을 안 지켜도 항상 정확히 렌더링된다.
-            const structuredItems =
-                Array.isArray(options) && options.length
-                    ? options
-                          .map((o, idx) => ({
-                              id: `opt::${idx}::${(o?.label || '').toString()}`,
-                              label: (o?.label || '').toString(),
-                              description: (o?.description || '').toString()
-                          }))
-                          .filter((it) => it.label)
-                    : [];
-            // select_items 는 (a) 구조화된 options 가 있거나, (b) **2단계 후보(스킬/에이전트/DMN) 형식**
-            // 프로즈일 때만. 컨설팅 초안처럼 카테고리 없는 불릿/번호는 선택지가 아니라 본문이므로
-            // approve_reject 로 보여준다.
-            // ⚠️ 카테고리가 '있기만' 하면 체크박스로 렌더하던 과거 로직은, 컨설팅 초안이 임의의
-            //   `[제목]` 머리글을 포함하면 승인/반려가 아닌 체크박스로 오인 렌더되는 간헐 버그의 원인이었다.
-            //   → 알려진 후보 카테고리(스킬/에이전트/DMN)일 때만 select_items 로 확정한다.
-            const CANDIDATE_CATEGORIES = ['스킬', '에이전트', 'dmn', 'skill', 'agent'];
-            const isCandidateCategory = (c) => {
-                const k = (c || '').toString().trim().toLowerCase();
-                return !!k && CANDIDATE_CATEGORIES.some((cc) => k === cc || k.includes(cc));
-            };
-            const hasCategorizedItems =
-                structuredItems.length > 0 || (parsed.items.length > 0 && parsed.items.some((it) => isCandidateCategory(it.category)));
-            if (hasCategorizedItems) {
-                const items = structuredItems.length
-                    ? structuredItems
-                    : parsed.items.map((it) => ({
-                          id: it.id,
-                          label: it.category ? `[${it.category}] ${it.label}` : it.label,
-                          description: it.description || ''
-                      }));
+            // 승인이냐 선택이냐는 @/shared/hitl 이 정한다. 여기서 다시 판단하면
+            // 모바일 화면과 갈라지고, 갈라지면 승인해야 할 것이 체크박스로 뜬다.
+            if (panel.kind === 'select_items') {
                 msg.__humanFeedback = {
                     ...baseFeedback,
-                    // 후보가 question 전체에 들어온 경우 headerQ 는 후보까지 포함하므로,
-                    // 패널 헤더는 첫 줄(제목)인 parsed.question 을 쓴다(후보는 items 로 표시).
-                    question: headerQ || parsed.question || '추가할 항목을 골라주세요',
                     feedback_type: 'select_items',
-                    items,
+                    items: panel.items,
                     suggestions: [],
-                    allow_multiple: structuredItems.length ? Boolean(multiSelect) : true,
-                    min_select: 0,
-                    allow_other: true
+                    allow_multiple: panel.allowMultiple,
+                    min_select: panel.minSelect,
+                    allow_other: panel.allowOther
                 };
                 msg.content = ''; // 후보는 패널 목록으로 보여주므로 본문 비움
             } else {
                 // 후보 없음 → 컨설팅 승인형: 승인/반려 버튼 + 자유 수정 입력.
-                // 초안은 패널 context 로만 보여주고 메시지 본문은 비운다(본문+패널 중복 표시 방지).
-                const draft = combined;
+                // 초안은 패널 context 로만 보여주고 본문은 비운다(중복 표시 방지).
                 msg.content = '';
                 msg.__humanFeedback = {
                     ...baseFeedback,
-                    question: headerQ || '이대로 진행할까요?',
-                    context: draft,
+                    context: panel.context,
                     feedback_type: 'approve_reject_with_edit',
                     items: [],
                     suggestions: []
@@ -5236,16 +5054,9 @@ export default {
         },
 
         shouldGenerateChatRoomName(room) {
-            if (!room) return false;
-            if (room.context?.auto_name_pending === true) return true;
-            if (room.context?.auto_name_pending === false) return false;
-            const name = String(room.name || '')
-                .trim()
-                .toLowerCase();
-            const translated = String(this.$t('chatListing.newChat') || '')
-                .trim()
-                .toLowerCase();
-            return !name || [translated, '새 대화', 'new chat', 'chat'].filter(Boolean).includes(name);
+            // 규칙은 @/shared/chatRoom 한 곳에 둔다 — 앱과 웹이 갈라지면
+            // 한쪽에서만 이름이 안 붙는다(실제로 앱이 그랬다).
+            return sharedShouldGenerateChatRoomName(room, this.$t('chatListing.newChat'));
         },
 
         // ===== 자동 추천(초대) =====
@@ -6122,10 +5933,16 @@ export default {
          * DeepAgent may first write a selected skill under the room root and
          * later copy it under the single process-* directory. Those are the
          * same artifact and must not create a second tab or duplicate row.
+         *
+         * 방 초안(.bpmn/<room>/)과 체크아웃(.checkouts/<room>/)도 같은 산출물로 본다.
+         * 스킬을 만든 방에서 이어서 고치면 생성분은 초안 경로로, 수정분은 체크아웃 경로로
+         * 오는데 둘을 다른 파일로 취급하면 작업 폴더에 같은 SKILL.md 가 '생성'·'수정' 두 줄로
+         * 쌓인다. 사용자는 무엇을 저장하는지 분간할 수 없고, 저장 시 두 벌이 함께 패키징되어
+         * 낡은 초안이 방금 한 수정을 덮어쓸 수 있다.
          */
         _workspaceLogicalPath(path) {
             const normalized = (path || '').toString().replace(/\\/g, '/');
-            const matched = normalized.match(/\/\.bpmn\/[^/]+\/(?:process-[^/]+\/)?(.+)$/);
+            const matched = normalized.match(/\/\.(?:bpmn|checkouts)\/[^/]+\/(?:process-[^/]+\/)?(.+)$/);
             return (matched ? matched[1] : normalized).toLowerCase();
         },
         /**
@@ -8295,23 +8112,9 @@ export default {
 
         /** Chat.vue / WorkAssistantChatPanel과 동일한 도구 표시명 (스트리밍 onToolStart에서 사용) */
         formatToolName(name) {
-            if (!name) return '';
-            const raw = name.toString();
-            const key = raw.split('__').pop();
-            const toolNameMap = {
-                get_process_list: '프로세스 목록 조회',
-                get_process_detail: '프로세스 상세 조회',
-                get_form_fields: '폼 필드 조회',
-                execute_process: '프로세스 실행',
-                get_instance_list: '인스턴스 목록 조회',
-                get_todolist: '할일 목록 조회',
-                get_organization: '조직도 조회',
-                ask_user: '사용자 확인 요청',
-                create_consulting_process_workitem: '컨설팅 기반 프로세스 생성',
-                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청',
-                get_current_user: '사용자 정보 조회'
-            };
-            return toolNameMap[key] || key;
+            // 표는 @/shared/toolNames 한 곳에 둔다 — 세 화면이 각자 갖고 있으면
+            // 새 도구가 생길 때 한 곳만 고쳐진다.
+            return sharedFormatToolName(name);
         },
 
         async streamAgents(agentTargets, userText, payload) {

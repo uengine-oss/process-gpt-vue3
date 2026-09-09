@@ -65,6 +65,15 @@ export default {
         node: {
             type: Object,
             default: {}
+        },
+        /**
+         * 읽기 전용 모드 (조직도-before 화면 전용).
+         * true 면 노드의 편집 진입점(루트명 수정 · 에이전트 편집)을 모두 막는다.
+         * 기본값 false 이므로 기존 화면 동작은 그대로다.
+         */
+        readonly: {
+            type: Boolean,
+            default: false
         }
     },
     data: () => ({
@@ -115,7 +124,7 @@ export default {
                     const displayName = userData.username || content.name;
                     const currentUid = localStorage.getItem('uid');
                     const currentUser = this.userList.find((u) => u.id === currentUid);
-                    const canEditRootName = isRoot && currentUser && currentUser.role === 'superAdmin';
+                    const canEditRootName = !this.readonly && isRoot && currentUser && currentUser.role === 'superAdmin';
                     const editBtn = canEditRootName
                         ? `<div class="node-content-btn-box"><div class="node-content-btn edit-root-name-btn"><i class="mdi mdi-pencil node-content-icon"></i></div></div>`
                         : '';
@@ -580,6 +589,7 @@ export default {
         handleAgentEditFromBadges(agentData) {
             // AgentBadgesDiagram에서 수정 버튼 클릭 시 호출
             // selectedAgent를 editNode로 설정하고 수정 다이얼로그 열기
+            if (this.readonly) return;
             if (agentData) {
                 // 조직도에서 해당 에이전트 노드 찾기
                 const foundNode = this.findOriginalNodeById(this.node, agentData.id);

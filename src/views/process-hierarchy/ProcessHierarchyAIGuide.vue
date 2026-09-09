@@ -507,7 +507,7 @@ const ownerRows = computed(() => {
             .map((id, idx) => ({ key: `${label}-${id}-${idx}`, text: labelFor(id) }));
         if (chips.length > 0) rows.push({ label, chips });
     };
-    if (owners.primaryOwner) pushRow('PI팀 담당자', [owners.primaryOwner]);
+    if (owners.primaryOwner) pushRow('프로세스 담당자', [owners.primaryOwner]);
     if (owners.fieldOwners?.length) pushRow('현업담당자', owners.fieldOwners);
     if (owners.hqOwners?.length) pushRow('검토담당자', owners.hqOwners);
     if (owners.masterOwner) pushRow('최종검토자', [owners.masterOwner]);

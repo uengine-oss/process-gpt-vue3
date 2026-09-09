@@ -7,7 +7,7 @@
                 :variant="variant"
                 :size="size"
                 class="progress-badge"
-                :class="{ 'progress-badge-clickable': clickable }"
+                :class="[badgeStatusClass, { 'progress-badge-clickable': clickable }]"
                 @click="handleClick"
             >
                 <v-icon v-if="showIcon" :size="iconSize" start>{{ statusIcon }}</v-icon>
@@ -24,7 +24,7 @@
         :variant="variant"
         :size="size"
         class="progress-badge"
-        :class="{ 'progress-badge-clickable': clickable }"
+        :class="[badgeStatusClass, { 'progress-badge-clickable': clickable }]"
         @click="handleClick"
     >
         <v-icon v-if="showIcon" :size="iconSize" start>{{ statusIcon }}</v-icon>
@@ -199,6 +199,18 @@ export default {
             //     return this.$t('progressBadge.publicReviewTooltip') || '본사/현업 검토가 승인되었습니다. 자유롭게 의견을 남겨주세요.';
             // }
             return '';
+        },
+        /**
+         * 상태별 CSS 훅 클래스 (예: progress-badge--final-edit).
+         * Vuetify tonal 칩은 글자색 = 배경색이라 amber/grey 계열에서 대비가 무너지는데,
+         * 칩 색은 v-chip 이 .text-<color> 로 !important 를 걸어 scoped CSS 로는 못 덮는다.
+         * 여기서는 훅 클래스만 붙이고 실제 글자색은 Pal 모드 전용 SKGlobalStyle.scss 에서
+         * 지정한다 — 비 Pal 화면은 이 클래스가 정의되지 않아 기존 색 그대로다.
+         */
+        badgeStatusClass() {
+            if (this.type !== 'status') return '';
+            const status = String(this.status || 'none').replace(/_/g, '-');
+            return `progress-badge--${status}`;
         },
         badgeColor() {
             if (this.type === 'status') {
