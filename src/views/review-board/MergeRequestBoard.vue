@@ -7,6 +7,7 @@ import PrReviewTimeline from '@/components/pr/PrReviewTimeline.vue';
 import PrReviewForm from '@/components/pr/PrReviewForm.vue';
 import PrMergeSection from '@/components/pr/PrMergeSection.vue';
 import PrVerification from '@/components/pr/PrVerification.vue';
+import PrChanges from '@/components/pr/PrChanges.vue';
 import {
     prStatusLabel,
     prStatusColor,
@@ -17,6 +18,7 @@ import {
     resourceTypeLabel,
     resourcePath
 } from '@/composables/usePrUtils';
+import { prHeadline, meaningfulPrDescription, loadPrSummaries } from '@/composables/usePrChanges';
 
 const backend = BackendFactory.createBackend() as any;
 const router = useRouter();
@@ -87,16 +89,20 @@ const canReviewSelected = computed(
     () => !!selectedPr.value && selectedPr.value.can_review && ACTIVE_STATUSES.includes(selectedPr.value.status)
 );
 /**
- * 병합 전 검증은 스킬 병합 요청이면서 깃 PR 번호가 있을 때만 돌릴 수 있다.
- * (검증은 base/head 두 브랜치를 실제로 펼쳐 실행하므로 깃에 올라간 요청이어야 한다.)
+ * 병합 전 검증을 돌릴 수 있는 요청인가.
+ *
+ * 스킬은 base/head 두 브랜치를 실제로 펼쳐 실행하므로 깃에 올라간 요청이어야 한다.
+ * 프로세스는 깃이 아니라 `proc_def_version` 스냅샷을 두 벌 읽어 재생하므로 깃 PR 번호가
+ * 필요 없고, 대신 병합 요청 id 로 회차를 건다.
  */
-const canVerifySelected = computed(
-    () =>
-        !!selectedPr.value &&
-        (selectedPr.value.resource_type || 'skill') === 'skill' &&
-        !!selectedPr.value.git_pr_number &&
-        !!selectedPr.value.resource_id
-);
+const canVerifySelected = computed(() => {
+    const pr = selectedPr.value;
+    if (!pr || !pr.resource_id) return false;
+    const type = pr.resource_type || 'skill';
+    if (type === 'skill') return !!pr.git_pr_number;
+    // 프로세스는 proc_def_version 스냅샷을, 의사결정은 규칙 표를 두 벌 읽어 비교한다.
+    return (type === 'bpmn' || type === 'dmn') && !!pr.id;
+});
 
 /**
  * 병합 버튼 위에 띄울 한 줄. 리소스 화면과 같은 기준으로, "아직 안 돌렸다" 도 알려준다 —
@@ -156,6 +162,9 @@ async function load() {
         reviewsByPr.value = await backend.getResourcePrReviewsByPrIds(prs.value.map((pr) => pr.id));
 
         if (selectedPrId.value && !prs.value.some((pr) => pr.id === selectedPrId.value)) selectedPrId.value = null;
+        // 선택된 게 없으면 첫 요청을 펼쳐 둔다. 빈 상세 패널은 화면 절반을 차지하고도
+        // 아무것도 알려주지 않아, 검토자가 한 번 더 클릭해야 할 이유가 없다.
+        if (!selectedPrId.value && filteredPrs.value.length) selectPr(filteredPrs.value[0]);
     } catch (error) {
         loadError.value = errorText(error) || '병합 요청을 불러오지 못했습니다.';
     } finally {
@@ -172,17 +181,68 @@ const EMPTY_VERIFICATION = {
     backfillStatus: null as string | null
 };
 
-const detailTab = ref<'reviews' | 'verify'>('reviews');
+/**
+ * 목록 카드에 걸 "무엇이 바뀌는가" 한 줄. 요청 id 로 찾는다.
+ * 제목이 `feat: update nda-review` 로 똑같은 요청이 여러 건 나란히 서는 화면이라,
+ * 이 줄이 없으면 목록에서 무엇을 먼저 볼지 고를 수가 없다.
+ */
+const summaryByPr = ref<Record<string, string>>({});
+let summaryRun = { aborted: false };
+
+/**
+ * 지금 화면에 걸린 요청들의 요약만 채운다.
+ * 전체를 한꺼번에 받으면 걸러 놓고 보지도 않을 요청까지 깃을 부르게 되므로,
+ * 필터가 바뀔 때마다 이전 작업을 접고 보이는 것부터 다시 채운다.
+ */
+function refreshSummaries() {
+    summaryRun.aborted = true;
+    const run = { aborted: false };
+    summaryRun = run;
+    const pending = filteredPrs.value.filter((pr) => !summaryByPr.value[pr.id]);
+    if (!pending.length) return;
+    loadPrSummaries(
+        backend,
+        pending,
+        (prId, summary) => {
+            summaryByPr.value = { ...summaryByPr.value, [prId]: summary };
+        },
+        { signal: run }
+    );
+}
+
+watch(filteredPrs, (visible) => {
+    refreshSummaries();
+    // 필터를 바꾸면 지금 골라 둔 요청이 목록에서 사라질 수 있다. 그대로 두면
+    // 목록에는 프로세스만 남았는데 상세에는 스킬이 열려 있는 어긋난 화면이 된다.
+    if (visible.length && !visible.some((pr) => pr.id === selectedPrId.value)) selectPr(visible[0]);
+});
+
+const detailTab = ref<'changes' | 'reviews' | 'verify'>('changes');
 const verification = ref({ ...EMPTY_VERIFICATION });
+/** 선택한 요청의 변경 내역 요약. PrChanges 가 계산해 올려 준다. */
+const changeSummary = ref<{ summary: string; count: number }>({ summary: '', count: 0 });
 
 function selectPr(pr: any) {
     selectedPrId.value = pr.id;
     reviewError.value = '';
     mergeError.value = '';
-    // 다른 요청의 판정이 잠깐이라도 남아 보이면 병합 직전 판단을 흐린다.
-    detailTab.value = 'reviews';
+    // 다른 요청의 판정이나 변경 내역이 잠깐이라도 남아 보이면 병합 직전 판단을 흐린다.
+    detailTab.value = 'changes';
     verification.value = { ...EMPTY_VERIFICATION };
+    changeSummary.value = { summary: '', count: 0 };
 }
+
+/**
+ * 상세 제목 자리에 세울 한 줄.
+ * 목록에서 이미 받아 둔 요약이 있으면 먼저 쓰고, 없으면 상세가 계산한 것을 쓴다 —
+ * 요청을 고르자마자 제목이 빈 채로 있다가 뒤늦게 바뀌는 일을 줄인다.
+ */
+const selectedHeadline = computed(() => {
+    const pr = selectedPr.value;
+    if (!pr) return '';
+    const summary = summaryByPr.value[pr.id] || changeSummary.value.summary || meaningfulPrDescription(pr);
+    return prHeadline(pr, summary);
+});
 
 function openResource(pr: any) {
     router.push(resourcePath(pr.resource_type, pr.resource_id));
@@ -244,263 +304,254 @@ onMounted(load);
 </script>
 
 <template>
-    <v-row class="justify-center ma-0 pa-0">
-        <v-col cols="12" class="pa-3">
-            <v-card elevation="10" class="mrb-card-root">
-                <v-card-text class="pt-4 d-flex flex-column" style="min-height: 0; flex: 1">
-                    <!-- 헤더 -->
-                    <div class="d-flex align-center justify-space-between mb-4 flex-wrap ga-2">
-                        <div>
-                            <h2 class="text-h5 font-weight-bold">
-                                병합 요청함
-                                <v-chip v-if="pendingCount" size="small" color="warning" variant="tonal" class="ml-2">
-                                    검토 대기 {{ pendingCount }}
-                                </v-chip>
-                            </h2>
-                            <span class="text-caption text-medium-emphasis">내가 검토해야 할 스킬·프로세스·의사결정 병합 요청입니다.</span>
-                        </div>
-                        <v-btn variant="outlined" size="small" :loading="loading" @click="load">
-                            <v-icon start size="16">mdi-refresh</v-icon>
-                            새로고침
-                        </v-btn>
+    <div>
+        <v-card elevation="10" class="mrb-card-root">
+            <v-card-text class="pt-4 d-flex flex-column" style="min-height: 0; flex: 1">
+                <!-- 헤더 -->
+                <div class="d-flex align-center justify-space-between mb-4 flex-wrap ga-2">
+                    <div>
+                        <h2 class="text-h5 font-weight-bold">
+                            병합 요청함
+                            <v-chip v-if="pendingCount" size="small" color="warning" variant="tonal" class="ml-2">
+                                검토 대기 {{ pendingCount }}
+                            </v-chip>
+                        </h2>
+                        <span class="text-caption text-medium-emphasis">내가 검토해야 할 스킬·프로세스·의사결정 병합 요청입니다.</span>
                     </div>
+                    <v-btn variant="outlined" size="small" :loading="loading" @click="load">
+                        <v-icon start size="16">mdi-refresh</v-icon>
+                        새로고침
+                    </v-btn>
+                </div>
 
-                    <v-divider />
+                <v-divider />
 
-                    <!-- 필터 -->
-                    <div class="d-flex align-center flex-wrap ga-4 py-1">
-                        <div class="d-flex align-center">
-                            <span class="text-caption text-medium-emphasis mr-2">종류</span>
-                            <v-chip-group v-model="typeFilter" mandatory selected-class="text-primary">
-                                <v-chip
-                                    v-for="option in typeOptions"
-                                    :key="`type-${option.key}`"
-                                    :value="option.key"
-                                    size="small"
-                                    variant="outlined"
-                                >
-                                    {{ option.label }}
-                                    <span class="text-medium-emphasis ml-1">{{ option.count }}</span>
-                                </v-chip>
-                            </v-chip-group>
-                        </div>
-                        <v-divider vertical class="my-2" />
-                        <div class="d-flex align-center">
-                            <span class="text-caption text-medium-emphasis mr-2">상태</span>
-                            <v-chip-group v-model="statusFilter" mandatory selected-class="text-primary">
-                                <v-chip
-                                    v-for="option in statusOptions"
-                                    :key="`status-${option.key}`"
-                                    :value="option.key"
-                                    size="small"
-                                    variant="outlined"
-                                >
-                                    {{ option.label }}
-                                    <span class="text-medium-emphasis ml-1">{{ option.count }}</span>
-                                </v-chip>
-                            </v-chip-group>
-                        </div>
+                <!-- 필터 -->
+                <div class="d-flex align-center flex-wrap ga-4 py-1">
+                    <div class="d-flex align-center">
+                        <span class="text-caption text-medium-emphasis mr-2">종류</span>
+                        <v-chip-group v-model="typeFilter" mandatory selected-class="text-primary">
+                            <v-chip
+                                v-for="option in typeOptions"
+                                :key="`type-${option.key}`"
+                                :value="option.key"
+                                size="small"
+                                variant="outlined"
+                            >
+                                {{ option.label }}
+                                <span class="text-medium-emphasis ml-1">{{ option.count }}</span>
+                            </v-chip>
+                        </v-chip-group>
                     </div>
+                    <v-divider vertical class="my-2" />
+                    <div class="d-flex align-center">
+                        <span class="text-caption text-medium-emphasis mr-2">상태</span>
+                        <v-chip-group v-model="statusFilter" mandatory selected-class="text-primary">
+                            <v-chip
+                                v-for="option in statusOptions"
+                                :key="`status-${option.key}`"
+                                :value="option.key"
+                                size="small"
+                                variant="outlined"
+                            >
+                                {{ option.label }}
+                                <span class="text-medium-emphasis ml-1">{{ option.count }}</span>
+                            </v-chip>
+                        </v-chip-group>
+                    </div>
+                </div>
 
-                    <v-divider class="mb-3" />
+                <v-divider class="mb-3" />
 
-                    <!-- 본문 -->
-                    <div class="mrb-body">
-                        <!-- 목록 -->
-                        <div class="mrb-list-pane">
-                            <div v-if="loading" class="d-flex justify-center py-12">
-                                <v-progress-circular indeterminate color="primary" />
-                            </div>
-                            <div v-else-if="loadError" class="mrb-empty">
-                                <v-icon size="40" color="grey-lighten-1">mdi-alert-circle-outline</v-icon>
-                                <div class="text-body-2 mt-3">{{ loadError }}</div>
-                                <v-btn class="mt-3" size="small" color="primary" variant="flat" @click="load">다시 시도</v-btn>
-                            </div>
-                            <div v-else-if="!filteredPrs.length" class="mrb-empty">
-                                <v-icon size="40" color="grey-lighten-2">mdi-source-pull</v-icon>
-                                <div class="text-body-2 text-medium-emphasis mt-3">검토할 병합 요청이 없습니다</div>
-                            </div>
-                            <div v-else class="d-flex flex-column ga-2">
-                                <v-card
-                                    v-for="pr in filteredPrs"
-                                    :key="pr.id"
-                                    variant="outlined"
-                                    :class="['mrb-item', { 'mrb-item--on': pr.id === selectedPrId }]"
-                                    @click="selectPr(pr)"
-                                >
-                                    <v-card-text class="d-flex align-start ga-3 py-3">
-                                        <v-avatar size="30" :color="pr.requester_profile ? undefined : getAvatarColor(pr.requester_name)">
-                                            <v-img v-if="pr.requester_profile" :src="pr.requester_profile" />
-                                            <span v-else class="text-white text-caption font-weight-bold">
-                                                {{ getInitial(pr.requester_name) }}
-                                            </span>
-                                        </v-avatar>
-                                        <div class="flex-grow-1" style="min-width: 0">
-                                            <div class="d-flex align-center flex-wrap ga-2">
-                                                <span class="text-body-2 font-weight-bold">{{ pr.title }}</span>
-                                                <v-chip size="x-small" :color="prStatusColor(pr.status)" variant="tonal">
-                                                    {{ prStatusLabel(pr.status) }}
-                                                </v-chip>
-                                                <!-- 내가 올렸는데 검토도 내 몫인 요청 — 왜 여기 있는지 알 수 있게 표시한다. -->
-                                                <v-chip v-if="pr.is_requester" size="x-small" variant="tonal" color="grey">
-                                                    내 요청
-                                                </v-chip>
-                                            </div>
-                                            <div class="d-flex align-center flex-wrap ga-1 mt-1 text-caption text-medium-emphasis">
-                                                <v-chip size="x-small" variant="tonal" color="primary">
-                                                    {{ resourceTypeLabel(pr.resource_type) }}
-                                                </v-chip>
-                                                <span class="mrb-resource">{{ pr.resource_name }}</span>
-                                                <span>·</span>
-                                                <span class="font-weight-medium">{{ pr.requester_name || '알 수 없음' }}</span>
-                                                <span>·</span>
-                                                <span>{{ formatRelativeTime(pr.updated_at || pr.created_at) }}</span>
-                                                <template v-if="latestActionText(pr)">
-                                                    <span>·</span>
-                                                    <span>{{ latestActionText(pr) }}</span>
-                                                </template>
-                                            </div>
-                                            <div class="d-flex align-center flex-wrap ga-1 mt-2 text-caption">
-                                                <code class="mrb-branch">{{ shortBranch(pr.branch_name) }}</code>
-                                                <v-icon size="12" color="grey">mdi-arrow-right</v-icon>
-                                                <code class="mrb-branch">{{ pr.base_branch }}</code>
-                                                <span v-if="pr.git_pr_number" class="text-medium-emphasis">#{{ pr.git_pr_number }}</span>
-                                                <v-chip v-if="!pr.owner_id" size="x-small" color="warning" variant="tonal">
-                                                    담당자 미지정
-                                                </v-chip>
-                                            </div>
-                                        </div>
-                                        <v-btn
-                                            v-if="pr.status === 'OPEN'"
-                                            size="small"
-                                            color="primary"
-                                            variant="flat"
-                                            @click.stop="selectPr(pr)"
-                                        >
-                                            검토
-                                        </v-btn>
-                                        <v-icon v-else size="18" color="grey-lighten-1">mdi-chevron-right</v-icon>
-                                    </v-card-text>
-                                </v-card>
-                            </div>
+                <!-- 본문 -->
+                <div class="mrb-body">
+                    <!-- 목록 -->
+                    <div class="mrb-list-pane">
+                        <div v-if="loading" class="d-flex justify-center py-12">
+                            <v-progress-circular indeterminate color="primary" />
                         </div>
-
-                        <!-- 상세 -->
-                        <v-card variant="outlined" class="mrb-detail-pane">
-                            <div v-if="!selectedPr" class="mrb-empty">
-                                <v-icon size="36" color="grey-lighten-2">mdi-gesture-tap</v-icon>
-                                <div class="text-caption text-medium-emphasis mt-2">요청을 선택하면 여기서 검토할 수 있습니다</div>
-                            </div>
-                            <template v-else>
-                                <PrHeader
-                                    :pr="selectedPr"
-                                    :owner-name="selectedPr.owner_name"
-                                    :requester-profile="selectedPr.requester_profile"
-                                    class="flex-shrink-0"
-                                >
-                                    <template #meta-extra>
-                                        <span>·</span>
-                                        <a class="mrb-resource-link" @click="openResource(selectedPr)">
-                                            {{ resourceTypeLabel(selectedPr.resource_type) }} · {{ selectedPr.resource_name }}
-                                        </a>
-                                    </template>
-                                </PrHeader>
-
-                                <!-- 리소스 화면까지 가지 않고 이 자리에서 병합 전 검증을 보고 돌린다. -->
-                                <div v-if="canVerifySelected" class="mrb-tabbar flex-shrink-0">
-                                    <button :class="['mrb-tab', { on: detailTab === 'reviews' }]" @click="detailTab = 'reviews'">
-                                        리뷰 이력
-                                    </button>
-                                    <button :class="['mrb-tab', { on: detailTab === 'verify' }]" @click="detailTab = 'verify'">
-                                        병합 전 검증
-                                        <span v-if="verification.brokenCount" class="mrb-tab-cnt">{{ verification.brokenCount }}</span>
-                                    </button>
-                                </div>
-
-                                <div class="mrb-detail-scroll">
-                                    <template v-if="detailTab === 'verify' && canVerifySelected">
-                                        <PrVerification
-                                            :key="selectedPr.id"
-                                            :skill-name="selectedPr.resource_id"
-                                            :pr-number="selectedPr.git_pr_number"
-                                            class="pa-3"
-                                            @status="verification = $event"
-                                        />
-                                    </template>
-                                    <template v-else>
-                                        <div v-if="selectedPr.description" class="mrb-desc text-body-2">{{ selectedPr.description }}</div>
-                                        <div v-if="!canVerifySelected" class="text-caption text-medium-emphasis font-weight-bold px-4 pt-3 pb-1">
-                                            리뷰 이력
-                                        </div>
-                                        <PrReviewTimeline :reviews="selectedReviews" />
-                                    </template>
-                                </div>
-
-                                <div class="mrb-detail-foot">
-                                    <div class="d-flex align-center ga-2 px-3 py-2">
-                                        <v-btn size="small" variant="text" color="primary" @click="openResource(selectedPr)">
-                                            <v-icon start size="14">mdi-open-in-app</v-icon>리소스 열기
-                                        </v-btn>
-                                        <v-btn
-                                            v-if="selectedPr.git_pr_url"
-                                            size="small"
-                                            variant="text"
-                                            color="primary"
-                                            :href="selectedPr.git_pr_url"
-                                            target="_blank"
-                                        >
-                                            <v-icon start size="14">mdi-open-in-new</v-icon>Git PR
-                                        </v-btn>
+                        <div v-else-if="loadError" class="mrb-empty">
+                            <v-icon size="40" color="grey-lighten-1">mdi-alert-circle-outline</v-icon>
+                            <div class="text-body-2 mt-3">{{ loadError }}</div>
+                            <v-btn class="mt-3" size="small" color="primary" variant="flat" @click="load">다시 시도</v-btn>
+                        </div>
+                        <div v-else-if="!filteredPrs.length" class="mrb-empty">
+                            <v-icon size="40" color="grey-lighten-2">mdi-source-pull</v-icon>
+                            <div class="text-body-2 text-medium-emphasis mt-3">검토할 병합 요청이 없습니다</div>
+                        </div>
+                        <div v-else class="d-flex flex-column ga-2">
+                            <v-card
+                                v-for="pr in filteredPrs"
+                                :key="pr.id"
+                                variant="outlined"
+                                :class="['mrb-item', { 'mrb-item--on': pr.id === selectedPrId }]"
+                                @click="selectPr(pr)"
+                            >
+                                <v-card-text class="mrb-item-body">
+                                    <!--
+                                        한 줄만 세운다. 제목이 무엇이 바뀌는지 말해 주면 제목을,
+                                        `feat: update nda-review` 처럼 아무 말도 못 하면 계산한 변경 요약을 —
+                                        둘을 나란히 두면 같은 말을 두 번 읽히거나 카드가 네 줄로 번진다.
+                                    -->
+                                    <div class="mrb-item-head">
+                                        <span :class="['mrb-dot', 'mrb-dot--' + pr.status]"></span>
+                                        <span class="mrb-item-title" :title="pr.title">
+                                            {{ prHeadline(pr, summaryByPr[pr.id] || meaningfulPrDescription(pr)) }}
+                                        </span>
                                     </div>
 
-                                    <PrReviewForm
-                                        v-if="canReviewSelected"
+                                    <!-- 누가·언제·어디에 -->
+                                    <div class="mrb-item-meta">
+                                        <span class="mrb-item-type">{{ resourceTypeLabel(pr.resource_type) }}</span>
+                                        <span class="mrb-item-res">{{ pr.resource_name }}</span>
+                                        <span class="mrb-sep">·</span>
+                                        <span>{{ pr.requester_name || '알 수 없음' }}</span>
+                                        <span class="mrb-sep">·</span>
+                                        <span>{{ formatRelativeTime(pr.updated_at || pr.created_at) }}</span>
+                                        <template v-if="pr.status !== 'OPEN' && latestActionText(pr)">
+                                            <span class="mrb-sep">·</span>
+                                            <span>{{ latestActionText(pr) }}</span>
+                                        </template>
+                                        <!-- 내가 올렸는데 검토도 내 몫인 요청 — 왜 여기 있는지 알 수 있게 표시한다. -->
+                                        <span v-if="pr.is_requester" class="mrb-flag">내 요청</span>
+                                        <span v-if="!pr.owner_id" class="mrb-flag mrb-flag--warn">담당자 미지정</span>
+                                    </div>
+                                </v-card-text>
+                            </v-card>
+                        </div>
+                    </div>
+
+                    <!-- 상세 -->
+                    <v-card variant="outlined" class="mrb-detail-pane">
+                        <div v-if="!selectedPr" class="mrb-empty">
+                            <v-icon size="36" color="grey-lighten-2">mdi-gesture-tap</v-icon>
+                            <div class="text-caption text-medium-emphasis mt-2">요청을 선택하면 여기서 검토할 수 있습니다</div>
+                        </div>
+                        <template v-else>
+                            <PrHeader
+                                :pr="selectedPr"
+                                :owner-name="selectedPr.owner_name"
+                                :requester-profile="selectedPr.requester_profile"
+                                :headline="selectedHeadline"
+                                class="flex-shrink-0"
+                            >
+                                <template #meta-extra>
+                                    <span>·</span>
+                                    <a class="mrb-resource-link" @click="openResource(selectedPr)">
+                                        {{ resourceTypeLabel(selectedPr.resource_type) }} · {{ selectedPr.resource_name }}
+                                    </a>
+                                </template>
+                            </PrHeader>
+
+                            <!-- 리소스 화면까지 가지 않고 이 자리에서 변경 내역을 읽고 병합 전 검증을 돌린다. -->
+                            <div class="mrb-tabbar flex-shrink-0">
+                                <button :class="['mrb-tab', { on: detailTab === 'changes' }]" @click="detailTab = 'changes'">
+                                    변경사항
+                                    <span v-if="changeSummary.count" class="mrb-tab-cnt">{{ changeSummary.count }}</span>
+                                </button>
+                                <button :class="['mrb-tab', { on: detailTab === 'reviews' }]" @click="detailTab = 'reviews'">
+                                    리뷰 이력
+                                    <span v-if="selectedReviews.length" class="mrb-tab-cnt">{{ selectedReviews.length }}</span>
+                                </button>
+                                <button
+                                    v-if="canVerifySelected"
+                                    :class="['mrb-tab', { on: detailTab === 'verify' }]"
+                                    @click="detailTab = 'verify'"
+                                >
+                                    병합 전 검증
+                                    <span v-if="verification.brokenCount" class="mrb-tab-cnt">{{ verification.brokenCount }}</span>
+                                </button>
+                            </div>
+
+                            <div class="mrb-detail-scroll">
+                                <template v-if="detailTab === 'verify' && canVerifySelected">
+                                    <PrVerification
                                         :key="selectedPr.id"
-                                        :is-owner="true"
-                                        :loading="reviewLoading"
-                                        :error="reviewError"
-                                        @submit="submitReview"
+                                        :skill-name="selectedPr.resource_id"
+                                        :pr-number="selectedPr.git_pr_number"
+                                        :resource-type="selectedPr.resource_type || 'skill'"
+                                        :pr-id="selectedPr.id"
+                                        :base-ref="selectedPr.base_branch"
+                                        class="pa-3"
+                                        @status="verification = $event"
                                     />
-
-                                    <!-- 병합 버튼 바로 위 — 누르기 직전에 보게 하는 것이 요점이다. -->
-                                    <div
-                                        v-if="canMergeSelected && verifyNotice"
-                                        :class="['mrb-verify-notice', verifyNotice.tone]"
-                                        @click="detailTab = 'verify'"
-                                    >
-                                        <span class="mrb-vn-text">{{ verifyNotice.text }}</span>
-                                        <span class="mrb-vn-link">자세히</span>
+                                </template>
+                                <template v-else-if="detailTab === 'changes'">
+                                    <div v-if="meaningfulPrDescription(selectedPr)" class="mrb-desc text-body-2">
+                                        {{ meaningfulPrDescription(selectedPr) }}
                                     </div>
+                                    <PrChanges :pr="selectedPr" :show-summary="false" @summary="changeSummary = $event" />
+                                </template>
+                                <template v-else>
+                                    <PrReviewTimeline :reviews="selectedReviews" />
+                                </template>
+                            </div>
 
-                                    <PrMergeSection
-                                        :can-merge="canMergeSelected"
-                                        :merge-loading="mergeLoading"
-                                        :merge-error="mergeError"
-                                        :base-branch="selectedPr.base_branch"
-                                        merge-description="으로 병합하면 즉시 반영됩니다."
-                                        @merge="mergePr"
-                                    />
-                                    <v-alert
-                                        v-if="selectedPr.status === 'APPROVED' && !canMergeSelected"
-                                        type="info"
-                                        variant="tonal"
-                                        density="compact"
-                                        class="ma-3"
+                            <div class="mrb-detail-foot">
+                                <div class="d-flex align-center ga-2 px-3 py-2">
+                                    <v-btn size="small" variant="text" color="primary" @click="openResource(selectedPr)">
+                                        <v-icon start size="14">mdi-open-in-app</v-icon>리소스 열기
+                                    </v-btn>
+                                    <v-btn
+                                        v-if="selectedPr.git_pr_url"
+                                        size="small"
+                                        variant="text"
+                                        color="primary"
+                                        :href="selectedPr.git_pr_url"
+                                        target="_blank"
                                     >
-                                        승인됨 — {{ resourceTypeLabel(selectedPr.resource_type) }} 병합은 리소스 화면의 버전 이력에서 진행합니다.
-                                    </v-alert>
+                                        <v-icon start size="14">mdi-open-in-new</v-icon>Git PR
+                                    </v-btn>
                                 </div>
-                            </template>
-                        </v-card>
-                    </div>
-                </v-card-text>
-            </v-card>
 
-            <v-snackbar v-model="snackbar.show" :color="snackbar.color" location="top right" timeout="3000">
-                {{ snackbar.message }}
-            </v-snackbar>
-        </v-col>
-    </v-row>
+                                <PrReviewForm
+                                    v-if="canReviewSelected"
+                                    :key="selectedPr.id"
+                                    :is-owner="true"
+                                    :loading="reviewLoading"
+                                    :error="reviewError"
+                                    @submit="submitReview"
+                                />
+
+                                <!-- 병합 버튼 바로 위 — 누르기 직전에 보게 하는 것이 요점이다. -->
+                                <div
+                                    v-if="canMergeSelected && verifyNotice"
+                                    :class="['mrb-verify-notice', verifyNotice.tone]"
+                                    @click="detailTab = 'verify'"
+                                >
+                                    <span class="mrb-vn-text">{{ verifyNotice.text }}</span>
+                                    <span class="mrb-vn-link">자세히</span>
+                                </div>
+
+                                <PrMergeSection
+                                    :can-merge="canMergeSelected"
+                                    :merge-loading="mergeLoading"
+                                    :merge-error="mergeError"
+                                    :base-branch="selectedPr.base_branch"
+                                    merge-description="으로 병합하면 즉시 반영됩니다."
+                                    @merge="mergePr"
+                                />
+                                <v-alert
+                                    v-if="selectedPr.status === 'APPROVED' && !canMergeSelected"
+                                    type="info"
+                                    variant="tonal"
+                                    density="compact"
+                                    class="ma-3"
+                                >
+                                    승인됨 — {{ resourceTypeLabel(selectedPr.resource_type) }} 병합은 리소스 화면의 버전 이력에서
+                                    진행합니다.
+                                </v-alert>
+                            </div>
+                        </template>
+                    </v-card>
+                </div>
+            </v-card-text>
+        </v-card>
+
+        <v-snackbar v-model="snackbar.show" :color="snackbar.color" location="top right" timeout="3000">
+            {{ snackbar.message }}
+        </v-snackbar>
+    </div>
 </template>
 
 <style scoped>
@@ -516,23 +567,60 @@ onMounted(load);
     flex: 1;
     min-height: 0;
 }
+/*
+ * 검토는 오른쪽 상세에서 한다 — diff 를 읽고, 검증 결과를 보고, 리뷰를 남긴다.
+ * 목록은 "어느 것을 볼지" 고르는 자리일 뿐이라 폭을 고정하고, 남는 폭은 전부 상세에 준다.
+ */
 .mrb-list-pane {
-    flex: 1 1 58%;
+    flex: 0 0 340px;
     min-width: 0;
     overflow-y: auto;
     padding-right: 4px;
 }
 .mrb-detail-pane {
-    flex: 1 1 42%;
+    flex: 1 1 auto;
     min-width: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
+
+/* 폭이 좁으면 상세가 읽을 수 없게 눌리므로 위아래로 쌓는다. */
+@media (max-width: 1100px) {
+    .mrb-body {
+        flex-direction: column;
+    }
+    .mrb-list-pane {
+        flex: 0 0 auto;
+        max-height: 40vh;
+    }
+    .mrb-detail-pane {
+        min-height: 420px;
+    }
+}
 .mrb-detail-scroll {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    /* 변경사항 탭의 파일 목록 + diff 가 남은 높이를 채우도록 세로 흐름으로 둔다. */
+    display: flex;
+    flex-direction: column;
+}
+
+/* 요청 설명은 늘 온전히 보여야 하므로 줄어들지 않는다. */
+.mrb-desc {
+    flex: none;
+}
+
+/* 목록 카드의 요청 설명. 카드 높이가 들쭉날쭉해지지 않게 두 줄에서 자른다. */
+.mrb-card-desc {
+    font-size: 12px;
+    line-height: 1.45;
+    color: rgba(var(--v-theme-on-surface), 0.6);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* ── 리뷰 이력 / 병합 전 검증 탭 (리소스 화면과 같은 생김새) ── */
@@ -638,14 +726,85 @@ onMounted(load);
 }
 .mrb-item--on {
     background: rgba(var(--v-theme-primary), 0.06);
+    border-color: rgb(var(--v-theme-primary));
 }
 
-.mrb-resource {
-    max-width: 220px;
+.mrb-item-body {
+    padding: 10px 12px;
+}
+
+.mrb-item-head {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+}
+/* 상태는 칩 대신 점 하나로 — 목록에서 스물 몇 번 반복되는 글자를 지운다. */
+.mrb-dot {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(var(--v-theme-on-surface), 0.25);
+    transform: translateY(-1px);
+}
+.mrb-dot--OPEN {
+    background: rgb(var(--v-theme-primary));
+}
+.mrb-dot--CHANGES_REQUESTED {
+    background: #d99000;
+}
+.mrb-dot--APPROVED {
+    background: #2e6b16;
+}
+.mrb-dot--MERGED {
+    background: #6b4fd8;
+}
+.mrb-item-title {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: rgba(var(--v-theme-on-surface), 0.87);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.mrb-item-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+    padding-left: 14px;
+    font-size: 11.5px;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+}
+.mrb-item-type {
+    color: rgb(var(--v-theme-primary));
+    font-weight: 600;
+}
+.mrb-item-res {
+    max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.mrb-sep {
+    color: rgba(var(--v-theme-on-surface), 0.25);
+}
+.mrb-flag {
+    font-size: 10.5px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    background: rgba(var(--v-theme-on-surface), 0.07);
+    color: rgba(var(--v-theme-on-surface), 0.55);
+}
+.mrb-flag--warn {
+    background: #fbf0da;
+    color: #92610a;
+}
+
 .mrb-branch {
     background: rgba(var(--v-theme-on-surface), 0.06);
     border-radius: 4px;

@@ -1,7 +1,7 @@
 <template>
     <div class="pr-header">
         <div class="prh-title-line">
-            <span class="prh-title">{{ pr.title }}</span>
+            <span class="prh-title" :title="pr.title">{{ headline || cleanPrTitle(pr.title) }}</span>
             <span :class="['prh-badge', prBadgeClass(pr.status)]">{{ statusLabelText }}</span>
         </div>
         <div class="prh-meta">
@@ -13,10 +13,10 @@
                 <img v-if="requesterProfile && !profileError" :src="requesterProfile" class="prh-ava-img" @error="profileError = true" />
                 <template v-else>{{ getInitial(pr.requester_name) }}</template>
             </span>
+            <!-- 병합 대상 브랜치는 바로 아래 화살표로 다시 보여 주므로 문장에서는 뺀다. -->
             <span
                 ><b>{{ pr.requester_name || '알 수 없음' }}</b
-                >님이 <b>{{ pr.base_branch }}</b
-                >으로 병합 요청</span
+                >님의 요청</span
             >
             <span class="prh-dot">&middot;</span>
             <span class="prh-branch">{{ shortBranch(pr.branch_name) }}</span>
@@ -41,6 +41,7 @@
 
 <script>
 import { prBadgeClass, prStatusLabel, getInitial, getAvatarColor, shortBranch } from '@/composables/usePrUtils';
+import { cleanPrTitle } from '@/composables/usePrChanges';
 
 export default {
     name: 'PrHeader',
@@ -48,7 +49,9 @@ export default {
         pr: { type: Object, required: true },
         ownerName: { type: String, default: '' },
         requesterProfile: { type: String, default: null },
-        statusLabel: { type: String, default: '' }
+        statusLabel: { type: String, default: '' },
+        /** 제목 자리에 세울 한 줄. 비우면 요청 제목을 그대로 쓴다. */
+        headline: { type: String, default: '' }
     },
     data() {
         return { profileError: false };
@@ -67,7 +70,8 @@ export default {
         prBadgeClass,
         getInitial,
         getAvatarColor,
-        shortBranch
+        shortBranch,
+        cleanPrTitle
     }
 };
 </script>

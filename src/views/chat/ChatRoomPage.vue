@@ -6041,7 +6041,10 @@ export default {
             }
             if (arr.length === 0) return;
             if (!this.workspaceSaveStateByGroup[group]) {
-                this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' };
+                // passingCases: 실엔진 검증이 통과시킨 분기 케이스. 최종 저장 시 회귀
+                // 스위트로 승격한다. 미리 선언해 두지 않으면 Vue 가 나중에 붙는 속성을
+                // 반응형으로 잡지 못한다.
+                this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '', passingCases: [] };
             }
             // '저장됨' 은 들고 있는 상태가 아니라 파일 내용에서 매번 도출한다. 그래야 새로고침으로
             // 컴포넌트 상태가 초기화돼도(bootstrapRoom 이 매번 비운다) 이미 저장한 산출물이
@@ -6661,7 +6664,7 @@ export default {
                 }
                 const st =
                     this.workspaceSaveStateByGroup[group] ||
-                    (this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' });
+                    (this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '', passingCases: [] });
                 if (st.__validated || st.validating) continue;
 
                 let pd;
@@ -6819,6 +6822,11 @@ export default {
                             repaired: report.repaired,
                             remaining: Array.isArray(report.remaining_defects) ? report.remaining_defects.length : 0
                         };
+                        // 검증이 통과시킨 분기 케이스를 들고 있는다. 이 케이스는 모델이 한 번
+                        // 만들고 실행 엔진이 실제로 돌려 통과를 확인한 것이라, 병합 전 회귀
+                        // 검증의 비교 기준으로 그대로 쓸 수 있다. 여기서 버리면 나중에 같은
+                        // 것을 다시 만들어야 한다.
+                        st.passingCases = Array.isArray(report.passing_cases) ? report.passing_cases : [];
                     }
                     st.__validated = true;
                     // draft id 추적(방 단위) — 새로고침/재진입에도 정리 가능하게 룸에 저장.
@@ -6862,7 +6870,10 @@ export default {
             // 프로세스(탭)별 저장 — 이 탭의 파일들만 해당 프로세스로 저장한다.
             const group = this._processGroupKey((list[0] && list[0].path) || '');
             if (!this.workspaceSaveStateByGroup[group]) {
-                this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' };
+                // passingCases: 실엔진 검증이 통과시킨 분기 케이스. 최종 저장 시 회귀
+                // 스위트로 승격한다. 미리 선언해 두지 않으면 Vue 가 나중에 붙는 속성을
+                // 반응형으로 잡지 못한다.
+                this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '', passingCases: [] };
             }
             const st = this.workspaceSaveStateByGroup[group];
             if (st.saving || st.saved) return;
@@ -7036,6 +7047,21 @@ export default {
                     await this._upsertProcMapEntry(procId, procName, tenantId);
                 } catch (pmErr) {
                     console.warn('[SaveWS] proc_map 등록 실패(무시):', pmErr);
+                }
+
+                // 5-b) 회귀 시나리오 승격 — 검증이 통과시킨 분기 케이스를 이 프로세스에 붙인다.
+                //      이걸 남기지 않으면 나중에 이 프로세스의 병합 요청을 검토할 때 "변경 전과
+                //      비교할 시나리오가 없습니다" 로 끝나, 리뷰어가 diff 를 눈으로 보는 수밖에
+                //      없다. 시나리오는 이미 만들어져 실행까지 마친 것이라 새로 드는 비용이 없다.
+                try {
+                    const passingCases = Array.isArray(st.passingCases) ? st.passingCases : [];
+                    if (passingCases.length) {
+                        await backend.promoteProcessScenarios(procId, passingCases);
+                    }
+                } catch (scErr) {
+                    // 저장 자체는 끝난 뒤라 여기서 실패해도 되돌리지 않는다. 시나리오는 다음
+                    // 편집·검증 때 다시 확보된다.
+                    console.warn('[SaveWS] 회귀 시나리오 승격 실패(무시):', scErr);
                 }
 
                 this._markWorkspaceFilesSaved(list);

@@ -366,6 +366,7 @@ import DmnVersionHistoryDialog from '@/components/dmn/DmnVersionHistoryDialog.vu
 import SkillProposalBadge from './ui/SkillProposalBadge.vue';
 import SkillProposalReviewModal from './ui/SkillProposalReviewModal.vue';
 import { buildDefinitionProposalMap } from '@/composables/useDefinitionProposals';
+import { describeDmnChanges } from '@/composables/usePrChanges';
 
 export default {
     mixins: [ChatModule],
@@ -644,6 +645,7 @@ export default {
                     if (versionInfo && versionInfo.length > 0) {
                         this.saveCurrentVersion = versionInfo[0].version || '0.0';
                     }
+                    await this.fillPrTitleFromChanges(definitionInfo?.bpmn || '');
                     // 오너 여부 판별
                     try {
                         const currentUser = this.userInfo || (await this.backend.getUserInfo());
@@ -709,6 +711,21 @@ export default {
                 },
                 successMsg: this.$t('successMsg.save')
             });
+        },
+
+        /**
+         * 병합 요청 제목 기본값을 무엇이 바뀌는지로 채운다.
+         * 비워 두면 검토자는 병합 요청함에서 리소스 이름만 읽게 된다.
+         * (사용자가 고쳐 쓸 수 있게 기본값으로만 넣는다)
+         */
+        async fillPrTitleFromChanges(previousXml) {
+            if (this.savePrTitle.trim() || !previousXml || !this.$refs.dmnModeler) return;
+            try {
+                const currentXml = await this.$refs.dmnModeler.saveDMN();
+                this.savePrTitle = describeDmnChanges(previousXml, currentXml) || '';
+            } catch (e) {
+                console.warn('[DmnChat] 병합 요청 제목 자동 생성 실패:', e);
+            }
         },
 
         async saveWithPr() {

@@ -241,6 +241,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator';
 import BpmnDiffGenerator from '@/components/ai/BpmnDiffGenerator.js';
+import { describeBpmnChanges } from '@/composables/usePrChanges';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 const backend = BackendFactory.createBackend();
@@ -743,6 +744,12 @@ export default {
                                 const previousXml = bpmn; // 항상 proc_def 기준
                                 const currentXml = me.currentBpmn || bpmn;
                                 if (currentXml) {
+                                    // 병합 요청 제목을 무엇이 바뀌는지로 채워 둔다. 비워 두면
+                                    // 검토자는 병합 요청함에서 `[병합 요청] OO 변경` 만 읽게 된다.
+                                    // (사용자가 고쳐 쓸 수 있게 기본값으로만 넣는다)
+                                    if (!me.prTitle.trim()) {
+                                        me.prTitle = describeBpmnChanges(previousXml, currentXml);
+                                    }
                                     me.isDiffGenerating = true;
                                     await me.generateVersionDiffDescription(previousXml, currentXml);
                                 }

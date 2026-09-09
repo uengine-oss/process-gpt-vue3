@@ -7,8 +7,9 @@
                 <v-progress-circular indeterminate size="30" width="2.5" color="primary" />
                 <div class="pv-empty-title">{{ backfillPhaseTitle }}</div>
                 <div class="pv-empty-desc">
-                    변경 전(<code>{{ backfill.base_ref }}</code>) 버전으로 후보 시나리오를 실제로 실행해 보고, 지금 버전이 실제로
-                    통과하는 단계만 남깁니다. 몇 분 걸립니다 — 이 탭을 벗어나도 계속 진행됩니다.
+                    변경 전(<code>{{ backfill.base_ref }}</code
+                    >) 버전으로 후보 시나리오를 실제로 실행해 보고, 지금 버전이 실제로 통과하는 단계만 남깁니다. 몇 분 걸립니다 — 이 탭을
+                    벗어나도 계속 진행됩니다.
                 </div>
             </template>
 
@@ -18,23 +19,66 @@
                     <path d="M9 3h6M10 3v6l-5.5 9A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-3L14 9V3" />
                 </svg>
                 <div class="pv-empty-title">병합 전에 비교할 시나리오가 없습니다</div>
-                <div class="pv-empty-desc">
-                    이 스킬은 주요 시나리오를 확보하는 단계를 거치지 않고 만들어졌습니다. 비교 기준이 없어 이 병합이 기존 동작을
-                    깨뜨리는지 자동으로 확인할 수 없습니다.
-                </div>
-                <div class="pv-empty-desc mt-2">
-                    지금 <b>변경 전 버전의 동작</b>을 기준으로 시나리오를 만들어 둘 수 있습니다. 만든 뒤에는 이 병합은 물론 앞으로의
-                    변경도 검증할 수 있습니다.
-                </div>
 
-                <div v-if="backfillFailed" class="pv-error mt-3" style="text-align: left">
-                    시나리오를 만들지 못했습니다. {{ backfill.error }}
-                </div>
-                <div v-if="backfillError" class="pv-error mt-3" style="text-align: left">{{ backfillError }}</div>
+                <!-- 스킬: 지금 만들어 둘 수 있다 -->
+                <template v-if="isSkill">
+                    <div class="pv-empty-desc">
+                        이 스킬은 주요 시나리오를 확보하는 단계를 거치지 않고 만들어졌습니다. 비교 기준이 없어 이 병합이 기존 동작을
+                        깨뜨리는지 자동으로 확인할 수 없습니다.
+                    </div>
+                    <div class="pv-empty-desc mt-2">
+                        지금 <b>변경 전 버전의 동작</b>을 기준으로 시나리오를 만들어 둘 수 있습니다. 만든 뒤에는 이 병합은 물론 앞으로의
+                        변경도 검증할 수 있습니다.
+                    </div>
 
-                <button class="pv-run-btn mt-3" @click="generate">
-                    {{ backfillFailed ? '시나리오 다시 만들기' : '시나리오 만들기' }}
-                </button>
+                    <div v-if="backfillFailed" class="pv-error mt-3" style="text-align: left">
+                        시나리오를 만들지 못했습니다. {{ backfill.error }}
+                    </div>
+                    <div v-if="backfillError" class="pv-error mt-3" style="text-align: left">{{ backfillError }}</div>
+
+                    <button class="pv-run-btn mt-3" @click="generate">
+                        {{ backfillFailed ? '시나리오 다시 만들기' : '시나리오 만들기' }}
+                    </button>
+                </template>
+
+                <!-- 의사결정: 규칙 표에서 바로 파생할 수 있다(모델 호출 없음). -->
+                <template v-else-if="isDmn">
+                    <div class="pv-empty-desc">
+                        이 의사결정에는 병합 전에 비교할 시나리오가 아직 없습니다. 비교 기준이 없어 이 병합이 기존 판정을 바꾸는지 자동으로
+                        확인할 수 없습니다.
+                    </div>
+                    <div class="pv-empty-desc mt-2">
+                        <b>변경 전 규칙 표</b>에서 시나리오를 만들 수 있습니다 — 규칙 행마다 그 행을 맞히는 입력과 임계값 경계, 어느 행에도
+                        맞지 않는 입력을 뽑아 지금 표가 내는 결론을 기준으로 굳힙니다.
+                    </div>
+
+                    <div v-if="backfillError" class="pv-error mt-3" style="text-align: left">{{ backfillError }}</div>
+
+                    <button class="pv-run-btn mt-3" :disabled="buildingScenarios" @click="generate">
+                        {{ buildingScenarios ? '만드는 중…' : '시나리오 만들기' }}
+                    </button>
+                </template>
+
+                <!-- 프로세스: 변경 전 정의의 갈림길 조합에서 바로 파생할 수 있다.
+                     병합 전 검증도 저장된 분기 판정으로 정의를 재생하는 방식이라, 시나리오에
+                     필요한 것은 실행 기록이 아니라 정의뿐이다(모델·엔진 호출 없음). -->
+                <template v-else>
+                    <div class="pv-empty-desc">
+                        이 프로세스는 만들 때 <b>실행 엔진 검증</b>을 거치지 않아 비교에 쓸 시나리오가 남아 있지 않습니다. 비교 기준이 없어
+                        이 병합이 기존 흐름을 바꾸는지 자동으로 확인할 수 없습니다.
+                    </div>
+                    <div class="pv-empty-desc mt-2">
+                        <b>변경 전 정의</b>에서 시나리오를 만들 수 있습니다 — 갈림길마다 어느 분기로 갔을 때 어떤 경로를 지나는지를 지금
+                        정의가 내는 흐름 그대로 굳힙니다.
+                    </div>
+
+                    <div v-if="backfillError" class="pv-error mt-3" style="text-align: left">{{ backfillError }}</div>
+
+                    <button class="pv-run-btn mt-3" :disabled="buildingScenarios" @click="generate">
+                        {{ buildingScenarios ? '만드는 중…' : '시나리오 만들기' }}
+                    </button>
+                </template>
+
                 <div class="pv-empty-note">직접 검토하려면 변경사항 탭의 diff 를 보세요.</div>
             </template>
         </div>
@@ -43,9 +87,9 @@
             <!-- 자동 생성된 스위트라는 사실을 숨기지 않는다: 사람이 고른 시나리오가 아니라
                  변경 전 버전의 동작에서 뽑아낸 기준선이므로, "무엇을 지키는 중인지" 는
                  리뷰어가 직접 읽고 판단해야 한다. -->
-            <div v-if="generatedSuite" class="pv-origin">
-                이 시나리오는 변경 전(<code>{{ backfill.base_ref }}</code>) 버전의 동작에서 자동으로 만들어졌습니다. 후보
-                {{ backfill.summary?.proposed }}건 중 그 버전이 실제로 통과한
+            <div v-if="isSkill && generatedSuite" class="pv-origin">
+                이 시나리오는 변경 전(<code>{{ backfill.base_ref }}</code
+                >) 버전의 동작에서 자동으로 만들어졌습니다. 후보 {{ backfill.summary?.proposed }}건 중 그 버전이 실제로 통과한
                 {{ backfill.summary?.accepted }}건만 남겼습니다.
             </div>
 
@@ -154,18 +198,16 @@
                      읽어 보고 미덥지 않다고 판단하면 현재 버전 기준으로 다시 뽑을 수 있어야
                      한다. 지금 것을 지우는 일이라 확인을 한 번 받는다. -->
                 <span class="pv-sec-actions">
-                    <template v-if="backfilling">
+                    <template v-if="backfilling || buildingScenarios">
                         <v-progress-circular indeterminate size="12" width="2" color="primary" class="mr-1" />
-                        {{ backfillPhaseTitle }}
+                        {{ regeneratingLabel }}
                     </template>
                     <template v-else-if="confirmingRegenerate">
                         <span class="pv-confirm-text">지금 시나리오를 버리고 다시 만들까요?</span>
                         <button class="pv-link danger" :disabled="running" @click="regenerate">다시 만들기</button>
                         <button class="pv-link" @click="confirmingRegenerate = false">취소</button>
                     </template>
-                    <button v-else class="pv-link" :disabled="running" @click="confirmingRegenerate = true">
-                        시나리오 다시 만들기
-                    </button>
+                    <button v-else class="pv-link" :disabled="running" @click="confirmingRegenerate = true">시나리오 다시 만들기</button>
                 </span>
             </div>
             <div v-if="backfillFailed && hasSuite" class="pv-error">
@@ -184,7 +226,7 @@
                     </span>
                     <span v-else class="pv-case-n">검증 {{ (c.assertions || []).length }}단계</span>
                 </div>
-                <div class="pv-case-prompt">{{ c.prompt }}</div>
+                <div class="pv-case-prompt">{{ casePromptText(c) }}</div>
             </div>
         </template>
     </div>
@@ -201,7 +243,13 @@ export default {
     name: 'PrVerification',
     props: {
         skillName: { type: String, required: true },
-        prNumber: { type: Number, required: true }
+        // 스킬 병합 요청의 깃 PR 번호. 프로세스·DMN 요청에는 깃 PR 이 없어 비어 있다.
+        prNumber: { type: Number, default: null },
+        // 리소스 중립 경로용. 'skill' 이 아니면 prId 로 병합 요청을 찾는다.
+        resourceType: { type: String, default: 'skill' },
+        prId: { type: String, default: '' },
+        // 변경 전 버전. 의사결정 시나리오를 이 버전의 규칙 표에서 뽑는다.
+        baseRef: { type: String, default: '' }
     },
     emits: ['status'],
     data() {
@@ -217,10 +265,31 @@ export default {
             backfill: null,
             backfillError: '',
             confirmingRegenerate: false,
+            buildingScenarios: false,
             pollTimer: null
         };
     },
     computed: {
+        isSkill() {
+            return (this.resourceType || 'skill') === 'skill';
+        },
+        isDmn() {
+            return this.resourceType === 'dmn';
+        },
+        /** 프로세스(BPMN) 병합 요청인가 — 시나리오를 정의에서 파생하는 쪽. */
+        isProcess() {
+            return !this.isSkill && !this.isDmn;
+        },
+        /** 시나리오를 다시 뽑는 동안 그 자리에 띄울 문구. */
+        regeneratingLabel() {
+            if (this.isDmn) return '규칙 표에서 시나리오를 다시 뽑는 중…';
+            if (this.isProcess) return '변경 전 정의에서 시나리오를 다시 뽑는 중…';
+            return this.backfillPhaseTitle;
+        },
+        /** 이 병합 요청을 가리킬 수 있는가 — 스킬은 깃 PR 번호, 나머지는 요청 id. */
+        addressed() {
+            return this.isSkill ? !!this.prNumber : !!this.prId;
+        },
         running() {
             return this.run?.status === 'running';
         },
@@ -329,12 +398,70 @@ export default {
     },
     methods: {
         formatRelativeTime,
+        /**
+         * 시나리오 한 줄 요약.
+         *
+         * 스킬 시나리오의 prompt 는 사람이 읽는 지시문이라 그대로 보여 준다. 프로세스는
+         * 입력값과 갈림길 판정을 담은 JSON 이라 그대로 뿌리면 읽을 수 없다 — 리뷰어가
+         * 알아야 하는 것은 "어떤 입력으로 어느 길을 갔는가" 뿐이다.
+         */
+        casePromptText(c) {
+            const raw = c.prompt || '';
+            if (this.isSkill) return raw;
+            let parsed;
+            try {
+                parsed = JSON.parse(raw);
+            } catch (e) {
+                return raw;
+            }
+            const parts = [];
+            if (this.isDmn) {
+                const values = parsed.inputs || {};
+                const pairs = Object.entries(values)
+                    .filter(([, v]) => v !== '' && v !== null && v !== undefined)
+                    .map(([k, v]) => `${k}=${v}`);
+                return pairs.length ? pairs.join(', ') : '입력값 없음';
+            }
+            const inputs = parsed.activity_inputs || {};
+            for (const [activityId, values] of Object.entries(inputs)) {
+                const pairs = Object.entries(values || {})
+                    .map(([k, v]) => `${k}=${v}`)
+                    .join(', ');
+                if (pairs) parts.push(`${activityId}: ${pairs}`);
+            }
+            const decisions = parsed.gateway_decisions || {};
+            for (const [gatewayId, d] of Object.entries(decisions)) {
+                const seqs = (d && d.sequences) || {};
+                const chosen = ((d && d.selected) || [])
+                    .map((seqId) => (seqs[seqId] && (seqs[seqId].condition || seqs[seqId].target)) || seqId)
+                    .join(', ');
+                if (chosen) parts.push(`${gatewayId} → ${chosen}`);
+            }
+            if (parts.length) return parts.join(' · ');
+            // 갈림길이 없는 프로세스는 고를 것도 넣을 것도 없다. 그렇다고 입력 JSON 을
+            // 그대로 뿌리면 `{}` 만 보여 무엇을 지키는 시나리오인지 읽히지 않는다 —
+            // 이 경우 지키려는 것은 경로 자체이므로 그것을 보여준다.
+            return this.caseExpectedPath(c) || raw;
+        },
+        /** 이 시나리오가 기준으로 굳힌 실행 경로. 없으면 빈 문자열. */
+        caseExpectedPath(c) {
+            let expected;
+            try {
+                expected = JSON.parse(c.expected_output || '{}');
+            } catch (e) {
+                return '';
+            }
+            const order = (expected && expected.activity_order) || [];
+            return order.length ? `경로 ${order.join(' → ')}` : '';
+        },
         countLabel(v) {
             return v ? `${v.passed}/${v.total}` : '—';
         },
         async reload() {
-            if (!this.backend || !this.skillName || !this.prNumber) return;
-            const data = await this.backend.getPrVerification(this.skillName, this.prNumber);
+            if (!this.backend || !this.skillName || !this.addressed) return;
+            const data = this.isSkill
+                ? await this.backend.getPrVerification(this.skillName, this.prNumber)
+                : await this.backend.getResourceVerification(this.resourceType, this.skillName, this.prId);
             if (!data) {
                 this.loaded = true;
                 return;
@@ -350,9 +477,45 @@ export default {
             else this.stopPolling();
         },
 
-        /** 변경 전 버전의 동작을 기준으로 시나리오를 만든다(백그라운드). */
+        /** 변경 전 버전의 동작을 기준으로 시나리오를 만든다. */
         async generate(replace = false) {
             this.backfillError = '';
+            if (this.isDmn) {
+                // 규칙 표에서 파생하므로 바로 끝난다 — 폴링할 회차가 없다.
+                this.buildingScenarios = true;
+                try {
+                    const built = await this.backend.buildDmnScenarios(this.skillName, {
+                        baseRef: this.baseRef,
+                        replace
+                    });
+                    if (built?.error) {
+                        this.backfillError = built.message || built.error;
+                        return;
+                    }
+                    await this.reload();
+                } finally {
+                    this.buildingScenarios = false;
+                }
+                return;
+            }
+            if (this.isProcess) {
+                // 정의의 갈림길 조합에서 바로 파생하므로 바로 끝난다 — 폴링할 회차가 없다.
+                this.buildingScenarios = true;
+                try {
+                    const built = await this.backend.buildProcessScenarios(this.skillName, {
+                        baseRef: this.baseRef,
+                        replace
+                    });
+                    if (built?.error) {
+                        this.backfillError = built.message || built.error;
+                        return;
+                    }
+                    await this.reload();
+                } finally {
+                    this.buildingScenarios = false;
+                }
+                return;
+            }
             const data = await this.backend.startEvalBackfill(this.skillName, this.prNumber, { replace });
             if (data?.error) {
                 this.backfillError = data.message || data.error;
@@ -369,7 +532,9 @@ export default {
         },
         async start() {
             this.startError = '';
-            const data = await this.backend.startPrVerification(this.skillName, this.prNumber);
+            const data = this.isSkill
+                ? await this.backend.startPrVerification(this.skillName, this.prNumber)
+                : await this.backend.startResourceVerification(this.resourceType, this.skillName, this.prId);
             if (data?.error) {
                 this.startError = data.message || data.error;
                 return;
