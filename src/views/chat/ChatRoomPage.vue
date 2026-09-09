@@ -3254,16 +3254,12 @@ export default {
                 // 그 placeholder 를 걷어내고 uuid 를 물려받는다. 활성 스트림이 없으면 attach 는
                 // 조용히 끝나므로, 그때는 기존 말풍선을 건드리지 않아야 메시지가 사라지지 않는다.
                 let assistantUuid = this.uuid();
-                // 진행 중인 턴의 placeholder 에는 서버가 올려둔 초안 산출물이 실려 있다.
-                // 그냥 걷어내면 방금 복원한 아티팩트 뷰가 같이 사라지므로 물려받는다.
-                let carriedFiles = [];
                 const takeOverPlaceholder = () => {
                     const idx = (this.messages || []).findIndex(
                         (m) => m && m.role === 'assistant' && m.agentId === agentId && this._isPlaceholderContent(m.content)
                     );
                     if (idx === -1) return;
                     assistantUuid = this.messages[idx].uuid || assistantUuid;
-                    carriedFiles = Array.isArray(this.messages[idx].pdfFiles) ? this.messages[idx].pdfFiles : [];
                     this.messages.splice(idx, 1);
                 };
 
@@ -3294,12 +3290,8 @@ export default {
                                     userName: agentTarget.username || agentId,
                                     profile: agentTarget.profile || null,
                                     agentId,
-                                    agentPlan: { summary: '', steps: [] },
-                                    pdfFiles: carriedFiles
+                                    agentPlan: { summary: '', steps: [] }
                                 };
-                                // 물려받은 초안으로 패널을 다시 세운다 — placeholder 를 걷어낸
-                                // 뒤에도 '작성 중' 미리보기가 화면에 남아야 한다.
-                                for (const carried of carriedFiles) this.restoreDocxArtifact(carried, this.activeStreams[agentId]);
                                 this.setAgentStatus(agentId, { state: 'streaming', message: '' });
                             } else {
                                 full += content;
@@ -7377,20 +7369,6 @@ export default {
             return { gate, detail: (file?.status?.detail || file?.quality_gate_detail || '').toString() };
         },
 
-        /**
-         * 저장된 산출물을 패널로 되살린다.
-         *
-         * 초안에는 원본 다운로드 URL 이 없다 — 서버가 초안 DOCX 는 일부러 안 올린다
-         * (보라고 있는 것이지 받아서 보내라고 있는 게 아니다). 그래서 완성본 경로는
-         * fileUrl 이 없으면 그냥 실패했고, 초안 미리보기가 새로고침에 사라졌다.
-         */
-        restoreDocxArtifact(file, msgIdxOrRef) {
-            if (!this.isDocxPayload(file)) return false;
-            const hasDownload = !!(file.file_url || file.fileUrl || file.url);
-            if (file.draft === true || !hasDownload) return this.pushDraftDocxArtifact(file, msgIdxOrRef);
-            return this.pushRenderedDocxArtifact(file, msgIdxOrRef);
-        },
-
         /** done.files와 저장된 pdfFiles 모두 같은 서버 PDF 미리보기 계약을 사용한다. */
         pushRenderedDocxArtifact(file, msgIdxOrRef) {
             const view = this.resolveArtifactView(file);
@@ -7415,37 +7393,6 @@ export default {
                     pageCount: view.pageCount,
                     // 검수 미통과여도 문서는 보여준다. 판정은 배지로만 알린다.
                     qualityGate: status?.gate || '', qualityGateDetail: status?.detail || ''
-                }
-            });
-            return true;
-        },
-
-        /**
-         * 작성 중인 문서의 현재 렌더를 같은 탭에 갱신한다.
-         *
-         * 제안서 턴은 10분 넘게 돈다. 최종본이 나올 때까지 스피너만 보이면
-         * 진행 중인지 멈춘 건지 알 수 없다. 서버의 렌더 채널이 중간 페이지를
-         * 이미 만들고 있으므로 그걸 그대로 보여준다.
-         *
-         * artifactKey 가 렌더마다 같아서 pushArtifactPanel 이 카드를 쌓지 않고
-         * 교체한다. 검수를 통과하지 않은 문서이므로 다운로드는 주지 않는다.
-         */
-        pushDraftDocxArtifact(file, msgIdxOrRef) {
-            if (!file || file.preview?.kind !== 'pdf' || !file.preview.url) return false;
-            const fileName = file.file_name || file.fileName || 'document.docx';
-            const pages = file.preview.page_count || 0;
-            const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
-            this.pushArtifactPanel({
-                type: 'docx',
-                label: pages ? `${fileName} (작성 중 · ${pages}쪽)` : `${fileName} (작성 중)`,
-                data: {
-                    fileUrl: '',
-                    fileName,
-                    previewUrl: file.preview.url,
-                    messageId: msg?.uuid || null,
-                    artifactKey: file.artifact_id,
-                    draft: true,
-                    pageCount: pages
                 }
             });
             return true;
@@ -7523,7 +7470,7 @@ export default {
                 if (!msg || !['assistant', 'agent'].includes(msg.role)) continue;
                 const files = [...(Array.isArray(msg.pdfFiles) ? msg.pdfFiles : []), ...(msg.pdfFile ? [msg.pdfFile] : [])];
                 let restored = false;
-                for (const file of files) restored = this.restoreDocxArtifact(file, msg) || restored;
+                for (const file of files) restored = this.pushRenderedDocxArtifact(file, msg) || restored;
                 if (restored) return;
             }
             // deepagent 산출물 파일 복원 — 방 내 모든 메시지의 workspaceFiles 를 by-path 병합 후,
@@ -8613,8 +8560,17 @@ export default {
                         } catch (e) {}
                     },
                     onDraft: (file) => {
+                        // 중간 렌더는 문서로 띄우지 않는다 — 에이전트가 중간에 만든 파일이
+                        // 산출물처럼 보이고, 저장·복원 배선만 늘어난다. 진행만 활동에 남긴다.
                         try {
-                            this.pushDraftDocxArtifact(file, this.activeStreams[agentId]);
+                            const name = (file?.file_name || file?.fileName || '문서').toString();
+                            const pages = Number(file?.page_count) || 0;
+                            this.recordActivity({
+                                id: `draft:${name}`,
+                                tool: '문서 작성',
+                                title: pages ? `${name} · ${pages}쪽까지 작성` : `${name} 작성 중`,
+                                status: 'running'
+                            });
                         } catch (e) {}
                     },
                     onToolStart: (tool, input, rawEvent) => {
