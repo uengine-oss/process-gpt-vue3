@@ -3511,6 +3511,7 @@ import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 import { getTenantId } from '@/utils/tenant';
+import { normalizeOrchestration } from '@/utils/orchestration';
 const backend = BackendFactory.createBackend();
 
 // getToolCallList()의 도구 결과 가공(JSON.parse/정규식/문자열 치환) 캐시.
@@ -3965,8 +3966,8 @@ export default {
                     }
                     // 새 대화(방 컨텍스트에 명시적 값 없음)는 기본값을 deepagents로 한다 —
                     // bsc-strategy-interview 같은 커스텀 스킬은 deepagents 오케스트레이션에서만 로드된다.
-                    // 기존 방에 명시적으로 'langchain-react'가 저장돼 있으면 그 선택은 그대로 존중한다.
-                    this.orchestration = v === 'langchain-react' ? 'langchain-react' : 'deepagents';
+                    // 기존 방에 저장된 값이 알려진 오케스트레이션이면 그 선택을 그대로 존중한다.
+                    this.orchestration = normalizeOrchestration(v);
                 } catch (e) {}
             }
         },
@@ -4006,7 +4007,8 @@ export default {
         orchestrationOptions() {
             return [
                 { label: this.$t('chats.basicAgent'), value: 'langchain-react' },
-                { label: this.$t('chats.deepAgent'), value: 'deepagents' }
+                { label: this.$t('chats.deepAgent'), value: 'deepagents' },
+                { label: this.$t('chats.codexAgent'), value: 'codex' }
             ];
         },
         isSystemMentioned() {
@@ -4917,7 +4919,7 @@ export default {
                     text,
                     images: [],
                     mentionedUsers: [],
-                    orchestration: (this.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
+                    orchestration: normalizeOrchestration(this.orchestration),
                     file: null,
                     files: [],
                     rawFiles: [],
@@ -6375,7 +6377,7 @@ export default {
                     images: this.attachedImages,
                     text: this.newMessage,
                     mentionedUsers: this.mentionedUsers,
-                    orchestration: (this.orchestration || '').toString().trim() === 'deepagents' ? 'deepagents' : 'langchain-react',
+                    orchestration: normalizeOrchestration(this.orchestration),
                     file: filesForMessage[0] || null,
                     files: filesForMessage,
                     rawFiles,
@@ -6519,6 +6521,12 @@ export default {
                         // memento /save-to-storage 경유 (임베딩 + 벡터 저장)
                         const options = {};
                         if (roomId) options.room_id = roomId;
+                        // codex 는 첨부를 워크스페이스의 원본 파일로 직접 연다 — 폴더 업로드와
+                        // 같은 원칙이다. 검색용 청킹·임베딩·VLM 판독은 아무도 쓰지 않으면서
+                        // 업로드를 수십 초 늦추고, 임베딩 서버가 흔들리면 첨부까지 실패시킨다.
+                        if ((this.orchestration || '').toString().trim() === 'codex') {
+                            options.raw_only = true;
+                        }
                         uploadResult = await backend.uploadFileToStorage(f, options);
                         const resolvedUrl =
                             uploadResult?.public_url ||

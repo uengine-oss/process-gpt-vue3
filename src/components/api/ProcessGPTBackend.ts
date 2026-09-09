@@ -220,7 +220,7 @@ class ProcessGPTBackend implements Backend {
         await this.deleteTest(`${path}/record`, '', index);
     }
 
-    async releaseVersion(releaseName: string): Promise<any> {}
+    async releaseVersion(releaseName: string): Promise<any> { }
 
     async testList(_path: string): Promise<any> {
         const map = this.__loadTestRawMap();
@@ -1359,14 +1359,14 @@ class ProcessGPTBackend implements Backend {
     async getTaskReturnAvailability(taskId: string): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 반송 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/return/availability`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/return/availability`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
     async returnTask(taskId: string, payload: any): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 반송 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/return`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/return`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
@@ -1380,14 +1380,14 @@ class ProcessGPTBackend implements Backend {
     async getTaskSkipAvailability(taskId: string): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 SKIP 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/skip/availability`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/skip/availability`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
     async skipTask(taskId: string, payload: any): Promise<any> {
         throw new Error(
             '[ProcessGPTBackend] 태스크 SKIP 기능은 현재 uEngine 모드에서 구현되었습니다. ' +
-                'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/skip`)를 먼저 제공한 뒤 구현해주세요.'
+            'ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/skip`)를 먼저 제공한 뒤 구현해주세요.'
         );
     }
 
@@ -2867,6 +2867,7 @@ class ProcessGPTBackend implements Backend {
             'checkbox-field',
             'radio-field',
             'file-field',
+            'folder-field',
             'label-field',
             'boolean-field',
             'textarea-field',
@@ -3779,6 +3780,27 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async watchChatRooms(callback: (payload: any) => void, options: any = {}) {
+        try {
+            const channel = options?.channel || `chat-rooms-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            const tenantId = getTenantId();
+            const filter = options?.filter || (tenantId ? `tenant_id=eq.${tenantId}` : null);
+            return await storage._watch(
+                {
+                    channel,
+                    table: 'chat_rooms',
+                    filter
+                },
+                (payload) => {
+                    callback(payload);
+                }
+            );
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async watchTenantSkills(callback: (payload: any) => void, options: any = {}) {
         try {
             const channel = options?.channel || `tenant-skills-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -4186,12 +4208,12 @@ class ProcessGPTBackend implements Backend {
             const skillsArray =
                 typeof newAgent.skills === 'string'
                     ? newAgent.skills
-                          .split(',')
-                          .map((s: string) => s.trim())
-                          .filter((s: string) => s.length > 0)
+                        .split(',')
+                        .map((s: string) => s.trim())
+                        .filter((s: string) => s.length > 0)
                     : Array.isArray(newAgent.skills)
-                    ? newAgent.skills.map((s: any) => String(s).trim()).filter((s: string) => s.length > 0)
-                    : [];
+                        ? newAgent.skills.map((s: any) => String(s).trim()).filter((s: string) => s.length > 0)
+                        : [];
             const putObj: any = {
                 id: newAgent.id,
                 username: newAgent.name,
@@ -4478,7 +4500,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadDefinition(file: File, path: string) {}
+    async uploadDefinition(file: File, path: string) { }
 
     async getLock(id: string) {
         try {
@@ -4685,7 +4707,7 @@ class ProcessGPTBackend implements Backend {
             setCachedJwtTenantId(tenantId);
             try {
                 localStorage.setItem('tenantId', tenantId);
-            } catch (e) {}
+            } catch (e) { }
 
             if (window.$tenantName !== 'localhost') {
                 for (const process of defaultProcessesData.defaultProcesses) {
@@ -5145,7 +5167,7 @@ class ProcessGPTBackend implements Backend {
      * - 기존 `processFile()`과 분리된 신규 호출로, 기존 로직에 영향이 없습니다.
      * - 백엔드가 폴더 전체 처리를 지원하는 경우(file_path 없이 storage_type="drive") 이를 사용합니다.
      */
-    async processDriveFolder(options?: { drive_folder_id?: string; [key: string]: any }) {
+    async processDriveFolder(options?: { drive_folder_id?: string;[key: string]: any }) {
         try {
             const response = await axios.post(
                 '/memento/process',
@@ -5958,11 +5980,11 @@ class ProcessGPTBackend implements Backend {
                 const skills = Array.isArray(a.skills)
                     ? a.skills
                     : typeof a.skills === 'string'
-                    ? a.skills
-                          .split(',')
-                          .map((s: string) => s.trim())
-                          .filter(Boolean)
-                    : [];
+                        ? a.skills
+                            .split(',')
+                            .map((s: string) => s.trim())
+                            .filter(Boolean)
+                        : [];
                 const agentPayload = {
                     id: agentId,
                     name,
@@ -6102,12 +6124,12 @@ class ProcessGPTBackend implements Backend {
                 skills:
                     typeof u.skills === 'string'
                         ? u.skills
-                              .split(',')
-                              .map((s: string) => s.trim())
-                              .filter(Boolean)
+                            .split(',')
+                            .map((s: string) => s.trim())
+                            .filter(Boolean)
                         : Array.isArray(u.skills)
-                        ? u.skills
-                        : [],
+                            ? u.skills
+                            : [],
                 description: u.description || null
             }));
         } catch (e) {
@@ -6130,11 +6152,11 @@ class ProcessGPTBackend implements Backend {
         const tags = Array.isArray(meta?.tags)
             ? meta?.tags
             : typeof meta?.tags === 'string'
-            ? (meta?.tags as string)
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-            : [];
+                ? (meta?.tags as string)
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                : [];
         let author = meta?.author;
         if (!author) {
             try {
@@ -6376,8 +6398,8 @@ class ProcessGPTBackend implements Backend {
             typeof meta.category === 'string'
                 ? meta.category
                 : meta.category
-                ? `${meta.category.mega || ''}/${meta.category.major || ''}`
-                : '';
+                    ? `${meta.category.mega || ''}/${meta.category.major || ''}`
+                    : '';
         const tagsStr = Array.isArray(meta.tags) ? meta.tags.join(',') : meta.tags || '';
 
         // 중복 버전 사전 체크(친절한 에러 메시지).
@@ -6546,9 +6568,9 @@ class ProcessGPTBackend implements Backend {
             tags:
                 typeof full.tags === 'string'
                     ? full.tags
-                          .split(',')
-                          .map((s: string) => s.trim())
-                          .filter(Boolean)
+                        .split(',')
+                        .map((s: string) => s.trim())
+                        .filter(Boolean)
                     : [],
             author: { name: full.author_name, uid: full.author_uid },
             definition: full.definition,
@@ -7507,7 +7529,18 @@ class ProcessGPTBackend implements Backend {
             // 목록 렌더링은 id/name/message/participants 만 쓴다. context(방별 컨텍스트 JSON)는
             // 방을 열 때 getChatRoom 으로 따로 가져오므로 목록에서는 제외한다.
             // (운영 uengine 테넌트에서 이 조회가 701KB / 1.0초였다)
-            return await storage.list(path, withTenantMatch({ key: 'id,name,message,participants,primary_agent_id,tenant_id' }));
+            // PostgREST는 기본적으로 최대 1,000행만 반환한다. 서버 정렬 없이 가져온 뒤
+            // 프론트에서 정렬하면 최신 방이 그 1,000행 밖에 있어 목록에서 사라질 수 있다.
+            // 반드시 DB에서 마지막 메시지 시각 내림차순으로 자른 결과를 받아야 한다.
+            return await storage.list(
+                path,
+                withTenantMatch({
+                    key: 'id,name,message,participants,primary_agent_id,tenant_id',
+                    orderBy: 'message->>createdAt',
+                    sort: 'desc',
+                    size: 1000
+                })
+            );
         } catch (error) {
             throw new Error(error.message);
         }
@@ -8503,11 +8536,11 @@ class ProcessGPTBackend implements Backend {
                     const skills = Array.isArray(a.skills)
                         ? a.skills
                         : typeof a.skills === 'string'
-                        ? a.skills
-                              .split(',')
-                              .map((s: string) => s.trim())
-                              .filter(Boolean)
-                        : [];
+                            ? a.skills
+                                .split(',')
+                                .map((s: string) => s.trim())
+                                .filter(Boolean)
+                            : [];
                     await this.putAgent({
                         id: agentId,
                         name,
@@ -9361,12 +9394,12 @@ class ProcessGPTBackend implements Backend {
             skillIds.length ? this.getTenantSkillOwners(tenantId).catch(() => []) : Promise.resolve([]),
             defIds.length
                 ? storage
-                      .list('proc_def', {
-                          match: { tenant_id: tenantId },
-                          inArray: { column: 'id', values: defIds },
-                          key: 'id,name,owner'
-                      })
-                      .catch(() => [])
+                    .list('proc_def', {
+                        match: { tenant_id: tenantId },
+                        inArray: { column: 'id', values: defIds },
+                        key: 'id,name,owner'
+                    })
+                    .catch(() => [])
                 : Promise.resolve([])
         ]);
 
@@ -9394,12 +9427,12 @@ class ProcessGPTBackend implements Backend {
         ];
         const userRows = personIds.length
             ? await storage
-                  .list('users', {
-                      match: { tenant_id: tenantId },
-                      inArray: { column: 'id', values: personIds },
-                      key: 'id,username,email,profile'
-                  })
-                  .catch(() => [])
+                .list('users', {
+                    match: { tenant_id: tenantId },
+                    inArray: { column: 'id', values: personIds },
+                    key: 'id,username,email,profile'
+                })
+                .catch(() => [])
             : [];
         const userById = new Map<string, any>((Array.isArray(userRows) ? userRows : []).map((row: any) => [row.id, row]));
         const displayName = (id: string | null): string => {

@@ -546,7 +546,8 @@
         "friday": "Friday",
         "saturday": "Saturday",
         "basicAgent": "Basic Agent",
-        "deepAgent": "Deep Agent"
+        "deepAgent": "Deep Agent",
+        "codexAgent": "Codex"
     },
     "AssistantChats": {
         "document": "Enter the task details you want to assign. When you provide information about the task, a preview of the task that the recipient will see is displayed on the left. Review the preview and improve any lacking areas. Once the improvements are complete, use 'Assign Task' to give the task."
@@ -2696,6 +2697,27 @@
                     "details": [
                         {
                             "title": "🎯 How it works:\n→ Image analysis\n→ Text extraction and organization"
+                        }
+                    ]
+                }
+            },
+            "codex": {
+                "title": "Codex Agent",
+                "description": "Opens the uploaded folder and attached documents in a workspace and produces DOCX/HWPX deliverables (5-40 min)",
+                "detailDesc": {
+                    "title": "Codex reads the material in a workspace and writes the document",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\n→ Copies the previous step's attachments as inputs\n→ Explores the uploaded folder with shell tools\n→ Writes the document and verifies the render\n→ Puts the output file in the form for the next step"
+                        },
+                        {
+                            "title": "💡 Use it when:\n• Writing a document with a required layout (proposal, report)\n• Company material must back the content\n• Images and diagrams must be opened and inserted"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Write a proposal from an RFP's requirements\n• Write a project status report\n• Update a document while keeping its template"
+                        },
+                        {
+                            "title": "⚠️ Notes:\n• The company folder must be uploaded in the earlier form step\n• Outputs are registered only after passing the render check"
                         }
                     ]
                 }

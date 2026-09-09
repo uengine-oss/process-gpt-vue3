@@ -37,7 +37,19 @@
                         @download="emitPanelAction(panel, 'download', $event)"
                         @page-edit-request="emitPanelAction(panel, 'page-edit-request', $event)"
                     />
-                    <!-- DOCX 문서 미리보기 -->
+                    <!-- 서버에서 LibreOffice로 렌더한 PDF를 표시하고 다운로드는 원본을 유지한다. -->
+                    <PdfViewer
+                        v-else-if="panel.type === 'docx' && panel.data.previewUrl"
+                        :ref="(el) => setPanelRef(panel.id, el)"
+                        :fileUrl="panel.data.previewUrl"
+                        :fileName="panel.data.fileName || panel.label"
+                        :downloadUrl="panel.data.fileUrl"
+                        :downloadFileName="panel.data.fileName || panel.label"
+                        downloadTitle="원본 DOCX 다운로드"
+                        :draft="panel.data.draft === true"
+                        @close="$emit('close-panel', panel.id)"
+                    />
+                    <!-- 기존 HTML DOCX 미리보기 -->
                     <HwpxViewer
                         v-else-if="panel.type === 'docx'"
                         :ref="(el) => setPanelRef(panel.id, el)"
@@ -81,6 +93,7 @@
 
 <script>
 import HwpxViewer from '@/components/HwpxViewer.vue';
+import PdfViewer from '@/components/PdfViewer.vue';
 import SlideArtifactViewer from '@/components/SlideArtifactViewer.vue';
 import ProcessArtifactViewer from '@/components/ProcessArtifactViewer.vue';
 import WorkspaceFilesViewer from '@/components/WorkspaceFilesViewer.vue';
@@ -99,7 +112,7 @@ const PANEL_TYPE_ICONS = {
 
 export default {
     name: 'ArtifactPanel',
-    components: { HwpxViewer, SlideArtifactViewer, ProcessArtifactViewer, WorkspaceFilesViewer, AgentChatRoomContext },
+    components: { HwpxViewer, PdfViewer, SlideArtifactViewer, ProcessArtifactViewer, WorkspaceFilesViewer, AgentChatRoomContext },
     props: {
         panels: { type: Array, default: () => [] },
         activeId: { type: String, default: null }

@@ -3,14 +3,18 @@
  *
  * - deepagents 서버(별도 포트/서비스)로 라우팅/웜업/스트리밍 요청을 보낸다.
  * - gateway `process-gpt-deepagents` 라우트와 동일한 고정 prefix만 사용한다.
+ * - codex 서버도 같은 chat/stream 계약이라 baseUrl 만 바꿔 이 클래스를 재사용한다.
+ *   (codex 도 /chat/stream/attach · /chat/stop 을 제공한다. 없는 런타임을 붙일 때만
+ *   supportsStreamAttach=false 로 재접속 호출을 끈다.)
  */
 const DEEP_AGENT_ROUTER_BASE_URL = '/process-gpt-deepagents';
 
 import { buildAgentHeaders } from './agentRequestHeaders';
 
 class DeepAgentRouterService {
-    constructor() {
-        this.baseUrl = DEEP_AGENT_ROUTER_BASE_URL;
+    constructor(baseUrl, { supportsStreamAttach = true } = {}) {
+        this.baseUrl = (baseUrl ?? '').toString().trim().replace(/\/$/, '') || DEEP_AGENT_ROUTER_BASE_URL;
+        this.supportsStreamAttach = supportsStreamAttach;
     }
 
     async healthCheck() {
@@ -127,6 +131,7 @@ class DeepAgentRouterService {
     async attachToStream(conversationId, callbacks = {}, options = {}) {
         const { onAbort } = callbacks;
         if (!conversationId) return;
+        if (!this.supportsStreamAttach) return;
 
         let response;
         try {
@@ -180,7 +185,8 @@ class DeepAgentRouterService {
             onMetadata,
             onOpenUi,
             onProcessResult,
-            onFileArtifact
+            onFileArtifact,
+            onDraft
         } = callbacks;
 
         const reader = response.body.getReader();
@@ -243,8 +249,15 @@ class DeepAgentRouterService {
                             case 'file_artifact':
                                 if (onFileArtifact) onFileArtifact(parsed);
                                 break;
+                            // 작성 중인 문서의 현재 모습. 최종 산출물이 아니므로
+                            // done.files 와 달리 다운로드 링크를 싣지 않는다.
+                            case 'draft':
+                                if (onDraft) onDraft(parsed.file || parsed);
+                                break;
                             case 'done':
-                                if (onDone) onDone(parsed.content);
+                                // parsed 를 통째로 넘긴다 — done.files(산출물 다운로드 링크)가
+                                // content 만 넘기던 시절에 조용히 버려지고 있었다.
+                                if (onDone) onDone(parsed.content, parsed);
                                 break;
                             case 'error':
                                 if (onError) onError(new Error(parsed.content || parsed.error || parsed.message || 'Agent error'));

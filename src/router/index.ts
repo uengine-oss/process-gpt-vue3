@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import MainRoutes from './MainRoutes';
 import AuthRoutes from './AuthRoutes';
 import TenantRoutes from './TenantRoutes';
+import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 
 declare global {
     interface Window {
@@ -176,6 +177,20 @@ router.beforeEach(async (to: any, from: any, next: any) => {
         console.error('[라우터] beforeEach 에러 발생:', error);
         hasRouterError = true;
         next();
+    }
+});
+
+// 지식베이스 선택 누수 방지: 채팅방(/chat)을 벗어나 메인/다른 화면으로 가면, 그 방에 묶였던
+// 선택을 비운다. (방→방 전환은 /chat 을 유지하며 ChatRoomPage 의 bindRoom 이 처리하고,
+// 메인에서 갓 고른 미채택 선택은 resetIfRoomBound 이 sourceRoomId=null 이라 보존한다.)
+// 네비게이션 흐름을 막지 않는 순수 side-effect 라 afterEach 에 둔다.
+router.afterEach((to: any) => {
+    try {
+        if (to?.path !== '/chat') {
+            useKnowledgeSelectionStore().resetIfRoomBound();
+        }
+    } catch (e) {
+        // pinia 미초기화 등 예외는 조용히 무시 (선택 누수 방지는 best-effort)
     }
 });
 
