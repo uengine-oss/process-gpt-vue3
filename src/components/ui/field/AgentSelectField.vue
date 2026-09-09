@@ -403,6 +403,22 @@ export default {
                     }
                 },
                 {
+                    titleKey: 'AgentSelectInfo.orchestration.codex.title',
+                    value: 'codex',
+                    icon: 'flowchart',
+                    descKey: 'AgentSelectInfo.orchestration.codex.description',
+                    costKey: 'AgentSelectInfo.cost.high',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.codex.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.codex.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.codex.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.codex.detailDesc.details.2.title' },
+                            { title: 'AgentSelectInfo.orchestration.codex.detailDesc.details.3.title' }
+                        ]
+                    }
+                },
+                {
                     titleKey: 'AgentSelectInfo.orchestration.cliagents.title',
                     value: 'cliagents',
                     icon: 'flowchart',
