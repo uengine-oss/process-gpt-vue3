@@ -2701,6 +2701,27 @@
                     ]
                 }
             },
+            "codex": {
+                "title": "Codex Agent",
+                "description": "Opens the uploaded folder and attached documents in a workspace and produces DOCX/HWPX deliverables (5-40 min)",
+                "detailDesc": {
+                    "title": "Codex reads the material in a workspace and writes the document",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\n→ Copies the previous step's attachments as inputs\n→ Explores the uploaded folder with shell tools\n→ Writes the document and verifies the render\n→ Puts the output file in the form for the next step"
+                        },
+                        {
+                            "title": "💡 Use it when:\n• Writing a document with a required layout (proposal, report)\n• Company material must back the content\n• Images and diagrams must be opened and inserted"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Write a proposal from an RFP's requirements\n• Write a project status report\n• Update a document while keeping its template"
+                        },
+                        {
+                            "title": "⚠️ Notes:\n• The company folder must be uploaded in the earlier form step\n• Outputs are registered only after passing the render check"
+                        }
+                    ]
+                }
+            },
             "cliagents": {
                 "title": "CLI coding agent",
                 "description": "Delegate the work item to a Claude Code / Codex CLI agent. Suited to work that produces files or needs tool execution (3-20 min)",

@@ -26,6 +26,7 @@ export const AGENT_ORCHESTRATIONS = [
     'crewai-deep-research',
     'deep-research-custom',
     'deepagents',
+    'codex',
     'langchain-react',
     'browser-automation-agent',
     'a2a',

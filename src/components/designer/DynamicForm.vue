@@ -139,7 +139,7 @@ export default {
                 const doc = parser.parseFromString(targetHTML, 'text/html');
 
                 const fields = doc.querySelectorAll(
-                    'text-field, select-field, checkbox-field, radio-field, file-field, boolean-field, textarea-field, user-select-field, report-field, slide-field, bpmn-uengine-field'
+                    'text-field, select-field, checkbox-field, radio-field, file-field, folder-field, boolean-field, textarea-field, user-select-field, report-field, slide-field, bpmn-uengine-field'
                 );
 
                 fields.forEach((field) => {
