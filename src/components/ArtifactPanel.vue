@@ -12,6 +12,13 @@
                 >
                     <v-icon size="13" class="artifact-panel__tab-icon">{{ typeIcon(panel.type) }}</v-icon>
                     <span class="artifact-panel__tab-label">{{ panel.label }}</span>
+                    <!-- 검수를 통과 못 한 산출물도 보여준다. 감추는 대신 표시한다. -->
+                    <v-tooltip v-if="panel.data?.qualityGate === 'not_passed'" location="bottom" max-width="360">
+                        <template #activator="{ props }">
+                            <v-icon v-bind="props" size="12" color="warning" class="artifact-panel__tab-warn">mdi-alert-circle-outline</v-icon>
+                        </template>
+                        <span>서버 검수를 통과하지 못했습니다{{ panel.data.qualityGateDetail ? ': ' + panel.data.qualityGateDetail : '' }}</span>
+                    </v-tooltip>
                     <span class="artifact-panel__tab-close" @click.stop="$emit('close-panel', panel.id)">
                         <v-icon size="11">mdi-close</v-icon>
                     </span>
@@ -227,6 +234,11 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 150px;
+}
+
+.artifact-panel__tab-warn {
+    flex: 0 0 auto;
+    margin-left: 2px;
 }
 
 .artifact-panel__tab-close {
