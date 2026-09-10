@@ -361,6 +361,7 @@ export default class StorageBaseSupabase {
             // autoconfirm 환경에서는 가입 즉시 session이 발급되므로
             // 메일 확인 안내 대신 바로 서비스로 이동한다.
             result.data['isNewUser'] = !result.data.session;
+            result.data['approvalPending'] = !!window.$pal;
             return result.data;
         } catch (e) {
             throw new StorageBaseError('error in signUp', e, arguments);

@@ -140,18 +140,18 @@ function normalizeTabs(raw: Partial<DashboardTab>[]): DashboardTab[] {
 
 /** 환경변수 기반 기본 탭 (DB에 값이 없을 때 폴백) */
 function getEnvFallbackTabs(): DashboardTab[] {
-    return normalizeTabs([
+    return normalizeTabs(NATIVE_VIEWS.map((nativeView, index) => (
         {
-            key: 'A',
+            key: String.fromCharCode(65 + index),
             label: '',
             mode: 'native',
-            nativeView: 'operational-board',
+            nativeView,
             url: '',
-            dataPath: 'operational',
-            refreshSeconds: 5,
+            dataPath: nativeView === 'operational-board' ? 'operational' : 'analytical',
+            refreshSeconds: nativeView === 'operational-board' ? 5 : 0,
             latencyLabel: ''
         }
-    ]);
+    )));
 }
 
 /** DB에 저장된 데이터를 flat DashboardTab[]로 변환 (레거시 그룹 구조 마이그레이션 포함) */

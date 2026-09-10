@@ -90,6 +90,16 @@ export const useAuthStore = defineStore({
                             });
                         }
                     } else {
+                        if (result.approvalPending) {
+                            await (window as any).$app_.try({
+                                action: () => Promise.resolve(),
+                                successMsg: result.isNewUser
+                                    ? '가입 신청이 접수되었습니다. 이메일 인증과 관리자 승인 후 이용할 수 있습니다.'
+                                    : '가입 신청이 접수되었습니다. 관리자 승인을 기다려 주세요.'
+                            });
+                            await router.push(result.isNewUser ? '/auth/login' : '/auth/signup-pending');
+                            return;
+                        }
                         const tenantId = window.$tenantName;
                         await backend.setTenant(tenantId);
                         if (result['isNewUser']) {

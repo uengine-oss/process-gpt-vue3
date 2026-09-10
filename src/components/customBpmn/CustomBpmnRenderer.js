@@ -847,14 +847,18 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     }
 
     // StartEvnet 관련
+    // Pal 모드 전용 — BPMN 관례대로 시작(녹색)·종료(적색)를 색으로 구분한다.
+    // process-gpt 기본 화면은 기존 단일색(warningBg)을 유지한다.
     drawCustomStartEvent(parentNode, shape, element) {
         const size = 34;
         const radius = 100;
-        var strokeColor = 'none';
+        const pal = !!window.$pal;
+        const fillColor = pal ? dsColor('eventStart') : dsColor('warningBg');
+        const strokeColor = pal ? dsColor('eventStartStroke') : 'none';
 
         const borderRect = drawBorderRect(parentNode, size, size, radius, strokeColor);
         prependTo(borderRect, parentNode);
-        const rect = drawRect(parentNode, size, size, radius, 'none', dsColor('warningBg'));
+        const rect = drawRect(parentNode, size, size, radius, 'none', fillColor);
         prependTo(rect, parentNode);
         svgRemove(shape);
     }
@@ -863,11 +867,14 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     drawCustomEndEvent(parentNode, shape, element) {
         const size = 34;
         const radius = 100;
-        var strokeColor = 'none';
+        const pal = !!window.$pal;
+        const fillColor = pal ? dsColor('eventEnd') : dsColor('warningBg');
+        const strokeColor = pal ? dsColor('eventEndStroke') : 'none';
 
-        const borderRect = drawBorderRect(parentNode, size, size, radius, strokeColor);
+        // 종료 이벤트는 BPMN 관례대로 테두리를 더 두껍게 그린다
+        const borderRect = drawBorderRect(parentNode, size, size, radius, strokeColor, pal ? 3 : 2);
         prependTo(borderRect, parentNode);
-        const rect = drawRect(parentNode, size, size, radius, 'none', dsColor('warningBg'));
+        const rect = drawRect(parentNode, size, size, radius, 'none', fillColor);
         prependTo(rect, parentNode);
         svgRemove(shape);
     }

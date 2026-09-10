@@ -1,14 +1,16 @@
 /**
  * Analysis Dashboard Store
  * Tab B: Operational Board 데이터 전용 store
- * pi-system-backend /operational-board API 기반
+ * completion /operational-board API 기반
  */
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import axios from 'axios';
+import { dashboardHttp as axios } from '@/services/dashboardHttp';
 import BackendFactory from '@/components/api/BackendFactory';
 
-const API_BASE = '/pi-system-backend/operational-board';
+// Vite와 nginx가 /completion 접두사를 제거해 completion FastAPI의
+// /operational-board/* 라우트로 전달한다.
+const API_BASE = '/completion/operational-board';
 
 // ============== Types (API Spec) ==============
 
@@ -136,6 +138,7 @@ export const useAnalysisDashboardStore = defineStore('analysisDashboard', () => 
     const pendingReopens = ref<PendingReopen[]>([]);
     const actionSummary = ref<ActionRequiredSummary>({ delayed_review_count: 0, pending_reopen_count: 0 });
     const loading = ref(false);
+    const error = ref('');
 
     // ============== Actions ==============
     function setFilters(nextFilters: Partial<AnalysisDashboardFilters>) {
@@ -166,6 +169,7 @@ export const useAnalysisDashboardStore = defineStore('analysisDashboard', () => 
             zombieTotalCount.value = data.total_count || 0;
         } catch (e) {
             console.error('fetchZombieProcesses error:', e);
+            error.value = '장기 미갱신 프로세스를 불러오지 못했습니다.';
             zombieProcesses.value = [];
             zombieTotalCount.value = 0;
         }
@@ -181,6 +185,7 @@ export const useAnalysisDashboardStore = defineStore('analysisDashboard', () => 
             actionSummary.value = data.summary || { delayed_review_count: 0, pending_reopen_count: 0 };
         } catch (e) {
             console.error('fetchActionRequired error:', e);
+            error.value = '검토 및 재개 요청을 불러오지 못했습니다.';
             delayedReviews.value = [];
             pendingReopens.value = [];
             actionSummary.value = { delayed_review_count: 0, pending_reopen_count: 0 };
@@ -199,8 +204,9 @@ export const useAnalysisDashboardStore = defineStore('analysisDashboard', () => 
 
     async function fetchAllTabB() {
         loading.value = true;
+        error.value = '';
         try {
-            await Promise.all([fetchBottleneck(), fetchZombieProcesses(), fetchActionRequired()]);
+            await Promise.all([fetchZombieProcesses(), fetchActionRequired()]);
         } finally {
             loading.value = false;
         }
@@ -218,6 +224,7 @@ export const useAnalysisDashboardStore = defineStore('analysisDashboard', () => 
         pendingReopens,
         actionSummary,
         loading,
+        error,
         setFilters,
         fetchBottleneck,
         fetchZombieProcesses,

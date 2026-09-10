@@ -3,7 +3,7 @@
  * View 3: Governance & Quality
  * 프로세스 자산 현황, DQ Score, BPMN 문법 오류 목록
  */
-import { onMounted, ref, computed } from 'vue';
+import { watch, ref, computed } from 'vue';
 import { fetchGovernanceQuality } from '@/services/dashboardDataService';
 import type { GovernanceQualityData } from '@/services/dashboardDataService';
 
@@ -25,7 +25,7 @@ async function load() {
     }
 }
 
-onMounted(load);
+watch(() => props.filters?.domains, load, { immediate: true, deep: true });
 
 // ─── Computed ────────────────────────────────────────────────────────
 const assetStatus = computed(() => d.value?.asset_status || []);
@@ -38,19 +38,20 @@ const dqGaugeStyle = computed(() => ({
     background: `conic-gradient(${dqColor(dqOverallScore.value)} ${Math.min(dqOverallScore.value, 100)}%, #e2e8f0 0)`
 }));
 const qualityCards = computed(() => {
-    const totalAssets = assetStatus.value.reduce((sum, item) => sum + Number(item.total_count || 0), 0);
-    const activeAssets = assetStatus.value.reduce((sum, item) => sum + Number(item.active_count || 0), 0);
+    const checked = d.value?.validation_summary?.checked_count || 0;
+    const valid = d.value?.validation_summary?.valid_count || 0;
     const errorProcesses = grammarErrors.value.filter((item) => Number(item.error_count || 0) > 0).length;
     const versionChanges = versionTop.value.reduce((sum, item) => sum + Number(item.change_count || 0), 0);
     return [
-        { label: '속성별 입력 충실도', value: `${dqOverallScore.value}%`, tone: dqColor(dqOverallScore.value) },
-        { label: '품질 기준 준수', value: `${totalAssets ? Math.round((activeAssets / totalAssets) * 100) : 0}%`, tone: '#10B981' },
+        { label: '속성별 입력 충실도', value: dqOverall.value?.score == null ? '미집계' : `${dqOverallScore.value}%`, tone: dqColor(dqOverallScore.value) },
+        { label: '구조 검사 통과율', value: checked ? `${Math.round(valid / checked * 100)}%` : '검사 대상 없음', tone: '#10B981' },
         { label: '오류 프로세스 건수', value: `${errorProcesses}건`, tone: errorProcesses > 0 ? '#EF4444' : '#10B981' },
         { label: '버전 변경 빈도', value: `${versionChanges}회`, tone: '#F59E0B' }
     ];
 });
 
-function dqColor(score: number) {
+function dqColor(score: number | null) {
+    if (score == null) return '#64748b';
     return score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : '#EF4444';
 }
 </script>
@@ -79,7 +80,7 @@ function dqColor(score: number) {
                     <div class="ds-card-header">
                         <div>
                             <h3 class="ds-card-title">프로세스 자산 현황</h3>
-                            <p class="ds-card-subtitle">도메인별 상태 점유율 및 버전 변경 빈도</p>
+                            <p class="ds-card-subtitle">모듈을 포함한 전체 저장 자산의 도메인별 상태</p>
                         </div>
                     </div>
                     <div class="asset-list">
@@ -107,7 +108,7 @@ function dqColor(score: number) {
                         </div>
                     </div>
                     <div v-if="versionTop.length" class="version-section">
-                        <p class="version-title">버전 변경 빈도 Top 5</p>
+                        <p class="version-title">지난달 이후 버전 기록 Top 5</p>
                         <div class="version-list">
                             <div v-for="(v, i) in versionTop" :key="v.proc_def_name" class="version-chip">
                                 <span class="version-rank">#{{ i + 1 }}</span>
@@ -124,7 +125,7 @@ function dqColor(score: number) {
                 <div class="ds-card">
                     <div class="ds-card-header">
                         <div>
-                            <h3 class="ds-card-title">표준 준수 / DQ Score</h3>
+                            <h3 class="ds-card-title">속성별 입력 충실도</h3>
                             <p class="ds-card-subtitle">속성 입력 충실도 (Data Quality)</p>
                         </div>
                     </div>
@@ -132,12 +133,12 @@ function dqColor(score: number) {
                         <div class="dq-gauge" :style="dqGaugeStyle">
                             <div class="dq-gauge-inner">
                                 <span>DQ</span>
-                                <strong>{{ dqOverall.score }}%</strong>
+                                <strong>{{ dqOverall.score == null ? '미집계' : `${dqOverall.score}%` }}</strong>
                             </div>
                         </div>
                         <div class="dq-gauge-copy">
                             <p>전체 DQ 평균 점수</p>
-                            <span :style="{ color: dqColor(dqOverall.score) }">{{ dqOverall.score }}%</span>
+                            <span :style="{ color: dqColor(dqOverall.score) }">{{ dqOverall.score == null ? '미집계' : `${dqOverall.score}%` }}</span>
                         </div>
                     </div>
                     <div class="dq-list">
@@ -147,7 +148,7 @@ function dqColor(score: number) {
                                 <div class="dq-bar-fill" :style="{ width: (item.score || 0) + '%', backgroundColor: dqColor(item.score) }"></div>
                             </div>
                             <div class="dq-score-wrap">
-                                <span class="dq-score" :style="{ color: dqColor(item.score) }">{{ item.score }}%</span>
+                                <span class="dq-score" :style="{ color: dqColor(item.score) }">{{ item.score == null ? '미집계' : `${item.score}%` }}</span>
                                 <v-icon v-if="item.trend === 'up'" size="10" color="#059669">mdi-trending-up</v-icon>
                                 <v-icon v-else-if="item.trend === 'down'" size="10" color="#dc2626">mdi-trending-down</v-icon>
                             </div>
@@ -162,7 +163,9 @@ function dqColor(score: number) {
                     <div class="ds-card-header">
                         <div>
                             <h3 class="ds-card-title">문법 오류 프로세스 목록</h3>
-                            <p class="ds-card-subtitle">BPMN 문법 위반 항목 (자동 검사 결과)</p>
+                            <p class="ds-card-subtitle">저장된 BPMN의 XML·ID·연결선 참조·고립 요소·이벤트 연결 규칙을 검사합니다. 실행 가능성 전체를 보증하는 검사는 아닙니다.</p>
+                            <p v-if="d?.validation_summary" class="ds-card-subtitle">검사 {{ d.validation_summary.checked_count }}개 · 통과 {{ d.validation_summary.valid_count }}개 · 순서도 미등록 {{ d.validation_summary.unchecked_count }}개</p>
+                            <p class="ds-card-subtitle">호출용 모듈을 제외한 분석 프로세스 기준입니다.</p>
                         </div>
                     </div>
                     <div v-if="grammarErrors.length" class="grammar-table-wrap">
@@ -173,9 +176,9 @@ function dqColor(score: number) {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="g in grammarErrors" :key="g.proc_def_name"
+                                <tr v-for="g in grammarErrors" :key="g.proc_def_id"
                                     :class="g.error_count > 0 ? 'grammar-row-err' : 'grammar-row-ok'">
-                                    <td :class="g.error_count > 0 ? 'grammar-name' : 'text-slate-400'">{{ g.proc_def_name }}</td>
+                                    <td class="grammar-name"><router-link :to="`/definitions/${encodeURIComponent(g.proc_def_id)}`">{{ g.proc_def_name }}</router-link></td>
                                     <td>
                                         <span :class="g.error_count > 0 ? 'text-red font-bold' : 'text-slate-400'">{{ g.error_count }}</span>
                                         <span class="text-slate-500">건</span>
@@ -183,8 +186,9 @@ function dqColor(score: number) {
                                     <td>
                                         <span v-if="g.primary_error_type !== '-'" class="error-type-badge">{{ g.primary_error_type }}</span>
                                         <span v-else class="text-slate-600">-</span>
+                                        <details v-if="g.issues?.length"><summary>검사 상세</summary><div v-for="(issue, index) in g.issues" :key="index">{{ issue.element_id || '문서' }}: {{ issue.message }}</div></details>
                                     </td>
-                                    <td class="text-slate-500">{{ g.last_checked_at }}</td>
+                                    <td class="text-slate-500">{{ new Date(g.last_checked_at).toLocaleString() }}</td>
                                     <td>
                                         <span :class="['status-badge', g.status === '정상' ? 'ok' : 'error']">{{ g.status }}</span>
                                     </td>
@@ -192,7 +196,7 @@ function dqColor(score: number) {
                             </tbody>
                         </table>
                     </div>
-                    <div v-else class="ds-empty-mini">문법 오류 데이터 없음</div>
+                    <div v-else class="ds-empty-mini">{{ d?.validation_summary?.checked_count ? '검사한 순서도에서 구조 오류가 발견되지 않았습니다.' : '등록된 순서도가 없어 검사할 수 없습니다.' }}</div>
                 </div>
             </v-col>
         </v-row>

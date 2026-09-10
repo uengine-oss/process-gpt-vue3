@@ -1116,7 +1116,7 @@ onBeforeUnmount(cleanupRealtime);
         <v-card elevation="10" class="rounded-xl content-card">
             <div class="page-header">
                 <div class="page-header-left">
-                    <h1 class="page-title">프로세스 리뷰보드</h1>
+                    <h1 class="page-title">프로세스 변경 관리</h1>
                     <p class="page-subtitle">프로세스 거버넌스 라이프사이클 관리</p>
                 </div>
                 <div class="page-header-right">

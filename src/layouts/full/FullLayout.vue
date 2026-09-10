@@ -100,9 +100,9 @@ const openSidebar = () => {
                             { 'pal-content-container': isPalMode }
                         ]"
                     >
+                        <GlobalNoticeBanner />
                         <div :class="{ 'pal-page-shell': isPalMode }">
                             <div :class="[customizer.boxed ? 'maxWidth' : '', { 'pal-page-frame': isPalMode }]">
-                                <GlobalNoticeBanner />
                                 <RouterView />
                             </div>
                         </div>
@@ -157,9 +157,9 @@ const openSidebar = () => {
                             { 'pal-content-container': isPalMode }
                         ]"
                     >
+                        <GlobalNoticeBanner />
                         <!-- 정의관련 maxWidth -->
                         <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize, { 'pal-page-frame': isPalMode }]">
-                            <GlobalNoticeBanner />
                             <RouterView />
                         </div>
                     </v-container>
@@ -208,6 +208,10 @@ const openSidebar = () => {
     max-height: 100dvh;
     box-sizing: border-box;
     overflow: hidden;
+    /* 공지 배너가 있으면 flex 로 세로 공간을 나눠, 배너가 페이지 콘텐츠를
+       덮지 않고 아래 프레임이 남은 높이를 차지하게 한다. */
+    display: flex;
+    flex-direction: column;
 }
 
 .pal-page-shell,
@@ -220,6 +224,12 @@ const openSidebar = () => {
     max-height: 100%;
 }
 
+.pal-content-container > .pal-page-shell,
+.pal-content-container > .pal-page-frame {
+    flex: 1 1 auto;
+    height: auto;
+}
+
 .pal-page-shell {
     overflow: hidden;
 }
@@ -229,7 +239,7 @@ const openSidebar = () => {
     overflow: auto;
 }
 
-.pal-page-frame > :deep(:not(.global-notice-banner)) {
+.pal-page-frame > :deep(*) {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;

@@ -9,7 +9,7 @@
             <v-card-title class="skt-version-diff-header">
                 <div class="skt-version-diff-header-left">
                     <v-icon class="mr-2" size="20">mdi-compare-horizontal</v-icon>
-                    <span class="skt-version-diff-title">SKT버전비교다이얼로그</span>
+                    <span class="skt-version-diff-title">버전 비교</span>
                     <span class="text-caption text-medium-emphasis ml-3">
                         v{{ internalSelectedVersion }} vs 현재 버전
                     </span>

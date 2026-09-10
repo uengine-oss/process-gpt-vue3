@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router';
 import MainRoutes from './MainRoutes';
 import AuthRoutes from './AuthRoutes';
 import TenantRoutes from './TenantRoutes';
+import { evaluateMaintenanceGate, MAINTENANCE_PATH } from '@/utils/maintenanceGate';
+import { membershipRedirect, SIGNUP_PENDING_PATH } from '@/utils/membershipGate';
+import { withCallActivityHistory } from '@/components/customDrilldown/drilldownHistory';
 
 declare global {
     interface Window {
@@ -40,7 +43,7 @@ const devRoutesEnabled = (() => {
 })();
 
 export const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
+    history: withCallActivityHistory(createWebHistory(import.meta.env.BASE_URL)),
     routes: [
         // 외부 고객용 폼 URL
         {
@@ -135,6 +138,14 @@ function isOnResetPasswordWithRecoveryHash(): boolean {
 }
 
 router.beforeEach(async (to: any, from: any, next: any) => {
+    // Approval lookup fails closed; a network error must not admit pending accounts.
+    try {
+        const redirect = await membershipRedirect(to.path);
+        if (redirect) return next(redirect);
+    } catch (error) {
+        console.error('가입 승인 상태 조회 실패:', error);
+        return next(SIGNUP_PENDING_PATH);
+    }
     try {
         // 라우터 에러 상태가 있으면 상태 리셋 후 계속 진행
         if (hasRouterError) {
@@ -147,6 +158,18 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             const isBlocked = to.path.startsWith('/tenant/');
             if (isBlocked) {
                 return next(false);
+            }
+        }
+
+        // PAL 점검 모드: 점검 중에는 admin 이 아닌 사용자를 점검 안내 화면으로 보낸다.
+        // (인증 라우트/외부 폼은 통과 — 관리자가 로그인해서 점검을 해제할 수 있어야 한다)
+        if (window.$pal) {
+            const maintenanceDecision = await evaluateMaintenanceGate(to.path);
+            if (maintenanceDecision === 'block') {
+                return next(MAINTENANCE_PATH);
+            }
+            if (maintenanceDecision === 'release' && to.path === MAINTENANCE_PATH) {
+                return next('/');
             }
         }
 

@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
 import { formatKST } from '@/utils/datetime';
+import { listPolicyDocuments, listPolicyUsages } from '@/services/policyDocumentService';
 
 type PolicyKind = 'file' | 'link';
 type Policy = {
@@ -15,6 +16,7 @@ type Policy = {
     author_team?: string;
     file?: File;
     file_path?: string;
+    file_bucket?: string;
     link?: string;
     domains: string[];
 };
@@ -24,6 +26,7 @@ interface AuditPolicyRow {
     name: string;
     kind: PolicyKind;
     file_path: string | null;
+    file_bucket: string;
     file_size_bytes: number | null;
     link_url: string | null;
     author_id: string | null;
@@ -42,12 +45,36 @@ const adminStore = useAdminConsoleStore();
 
 const uploadedPolicies = ref<Policy[]>([]);
 const loadingPolicies = ref(false);
+const policyError = ref('');
+type PolicyProcess = { id: string; name: string; domainId?: string };
+const usagesByPolicy = ref<Record<string, PolicyProcess[]>>({});
+function policyProcesses(policy: Policy) {
+    return usagesByPolicy.value[policy.id || ''] || [];
+}
+function policyDomains(policy: Policy) {
+    // Keep manually assigned document domains and derive current process domains
+    // at display time, so detaching/moving a process cannot leave stale labels.
+    const domains = [...policy.domains, ...policyProcesses(policy).map((process) => process.domainId || '')];
+    return [...new Set(domains.filter(Boolean).map((domain) => domainMap.value[domain]?.id || domain))];
+}
+async function loadUsages() {
+    const rows = await listPolicyUsages();
+    const result: Record<string, PolicyProcess[]> = {};
+    for (const row of rows) {
+        const processes = result[row.policy_id] || (result[row.policy_id] = []);
+        if (!processes.some((p) => p.id === row.process_id)) {
+            processes.push({ id: row.process_id, name: row.process?.name || row.process_id, domainId: row.process?.domain_id || '' });
+        }
+    }
+    usagesByPolicy.value = result;
+}
 const currentUser = ref<{ id: string; name: string; team: string }>({ id: '', name: '', team: '' });
 const domainOptions = ref<DomainOption[]>([]);
 const domainMap = computed<Record<string, DomainOption>>(() => {
     const map: Record<string, DomainOption> = {};
     domainOptions.value.forEach((d) => {
         map[d.id] = d;
+        map[d.name] = d;
     });
     return map;
 });
@@ -141,9 +168,10 @@ const filteredPolicies = computed(() => {
     if (!keyword) return uploadedPolicies.value;
     return uploadedPolicies.value.filter((p) => {
         if (p.name.toLowerCase().includes(keyword)) return true;
+        if (policyProcesses(p).some((process) => `${process.name} ${process.id}`.toLowerCase().includes(keyword))) return true;
         const authorName = (p.author_name || '').toLowerCase();
         if (authorName.includes(keyword)) return true;
-        const domainLabels = (p.domains || []).map((id) => (domainMap.value[id]?.name || id).toLowerCase());
+        const domainLabels = policyDomains(p).map((id) => (domainMap.value[id]?.name || id).toLowerCase());
         if (domainLabels.some((label) => label.includes(keyword))) return true;
         return false;
     });
@@ -151,11 +179,12 @@ const filteredPolicies = computed(() => {
 
 const policyHeaders = [
     { title: '도메인', key: 'domains', sortable: false, width: '12%' },
-    { title: '문서명', key: 'name', sortable: true, width: '32%' },
+    { title: '문서명', key: 'name', sortable: true },
+    { title: '사용 중인 프로세스', key: 'processes', sortable: false },
     { title: '형식', key: 'kind', sortable: true, width: '12%' },
     { title: '작성자', key: 'author_name', sortable: true, width: '12%', align: 'center' as const },
     { title: '크기', key: 'size', sortable: false, width: '12%', align: 'end' as const },
-    { title: '업로드 시각', key: 'uploadedAt', sortable: true, width: '12%' },
+    { title: '등록 시각', key: 'uploadedAt', sortable: true, width: '12%' },
     { title: '작업', key: 'actions', sortable: false, width: '8%', align: 'end' as const }
 ];
 
@@ -219,6 +248,7 @@ function rowToPolicy(row: AuditPolicyRow): Policy {
         author_name: row.author_name || undefined,
         author_team: row.author_team || undefined,
         file_path: row.file_path || undefined,
+        file_bucket: row.file_bucket || 'files',
         link: row.link_url || undefined,
         domains: Array.isArray(row.domains) ? row.domains : []
     };
@@ -228,16 +258,12 @@ async function loadPolicies() {
     if (!supabase) return;
     loadingPolicies.value = true;
     try {
-        const { data, error } = await supabase
-            .from('audit_policy')
-            .select('*')
-            .eq('tenant_id', tenantId)
-            .is('deleted_at', null)
-            .order('created_at', { ascending: false });
-        if (error) throw error;
-        uploadedPolicies.value = (data || []).map((row: AuditPolicyRow) => rowToPolicy(row));
+        policyError.value = '';
+        const [data] = await Promise.all([listPolicyDocuments(), loadUsages()]);
+        uploadedPolicies.value = data.map((row: AuditPolicyRow) => rowToPolicy(row));
     } catch (e) {
         console.error('[auditPolicy] 조회 실패:', e);
+        policyError.value = '문서 또는 사용 프로세스를 불러오지 못했습니다. 새로고침해 주세요.';
     } finally {
         loadingPolicies.value = false;
     }
@@ -282,14 +308,15 @@ async function submitFileUpload() {
     if (fileForm.value.files.length === 0) return;
     uploadingFiles.value = true;
     const selectedDomains = fileForm.value.domain ? [fileForm.value.domain] : [];
+    const failedFiles: File[] = [];
+    policyError.value = '';
     try {
         for (const file of fileForm.value.files) {
             try {
                 const uploaded = await backend.uploadFile(file.name, file);
                 const filePath = uploaded?.path;
                 if (!filePath) {
-                    console.error('[auditPolicy] 업로드 결과에 path 없음:', uploaded);
-                    continue;
+                    throw new Error('업로드 결과에 파일 경로가 없습니다.');
                 }
                 const { data, error } = await supabase
                     .from('audit_policy')
@@ -330,9 +357,12 @@ async function submitFileUpload() {
                 });
             } catch (e) {
                 console.error('[auditPolicy] 업로드 실패:', e);
+                failedFiles.push(file);
             }
         }
-        fileDialog.value = false;
+        fileForm.value.files = failedFiles;
+        fileDialog.value = failedFiles.length > 0;
+        if (failedFiles.length) policyError.value = `${failedFiles.length}개 파일 등록에 실패했습니다. 다시 시도해 주세요.`;
     } finally {
         uploadingFiles.value = false;
     }
@@ -415,8 +445,9 @@ async function downloadPolicy(policy: Policy) {
     let file = policy.file;
     if (!file && policy.file_path) {
         try {
-            const result = await backend.downloadFile(policy.file_path);
-            file = result?.file;
+            const { data, error } = await supabase.storage.from(policy.file_bucket || 'files').download(policy.file_path);
+            if (error) throw error;
+            file = new File([data], policy.name, { type: data.type });
         } catch (e) {
             console.error('[auditPolicy] 다운로드 실패:', e);
             return;
@@ -497,8 +528,9 @@ async function openPreview(policy: Policy) {
     let file = policy.file;
     if (!file && policy.file_path) {
         try {
-            const result = await backend.downloadFile(policy.file_path);
-            file = result?.file;
+            const { data, error } = await supabase.storage.from(policy.file_bucket || 'files').download(policy.file_path);
+            if (error) throw error;
+            file = new File([data], policy.name, { type: data.type });
         } catch (e) {
             console.error('[auditPolicy] 미리보기 다운로드 실패:', e);
             return;
@@ -534,6 +566,10 @@ const deleteDialog = ref<{ visible: boolean; item: Policy | null }>({
 const deletingPolicy = ref(false);
 
 function openDeleteDialog(policy: Policy) {
+    if (policyProcesses(policy).length) {
+        policyError.value = '사용 중인 문서는 프로세스에서 첨부를 먼저 해제한 후 삭제할 수 있습니다.';
+        return;
+    }
     deleteDialog.value = { visible: true, item: policy };
 }
 
@@ -570,6 +606,8 @@ async function confirmDeletePolicy() {
         deleteDialog.value = { visible: false, item: null };
     } catch (e) {
         console.error('[auditPolicy] 삭제 실패:', e);
+        policyError.value = '문서를 삭제하지 못했습니다. 사용 중인 프로세스가 있는지 확인해 주세요.';
+        await loadUsages().catch(() => undefined);
     } finally {
         deletingPolicy.value = false;
     }
@@ -585,18 +623,20 @@ async function confirmDeletePolicy() {
                     <h1 class="page-title">사내 정책문서 관리</h1>
                     <v-chip size="small" variant="tonal" color="grey">총 {{ uploadedPolicies.length }}건</v-chip>
                 </div>
-                <p class="page-subtitle">BPMN 분석 Agent 가 활용할 컴플라이언스 PDF/CSV 또는 외부 문서 링크를 등록·관리합니다.</p>
+                <p class="page-subtitle">정책문서와 순서도 첨부 파일을 함께 관리하고, 저장된 순서도에서 파일을 사용하는 프로세스를 확인합니다.</p>
             </div>
         </div>
 
         <v-card-text class="pa-4 pt-0 sk-page-card-text">
+            <v-alert v-if="policyError" type="error" class="mb-3" closable @click:close="policyError = ''">{{ policyError }}</v-alert>
+            <v-btn variant="text" prepend-icon="mdi-refresh" :loading="loadingPolicies" @click="loadPolicies">새로고침</v-btn>
             <!-- Filter Bar -->
             <v-row dense align="center" class="pt-4 pb-4">
                 <v-col cols="12" sm="auto" style="min-width: 320px">
                     <v-text-field
                         v-model="policyKeyword"
                         label="검색"
-                        placeholder="도메인·문서명·작성자"
+                        placeholder="도메인·문서명·작성자·프로세스"
                         prepend-inner-icon="mdi-magnify"
                         density="compact"
                         variant="outlined"
@@ -608,7 +648,7 @@ async function confirmDeletePolicy() {
                 <v-col cols="12" sm="auto">
                     <div class="d-flex align-center ga-2">
                         <v-btn color="grey" variant="flat" prepend-icon="mdi-link-plus" @click="openLinkDialog"> 링크 등록 </v-btn>
-                        <v-tooltip text="PDF, CSV 파일 업로드 가능" location="top">
+                        <v-tooltip text="순서도에서 재사용할 파일을 등록합니다" location="top">
                             <template #activator="{ props }">
                                 <v-btn
                                     v-bind="props"
@@ -621,7 +661,7 @@ async function confirmDeletePolicy() {
                                 </v-btn>
                             </template>
                         </v-tooltip>
-                        <input ref="fileInputEl" type="file" accept=".pdf,.csv" multiple style="display: none" @change="onFileInputChange" />
+                        <input ref="fileInputEl" type="file" multiple style="display: none" @change="onFileInputChange" />
                     </div>
                 </v-col>
             </v-row>
@@ -655,6 +695,15 @@ async function confirmDeletePolicy() {
                         </a>
                     </div>
                 </template>
+                <template v-slot:[`item.processes`]="{ item }">
+                    <div v-if="policyProcesses(item).length" class="d-flex flex-wrap ga-1">
+                        <v-chip v-for="process in policyProcesses(item)" :key="process.id" size="small" color="primary" variant="tonal"
+                            :to="{ path: '/process-hierarchy', query: { id: process.id } }" :title="process.id">
+                            {{ process.name }}
+                        </v-chip>
+                    </div>
+                    <span v-else class="text-medium-emphasis">{{ item.kind === 'file' ? '미사용' : '-' }}</span>
+                </template>
                 <template v-slot:[`item.kind`]="{ item }">
                     <v-chip
                         size="x-small"
@@ -666,9 +715,9 @@ async function confirmDeletePolicy() {
                     </v-chip>
                 </template>
                 <template v-slot:[`item.domains`]="{ item }">
-                    <div v-if="item.domains && item.domains.length > 0" class="d-flex flex-wrap ga-1">
+                    <div v-if="policyDomains(item).length > 0" class="d-flex flex-wrap ga-1">
                         <v-chip
-                            v-for="domainId in item.domains"
+                            v-for="domainId in policyDomains(item)"
                             :key="domainId"
                             size="x-small"
                             variant="tonal"
@@ -702,10 +751,11 @@ async function confirmDeletePolicy() {
                                 />
                             </template>
                         </v-tooltip>
-                        <v-tooltip text="삭제" location="top">
+                        <v-tooltip :text="policyProcesses(item).length ? '사용 중인 프로세스에서 첨부를 먼저 해제해 주세요' : '삭제'" location="top">
                             <template #activator="{ props }">
                                 <v-btn
                                     v-bind="props"
+                                    :disabled="policyProcesses(item).length > 0"
                                     icon="mdi-trash-can-outline"
                                     size="x-small"
                                     variant="text"
@@ -776,6 +826,7 @@ async function confirmDeletePolicy() {
                 </v-card-title>
                 <v-divider />
                 <v-card-text class="py-4">
+                    <v-alert v-if="policyError" type="error" class="mb-3">{{ policyError }}</v-alert>
                     <div class="mb-3">
                         <v-btn
                             color="primary"
@@ -786,7 +837,7 @@ async function confirmDeletePolicy() {
                         >
                             파일 선택
                         </v-btn>
-                        <span class="text-caption text-medium-emphasis ms-2">PDF, CSV 다중 선택 가능</span>
+                        <span class="text-caption text-medium-emphasis ms-2">여러 파일 선택 가능</span>
                     </div>
                     <v-sheet
                         v-if="fileForm.files.length > 0"
@@ -990,13 +1041,12 @@ async function confirmDeletePolicy() {
                         </div>
                     </v-sheet>
                     <v-sheet v-else rounded="lg" class="preview-body pa-4">
-                        <p class="mb-2 font-weight-medium">컴플라이언스 가이드라인</p>
+                        <p class="mb-2 font-weight-medium">미리보기 안내</p>
                         <p class="text-body-2 mb-2">
-                            본 샘플은 시연용 더미 항목으로, 원본 파일이 보관되어 있지 않아 본문을 표시할 수 없습니다. 직접 업로드한 PDF/CSV
-                            문서는 이 영역에서 바로 확인할 수 있습니다.
+                            이 파일 형식은 미리보기를 지원하지 않습니다. 문서명을 클릭하여 다운로드해 주세요.
                         </p>
                         <p class="text-body-2 mb-0 text-medium-emphasis">
-                            * 우측 상단 업로드 영역에서 파일을 등록한 후 다시 미리보기를 열어 주세요.
+                            PDF와 CSV 파일은 미리보기를 지원합니다.
                         </p>
                     </v-sheet>
                 </v-card-text>

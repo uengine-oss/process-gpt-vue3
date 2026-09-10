@@ -83,7 +83,7 @@ export const MENU_DEFINITIONS: MenuDefinition[] = [
     // },
     {
         path: '/review-board',
-        label: '프로세스 리뷰 보드',
+        label: '프로세스 변경 관리',
         section: 'process',
         icon: 'clipboard-check',
         requiredRole: 'editor',
@@ -98,7 +98,7 @@ export const MENU_DEFINITIONS: MenuDefinition[] = [
     // },
     {
         path: '/call-activity-management',
-        label: '프로세스 리스트',
+        label: '프로세스 목록',
         section: 'process',
         icon: 'delegation',
         requiredRole: 'owner'
@@ -130,7 +130,8 @@ export const MENU_DEFINITIONS: MenuDefinition[] = [
         label: '온톨로지 익스플로러',
         section: 'analytics',
         icon: 'sitemap',
-        requiredRole: 'reviewer'
+        requiredRole: 'reviewer',
+        hiddenInSidebar: true
     },
     // {
     //     path: '/ontology-explorer-new',

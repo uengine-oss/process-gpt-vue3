@@ -468,6 +468,7 @@
                                             :model-value="processForm.ppi"
                                             :readonly="isViewMode"
                                             :show-header="false"
+                                            :dialog-mode="true"
                                             @update:model-value="processForm.ppi = $event"
                                         />
                                     </div>
@@ -1180,6 +1181,7 @@
                                                 :model-value="taskForm.ppi"
                                                 :readonly="isViewMode"
                                                 :show-header="false"
+                                                :dialog-mode="true"
                                                 @update:model-value="taskForm.ppi = $event"
                                             />
                                         </div>
@@ -1485,7 +1487,38 @@
                                             {{ builtinLabel('bpmn:CallActivity', 'definition_link', $t('CallActivityPanel.selectDefinition') || '프로세스 정의 선택') }}
                                         </div>
                                         <div v-show="isOpen('call-activity-def')" class="section-body">
+                                            <!-- Start 이벤트: 선행 프로세스는 여러 개일 수 있어 다중 선택 -->
                                             <v-autocomplete
+                                                v-if="isMultiProcessLinkElement"
+                                                v-model="callActivityDefinitionIds"
+                                                :items="callActivityDisplayItems"
+                                                item-title="name"
+                                                item-value="path"
+                                                multiple
+                                                chips
+                                                closable-chips
+                                                density="compact"
+                                                variant="outlined"
+                                                hide-details
+                                                clearable
+                                                :loading="callActivitySearchLoading"
+                                                :placeholder="processLinkMultiPlaceholder"
+                                                :disabled="isViewMode"
+                                                :no-data-text="'이름을 입력하세요'"
+                                                :custom-filter="() => true"
+                                                class="mb-3"
+                                                @update:search="onCallActivitySearch"
+                                                @update:modelValue="onCallActivityDefinitionsSelected"
+                                            >
+                                                <template v-slot:chip="{ props, item }">
+                                                    <v-chip v-bind="props" size="small">{{ displayText(item.raw.name) }}</v-chip>
+                                                </template>
+                                                <template v-slot:item="{ props, item }">
+                                                    <v-list-item v-bind="props" :subtitle="displayText(item.raw.id)" :title="displayText(item.raw.name)" />
+                                                </template>
+                                            </v-autocomplete>
+                                            <v-autocomplete
+                                                v-else
                                                 v-model="callActivityDefinitionId"
                                                 :items="callActivityDisplayItems"
                                                 item-title="name"
@@ -1511,7 +1544,7 @@
                                                 </template>
                                             </v-autocomplete>
                                             <v-chip
-                                                v-if="callActivityDefinitionId && callActivityDefinitionDeleted"
+                                                v-if="!isMultiProcessLinkElement && callActivityDefinitionId && callActivityDefinitionDeleted"
                                                 size="small"
                                                 color="error"
                                                 variant="tonal"
@@ -1519,6 +1552,16 @@
                                             >
                                                 <v-icon start size="14">mdi-alert-circle-outline</v-icon>
                                                 삭제된 프로세스 입니다.
+                                            </v-chip>
+                                            <v-chip
+                                                v-if="isMultiProcessLinkElement && callActivityDeletedDefinitionIds.length"
+                                                size="small"
+                                                color="error"
+                                                variant="tonal"
+                                                class="mb-3"
+                                            >
+                                                <v-icon start size="14">mdi-alert-circle-outline</v-icon>
+                                                삭제된 프로세스: {{ callActivityDeletedDefinitionIds.map((id) => callActivityDefinitionNameMap[id] || id).join(', ') }}
                                             </v-chip>
 
                                             <!-- 이 프로세스를 참조하고 있는 parent process 목록 -->
@@ -1792,7 +1835,12 @@
                                             {{ builtinLabel('task', 'raci', $t('raci.tab') || 'RACI') }}
                                         </div>
                                         <div v-show="isOpen('task-raci')" class="section-body">
-                                            <RaciField v-model="taskForm.raci" :readonly="isViewMode" :suggestions="raciSuggestions" />
+                                            <RaciField
+                                                v-model="taskForm.raci"
+                                                :readonly="isViewMode"
+                                                :suggestions="raciSuggestions"
+                                                :dialog-mode="true"
+                                            />
                                         </div>
                                     </div>
                                         </template>
@@ -1807,6 +1855,7 @@
                                             <TaskIoField
                                                 :procedure="taskForm.procedure"
                                                 :readonly="isViewMode"
+                                                :dialog-mode="true"
                                                 @update:procedure="taskForm.procedure = $event"
                                             />
                                         </div>
@@ -1980,6 +2029,7 @@
                                                 :field="dataAttachmentFileField"
                                                 :model="taskForm"
                                                 model-key="dataAttachmentFile"
+                                                policy-library
                                                 :disabled="isViewMode"
                                                 @dirty="taskFormDirty = true"
                                             />
@@ -4374,6 +4424,10 @@ export default {
             callActivityDefinitionId: '',
             callActivityDefinitionName: '',
             callActivityDefinitionDeleted: false,
+            // Start 이벤트 전용 다중 연결 상태 (definitionIds 배열이 원본, 단일 필드는 첫 항목 미러)
+            callActivityDefinitionIds: [],
+            callActivityDefinitionNameMap: {},
+            callActivityDeletedDefinitionIds: [],
             callActivitySearchResults: [],
             callActivitySearchLoading: false,
             // UserTask 계열: 폼 연결 (uengine json 'tool' = 'formHandler:<form_def.id>', 미설정 시 네이밍 규칙 폴백)
@@ -4752,6 +4806,13 @@ export default {
         isProcessLinkableElement() {
             return this.isCallActivityElement || this.isStartEventElement || this.isEndEventElement;
         },
+        // Start 이벤트만 선행 프로세스가 여러 개일 수 있어 다중 선택 UI 사용 (End 이벤트는 단일)
+        isMultiProcessLinkElement() {
+            return this.isStartEventElement;
+        },
+        processLinkMultiPlaceholder() {
+            return '선행 프로세스 검색 (여러 개 선택 가능)';
+        },
         isBusinessRuleElement() {
             return toSafeText(this.element?.type || this.element?.$type).trim() === 'bpmn:BusinessRuleTask';
         },
@@ -4811,16 +4872,22 @@ export default {
             const filtered = currentId
                 ? items.filter((item) => this.normalizeCallActivityDefinitionId(item?.path || item?.id) !== currentId)
                 : items;
-            const selectedId = this.normalizeCallActivityDefinitionId(this.callActivityDefinitionId);
-            if (!selectedId) return filtered;
-
-            const selectedPath = this.normalizeCallActivityDefinitionPath(selectedId);
-            const exists = filtered.some((item) => this.normalizeCallActivityDefinitionId(item?.path || item?.id) === selectedId);
-            if (!exists) {
+            // 선택돼 있는 정의는 검색 결과에 없어도 항목으로 유지 (다중 선택 칩 라벨 표시용)
+            const selectedValues = this.isMultiProcessLinkElement
+                ? (this.callActivityDefinitionIds || [])
+                : [this.callActivityDefinitionId];
+            for (const raw of [...selectedValues].reverse()) {
+                const selectedId = this.normalizeCallActivityDefinitionId(raw);
+                if (!selectedId) continue;
+                const exists = filtered.some((item) => this.normalizeCallActivityDefinitionId(item?.path || item?.id) === selectedId);
+                if (exists) continue;
+                const name = toSafeText(this.callActivityDefinitionNameMap[selectedId]).trim()
+                    || (!this.isMultiProcessLinkElement ? toSafeText(this.callActivityDefinitionName).trim() : '')
+                    || selectedId;
                 filtered.unshift({
                     id: selectedId,
-                    name: toSafeText(this.callActivityDefinitionName).trim() || selectedId,
-                    path: selectedPath
+                    name,
+                    path: this.normalizeCallActivityDefinitionPath(selectedId)
                 });
             }
             return filtered;
@@ -10003,14 +10070,39 @@ export default {
             this.taskForm.conditionLlmMode = toSafeText(uengineProps.conditionMode).trim().toLowerCase() === 'llm';
 
             // CallActivity / StartEvent / EndEvent: definitionId 로드
+            // Start 이벤트만 선행 프로세스 다중 연결 — definitionIds 배열 우선,
+            // 레거시 단일 definitionId 는 1개 항목으로 승격한다.
+            // End 이벤트·CallActivity 는 단일 — 과도기에 배열로 저장된 값은 첫 항목으로 폴백.
             const elType = toSafeText(el.type || el.$type).trim();
-            if (elType === 'bpmn:CallActivity' || elType === 'bpmn:StartEvent' || elType === 'bpmn:EndEvent') {
-                const definitionValue = toSafeText(uengineProps.definitionId || bo?.calledElement).trim();
+            if (elType === 'bpmn:CallActivity' || elType === 'bpmn:EndEvent') {
+                const storedIds = Array.isArray(uengineProps.definitionIds) ? uengineProps.definitionIds : [];
+                const definitionValue = toSafeText(uengineProps.definitionId || storedIds[0] || bo?.calledElement).trim();
+                this.callActivityDefinitionIds = [];
+                this.callActivityDefinitionNameMap = {};
+                this.callActivityDeletedDefinitionIds = [];
                 this.callActivityDefinitionId = this.normalizeCallActivityDefinitionPath(definitionValue);
                 this.callActivityDefinitionName = toSafeText(uengineProps.definitionName).trim();
                 this.callActivitySearchResults = [];
                 this.resolveCallActivityDefinitionName(definitionValue);
+            } else if (elType === 'bpmn:StartEvent') {
+                const rawIds = Array.isArray(uengineProps.definitionIds) ? uengineProps.definitionIds : [];
+                const legacyValue = toSafeText(uengineProps.definitionId || bo?.calledElement).trim();
+                const paths = (rawIds.length ? rawIds : (legacyValue ? [legacyValue] : []))
+                    .map((v) => this.normalizeCallActivityDefinitionPath(v))
+                    .filter(Boolean);
+                this.callActivityDefinitionIds = [...new Set(paths)];
+                // 첫 항목을 단일 필드에 미러 — 역참조 조회 워처·레거시 소비처 호환
+                this.callActivityDefinitionId = this.callActivityDefinitionIds[0] || '';
+                this.callActivityDefinitionName = '';
+                this.callActivityDefinitionDeleted = false;
+                this.callActivityDefinitionNameMap = {};
+                this.callActivityDeletedDefinitionIds = [];
+                this.callActivitySearchResults = [];
+                this.resolveCallActivityDefinitionNames(this.callActivityDefinitionIds);
             } else {
+                this.callActivityDefinitionIds = [];
+                this.callActivityDefinitionNameMap = {};
+                this.callActivityDeletedDefinitionIds = [];
                 this.callActivityDefinitionId = '';
                 this.callActivityDefinitionName = '';
                 this.callActivityDefinitionDeleted = false;
@@ -10518,10 +10610,73 @@ export default {
             await this.resolveCallActivityDefinitionName(path, { updateTaskTitle: true });
         },
 
+        // Start 이벤트 다중 선택 — 여러 개라 요소 이름 자동 변경(updateTaskTitle)은 하지 않는다
+        async onCallActivityDefinitionsSelected(values) {
+            const paths = [...new Set((Array.isArray(values) ? values : [])
+                .map((v) => this.normalizeCallActivityDefinitionPath(v))
+                .filter(Boolean))];
+            this.callActivityDefinitionIds = paths;
+            // 첫 항목 미러 — 역참조 조회 워처·레거시 소비처 호환
+            this.callActivityDefinitionId = paths[0] || '';
+            await this.resolveCallActivityDefinitionNames(paths);
+        },
+
+        // 선택된 정의들의 이름·삭제 여부 일괄 조회 — 소프트 삭제 포함
+        // (resolveCallActivityDefinitionName 과 동일 규약: 참조 표시용이라 deleted 도 이름을 보여준다)
+        async resolveCallActivityDefinitionNames(values) {
+            const ids = [...new Set((values || [])
+                .map((v) => this.normalizeCallActivityDefinitionId(v))
+                .filter(Boolean))];
+            if (!ids.length) {
+                this.callActivityDefinitionNameMap = {};
+                this.callActivityDeletedDefinitionIds = [];
+                return;
+            }
+            try {
+                const supabase = window.$supabase;
+                if (!supabase) return;
+                const { data, error } = await supabase
+                    .from('proc_def')
+                    .select('id, name, deleted_at')
+                    .eq('tenant_id', window.$tenantName)
+                    .in('id', ids);
+                if (error) throw error;
+
+                // 비동기 응답 도착 시 선택이 바뀌었으면 무시
+                const currentIds = new Set((this.callActivityDefinitionIds || [])
+                    .map((v) => this.normalizeCallActivityDefinitionId(v)));
+                if (ids.length !== currentIds.size || ids.some((id) => !currentIds.has(id))) return;
+
+                const rows = Array.isArray(data) ? data : [];
+                const map = {};
+                const deleted = [];
+                for (const id of ids) {
+                    const row = rows.find((r) => toSafeText(r?.id).trim() === id);
+                    if (!row) {
+                        // 참조 정의가 없음(영구 삭제 등) → 삭제된 프로세스로 표시
+                        deleted.push(id);
+                        continue;
+                    }
+                    const name = toSafeText(row.name).trim();
+                    if (name) map[id] = name;
+                    if (row.deleted_at) deleted.push(id);
+                }
+                this.callActivityDefinitionNameMap = map;
+                this.callActivityDeletedDefinitionIds = deleted;
+            } catch (e) {
+                console.warn('[ProcessHierarchyProperties] resolveCallActivityDefinitionNames failed', e);
+            }
+        },
+
         onCallActivitySearch(keyword) {
             clearTimeout(this._callActivitySearchTimer);
             const normalizedKeyword = toSafeText(keyword).trim();
             if (!normalizedKeyword || normalizedKeyword.length < 1) {
+                if (this.isMultiProcessLinkElement) {
+                    // 다중 선택 항목은 callActivityDisplayItems 가 NameMap 으로 유지한다
+                    this.callActivitySearchResults = [];
+                    return;
+                }
                 this.callActivitySearchResults = this.callActivityDefinitionName && this.callActivityDefinitionId
                     ? [{
                         id: this.normalizeCallActivityDefinitionId(this.callActivityDefinitionId),
@@ -10897,8 +11052,22 @@ export default {
             const targetIsLane = targetType.toLowerCase().includes('lane');
 
             // CallActivity / StartEvent / EndEvent: definitionId 저장
+            // Start 이벤트는 definitionIds 배열이 원본이고 레거시 단일 definitionId 에는
+            // 첫 항목을 미러링한다 (드릴다운·KG 등 기존 소비처 호환). 해제 시 키 삭제 대신
+            // 빈 배열을 남긴다 — 삭제하면 definition 병합이 기존 값을 부활시킨다.
             if (targetIsProcessLinkable) {
-                uengineProps.definitionId = this.callActivityDefinitionId || '';
+                if (targetIsStartEvent) {
+                    const linkedIds = [...new Set((this.callActivityDefinitionIds || [])
+                        .map((v) => this.normalizeCallActivityDefinitionPath(v))
+                        .filter(Boolean))];
+                    uengineProps.definitionIds = linkedIds;
+                    uengineProps.definitionId = linkedIds[0] || '';
+                } else {
+                    uengineProps.definitionId = this.callActivityDefinitionId || '';
+                    // End 이벤트·CallActivity 는 단일 — 과도기에 남은 배열은 빈 배열 톰스톤으로
+                    // 정리해 드릴다운의 배열 우선 읽기가 단일 값을 가리지 않게 한다.
+                    if ('definitionIds' in uengineProps) uengineProps.definitionIds = [];
+                }
             }
 
             // UserTask 계열: 폼 연결 저장 — 워크아이템이 tool('formHandler:<form_def.id>')로 폼을 로드한다

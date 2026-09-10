@@ -37,6 +37,8 @@ export interface BuiltinPanelProperty {
     displayOrder: number;
     required?: boolean;
     description?: string;
+    /** 최초 스키마 생성 시 함께 저장할 위젯별 설정 */
+    config?: Record<string, unknown>;
 }
 
 const PANEL = 'ProcessHierarchyProperties.vue';
@@ -77,8 +79,8 @@ export const BUILTIN_PANEL_PROPERTIES: BuiltinPanelProperty[] = [
     { taskType: 'task', key: 'name', labelKo: '이름', propertyType: 'string', widget: 'text', binding: 'taskForm.name', tab: 'task', panel: PANEL, displayOrder: 20 },
     { taskType: 'task', key: 'description', labelKo: '설명', propertyType: 'textarea', widget: 'textarea', binding: 'taskForm.description', tab: 'task', panel: PANEL, displayOrder: 30, description: '커스텀 스키마 필드가 없을 때 표시되는 기본 설명 입력' },
     { taskType: 'task', key: 'form_link', labelKo: '폼 연결', propertyType: 'select', widget: 'autocomplete', binding: 'taskFormLinkId', tab: 'task', panel: PANEL, displayOrder: 40, description: 'UserTask/Task/ManualTask에만 표시. 폼 디자이너 열기 포함' },
-    { taskType: 'task', key: 'raci', labelKo: 'RACI', propertyType: 'multiselect', widget: 'RaciField', binding: 'taskForm.raci', tab: 'task', panel: PANEL, displayOrder: 50, description: 'Task 계열 요소에 표시' },
-    { taskType: 'task', key: 'task_io', labelKo: '세부 업무 수행 절차', labelI18n: 'taskIo.tab', propertyType: 'multiselect', widget: 'TaskIoField', binding: 'taskForm.procedure', tab: 'task', panel: PANEL, displayOrder: 60, description: 'Task 계열 요소의 단계별 업무 수행 절차' },
+    { taskType: 'task', key: 'raci', labelKo: 'RACI', propertyType: 'multiselect', widget: 'dialog', binding: 'taskForm.raci', tab: 'task', panel: PANEL, displayOrder: 50, description: 'Task 계열 요소에 표시. 패널에는 요약만 표시하고 입력은 다이얼로그에서 (RaciField dialog 모드)', config: { input_mode: 'dialog' } },
+    { taskType: 'task', key: 'task_io', labelKo: '세부 업무 수행 절차', labelI18n: 'taskIo.tab', propertyType: 'multiselect', widget: 'dialog', binding: 'taskForm.procedure', tab: 'task', panel: PANEL, displayOrder: 60, description: 'Task 계열 요소의 단계별 업무 수행 절차. 패널에는 요약만 표시하고 입력은 다이얼로그에서 (TaskIoField dialog 모드)', config: { input_mode: 'dialog' } },
     { taskType: 'task', key: 'manual_links', labelKo: '관련자료 링크', propertyType: 'url', widget: 'ManualLinkField', binding: 'taskForm.manualLinks', tab: 'task', panel: PANEL, displayOrder: 70 },
     { taskType: 'task', key: 'api_integrations', labelKo: 'API 연동', propertyType: 'multiselect', widget: 'list-editor', binding: 'taskForm.apiIntegrations', tab: 'task', panel: PANEL, displayOrder: 80, description: 'API 이름/메서드/URL/파라미터 편집 목록' },
     { taskType: 'task', key: 'data_io', labelKo: '입출력 데이터', propertyType: 'boolean', widget: 'section', tab: 'task', panel: PANEL, displayOrder: 90, description: '데이터 객체 입출력 표시 (읽기 전용 섹션)' },
@@ -99,7 +101,7 @@ export const BUILTIN_PANEL_PROPERTIES: BuiltinPanelProperty[] = [
 
     // 참여자 (Pool)
     { taskType: 'bpmn:Participant', key: 'exec_pool', labelKo: '실행형 Pool 지정', propertyType: 'boolean', widget: 'switch', binding: 'toggleExecPoolForElement', tab: 'task', panel: PANEL, displayOrder: 10, description: '실행 사용자에게만 표시' },
-    { taskType: 'bpmn:Participant', key: 'ppi', labelKo: 'PPI (프로세스 성과지표)', propertyType: 'multiselect', widget: 'PpiField', binding: 'taskForm.ppi', tab: 'task', panel: PANEL, displayOrder: 20 },
+    { taskType: 'bpmn:Participant', key: 'ppi', labelKo: 'PPI (프로세스 성과지표)', propertyType: 'multiselect', widget: 'dialog', binding: 'taskForm.ppi', tab: 'task', panel: PANEL, displayOrder: 20, description: '패널에는 지표 요약만 표시하고 입력은 다이얼로그에서 (PpiField dialog 모드)', config: { input_mode: 'dialog' } },
 
     // 레인
     { taskType: 'bpmn:Lane', key: 'name', labelKo: 'Lane 이름', propertyType: 'string', widget: 'text', binding: 'taskForm.name', tab: 'task', panel: PANEL, displayOrder: 10 },
@@ -107,7 +109,7 @@ export const BUILTIN_PANEL_PROPERTIES: BuiltinPanelProperty[] = [
     { taskType: 'bpmn:Lane', key: 'lane_assignment', labelKo: 'Lane 담당 지정', propertyType: 'select', widget: 'section', binding: 'laneResourceType/laneAssignee/laneOrganization/laneSupplier/laneRoleGroupSelectedList', tab: 'task', panel: PANEL, displayOrder: 30, description: '원가 유형·담당자·조직·공급업체·역할 그룹 지정' },
 
     // 콜 액티비티 / 시작·종료 이벤트 (프로세스 연결)
-    { taskType: 'bpmn:CallActivity', key: 'definition_link', labelKo: '프로세스 정의 선택', propertyType: 'select', widget: 'autocomplete', binding: 'callActivityDefinitionId', tab: 'task', panel: PANEL, displayOrder: 10, description: '시작/종료 이벤트의 프로세스 연결에도 동일 적용' },
+    { taskType: 'bpmn:CallActivity', key: 'definition_link', labelKo: '프로세스 정의 선택', propertyType: 'select', widget: 'autocomplete', binding: 'callActivityDefinitionId', tab: 'task', panel: PANEL, displayOrder: 10, description: '시작/종료 이벤트의 선행·후행 프로세스 연결에도 동일 적용 (시작 이벤트는 다중 선택 가능)' },
 
     // 비즈니스 룰 태스크
     { taskType: 'bpmn:BusinessRuleTask', key: 'dmn_rule', labelKo: 'DMN 룰 설정', propertyType: 'select', widget: 'autocomplete', binding: 'businessRuleId', tab: 'task', panel: PANEL, displayOrder: 10 },
@@ -118,5 +120,26 @@ export const BUILTIN_PANEL_PROPERTIES: BuiltinPanelProperty[] = [
     { taskType: 'bpmn:SendTask', key: 'mail_contents', labelKo: '메일 내용', propertyType: 'textarea', widget: 'textarea', binding: 'sendTaskMailContents', tab: 'task', panel: PANEL, displayOrder: 30 },
 
     // 데이터 객체/저장소 참조
-    { taskType: 'bpmn:DataObjectReference', key: 'attachment', labelKo: '첨부 자료', propertyType: 'url', widget: 'section', binding: 'taskForm.dataAttachmentUrl, taskForm.dataAttachmentFile', tab: 'task', panel: PANEL, displayOrder: 10, description: 'URL 및 파일 첨부. DataStoreReference에도 적용' }
+    {
+        taskType: 'bpmn:DataObjectReference',
+        key: 'attachment',
+        labelKo: '첨부 파일',
+        propertyType: 'file',
+        widget: 'file',
+        binding: 'taskForm.dataAttachmentFile',
+        tab: 'task',
+        panel: PANEL,
+        displayOrder: 10,
+        description: 'Supabase Storage에 업로드하는 데이터 객체 파일. DataStoreReference에도 적용',
+        config: {
+            file: {
+                bucket: 'files',
+                path_prefix: 'data-objects',
+                accept: '',
+                max_size_mb: null,
+                name_strategy: 'uuid',
+                multiple: false
+            }
+        }
+    }
 ];

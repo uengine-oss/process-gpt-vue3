@@ -1808,6 +1808,10 @@
         "tab": "RACI",
         "title": "RACI Chart",
         "legend": "R=Responsible · A=Accountable(Approve) · S=Support · C=Consulted · I=Informed",
+        "edit": "Edit RACI",
+        "empty": "No assignments.",
+        "save": "Save",
+        "cancel": "Cancel",
         "responsible": "R · Responsible",
         "accountable": "A · Accountable (Approve)",
         "support": "S · Support",
@@ -1829,7 +1833,10 @@
         "procedureHint": "Step-by-step procedure for performing this task",
         "procedurePlaceholder": "e.g. Conduct audit based on the internal audit checklist",
         "addItem": "Add item",
-        "empty": "No items registered."
+        "empty": "No items registered.",
+        "edit": "Edit items",
+        "save": "Save",
+        "cancel": "Cancel"
     },
     "ppi": {
         "title": "PPI (Process Performance Indicators)",
@@ -1840,7 +1847,10 @@
         "definition": "Operational definition",
         "formula": "Formula",
         "addItem": "Add indicator",
-        "empty": "No indicators registered."
+        "empty": "No indicators registered.",
+        "edit": "Edit indicators",
+        "save": "Save",
+        "cancel": "Cancel"
     },
     "KeyValueField": {
         "add": "Add",

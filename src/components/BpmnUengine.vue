@@ -96,6 +96,10 @@ import '@/components/autoLayout/edge-router-orthogonal.js';
 import '@/components/autoLayout/bpmn-waypoints-refresh.js';
 import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequence-flow-final-module.js';
 import sequenceFlowManualCropSkipModule from '@/components/autoLayout/sequence-flow-manual-crop-skip-module.js';
+import customDrilldownModule from './customDrilldown';
+import { resolveLinkedProcessXml } from './customDrilldown/resolveLinkedProcessXml';
+import { openLinkedProcessInNewTab, PROCESS_HIERARCHY_MODE } from '@/views/process-hierarchy/navigation';
+import { resolveProcessRouteId } from '@/utils/processRouteId';
 import { markRaw } from 'vue';
 import minimapModule from 'diagram-js-minimap';
 import {
@@ -147,6 +151,9 @@ export default {
         isViewMode: {
             type: Boolean
         },
+        enableLinkedNavigation: { type: Boolean, default: true },
+        rootProcessName: { type: String, default: '' },
+        diagramMode: { type: String, default: 'as-is' },
         isPreviewMode: {
             type: Boolean
         },
@@ -1563,50 +1570,6 @@ export default {
                 setTimeout(() => safeZoom(), 50);
                 // you may hook into any of the following events
                 if (self.isViewMode) {
-                    const elementRegistry = self.bpmnViewer.get('elementRegistry');
-                    const overlays = self.bpmnViewer.get('overlays');
-
-                    const callActivities = elementRegistry.filter((element) => element.type === 'bpmn:CallActivity');
-
-                    callActivities.forEach((element) => {
-                        const businessObject = element.businessObject;
-                        if (
-                            businessObject.extensionElements &&
-                            businessObject.extensionElements.values &&
-                            businessObject.extensionElements.values.length > 0
-                        ) {
-                            const json = businessObject.extensionElements.values[0].json;
-                            if (json) {
-                                try {
-                                    const properties = JSON.parse(json);
-                                    if (properties.definitionId) {
-                                        const html = document.createElement('div');
-                                        html.className = 'call-activity-link-btn';
-                                        html.style.cssText =
-                                            'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
-                                        html.innerHTML =
-                                            '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: var(--cds-text-primary);"></i>';
-
-                                        html.addEventListener('click', function (e) {
-                                            e.stopPropagation(); // Prevent element selection
-                                            window.open(`/definitions/${properties.definitionId.replace('.bpmn', '')}`, '_blank');
-                                        });
-
-                                        overlays.add(element.id, {
-                                            position: {
-                                                top: -10,
-                                                right: -10
-                                            },
-                                            html: html
-                                        });
-                                    }
-                                } catch (err) {
-                                    console.error('Failed to parse CallActivity properties', err);
-                                }
-                            }
-                        }
-                    });
-
                     // View 모드: 더블클릭 시 CallActivity/SubProcess(definitionId 있음)면 프로세스로 이동(openDefinition), 그 외는 패널 열기
                     // Pal 모드에서는 속성 패널을 우클릭(contextmenu)으로만 연다 — 더블클릭은 연결 프로세스 이동 전용
                     trackListener('element.dblclick', function (e) {
@@ -1755,6 +1718,7 @@ export default {
                 // Phase 4-2: Business ID auto-assignment on task creation
                 trackListener('shape.added', function (event) {
                     const element = event.element;
+                    if (element?._caDrilldown) return;
                     if (!element || !element.type || !element.type.includes('Task')) return;
                     // Only assign if no businessId already
                     const extEls = element.businessObject?.extensionElements;
@@ -1916,6 +1880,33 @@ export default {
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
+            const moddleExtensions = {
+                uengine: uEngineModdleDescriptor,
+                zeebe: zeebeModdleDescriptor,
+                phase: phaseModdle,
+                ...self.options?.moddleExtensions
+            };
+            const drilldownModules = [customDrilldownModule, {
+                callActivityDrilldownConfig: ['value', {
+                    enabled: self.enableLinkedNavigation,
+                    isViewMode: self.isViewMode,
+                    rootLabel: self.rootProcessName,
+                    moddleExtensions,
+                    resolveXml: async (id) => {
+                        const definitionId = (await resolveProcessRouteId(id)) || id;
+                        const xml = await resolveLinkedProcessXml(backend, definitionId, self.diagramMode);
+                        return xml ? uengineJsonElementToAttr(xml) : null;
+                    },
+                    onOpenInNew: (id, name) => openLinkedProcessInNewTab(self.$router, {
+                        id, name, mode: PROCESS_HIERARCHY_MODE.EDIT
+                    }),
+                    onAfterEnter: () => self.resetZoom(),
+                    onError: (error) => {
+                        console.warn('CallActivity 펼쳐보기 실패', error);
+                        self.$emit('error', error);
+                    }
+                }]
+            }];
             if (self.isViewMode) {
                 var Blocker = function (eventBus, elementRegistry, graphicsFactory) {
                     const ignoreEvent = (event) => {
@@ -2006,6 +1997,8 @@ export default {
                     },
                     self.options
                 );
+                viewerOptions.moddleExtensions = moddleExtensions;
+                viewerOptions.additionalModules = [...viewerOptions.additionalModules, ...drilldownModules];
                 self.bpmnViewer = markRaw(new BpmnModeler(viewerOptions));
             } else {
                 var _options = Object.assign({
@@ -2037,6 +2030,8 @@ export default {
                         minimapModule
                     ]
                 });
+                _options.moddleExtensions = moddleExtensions;
+                _options.additionalModules = [..._options.additionalModules, ...drilldownModules];
                 self.bpmnViewer = markRaw(new BpmnModeler(_options));
             }
 
@@ -2311,7 +2306,9 @@ export default {
                 /* ignore */
             }
 
-            var allPools = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+            var allPools = elementRegistry.filter((element) =>
+                element.type === 'bpmn:Participant' && canvas.findRoot(element) === canvas.getRootElement()
+            );
 
             try {
                 zoomScroll.reset();

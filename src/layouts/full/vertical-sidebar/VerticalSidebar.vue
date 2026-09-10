@@ -234,6 +234,29 @@
                     </v-col>
                 </div>
 
+                <!-- PAL 조직 관리 메뉴 -->
+                <div v-if="pal" class="mb-4">
+                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">조직관리</div>
+                    <v-col class="pa-0">
+                        <v-list-item
+                            to="/organization"
+                            density="compact"
+                            class="leftPadding sidebar-list-hover-bg"
+                            :class="{ 'sidebar-list-hover-bg--active': $route?.path === '/organization' }"
+                        >
+                            <template #prepend>
+                                <Icons icon="side-group" :size="20" class="mr-2" />
+                            </template>
+                            <v-list-item-title>조직도</v-list-item-title>
+                            <template #append><MembershipRequestBadge /></template>
+                        </v-list-item>
+                        <v-list-item to="/admin-request" density="compact" class="leftPadding sidebar-list-hover-bg">
+                            <template #prepend><Icons icon="user-admin" :size="20" class="mr-2" /></template>
+                            <v-list-item-title>권한 변경 신청</v-list-item-title>
+                        </v-list-item>
+                    </v-col>
+                </div>
+
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
                 <v-col v-if="isAdmin && !pal" class="pa-0">
                     <!-- definition menu item -->
@@ -347,6 +370,29 @@
                     </ExpandableList>
                 </v-col>
 
+                <!-- 분석(Analytics) 타이틀 + 목록 -->
+                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4 mt-8">
+                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                        {{ $t('VerticalSidebar.analytics') }}
+                    </div>
+                    <v-col class="pa-0">
+                        <v-list-item
+                            v-for="item in analyticsItem"
+                            :key="item.title"
+                            :to="item.to"
+                            :disabled="item.disable"
+                            density="compact"
+                            class="leftPadding sidebar-list-hover-bg"
+                            :class="{ 'sidebar-list-hover-bg--active': isAnalyticsItemActive(item) }"
+                        >
+                            <template v-slot:prepend>
+                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                            </template>
+                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                        </v-list-item>
+                    </v-col>
+                </div>
+
                 <div v-if="pal && isAdmin" class="mb-4 mt-8">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">관리자</div>
                     <v-col class="pa-0">
@@ -377,42 +423,6 @@
                         </v-list-item>
                     </v-col>
                 </div>
-
-                <!-- 분석(Analytics) 타이틀 + 목록 -->
-                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4 mt-8">
-                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
-                        {{ $t('VerticalSidebar.analytics') }}
-                    </div>
-                    <v-col class="pa-0">
-                        <v-list-item
-                            v-for="item in analyticsItem"
-                            :key="item.title"
-                            :to="item.to"
-                            :disabled="item.disable"
-                            density="compact"
-                            class="leftPadding sidebar-list-hover-bg"
-                            :class="{ 'sidebar-list-hover-bg--active': isAnalyticsItemActive(item) }"
-                        >
-                            <template v-slot:prepend>
-                                <Icons :icon="item.icon" :size="20" class="mr-2" />
-                            </template>
-                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
-                        </v-list-item>
-                    </v-col>
-                </div>
-
-                <v-list-item
-                    v-if="pal"
-                    to="/organization"
-                    density="compact"
-                    class="leftPadding sidebar-list-hover-bg mt-auto"
-                    :class="{ 'sidebar-list-hover-bg--active': $route?.path === '/organization' }"
-                >
-                    <template #prepend>
-                        <Icons icon="side-group" :size="20" class="mr-2" />
-                    </template>
-                    <v-list-item-title>조직도</v-list-item-title>
-                </v-list-item>
             </v-list>
             <Footer class="mt-2" />
         </div>
@@ -453,6 +463,8 @@ import ProjectList from '@/components/ui/ProjectList.vue';
 import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
 import AgentList from '@/components/ui/AgentList.vue';
 import SkillList from '@/components/ui/SkillList.vue';
+import MembershipRequestBadge from '@/components/ui/MembershipRequestBadge.vue';
+import { getIsAdminClaim } from '@/utils/authClaims';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 import SidebarUserList from '@/components/ui/SidebarUserList.vue';
 import ChatList from '@/components/ui/ChatList.vue';
@@ -478,6 +490,7 @@ const backend = BackendFactory.createBackend();
 
 export default {
     components: {
+        MembershipRequestBadge,
         ProcessInstanceList,
         ChatList,
         ProjectList,
@@ -567,6 +580,7 @@ export default {
             return true;
         },
         isAdmin() {
+            if (this.pal) return getIsAdminClaim();
             const isAdmin = localStorage.getItem('isAdmin') == 'true';
             return isAdmin;
         }
@@ -770,20 +784,13 @@ export default {
             }
 
             // 프로세스 관리 메뉴 (프로세스 정의/업로드/내보내기는 아래 프로세스 섹션에 표시)
-            // 리뷰보드는 모든 모드에 표시하고, PAL 모드에서는 내 수신함 대신 프로세스 리스트를 표시한다.
+            // 변경 관리는 모든 모드에 표시하고, PAL 모드에서는 내 수신함 대신 프로세스 목록을 표시한다.
             this.processItem = [
                 {
                     title: 'processArchitecture.title',
                     icon: 'sitemap',
                     BgColor: 'primary',
                     to: '/process-architecture',
-                    disable: false
-                },
-                {
-                    title: 'versionComparison.title',
-                    icon: 'file-document-edit-outline',
-                    BgColor: 'primary',
-                    to: '/version-comparison',
                     disable: false
                 },
                 {
@@ -796,7 +803,7 @@ export default {
                 ...(this.pal
                     ? [
                           {
-                              title: '프로세스 리스트',
+                              title: '프로세스 목록',
                               icon: 'delegation',
                               BgColor: 'primary',
                               to: '/call-activity-management',
@@ -913,13 +920,6 @@ export default {
                         icon: 'dashboard',
                         BgColor: 'primary',
                         to: '/analysis-dashboard',
-                        disable: false
-                    },
-                    {
-                        title: '온톨로지 익스플로러',
-                        icon: 'sitemap',
-                        BgColor: 'primary',
-                        to: '/ontology-explorer',
                         disable: false
                     }
                 ];

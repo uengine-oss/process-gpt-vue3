@@ -436,6 +436,7 @@
                     :isViewMode="isViewMode || isToBePreviewing"
                     :enable-linked-navigation="true"
                     :root-process-name="processNameText"
+                    :diagram-mode="toBeMode ? 'to-be' : 'as-is'"
                     :showPiFlag="showPiFlag"
                     :showRelatedProjectGroup="showRelatedProjectGroup"
                     @openPanel="(id) => $emit('openPanel', id)"
