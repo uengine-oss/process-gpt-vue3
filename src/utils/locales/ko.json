@@ -5242,5 +5242,306 @@
             "noTabs": "등록된 대시보드 탭이 없습니다.",
             "emptyHint": "설정에서 Grafana URL을 등록하면 이 탭에 대시보드가 표시됩니다."
         }
-    }
+    },
+        "mergeRequestBoard": {
+            "title": "병합 요청함",
+            "pending": "검토 대기 {count}",
+            "refresh": "새로고침",
+            "collapseList": "목록 접기",
+            "expandList": "목록 펼치기",
+            "searchPlaceholder": "제목·리소스·요청자 검색",
+            "retry": "다시 시도",
+            "loadFailed": "병합 요청을 불러오지 못했습니다.",
+            "empty": "검토할 병합 요청이 없습니다",
+            "selectHint": "요청을 선택하면 여기서 검토할 수 있습니다",
+            "filter": {
+                "allTypes": "전체 유형 ({count})",
+                "type": "{label} ({count})",
+                "allStatuses": "전체 상태 ({count})",
+                "open": "검토 대기 ({count})",
+                "changesRequested": "변경 요청됨 ({count})",
+                "approved": "승인됨 ({count})",
+                "done": "병합·닫힘 ({count})"
+            },
+            "tabs": {
+                "changes": "변경사항",
+                "verify": "병합 전 검증",
+                "reviews": "리뷰 이력",
+                "reviewCount": "리뷰 {count}건"
+            },
+            "notify": {
+                "approved": "승인했습니다.",
+                "changesRequested": "변경을 요청했습니다.",
+                "commented": "코멘트를 남겼습니다.",
+                "merged": "병합했습니다.",
+                "mergedVersion": "병합했습니다. v{version} 으로 반영됐습니다."
+            },
+            "error": {
+                "review": "리뷰 제출에 실패했습니다.",
+                "merge": "병합에 실패했습니다.",
+                "noResource": "병합할 리소스를 알 수 없습니다.",
+                "snapshotMissing": "이 요청이 가리키는 버전 스냅샷을 찾을 수 없어 병합할 수 없습니다."
+            },
+            "verifyNotice": {
+                "backfilling": "비교할 시나리오를 만드는 중입니다.",
+                "noSuite": "비교할 시나리오가 없어 기존 동작이 깨지는지 확인되지 않았습니다.",
+                "running": "병합 전 검증이 진행 중입니다.",
+                "failed": "병합 전 검증이 완료되지 못했습니다.",
+                "notRun": "병합 전 검증을 아직 실행하지 않았습니다. (시나리오 {total}건)",
+                "broken": "이 병합은 기존 동작 {count}개 단계를 깨뜨립니다.",
+                "inconclusive": "시나리오 {count}건은 판단할 수 없습니다.",
+                "ok": "시나리오 {total}건 통과 — 기존 동작이 깨지지 않습니다.",
+                "newlyFailed": "이 병합으로 시나리오 {count}건이 새로 실패합니다."
+            }
+        },
+        "pr": {
+            "unknown": "알 수 없음",
+            "type": {
+                "skill": "스킬",
+                "bpmn": "프로세스",
+                "dmn": "DMN",
+                "fallback": "리소스"
+            },
+            "status": {
+                "OPEN": "검토 대기",
+                "CHANGES_REQUESTED": "변경 요청됨",
+                "APPROVED": "승인됨",
+                "MERGED": "병합됨",
+                "CLOSED": "닫힘"
+            },
+            "time": {
+                "justNow": "방금",
+                "minutes": "{count}분 전",
+                "hours": "{count}시간 전",
+                "yesterday": "어제",
+                "days": "{count}일 전"
+            },
+            "header": {
+                "requestedBy": "{name}님의 요청",
+                "owner": "담당자"
+            },
+            "changes": {
+                "loadFailed": "변경 내역을 불러오지 못했습니다.",
+                "retry": "다시 시도",
+                "viewPlain": "요약 비교",
+                "viewDiff": "상세 비교",
+                "fileList": "변경 파일",
+                "selectFile": "← 파일을 선택하세요",
+                "noPatch": "이 파일은 패치 데이터가 없습니다.",
+                "before": "변경 전",
+                "after": "변경 후",
+                "emptyBefore": "(없음 — 새로 추가되는 내용입니다)",
+                "emptyAfter": "(없음 — 삭제되는 내용입니다)",
+                "noBody": {
+                    "added": "새 파일이 추가됩니다. 내용은 상세 비교에서 볼 수 있습니다.",
+                    "removed": "파일이 통째로 삭제됩니다.",
+                    "renamed": "내용은 그대로이고 파일 이름만 바뀝니다.",
+                    "modified": "본문에서 읽어낼 변경 문장이 없습니다. 상세 비교에서 확인하세요."
+                },
+                "kind": {
+                    "added": "추가",
+                    "modified": "변경",
+                    "removed": "삭제"
+                },
+                "category": {
+                    "task": "태스크",
+                    "subProcess": "하위 프로세스",
+                    "gateway": "게이트웨이",
+                    "decision": "결정",
+                    "event": "이벤트",
+                    "lane": "담당 역할",
+                    "input": "입력 데이터",
+                    "data": "데이터",
+                    "pool": "풀",
+                    "element": "요소",
+                    "flow": "연결"
+                },
+                "file": {
+                    "skillBody": "스킬 본문",
+                    "evals": "평가 시나리오",
+                    "references": "참고 문서"
+                },
+                "phrase": {
+                    "group": "{category} {count}개 {kind}",
+                    "groupOneNamed": "'{name}' {category} {kind}",
+                    "groupManyNamed": "'{name}' 등 {category} {count}개 {kind}",
+                    "hiddenTail": " 외 {count}건",
+                    "docAdded": "'{title}' 문서 추가",
+                    "fileAdded": "{label} 추가",
+                    "fileRemoved": "{label} 삭제",
+                    "fileRewritten": "{label} 전면 개편",
+                    "fileChanged": "{label} 변경",
+                    "descriptionOnly": "호출 조건 문구 수정",
+                    "descriptionWithRest": "호출 조건 문구 수정 외 {count}줄",
+                    "quoted": "{where}\"{quote}\"{tail} {verb}",
+                    "quotedWhere": "{section} · ",
+                    "quotedTail": " 외 {count}줄",
+                    "filesRemoved": "파일 {count}개 삭제",
+                    "moreItems": "외 {count}건",
+                    "rulesAdded": "규칙 {count}개 추가",
+                    "rulesModified": "규칙 {count}개 변경",
+                    "rulesRemoved": "규칙 {count}개 삭제",
+                    "renamed": "이름: {before} → {after}",
+                    "propertyChanged": "속성 변경",
+                    "attrsChanged": "{attrs} 변경"
+                },
+                "fieldLabel": {
+                "name": "이름"
+            },
+            "compare": {
+                "diagramBefore": "변경 전",
+                "diagramAfter": "변경 후",
+                "legendAdded": "추가",
+                "legendModified": "변경",
+                "legendRemoved": "삭제",
+                "showOne": "한 화면에 하나씩",
+                "showBoth": "좌우로 나란히",
+                "rawToggle": "원문 보기",
+                "rawHide": "원문 접기",
+                "rawNote": "정의 원문(XML) 입니다. 판단은 위 비교로 하고, 여기는 마지막 확인용입니다.",
+                "noDetail": "이 요청에는 비교할 정의 원본이 없습니다.",
+                "loadingDiagram": "다이어그램을 그리는 중…",
+                    "undrawn": "새로 추가된 요소 {count}개({names} 등)는 도형 좌표가 없어 다이어그램에 그려지지 않습니다. 요약 비교에서 확인하세요.",
+                "fieldsTitle": "바뀐 값",
+                "empty": "(없음)"
+            },
+            "attr": {
+                "name": "이름",
+                "description": "설명",
+                "instruction": "수행 지침",
+                "role": "담당 역할",
+                "lane": "담당 역할",
+                "condition": "분기 조건",
+                "connection": "연결",
+                "checkpoints": "체크포인트",
+                "inputData": "입력 데이터",
+                "outputData": "출력 데이터",
+                "inputMapping": "입력 매핑",
+                "outputMapping": "출력 매핑",
+                "duration": "소요 기간",
+                "tool": "사용 도구",
+                "agent": "담당 에이전트"
+            },
+            "unavailable": {
+                    "notInGit": "깃에 올라간 요청이 아니어서 변경 내역을 가져올 수 없습니다.",
+                    "noFiles": "변경 파일 정보를 가져오지 못했습니다.",
+                    "noVersion": "이 요청이 가리키는 버전을 찾을 수 없어 변경 내역을 계산하지 못했습니다.",
+                    "emptySnapshot": "이 요청의 버전 스냅샷이 비어 있어 변경 내역을 계산하지 못했습니다.",
+                    "noBase": "비교할 이전 버전이 없어 변경 내역을 계산하지 못했습니다. (최초 버전)",
+                    "noDiff": "두 버전 사이에 바뀐 내용이 없습니다."
+                }
+            },
+            "timeline": {
+                "empty": "아직 리뷰가 없습니다",
+                "created": "{name}님이 검토 요청",
+                "createdBadge": "요청 생성",
+                "approved": "승인",
+                "changesRequested": "변경 요청",
+                "comment": "코멘트",
+                "merged": "병합 완료",
+                "closed": "요청이 닫혔습니다"
+            },
+            "actions": {
+                "openResource": "리소스 열기",
+                "gitPr": "Git PR",
+                "comment": "코멘트",
+                "requestChanges": "변경 요청",
+                "approve": "승인",
+                "merge": "병합",
+                "merging": "병합 중…",
+                "submitting": "처리 중…",
+                "cancel": "취소",
+                "details": "자세히",
+                "placeholder": {
+                    "comment": "코멘트를 남기세요…",
+                    "requestChanges": "어디를 어떻게 고쳐야 하는지 적어 주세요. (필수)",
+                    "approve": "승인 의견 (선택)"
+                },
+                "confirm": {
+                    "comment": "코멘트 제출",
+                    "requestChanges": "변경 요청 제출",
+                    "approve": "승인"
+                },
+                "note": {
+                    "merged": "병합 완료된 요청입니다.",
+                    "closed": "닫힌 요청입니다.",
+                    "noPermission": "이 요청의 검토 권한이 없습니다.",
+                    "approvedElsewhere": "승인됨 — 병합은 리소스 화면에서"
+                }
+            },
+            "verify": {
+                "badge": {
+                    "preparing": "시나리오 준비 중",
+                    "noSuite": "시나리오 없음",
+                    "running": "검증 중",
+                    "failed": "검증 실패",
+                    "notRun": "검증 미실행",
+                    "broken": "기존 동작 {count}건 깨짐",
+                    "inconclusive": "판단 불가 {count}건",
+                    "passed": "검증 통과"
+                },
+                "backfillDesc": "변경 전({ref}) 버전으로 후보 시나리오를 실제로 실행해 보고, 지금 버전이 실제로 통과하는 단계만 남깁니다. 몇 분 걸립니다 — 이 탭을 벗어나도 계속 진행됩니다.",
+                "backfillPhaseCalibrating": "후보 시나리오 {count}건을 변경 전 버전으로 확인하는 중…",
+                "backfillPhaseCalibratingPlain": "변경 전 버전으로 확인하는 중…",
+                "backfillPhaseReading": "변경 전 버전을 읽고 시나리오를 만드는 중…",
+                "regenerateDmn": "규칙 표에서 시나리오를 다시 뽑는 중…",
+                "regenerateProcess": "변경 전 정의에서 시나리오를 다시 뽑는 중…",
+                "emptyTitle": "병합 전에 비교할 시나리오가 없습니다",
+                "emptySkill1": "이 스킬은 주요 시나리오를 확보하는 단계를 거치지 않고 만들어졌습니다. 비교 기준이 없어 이 병합이 기존 동작을 깨뜨리는지 자동으로 확인할 수 없습니다.",
+                "emptySkill2": "지금 <b>변경 전 버전의 동작</b>을 기준으로 시나리오를 만들어 둘 수 있습니다. 만든 뒤에는 이 병합은 물론 앞으로의 변경도 검증할 수 있습니다.",
+                "emptyDmn1": "이 의사결정에는 병합 전에 비교할 시나리오가 아직 없습니다. 비교 기준이 없어 이 병합이 기존 판정을 바꾸는지 자동으로 확인할 수 없습니다.",
+                "emptyDmn2": "<b>변경 전 규칙 표</b>에서 시나리오를 만들 수 있습니다 — 규칙 행마다 그 행을 맞히는 입력과 임계값 경계, 어느 행에도 맞지 않는 입력을 뽑아 지금 표가 내는 결론을 기준으로 굳힙니다.",
+                "emptyProcess1": "이 프로세스는 만들 때 <b>실행 엔진 검증</b>을 거치지 않아 비교에 쓸 시나리오가 남아 있지 않습니다. 비교 기준이 없어 이 병합이 기존 흐름을 바꾸는지 자동으로 확인할 수 없습니다.",
+                "emptyProcess2": "<b>변경 전 정의</b>에서 시나리오를 만들 수 있습니다 — 갈림길마다 어느 분기로 갔을 때 어떤 경로를 지나는지를 지금 정의가 내는 흐름 그대로 굳힙니다.",
+                "emptyNote": "직접 검토하려면 변경사항 탭의 비교를 보세요.",
+                "buildFailed": "시나리오를 만들지 못했습니다. {reason}",
+                "buildScenarios": "시나리오 만들기",
+                "rebuildScenarios": "시나리오 다시 만들기",
+                "building": "만드는 중…",
+                "origin": "이 시나리오는 변경 전({ref}) 버전의 동작에서 자동으로 만들어졌습니다. 후보 {proposed}건 중 그 버전이 실제로 통과한 {accepted}건만 남겼습니다.",
+                "runningBar": "변경 전 / 변경 후 두 벌로 시나리오 {count}건을 실행하는 중…",
+                "runFailed": "검증이 완료되지 못했습니다.",
+                "lastRun": "{time} 검증",
+                "idleBar": "시나리오 {count}건으로 병합 전후 동작을 비교합니다.",
+                "run": "검증 실행",
+                "rerun": "다시 검증",
+                "verdictBroken": "기존 동작 {count}개 단계가 깨집니다",
+                "verdictInconclusive": "시나리오 {count}건은 판단할 수 없습니다",
+                "verdictOk": "기존 동작이 깨지지 않습니다",
+                "verdictBrokenDesc": "변경 전에는 통과하던 단계입니다. 병합하면 이 동작이 사라집니다.",
+                "verdictNoSignalDesc": "두 버전 모두 한 단계도 통과하지 못해 달라졌는지 알 수 없습니다. 깨진 곳이 없다는 뜻이 아닙니다.",
+                "verdictIncomparableDesc": "비교된 시나리오에서는 깨진 단계가 없지만, 한쪽 실행이 끝나지 않아 확인하지 못한 시나리오가 있습니다.",
+                "verdictOkDesc": "시나리오 {count}건을 변경 전/후로 돌린 결과, 통과하던 단계가 깨진 곳이 없습니다.",
+                "statTotal": "전체 시나리오",
+                "statPassed": "정상 유지",
+                "statStillFailing": "기존 실패 유지",
+                "statNewlyFailed": "새로운 실패",
+                "statInconclusive": "판단 불가",
+                "changedSection": "변경 전후 결과가 달라진 시나리오",
+                "brokenSection": "병합하면 깨지는 단계",
+                "fixedSection": "이 변경으로 통과하게 된 단계",
+                "noSignalSection": "판단할 수 없는 시나리오",
+                "noSignalDesc": "변경 전/후 모두 한 단계도 통과하지 못했습니다 — 달라졌는지 알 수 없습니다.",
+                "missingInputs": "시나리오가 참조하는 첨부 문서를 가져오지 못했습니다({files}).",
+                "incomparableSection": "비교하지 못한 시나리오",
+                "incomparableDesc": "두 버전 중 한쪽 실행이 완료되지 않아 달라졌는지 판단할 수 없습니다.",
+                "casesSection": "검증 대상 시나리오",
+                "confirmRegenerate": "지금 시나리오를 버리고 다시 만들까요?",
+                "confirmRegenerateYes": "다시 만들기",
+                "confirmRegenerateNo": "취소",
+                "rebuildFailed": "시나리오를 다시 만들지 못했습니다. {reason} — 기존 시나리오는 그대로 남아 있습니다.",
+                "beforeCount": "변경 전 {label}",
+                "afterCount": "변경 후 {label}",
+                "steps": "검증 {count}단계",
+                "noInputs": "입력값 없음",
+            "caseInput": "입력",
+            "caseCondition": "조건",
+            "caseExpected": "기대",
+            "caseActual": "실제",
+            "ruleLabel": "규칙 {index}행",
+            "noMatch": "매칭 없음",
+            "noOutcome": "결론 없음(매칭 없음)",
+                "path": "경로 {path}"
+            }
+        }
 }

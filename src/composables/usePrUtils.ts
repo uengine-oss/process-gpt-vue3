@@ -1,10 +1,4 @@
-const STATUS_LABELS: Record<string, string> = {
-    OPEN: '검토 대기',
-    CHANGES_REQUESTED: '변경 요청됨',
-    APPROVED: '승인됨',
-    MERGED: '병합됨',
-    CLOSED: '닫힘'
-};
+import { t, currentLocale } from '@/composables/i18nText';
 
 const STATUS_COLORS: Record<string, string> = {
     OPEN: 'primary',
@@ -32,8 +26,10 @@ const ACCENT_CLASSES: Record<string, string> = {
 
 const AVATAR_COLORS = ['#2F6BFF', '#E0822B', '#22A05B', '#8268D8', '#E04848', '#0097A7', '#7B1FA2', '#C62828'];
 
+const KNOWN_STATUSES = ['OPEN', 'CHANGES_REQUESTED', 'APPROVED', 'MERGED', 'CLOSED'];
+
 export function prStatusLabel(status: string): string {
-    return STATUS_LABELS[status] || status;
+    return KNOWN_STATUSES.includes(status) ? t(`pr.status.${status}`) : status;
 }
 
 export function prStatusColor(status: string): string {
@@ -78,20 +74,20 @@ export function formatRelativeTime(ts: string | null | undefined): string {
     const ms = Date.now() - d.getTime();
     if (ms < 0) return d.toLocaleString();
     const m = Math.floor(ms / 60000);
-    if (m < 1) return '방금';
+    if (m < 1) return t('pr.time.justNow');
     const h = Math.floor(m / 60);
-    if (h < 1) return `${m}분 전`;
+    if (h < 1) return t('pr.time.minutes', { count: m });
     const day = Math.floor(h / 24);
-    if (day < 1) return `${h}시간 전`;
-    if (day === 1) return '어제';
-    if (day < 7) return `${day}일 전`;
-    return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+    if (day < 1) return t('pr.time.hours', { count: h });
+    if (day === 1) return t('pr.time.yesterday');
+    if (day < 7) return t('pr.time.days', { count: day });
+    return d.toLocaleDateString(currentLocale(), { month: 'short', day: 'numeric' });
 }
 
 export function formatDate(ts: string | null | undefined): string {
     if (!ts) return '';
     try {
-        return new Date(ts).toLocaleDateString('ko-KR', {
+        return new Date(ts).toLocaleDateString(currentLocale(), {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
@@ -102,14 +98,11 @@ export function formatDate(ts: string | null | undefined): string {
     }
 }
 
-const RESOURCE_TYPE_LABELS: Record<string, string> = {
-    skill: '스킬',
-    bpmn: '프로세스',
-    dmn: '의사결정'
-};
+const KNOWN_RESOURCE_TYPES = ['skill', 'bpmn', 'dmn'];
 
 export function resourceTypeLabel(resourceType: string | null | undefined): string {
-    return RESOURCE_TYPE_LABELS[resourceType || ''] || resourceType || '리소스';
+    if (KNOWN_RESOURCE_TYPES.includes(resourceType || '')) return t(`pr.type.${resourceType}`);
+    return resourceType || t('pr.type.fallback');
 }
 
 /** 병합 요청이 가리키는 리소스의 화면 경로. (알림 URL 과 같은 규칙) */

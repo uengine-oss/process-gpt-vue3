@@ -1,4 +1,5 @@
 import { computeBpmnDiff, type BpmnChange } from '@/utils/bpmnDiff';
+import { t } from '@/composables/i18nText';
 import { parseDmnXml, diffDmn } from '@/utils/dmnParser';
 
 /** 스킬 병합 요청의 변경 파일 한 건. (깃 PR files API 응답 형태) */
@@ -15,10 +16,23 @@ export interface PrChangeItem {
     kind: 'added' | 'modified' | 'removed';
     /** 바뀐 대상의 사람이 읽는 이름 (태스크명·Decision 명 등) */
     name: string;
-    /** 대상의 종류. "태스크", "게이트웨이", "Decision" 처럼 한 단어. */
+    /** 대상의 종류를 가리키는 번역 키 조각. 'task', 'gateway', 'decision' … */
     category: string;
     /** 무엇이 어떻게 바뀌었는지 한 줄. 없으면 빈 문자열. */
     detail: string;
+    /** 요약 비교에서 좌우 두 칸으로 세울 값 짝. 없으면 비어 있다. */
+    fields?: { label: string; before: string; after: string }[];
+    /** 연결선이면 어디서 어디로 가는지. */
+    flow?: { from: string; to: string };
+}
+
+/** 상세 비교가 쓸 원본 두 벌. 목록 요약을 채울 때는 담지 않는다. */
+export interface PrSnapshots {
+    baseXml: string;
+    headXml: string;
+    /** BPMN 다이어그램에 칠할 하이라이트 맵 (요소 id → added|modified|deleted) */
+    diffActivitiesBase: Record<string, string>;
+    diffActivitiesHead: Record<string, string>;
 }
 
 export interface PrChanges {
@@ -26,6 +40,11 @@ export interface PrChanges {
     shape: 'files' | 'items';
     files: PrFileChange[];
     items: PrChangeItem[];
+    /**
+     * 변경 전/후 정의 원본. 상세 비교(다이어그램·규칙표)가 쓴다.
+     * 목록 카드용 요약을 채울 때는 요청 수만큼 XML 을 들고 있게 되므로 비워 둔다.
+     */
+    snapshots?: PrSnapshots;
     /** 상세에 놓는 요약. 바뀐 것을 종류별로 모두 부른다. */
     summary: string;
     /** 목록 카드에 놓는 요약. 좁은 카드에서 한 줄로 읽히도록 가장 큰 변경만 부른다. */
@@ -39,49 +58,82 @@ export interface PrChanges {
 
 const EMPTY: PrChanges = { shape: 'items', files: [], items: [], summary: '', shortSummary: '', unavailable: '' };
 
+/** 상세에서만 원본을 싣는다. 목록은 요약 한 줄이면 충분하고, 그만큼 메모리도 아낀다. */
+export interface LoadPrChangesOptions {
+    withSnapshots?: boolean;
+}
+
 /** 프로세스·의사결정의 브랜치 이름은 `v4.0-abc` 처럼 버전 앞에 v 가 붙는다. */
 function stripVersionPrefix(branch: string | null | undefined): string {
     return String(branch || '').replace(/^v/i, '');
 }
 
+/** BPMN 요소 종류 → 번역 키. 화면에 나가는 말은 모두 로케일 파일이 갖는다. */
 const BPMN_CATEGORY: Record<string, string> = {
-    task: '태스크',
-    userTask: '태스크',
-    serviceTask: '태스크',
-    manualTask: '태스크',
-    scriptTask: '태스크',
-    sendTask: '태스크',
-    receiveTask: '태스크',
-    businessRuleTask: '태스크',
-    callActivity: '하위 프로세스',
-    subProcess: '하위 프로세스',
-    startEvent: '이벤트',
-    endEvent: '이벤트',
-    intermediateThrowEvent: '이벤트',
-    intermediateCatchEvent: '이벤트',
-    boundaryEvent: '이벤트',
-    exclusiveGateway: '게이트웨이',
-    parallelGateway: '게이트웨이',
-    inclusiveGateway: '게이트웨이',
-    eventBasedGateway: '게이트웨이',
-    complexGateway: '게이트웨이',
-    sequenceFlow: '연결',
-    lane: '담당 역할',
-    laneSet: '담당 역할',
-    participant: '풀',
-    dataObject: '데이터',
-    dataObjectReference: '데이터',
-    dataStoreReference: '데이터'
+    task: 'task',
+    userTask: 'task',
+    serviceTask: 'task',
+    manualTask: 'task',
+    scriptTask: 'task',
+    sendTask: 'task',
+    receiveTask: 'task',
+    businessRuleTask: 'task',
+    callActivity: 'subProcess',
+    subProcess: 'subProcess',
+    startEvent: 'event',
+    endEvent: 'event',
+    intermediateThrowEvent: 'event',
+    intermediateCatchEvent: 'event',
+    boundaryEvent: 'event',
+    exclusiveGateway: 'gateway',
+    parallelGateway: 'gateway',
+    inclusiveGateway: 'gateway',
+    eventBasedGateway: 'gateway',
+    complexGateway: 'gateway',
+    sequenceFlow: 'flow',
+    lane: 'lane',
+    laneSet: 'lane',
+    participant: 'pool',
+    dataObject: 'data',
+    dataObjectReference: 'data',
+    dataStoreReference: 'data'
 };
 
-const KIND_LABEL: Record<PrChangeItem['kind'], string> = {
-    added: '추가',
-    modified: '변경',
-    removed: '삭제'
-};
+/** 요소 종류·동작을 지금 언어의 말로. */
+function categoryLabel(category: string): string {
+    return t(`pr.changes.category.${category}`);
+}
+
+function kindLabel(kind: PrChangeItem['kind']): string {
+    return t(`pr.changes.kind.${kind}`);
+}
+
+/** 화면에서 부르는 속성 이름. 모르는 키는 키 그대로 — 지어내는 것보다 낫다. */
+const KNOWN_ATTRS = [
+    'name',
+    'description',
+    'instruction',
+    'role',
+    'lane',
+    'condition',
+    'connection',
+    'checkpoints',
+    'inputData',
+    'outputData',
+    'inputMapping',
+    'outputMapping',
+    'duration',
+    'tool',
+    'agent'
+];
+
+function attrLabel(key: string): string {
+    if (!key) return '';
+    return KNOWN_ATTRS.includes(key) ? t(`pr.changes.attr.${key}`) : key;
+}
 
 function bpmnCategory(elementType: string | undefined): string {
-    return BPMN_CATEGORY[elementType || ''] || '요소';
+    return BPMN_CATEGORY[elementType || ''] || 'element';
 }
 
 const KIND_ORDER: PrChangeItem['kind'][] = ['added', 'modified', 'removed'];
@@ -91,19 +143,7 @@ const KIND_ORDER: PrChangeItem['kind'][] = ['added', 'modified', 'removed'];
  * 개수로 줄을 세우면 이름 없는 연결선이 늘 앞을 차지하고, 정작 업무가 어떻게
  * 달라지는지를 말해 주는 태스크·게이트웨이가 "외 N개" 뒤로 숨는다.
  */
-const CATEGORY_RANK: string[] = [
-    '태스크',
-    '하위 프로세스',
-    '게이트웨이',
-    '결정',
-    '이벤트',
-    '담당 역할',
-    '입력 데이터',
-    '데이터',
-    '풀',
-    '요소',
-    '연결'
-];
+const CATEGORY_RANK: string[] = ['task', 'subProcess', 'gateway', 'decision', 'event', 'lane', 'input', 'data', 'pool', 'element', 'flow'];
 
 function categoryRank(category: string): number {
     const index = CATEGORY_RANK.indexOf(category);
@@ -124,12 +164,14 @@ function hasHumanName(name: string): boolean {
 
 /** (동작, 종류) 묶음 하나를 "'무엇' 등 종류 N개 동작" 으로 옮긴다. */
 function phraseGroup(kind: PrChangeItem['kind'], category: string, members: PrChangeItem[]): string {
+    const label = categoryLabel(category);
+    const verb = kindLabel(kind);
     const named = members.find((item) => hasHumanName(item.name));
-    if (!named) return `${category} ${members.length}개 ${KIND_LABEL[kind]}`;
-    const quoted = `'${truncate(named.name, 22)}'`;
+    if (!named) return t('pr.changes.phrase.group', { category: label, count: members.length, kind: verb });
+    const name = truncate(named.name, 22);
     // 하나뿐이면 "등" 을 붙일 나머지가 없다.
-    if (members.length === 1) return `${quoted} ${category} ${KIND_LABEL[kind]}`;
-    return `${quoted} 등 ${category} ${members.length}개 ${KIND_LABEL[kind]}`;
+    if (members.length === 1) return t('pr.changes.phrase.groupOneNamed', { name, category: label, kind: verb });
+    return t('pr.changes.phrase.groupManyNamed', { name, category: label, count: members.length, kind: verb });
 }
 
 /**
@@ -161,7 +203,7 @@ function summarizeItems(items: PrChangeItem[], maxGroups = 3): string {
     const hidden = ranked.slice(maxGroups).reduce((sum, group) => sum + group.members.length, 0);
     // 접어 둔 나머지는 별개 항목이 아니라 앞 구절의 꼬리다. `· 외 3건` 으로 떨어뜨리면
     // 마치 또 다른 종류의 변경인 것처럼 읽힌다.
-    if (hidden) phrases[phrases.length - 1] += ` 외 ${hidden}건`;
+    if (hidden) phrases[phrases.length - 1] += t('pr.changes.phrase.hiddenTail', { count: hidden });
 
     return phrases.join(' · ');
 }
@@ -258,9 +300,9 @@ function readPatch(patch: string): { added: PatchLine[]; removed: PatchLine[] } 
 
 /** 파일 경로를 검토자가 쓰는 말로 바꾼다. 경로는 파일 위치일 뿐 내용이 아니다. */
 function fileLabel(filename: string): string {
-    if (/^SKILL\.md$/i.test(filename)) return '스킬 본문';
-    if (/(^|\/)evals?\//i.test(filename) || /evals?\.json$/i.test(filename)) return '평가 시나리오';
-    if (/(^|\/)references?\//i.test(filename)) return '참고 문서';
+    if (/^SKILL\.md$/i.test(filename)) return t('pr.changes.file.skillBody');
+    if (/(^|\/)evals?\//i.test(filename) || /evals?\.json$/i.test(filename)) return t('pr.changes.file.evals');
+    if (/(^|\/)references?\//i.test(filename)) return t('pr.changes.file.references');
     return filename;
 }
 
@@ -278,28 +320,28 @@ function describeFile(file: PrFileChange): string {
     if (file.status === 'added') {
         // 새 문서는 제목이 곧 내용 요약이다.
         const title = added.find((line) => line.section && line.section === line.text)?.text || added[0]?.text;
-        return title ? `'${truncate(title, 34)}' 문서 추가` : `${label} 추가`;
+        return title ? t('pr.changes.phrase.docAdded', { title: truncate(title, 34) }) : t('pr.changes.phrase.fileAdded', { label });
     }
-    if (file.status === 'removed') return `${label} 삭제`;
+    if (file.status === 'removed') return t('pr.changes.phrase.fileRemoved', { label });
 
     const touched = (file.additions || 0) + (file.deletions || 0);
-    if (touched >= REWRITE_THRESHOLD) return `${label} 전면 개편`;
+    if (touched >= REWRITE_THRESHOLD) return t('pr.changes.phrase.fileRewritten', { label });
 
     // 스킬 설명(description)은 언제 이 스킬이 불릴지를 정하는 문장이라 따로 짚어 준다.
     const isDescription = (line: PatchLine) => /^description\s*:/i.test(line.text);
     if (added.some(isDescription) || removed.some(isDescription)) {
         const rest = added.filter((line) => !isDescription(line));
-        return rest.length ? `호출 조건 문구 수정 외 ${rest.length}줄` : '호출 조건 문구 수정';
+        return rest.length ? t('pr.changes.phrase.descriptionWithRest', { count: rest.length }) : t('pr.changes.phrase.descriptionOnly');
     }
 
     const quoted = added[0] || removed[0];
-    if (!quoted) return `${label} 변경`;
+    if (!quoted) return t('pr.changes.phrase.fileChanged', { label });
 
-    const verb = added.length ? '추가' : '삭제';
+    const verb = kindLabel(added.length ? 'added' : 'removed');
     const rest = (added.length || removed.length) - 1;
-    const where = quoted.section ? `${truncate(quoted.section, 16)} · ` : '';
-    const tail = rest > 0 ? ` 외 ${rest}줄` : '';
-    return `${where}"${truncate(quoted.text, 40)}"${tail} ${verb}`;
+    const where = quoted.section ? t('pr.changes.phrase.quotedWhere', { section: truncate(quoted.section, 16) }) : '';
+    const tail = rest > 0 ? t('pr.changes.phrase.quotedTail', { count: rest }) : '';
+    return t('pr.changes.phrase.quoted', { where, quote: truncate(quoted.text, 40), tail, verb });
 }
 
 /**
@@ -318,7 +360,9 @@ function summarizeFiles(files: PrFileChange[], maxChars = Infinity): string {
 
     const notes = ranked.map(describeFile);
     if (removedFiles.length) {
-        notes.push(removedFiles.length === 1 ? describeFile(removedFiles[0]) : `파일 ${removedFiles.length}개 삭제`);
+        notes.push(
+            removedFiles.length === 1 ? describeFile(removedFiles[0]) : t('pr.changes.phrase.filesRemoved', { count: removedFiles.length })
+        );
     }
 
     // 카드에 놓을 때는 길이로 자른다. 개수로 자르면 "새 문서가 생겼다" 처럼
@@ -332,7 +376,7 @@ function summarizeFiles(files: PrFileChange[], maxChars = Infinity): string {
         width = next;
     }
     const hidden = notes.length - kept.length;
-    if (hidden > 0) kept.push(`외 ${hidden}건`);
+    if (hidden > 0) kept.push(t('pr.changes.phrase.moreItems', { count: hidden }));
 
     return kept.join(' · ');
 }
@@ -340,16 +384,24 @@ function summarizeFiles(files: PrFileChange[], maxChars = Infinity): string {
 function toBpmnItems(changes: BpmnChange[]): PrChangeItem[] {
     return changes.map((change) => {
         const category = bpmnCategory(change.elementType);
-        const fields = change.fieldChanges || [];
         let detail = '';
         if (change.type === 'modified') {
-            detail = fields.length ? fields.slice(0, 3).join(', ') : '속성 변경';
+            // `Extension fields added: json.description` 같은 개발자 문장은 화면에 내보내지 않는다.
+            // 무엇이 바뀌었는지는 속성 이름으로 말한다 — "설명 · 담당 역할 변경".
+            const labels = (change.changedKeys || []).map(attrLabel).filter(Boolean);
+            detail = labels.length
+                ? t('pr.changes.phrase.attrsChanged', { attrs: labels.slice(0, 4).join(' · ') })
+                : t('pr.changes.phrase.propertyChanged');
         }
         return {
             kind: change.type,
-            name: change.name || change.id,
+            // 이름 없는 연결선은 id 대신 "'민원접수' → '사전검토'" 로 부른다 —
+            // id 는 무엇이 이어졌는지 말해 주지 않는다.
+            name: change.name || (change.flow ? `${change.flow.from} → ${change.flow.to}` : change.id),
             category,
-            detail
+            detail,
+            fields: change.fields || [],
+            flow: change.flow
         };
     });
 }
@@ -363,7 +415,7 @@ function toDmnItems(previous: any, current: any): PrChangeItem[] {
         items.push({
             kind: change.type as PrChangeItem['kind'],
             name: target.name || change.key,
-            category: '입력 데이터',
+            category: 'input',
             detail: ''
         });
     }
@@ -373,20 +425,24 @@ function toDmnItems(previous: any, current: any): PrChangeItem[] {
         const parts: string[] = [];
         const summary = change.tableDiff?.summary;
         if (summary) {
-            if (summary.addedRules) parts.push(`규칙 ${summary.addedRules}개 추가`);
-            if (summary.modifiedRules) parts.push(`규칙 ${summary.modifiedRules}개 변경`);
-            if (summary.removedRules) parts.push(`규칙 ${summary.removedRules}개 삭제`);
+            if (summary.addedRules) parts.push(t('pr.changes.phrase.rulesAdded', { count: summary.addedRules }));
+            if (summary.modifiedRules) parts.push(t('pr.changes.phrase.rulesModified', { count: summary.modifiedRules }));
+            if (summary.removedRules) parts.push(t('pr.changes.phrase.rulesRemoved', { count: summary.removedRules }));
         }
         const previousName = change.previous?.name;
         const currentName = change.current?.name;
         if (change.type === 'modified' && previousName && currentName && previousName !== currentName) {
-            parts.push(`이름: ${previousName} → ${currentName}`);
+            parts.push(t('pr.changes.phrase.renamed', { before: previousName, after: currentName }));
         }
         items.push({
             kind: change.type as PrChangeItem['kind'],
             name: target.name || change.key,
-            category: '결정',
-            detail: parts.join(', ')
+            category: 'decision',
+            detail: parts.join(', '),
+            fields:
+                change.type === 'modified' && previousName && currentName && previousName !== currentName
+                    ? [{ label: t('pr.changes.fieldLabel.name'), before: previousName, after: currentName }]
+                    : []
         });
     }
 
@@ -435,13 +491,18 @@ async function loadDefinitionSnapshots(
  * 병합 요청 한 건의 변경 내역을 리소스 종류에 맞는 방식으로 계산한다.
  * 스킬은 깃 패치를, 프로세스·의사결정은 두 버전 스냅샷의 구조 비교를 쓴다.
  */
-export async function loadPrChanges(backend: any, pr: any, versionCache?: Map<string, Promise<any[]>>): Promise<PrChanges> {
+export async function loadPrChanges(
+    backend: any,
+    pr: any,
+    versionCache?: Map<string, Promise<any[]>>,
+    options: LoadPrChangesOptions = {}
+): Promise<PrChanges> {
     if (!pr) return { ...EMPTY };
     const resourceType = pr.resource_type || 'skill';
 
     if (resourceType === 'skill') {
         if (!pr.git_pr_number || !pr.resource_id) {
-            return { ...EMPTY, shape: 'files', unavailable: '깃에 올라간 요청이 아니어서 변경 내역을 가져올 수 없습니다.' };
+            return { ...EMPTY, shape: 'files', unavailable: t('pr.changes.unavailable.notInGit') };
         }
         const files: PrFileChange[] = (await backend.getSkillPrFiles(pr.resource_id, pr.git_pr_number)) || [];
         return {
@@ -451,34 +512,43 @@ export async function loadPrChanges(backend: any, pr: any, versionCache?: Map<st
             summary: summarizeFiles(files),
             // 카드는 340px 라 가장 크게 바뀐 파일 하나만 말한다.
             shortSummary: summarizeFiles(files, 60),
-            unavailable: files.length ? '' : '변경 파일 정보를 가져오지 못했습니다.'
+            unavailable: files.length ? '' : t('pr.changes.unavailable.noFiles')
         };
     }
 
     const snapshots = await loadDefinitionSnapshots(backend, pr.resource_id, pr.branch_name, pr.base_branch, versionCache);
     if (!snapshots) {
-        return { ...EMPTY, unavailable: '이 요청이 가리키는 버전을 찾을 수 없어 변경 내역을 계산하지 못했습니다.' };
+        return { ...EMPTY, unavailable: t('pr.changes.unavailable.noVersion') };
     }
     if (!snapshots.headXml) {
-        return { ...EMPTY, unavailable: '이 요청의 버전 스냅샷이 비어 있어 변경 내역을 계산하지 못했습니다.' };
+        return { ...EMPTY, unavailable: t('pr.changes.unavailable.emptySnapshot') };
     }
     if (!snapshots.baseXml) {
-        return { ...EMPTY, unavailable: '비교할 이전 버전이 없어 변경 내역을 계산하지 못했습니다. (최초 버전)' };
+        return { ...EMPTY, unavailable: t('pr.changes.unavailable.noBase') };
     }
 
+    // BPMN 은 한 번 계산한 diff 에서 항목과 하이라이트 맵을 함께 얻는다 — 상세 비교에서
+    // 다시 돌리면 같은 XML 을 두 번 파싱한다.
+    const bpmnDiff = resourceType === 'dmn' ? null : computeBpmnDiff(snapshots.baseXml, snapshots.headXml);
     const items = orderItems(
-        resourceType === 'dmn'
-            ? toDmnItems(parseDmnXml(snapshots.baseXml), parseDmnXml(snapshots.headXml))
-            : toBpmnItems(computeBpmnDiff(snapshots.baseXml, snapshots.headXml).changes)
+        bpmnDiff ? toBpmnItems(bpmnDiff.changes) : toDmnItems(parseDmnXml(snapshots.baseXml), parseDmnXml(snapshots.headXml))
     );
 
     return {
         shape: 'items',
         files: [],
         items,
+        snapshots: options.withSnapshots
+            ? {
+                  baseXml: snapshots.baseXml,
+                  headXml: snapshots.headXml,
+                  diffActivitiesBase: bpmnDiff?.diffActivitiesB || {},
+                  diffActivitiesHead: bpmnDiff?.diffActivitiesA || {}
+              }
+            : undefined,
         summary: summarizeItems(items),
         shortSummary: shortSummarizeItems(items),
-        unavailable: items.length ? '' : '두 버전 사이에 바뀐 내용이 없습니다.'
+        unavailable: items.length ? '' : t('pr.changes.unavailable.noDiff')
     };
 }
 
@@ -644,4 +714,62 @@ export function isGenericPrTitle(pr: { title?: string; resource_name?: string })
 export function prHeadline(pr: { title?: string; resource_name?: string }, summary?: string): string {
     if (summary && isGenericPrTitle(pr)) return summary;
     return cleanPrTitle(pr?.title);
+}
+
+/**
+ * 업무 관점 변경 보기 한 덩어리.
+ * 파일 하나의 한 문단에서 무엇이 빠지고 무엇이 들어왔는지를 짝지어 담는다.
+ */
+export interface PrPlainBlock {
+    filename: string;
+    /** 검토자가 쓰는 말로 옮긴 파일 이름. (예: '스킬 본문') */
+    label: string;
+    status: string;
+    /** 이 덩어리가 속한 문단 제목. 없으면 빈 문자열. */
+    section: string;
+    /** 변경 전 문장 */
+    before: string[];
+    /** 변경 후 문장 */
+    after: string[];
+}
+
+/**
+ * 깃 패치를 "변경 전 ↔ 변경 후" 문장 짝으로 옮긴다.
+ *
+ * `@@ -12,7 +12,9 @@` 와 `+`/`-` 기호는 이 변경이 업무적으로 무엇을 뜻하는지 말해 주지
+ * 않는다. 검토자가 먼저 알아야 하는 것은 **어느 문단의 어떤 문장이 어떻게 바뀌는가** 이므로,
+ * 마크다운 장식과 diff 기호를 걷어낸 본문만 문단별로 모아 좌우로 세운다.
+ * 실제 패치는 '상세 Diff' 로 따로 둔다.
+ */
+export function buildPlainFileView(files: PrFileChange[]): PrPlainBlock[] {
+    const blocks: PrPlainBlock[] = [];
+
+    for (const file of files || []) {
+        const label = fileLabel(file.filename);
+        const base = { filename: file.filename, label, status: file.status };
+
+        if (!file.patch) {
+            blocks.push({ ...base, section: '', before: [], after: [] });
+            continue;
+        }
+
+        const { added, removed } = readPatch(file.patch);
+        const bySection = new Map<string, PrPlainBlock>();
+        const put = (line: PatchLine, side: 'before' | 'after') => {
+            let block = bySection.get(line.section);
+            if (!block) {
+                block = { ...base, section: line.section, before: [], after: [] };
+                bySection.set(line.section, block);
+                blocks.push(block);
+            }
+            block[side].push(line.text);
+        };
+
+        removed.forEach((line) => put(line, 'before'));
+        added.forEach((line) => put(line, 'after'));
+
+        if (!bySection.size) blocks.push({ ...base, section: '', before: [], after: [] });
+    }
+
+    return blocks;
 }

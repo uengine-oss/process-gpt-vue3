@@ -5094,5 +5094,306 @@
             "statusApproved": "Approved",
             "statusRejected": "Rejected"
         }
-    }
+    },
+        "mergeRequestBoard": {
+            "title": "Merge Requests",
+            "pending": "{count} awaiting review",
+            "refresh": "Refresh",
+            "collapseList": "Collapse list",
+            "expandList": "Expand list",
+            "searchPlaceholder": "Search title, resource, requester",
+            "retry": "Try again",
+            "loadFailed": "Could not load merge requests.",
+            "empty": "No merge requests to review",
+            "selectHint": "Pick a request to review it here",
+            "filter": {
+                "allTypes": "All types ({count})",
+                "type": "{label} ({count})",
+                "allStatuses": "All statuses ({count})",
+                "open": "Awaiting review ({count})",
+                "changesRequested": "Changes requested ({count})",
+                "approved": "Approved ({count})",
+                "done": "Merged / closed ({count})"
+            },
+            "tabs": {
+                "changes": "Changes",
+                "verify": "Pre-merge check",
+                "reviews": "Review history",
+                "reviewCount": "{count} reviews"
+            },
+            "notify": {
+                "approved": "Approved.",
+                "changesRequested": "Changes requested.",
+                "commented": "Comment posted.",
+                "merged": "Merged.",
+                "mergedVersion": "Merged. Released as v{version}."
+            },
+            "error": {
+                "review": "Could not submit the review.",
+                "merge": "Could not merge.",
+                "noResource": "The resource to merge is unknown.",
+                "snapshotMissing": "Cannot merge: the version snapshot this request points to was not found."
+            },
+            "verifyNotice": {
+                "backfilling": "Building the scenarios to compare against.",
+                "noSuite": "No scenarios to compare against, so it is unknown whether this breaks existing behavior.",
+                "running": "The pre-merge check is running.",
+                "failed": "The pre-merge check did not finish.",
+                "notRun": "The pre-merge check has not been run yet. ({total} scenarios)",
+                "broken": "This merge breaks {count} steps of existing behavior.",
+                "inconclusive": "{count} scenarios are inconclusive.",
+                "ok": "All {total} scenarios pass — existing behavior is not broken.",
+                "newlyFailed": "{count} scenarios start failing with this merge."
+            }
+        },
+        "pr": {
+            "unknown": "Unknown",
+            "type": {
+                "skill": "Skill",
+                "bpmn": "Process",
+                "dmn": "DMN",
+                "fallback": "Resource"
+            },
+            "status": {
+                "OPEN": "Awaiting review",
+                "CHANGES_REQUESTED": "Changes requested",
+                "APPROVED": "Approved",
+                "MERGED": "Merged",
+                "CLOSED": "Closed"
+            },
+            "time": {
+                "justNow": "just now",
+                "minutes": "{count} min ago",
+                "hours": "{count} hours ago",
+                "yesterday": "yesterday",
+                "days": "{count} days ago"
+            },
+            "header": {
+                "requestedBy": "Requested by {name}",
+                "owner": "Owner"
+            },
+            "changes": {
+                "loadFailed": "Could not load the changes.",
+                "retry": "Try again",
+                "viewPlain": "Summary compare",
+                "viewDiff": "Detailed compare",
+                "fileList": "Changed files",
+                "selectFile": "← Pick a file",
+                "noPatch": "This file has no patch data.",
+                "before": "Before",
+                "after": "After",
+                "emptyBefore": "(none — this content is newly added)",
+                "emptyAfter": "(none — this content is removed)",
+                "noBody": {
+                    "added": "A new file is added. See its content in the detailed compare.",
+                    "removed": "The whole file is removed.",
+                    "renamed": "Only the file name changes; the content stays the same.",
+                    "modified": "No change sentences could be read from the body. Check the detailed compare."
+                },
+                "kind": {
+                    "added": "added",
+                    "modified": "changed",
+                    "removed": "removed"
+                },
+                "category": {
+                    "task": "task",
+                    "subProcess": "sub-process",
+                    "gateway": "gateway",
+                    "decision": "decision",
+                    "event": "event",
+                    "lane": "role",
+                    "input": "input data",
+                    "data": "data",
+                    "pool": "pool",
+                    "element": "element",
+                    "flow": "flow"
+                },
+                "file": {
+                    "skillBody": "skill body",
+                    "evals": "eval scenarios",
+                    "references": "reference docs"
+                },
+                "phrase": {
+                    "group": "{count} {category} {kind}",
+                    "groupOneNamed": "'{name}' {category} {kind}",
+                    "groupManyNamed": "{count} {category} {kind}, incl. '{name}'",
+                    "hiddenTail": " and {count} more",
+                    "docAdded": "'{title}' document added",
+                    "fileAdded": "{label} added",
+                    "fileRemoved": "{label} removed",
+                    "fileRewritten": "{label} fully rewritten",
+                    "fileChanged": "{label} changed",
+                    "descriptionOnly": "invocation wording changed",
+                    "descriptionWithRest": "invocation wording changed, and {count} more lines",
+                    "quoted": "{where}\"{quote}\"{tail} {verb}",
+                    "quotedWhere": "{section} · ",
+                    "quotedTail": " and {count} more lines",
+                    "filesRemoved": "{count} files removed",
+                    "moreItems": "{count} more",
+                    "rulesAdded": "{count} rules added",
+                    "rulesModified": "{count} rules changed",
+                    "rulesRemoved": "{count} rules removed",
+                    "renamed": "name: {before} → {after}",
+                    "propertyChanged": "properties changed",
+                    "attrsChanged": "{attrs} changed"
+                },
+                "fieldLabel": {
+                "name": "Name"
+            },
+            "compare": {
+                "diagramBefore": "Before",
+                "diagramAfter": "After",
+                "legendAdded": "Added",
+                "legendModified": "Changed",
+                "legendRemoved": "Removed",
+                "showOne": "One at a time",
+                "showBoth": "Side by side",
+                "rawToggle": "Show source",
+                "rawHide": "Hide source",
+                "rawNote": "This is the raw definition (XML). Judge from the compare above; this is a last-resort check.",
+                "noDetail": "This request has no definition source to compare.",
+                "loadingDiagram": "Drawing the diagram…",
+                    "undrawn": "{count} newly added elements ({names}, …) have no diagram coordinates and are not drawn here. Check them in the summary compare.",
+                "fieldsTitle": "Changed values",
+                "empty": "(none)"
+            },
+            "attr": {
+                "name": "name",
+                "description": "description",
+                "instruction": "instruction",
+                "role": "role",
+                "lane": "role",
+                "condition": "branch condition",
+                "connection": "connection",
+                "checkpoints": "checkpoints",
+                "inputData": "input data",
+                "outputData": "output data",
+                "inputMapping": "input mapping",
+                "outputMapping": "output mapping",
+                "duration": "duration",
+                "tool": "tool",
+                "agent": "agent"
+            },
+            "unavailable": {
+                    "notInGit": "This request is not on git, so its changes cannot be fetched.",
+                    "noFiles": "Could not fetch the changed-file information.",
+                    "noVersion": "Could not find the version this request points to, so the changes could not be computed.",
+                    "emptySnapshot": "The version snapshot of this request is empty, so the changes could not be computed.",
+                    "noBase": "There is no previous version to compare against. (first version)",
+                    "noDiff": "Nothing changed between the two versions."
+                }
+            },
+            "timeline": {
+                "empty": "No reviews yet",
+                "created": "{name} asked for a review",
+                "createdBadge": "Request opened",
+                "approved": "Approved",
+                "changesRequested": "Changes requested",
+                "comment": "Comment",
+                "merged": "Merged",
+                "closed": "The request was closed"
+            },
+            "actions": {
+                "openResource": "Open resource",
+                "gitPr": "Git PR",
+                "comment": "Comment",
+                "requestChanges": "Request changes",
+                "approve": "Approve",
+                "merge": "Merge",
+                "merging": "Merging…",
+                "submitting": "Working…",
+                "cancel": "Cancel",
+                "details": "Details",
+                "placeholder": {
+                    "comment": "Leave a comment…",
+                    "requestChanges": "Say what should change and how. (required)",
+                    "approve": "Approval note (optional)"
+                },
+                "confirm": {
+                    "comment": "Post comment",
+                    "requestChanges": "Request changes",
+                    "approve": "Approve"
+                },
+                "note": {
+                    "merged": "This request has been merged.",
+                    "closed": "This request is closed.",
+                    "noPermission": "You cannot review this request.",
+                    "approvedElsewhere": "Approved — merge from the resource screen"
+                }
+            },
+            "verify": {
+                "badge": {
+                    "preparing": "Preparing scenarios",
+                    "noSuite": "No scenarios",
+                    "running": "Checking",
+                    "failed": "Check failed",
+                    "notRun": "Not checked",
+                    "broken": "{count} behaviors broken",
+                    "inconclusive": "{count} inconclusive",
+                    "passed": "Check passed"
+                },
+                "backfillDesc": "Candidate scenarios are actually run against the before version ({ref}), keeping only the steps that version really passes. This takes a few minutes — it keeps going even if you leave this tab.",
+                "backfillPhaseCalibrating": "Checking {count} candidate scenarios against the before version…",
+                "backfillPhaseCalibratingPlain": "Checking against the before version…",
+                "backfillPhaseReading": "Reading the before version and building scenarios…",
+                "regenerateDmn": "Deriving scenarios from the rule table again…",
+                "regenerateProcess": "Deriving scenarios from the before definition again…",
+                "emptyTitle": "There are no scenarios to compare before merging",
+                "emptySkill1": "This skill was created without a step that captures its key scenarios. With no baseline, we cannot automatically tell whether this merge breaks existing behavior.",
+                "emptySkill2": "You can build scenarios now from <b>the behavior of the before version</b>. Once built, they cover this merge and every change after it.",
+                "emptyDmn1": "This decision has no scenarios to compare against yet. With no baseline, we cannot automatically tell whether this merge changes existing verdicts.",
+                "emptyDmn2": "Scenarios can be derived from <b>the before rule table</b> — for each rule row, an input that hits it, the threshold boundaries, and an input that matches no row, all pinned to the verdicts the current table gives.",
+                "emptyProcess1": "This process was created without <b>engine verification</b>, so no scenarios are left to compare against. With no baseline, we cannot automatically tell whether this merge changes the existing flow.",
+                "emptyProcess2": "Scenarios can be derived from <b>the before definition</b> — for each branch point, the path taken is pinned exactly as the current definition routes it.",
+                "emptyNote": "To review it yourself, read the compare on the Changes tab.",
+                "buildFailed": "Could not build the scenarios. {reason}",
+                "buildScenarios": "Build scenarios",
+                "rebuildScenarios": "Rebuild scenarios",
+                "building": "Building…",
+                "origin": "These scenarios were generated automatically from the behavior of the before version ({ref}). Of {proposed} candidates, only the {accepted} that version actually passed were kept.",
+                "runningBar": "Running {count} scenarios against both the before and after versions…",
+                "runFailed": "The check did not finish.",
+                "lastRun": "Checked {time}",
+                "idleBar": "{count} scenarios compare behavior before and after the merge.",
+                "run": "Run check",
+                "rerun": "Run again",
+                "verdictBroken": "{count} steps of existing behavior break",
+                "verdictInconclusive": "{count} scenarios are inconclusive",
+                "verdictOk": "Existing behavior is not broken",
+                "verdictBrokenDesc": "These steps passed before the change. Merging drops that behavior.",
+                "verdictNoSignalDesc": "Neither version passed a single step, so we cannot tell whether anything changed. This does not mean nothing is broken.",
+                "verdictIncomparableDesc": "No steps broke in the compared scenarios, but some scenarios could not be checked because one side did not finish.",
+                "verdictOkDesc": "Running {count} scenarios before and after the change, no passing step broke.",
+                "statTotal": "Scenarios",
+                "statPassed": "Still passing",
+                "statStillFailing": "Already failing",
+                "statNewlyFailed": "Newly failing",
+                "statInconclusive": "Inconclusive",
+                "changedSection": "Scenarios whose result changed",
+                "brokenSection": "Steps that break on merge",
+                "fixedSection": "Steps that start passing with this change",
+                "noSignalSection": "Inconclusive scenarios",
+                "noSignalDesc": "Neither before nor after passed a single step — we cannot tell whether anything changed.",
+                "missingInputs": "The attachments this scenario refers to could not be fetched ({files}).",
+                "incomparableSection": "Scenarios that could not be compared",
+                "incomparableDesc": "One of the two runs did not finish, so we cannot tell whether the result changed.",
+                "casesSection": "Scenarios checked",
+                "confirmRegenerate": "Discard the current scenarios and build them again?",
+                "confirmRegenerateYes": "Rebuild",
+                "confirmRegenerateNo": "Cancel",
+                "rebuildFailed": "Could not rebuild the scenarios. {reason} — the existing ones are untouched.",
+                "beforeCount": "before {label}",
+                "afterCount": "after {label}",
+                "steps": "{count} check steps",
+                "noInputs": "no inputs",
+            "caseInput": "Input",
+            "caseCondition": "Rule",
+            "caseExpected": "Expected",
+            "caseActual": "Actual",
+            "ruleLabel": "rule row {index}",
+            "noMatch": "no match",
+            "noOutcome": "no outcome (no match)",
+                "path": "path {path}"
+            }
+        }
 }
