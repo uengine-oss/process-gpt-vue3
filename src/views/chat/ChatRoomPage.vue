@@ -211,8 +211,6 @@
                                 :desktopVoiceActive="isDesktopVoiceActive"
                                 :enableDesktopVoice="isVoiceEnabled"
                                 :enableKnowledgeBase="true"
-                                :knowledgeDocs="selectedKnowledgeDocs"
-                                @update:knowledgeDocs="onKnowledgeDocsUpdate"
                                 @sendMessage="handleSendMessage"
                                 @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
                                 @desktop-voice-toggle="toggleDesktopVoice"
@@ -816,10 +814,16 @@ import BPMNXmlGenerator from '@/components/BPMNXmlGenerator.vue';
 import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import ArtifactPanel from '@/components/ArtifactPanel.vue';
 import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/processArtifactPanel.js';
+import { buildHitlPanel, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
+import { shouldGenerateChatRoomName as sharedShouldGenerateChatRoomName } from '@/shared/chatRoom/index.js';
+import { formatToolName as sharedFormatToolName } from '@/shared/toolNames/index.js';
 import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
+import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
+import { useCodexFolderStore } from '@/stores/codexFolder';
+import { normalizeOrchestration } from '@/utils/orchestration';
 import agentRouterService from '@/services/AgentRouterService';
-import deepAgentRouterService from '@/services/DeepAgentRouterService';
+import deepAgentRouterService, { DeepAgentRouterService } from '@/services/DeepAgentRouterService';
 import FixedBaseWorkAssistantAgentService from '@/services/FixedBaseWorkAssistantAgentService';
 import { getValidToken } from '@/utils/supabaseAuth';
 import { getTenantId, resolveTenantId } from '@/utils/tenant';
@@ -830,6 +834,9 @@ import { PROCESS_GPT_AGENT_ID } from '@/constants/processGptAgent';
 const backend = BackendFactory.createBackend();
 const fixedLangchainMainAgentService = new FixedBaseWorkAssistantAgentService('/agent');
 const fixedDeepagentsMainAgentService = new FixedBaseWorkAssistantAgentService('/process-gpt-deepagents');
+// codex 는 deepagents 와 동일한 chat/stream 계약이라 같은 서비스 클래스를 prefix 만 바꿔 쓴다.
+const codexAgentRouterService = new DeepAgentRouterService('/process-gpt-codex');
+const fixedCodexMainAgentService = new FixedBaseWorkAssistantAgentService('/process-gpt-codex');
 
 // 메인 에이전트(process-gpt-agent)는 별도 메타 설정이 필요함(항상 기본 파드로 실행)
 const MAIN_PROCESS_GPT_AGENT_META = {
@@ -851,6 +858,14 @@ const MAIN_PROCESS_GPT_AGENT_META = {
 
 export default {
     name: 'ChatRoomPage',
+    // 지식 선택은 전역 스토어(단일 소스). 이 페이지가 방 lifecycle(로드/저장/이월)을 이 스토어로 조율.
+    setup() {
+        return {
+            knowledgeStore: useKnowledgeSelectionStore(),
+            // 원본 폴더 업로드 게이트 — 덜 올라온 상태로 턴이 시작되지 않게 한다.
+            codexFolderStore: useCodexFolderStore()
+        };
+    },
     props: {
         embedded: { type: Boolean, default: false },
         contextAgentId: { type: String, default: null },
@@ -958,7 +973,6 @@ export default {
             artifactPanels: [], // [{ id, type, label, data: { htmlUrl, fileUrl, messageId } }]
             roomWorkspaceFilesByGroup: {}, // 프로세스 폴더(process-<uuid>)별 산출물 파일 누적 — 프로세스마다 탭
             workspaceSaveStateByGroup: {}, // 프로세스별 DB 저장 상태 { [group]: {saving,saved,error} }
-            selectedKnowledgeDocs: [], // 지식 베이스(Google Drive) RAG 컨텍스트로 선택된 문서
             activeArtifactId: null, // 현재 활성 탭 ID
             artifactSidebarVisible: false,
             artifactSidebarWidth: 820,
@@ -1011,6 +1025,13 @@ export default {
         };
     },
     computed: {
+        // 지식 선택 — 전역 스토어 프록시(읽기 전용). 쓰기는 knowledgeStore 액션 사용.
+        selectedKnowledgeDocs() {
+            return this.knowledgeStore.docs;
+        },
+        selectedKnowledgeFolders() {
+            return this.knowledgeStore.folders;
+        },
         // DB 확정 메시지 + 현재 스트리밍 중인 임시 메시지를 합쳐 Chat 컴포넌트에 전달
         displayMessages() {
             const streams = Object.values(this.activeStreams);
@@ -1420,6 +1441,12 @@ export default {
         }
     },
     watch: {
+        selectedKnowledgeDocs() {
+            this.onKnowledgeSelectionChanged();
+        },
+        selectedKnowledgeFolders() {
+            this.onKnowledgeSelectionChanged();
+        },
         roomId: {
             immediate: true,
             async handler(newRoomId, oldRoomId) {
@@ -1861,12 +1888,9 @@ export default {
                     //   (사용자가 직접 rename 한 이름은 placeholder 가 아니므로 그대로 유지된다.)
                     const dbName = String(existing?.name || '').trim();
                     const localName = String(r.name || '').trim();
-                    const placeholders = [
-                        String(this.$t('chatListing.newChat') || '').trim(),
-                        '새 대화',
-                        '새 채팅',
-                        'New Chat'
-                    ].filter(Boolean);
+                    const placeholders = [String(this.$t('chatListing.newChat') || '').trim(), '새 대화', '새 채팅', 'New Chat'].filter(
+                        Boolean
+                    );
                     if (dbName && dbName !== localName && (!localName || placeholders.includes(localName))) {
                         r.name = existing.name;
                         // 이름이 이미 확정됐다면 자동 네이밍 대기 플래그도 되살리지 않는다.
@@ -1955,7 +1979,7 @@ export default {
             for (const f of list) {
                 try {
                     // eslint-disable-next-line no-await-in-loop
-                    const uploadResult = await backend.uploadFileToStorage(f, roomId ? { room_id: roomId } : {});
+                    const uploadResult = await backend.uploadFileToStorage(f, this.roomUploadOptions(roomId));
                     const resolvedUrl =
                         uploadResult?.public_url ||
                         uploadResult?.publicUrl ||
@@ -2428,8 +2452,8 @@ export default {
             };
             this.plannedActivityById = {};
             this._activityOrder = 0;
-            // 방 전환 시 지식 베이스 선택 상태도 초기화 (kickoff에서 새로 세팅 가능)
-            this.selectedKnowledgeDocs = [];
+            // 지식 선택은 아래 restoreSideInfoFromRoomContext 의 knowledgeStore.bindRoom 이
+            // 이월/복원/초기화를 한 곳에서 결정하므로 여기서 건드리지 않는다.
             try {
                 // 방 전환 시 히스토리 페이지네이션 상태 초기화
                 this.resetHistoryPagination();
@@ -2563,11 +2587,8 @@ export default {
                 // 1회만 실행
                 sessionStorage.removeItem(`chatKickoff:${roomId}`);
 
-                // 메인 화면에서 선택한 지식 베이스 문서를 채팅방으로 인계 — 입력창 칩 + 사이드 컨텍스트 표시
-                if (Array.isArray(payload?.knowledgeDocs) && payload.knowledgeDocs.length > 0) {
-                    this.selectedKnowledgeDocs = payload.knowledgeDocs;
-                    this.upsertKnowledgePanel();
-                }
+                // 지식 선택은 전역 스토어가 단일 소스라 kickoff payload 로 인계하지 않는다.
+                // knowledgeStore.bindRoom 이 이 새 방으로 이월/저장한다.
 
                 // 메인 화면에서 전달된 raw File이 있으면 memento 경유 업로드 (임베딩 + 벡터 저장)
                 const pendingFiles = window.__pendingMementoFiles;
@@ -2588,7 +2609,7 @@ export default {
                     for (const f of pendingFiles.files) {
                         try {
                             // eslint-disable-next-line no-await-in-loop
-                            const uploadResult = await backend.uploadFileToStorage(f, { room_id: roomId });
+                            const uploadResult = await backend.uploadFileToStorage(f, this.roomUploadOptions(roomId));
                             const resolvedUrl = uploadResult?.public_url || uploadResult?.publicUrl || '';
                             if (resolvedUrl) {
                                 uploadedKickoffFiles.push({
@@ -2750,11 +2771,17 @@ export default {
                     }
                 }
 
-                // ctx.knowledgeDocs → 지식 베이스 패널 복원
-                const knowledgeDocs = Array.isArray(ctx.knowledgeDocs) ? ctx.knowledgeDocs : [];
-                if (knowledgeDocs.length > 0) {
-                    this.selectedKnowledgeDocs = knowledgeDocs;
-                    this.upsertKnowledgePanel();
+                // 지식 선택 — 스토어가 이 방의 저장분 로드 / 메인에서 고른 이월분 채택 / 타 방 선택 비우기를 결정
+                try {
+                    const roomId = this.currentChatRoom?.id;
+                    const carried = this.knowledgeStore.bindRoom(roomId, ctx);
+                    if (this.knowledgeStore.hasSelection) {
+                        this.planSideInfoEnabled.knowledge = true;
+                        this.upsertKnowledgePanel();
+                        if (carried) this.persistSelectedKnowledge(); // 이월분을 이 방 컨텍스트에 저장
+                    }
+                } catch (e) {
+                    // 지식 선택 복원 실패가 방 로딩을 막지 않게
                 }
 
                 if (enabledSkills) {
@@ -2792,23 +2819,47 @@ export default {
                 return '';
             }
         },
+        /**
+         * 이 대화의 첨부 업로드 옵션.
+         *
+         * codex 는 첨부를 워크스페이스의 원본 파일로 직접 연다 — 폴더 업로드가
+         * 이미 그렇게 동작한다. 검색용 청킹·임베딩·VLM 판독은 아무도 쓰지 않으면서
+         * 업로드를 수십 초 늦추고, 임베딩 서버가 흔들리면 첨부까지 실패시킨다.
+         */
+        roomUploadOptions(roomId) {
+            const options = roomId ? { room_id: roomId } : {};
+            // 첫 메시지로 방을 여는 흐름에서는 방 설정이 아직 저장되기 전이라
+            // 입력창의 현재 선택도 함께 본다.
+            let selected = '';
+            try {
+                selected = (this.$refs.composer?.$refs?.inputChat?.orchestration || '').toString().trim();
+            } catch (e) {
+                selected = '';
+            }
+            if (this.getRoomOrchestration() === 'codex' || selected === 'codex') {
+                options.raw_only = true;
+            }
+            return options;
+        },
+
         getRoomOrchestration() {
             try {
                 const ctx = this.readChatRoomContext(this.currentChatRoom);
-                const value = (ctx?.orchestration || '').toString().trim();
                 // 명시적 값이 없는 새 대화는 deepagents를 기본으로 한다 — 커스텀 스킬(예:
                 // bsc-strategy-interview)은 deepagents 오케스트레이션에서만 로드된다.
-                return value || 'deepagents';
+                return normalizeOrchestration(ctx?.orchestration);
             } catch (e) {
                 return 'deepagents';
             }
         },
         getAgentRouterForOrchestration(orchestration) {
             const o = (orchestration || '').toString().trim();
+            if (o === 'codex') return codexAgentRouterService;
             return o === 'deepagents' ? deepAgentRouterService : agentRouterService;
         },
         getMainAgentServiceForOrchestration(orchestration) {
             const o = (orchestration || '').toString().trim();
+            if (o === 'codex') return fixedCodexMainAgentService;
             return o === 'deepagents' ? fixedDeepagentsMainAgentService : fixedLangchainMainAgentService;
         },
         async setRoomOrchestration(orchestration) {
@@ -3212,7 +3263,11 @@ export default {
                     this.messages.splice(idx, 1);
                 };
 
-                await deepAgentRouterService.attachToStream(
+                // 재접속도 방의 오케스트레이션(deepagents/codex)에 맞는 서버로 붙어야 한다.
+                const attachRouter = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
+                // 재접속을 지원하지 않는 런타임(codex)은 건너뛴다 — 없는 엔드포인트로 404 를 내지 않게.
+                if (typeof attachRouter?.attachToStream !== 'function' || attachRouter.supportsStreamAttach === false) return;
+                await attachRouter.attachToStream(
                     roomId,
                     {
                         onToken: (content) => {
@@ -3947,141 +4002,6 @@ export default {
             });
         },
 
-        /**
-         * deepagent `request_human_input` 의 자유텍스트 질문을 선택 패널용 구조로 파싱.
-         * 스킬(03 elicit-artifacts) 포맷을 인식한다:
-         *   [프로세스] 질문...            ← 질문 헤더(대괄호 뒤 텍스트 있음)
-         *   [스킬 — ...]                  ← 섹션(대괄호만)
-         *   • 라벨: 설명                  ← 선택 항목
-         * 항목이 하나도 없으면 items=[] 로 두고 자유입력(allow_other)만으로 응답하게 한다.
-         */
-        /**
-         * 멀티프로세스 일괄 HITL 페이로드 파싱.
-         * 에이전트가 request_human_input 의 question/context 에 아래 JSON 을 넣으면 프로세스별 페이지 질문으로 변환.
-         *  consult:    {"multi_process":true,"stage":"consult","processes":[{"name","draft"},...]}
-         *  candidates: {"multi_process":true,"stage":"candidates","processes":[{"name","skills":[{label,desc}],"agents":[...],"dmn":[...]},...]}
-         */
-        _parseMultiProcessHitl(text) {
-            const raw = (text || '').toString();
-            if (raw.indexOf('multi_process') === -1) return null;
-            // "multi_process" 를 감싸는 첫 번째 '균형 잡힌' { ... } 객체만 추출(배열 래핑·중복 출력에도 견고).
-            let obj = null;
-            const key = raw.indexOf('"multi_process"');
-            const start = key >= 0 ? raw.lastIndexOf('{', key) : -1;
-            if (start >= 0) {
-                let depth = 0;
-                let end = -1;
-                let inStr = false;
-                let esc = false;
-                for (let j = start; j < raw.length; j++) {
-                    const c = raw[j];
-                    if (inStr) {
-                        if (esc) esc = false;
-                        else if (c === '\\') esc = true;
-                        else if (c === '"') inStr = false;
-                    } else if (c === '"') inStr = true;
-                    else if (c === '{') depth++;
-                    else if (c === '}') {
-                        depth--;
-                        if (depth === 0) {
-                            end = j;
-                            break;
-                        }
-                    }
-                }
-                if (end > start) {
-                    try {
-                        obj = JSON.parse(raw.slice(start, end + 1));
-                    } catch (e) {
-                        obj = null;
-                    }
-                }
-            }
-            if (!obj || !obj.multi_process || !Array.isArray(obj.processes) || obj.processes.length < 2) return null;
-            const stage = obj.stage === 'candidates' ? 'candidates' : 'consult';
-            const questions = [];
-            obj.processes.forEach((p, pi) => {
-                const name = (p?.name || `프로세스 ${pi + 1}`).toString().trim();
-                if (stage === 'consult') {
-                    questions.push({
-                        question_id: `mp-${pi}-consult`,
-                        process: name,
-                        prompt: `[${name}] 초안 검토`,
-                        context: (p?.draft || '').toString(),
-                        feedback_type: 'approve_reject_with_edit',
-                        target_type: 'consult'
-                    });
-                } else {
-                    const addKind = (kind, label, arr) => {
-                        const items = (Array.isArray(arr) ? arr : [])
-                            .map((c, ci) => {
-                                const lab = (typeof c === 'string' ? c : c?.label || c?.name || '').toString().trim();
-                                if (!lab) return null;
-                                return {
-                                    id: `${name}::${kind}::${ci}::${lab}`,
-                                    label: lab,
-                                    description: (typeof c === 'object' ? c?.desc || c?.description || '' : '').toString()
-                                };
-                            })
-                            .filter(Boolean);
-                        if (!items.length) return;
-                        questions.push({
-                            question_id: `mp-${pi}-${kind}`,
-                            process: name,
-                            prompt: `[${name}] ${label}`,
-                            feedback_type: 'select_items',
-                            items,
-                            allow_multiple: true,
-                            min_select: 0,
-                            allow_other: true,
-                            target_type: kind
-                        });
-                    };
-                    addKind('skills', '스킬', p?.skills);
-                    addKind('agents', '에이전트', p?.agents);
-                    addKind('dmn', 'DMN', p?.dmn);
-                }
-            });
-            if (!questions.length) return null;
-            return { stage, questions };
-        },
-
-        parseHumanInputQuestion(raw) {
-            const text = String(raw || '');
-            const lines = text.split('\n');
-            let question = '';
-            let category = '';
-            const items = [];
-            for (const line of lines) {
-                const t = (line || '').trim();
-                if (!t) continue;
-                if (/^[•\-*]\s+/.test(t)) {
-                    const body = t.replace(/^[•\-*]\s+/, '');
-                    const ci = body.indexOf(':');
-                    const label = (ci >= 0 ? body.slice(0, ci) : body).trim();
-                    const desc = ci >= 0 ? body.slice(ci + 1).trim() : '';
-                    if (label) {
-                        // id 에 인덱스를 포함해 라벨이 같아도 항상 고유하게(같은 이름이면 한 번에 다 선택되던 버그 방지).
-                        items.push({
-                            id: `${category || 'opt'}::${items.length}::${label}`,
-                            label,
-                            description: category ? (desc ? `${desc}` : '') : desc,
-                            category
-                        });
-                    }
-                    continue;
-                }
-                // 섹션 헤더: `[스킬]`, `[스킬]:`, `[에이전트] :` 등 뒤따르는 콜론/공백 허용.
-                const secMatch = t.match(/^\[([^\]]+)\]\s*:?\s*$/);
-                if (secMatch) {
-                    category = secMatch[1].split(/[—\-:]/)[0].trim();
-                    continue;
-                }
-                if (!question) question = t; // 첫 일반/질문 라인
-            }
-            return { question: question || text.trim(), items };
-        },
-
         /** request_human_input 호출을 스트리밍 중인 어시스턴트 메시지에 HITL 패널로 부착(plan_tools 경로). */
         attachDeepagentHitlPanel(agentId, args) {
             const msg = this.activeStreams?.[agentId];
@@ -4101,35 +4021,16 @@ export default {
          */
         restoreDeepagentHitlFromAssistantContent(msg) {
             if (!msg || msg.__humanFeedback || (msg.role || '').toString() !== 'assistant') return;
-            const roomOrchestration = (
-                this.currentChatRoom?.context?.orchestration ||
-                this.currentChatRoom?.orchestration ||
-                ''
-            )
+            const roomOrchestration = (this.currentChatRoom?.context?.orchestration || this.currentChatRoom?.orchestration || '')
                 .toString()
                 .toLowerCase();
             if (roomOrchestration && !roomOrchestration.includes('deepagent')) return;
             const content = (msg.content || '').toString().trim();
             if (!content) return;
 
-            // Keep these matchers ASCII-only: this legacy SFC has previously been
-            // saved through non-UTF8 tooling, which can corrupt literal Korean regexes.
-            const hasCandidateSectionsUnicode = /\[(?:\uC2A4\uD0AC|\uC5D0\uC774\uC804\uD2B8|DMN|skill|agent)\]/i.test(content);
-            const isCandidateRequestUnicode =
-                hasCandidateSectionsUnicode && /(?:\uC120\uD0DD|\uACE0\uB974|\uCD94\uAC00|\uD6C4\uBCF4)/i.test(content);
-            const isConsultingRequestUnicode =
-                /(?:\uC774\uB300\uB85C\s*\uC9C4\uD589\uD560\uAE4C\uC694|\uCD94\uAC00\uD558\uAC70\uB098\s*\uBC14\uAFC0\s*\uB2E8\uACC4|\uCD08\uC548.*(?:\uC2B9\uC778|\uC9C4\uD589))/i.test(content);
-
-            const hasCandidateSections = /\[(?:스킬|에이전트|DMN|skill|agent)\]/i.test(content);
-            const isCandidateRequest = hasCandidateSections && /(선택|골라|추가할|안 고르면|후보)/i.test(content);
-            const isConsultingRequest = /(이대로 진행할까요|초안.*(?:승인|진행)|추가하거나 바꿀 단계)/i.test(content);
-            if (
-                !isCandidateRequest &&
-                !isConsultingRequest &&
-                !isCandidateRequestUnicode &&
-                !isConsultingRequestUnicode
-            )
-                return;
+            // 승인 대기였는지 판별하는 규칙도 @/shared/hitl 에 있다. 여기에 따로 두면
+            // 모바일과 갈라져, 한쪽에서만 답할 곳이 사라진다.
+            if (!shouldRestoreFromAssistantContent(content)) return;
 
             const firstLine = content.split(/\r?\n/).find((line) => line.trim()) || '';
             this._buildDeepagentHitlPanel(msg, {
@@ -4162,7 +4063,7 @@ export default {
             const bodyText = (context || '').toString().trim();
             // 모델이 초안/후보를 question 또는 context 어디에 넣든 잡을 수 있게 둘을 합쳐 파싱한다.
             const combined = [headerQ, bodyText].filter(Boolean).join('\n\n');
-            const parsed = this.parseHumanInputQuestion(combined);
+            const panel = buildHitlPanel({ question: headerQ, context: bodyText, options, multiSelect });
             msg.runState = {
                 ...(msg.runState || {}),
                 tool_name: 'request_human_input',
@@ -4175,21 +4076,17 @@ export default {
             if (convId) this.pendingHitlRunState[convId] = msg.runState;
 
             // 멀티프로세스 일괄 HITL: 프로세스별 페이지네이션(컨설팅/후보)을 multi-question 패널로 구성.
-            const mp = this._parseMultiProcessHitl(combined);
-            if (mp) {
+            if (panel.kind === 'multi_process') {
                 msg.__humanFeedback = {
                     user_request_type: 'ask_user',
                     context: '',
                     allow_skip: false,
                     question_id: `${msg.uuid || 'hitl'}-mp`,
                     __submittedText: '',
-                    question:
-                        mp.stage === 'consult'
-                            ? '각 프로세스 초안을 검토해 주세요 (다음으로 페이지 이동)'
-                            : '각 프로세스에 추가할 스킬·에이전트·DMN을 선택해 주세요 (다음으로 페이지 이동)',
-                    questions: mp.questions,
+                    question: panel.question,
+                    questions: panel.questions,
                     __groupBy: 'process',
-                    __mpStage: mp.stage,
+                    __mpStage: panel.stage,
                     __deepagentHitl: true,
                     __submitted: false
                 };
@@ -4201,7 +4098,7 @@ export default {
 
             const baseFeedback = {
                 user_request_type: 'ask_user',
-                question: headerQ || parsed.question || '확인이 필요합니다.',
+                question: panel.question,
                 context: '',
                 allow_skip: true,
                 question_id: `${msg.uuid || 'hitl'}-deepagent`,
@@ -4209,61 +4106,26 @@ export default {
                 __submitted: false,
                 __submittedText: ''
             };
-            // request_human_input의 options 파라미터(구조화, 신규)가 있으면 프로즈 파싱보다
-            // 우선한다 — 모델이 `[카테고리]`+불릿 텍스트 컨벤션을 안 지켜도 항상 정확히 렌더링된다.
-            const structuredItems = Array.isArray(options) && options.length
-                ? options
-                      .map((o, idx) => ({
-                          id: `opt::${idx}::${(o?.label || '').toString()}`,
-                          label: (o?.label || '').toString(),
-                          description: (o?.description || '').toString()
-                      }))
-                      .filter((it) => it.label)
-                : [];
-            // select_items 는 (a) 구조화된 options 가 있거나, (b) **2단계 후보(스킬/에이전트/DMN) 형식**
-            // 프로즈일 때만. 컨설팅 초안처럼 카테고리 없는 불릿/번호는 선택지가 아니라 본문이므로
-            // approve_reject 로 보여준다.
-            // ⚠️ 카테고리가 '있기만' 하면 체크박스로 렌더하던 과거 로직은, 컨설팅 초안이 임의의
-            //   `[제목]` 머리글을 포함하면 승인/반려가 아닌 체크박스로 오인 렌더되는 간헐 버그의 원인이었다.
-            //   → 알려진 후보 카테고리(스킬/에이전트/DMN)일 때만 select_items 로 확정한다.
-            const CANDIDATE_CATEGORIES = ['스킬', '에이전트', 'dmn', 'skill', 'agent'];
-            const isCandidateCategory = (c) => {
-                const k = (c || '').toString().trim().toLowerCase();
-                return !!k && CANDIDATE_CATEGORIES.some((cc) => k === cc || k.includes(cc));
-            };
-            const hasCategorizedItems =
-                structuredItems.length > 0 ||
-                (parsed.items.length > 0 && parsed.items.some((it) => isCandidateCategory(it.category)));
-            if (hasCategorizedItems) {
-                const items = structuredItems.length
-                    ? structuredItems
-                    : parsed.items.map((it) => ({
-                          id: it.id,
-                          label: it.category ? `[${it.category}] ${it.label}` : it.label,
-                          description: it.description || ''
-                      }));
+            // 승인이냐 선택이냐는 @/shared/hitl 이 정한다. 여기서 다시 판단하면
+            // 모바일 화면과 갈라지고, 갈라지면 승인해야 할 것이 체크박스로 뜬다.
+            if (panel.kind === 'select_items') {
                 msg.__humanFeedback = {
                     ...baseFeedback,
-                    // 후보가 question 전체에 들어온 경우 headerQ 는 후보까지 포함하므로,
-                    // 패널 헤더는 첫 줄(제목)인 parsed.question 을 쓴다(후보는 items 로 표시).
-                    question: headerQ || parsed.question || '추가할 항목을 골라주세요',
                     feedback_type: 'select_items',
-                    items,
+                    items: panel.items,
                     suggestions: [],
-                    allow_multiple: structuredItems.length ? Boolean(multiSelect) : true,
-                    min_select: 0,
-                    allow_other: true
+                    allow_multiple: panel.allowMultiple,
+                    min_select: panel.minSelect,
+                    allow_other: panel.allowOther
                 };
                 msg.content = ''; // 후보는 패널 목록으로 보여주므로 본문 비움
             } else {
                 // 후보 없음 → 컨설팅 승인형: 승인/반려 버튼 + 자유 수정 입력.
-                // 초안은 패널 context 로만 보여주고 메시지 본문은 비운다(본문+패널 중복 표시 방지).
-                const draft = combined;
+                // 초안은 패널 context 로만 보여주고 본문은 비운다(중복 표시 방지).
                 msg.content = '';
                 msg.__humanFeedback = {
                     ...baseFeedback,
-                    question: headerQ || '이대로 진행할까요?',
-                    context: draft,
+                    context: panel.context,
                     feedback_type: 'approve_reject_with_edit',
                     items: [],
                     suggestions: []
@@ -5005,6 +4867,7 @@ export default {
             )
                 return;
             if (!this.currentChatRoom?.id) return;
+
             const text = (payload.text || '').trim();
             const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
             const hasFile = initialFiles.length > 0 || hasRawFiles;
@@ -5191,16 +5054,9 @@ export default {
         },
 
         shouldGenerateChatRoomName(room) {
-            if (!room) return false;
-            if (room.context?.auto_name_pending === true) return true;
-            if (room.context?.auto_name_pending === false) return false;
-            const name = String(room.name || '')
-                .trim()
-                .toLowerCase();
-            const translated = String(this.$t('chatListing.newChat') || '')
-                .trim()
-                .toLowerCase();
-            return !name || [translated, '새 대화', 'new chat', 'chat'].filter(Boolean).includes(name);
+            // 규칙은 @/shared/chatRoom 한 곳에 둔다 — 앱과 웹이 갈라지면
+            // 한쪽에서만 이름이 안 붙는다(실제로 앱이 그랬다).
+            return sharedShouldGenerateChatRoomName(room, this.$t('chatListing.newChat'));
         },
 
         // ===== 자동 추천(초대) =====
@@ -5706,12 +5562,9 @@ export default {
                 // 첨부만 보낸 메시지는 text 가 비어 라우터가 empty_input 으로 판단해 아무도 응답하지 않았다.
                 // 라우터가 의도를 추정할 수 있도록 첨부 정보를 요약해 함께 싣는다.
                 const routingFiles = this.normalizePayloadFiles(payload);
-                const routingFileNames = routingFiles
-                    .map((f) => (f?.name || f?.fileName || '').toString().trim())
-                    .filter(Boolean);
+                const routingFileNames = routingFiles.map((f) => (f?.name || f?.fileName || '').toString().trim()).filter(Boolean);
                 const routingUserMessage =
-                    (text || '').toString().trim() ||
-                    (routingFileNames.length > 0 ? `[첨부 파일] ${routingFileNames.join(', ')}` : '');
+                    (text || '').toString().trim() || (routingFileNames.length > 0 ? `[첨부 파일] ${routingFileNames.join(', ')}` : '');
 
                 const routed = await router.routeAgents({
                     user_message: routingUserMessage,
@@ -5736,9 +5589,7 @@ export default {
                     // 첨부가 있으면 기본 에이전트가 "이 파일로 무엇을 할지" 되묻도록 폴백한다.
                     if (routingFiles.length > 0) {
                         const fallbackAgent =
-                            (inRoomAgentsRaw || []).find((a) => a?.id === PROCESS_GPT_AGENT_ID) ||
-                            (inRoomAgentsRaw || [])[0] ||
-                            null;
+                            (inRoomAgentsRaw || []).find((a) => a?.id === PROCESS_GPT_AGENT_ID) || (inRoomAgentsRaw || [])[0] || null;
                         if (fallbackAgent) {
                             return [{ ...fallbackAgent, policy: 'must_reply', __routingLoadingUuid: routingLoadingUuid }];
                         }
@@ -6052,7 +5903,8 @@ export default {
                     p.type === type &&
                     (type === 'slide' || type === 'process' || type === 'files'
                         ? p.data?.messageId === data?.messageId
-                        : p.data?.htmlUrl === data?.htmlUrl)
+                        : (p.data?.artifactKey || p.data?.fileUrl || p.data?.htmlUrl) ===
+                          (data?.artifactKey || data?.fileUrl || data?.htmlUrl))
             );
             if (existingIdx !== -1) {
                 this.artifactPanels[existingIdx] = { ...this.artifactPanels[existingIdx], label, data };
@@ -6081,10 +5933,16 @@ export default {
          * DeepAgent may first write a selected skill under the room root and
          * later copy it under the single process-* directory. Those are the
          * same artifact and must not create a second tab or duplicate row.
+         *
+         * 방 초안(.bpmn/<room>/)과 체크아웃(.checkouts/<room>/)도 같은 산출물로 본다.
+         * 스킬을 만든 방에서 이어서 고치면 생성분은 초안 경로로, 수정분은 체크아웃 경로로
+         * 오는데 둘을 다른 파일로 취급하면 작업 폴더에 같은 SKILL.md 가 '생성'·'수정' 두 줄로
+         * 쌓인다. 사용자는 무엇을 저장하는지 분간할 수 없고, 저장 시 두 벌이 함께 패키징되어
+         * 낡은 초안이 방금 한 수정을 덮어쓸 수 있다.
          */
         _workspaceLogicalPath(path) {
             const normalized = (path || '').toString().replace(/\\/g, '/');
-            const matched = normalized.match(/\/\.bpmn\/[^/]+\/(?:process-[^/]+\/)?(.+)$/);
+            const matched = normalized.match(/\/\.(?:bpmn|checkouts)\/[^/]+\/(?:process-[^/]+\/)?(.+)$/);
             return (matched ? matched[1] : normalized).toLowerCase();
         },
         /**
@@ -6207,9 +6065,7 @@ export default {
             const arr = this.roomWorkspaceFilesByGroup[group];
             if (entry && entry.path) {
                 const logicalPath = this._workspaceLogicalPath(entry.path);
-                const i = arr.findIndex(
-                    (f) => f.path === entry.path || this._workspaceLogicalPath(f.path) === logicalPath
-                );
+                const i = arr.findIndex((f) => f.path === entry.path || this._workspaceLogicalPath(f.path) === logicalPath);
                 // 병합(spread)으로 갱신해 savedHash 같은 저장 표식이 살아남게 한다.
                 // 표식은 남기고 content 만 바뀌면 아래 _isWorkspaceGroupSaved 가 해시 불일치로
                 // '저장됨' 을 자동 해제한다 — 턴 종료 시 동일 내용이 재전송되는 경로에서는
@@ -6228,7 +6084,10 @@ export default {
             }
             if (arr.length === 0) return;
             if (!this.workspaceSaveStateByGroup[group]) {
-                this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' };
+                // passingCases: 실엔진 검증이 통과시킨 분기 케이스. 최종 저장 시 회귀
+                // 스위트로 승격한다. 미리 선언해 두지 않으면 Vue 가 나중에 붙는 속성을
+                // 반응형으로 잡지 못한다.
+                this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '', passingCases: [] };
             }
             // '저장됨' 은 들고 있는 상태가 아니라 파일 내용에서 매번 도출한다. 그래야 새로고침으로
             // 컴포넌트 상태가 초기화돼도(bootstrapRoom 이 매번 비운다) 이미 저장한 산출물이
@@ -6600,20 +6459,44 @@ export default {
         },
 
         /** ArtifactPanel의 panel-action 이벤트 중앙 처리 */
-        // 지식 베이스(Google Drive) — 입력창 칩 선택 변경
-        onKnowledgeDocsUpdate(docs) {
-            this.selectedKnowledgeDocs = Array.isArray(docs) ? docs : [];
-            this.upsertKnowledgePanel();
+        // 지식 선택(전역 스토어)이 바뀌면 호출 — 방 컨텍스트 저장 + 패널 갱신 + 이 방 소유로 표시.
+        onKnowledgeSelectionChanged() {
+            // docs·folders 가 동시에 바뀌면 watcher 가 2번 뜨므로 1틱으로 합쳐 DB 중복쓰기 방지
+            if (this._ksChangePending) return;
+            this._ksChangePending = true;
+            this.$nextTick(() => {
+                this._ksChangePending = false;
+                if (this.knowledgeStore.hasSelection) this.planSideInfoEnabled.knowledge = true;
+                this.upsertKnowledgePanel();
+                this.persistSelectedKnowledge();
+                const rid = this.currentChatRoom?.id;
+                if (rid) this.knowledgeStore.claimRoom(rid);
+            });
+        },
+        /** 현재 지식 선택(스토어)을 방 컨텍스트에 저장 → 방 재진입 시 복원. */
+        persistSelectedKnowledge() {
+            try {
+                const room = this.currentChatRoom;
+                if (!room || !room.id) return;
+                const prev = this.normalizeRoomContext(this.readChatRoomContext(room));
+                const next = { ...prev, ...this.knowledgeStore.contextPayload };
+                this.writeChatRoomContext(next, room);
+                this.putChatRoomMerged(room).catch(() => {});
+            } catch (e) {
+                // 저장 실패는 선택 동작을 막지 않음
+            }
         },
 
         /** 우측 사이드바에 지식 베이스 컨텍스트 패널 생성/갱신 */
         upsertKnowledgePanel() {
             const items = Array.isArray(this.selectedKnowledgeDocs) ? this.selectedKnowledgeDocs : [];
+            // 폴더째 선택 — 수천 파일 대신 폴더 경로 몇 개로 표시(활동탭 패널 부하 방지)
+            const folders = Array.isArray(this.selectedKnowledgeFolders) ? this.selectedKnowledgeFolders : [];
             const enabled = !!this.planSideInfoEnabled?.knowledge;
-            const data = { enabled, items };
+            const data = { enabled, items, folders };
 
             const existingIdx = this.artifactPanels.findIndex((p) => p.type === 'knowledge');
-            if (items.length === 0) {
+            if (items.length === 0 && folders.length === 0) {
                 if (existingIdx !== -1) this.artifactPanels.splice(existingIdx, 1);
                 if (this.artifactPanels.length === 0) {
                     this.artifactSidebarVisible = false;
@@ -6848,7 +6731,7 @@ export default {
                 }
                 const st =
                     this.workspaceSaveStateByGroup[group] ||
-                    (this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' });
+                    (this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '', passingCases: [] });
                 if (st.__validated || st.validating) continue;
 
                 let pd;
@@ -7006,6 +6889,11 @@ export default {
                             repaired: report.repaired,
                             remaining: Array.isArray(report.remaining_defects) ? report.remaining_defects.length : 0
                         };
+                        // 검증이 통과시킨 분기 케이스를 들고 있는다. 이 케이스는 모델이 한 번
+                        // 만들고 실행 엔진이 실제로 돌려 통과를 확인한 것이라, 병합 전 회귀
+                        // 검증의 비교 기준으로 그대로 쓸 수 있다. 여기서 버리면 나중에 같은
+                        // 것을 다시 만들어야 한다.
+                        st.passingCases = Array.isArray(report.passing_cases) ? report.passing_cases : [];
                     }
                     st.__validated = true;
                     // draft id 추적(방 단위) — 새로고침/재진입에도 정리 가능하게 룸에 저장.
@@ -7049,7 +6937,10 @@ export default {
             // 프로세스(탭)별 저장 — 이 탭의 파일들만 해당 프로세스로 저장한다.
             const group = this._processGroupKey((list[0] && list[0].path) || '');
             if (!this.workspaceSaveStateByGroup[group]) {
-                this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '' };
+                // passingCases: 실엔진 검증이 통과시킨 분기 케이스. 최종 저장 시 회귀
+                // 스위트로 승격한다. 미리 선언해 두지 않으면 Vue 가 나중에 붙는 속성을
+                // 반응형으로 잡지 못한다.
+                this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '', passingCases: [] };
             }
             const st = this.workspaceSaveStateByGroup[group];
             if (st.saving || st.saved) return;
@@ -7225,6 +7116,21 @@ export default {
                     console.warn('[SaveWS] proc_map 등록 실패(무시):', pmErr);
                 }
 
+                // 5-b) 회귀 시나리오 승격 — 검증이 통과시킨 분기 케이스를 이 프로세스에 붙인다.
+                //      이걸 남기지 않으면 나중에 이 프로세스의 병합 요청을 검토할 때 "변경 전과
+                //      비교할 시나리오가 없습니다" 로 끝나, 리뷰어가 diff 를 눈으로 보는 수밖에
+                //      없다. 시나리오는 이미 만들어져 실행까지 마친 것이라 새로 드는 비용이 없다.
+                try {
+                    const passingCases = Array.isArray(st.passingCases) ? st.passingCases : [];
+                    if (passingCases.length) {
+                        await backend.promoteProcessScenarios(procId, passingCases);
+                    }
+                } catch (scErr) {
+                    // 저장 자체는 끝난 뒤라 여기서 실패해도 되돌리지 않는다. 시나리오는 다음
+                    // 편집·검증 때 다시 확보된다.
+                    console.warn('[SaveWS] 회귀 시나리오 승격 실패(무시):', scErr);
+                }
+
                 this._markWorkspaceFilesSaved(list);
                 st.saved = true;
                 st.saving = false;
@@ -7389,6 +7295,7 @@ export default {
         },
 
         pushDocxArtifact(parsed, msgIdxOrRef) {
+            if (this.pushRenderedDocxArtifact(parsed, msgIdxOrRef)) return;
             const url = this.extractHwpxHtmlUrl(parsed);
             if (!url) return;
             const name = (parsed?.html_name || parsed?.htmlName || parsed?.file_name || parsed?.fileName || '').toString();
@@ -7427,8 +7334,80 @@ export default {
         isDocxPayload(parsed) {
             if (!parsed || typeof parsed !== 'object') return false;
             const ct = (parsed.content_type || parsed.contentType || '').toString();
-            const fn = (parsed.file_name || parsed.fileName || '').toString();
-            return ct.includes('wordprocessingml') || fn.toLowerCase().endsWith('.docx');
+            const fn = (parsed.file_name || parsed.fileName || parsed.name || '').toString();
+            return parsed.artifact_type === 'docx' || ct.includes('wordprocessingml') || fn.toLowerCase().endsWith('.docx');
+        },
+
+        /**
+         * 서버가 정한 표시 방법(view). 확장자별 뷰어 지식은 서버에 두고 여기선 실행만 한다.
+         *
+         * - `view.renderer` 가 뷰어를 고른다(pdf | html | slides | none).
+         * - `view.of_sha256` 이 이 렌더가 '어느 판'의 것인지 밝힌다. 파일 해시와 다르면
+         *   옛 렌더다 — 고쳐지기 전 문서를 새 문서인 양 보여주는 것이 미리보기가
+         *   없는 것보다 위험하므로 띄우지 않는다.
+         * - `view` 가 없는 옛 서버 응답은 기존 `preview` 로 폴백한다.
+         */
+        resolveArtifactView(file) {
+            if (!file || typeof file !== 'object') return null;
+            const view = file.view;
+            if (view && view.url && view.renderer && view.renderer !== 'none') {
+                const fileSha = (file.sha256 || '').toString();
+                const ofSha = (view.of_sha256 || '').toString();
+                if (fileSha && ofSha && fileSha !== ofSha) return null;
+                return { renderer: view.renderer, url: view.url, pageCount: view.page_count || null };
+            }
+            const preview = file.preview;
+            if (preview?.kind === 'pdf' && preview.url) return { renderer: 'pdf', url: preview.url, pageCount: preview.page_count || null };
+            if (preview?.kind === 'file' && preview.url) return { renderer: 'html', url: preview.url, pageCount: null };
+            return null;
+        },
+
+        /** 산출물의 검수 판정. 뷰 표시 여부와 무관하게 배지로만 쓴다. */
+        resolveArtifactStatus(file) {
+            const gate = (file?.status?.quality_gate || file?.quality_gate || '').toString();
+            if (!gate || gate === 'passed') return null;
+            return { gate, detail: (file?.status?.detail || file?.quality_gate_detail || '').toString() };
+        },
+
+        /** done.files와 저장된 pdfFiles 모두 같은 서버 PDF 미리보기 계약을 사용한다. */
+        pushRenderedDocxArtifact(file, msgIdxOrRef) {
+            const view = this.resolveArtifactView(file);
+            if (!this.isDocxPayload(file) || view?.renderer !== 'pdf') return false;
+            const fileUrl = file.file_url || file.fileUrl || file.url || '';
+            if (!fileUrl) return false;
+            const fileName = file.file_name || file.fileName || file.name || 'document.docx';
+            const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
+            // 완성본은 자기 초안 탭을 대신한다 — 남겨두면 '작성 중' 카드가 계속 붙어 있다.
+            this.artifactPanels = this.artifactPanels.filter(
+                (panel) => !(panel.data?.draft === true && panel.data?.fileName === fileName)
+            );
+            const status = this.resolveArtifactStatus(file);
+            this.pushArtifactPanel({
+                type: 'docx',
+                label: fileName,
+                data: {
+                    fileUrl, fileName, previewUrl: view.url, messageId: msg?.uuid || null,
+                    // 같은 산출물의 새 판은 같은 탭을 덮어쓴다(버전은 배지로 보인다).
+                    artifactKey: file.artifact_id || file.file_id || fileUrl,
+                    fileId: file.file_id || '', sha256: file.sha256 || '', turnId: file.turn_id || '',
+                    pageCount: view.pageCount,
+                    // 검수 미통과여도 문서는 보여준다. 판정은 배지로만 알린다.
+                    qualityGate: status?.gate || '', qualityGateDetail: status?.detail || ''
+                }
+            });
+            return true;
+        },
+
+        activeDocumentContext() {
+            if (!this.artifactSidebarVisible) return null;
+            const panel = this.artifactPanels.find((p) => p.id === this.activeArtifactId);
+            if (panel?.type !== 'docx' || !panel.data?.fileUrl) return null;
+            const data = panel.data;
+            return {
+                fileName: data.fileName || panel.label,
+                file_id: data.fileId || '', artifact_id: data.artifactKey || data.fileUrl,
+                sha256: data.sha256 || '', turn_id: data.turnId || ''
+            };
         },
 
         startArtifactSidebarResize(event) {
@@ -7485,6 +7464,15 @@ export default {
         },
 
         checkExistingArtifactPanels() {
+            // 최신 AI 산출물의 PDF를 새로고침/방 재진입 때도 복원한다.
+            for (let i = this.messages.length - 1; i >= 0; i--) {
+                const msg = this.messages[i];
+                if (!msg || !['assistant', 'agent'].includes(msg.role)) continue;
+                const files = [...(Array.isArray(msg.pdfFiles) ? msg.pdfFiles : []), ...(msg.pdfFile ? [msg.pdfFile] : [])];
+                let restored = false;
+                for (const file of files) restored = this.pushRenderedDocxArtifact(file, msg) || restored;
+                if (restored) return;
+            }
             // deepagent 산출물 파일 복원 — 방 내 모든 메시지의 workspaceFiles 를 by-path 병합 후,
             // 프로세스 폴더(process-<uuid>)별로 그룹핑해 프로세스마다 탭으로 복원한다.
             const mergedByPath = {};
@@ -8156,26 +8144,21 @@ export default {
 
         /** Chat.vue / WorkAssistantChatPanel과 동일한 도구 표시명 (스트리밍 onToolStart에서 사용) */
         formatToolName(name) {
-            if (!name) return '';
-            const raw = name.toString();
-            const key = raw.split('__').pop();
-            const toolNameMap = {
-                get_process_list: '프로세스 목록 조회',
-                get_process_detail: '프로세스 상세 조회',
-                get_form_fields: '폼 필드 조회',
-                execute_process: '프로세스 실행',
-                get_instance_list: '인스턴스 목록 조회',
-                get_todolist: '할일 목록 조회',
-                get_organization: '조직도 조회',
-                ask_user: '사용자 확인 요청',
-                create_consulting_process_workitem: '컨설팅 기반 프로세스 생성',
-                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청',
-                get_current_user: '사용자 정보 조회'
-            };
-            return toolNameMap[key] || key;
+            // 표는 @/shared/toolNames 한 곳에 둔다 — 세 화면이 각자 갖고 있으면
+            // 새 도구가 생길 때 한 곳만 고쳐진다.
+            return sharedFormatToolName(name);
         },
 
         async streamAgents(agentTargets, userText, payload) {
+            // codex 원본 폴더가 아직 올라가는 중이면 다 올라간 뒤에 턴을 시작한다.
+            // 게이트를 여기(턴 시작의 단일 관문)에 두는 이유: definition-map kickoff 은
+            // handleSendMessage 를 거치지 않고 여기로 바로 온다. 첫 메시지가 정확히 그
+            // 경로라, 상위에 두면 정작 중요한 첫 턴이 게이트를 건너뛴다.
+            // (실측: 877개 폴더인데 매니페스트에 40개만 잡힌 채 턴이 시작됐다.)
+            if (this.codexFolderStore.blocksSend) {
+                await this.codexFolderStore.waitForUpload();
+            }
+
             const userJwt = (await getValidToken()) || '';
             // 스트림 경로는 테넌트가 반드시 정확해야 한다(잘못된 테넌트 → 401/빈 결과).
             // 서브도메인으로 확정되지 않으면 세션 JWT 의 app_metadata.tenant_id 까지 조회한다.
@@ -8385,6 +8368,7 @@ export default {
                     file_count: requestFiles.length,
                     metadata: {
                         ...(payload?.metadata && typeof payload.metadata === 'object' ? payload.metadata : {}),
+                        ...(orchestration === 'codex' ? { active_document: this.activeDocumentContext() } : {}),
                         ...(agentTarget?.__routingDecision ? { routing: agentTarget.__routingDecision } : {}),
                         room_recent_history,
                         assigned_skills: assignedSkills,
@@ -8404,7 +8388,9 @@ export default {
                                           source_type: d.sourceType || 'drive',
                                           file_name: d.file_name || d.name || '',
                                           mime_type: d.mimeType || '',
-                                          folder_path: d.folderPath || ''
+                                          folder_path: d.folderPath || '',
+                                          // 역할(양식/사업개요 등) — 백엔드 초안 템플릿/자료 구분에 필수
+                                          doc_role: d.docRole || d.doc_role || 'content'
                                       }))
                                 : [];
                             // 이번 메시지에 첨부·업로드된 파일도 memento file_id(=storage path)로
@@ -8424,6 +8410,10 @@ export default {
                             }
                             return picked;
                         })(),
+                        // 폴더째 선택 — 수천 file_id 나열 대신 폴더 경로로 스코프를 넘긴다.
+                        knowledge_folders: Array.isArray(this.selectedKnowledgeFolders)
+                            ? this.selectedKnowledgeFolders.filter((p) => typeof p === 'string' && p.trim())
+                            : [],
                         input_data: {
                             file: requestPrimaryFile,
                             files: requestFiles,
@@ -8567,6 +8557,20 @@ export default {
                             this.upsertWorkspaceFilesPanel(entry);
                             // file_artifact는 서버의 기본 chat INSERT에 포함되지 않으므로 별도 병합 저장한다.
                             this.scheduleMessageFrontendStatePersist(msg);
+                        } catch (e) {}
+                    },
+                    onDraft: (file) => {
+                        // 중간 렌더는 문서로 띄우지 않는다 — 에이전트가 중간에 만든 파일이
+                        // 산출물처럼 보이고, 저장·복원 배선만 늘어난다. 진행만 활동에 남긴다.
+                        try {
+                            const name = (file?.file_name || file?.fileName || '문서').toString();
+                            const pages = Number(file?.page_count) || 0;
+                            this.recordActivity({
+                                id: `draft:${name}`,
+                                tool: '문서 작성',
+                                title: pages ? `${name} · ${pages}쪽까지 작성` : `${name} 작성 중`,
+                                status: 'running'
+                            });
                         } catch (e) {}
                     },
                     onToolStart: (tool, input, rawEvent) => {
@@ -8866,7 +8870,7 @@ export default {
                             this.setAgentStatus(agentId, { state: 'ready', message: '' });
                         }
                     },
-                    onDone: async (content) => {
+                    onDone: async (content, doneEvent) => {
                         // 60ms 배칭으로 아직 반영되지 않은 마지막 토큰들을 먼저 확정한다.
                         flushStreamedContentNow();
                         const finalContent = (content || full || '').toString().trim();
@@ -8886,6 +8890,24 @@ export default {
 
                         const msg = this.activeStreams[agentId];
                         if (msg) {
+                            // 스트리밍 버블은 요청 시작 때 만들어지지만, 완료된 assistant 답변의
+                            // 표시 시각은 실제 응답 완료 시각이어야 한다. 이 객체는 아래
+                            // persistMessageFrontendState(force)에서 서버가 저장한 row를 통째로
+                            // 갱신하므로 시작 시각을 그대로 두면 백엔드의 완료 시각까지 덮어쓴다.
+                            msg.timeStamp = new Date().toISOString();
+                            // 산출물 다운로드 링크. 서버도 chats row 에 pdfFiles 를 넣지만,
+                            // persistMessageFrontendState 가 messages 를 통째로 덮어쓰므로
+                            // 여기서 메시지에 실어두지 않으면 서버가 쓴 링크가 지워진다.
+                            const doneFiles = Array.isArray(doneEvent?.files) ? doneEvent.files : [];
+                            for (const file of doneFiles) this.pushRenderedDocxArtifact(file, msg);
+                            if (doneFiles.length) {
+                                const existing = Array.isArray(msg.pdfFiles) ? msg.pdfFiles : [];
+                                const seen = new Set(existing.map((f) => (f?.url || f?.fileUrl || f?.name || '').toString()));
+                                msg.pdfFiles = [
+                                    ...existing,
+                                    ...doneFiles.filter((f) => f && !seen.has((f.url || f.fileUrl || f.name || '').toString()))
+                                ];
+                            }
                             const msgToolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
                             msg.toolCalls = msgToolCalls.map((toolCall) =>
                                 toolCall?.status === 'running'
@@ -9089,6 +9111,7 @@ export default {
                             : `⚠️ 오류가 발생했습니다: ${errText || '에이전트 응답 오류'}`;
                         const msg = this.activeStreams[agentId];
                         if (msg) {
+                            msg.timeStamp = new Date().toISOString();
                             msg.content = display;
                             msg.isLoading = false;
                             msg.openuiIsStreaming = false;
@@ -9130,6 +9153,7 @@ export default {
                     const msg = this.activeStreams[agentId];
                     if (msg) {
                         if (!this._isPlaceholderContent(msg.content)) {
+                            msg.timeStamp = new Date().toISOString();
                             msg.isLoading = false;
                             msg.openuiIsStreaming = false;
                             this.messages.push(this.normalizeAssistantMessageForDisplay(msg));
@@ -10965,6 +10989,8 @@ export default {
                 const hasOpenuiLang = typeof msg.openuiLang === 'string' && msg.openuiLang.length > 0;
                 const hasAgentLogs = Array.isArray(msg.agentLogs) && msg.agentLogs.length > 0;
                 const hasAgentPlan = !!msg.agentPlan;
+                const pdfFilesArr = Array.isArray(msg.pdfFiles) ? msg.pdfFiles : [];
+                const hasPdfFiles = pdfFilesArr.length > 0;
                 if (
                     !hasFeedback &&
                     !hasToolCalls &&
@@ -10976,7 +11002,8 @@ export default {
                     !hasRunState &&
                     !hasOpenuiLang &&
                     !hasAgentLogs &&
-                    !hasAgentPlan
+                    !hasAgentPlan &&
+                    !hasPdfFiles
                 ) {
                     return;
                 }
@@ -11009,7 +11036,8 @@ export default {
                     rs: hasRunState ? 1 : 0,
                     ol: hasOpenuiLang ? msg.openuiLang.length || 0 : 0,
                     al: hasAgentLogs ? msg.agentLogs.length : 0,
-                    ap: hasAgentPlan ? 1 : 0
+                    ap: hasAgentPlan ? 1 : 0,
+                    pf: hasPdfFiles ? pdfFilesArr.map((f) => f?.url || f?.fileUrl || f?.name || '').join('|') : ''
                 });
                 if (!force && msg.__feStateKey === stateKey) return;
                 msg.__feStateKey = stateKey;

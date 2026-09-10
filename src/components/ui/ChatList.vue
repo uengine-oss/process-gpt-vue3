@@ -214,7 +214,9 @@ export default {
         _onChatRoomsUpdated: null,
         _onChatRoomSelected: null,
         _onChatRoomUnselected: null,
-        chatsWatchRef: null
+        chatsWatchRef: null,
+        chatRoomsWatchRef: null,
+        chatRoomsReloadTimer: null
     }),
     async created() {
         try {
@@ -259,6 +261,11 @@ export default {
         };
         this.EventBus.on('chat-room-selected', this._onChatRoomSelected);
         this.EventBus.on('chat-room-unselected', this._onChatRoomUnselected);
+
+        // Codex/DeepAgent 서버가 chat_rooms를 생성하거나 마지막 메시지를 갱신하는 경우도
+        // 즉시 목록에 반영한다. 기존 chats 구독은 이미 목록에 들어온 room id만 감시하므로
+        // 서버에서 뒤늦게 생성된 새 방을 발견할 수 없었다.
+        await this.refreshChatRoomsWatch();
     },
     beforeUnmount() {
         if (this._onChatRoomsUpdated) this.EventBus.off('chat-rooms-updated', this._onChatRoomsUpdated);
@@ -273,6 +280,12 @@ export default {
                 this.chatsWatchRef.unsubscribe();
             }
         } catch (e) {}
+        try {
+            if (this.chatRoomsWatchRef && typeof this.chatRoomsWatchRef.unsubscribe === 'function') {
+                this.chatRoomsWatchRef.unsubscribe();
+            }
+        } catch (e) {}
+        if (this.chatRoomsReloadTimer) clearTimeout(this.chatRoomsReloadTimer);
     },
     computed: {
         filteredChatRooms() {
@@ -548,6 +561,23 @@ export default {
                 );
             } catch (e) {}
         },
+        async refreshChatRoomsWatch() {
+            try {
+                if (this.chatRoomsWatchRef && typeof this.chatRoomsWatchRef.unsubscribe === 'function') {
+                    await this.chatRoomsWatchRef.unsubscribe();
+                }
+                this.chatRoomsWatchRef = await backend.watchChatRooms(() => {
+                    // 한 답변 완료 과정에서 room UPDATE가 연달아 올 수 있으므로 한 번만 다시 읽는다.
+                    if (this.chatRoomsReloadTimer) clearTimeout(this.chatRoomsReloadTimer);
+                    this.chatRoomsReloadTimer = setTimeout(() => {
+                        this.chatRoomsReloadTimer = null;
+                        this.loadChatRooms();
+                    }, 100);
+                });
+            } catch (e) {
+                console.warn('[ChatList] chat_rooms 실시간 구독 실패:', e);
+            }
+        },
         async handleChatsRealtime(payload) {
             try {
                 if (!payload || !payload.new) return;
@@ -611,6 +641,7 @@ export default {
                     this.saveChatRoomIndexToLocalStorage();
                 }
             } catch (error) {
+                console.warn('[ChatList] 대화 목록 조회 실패:', error);
                 this.chatRooms = [];
             } finally {
                 this.isLoadingChatRooms = false;

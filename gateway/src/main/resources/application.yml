@@ -5,6 +5,22 @@ spring:
     profiles: default
     cloud:
         gateway:
+            # CORS 헤더가 두 번 실리는 것을 막는다.
+            #
+            # 게이트웨이도 붙이고 뒤의 서비스도 붙여서, 브라우저가
+            # "Access-Control-Allow-Origin 값이 둘" 이라며 응답을 통째로 버린다.
+            # 포털은 같은 출처라 겪지 않지만, 모바일 앱은 언제나 교차 출처라
+            # 이것이 없으면 응답을 하나도 받지 못한다.
+            #
+            # RETAIN_UNIQUE 가 아니라 RETAIN_FIRST 인 이유
+            #   두 값이 **다를 때**(게이트웨이는 요청 출처를 그대로, memento 는 `*`)
+            #   RETAIN_UNIQUE 는 서로 다르니 둘 다 남긴다 — 중복이 그대로 간다.
+            #   실제로 지식 베이스 조회가 이것 때문에 계속 실패했다.
+            #   첫 번째(게이트웨이가 붙인 실제 요청 출처)만 남기는 것이 맞다.
+            #   `*` 보다 좁고, 자격 증명을 실은 요청에도 유효한 값이다.
+            default-filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+
             #<<< API Gateway / Routes
             routes:
                 - id: litellm
@@ -65,6 +81,14 @@ spring:
                   filters:
                       - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
+                # Codex 서비스 (deepagents 와 같은 chat/stream 계약, 별도 포트)
+                - id: process-gpt-codex
+                  uri: http://localhost:8891
+                  predicates:
+                      - Path=/process-gpt-codex/**
+                  filters:
+                      - RewritePath=/process-gpt-codex/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
                 # CLI Agent 서비스 (실행 CLI/모델 가용성 조회, 스킬/스트리밍)
                 - id: process-gpt-cli-agent
                   uri: http://localhost:8890
@@ -114,6 +138,10 @@ spring:
                     type: ELASTIC
                     max-connections: 100
                     acquire-timeout: 45000
+
+            # CORS 헤더 중복 정리 (위 default 프로파일의 설명과 같은 이유)
+            default-filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
             # 라우트별 설정
             routes:
@@ -242,6 +270,16 @@ spring:
                       - Path=/process-gpt-deepagents/**
                   filters:
                       - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
+                  order: 45
+
+                # Codex 서비스 (deepagents 와 같은 chat/stream 계약, 별도 포트)
+                - id: process-gpt-codex
+                  uri: http://process-gpt-codex:8891
+                  predicates:
+                      - Path=/process-gpt-codex/**
+                  filters:
+                      - RewritePath=/process-gpt-codex/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
                   order: 45
 

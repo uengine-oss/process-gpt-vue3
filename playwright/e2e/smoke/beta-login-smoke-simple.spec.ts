@@ -9,7 +9,7 @@ function requiredEnv(name: string): string {
 }
 
 test.describe('smoke simple: login only', () => {
-    test('login -> definition-map visible', async ({ page }) => {
+    test('login -> process-architecture visible', async ({ page }) => {
         const email = requiredEnv('E2E_USER');
         const password = requiredEnv('E2E_PASS');
 
@@ -39,9 +39,9 @@ test.describe('smoke simple: login only', () => {
         }
 
         await page.locator('.cp-login').click();
-        await expect(page).toHaveURL(/\/definition-map/, { timeout: 60_000 });
+        await expect(page).toHaveURL(/\/process-architecture/, { timeout: 60_000 });
 
-        // 정의체계도 메인 영역이 렌더링되는지 최소 확인
+        // 로그인 후 시작 화면 메인 영역이 렌더링되는지 최소 확인
         await expect(page.getByText(/프로세스 정의 체계도|정의체계도|Process/i).first()).toBeVisible({ timeout: 30_000 });
     });
 });

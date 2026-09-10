@@ -33,6 +33,7 @@
         <SkillPrDetail
             v-else-if="selectedPr"
             :pr="selectedPr"
+            :skill-name="skillName"
             :files="prFiles[selectedPr.id] || []"
             :files-loading="!!prFilesLoading[selectedPr.id]"
             :reviews="prReviewsMap[selectedPr.id] || []"

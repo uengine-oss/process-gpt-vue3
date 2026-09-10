@@ -132,6 +132,7 @@ import customBpmnModule from '@/components/customBpmn';
 
 import BackendFactory from '@/components/api/BackendFactory';
 import { findStartActivity } from '@/utils/processStart';
+import { buildStartWorkItem, runsAsAgent } from '@/shared/processStart/index.js';
 const backend = BackendFactory.createBackend();
 
 import { useDefaultSetting } from '@/stores/defaultSetting';
@@ -469,58 +470,27 @@ export default {
         async createNewWorkItem(activity) {
             if (!activity) return;
             var me = this;
-            const query = `[Description]\n${activity.description}\n\n[Instruction]\n${activity.instruction}`;
 
-            // enum 유효성 검사
-            const validAgentModes = ['DRAFT', 'COMPLETE'];
-            const validAgentOrch = [
-                'crewai-action',
-                'openai-deep-research',
-                'crewai-deep-research',
-                'deep-research-custom',
-                'deepagents',
-                'langchain-react',
-                'browser-automation-agent',
-                'a2a',
-                'visionparse'
-            ];
-
-            const rawAgentMode = activity.agentMode && activity.agentMode !== 'none' ? activity.agentMode.toUpperCase() : null;
-            const agentMode = rawAgentMode && validAgentModes.includes(rawAgentMode) ? rawAgentMode : null;
-
-            const rawAgentOrch = activity.orchestration && activity.orchestration !== 'none' ? activity.orchestration : null;
-            const agentOrch = rawAgentOrch && validAgentOrch.includes(rawAgentOrch) ? rawAgentOrch : null;
-            let userId = localStorage.getItem('uid');
-            let username = localStorage.getItem('userName');
-            if (agentMode && activity.agent && activity.agent !== 'none') {
+            // 맡을 사람. 에이전트가 하는 업무면 그 에이전트로 바꾼다.
+            let assignee = { id: localStorage.getItem('uid'), name: localStorage.getItem('userName') };
+            if (runsAsAgent(activity)) {
                 let agent = this.defaultSetting.getAgentById(activity.agent);
                 if (!agent) {
                     agent = await this.backend.getUserById(activity.agent);
                 }
-                if (agent) {
-                    userId = agent.id;
-                    username = agent.username;
-                }
+                if (agent) assignee = { id: agent.id, name: agent.username };
             }
-            const newWorkItem = {
+
+            // 상태값 · 오케스트레이션 목록 · 기한 계산은 @/shared/processStart 가 정한다.
+            // 여기에 따로 두면 모바일 화면과 갈라지고, 갈라지면 새로 추가된
+            // 오케스트레이션을 모르는 쪽에서 시작한 건이 에이전트 없이 남는다.
+            const newWorkItem = buildStartWorkItem(activity, {
                 id: me.uuid(),
-                user_id: userId,
-                username: username,
-                proc_inst_id: me.instId,
-                root_proc_inst_id: me.instId,
-                proc_def_id: me.processDefinition.processDefinitionId,
-                activity_id: activity.id,
-                activity_name: activity.name,
-                status: 'IN_PROGRESS',
-                tool: activity.tool || '',
-                description: activity.description || '',
-                query: query || '',
-                duration: activity.duration || 0,
-                start_date: new Date().toISOString(),
-                due_date: new Date(new Date().getTime() + activity.duration * 60 * 1000).toISOString(),
-                agent_mode: agentMode || null,
-                agent_orch: agentOrch || null
-            };
+                instId: me.instId,
+                defId: me.processDefinition.processDefinitionId,
+                assignee
+            });
+
             await backend.putWorkItem(newWorkItem.id, newWorkItem);
             return newWorkItem;
         },

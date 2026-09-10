@@ -1157,7 +1157,7 @@ export default {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(formHtml, 'text/html');
                 const selectors =
-                    'text-field, textarea-field, select-field, checkbox-field, radio-field, boolean-field, user-select-field, file-field, bpmn-uengine-field, report-field, slide-field';
+                    'text-field, textarea-field, select-field, checkbox-field, radio-field, boolean-field, user-select-field, file-field, folder-field, bpmn-uengine-field, report-field, slide-field';
                 const fields = [];
                 Array.from(doc.querySelectorAll(selectors)).forEach((el) => {
                     const name = el.getAttribute('name') || el.getAttribute('id');
@@ -1532,6 +1532,7 @@ export default {
                     'deep-research-custom',
                     'deepagents',
                     'cliagents',
+                    'codex',
                     'crewai-action',
                     'openai-deep-research',
                     'langchain-react',
@@ -1552,6 +1553,7 @@ export default {
                 crewaiDeepResearch: 'crewai-deep-research',
                 deepResearchCustom: 'deep-research-custom',
                 deepagents: 'deepagents',
+                codex: 'codex',
                 crewaiAction: 'crewai-action',
                 openaiDeepResearch: 'openai-deep-research',
                 langchainReact: 'langchain-react',

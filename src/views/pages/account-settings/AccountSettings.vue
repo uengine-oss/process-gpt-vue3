@@ -36,6 +36,11 @@
                                         {{ $t('accountTab.environments') }}
                                     </v-tab>
                                     <!-- <v-tab v-if="!isUEngineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab> -->
+                                    <!-- 결정론적 코드 / 보상 처리 코드 편집 -->
+                                    <v-tab v-if="!isUEngineMode" value="CodeEdit">
+                                        <v-icon class="mr-2" size="20">mdi-code-braces</v-icon>
+                                        {{ $t('accountTab.codeEdit') }}
+                                    </v-tab>
                                     <!-- 데이터 소스 연결 정보 -->
                                     <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                         <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
@@ -159,6 +164,16 @@
                                     :class="{ 'selected-tab': tab === 'MCP-Environments' }"
                                 >
                                     {{ $t('accountTab.environments') }}
+                                </v-btn>
+                                <v-btn
+                                    v-if="!isUEngineMode"
+                                    variant="text"
+                                    color="default"
+                                    size="small"
+                                    @click="tab = 'CodeEdit'"
+                                    :class="{ 'selected-tab': tab === 'CodeEdit' }"
+                                >
+                                    <v-icon class="mr-2" size="16">mdi-code-braces</v-icon>{{ $t('accountTab.codeEdit') }}
                                 </v-btn>
                                 <v-btn
                                     v-if="!isUEngineMode"
@@ -310,6 +325,13 @@
                                 <MCPEnvSecretTab />
                             </div>
                         </v-window-item>
+                        <!-- CodeEdit: 결정론적 코드 / 보상 처리 코드 편집 (accountTab.codeEdit) -->
+                        <v-window-item v-if="!isUEngineMode" value="CodeEdit">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                                <CodeEditTab />
+                            </div>
+                        </v-window-item>
+
                         <!-- Skills: 스킬 탭 (accountTab.skills) -->
                         <!-- <v-window-item v-if="!isUEngineMode" value="Skills">
                             <div 
@@ -355,6 +377,7 @@ import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
 import KnowledgeFilesTab from '@/components/pages/account-settings/KnowledgeFilesTab.vue';
 import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
+import CodeEditTab from '@/components/pages/account-settings/CodeEditTab.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
 import SkillsTab from '@/components/pages/account-settings/SkillsTab.vue';
 import GlossaryManageTab from '@/components/pages/account-settings/GlossaryManageTab.vue';
@@ -379,6 +402,7 @@ export default {
         KnowledgeFilesTab,
         MCPServerTab,
         MCPEnvSecretTab,
+        CodeEditTab,
         ConnectionInfoTab,
         SkillsTab,
         GlossaryManageTab,
@@ -440,6 +464,7 @@ export default {
                 'Drive',
                 'MCP-Servers',
                 'MCP-Environments',
+                'CodeEdit',
                 'ConnectionInfo',
                 'GlossaryManage',
                 'TaskCatalog'
@@ -448,6 +473,7 @@ export default {
                 'Drive',
                 'MCP-Servers',
                 'MCP-Environments',
+                'CodeEdit',
                 'ConnectionInfo',
                 'GlossaryManage',
                 'TaskCatalog',

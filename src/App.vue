@@ -58,6 +58,8 @@ import partialParse from 'partial-json-parser';
 import { getMainDomainUrl } from '@/utils/domainUtils';
 import { setCachedJwtTenantId } from '@/utils/tenant';
 import { useDefaultSetting } from '@/stores/defaultSetting';
+import { browserActivitySource, startPresence } from '@/shared/presence/index.js';
+import { deviceId, deviceType } from '@/shared/deviceIdentity/index.js';
 
 export default {
     components: {
@@ -120,6 +122,17 @@ export default {
 
         // 클릭 이벤트로 스낵바 닫기
         document.addEventListener('click', this.closeSnackbarOnEvent);
+
+        // 이 브라우저를 지금 쓰고 있다고 알린다.
+        //
+        // 알림을 어느 기기로 보낼지는 서버가 user_devices.last_active_at 하나로
+        // 정한다. 이것을 갱신하지 않으면 PC 앞에 앉아 화면을 보고 있는데도
+        // 휴대폰이 울린다 — 반대로, 자리를 비운 뒤에는 신호가 끊겨 휴대폰이
+        // 받는다. 탭이 보이면서 사람이 최근에 조작했을 때만 보낸다.
+        this.stopPresence = startPresence({
+            touch: () => this.reportDeviceActive(),
+            onActiveChange: browserActivitySource(window)
+        });
     },
     async mounted() {
         if (window.$mode == 'ProcessGPT') {
@@ -330,6 +343,34 @@ export default {
                 // URL() 파싱이 실패하는 경우(구형/비정상 문자열) fallback
                 const match = url.match(/[?&]id=([^&]+)/);
                 return match ? decodeURIComponent(match[1]) : null;
+            }
+        },
+        /**
+         * 이 브라우저를 알림 받을 기기 목록에 두고, 지금 쓰고 있다고 표시한다.
+         *
+         * 브라우저는 푸시 토큰을 받지 않는다(웹 푸시 등록이 없다). 그래도 줄은
+         * 남긴다 — 보내는 쪽은 "쓰고 있는 기기가 있는가" 로 먼저 판단하기
+         * 때문이다. 이 줄이 없으면 PC 앞에 앉아 있어도 휴대폰이 울린다.
+         *
+         * 실패는 삼킨다. 알림 라우팅용 부가 기능이 화면을 막으면 안 된다.
+         */
+        async reportDeviceActive() {
+            try {
+                const email = window.localStorage.getItem('email');
+                if (!email || !window.$supabase) return;
+
+                const now = new Date().toISOString();
+                await window.$supabase.from('user_devices').upsert(
+                    {
+                        user_email: email,
+                        device_id: deviceId(window),
+                        device_type: deviceType(window),
+                        last_active_at: now
+                    },
+                    { onConflict: 'user_email,device_id' }
+                );
+            } catch (e) {
+                console.warn('[presence] 기기 활동 표시 실패:', e);
             }
         },
         closeSnackbarOnEvent() {
@@ -559,6 +600,7 @@ export default {
     },
     beforeUnmount() {
         // 이벤트 리스너 정리
+        this.stopPresence?.();
         document.removeEventListener('click', this.closeSnackbarOnEvent);
         window.removeEventListener('androidBackButton', this.handleAndroidBackButton);
 

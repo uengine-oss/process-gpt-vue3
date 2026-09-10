@@ -1298,7 +1298,6 @@ export default {
                 });
         },
         changeOrientation() {
-            if (window.$pal) return;
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             const elementRegistry = self.bpmnViewer.get('elementRegistry');

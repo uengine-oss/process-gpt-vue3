@@ -535,7 +535,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
         } else {
             svgAttr(text, {
                 x: existingWidth / 2,
-                y: existingHeight - 30,
+                y: existingHeight / 2,
                 'text-anchor': 'middle',
                 'alignment-baseline': 'middle',
                 'font-size': '20px',

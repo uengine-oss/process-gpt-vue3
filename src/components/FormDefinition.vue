@@ -74,6 +74,7 @@ import Chat from './ui/Chat.vue';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import FormDefinitionModule from './FormDefinitionModule.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import { expandRowLayoutInPlace } from '@/utils/formLayout';
 
 const backend = BackendFactory.createBackend();
 
@@ -222,43 +223,7 @@ export default {
             rows.forEach((row) => {
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
                 if (!isMultiDataMode || isMultiDataMode === 'false') {
-                    const newRow = document.createElement('div');
-
-                    newRow.setAttribute('name', row.getAttribute('name') ?? '');
-                    newRow.setAttribute('alias', row.getAttribute('alias') ?? '');
-                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? 'false');
-
-                    newRow.setAttribute('class', 'row');
-
-                    if (row.firstElementChild) {
-                        Array.from(row.firstElementChild.children).forEach((child) => {
-                            newRow.appendChild(child);
-                        });
-                    }
-
-                    $(newRow)
-                        .children('[class^="col-sm-"]')
-                        .children('[v-model]')
-                        .each(function () {
-                            var field = $(this)[0];
-
-                            field.removeAttribute('v-model');
-                        });
-
-                    $(newRow)
-                        .children('[class^="col-sm-"]')
-                        .children('*')
-                        .each(function () {
-                            var field = $(this)[0];
-
-                            Array.from(field.attributes).forEach((attr) => {
-                                if (attr.name.startsWith('v-on:')) {
-                                    field.removeAttribute(attr.name);
-                                }
-                            });
-                        });
-
-                    row.parentNode.replaceChild(newRow, row);
+                    expandRowLayoutInPlace(row);
                 } else {
                     const newRow = document.createElement('div');
 

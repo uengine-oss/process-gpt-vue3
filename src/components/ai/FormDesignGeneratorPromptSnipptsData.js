@@ -84,6 +84,13 @@ const formDesignGeneratorPromptSnipptsData = {
         },
 
         {
+            tagName: 'folder-field',
+            tag: `<folder-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></folder-field>`,
+            purpose: 'To upload a whole folder of source material as-is for an agent to explore (not indexed as knowledge)',
+            limit: 'Only the codex agent reads this folder. Use file-field for a single document.'
+        },
+
+        {
             tagName: 'label-field',
             tag: `<label-field label='<label_text>'></label-field>`,
             purpose: 'To provide descriptive text for components',

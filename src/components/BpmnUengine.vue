@@ -17,7 +17,7 @@
                 <v-icon @click="zoomIn" style="color: var(--cds-text-secondary); cursor: pointer">mdi-plus</v-icon>
                 <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
                 <v-icon @click="zoomOut" style="color: var(--cds-text-secondary); cursor: pointer">mdi-minus</v-icon>
-                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crop-rotate</v-icon>
+                <v-icon @click="changeOrientation" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- Font size and zoom controls (edit mode only) -->
@@ -92,6 +92,9 @@ import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
 import '@/components/autoLayout/bpmn-auto-layout.js';
+import { captureLayoutRestore, getLayoutOrientation, getRotationEditBaseline, ensureRotationEditBaseline } from '@/components/autoLayout/structured-layout/apply-layout.js';
+import { layoutModeler, validateModelerSnapshot } from '@/components/autoLayout/structured-layout/modeler-layout.js';
+import { captureRotationBaseline, collectRotationOffsets } from '@/components/autoLayout/structured-layout/rotation-edits.js';
 import '@/components/autoLayout/edge-router-orthogonal.js';
 import '@/components/autoLayout/bpmn-waypoints-refresh.js';
 import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequence-flow-final-module.js';
@@ -256,14 +259,33 @@ export default {
         },
         isPal() {
             return window.$pal;
-        },
-        isPalUengine() {
-            return !!(window.$pal && window.$mode === 'uEngine');
         }
     },
     async mounted() {
         this.onLoadStart();
         this.canvasContainer = document.getElementById('canvas-container');
+        this._recordDiagramUserInput = (event) => {
+            if (event instanceof MouseEvent) {
+                this._lastDiagramUserInputKind = 'mouse';
+                this._diagramMouseDown = true;
+            } else if (event instanceof KeyboardEvent) {
+                this._lastDiagramUserInputKind = 'keyboard';
+            } else {
+                return;
+            }
+            this._lastDiagramUserInputAt = Date.now();
+        };
+        this._releaseDiagramMouse = (event) => {
+            this._diagramMouseDown = false;
+            if (event instanceof MouseEvent) {
+                this._lastDiagramUserInputKind = 'mouse';
+                this._lastDiagramUserInputAt = Date.now();
+            }
+        };
+        document.addEventListener('mousedown', this._recordDiagramUserInput, true);
+        document.addEventListener('keydown', this._recordDiagramUserInput, true);
+        document.addEventListener('mouseup', this._releaseDiagramMouse, true);
+        window.addEventListener('blur', this._releaseDiagramMouse);
 
         // Load palette settings before initializing viewer
         await this.loadPaletteSettings();
@@ -335,6 +357,12 @@ export default {
         document.addEventListener('keydown', this._keyboardHandler);
     },
     beforeUnmount() {
+        if (this._recordDiagramUserInput) {
+            document.removeEventListener('mousedown', this._recordDiagramUserInput, true);
+            document.removeEventListener('keydown', this._recordDiagramUserInput, true);
+            document.removeEventListener('mouseup', this._releaseDiagramMouse, true);
+            window.removeEventListener('blur', this._releaseDiagramMouse);
+        }
         if (this._appearanceHandler) {
             window.removeEventListener('pg:appearance-changed', this._appearanceHandler);
             this._appearanceHandler = null;
@@ -908,11 +936,8 @@ export default {
         },
         applyAutoLayout() {
             // PAL 모드에서도 엑셀→BPMN 로드 시 자동 레이아웃 적용
-            const elementRegistry = this.bpmnViewer.get('elementRegistry');
-            const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
-            const horizontal = participant[0].di.isHorizontal;
-            window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal: horizontal });
-            this.EventBus.emit('autoLayout.complete');
+            const horizontal = getLayoutOrientation(this.bpmnViewer);
+            window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal });
         },
         revertAutoLayout() {
             if (!window.BpmnAutoLayout || !window.BpmnAutoLayout.hasLayoutSnapshot()) {
@@ -1294,42 +1319,67 @@ export default {
                 this.addTestClassToElement(element, canvas);
             });
         },
-        changeOrientation() {
-            if (window.$pal && window.$mode === 'uEngine') return;
-            var self = this;
-            const palleteProvider = self.bpmnViewer.get('paletteProvider');
-            const elementRegistry = self.bpmnViewer.get('elementRegistry');
-            const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
-            participant.forEach((element) => {
-                const isCurrentlyHorizontal = element.di.isHorizontal !== false && element.width > element.height;
-                const rotateOptions = {};
-                if (isCurrentlyHorizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
-                    element.di.isHorizontal = false;
-                } else {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
-                    element.di.isHorizontal = true;
-                }
-            });
-            const nextHorizontal = participant[0]?.di?.isHorizontal !== false;
-            palleteProvider.syncAllLaneOrientationForView?.(nextHorizontal);
-            self.syncOrientationFlagsLater(nextHorizontal);
-            const refreshLabels = () => {
-                window.BpmnAutoLayout?.adjustLabelsAfterLayout?.(self.bpmnViewer);
+        captureOrientationLayout() {
+            return {
+                restore: captureLayoutRestore(this.bpmnViewer),
+                canRestore: validateModelerSnapshot(this.bpmnViewer).length === 0
             };
-            setTimeout(() => {
-                refreshLabels();
-                requestAnimationFrame(() => requestAnimationFrame(refreshLabels));
-                setTimeout(refreshLabels, 120);
-                setTimeout(() => {
-                    refreshLabels();
-                    if (self.isViewMode) {
-                        self.scheduleFitDiagramToViewport({ padding: 24, maxZoom: 1.5 });
-                    } else {
-                        self.resetZoom();
-                    }
-                }, 300);
-            }, 0);
+        },
+        restoreOrientationLayout(layout) {
+            layout.restore();
+        },
+        async changeOrientation() {
+            var self = this;
+            if (self._isChangingOrientation) return;
+            self._isChangingOrientation = true;
+
+            try {
+                if (self._layoutTimeout) {
+                    clearTimeout(self._layoutTimeout);
+                    self._layoutTimeout = null;
+                    self.$emit('update:isAIGenerated', false);
+                }
+
+                const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                const currentHorizontal = getLayoutOrientation(self.bpmnViewer);
+                const targetHorizontal = !currentHorizontal;
+                const returningSnapshot = self._orientationLayoutSnapshot?.horizontal === targetHorizontal
+                    ? self._orientationLayoutSnapshot
+                    : null;
+
+                if (returningSnapshot && !returningSnapshot.edited && returningSnapshot.layout.canRestore !== false) {
+                    self.restoreOrientationLayout(returningSnapshot.layout);
+                    self._orientationLayoutSnapshot = null;
+                    window.isHorizontalLayout = targetHorizontal;
+                    self.resetZoom();
+                    return;
+                }
+
+                const editBaseline = getRotationEditBaseline(self.bpmnViewer);
+                const baseline = returningSnapshot?.baseline ||
+                    (editBaseline?.edited && editBaseline.horizontal === currentHorizontal ? editBaseline.nodes : null);
+                const nodeOffsets = baseline
+                    ? collectRotationOffsets(elementRegistry.getAll(), baseline, currentHorizontal)
+                    : [];
+                const snapshot = {
+                    horizontal: currentHorizontal,
+                    layout: self.captureOrientationLayout(),
+                    edited: false
+                };
+                const result = layoutModeler(self.bpmnViewer, { horizontal: targetHorizontal, nodeOffsets });
+                if (result.plan.status !== 'computed') {
+                    self.bpmnViewer.get('eventBus').fire('orientation.failed', { result });
+                    throw new Error(`Structured rotation failed: ${result.plan.status}`);
+                }
+                snapshot.baseline = captureRotationBaseline(elementRegistry.getAll(), result.input, targetHorizontal, nodeOffsets);
+                self._orientationLayoutSnapshot = snapshot;
+                window.isHorizontalLayout = targetHorizontal;
+                self.bpmnViewer.get('eventBus').fire('orientation.complete', { result });
+                self.resetZoom();
+            } finally {
+                await new Promise(resolve => setTimeout(resolve, 0));
+                self._isChangingOrientation = false;
+            }
         },
         initDefaultOrientation(orientation = null) {
             if (!this.isViewMode) return false;
@@ -1420,12 +1470,64 @@ export default {
         setDiagramEvent() {
             var self = this;
             var eventBus = this.bpmnViewer.get('eventBus');
+            let phaseSyncTimer = null;
+            let isSyncingPhaseContainers = false;
+            const isPhaseSyncRelevantElement = function (element) {
+                return element?.type === 'bpmn:Participant' || element?.type === 'phase:PhaseContainer';
+            };
+            const syncPhaseContainersNow = function () {
+                if (isSyncingPhaseContainers || !self.bpmnViewer) return;
+                const sync = window.BpmnAutoLayout?.syncPhaseContainersWithParticipants;
+                if (typeof sync !== 'function') return;
+
+                const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                const participants = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+                const horizontal = participants[0]?.di?.isHorizontal ?? self.isHorizontal ?? true;
+                self.isHorizontal = horizontal;
+                try {
+                    isSyncingPhaseContainers = true;
+                    sync(self.bpmnViewer, { horizontal, preserveThickness: true });
+                } finally {
+                    isSyncingPhaseContainers = false;
+                }
+            };
+            const schedulePhaseContainerSync = function () {
+                if (phaseSyncTimer) clearTimeout(phaseSyncTimer);
+                phaseSyncTimer = setTimeout(function () {
+                    phaseSyncTimer = null;
+                    syncPhaseContainersNow();
+                }, 0);
+            };
+            eventBus.on('commandStack.elements.move.postExecuted', 500, function () {
+                if (!self.bpmnViewer.get('atomicModeling').isExecuting()) syncPhaseContainersNow();
+            });
+            eventBus.on('commandStack.preExecute', function (evt) {
+                const atomicModeling = self.bpmnViewer.get('atomicModeling');
+                const recentUserInput = Date.now() - self._lastDiagramUserInputAt <= 1000;
+                const userTriggered =
+                    (self._lastDiagramUserInputKind === 'mouse' && (recentUserInput || self._diagramMouseDown)) ||
+                    (self._lastDiagramUserInputKind === 'keyboard' && recentUserInput);
+                if (!self._isChangingOrientation && !atomicModeling.isExecuting() && userTriggered && evt?.trigger !== 'clear') {
+                    if (self._orientationLayoutSnapshot) self._orientationLayoutSnapshot.edited = true;
+                    const editBaseline = ensureRotationEditBaseline(self.bpmnViewer);
+                    if (editBaseline) editBaseline.edited = true;
+                }
+            });
+            eventBus.on(['commandStack.shape.move.postExecuted', 'commandStack.shape.resize.postExecuted'], 500, function (evt) {
+                if (self.bpmnViewer.get('atomicModeling').isExecuting()) return;
+                if (isPhaseSyncRelevantElement(evt.context?.shape)) syncPhaseContainersNow();
+            });
+            eventBus.on('autoLayout.complete', function () {
+                self._orientationLayoutSnapshot = null;
+                if (!self.bpmnViewer.get('atomicModeling').isExecuting()) schedulePhaseContainerSync();
+            });
             // eventBus.on('import.render.start', function (e) {
             //     // self.openPanel = true;
             //     // console.log("render  complete")
             //     self.$emit('openPanel', e.element.id);
             // });
             eventBus.on('import.done', async function (evt) {
+                self._orientationLayoutSnapshot = null;
                 self.$emit('done');
 
                 // Load color rules from BPMN and store in window for renderer
@@ -1702,6 +1804,16 @@ export default {
 
                 trackListener('commandStack.changed', async function (evt) {
                     console.log('commandStack.changed');
+                    const atomicModeling = self.bpmnViewer.get('atomicModeling');
+                    const recentUserInput = Date.now() - self._lastDiagramUserInputAt <= 1000;
+                    const userTriggered =
+                        (self._lastDiagramUserInputKind === 'mouse' && (recentUserInput || self._diagramMouseDown)) ||
+                        (self._lastDiagramUserInputKind === 'keyboard' && recentUserInput);
+                    if (!self._isChangingOrientation && !atomicModeling.isExecuting() && userTriggered && evt?.trigger !== 'clear') {
+                        if (self._orientationLayoutSnapshot) self._orientationLayoutSnapshot.edited = true;
+                        const editBaseline = getRotationEditBaseline(self.bpmnViewer);
+                        if (editBaseline) editBaseline.edited = true;
+                    }
                     // PI Flag 표시가 켜져 있으면 깃발/묶음 박스 갱신 (추가·삭제·이동 반영)
                     self.schedulePiFlagRefresh();
                     if (self.bpmn) {

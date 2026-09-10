@@ -12,6 +12,13 @@
                 >
                     <v-icon size="13" class="artifact-panel__tab-icon">{{ typeIcon(panel.type) }}</v-icon>
                     <span class="artifact-panel__tab-label">{{ panel.label }}</span>
+                    <!-- 검수를 통과 못 한 산출물도 보여준다. 감추는 대신 표시한다. -->
+                    <v-tooltip v-if="panel.data?.qualityGate === 'not_passed'" location="bottom" max-width="360">
+                        <template #activator="{ props }">
+                            <v-icon v-bind="props" size="12" color="warning" class="artifact-panel__tab-warn">mdi-alert-circle-outline</v-icon>
+                        </template>
+                        <span>서버 검수를 통과하지 못했습니다{{ panel.data.qualityGateDetail ? ': ' + panel.data.qualityGateDetail : '' }}</span>
+                    </v-tooltip>
                     <span class="artifact-panel__tab-close" @click.stop="$emit('close-panel', panel.id)">
                         <v-icon size="11">mdi-close</v-icon>
                     </span>
@@ -37,7 +44,19 @@
                         @download="emitPanelAction(panel, 'download', $event)"
                         @page-edit-request="emitPanelAction(panel, 'page-edit-request', $event)"
                     />
-                    <!-- DOCX 문서 미리보기 -->
+                    <!-- 서버에서 LibreOffice로 렌더한 PDF를 표시하고 다운로드는 원본을 유지한다. -->
+                    <PdfViewer
+                        v-else-if="panel.type === 'docx' && panel.data.previewUrl"
+                        :ref="(el) => setPanelRef(panel.id, el)"
+                        :fileUrl="panel.data.previewUrl"
+                        :fileName="panel.data.fileName || panel.label"
+                        :downloadUrl="panel.data.fileUrl"
+                        :downloadFileName="panel.data.fileName || panel.label"
+                        downloadTitle="원본 DOCX 다운로드"
+                        :draft="panel.data.draft === true"
+                        @close="$emit('close-panel', panel.id)"
+                    />
+                    <!-- 기존 HTML DOCX 미리보기 -->
                     <HwpxViewer
                         v-else-if="panel.type === 'docx'"
                         :ref="(el) => setPanelRef(panel.id, el)"
@@ -81,6 +100,7 @@
 
 <script>
 import HwpxViewer from '@/components/HwpxViewer.vue';
+import PdfViewer from '@/components/PdfViewer.vue';
 import SlideArtifactViewer from '@/components/SlideArtifactViewer.vue';
 import ProcessArtifactViewer from '@/components/ProcessArtifactViewer.vue';
 import WorkspaceFilesViewer from '@/components/WorkspaceFilesViewer.vue';
@@ -99,7 +119,7 @@ const PANEL_TYPE_ICONS = {
 
 export default {
     name: 'ArtifactPanel',
-    components: { HwpxViewer, SlideArtifactViewer, ProcessArtifactViewer, WorkspaceFilesViewer, AgentChatRoomContext },
+    components: { HwpxViewer, PdfViewer, SlideArtifactViewer, ProcessArtifactViewer, WorkspaceFilesViewer, AgentChatRoomContext },
     props: {
         panels: { type: Array, default: () => [] },
         activeId: { type: String, default: null }
@@ -214,6 +234,11 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 150px;
+}
+
+.artifact-panel__tab-warn {
+    flex: 0 0 auto;
+    margin-left: 2px;
 }
 
 .artifact-panel__tab-close {

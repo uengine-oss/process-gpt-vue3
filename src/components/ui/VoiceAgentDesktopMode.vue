@@ -4,6 +4,8 @@
 </template>
 
 <script>
+import { voiceSocketUrl } from '@/shared/voice/index.js';
+
 const BUFFER_SIZE = 4800;
 
 // ── AI 응답 오디오 재생 (AudioStream.vue의 Player와 동일) ──────────────────────
@@ -136,6 +138,17 @@ export default {
         conversationHistory: {
             type: Array,
             default: () => []
+        },
+        /**
+         * 음성 서버가 있는 곳. 비워 두면 지금 페이지가 떠 있는 곳으로 연결한다.
+         *
+         * 앱(Capacitor)에서는 화면이 `https://localhost` 위에 있어서, 비워 두면
+         * **앱 자신에게** 연결하려다 실패한다. 오류도 조용해서 "연결 중" 에서
+         * 멈춘 것처럼 보인다. 그래서 앱은 조직 서버 주소를 넘긴다.
+         */
+        origin: {
+            type: String,
+            default: ''
         }
     },
     emits: [
@@ -176,8 +189,8 @@ export default {
     methods: {
         async start() {
             try {
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const url = `${protocol}//${window.location.host}/voice/ws`;
+                const url = voiceSocketUrl(this.origin || window.location.origin);
+                if (!url) throw new Error('음성 서버 주소를 알 수 없습니다');
 
                 this.ws = new WebSocket(url);
                 const email = localStorage.getItem('email') || '';
