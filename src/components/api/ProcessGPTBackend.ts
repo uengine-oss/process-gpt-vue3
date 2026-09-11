@@ -8143,8 +8143,7 @@ class ProcessGPTBackend implements Backend {
             };
             await storage.putObject('proc_def_version', newProcess);
 
-            // 병합 요청 생성
-            const majorNum = (parseInt(String(parentVersion).split('.')[0]) || 0) + 1;
+            // 병합 요청 생성 — 기준은 이 초안이 갈라져 나온 parentVersion 이다.
             const user = await this.getUserInfo();
             const feedbackActivity = definition.activities?.find((a: any) => a.id === activityId);
             const feedbackOrigin = feedbackActivity?.name || activityId;
@@ -8152,7 +8151,7 @@ class ProcessGPTBackend implements Backend {
             await this.createResourcePrRecord('bpmn', {
                 resourceId: defId,
                 branchName: `v${newVersion}`,
-                baseBranch: `v${majorNum}.0`,
+                baseBranch: `v${parentVersion}`,
                 // 제목이 곧 검토자가 읽는 한 줄이다. "…에서 시작된 프로세스 개선" 은 어디서
                 // 출발했는지만 말할 뿐 무엇이 바뀌는지는 말해 주지 않아, 병합 요청함에서
                 // 같은 프로세스의 요청 여러 건이 제목만으로는 갈리지 않는다.

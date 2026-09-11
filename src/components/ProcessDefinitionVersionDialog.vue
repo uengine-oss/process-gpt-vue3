@@ -658,6 +658,8 @@ export default {
             if (!me.prTitle.trim()) return;
             me.prSubmitting = true;
             me.prError = '';
+            // 이 요청이 갈라져 나온 버전. 저장(emit)이 information 을 갱신하기 전에 잡아 둔다.
+            const baseVersion = me.information.version || '0.0';
             try {
                 me.information.version_tag = 'minor';
                 me.$emit('save', {
@@ -678,12 +680,12 @@ export default {
                 });
 
                 const user = me.currentUserInfo || (await backend.getUserInfo());
-                const currentVersion = me.information.version || '0.0';
-                const majorNum = (parseInt(String(currentVersion).split('.')[0]) || 0) + 1;
                 await backend.createResourcePrRecord('bpmn', {
                     resourceId: me.information.proc_def_id,
                     branchName: `v${me.newVersion}`,
-                    baseBranch: `v${majorNum}.0`,
+                    // 기준은 이 초안이 갈라져 나온 버전이다. 병합이 만들 다음 메이저는 아직
+                    // 없는 버전이라 기준으로 적으면 변경 비교·병합 전 검증이 기준을 찾지 못한다.
+                    baseBranch: `v${baseVersion}`,
                     title: me.prTitle.trim(),
                     description: me.information.message || null,
                     requesterId: user.uid,

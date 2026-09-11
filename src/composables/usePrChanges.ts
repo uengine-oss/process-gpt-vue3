@@ -452,9 +452,10 @@ function toDmnItems(previous: any, current: any): PrChangeItem[] {
 /**
  * 프로세스·의사결정 병합 요청이 비교해야 할 두 스냅샷을 찾는다.
  *
- * 비교 기준은 base_branch 가 아니라 이 버전이 갈라져 나온 parent_version 이다.
- * 피드백이 자동으로 올리는 요청은 base_branch 에 "다음 메이저"(예: v5.0)를 적어 두는데,
- * 그 버전은 아직 만들어지지 않았으므로 base_branch 로 찾으면 늘 빈손이 된다.
+ * 비교 기준은 이 버전이 갈라져 나온 버전이다. parent_version 을 먼저 보고, 없으면
+ * 초안 이름(`<부모>-<난수>`)에서 되짚고, 그래도 없으면 base_branch 를 쓴다.
+ * base_branch 는 갈라져 나온 버전을 적는다(예: v1.0 → v1.1 요청이면 v1.0). 예전 요청은
+ * "병합이 만들 다음 메이저"(예: v2.0)를 적어 두어 base_branch 로는 찾지 못한다.
  */
 async function loadDefinitionSnapshots(
     backend: any,
