@@ -5,7 +5,7 @@
           그러지 않으면 휴대폰으로 들어왔을 때 빈 화면만 뜬다 — 목록이
           서랍 안에 있다는 것을 알 방법이 없다.
         -->
-        <AppBaseCard :isInstanceChat="isInstanceChat" :preferLeftOnMobile="!chatRoomId">
+        <AppBaseCard :isInstanceChat="isInstanceChat" :preferLeftOnMobile="mobileListOpen">
             <template v-if="!isInstanceChat" v-slot:leftpart="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab" grow color="primary">
@@ -247,6 +247,21 @@ export default {
         ChatProfile,
         AssistantChats,
         Attachments
+    },
+    data() {
+        return {
+            /**
+             * 좁은 화면에서 대화 목록을 본문에 보여 줄지.
+             *
+             * chatRoomId 로 판단하지 않는다. 그 값은 지난번에 보던 대화가 남아
+             * 있어서, 휴대폰으로 새로 들어와도 목록 대신 옛 대화가 열린다.
+             * 들어올 때는 목록부터 보여 주고, 하나 고르면 그 대화로 넘어간다.
+             *
+             * 주소에 대화가 지정돼 있으면(알림을 눌러 들어온 경우) 아래
+             * chatRoomSelected 가 불리면서 곧바로 꺼진다.
+             */
+            mobileListOpen: true
+        };
     },
     emits: ['selectedUser', 'startChat', 'chat-selected', 'create-chat-room', 'delete-chat-room', 'genFinished', 'clickedWorkOrder'],
     props: {
@@ -624,6 +639,9 @@ export default {
             }
         },
         chatRoomSelected(chatRoomInfo) {
+            // 하나 골랐으니 좁은 화면에서는 목록을 접고 그 대화를 보여 준다.
+            this.mobileListOpen = false;
+
             // 현재 진행 중인 AI 생성 작업이 있으면 백그라운드 모드로 전환 (새로운 채팅방 정보 설정 전에 호출)
             this.handleChatRoomChange();
 
