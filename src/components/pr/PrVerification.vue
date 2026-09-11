@@ -172,8 +172,8 @@
                     <div v-for="(b, i) in grp.broken" :key="i" class="pv-step broken">
                         <span class="pv-step-mark">✕</span>
                         <div>
-                            <div class="pv-step-text">{{ b.step }}</div>
-                            <div v-if="b.evidence" class="pv-step-ev">{{ b.evidence }}</div>
+                            <div class="pv-step-text">{{ displayText(b.step) }}</div>
+                            <div v-if="b.evidence" class="pv-step-ev">{{ displayText(b.evidence) }}</div>
                         </div>
                     </div>
                 </div>
@@ -186,7 +186,7 @@
                     <div v-for="(f, i) in fixed" :key="i" class="pv-step fixed">
                         <span class="pv-step-mark ok">✓</span>
                         <div>
-                            <div class="pv-step-text">{{ f.step }}</div>
+                            <div class="pv-step-text">{{ displayText(f.step) }}</div>
                             <div class="pv-step-sub">{{ f.eval_name }}</div>
                         </div>
                     </div>
@@ -310,6 +310,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import { formatRelativeTime } from '@/composables/usePrUtils';
 import { computeVerifyStats, changedCases } from '@/composables/usePrVerification';
+import { buildActivityLabels, labelOf, labelPath, relabelText } from '@/shared/activityLabels/index.js';
 
 // 검증이 도는 동안의 폴링 간격(ms). 실행은 수 분 걸리므로 촘촘히 볼 이유가 없다.
 const POLL_MS = 5000;
@@ -341,7 +342,10 @@ export default {
             backfillError: '',
             confirmingRegenerate: false,
             buildingScenarios: false,
-            pollTimer: null
+            pollTimer: null,
+            // 프로세스 요소 ID → 이름. 실행 경로·근거를 ID 대신 이름으로 보여 줄 때 쓴다.
+            activityLabels: {},
+            activityLabelsLoaded: false
         };
     },
     computed: {
@@ -562,15 +566,15 @@ export default {
                 const pairs = Object.entries(values || {})
                     .map(([k, v]) => `${k}=${v}`)
                     .join(', ');
-                if (pairs) parts.push(`${activityId}: ${pairs}`);
+                if (pairs) parts.push(`${labelOf(activityId, this.activityLabels)}: ${pairs}`);
             }
             const decisions = parsed.gateway_decisions || {};
             for (const [gatewayId, d] of Object.entries(decisions)) {
                 const seqs = (d && d.sequences) || {};
                 const chosen = ((d && d.selected) || [])
-                    .map((seqId) => (seqs[seqId] && (seqs[seqId].condition || seqs[seqId].target)) || seqId)
+                    .map((seqId) => (seqs[seqId] && (seqs[seqId].condition || labelOf(seqs[seqId].target, this.activityLabels))) || seqId)
                     .join(', ');
-                if (chosen) parts.push(`${gatewayId} → ${chosen}`);
+                if (chosen) parts.push(`${labelOf(gatewayId, this.activityLabels)} → ${chosen}`);
             }
             if (parts.length) return parts.join(' · ');
             // 갈림길이 없는 프로세스는 고를 것도 넣을 것도 없다. 그렇다고 입력 JSON 을
@@ -587,10 +591,39 @@ export default {
                 return '';
             }
             const order = (expected && expected.activity_order) || [];
-            return order.length ? this.$t('pr.verify.path', { path: order.join(' → ') }) : '';
+            return order.length ? this.$t('pr.verify.path', { path: labelPath(order, this.activityLabels).join(' → ') }) : '';
         },
         countLabel(v) {
             return v ? `${v.passed}/${v.total}` : '—';
+        },
+        /**
+         * 단계 문구·근거를 화면에 보일 모양으로.
+         *
+         * 프로세스 단계는 실행 엔진이 요소 ID 로 적는다(`실행 경로가 ship_order → Activity_0q13olf 다`).
+         * 저장된 문구는 변경 전/후 단계를 짝짓는 열쇠라 그대로 두고, 보여 줄 때만 이름으로 바꾼다.
+         */
+        displayText(text) {
+            return this.isProcess ? relabelText(text, this.activityLabels) : text;
+        },
+        /** 프로세스 모든 버전의 정의에서 요소 이름표를 한 번 받아 둔다. */
+        async loadActivityLabels() {
+            if (!this.isProcess || this.activityLabelsLoaded || !this.skillName) return;
+            this.activityLabelsLoaded = true;
+            try {
+                const rows = await this.backend.getDefinitionVersions(this.skillName, { orderBy: 'timeStamp', sort: 'desc' });
+                const versions = Array.isArray(rows) ? rows : [];
+                // 오래된 버전부터 쌓아 최신 이름이 이기게 한다. 변경 후에만 있는(새로 추가한) 요소와
+                // 변경 전에만 있던(삭제된) 요소 모두 이름으로 보인다.
+                this.activityLabels = buildActivityLabels(
+                    versions
+                        .slice()
+                        .reverse()
+                        .map((row) => row.definition)
+                );
+            } catch (e) {
+                // 이름표를 못 받아도 검증 결과는 보여야 한다 — ID 그대로 두고 다음 새로고침에서 다시 받는다.
+                this.activityLabelsLoaded = false;
+            }
         },
         /**
          * 채점 근거에서 실제 결론만 떼어 온다.
@@ -603,6 +636,8 @@ export default {
         },
         async reload() {
             if (!this.backend || !this.skillName || !this.addressed) return;
+            // 기다리지 않는다 — 이름표가 늦어도 검증 결과는 먼저 보이고, 도착하면 이름으로 바뀐다.
+            this.loadActivityLabels();
             const data = this.isSkill
                 ? await this.backend.getPrVerification(this.skillName, this.prNumber)
                 : await this.backend.getResourceVerification(this.resourceType, this.skillName, this.prId);
