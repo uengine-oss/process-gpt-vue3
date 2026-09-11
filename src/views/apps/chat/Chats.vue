@@ -1,6 +1,11 @@
 <template>
     <v-card elevation="10">
-        <AppBaseCard :isInstanceChat="isInstanceChat">
+        <!--
+          좁은 화면에서 아직 대화를 고르지 않았으면 목록을 본문에 보여 준다.
+          그러지 않으면 휴대폰으로 들어왔을 때 빈 화면만 뜬다 — 목록이
+          서랍 안에 있다는 것을 알 방법이 없다.
+        -->
+        <AppBaseCard :isInstanceChat="isInstanceChat" :preferLeftOnMobile="!chatRoomId">
             <template v-if="!isInstanceChat" v-slot:leftpart="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab" grow color="primary">

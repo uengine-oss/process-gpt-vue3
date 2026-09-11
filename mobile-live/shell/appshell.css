@@ -1,0 +1,106 @@
+/*
+ * 모바일 껍데기.
+ *
+ * 이 앱은 포털을 그대로 띄우지만, 포털 전체를 열어 주지는 않는다. 앱에서
+ * 지원하기로 한 몇 가지만 탭으로 두고, 나머지로 새어 나가는 길을 막는다.
+ * 그래야 작은 화면에서 쓸 수 없는 화면(BPMN 편집기·프로세스 맵 같은)에
+ * 사용자가 빠지지 않는다.
+ *
+ * 안쪽 화면은 손대지 않는다 — 그것이 이 앱의 요점이다. 여기서 하는 것은
+ * 바깥 테두리(하단 탭)를 두르고, 포털이 스스로 그리는 길잡이를 감추는 일뿐이다.
+ *
+ * 색은 모바일 전용 앱(mobile/src/styles/base.css)의 값을 그대로 옮겨 왔다.
+ * 두 앱이 다른 색이면 같은 제품으로 보이지 않는다.
+ */
+
+:root {
+    --pg-surface: hsl(0 0% 100%);
+    --pg-rule: hsl(210 25% 92%);
+    --pg-ink-faint: hsl(206 6% 47%);
+    --pg-brand: hsl(202 100% 43%);
+    --pg-tap: 56px;
+    --pg-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --pg-surface: hsl(60 2.1% 18.4%);
+        --pg-rule: hsl(51 16.5% 84.5% / 0.18);
+        --pg-ink-faint: hsl(48 4.8% 59.2%);
+    }
+}
+
+/* 탭 높이만큼 아래를 비워 준다. 없으면 마지막 내용이 탭에 가린다. */
+body.pg-shell {
+    padding-bottom: calc(var(--pg-tap) + var(--pg-safe-bottom)) !important;
+}
+
+.pg-tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2147483000; /* 포털의 다이얼로그·오버레이보다 위 */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--pg-surface);
+    border-top: 1px solid var(--pg-rule);
+    padding-bottom: var(--pg-safe-bottom);
+    font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', system-ui, sans-serif;
+}
+
+.pg-tab {
+    /* 손가락으로 누를 수 있는 크기. */
+    min-height: var(--pg-tap);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 4px;
+    border: 0;
+    background: none;
+    color: var(--pg-ink-faint);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pg-tab svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.pg-tab--on {
+    color: var(--pg-brand);
+}
+
+/*
+ * 포털의 사이드바는 **남겨 둔다.**
+ *
+ * 처음에는 통째로 감췄는데, 그러자 채팅 탭이 빈 화면이 됐다. 포털은 대화
+ * 목록을 사이드바 안에 두기 때문이다 — 감추면 대화를 고를 방법이 사라진다.
+ *
+ * 대신 그 안에서 **갈 수 없는 곳으로 가는 링크만** 지운다(appshell.js).
+ * 어디로 갈 수 있는지는 앱이 정하되, 화면은 포털 것을 그대로 쓴다는 원칙은
+ * 그대로다.
+ */
+.pg-shell .v-app-bar {
+    display: none !important;
+}
+
+/* 앱이 정한 곳 밖으로 나가는 길. 자바스크립트가 이 표시를 붙인다. */
+.pg-shell .pg-hidden {
+    display: none !important;
+}
+
+/* 사이드바가 탭을 가리지 않게 한다. */
+.pg-shell .v-navigation-drawer {
+    bottom: calc(var(--pg-tap) + var(--pg-safe-bottom)) !important;
+}
