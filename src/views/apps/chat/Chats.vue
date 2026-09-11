@@ -1,6 +1,11 @@
 <template>
     <v-card elevation="10">
-        <AppBaseCard :isInstanceChat="isInstanceChat">
+        <!--
+          좁은 화면에서 아직 대화를 고르지 않았으면 목록을 본문에 보여 준다.
+          그러지 않으면 휴대폰으로 들어왔을 때 빈 화면만 뜬다 — 목록이
+          서랍 안에 있다는 것을 알 방법이 없다.
+        -->
+        <AppBaseCard :isInstanceChat="isInstanceChat" :preferLeftOnMobile="mobileListOpen">
             <template v-if="!isInstanceChat" v-slot:leftpart="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab" grow color="primary">
@@ -26,7 +31,7 @@
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
                                 :closeDrawer="closeDrawer"
-                                @chat-selected="chatRoomSelected"
+                                @chat-selected="pickChatRoom"
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
                             />
@@ -114,7 +119,7 @@
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
                                 :closeDrawer="closeDrawer"
-                                @chat-selected="chatRoomSelected"
+                                @chat-selected="pickChatRoom"
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
                             />
@@ -243,6 +248,21 @@ export default {
         AssistantChats,
         Attachments
     },
+    data() {
+        return {
+            /**
+             * 좁은 화면에서 대화 목록을 본문에 보여 줄지.
+             *
+             * chatRoomId 로 판단하지 않는다. 그 값은 지난번에 보던 대화가 남아
+             * 있어서, 휴대폰으로 새로 들어와도 목록 대신 옛 대화가 열린다.
+             * 들어올 때는 목록부터 보여 주고, 하나 고르면 그 대화로 넘어간다.
+             *
+             * 주소에 대화가 지정돼 있으면(알림을 눌러 들어온 경우) 아래
+             * chatRoomSelected 가 불리면서 곧바로 꺼진다.
+             */
+            mobileListOpen: true
+        };
+    },
     emits: ['selectedUser', 'startChat', 'chat-selected', 'create-chat-room', 'delete-chat-room', 'genFinished', 'clickedWorkOrder'],
     props: {
         isInstanceChat: {
@@ -336,6 +356,8 @@ export default {
         });
 
         if (this.$route.query.id) {
+            // 알림 등으로 특정 대화를 지정해 들어온 경우다. 목록을 거치지 않는다.
+            this.mobileListOpen = false;
             this.chatRoomSelected(this.chatRoomList.find((room) => room.id === this.$route.query.id));
         }
 
@@ -618,6 +640,18 @@ export default {
                 );
             }
         },
+        /**
+         * 사용자가 목록에서 하나 골랐다.
+         *
+         * 자동 선택(첫 대화를 미리 열어 두는 것)과 구분해야 한다. 둘을 같이
+         * 두었더니 화면에 들어오자마자 목록이 접혀, 좁은 화면에서는 **목록을
+         * 볼 기회가 없었다.**
+         */
+        pickChatRoom(chatRoomInfo) {
+            this.mobileListOpen = false;
+            this.chatRoomSelected(chatRoomInfo);
+        },
+
         chatRoomSelected(chatRoomInfo) {
             // 현재 진행 중인 AI 생성 작업이 있으면 백그라운드 모드로 전환 (새로운 채팅방 정보 설정 전에 호출)
             this.handleChatRoomChange();

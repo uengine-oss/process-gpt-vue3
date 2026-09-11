@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>Process-GPT</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!--
+      라이브 앱이 실제로 여는 것은 이 파일이 아니라 **웹 포털 자체**다
+      (capacitor.config.json 의 server.url). 화면·기능은 전부 포털의 것이고,
+      앱은 그것을 감싸는 껍데기일 뿐이다 — 그래서 옮겨 적을 것이 없다.
+
+      그럼 이 파일은 언제 보이는가
+        포털에 닿지 못할 때다. 비행기 모드, 사내망 밖, 서버 점검 같은 경우.
+        이때 아무것도 없는 흰 화면이 뜨면 사용자는 앱이 고장 난 줄 안다.
+        무슨 일인지 말해 주고, 다시 시도할 방법을 준다.
+
+      왜 여기에 화면을 더 만들지 않는가
+        만드는 순간 그것이 다시 "두 번째 UI" 가 되고, 포털이 바뀌면 같이
+        손봐야 한다. 이 앱의 존재 이유가 그 이중 작업을 없애는 것이므로,
+        여기 있는 것은 연결이 끊겼을 때의 한 장으로 끝낸다.
+    -->
+    <style>
+        :root { --ground: hsl(206 41% 97%); --ink: hsl(218 26% 22%); --ink-faint: hsl(206 6% 47%); --brand: hsl(202 100% 43%); }
+        @media (prefers-color-scheme: dark) {
+            :root { --ground: hsl(60 2.7% 14.5%); --ink: hsl(48 33.3% 97.1%); --ink-faint: hsl(48 4.8% 59.2%); }
+        }
+
+        html, body { margin: 0; height: 100%; background: var(--ground); }
+
+        .offline {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 24px;
+            text-align: center;
+            color: var(--ink);
+            font: 1rem/1.5 -apple-system, BlinkMacSystemFont, 'Malgun Gothic', system-ui, sans-serif;
+        }
+
+        .offline p { margin: 0; color: var(--ink-faint); font-size: 0.9rem; max-width: 28em; }
+
+        .offline button {
+            min-height: 44px;
+            padding: 0 24px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--brand);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline" role="status">
+        <strong>서버에 연결하지 못했습니다</strong>
+        <p>네트워크를 확인한 뒤 다시 시도해 주세요. 사내망에서만 열리는 환경이라면 그 망에 연결돼 있는지도 함께 확인해 주세요.</p>
+        <button type="button" onclick="location.reload()">다시 시도</button>
+    </div>
+</body>
+</html>
