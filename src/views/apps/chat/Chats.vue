@@ -31,7 +31,7 @@
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
                                 :closeDrawer="closeDrawer"
-                                @chat-selected="chatRoomSelected"
+                                @chat-selected="pickChatRoom"
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
                             />
@@ -119,7 +119,7 @@
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
                                 :closeDrawer="closeDrawer"
-                                @chat-selected="chatRoomSelected"
+                                @chat-selected="pickChatRoom"
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
                             />
@@ -356,6 +356,8 @@ export default {
         });
 
         if (this.$route.query.id) {
+            // 알림 등으로 특정 대화를 지정해 들어온 경우다. 목록을 거치지 않는다.
+            this.mobileListOpen = false;
             this.chatRoomSelected(this.chatRoomList.find((room) => room.id === this.$route.query.id));
         }
 
@@ -638,10 +640,19 @@ export default {
                 );
             }
         },
-        chatRoomSelected(chatRoomInfo) {
-            // 하나 골랐으니 좁은 화면에서는 목록을 접고 그 대화를 보여 준다.
+        /**
+         * 사용자가 목록에서 하나 골랐다.
+         *
+         * 자동 선택(첫 대화를 미리 열어 두는 것)과 구분해야 한다. 둘을 같이
+         * 두었더니 화면에 들어오자마자 목록이 접혀, 좁은 화면에서는 **목록을
+         * 볼 기회가 없었다.**
+         */
+        pickChatRoom(chatRoomInfo) {
             this.mobileListOpen = false;
+            this.chatRoomSelected(chatRoomInfo);
+        },
 
+        chatRoomSelected(chatRoomInfo) {
             // 현재 진행 중인 AI 생성 작업이 있으면 백그라운드 모드로 전환 (새로운 채팅방 정보 설정 전에 호출)
             this.handleChatRoomChange();
 
