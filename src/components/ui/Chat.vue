@@ -1372,7 +1372,7 @@
                                                                             class="chat-tool-activity__list chat-tool-activity__list--live"
                                                                         >
                                                                             <div
-                                                                                v-for="(tc, tcIdx) in getToolCallList(message)"
+                                                                                v-for="(tc, tcIdx) in getLiveToolCallList(message)"
                                                                                 :key="`live-tc-${index}-${tcIdx}`"
                                                                                 class="chat-tool-activity__item-wrap"
                                                                             >
@@ -1395,6 +1395,12 @@
                                                                                     <span class="chat-tool-activity__name">{{
                                                                                         tc.label
                                                                                     }}</span>
+                                                                                    <span
+                                                                                        v-if="tc.summary"
+                                                                                        class="chat-tool-activity__cmd"
+                                                                                        :title="tc.summary"
+                                                                                        >{{ tc.summary }}</span
+                                                                                    >
                                                                                     <span
                                                                                         class="chat-tool-activity__status"
                                                                                         :class="`is-${tc.status}`"
@@ -4742,6 +4748,29 @@ export default {
             _toolCallListCache.set(message, { sig, result });
             return result;
         },
+        /** 실시간 타임라인 한 줄에 실을 요약 — 도구 이름만으로는 뭘 하는지 알 수 없다. */
+        summarizeToolInput(input) {
+            if (input == null) return '';
+            const pick = (value) => {
+                if (typeof value === 'string') return value;
+                if (!value || typeof value !== 'object') return '';
+                for (const key of ['command', 'path', 'file_path', 'filePath', 'query', 'url', 'name', 'description']) {
+                    if (typeof value[key] === 'string' && value[key].trim()) return value[key];
+                }
+                const first = Object.values(value).find((v) => typeof v === 'string' && v.trim());
+                return typeof first === 'string' ? first : '';
+            };
+            const text = pick(input).replace(/\s+/g, ' ').trim();
+            return text.length > 120 ? `${text.slice(0, 120)}…` : text;
+        },
+        /** 실시간 타임라인은 최신이 아래에 붙도록 column-reverse 로 그린다(스크롤 고정). */
+        getLiveToolCallList(message) {
+            const list = this.getToolCallList(message);
+            const cached = _toolCallListCache.get(message);
+            if (!cached || cached.result !== list) return [...list].reverse();
+            if (!cached.reversed) cached.reversed = [...list].reverse();
+            return cached.reversed;
+        },
         hasRunningTool(message) {
             const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
             if (!tools.length) return false;
@@ -4770,6 +4799,7 @@ export default {
                         return {
                             name,
                             label: `${connectors.length ? `${connectors.join(', ')} · ` : ''}${this.formatToolName(name) || name}`,
+                            summary: this.summarizeToolInput(t?.input),
                             kind,
                             status: (t?.status || 'done').toString(),
                             output,
@@ -7620,11 +7650,30 @@ pre {
 
 /* 로딩 중(스트리밍) 실시간 도구 타임라인 — 완료 후의 접이식 .chat-tool-activity__list와 스타일 공유,
    전체를 항상 펼쳐서 보여준다는 점만 다르다. */
-.chat-tool-activity__list--live {
-    padding: 2px 0;
+/* 한 턴에 수십 건이 쌓이므로 높이를 제한한다. column-reverse 라서 새 항목이 와도 바닥에 붙어 있고,
+   위로 스크롤하면 지나간 항목을 볼 수 있다(전체 목록은 아래 '실행 상세'에도 남는다). */
+.chat-tool-activity__list.chat-tool-activity__list--live {
+    padding: 2px 4px 2px 0;
+    flex-direction: column-reverse;
+    max-height: 168px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.chat-tool-activity__list--live .chat-tool-activity__name {
+    flex: 0 0 auto;
 }
 .chat-tool-activity__list--live .chat-tool-activity__item {
     animation: chat-tool-activity-item-in 0.15s ease-out;
+}
+.chat-tool-activity__cmd {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.45);
 }
 @keyframes chat-tool-activity-item-in {
     from {

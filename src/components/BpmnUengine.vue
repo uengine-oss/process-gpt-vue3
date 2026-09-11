@@ -17,7 +17,7 @@
                 <v-icon @click="zoomIn" style="color: var(--cds-text-secondary); cursor: pointer">mdi-plus</v-icon>
                 <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
                 <v-icon @click="zoomOut" style="color: var(--cds-text-secondary); cursor: pointer">mdi-minus</v-icon>
-                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crop-rotate</v-icon>
+                <v-icon @click="changeOrientation" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- Font size and zoom controls (edit mode only) -->
@@ -87,16 +87,22 @@ import paletteProvider from './customPalette/PaletteProvider';
 import customContextPadModule from './customContextPad';
 import customReplaceElement from './customReplaceElement';
 import customPopupMenu from './customPopupMenu';
-// skt 마이그레이션 요소 변경 비활성화
-// import customReplaceModule from './customReplace';
+import customReplaceModule from './customReplace';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
 import '@/components/autoLayout/bpmn-auto-layout.js';
+import { captureLayoutRestore, getLayoutOrientation, getRotationEditBaseline, ensureRotationEditBaseline } from '@/components/autoLayout/structured-layout/apply-layout.js';
+import { layoutModeler, validateModelerSnapshot } from '@/components/autoLayout/structured-layout/modeler-layout.js';
+import { captureRotationBaseline, collectRotationOffsets } from '@/components/autoLayout/structured-layout/rotation-edits.js';
 import '@/components/autoLayout/edge-router-orthogonal.js';
 import '@/components/autoLayout/bpmn-waypoints-refresh.js';
 import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequence-flow-final-module.js';
 import sequenceFlowManualCropSkipModule from '@/components/autoLayout/sequence-flow-manual-crop-skip-module.js';
+import customDrilldownModule from './customDrilldown';
+import { resolveLinkedProcessXml } from './customDrilldown/resolveLinkedProcessXml';
+import { openLinkedProcessInNewTab, PROCESS_HIERARCHY_MODE } from '@/views/process-hierarchy/navigation';
+import { resolveProcessRouteId } from '@/utils/processRouteId';
 import { markRaw } from 'vue';
 import minimapModule from 'diagram-js-minimap';
 import {
@@ -110,6 +116,7 @@ import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 import { BPMN_AUTO_ORIENTATION_MODES, getAutoOrientationRotateOptions, getBpmnAutoOrientationMode } from '@/utils/bpmnAutoOrientationMode';
 
 const backend = BackendFactory.createBackend();
+const MINIMAP_OPEN_STORAGE_KEY = 'process-gpt:bpmn:minimap-open';
 
 const WARNING = 0,
     ERROR = 1;
@@ -147,6 +154,9 @@ export default {
         isViewMode: {
             type: Boolean
         },
+        enableLinkedNavigation: { type: Boolean, default: true },
+        rootProcessName: { type: String, default: '' },
+        diagramMode: { type: String, default: 'as-is' },
         isPreviewMode: {
             type: Boolean
         },
@@ -202,6 +212,7 @@ export default {
         return {
             diagramXML: null,
             bpmnXML: null,
+            acceptedCurrentBpmnSnapshot: null,
             openPanel: false,
             moddle: null,
             bpmnStore: null,
@@ -248,14 +259,33 @@ export default {
         },
         isPal() {
             return window.$pal;
-        },
-        isPalUengine() {
-            return !!(window.$pal && window.$mode === 'uEngine');
         }
     },
     async mounted() {
         this.onLoadStart();
         this.canvasContainer = document.getElementById('canvas-container');
+        this._recordDiagramUserInput = (event) => {
+            if (event instanceof MouseEvent) {
+                this._lastDiagramUserInputKind = 'mouse';
+                this._diagramMouseDown = true;
+            } else if (event instanceof KeyboardEvent) {
+                this._lastDiagramUserInputKind = 'keyboard';
+            } else {
+                return;
+            }
+            this._lastDiagramUserInputAt = Date.now();
+        };
+        this._releaseDiagramMouse = (event) => {
+            this._diagramMouseDown = false;
+            if (event instanceof MouseEvent) {
+                this._lastDiagramUserInputKind = 'mouse';
+                this._lastDiagramUserInputAt = Date.now();
+            }
+        };
+        document.addEventListener('mousedown', this._recordDiagramUserInput, true);
+        document.addEventListener('keydown', this._recordDiagramUserInput, true);
+        document.addEventListener('mouseup', this._releaseDiagramMouse, true);
+        window.addEventListener('blur', this._releaseDiagramMouse);
 
         // Load palette settings before initializing viewer
         await this.loadPaletteSettings();
@@ -317,8 +347,6 @@ export default {
             .finally(() => {
                 try {
                     this.onLoadEnd();
-                    const minimap = this.bpmnViewer.get('minimap');
-                    if (minimap) minimap.open();
                 } catch (_) {}
             });
         this.initResizeObserver();
@@ -329,6 +357,12 @@ export default {
         document.addEventListener('keydown', this._keyboardHandler);
     },
     beforeUnmount() {
+        if (this._recordDiagramUserInput) {
+            document.removeEventListener('mousedown', this._recordDiagramUserInput, true);
+            document.removeEventListener('keydown', this._recordDiagramUserInput, true);
+            document.removeEventListener('mouseup', this._releaseDiagramMouse, true);
+            window.removeEventListener('blur', this._releaseDiagramMouse);
+        }
         if (this._appearanceHandler) {
             window.removeEventListener('pg:appearance-changed', this._appearanceHandler);
             this._appearanceHandler = null;
@@ -363,6 +397,15 @@ export default {
                     if (!this.bpmnViewer) return;
 
                     const normalizedNewVal = newVal.trim();
+
+                    // 현재 modeler에서 export해 영구 저장한 XML이 prop으로 돌아온 경우다.
+                    // 이미 캔버스에 반영된 상태이므로 importXML을 다시 실행하지 않는다.
+                    if (this.acceptedCurrentBpmnSnapshot === normalizedNewVal) {
+                        this.acceptedCurrentBpmnSnapshot = null;
+                        this.bpmnXML = newVal;
+                        this.diagramXML = newVal;
+                        return;
+                    }
 
                     // registerToStore 모드에서는 내부 편집(changeElement)로 올라온 동일 XML은 다시 import하지 않는다.
                     // 단, 외부(생성/로드/롤백 등)에서 변경된 BPMN은 import해서 화면을 동기화한다.
@@ -493,6 +536,9 @@ export default {
         }
     },
     methods: {
+        acceptCurrentBpmnSnapshot(xml) {
+            this.acceptedCurrentBpmnSnapshot = typeof xml === 'string' ? xml.trim() : null;
+        },
         /**
          * 색상 테마 변경 시 캔버스 도형을 다시 그린다.
          *
@@ -874,26 +920,24 @@ export default {
                 // Load new table-based palette task types
                 await catalogStore.loadPaletteTaskTypes();
 
-                // Set enabled palette task types to window for PaletteProvider access
-                window.$enabledPaletteTaskTypes = catalogStore.enabledPaletteTaskTypes;
-
                 // Legacy support: also load old palette settings
                 await catalogStore.loadPaletteSettings();
-                window.$paletteSettings = catalogStore.paletteSettings;
+
+                // 팔레트·변경 메뉴가 읽는 window 전역(실효 노출 목록 포함) 발행
+                catalogStore.publishPaletteSettingsToWindow();
             } catch (error) {
                 console.error('Failed to load palette settings:', error);
                 // Set default settings
                 window.$enabledPaletteTaskTypes = [];
                 window.$paletteSettings = { visibleTaskTypes: ['bpmn:UserTask'] };
+                window.$visibleTaskTypes = null;
+                window.$visibleEventTypes = null;
             }
         },
         applyAutoLayout() {
             // PAL 모드에서도 엑셀→BPMN 로드 시 자동 레이아웃 적용
-            const elementRegistry = this.bpmnViewer.get('elementRegistry');
-            const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
-            const horizontal = participant[0].di.isHorizontal;
-            window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal: horizontal });
-            this.EventBus.emit('autoLayout.complete');
+            const horizontal = getLayoutOrientation(this.bpmnViewer);
+            window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal });
         },
         revertAutoLayout() {
             if (!window.BpmnAutoLayout || !window.BpmnAutoLayout.hasLayoutSnapshot()) {
@@ -1275,42 +1319,67 @@ export default {
                 this.addTestClassToElement(element, canvas);
             });
         },
-        changeOrientation() {
-            if (window.$pal && window.$mode === 'uEngine') return;
-            var self = this;
-            const palleteProvider = self.bpmnViewer.get('paletteProvider');
-            const elementRegistry = self.bpmnViewer.get('elementRegistry');
-            const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
-            participant.forEach((element) => {
-                const isCurrentlyHorizontal = element.di.isHorizontal !== false && element.width > element.height;
-                const rotateOptions = {};
-                if (isCurrentlyHorizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
-                    element.di.isHorizontal = false;
-                } else {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd, rotateOptions);
-                    element.di.isHorizontal = true;
-                }
-            });
-            const nextHorizontal = participant[0]?.di?.isHorizontal !== false;
-            palleteProvider.syncAllLaneOrientationForView?.(nextHorizontal);
-            self.syncOrientationFlagsLater(nextHorizontal);
-            const refreshLabels = () => {
-                window.BpmnAutoLayout?.adjustLabelsAfterLayout?.(self.bpmnViewer);
+        captureOrientationLayout() {
+            return {
+                restore: captureLayoutRestore(this.bpmnViewer),
+                canRestore: validateModelerSnapshot(this.bpmnViewer).length === 0
             };
-            setTimeout(() => {
-                refreshLabels();
-                requestAnimationFrame(() => requestAnimationFrame(refreshLabels));
-                setTimeout(refreshLabels, 120);
-                setTimeout(() => {
-                    refreshLabels();
-                    if (self.isViewMode) {
-                        self.scheduleFitDiagramToViewport({ padding: 24, maxZoom: 1.5 });
-                    } else {
-                        self.resetZoom();
-                    }
-                }, 300);
-            }, 0);
+        },
+        restoreOrientationLayout(layout) {
+            layout.restore();
+        },
+        async changeOrientation() {
+            var self = this;
+            if (self._isChangingOrientation) return;
+            self._isChangingOrientation = true;
+
+            try {
+                if (self._layoutTimeout) {
+                    clearTimeout(self._layoutTimeout);
+                    self._layoutTimeout = null;
+                    self.$emit('update:isAIGenerated', false);
+                }
+
+                const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                const currentHorizontal = getLayoutOrientation(self.bpmnViewer);
+                const targetHorizontal = !currentHorizontal;
+                const returningSnapshot = self._orientationLayoutSnapshot?.horizontal === targetHorizontal
+                    ? self._orientationLayoutSnapshot
+                    : null;
+
+                if (returningSnapshot && !returningSnapshot.edited && returningSnapshot.layout.canRestore !== false) {
+                    self.restoreOrientationLayout(returningSnapshot.layout);
+                    self._orientationLayoutSnapshot = null;
+                    window.isHorizontalLayout = targetHorizontal;
+                    self.resetZoom();
+                    return;
+                }
+
+                const editBaseline = getRotationEditBaseline(self.bpmnViewer);
+                const baseline = returningSnapshot?.baseline ||
+                    (editBaseline?.edited && editBaseline.horizontal === currentHorizontal ? editBaseline.nodes : null);
+                const nodeOffsets = baseline
+                    ? collectRotationOffsets(elementRegistry.getAll(), baseline, currentHorizontal)
+                    : [];
+                const snapshot = {
+                    horizontal: currentHorizontal,
+                    layout: self.captureOrientationLayout(),
+                    edited: false
+                };
+                const result = layoutModeler(self.bpmnViewer, { horizontal: targetHorizontal, nodeOffsets });
+                if (result.plan.status !== 'computed') {
+                    self.bpmnViewer.get('eventBus').fire('orientation.failed', { result });
+                    throw new Error(`Structured rotation failed: ${result.plan.status}`);
+                }
+                snapshot.baseline = captureRotationBaseline(elementRegistry.getAll(), result.input, targetHorizontal, nodeOffsets);
+                self._orientationLayoutSnapshot = snapshot;
+                window.isHorizontalLayout = targetHorizontal;
+                self.bpmnViewer.get('eventBus').fire('orientation.complete', { result });
+                self.resetZoom();
+            } finally {
+                await new Promise(resolve => setTimeout(resolve, 0));
+                self._isChangingOrientation = false;
+            }
         },
         initDefaultOrientation(orientation = null) {
             if (!this.isViewMode) return false;
@@ -1401,12 +1470,64 @@ export default {
         setDiagramEvent() {
             var self = this;
             var eventBus = this.bpmnViewer.get('eventBus');
+            let phaseSyncTimer = null;
+            let isSyncingPhaseContainers = false;
+            const isPhaseSyncRelevantElement = function (element) {
+                return element?.type === 'bpmn:Participant' || element?.type === 'phase:PhaseContainer';
+            };
+            const syncPhaseContainersNow = function () {
+                if (isSyncingPhaseContainers || !self.bpmnViewer) return;
+                const sync = window.BpmnAutoLayout?.syncPhaseContainersWithParticipants;
+                if (typeof sync !== 'function') return;
+
+                const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                const participants = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+                const horizontal = participants[0]?.di?.isHorizontal ?? self.isHorizontal ?? true;
+                self.isHorizontal = horizontal;
+                try {
+                    isSyncingPhaseContainers = true;
+                    sync(self.bpmnViewer, { horizontal, preserveThickness: true });
+                } finally {
+                    isSyncingPhaseContainers = false;
+                }
+            };
+            const schedulePhaseContainerSync = function () {
+                if (phaseSyncTimer) clearTimeout(phaseSyncTimer);
+                phaseSyncTimer = setTimeout(function () {
+                    phaseSyncTimer = null;
+                    syncPhaseContainersNow();
+                }, 0);
+            };
+            eventBus.on('commandStack.elements.move.postExecuted', 500, function () {
+                if (!self.bpmnViewer.get('atomicModeling').isExecuting()) syncPhaseContainersNow();
+            });
+            eventBus.on('commandStack.preExecute', function (evt) {
+                const atomicModeling = self.bpmnViewer.get('atomicModeling');
+                const recentUserInput = Date.now() - self._lastDiagramUserInputAt <= 1000;
+                const userTriggered =
+                    (self._lastDiagramUserInputKind === 'mouse' && (recentUserInput || self._diagramMouseDown)) ||
+                    (self._lastDiagramUserInputKind === 'keyboard' && recentUserInput);
+                if (!self._isChangingOrientation && !atomicModeling.isExecuting() && userTriggered && evt?.trigger !== 'clear') {
+                    if (self._orientationLayoutSnapshot) self._orientationLayoutSnapshot.edited = true;
+                    const editBaseline = ensureRotationEditBaseline(self.bpmnViewer);
+                    if (editBaseline) editBaseline.edited = true;
+                }
+            });
+            eventBus.on(['commandStack.shape.move.postExecuted', 'commandStack.shape.resize.postExecuted'], 500, function (evt) {
+                if (self.bpmnViewer.get('atomicModeling').isExecuting()) return;
+                if (isPhaseSyncRelevantElement(evt.context?.shape)) syncPhaseContainersNow();
+            });
+            eventBus.on('autoLayout.complete', function () {
+                self._orientationLayoutSnapshot = null;
+                if (!self.bpmnViewer.get('atomicModeling').isExecuting()) schedulePhaseContainerSync();
+            });
             // eventBus.on('import.render.start', function (e) {
             //     // self.openPanel = true;
             //     // console.log("render  complete")
             //     self.$emit('openPanel', e.element.id);
             // });
             eventBus.on('import.done', async function (evt) {
+                self._orientationLayoutSnapshot = null;
                 self.$emit('done');
 
                 // Load color rules from BPMN and store in window for renderer
@@ -1551,50 +1672,6 @@ export default {
                 setTimeout(() => safeZoom(), 50);
                 // you may hook into any of the following events
                 if (self.isViewMode) {
-                    const elementRegistry = self.bpmnViewer.get('elementRegistry');
-                    const overlays = self.bpmnViewer.get('overlays');
-
-                    const callActivities = elementRegistry.filter((element) => element.type === 'bpmn:CallActivity');
-
-                    callActivities.forEach((element) => {
-                        const businessObject = element.businessObject;
-                        if (
-                            businessObject.extensionElements &&
-                            businessObject.extensionElements.values &&
-                            businessObject.extensionElements.values.length > 0
-                        ) {
-                            const json = businessObject.extensionElements.values[0].json;
-                            if (json) {
-                                try {
-                                    const properties = JSON.parse(json);
-                                    if (properties.definitionId) {
-                                        const html = document.createElement('div');
-                                        html.className = 'call-activity-link-btn';
-                                        html.style.cssText =
-                                            'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
-                                        html.innerHTML =
-                                            '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: var(--cds-text-primary);"></i>';
-
-                                        html.addEventListener('click', function (e) {
-                                            e.stopPropagation(); // Prevent element selection
-                                            window.open(`/definitions/${properties.definitionId.replace('.bpmn', '')}`, '_blank');
-                                        });
-
-                                        overlays.add(element.id, {
-                                            position: {
-                                                top: -10,
-                                                right: -10
-                                            },
-                                            html: html
-                                        });
-                                    }
-                                } catch (err) {
-                                    console.error('Failed to parse CallActivity properties', err);
-                                }
-                            }
-                        }
-                    });
-
                     // View 모드: 더블클릭 시 CallActivity/SubProcess(definitionId 있음)면 프로세스로 이동(openDefinition), 그 외는 패널 열기
                     // Pal 모드에서는 속성 패널을 우클릭(contextmenu)으로만 연다 — 더블클릭은 연결 프로세스 이동 전용
                     trackListener('element.dblclick', function (e) {
@@ -1727,6 +1804,16 @@ export default {
 
                 trackListener('commandStack.changed', async function (evt) {
                     console.log('commandStack.changed');
+                    const atomicModeling = self.bpmnViewer.get('atomicModeling');
+                    const recentUserInput = Date.now() - self._lastDiagramUserInputAt <= 1000;
+                    const userTriggered =
+                        (self._lastDiagramUserInputKind === 'mouse' && (recentUserInput || self._diagramMouseDown)) ||
+                        (self._lastDiagramUserInputKind === 'keyboard' && recentUserInput);
+                    if (!self._isChangingOrientation && !atomicModeling.isExecuting() && userTriggered && evt?.trigger !== 'clear') {
+                        if (self._orientationLayoutSnapshot) self._orientationLayoutSnapshot.edited = true;
+                        const editBaseline = getRotationEditBaseline(self.bpmnViewer);
+                        if (editBaseline) editBaseline.edited = true;
+                    }
                     // PI Flag 표시가 켜져 있으면 깃발/묶음 박스 갱신 (추가·삭제·이동 반영)
                     self.schedulePiFlagRefresh();
                     if (self.bpmn) {
@@ -1743,6 +1830,7 @@ export default {
                 // Phase 4-2: Business ID auto-assignment on task creation
                 trackListener('shape.added', function (event) {
                     const element = event.element;
+                    if (element?._caDrilldown) return;
                     if (!element || !element.type || !element.type.includes('Task')) return;
                     // Only assign if no businessId already
                     const extEls = element.businessObject?.extensionElements;
@@ -1904,6 +1992,33 @@ export default {
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
+            const moddleExtensions = {
+                uengine: uEngineModdleDescriptor,
+                zeebe: zeebeModdleDescriptor,
+                phase: phaseModdle,
+                ...self.options?.moddleExtensions
+            };
+            const drilldownModules = [customDrilldownModule, {
+                callActivityDrilldownConfig: ['value', {
+                    enabled: self.enableLinkedNavigation,
+                    isViewMode: self.isViewMode,
+                    rootLabel: self.rootProcessName,
+                    moddleExtensions,
+                    resolveXml: async (id) => {
+                        const definitionId = (await resolveProcessRouteId(id)) || id;
+                        const xml = await resolveLinkedProcessXml(backend, definitionId, self.diagramMode);
+                        return xml ? uengineJsonElementToAttr(xml) : null;
+                    },
+                    onOpenInNew: (id, name) => openLinkedProcessInNewTab(self.$router, {
+                        id, name, mode: PROCESS_HIERARCHY_MODE.EDIT
+                    }),
+                    onAfterEnter: () => self.resetZoom(),
+                    onError: (error) => {
+                        console.warn('CallActivity 펼쳐보기 실패', error);
+                        self.$emit('error', error);
+                    }
+                }]
+            }];
             if (self.isViewMode) {
                 var Blocker = function (eventBus, elementRegistry, graphicsFactory) {
                     const ignoreEvent = (event) => {
@@ -1994,6 +2109,8 @@ export default {
                     },
                     self.options
                 );
+                viewerOptions.moddleExtensions = moddleExtensions;
+                viewerOptions.additionalModules = [...viewerOptions.additionalModules, ...drilldownModules];
                 self.bpmnViewer = markRaw(new BpmnModeler(viewerOptions));
             } else {
                 var _options = Object.assign({
@@ -2018,19 +2135,49 @@ export default {
                         customContextPadModule,
                         customReplaceElement,
                         customPopupMenu,
-                        // skt 마이그레이션 요소 변경 비활성화
-                        // customReplaceModule,
+                        // 변경(replace) 메뉴를 관리자 'Task/Event 종류 설정'과 동기화 — PAL 모드에만 적용
+                        ...(window.$pal ? [customReplaceModule] : []),
                         ZoomScroll,
                         MoveCanvas,
                         minimapModule
                     ]
                 });
+                _options.moddleExtensions = moddleExtensions;
+                _options.additionalModules = [..._options.additionalModules, ...drilldownModules];
                 self.bpmnViewer = markRaw(new BpmnModeler(_options));
             }
+
+            self.setupMinimapPreference();
 
             if (self.registerToStore) {
                 self.bpmnStore = useBpmnStore();
                 self.bpmnStore.setModeler(self.bpmnViewer);
+            }
+        },
+        setupMinimapPreference() {
+            if (!this.bpmnViewer) return;
+
+            let shouldOpen = true;
+            try {
+                const storedValue = window.localStorage.getItem(MINIMAP_OPEN_STORAGE_KEY);
+                shouldOpen = storedValue === null ? true : storedValue === 'true';
+            } catch (_) {
+                // 저장소 접근이 제한된 환경에서는 기존 기본값(열림)을 사용한다.
+            }
+
+            try {
+                const minimap = this.bpmnViewer.get('minimap');
+                const eventBus = this.bpmnViewer.get('eventBus');
+                minimap.toggle(shouldOpen);
+                eventBus.on('minimap.toggle', ({ open }) => {
+                    try {
+                        window.localStorage.setItem(MINIMAP_OPEN_STORAGE_KEY, String(open));
+                    } catch (_) {
+                        // 저장소 접근이 제한된 환경에서는 현재 화면의 토글만 유지한다.
+                    }
+                });
+            } catch (_) {
+                // minimap 모듈을 사용할 수 없는 임베드 환경은 기존 동작을 유지한다.
             }
         },
         extendUEngineProperties(businessObject) {
@@ -2271,7 +2418,9 @@ export default {
                 /* ignore */
             }
 
-            var allPools = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+            var allPools = elementRegistry.filter((element) =>
+                element.type === 'bpmn:Participant' && canvas.findRoot(element) === canvas.getRootElement()
+            );
 
             try {
                 zoomScroll.reset();

@@ -41,7 +41,7 @@
                                     </span>
                                 </template>
                                 <template
-                                    v-if="information.name && !isGeneratingName && isNew && mode === 'ProcessGPT'"
+                                    v-if="aiDesignerEnabled && information.name && !isGeneratingName && isNew && mode === 'ProcessGPT'"
                                     v-slot:append-inner
                                 >
                                     <v-tooltip location="top">
@@ -76,7 +76,7 @@
                                     </span>
                                 </template>
                                 <template
-                                    v-if="information.proc_def_id && !isGeneratingId && isNew && mode === 'ProcessGPT'"
+                                    v-if="aiDesignerEnabled && information.proc_def_id && !isGeneratingId && isNew && mode === 'ProcessGPT'"
                                     v-slot:append-inner
                                 >
                                     <v-tooltip location="top">
@@ -241,6 +241,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator';
 import BpmnDiffGenerator from '@/components/ai/BpmnDiffGenerator.js';
+import { canUseAiFeatures } from '@/utils/aiFeatureGate';
 import { describeBpmnChanges } from '@/composables/usePrChanges';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import { useBpmnStore } from '@/stores/bpmn';
@@ -313,6 +314,9 @@ export default {
         prError: ''
     }),
     computed: {
+        aiDesignerEnabled() {
+            return canUseAiFeatures('DESIGNER');
+        },
         idRules() {
             const isUEngine = this.mode === 'uEngine';
             if (isUEngine) {
@@ -520,6 +524,10 @@ export default {
          */
         async generateIdSuggestions() {
             const me = this;
+            if (!me.aiDesignerEnabled) {
+                me.isGeneratingId = false;
+                return;
+            }
             if (!me.information.name || !me.information.name.trim()) {
                 return;
             }
@@ -901,6 +909,7 @@ export default {
          * - ProcessGPT 모드에서만 사용
          */
         async generateVersionDiffDescription(previousXml, currentXml) {
+            if (!this.aiDesignerEnabled) return;
             if (this.mode !== 'ProcessGPT') return;
             if (!currentXml || typeof currentXml !== 'string') return;
 

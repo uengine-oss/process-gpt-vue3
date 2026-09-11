@@ -4,10 +4,10 @@
         <div class="page-header">
             <div class="page-header-left">
                 <div class="d-flex align-center ga-2">
-                    <h1 class="page-title">프로세스 리스트</h1>
+                    <h1 class="page-title">프로세스 목록</h1>
                     <v-chip v-if="!loading && totalCount > 0" size="small" variant="tonal" color="grey"> 총 {{ totalCount }}건 </v-chip>
                 </div>
-                <p class="page-subtitle">전체 프로세스와 프로세스 모듈을 조회하고 관리합니다.</p>
+                <p class="page-subtitle">전체 프로세스와 프로세스 모듈·템플릿을 조회하고 관리합니다.</p>
             </div>
             <div class="page-header-right">
                 <v-btn variant="outlined" size="small" prepend-icon="mdi-refresh" :disabled="loading" @click="loadData"> 새로고침 </v-btn>
@@ -20,7 +20,7 @@
                 <v-col cols="12" sm="auto" style="min-width: 320px">
                     <v-text-field
                         v-model="searchInput"
-                        placeholder="프로세스명, ID, PI/현업 담당자"
+                        placeholder="프로세스명, ID, 담당자 검색"
                         prepend-inner-icon="mdi-magnify"
                         density="compact"
                         variant="outlined"
@@ -45,6 +45,15 @@
                         :label="`모듈 (${moduleCount})`"
                         density="compact"
                         color="secondary"
+                        hide-details
+                    />
+                </v-col>
+                <v-col cols="auto">
+                    <v-checkbox
+                        v-model="showTemplates"
+                        :label="`템플릿 (${templateCount})`"
+                        density="compact"
+                        color="warning"
                         hide-details
                     />
                 </v-col>
@@ -77,8 +86,8 @@
                 class="sk-data-table"
             >
                 <template v-slot:[`item.kind`]="{ item }">
-                    <v-chip size="x-small" variant="tonal" :color="item.kind === 'module' ? 'secondary' : 'primary'">
-                        {{ item.kind === 'module' ? '모듈' : '프로세스' }}
+                    <v-chip size="x-small" variant="tonal" :color="KIND_META[item.kind].color">
+                        {{ KIND_META[item.kind].label }}
                     </v-chip>
                 </template>
                 <template v-slot:[`item.id`]="{ item }">
@@ -102,6 +111,16 @@
                 </template>
                 <template v-slot:[`item.actions`]="{ item }">
                     <ProcessHierarchyOpenButton :id="item.id" :name="item.name" />
+                    <v-btn
+                        v-if="item.kind !== 'module'"
+                        :icon="item.kind === 'template' ? 'mdi-file-star' : 'mdi-file-star-outline'"
+                        size="x-small"
+                        variant="text"
+                        :color="item.kind === 'template' ? 'warning' : undefined"
+                        :title="item.kind === 'template' ? '템플릿 해제' : '템플릿 지정'"
+                        :loading="templateTogglingId === item.id"
+                        @click="toggleTemplate(item)"
+                    />
                     <v-btn
                         icon="mdi-trash-can-outline"
                         size="x-small"
@@ -152,10 +171,16 @@ import { navigateToProcessHierarchy, PROCESS_HIERARCHY_ENTRY } from '@/views/pro
 import ProcessHierarchyOpenButton from '@/views/process-hierarchy/ProcessHierarchyOpenButton.vue';
 import UserIdentityText from '@/components/ui/common/UserIdentityText.vue';
 import { formatIdentityName } from '@/utils/userIdentity';
-import { isCallActivitySubModule } from '@/utils/processStages';
+import { isCallActivitySubModule, isTemplateDefinition } from '@/utils/processStages';
 import { formatDateTimeKST } from '@/utils/datetime';
 
-type ProcessKind = 'process' | 'module';
+type ProcessKind = 'process' | 'module' | 'template';
+
+const KIND_META: Record<ProcessKind, { label: string; color: string }> = {
+    process: { label: '프로세스', color: 'primary' },
+    module: { label: '모듈', color: 'secondary' },
+    template: { label: '템플릿', color: 'warning' }
+};
 
 interface CallActivityItem {
     id: string;
@@ -210,6 +235,8 @@ export default defineComponent({
         const searchQuery = ref('');
         const showProcesses = ref(true);
         const showModules = ref(true);
+        const showTemplates = ref(true);
+        const templateTogglingId = ref<string | null>(null);
         const identityDisplayMap = ref<Record<string, string>>({});
 
         const deleteDialog = ref<{ visible: boolean; target: CallActivityItem | null }>({
@@ -222,14 +249,15 @@ export default defineComponent({
             { title: 'ID', key: 'id', align: 'start' as const, width: 220 },
             { title: '프로세스명', key: 'name', align: 'start' as const, width: 240 },
             { title: '설명', key: 'description', align: 'start' as const, width: 300 },
-            { title: 'PI팀담당자', key: 'pi_owner_name', align: 'start' as const, width: 160 },
+            { title: '프로세스 담당자', key: 'pi_owner_name', align: 'start' as const, width: 160 },
             { title: '현업담당자', key: 'field_owner_names', align: 'start' as const, width: 220 },
             { title: '최종저장', key: 'saved_at', align: 'start' as const, width: 180 },
-            { title: '', key: 'actions', align: 'end' as const, sortable: false, width: 120 }
+            { title: '', key: 'actions', align: 'end' as const, sortable: false, width: 150 }
         ]);
 
         const processCount = computed(() => items.value.filter((item) => item.kind === 'process').length);
         const moduleCount = computed(() => items.value.filter((item) => item.kind === 'module').length);
+        const templateCount = computed(() => items.value.filter((item) => item.kind === 'template').length);
 
         // 정렬 — 셀렉트와 테이블 컬럼 클릭 양쪽에서 sortBy 를 공유
         const sortBy = ref<{ key: string; order: 'asc' | 'desc' }[]>([{ key: 'saved_at', order: 'desc' }]);
@@ -259,6 +287,7 @@ export default defineComponent({
             return items.value.filter((item) => {
                 if (item.kind === 'process' && !showProcesses.value) return false;
                 if (item.kind === 'module' && !showModules.value) return false;
+                if (item.kind === 'template' && !showTemplates.value) return false;
                 if (!q) return true;
                 return (
                     item.name.toLowerCase().includes(q) ||
@@ -355,7 +384,7 @@ export default defineComponent({
                     return {
                         id: d.id,
                         name: d.name || d.id,
-                        kind: (isCallActivitySubModule(d) ? 'module' : 'process') as ProcessKind,
+                        kind: (isTemplateDefinition(d) ? 'template' : isCallActivitySubModule(d) ? 'module' : 'process') as ProcessKind,
                         description: normalizeDescription(d),
                         pi_owner: piOwner,
                         field_owners: fieldOwners,
@@ -400,6 +429,43 @@ export default defineComponent({
             );
         }
 
+        // 템플릿 지정/해제 — 마커는 definition.type('template') 이 정본 (processStages.isTemplateDefinition 규약).
+        // 모듈(call-activity-sub)은 마커 충돌을 피하기 위해 대상에서 제외한다(버튼 미노출).
+        async function toggleTemplate(item: CallActivityItem) {
+            if (!supabase || item.kind === 'module' || templateTogglingId.value) return;
+            templateTogglingId.value = item.id;
+            try {
+                const { data, error } = await supabase
+                    .from('proc_def')
+                    .select('definition')
+                    .eq('id', item.id)
+                    .eq('tenant_id', tenantId)
+                    .single();
+                if (error) throw error;
+
+                const definition = { ...((data?.definition as Record<string, unknown>) || {}) };
+                const makeTemplate = item.kind !== 'template';
+                if (makeTemplate) {
+                    definition.type = 'template';
+                } else if (definition.type === 'template') {
+                    delete definition.type;
+                }
+
+                const { error: updateError } = await supabase
+                    .from('proc_def')
+                    .update({ definition })
+                    .eq('id', item.id)
+                    .eq('tenant_id', tenantId);
+                if (updateError) throw updateError;
+
+                item.kind = makeTemplate ? 'template' : 'process';
+            } catch (e) {
+                console.error('Failed to toggle template marker:', e);
+            } finally {
+                templateTogglingId.value = null;
+            }
+        }
+
         function openDeleteDialog(item: CallActivityItem) {
             deleteDialog.value = { visible: true, target: item };
         }
@@ -438,8 +504,12 @@ export default defineComponent({
             searchQuery,
             showProcesses,
             showModules,
+            showTemplates,
+            templateTogglingId,
             processCount,
             moduleCount,
+            templateCount,
+            KIND_META,
             sortBy,
             sortOption,
             sortOptions,
@@ -452,6 +522,7 @@ export default defineComponent({
             resetSearch,
             loadData,
             navigateToProcess,
+            toggleTemplate,
             openDeleteDialog,
             confirmDelete
         };

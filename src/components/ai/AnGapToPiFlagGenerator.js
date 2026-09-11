@@ -138,6 +138,11 @@ export async function analyzeGapsToPiFlags(backend, params = {}) {
     const elementsById = new Map(elements.map((e) => [String(e.id), e]));
     const message = buildPrompt({ processName, elements, existingFlags });
     const response = await backend.qdrantChat({ message, xml: asIsXml || undefined, sessionId });
+    // BackendFactory 의 null-skip 프록시는 미구현 메서드 호출 시 null 을 반환한다
+    // (PalUengineBackend 등 qdrantChat 미지원 모드) — 해석 실패로 오인하지 않도록 구분한다
+    if (response === null || response === undefined) {
+        throw new Error('현재 백엔드 모드에서는 AI Gap 진단(qdrantChat)을 사용할 수 없습니다.');
+    }
     const text = readAnswerText(response);
     const parsed = parseJsonLoose(text);
     const arr = pickArray(parsed)

@@ -20,7 +20,7 @@
                     :disabled="isViewMode"
                     style="width: 100%"
                 ></v-textarea>
-                <GenerateScriptPanel v-if="isBuiltinPropVisible('generate_script')" v-model="copyUengineProperties.script" :language="languageLabel" />
+                <GenerateScriptPanel v-if="aiDesignerEnabled && isBuiltinPropVisible('generate_script')" v-model="copyUengineProperties.script" :language="languageLabel" />
                 <DetailComponent
                     :title="$t('ScriptTaskPanel.scriptDescriptionTitle')"
                     :detailUrl="'https://bpm-intro.uengine.io/api-customizing/script-task/'"

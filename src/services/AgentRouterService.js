@@ -14,6 +14,7 @@ const normalizeBaseUrl = (value, fallback) => {
 const AGENT_ROUTER_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_AGENT_ROUTER_BASE_URL, '/agent-router');
 
 import { buildAgentHeaders } from './agentRequestHeaders';
+import { assertAiEnabled } from '@/utils/aiFeatureGate';
 
 class AgentRouterService {
     constructor() {
@@ -26,6 +27,7 @@ class AgentRouterService {
      * @returns {Promise<Object>} routing result JSON
      */
     async routeAgents(payload) {
+        assertAiEnabled();
         const response = await fetch(`${this.baseUrl}/route`, {
             method: 'POST',
             headers: buildAgentHeaders(payload || {}),
@@ -49,6 +51,7 @@ class AgentRouterService {
     }
 
     async sendMessageStream(agentId, params, callbacks = {}, options = {}) {
+        assertAiEnabled();
         const { onToken, onToolStart, onToolEnd, onPlanTools, onPlanSkills, onPlanTodos, onDone, onError, onMetadata, onAbort } = callbacks;
 
         try {

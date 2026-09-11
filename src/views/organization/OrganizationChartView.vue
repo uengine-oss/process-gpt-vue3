@@ -28,202 +28,224 @@
             </div>
         </div>
 
-        <!-- ───────────── 툴바 ───────────── -->
-        <header class="org-toolbar">
-            <div class="org-toolbar__search">
-                <v-text-field
-                    v-model="searchQuery"
-                    placeholder="부서 · 이름 · 이메일 검색"
-                    variant="solo-filled"
-                    flat
-                    density="compact"
-                    hide-details
-                    rounded="pill"
-                    prepend-inner-icon="mdi-magnify"
-                    clearable
-                />
-                <span v-if="searchQuery && matchedIds.size" class="org-toolbar__hits">{{ matchedIds.size }}건</span>
-            </div>
+        <v-tabs v-if="canManageRoles" v-model="activeTab" color="primary" class="org-tabs" height="48">
+            <v-tab id="organization-tab" value="organization" class="text-none" aria-controls="organization-panel">조직도</v-tab>
+            <v-tab id="approvals-tab" value="approvals" class="text-none" aria-controls="approvals-panel">
+                가입 및 권한 승인
+                <v-chip v-if="membershipRequests.counts.total" size="x-small" color="primary" class="ml-2">
+                    {{ membershipRequests.counts.total }}
+                </v-chip>
+            </v-tab>
+        </v-tabs>
 
-            <div class="org-toolbar__actions">
-                <v-btn
-                    v-if="editable"
-                    size="small"
-                    color="primary"
-                    variant="flat"
-                    class="text-none"
-                    prepend-icon="mdi-plus"
-                    @click="openAddTeam(root)"
-                >
-                    부서 추가
-                </v-btn>
+        <section id="organization-panel" v-show="activeTab === 'organization'" class="org-chart-tab" role="tabpanel" aria-label="조직도">
+            <!-- ───────────── 툴바 ───────────── -->
+            <header class="org-toolbar">
+                <div class="org-toolbar__search">
+                    <v-text-field
+                        v-model="searchQuery"
+                        placeholder="부서 · 이름 · 이메일 검색"
+                        variant="solo-filled"
+                        flat
+                        density="compact"
+                        hide-details
+                        rounded="pill"
+                        prepend-inner-icon="mdi-magnify"
+                        clearable
+                    />
+                    <span v-if="searchQuery && matchedIds.size" class="org-toolbar__hits">{{ matchedIds.size }}건</span>
+                </div>
 
-                <v-btn
-                    v-if="canManageRoles"
-                    size="small"
-                    variant="tonal"
-                    class="text-none"
-                    prepend-icon="mdi-account-clock-outline"
-                    @click="openPreRegister"
-                >
-                    구성원 사전등록
-                </v-btn>
+                <div class="org-toolbar__actions">
+                    <v-btn
+                        v-if="editable"
+                        size="small"
+                        color="primary"
+                        variant="flat"
+                        class="text-none"
+                        prepend-icon="mdi-plus"
+                        @click="openAddTeam(root)"
+                    >
+                        부서 추가
+                    </v-btn>
 
-                <v-divider vertical class="mx-1" />
+                    <v-btn
+                        v-if="canManageRoles"
+                        size="small"
+                        variant="tonal"
+                        class="text-none"
+                        prepend-icon="mdi-account-clock-outline"
+                        @click="openPreRegister"
+                    >
+                        구성원 사전등록
+                    </v-btn>
 
-                <v-btn icon size="small" variant="text" title="모두 펼치기" @click="expandAll">
-                    <v-icon size="19">mdi-arrow-expand-vertical</v-icon>
-                </v-btn>
-                <v-btn icon size="small" variant="text" title="모두 접기" @click="collapseAll">
-                    <v-icon size="19">mdi-arrow-collapse-vertical</v-icon>
-                </v-btn>
-                <v-btn
-                    icon
-                    size="small"
-                    variant="text"
-                    :title="showMembers ? '구성원 숨기기' : '구성원 표시'"
-                    :color="showMembers ? 'primary' : undefined"
-                    @click="showMembers = !showMembers"
-                >
-                    <v-icon size="19">mdi-account-multiple-outline</v-icon>
-                </v-btn>
+                    <v-divider vertical class="mx-1" />
 
-                <v-divider vertical class="mx-1" />
+                    <v-btn icon size="small" variant="text" title="모두 펼치기" @click="expandAll">
+                        <v-icon size="19">mdi-arrow-expand-vertical</v-icon>
+                    </v-btn>
+                    <v-btn icon size="small" variant="text" title="모두 접기" @click="collapseAll">
+                        <v-icon size="19">mdi-arrow-collapse-vertical</v-icon>
+                    </v-btn>
+                    <v-btn
+                        icon
+                        size="small"
+                        variant="text"
+                        :title="showMembers ? '구성원 숨기기' : '구성원 표시'"
+                        :color="showMembers ? 'primary' : undefined"
+                        @click="showMembers = !showMembers"
+                    >
+                        <v-icon size="19">mdi-account-multiple-outline</v-icon>
+                    </v-btn>
 
-                <v-btn icon size="small" variant="text" title="축소" @click="zoomBy(-0.1)">
-                    <v-icon size="19">mdi-magnify-minus-outline</v-icon>
-                </v-btn>
-                <button class="org-zoom" title="100%로 초기화" @click="zoom = 1">{{ Math.round(zoom * 100) }}%</button>
-                <v-btn icon size="small" variant="text" title="확대" @click="zoomBy(0.1)">
-                    <v-icon size="19">mdi-magnify-plus-outline</v-icon>
-                </v-btn>
-                <v-btn icon size="small" variant="text" title="화면에 맞추기" @click="fitToScreen">
-                    <v-icon size="19">mdi-fit-to-screen-outline</v-icon>
-                </v-btn>
+                    <v-divider vertical class="mx-1" />
 
-                <v-divider vertical class="mx-1" />
+                    <v-btn icon size="small" variant="text" title="축소" @click="zoomBy(-0.1)">
+                        <v-icon size="19">mdi-magnify-minus-outline</v-icon>
+                    </v-btn>
+                    <button class="org-zoom" title="100%로 초기화" @click="zoom = 1">{{ Math.round(zoom * 100) }}%</button>
+                    <v-btn icon size="small" variant="text" title="확대" @click="zoomBy(0.1)">
+                        <v-icon size="19">mdi-magnify-plus-outline</v-icon>
+                    </v-btn>
+                    <v-btn icon size="small" variant="text" title="화면에 맞추기" @click="fitToScreen">
+                        <v-icon size="19">mdi-fit-to-screen-outline</v-icon>
+                    </v-btn>
 
-                <v-btn
-                    icon
-                    size="small"
-                    variant="text"
-                    :title="panelOpen ? '패널 닫기' : '패널 열기'"
-                    :color="panelOpen ? 'primary' : undefined"
-                    @click="panelOpen = !panelOpen"
-                >
-                    <v-icon size="19">mdi-dock-right</v-icon>
-                </v-btn>
-            </div>
-        </header>
+                    <v-divider vertical class="mx-1" />
 
-        <!-- ───────────── 본문 ───────────── -->
-        <div class="org-body">
-            <div class="org-main">
-                <section
-                    ref="canvasRef"
-                    class="org-canvas"
-                    :class="{ 'org-canvas--panning': panning }"
-                    @mousedown="startPan"
-                    @wheel="onWheel"
-                    @click="clearSelection"
-                    @dragover.prevent
-                    @drop.prevent="onCanvasDrop"
-                >
-                    <div v-if="loading" class="org-canvas__state">
-                        <v-progress-circular indeterminate size="28" width="3" color="primary" />
-                        <p>조직도를 불러오는 중…</p>
-                    </div>
+                    <v-btn
+                        icon
+                        size="small"
+                        variant="text"
+                        :title="panelOpen ? '패널 닫기' : '패널 열기'"
+                        :color="panelOpen ? 'primary' : undefined"
+                        @click="panelOpen = !panelOpen"
+                    >
+                        <v-icon size="19">mdi-dock-right</v-icon>
+                    </v-btn>
+                </div>
+            </header>
 
-                    <div v-else-if="!hasTeams" class="org-canvas__state">
-                        <v-icon size="42" color="primary">mdi-sitemap-outline</v-icon>
-                        <p>아직 등록된 부서가 없습니다.</p>
-                        <v-btn
-                            v-if="editable"
-                            color="primary"
-                            variant="flat"
-                            class="text-none"
-                            prepend-icon="mdi-plus"
-                            @click="openAddTeam(root)"
-                        >
-                            첫 부서 만들기
-                        </v-btn>
-                    </div>
+            <!-- ───────────── 본문 ───────────── -->
+            <div class="org-body">
+                <div class="org-main">
+                    <section
+                        ref="canvasRef"
+                        class="org-canvas"
+                        :class="{ 'org-canvas--panning': panning }"
+                        @mousedown="startPan"
+                        @wheel="onWheel"
+                        @click="clearSelection"
+                        @dragover.prevent
+                        @drop.prevent="onCanvasDrop"
+                    >
+                        <div v-if="loading" class="org-canvas__state">
+                            <v-progress-circular indeterminate size="28" width="3" color="primary" />
+                            <p>조직도를 불러오는 중…</p>
+                        </div>
 
-                    <div v-else class="org-stage" :style="{ transform: `scale(${zoom})` }">
-                        <ul class="org-tree">
-                            <OrgTreeNode
-                                :node="root"
-                                :depth="0"
-                                :selected-id="selectedId"
-                                :expanded-ids="expandedIds"
-                                :matched-ids="matchedIds"
-                                :searching="isSearching"
-                                :show-members="showMembers"
-                                :editable="editable"
-                                :drop-target-id="dropTargetId"
-                                @action="handleNodeAction"
-                            />
-                        </ul>
-                    </div>
-                </section>
+                        <div v-else-if="!hasTeams" class="org-canvas__state">
+                            <v-icon size="42" color="primary">mdi-sitemap-outline</v-icon>
+                            <p>아직 등록된 부서가 없습니다.</p>
+                            <v-btn
+                                v-if="editable"
+                                color="primary"
+                                variant="flat"
+                                class="text-none"
+                                prepend-icon="mdi-plus"
+                                @click="openAddTeam(root)"
+                            >
+                                첫 부서 만들기
+                            </v-btn>
+                        </div>
 
-                <!-- 미배치 인원 (캔버스 아래 고정 — 조직도를 가리지 않는다) -->
-                <div v-if="!loading && unassignedUsers.length" class="org-unassigned" :class="{ 'org-unassigned--open': unassignedOpen }">
-                    <button class="org-unassigned__head" @click.stop="unassignedOpen = !unassignedOpen">
-                        <v-icon size="16" color="warning">mdi-account-question-outline</v-icon>
-                        <span>미배치 인원 {{ unassignedUsers.length }}명</span>
-                        <v-icon size="16">{{ unassignedOpen ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
-                    </button>
-                    <div v-if="unassignedOpen" class="org-unassigned__list">
-                        <div
-                            v-for="user in unassignedUsers"
-                            :key="user.id"
-                            class="org-unassigned__chip"
-                            :draggable="editable"
-                            :title="editable ? '부서 카드로 끌어다 놓으면 배치됩니다' : user.email"
-                            @dragstart="onUnassignedDragStart($event, user)"
-                            @dragend="resetDrag"
-                        >
-                            <v-avatar size="18">
-                                <v-img v-if="user.profile && user.profile !== '/images/defaultUser.png'" :src="user.profile" cover />
-                                <v-icon v-else size="12">{{ user.is_agent ? 'mdi-robot-outline' : 'mdi-account' }}</v-icon>
-                            </v-avatar>
-                            <span>{{ user.username || user.email || user.id }}</span>
+                        <div v-else class="org-stage" :style="{ transform: `scale(${zoom})` }">
+                            <ul class="org-tree">
+                                <OrgTreeNode
+                                    :node="root"
+                                    :depth="0"
+                                    :selected-id="selectedId"
+                                    :expanded-ids="expandedIds"
+                                    :matched-ids="matchedIds"
+                                    :searching="isSearching"
+                                    :show-members="showMembers"
+                                    :editable="editable"
+                                    :drop-target-id="dropTargetId"
+                                    @action="handleNodeAction"
+                                />
+                            </ul>
+                        </div>
+                    </section>
+
+                    <!-- 미배치 인원 (캔버스 아래 고정 — 조직도를 가리지 않는다) -->
+                    <div v-if="!loading && unassignedUsers.length" class="org-unassigned" :class="{ 'org-unassigned--open': unassignedOpen }">
+                        <button class="org-unassigned__head" @click.stop="unassignedOpen = !unassignedOpen">
+                            <v-icon size="16" color="warning">mdi-account-question-outline</v-icon>
+                            <span>미배치 인원 {{ unassignedUsers.length }}명</span>
+                            <v-icon size="16">{{ unassignedOpen ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
+                        </button>
+                        <div v-if="unassignedOpen" class="org-unassigned__list">
+                            <div
+                                v-for="user in unassignedUsers"
+                                :key="user.id"
+                                class="org-unassigned__chip"
+                                :draggable="editable"
+                                :title="editable ? '부서 카드로 끌어다 놓으면 배치됩니다' : user.email"
+                                @dragstart="onUnassignedDragStart($event, user)"
+                                @dragend="resetDrag"
+                            >
+                                <v-avatar size="18">
+                                    <v-img v-if="user.profile && user.profile !== '/images/defaultUser.png'" :src="user.profile" cover />
+                                    <v-icon v-else size="12">{{ user.is_agent ? 'mdi-robot-outline' : 'mdi-account' }}</v-icon>
+                                </v-avatar>
+                                <span>{{ user.username || user.email || user.id }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <transition name="org-panel-slide">
-                <OrgDetailPanel
-                    v-if="panelOpen"
-                    ref="panelRef"
-                    class="org-body__panel"
-                    :root="root"
-                    :team="selectedTeam"
-                    :selected-id="selectedId"
-                    :users="users"
-                    :editable="editable"
-                    :can-manage-roles="canManageRoles"
-                    :current-user-id="currentUserId"
-                    @update-team="onUpdateTeam"
-                    @add-team="openAddTeam"
-                    @remove-team="confirmRemoveTeam"
-                    @move-team="onMoveTeam"
-                    @add-members="onAddMembers"
-                    @remove-member="onRemoveMember"
-                    @move-member="onMoveMember"
-                    @set-leader="onSetLeader"
-                    @update-role="onUpdateRole"
-                    @update-roles="onUpdateRoles"
-                    @select-member="onSelectMemberFromPanel"
-                    @create-agent="openAgentDialog"
-                    @show-agent="openAgentDetail"
-                    @edit-agent="(member) => openAgentEdit(member, 'edit-agent')"
-                    @delete-agent="(member) => openAgentEdit(member, 'delete')"
-                />
-            </transition>
-        </div>
+                <transition name="org-panel-slide">
+                    <OrgDetailPanel
+                        v-if="panelOpen"
+                        ref="panelRef"
+                        class="org-body__panel"
+                        :root="root"
+                        :team="selectedTeam"
+                        :selected-id="selectedId"
+                        :users="users"
+                        :editable="editable"
+                        :can-manage-roles="canManageRoles"
+                        :current-user-id="currentUserId"
+                        @update-team="onUpdateTeam"
+                        @add-team="openAddTeam"
+                        @remove-team="confirmRemoveTeam"
+                        @move-team="onMoveTeam"
+                        @add-members="onAddMembers"
+                        @remove-member="onRemoveMember"
+                        @move-member="onMoveMember"
+                        @set-leader="onSetLeader"
+                        @update-role="onUpdateRole"
+                        @update-roles="onUpdateRoles"
+                        @select-member="onSelectMemberFromPanel"
+                        @create-agent="openAgentDialog"
+                        @show-agent="openAgentDetail"
+                        @edit-agent="(member) => openAgentEdit(member, 'edit-agent')"
+                        @delete-agent="(member) => openAgentEdit(member, 'delete')"
+                    />
+                </transition>
+            </div>
+        </section>
+
+        <section
+            v-if="canManageRoles && activeTab === 'approvals'"
+            id="approvals-panel"
+            class="org-approvals-tab"
+            role="tabpanel"
+            aria-labelledby="approvals-tab"
+        >
+            <MembershipApprovalPanel @reviewed="onMembershipReviewed" />
+        </section>
 
         <!-- ───────────── 부서 추가 ───────────── -->
         <v-dialog v-model="addTeamDialog" max-width="420">
@@ -362,12 +384,16 @@ export default { name: 'OrganizationChartView' };
 
 <script setup>
 import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import BackendFactory from '@/components/api/BackendFactory';
 import AgentBadgesDiagram from '@/components/ui/AgentBadgesDiagram.vue';
 import AgentCreateDialog from '@/components/ui/AgentCreateDialog.vue';
 import OrganizationEditDialog from '@/components/ui/OrganizationEditDialog.vue';
 import OrgDetailPanel from './OrgDetailPanel.vue';
 import OrgTreeNode from './OrgTreeNode.vue';
+import MembershipApprovalPanel from './MembershipApprovalPanel.vue';
+import { useMembershipRequestsStore } from '@/stores/membershipRequests';
+import { getResolvedRole, getIsAdminClaim } from '@/utils/authClaims';
 import { hasRoleAtLeast, isAdminRole, ROLE_HIERARCHY, ROLE_META } from '@/utils/roles';
 import {
     ROOT_ID,
@@ -393,6 +419,9 @@ import {
 } from './orgChartModel';
 
 const backend = BackendFactory.createBackend();
+const membershipRequests = useMembershipRequestsStore();
+const route = useRoute();
+const activeTab = ref('organization');
 const instance = getCurrentInstance();
 const eventBus = instance?.appContext.config.globalProperties.EventBus;
 
@@ -444,13 +473,21 @@ const isMobile = ref(window.innerWidth <= 768);
 /* ── 권한 ───────────────────────────────────────────── */
 
 const currentUserId = computed(() => localStorage.getItem('uid') || '');
-const currentRole = computed(() => localStorage.getItem('role') || '');
-const isAdminFlag = computed(() => localStorage.getItem('isAdmin') === 'true');
+const currentRole = computed(() => getResolvedRole());
+const isAdminFlag = computed(() => getIsAdminClaim());
 
 /** 조직 구조(부서·배치) 편집 — owner 이상 */
 const editable = computed(() => isAdminRole(currentRole.value) || hasRoleAtLeast(currentRole.value, 'owner') || isAdminFlag.value);
 /** 사용자 역할 변경 — admin 이상 (ManageAccessTab 과 동일 기준) */
 const canManageRoles = computed(() => isAdminRole(currentRole.value) || hasRoleAtLeast(currentRole.value, 'admin') || isAdminFlag.value);
+
+watch(
+    [() => route.query.approvals, canManageRoles],
+    ([approvals, canManage]) => {
+        activeTab.value = canManage && approvals === '1' ? 'approvals' : 'organization';
+    },
+    { immediate: true }
+);
 
 /* ── 파생 ───────────────────────────────────────────── */
 
@@ -525,12 +562,21 @@ async function loadUsers() {
             sort: 'asc',
             match: { tenant_id: window.$tenantName }
         });
-        registeredUsers.value = (list || []).filter((user) => user && user.id && user.is_draft !== true);
+        registeredUsers.value = (list || []).filter((user) => user && user.id && user.is_draft !== true && (!user.membership_status || user.membership_status === 'approved'));
     } catch (error) {
         console.error('[OrganizationChart] 사용자 목록 로드 실패:', error);
         registeredUsers.value = [];
     }
     mergeUsers();
+}
+
+async function onMembershipReviewed() {
+    await loadUsers();
+    const byId = new Map(users.value.map(user => [user.id, user]));
+    walk(root.value, node => {
+        const user = byId.get(node.id);
+        if (user && node.data) node.data.role = user.role;
+    });
 }
 
 function mergeUsers() {
@@ -1257,6 +1303,23 @@ onBeforeUnmount(() => {
     font-size: var(--cds-font-size-caption);
     color: var(--cds-text-muted);
     white-space: nowrap;
+}
+
+.org-tabs {
+    flex: none;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--cds-border);
+}
+.org-chart-tab {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.org-approvals-tab {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
 }
 
 /* 툴바 */

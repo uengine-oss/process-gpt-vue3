@@ -17,6 +17,7 @@ const normalizeBaseUrl = (value, fallback) => {
 const AGENT_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_AGENT_BASE_URL, '/agent');
 
 import { buildAgentHeaders } from './agentRequestHeaders';
+import { assertAiEnabled } from '@/utils/aiFeatureGate';
 
 class WorkAssistantAgentService {
     constructor() {
@@ -36,6 +37,7 @@ class WorkAssistantAgentService {
      * @returns {Promise<Object>} 응답 데이터
      */
     async sendMessage(params) {
+        assertAiEnabled();
         const response = await fetch(`${this.baseUrl}/chat`, {
             method: 'POST',
             headers: buildAgentHeaders(params),
@@ -79,6 +81,7 @@ class WorkAssistantAgentService {
      * @returns {Promise<void>}
      */
     async sendMessageStream(params, callbacks = {}, options = {}) {
+        assertAiEnabled();
         const {
             onToken,
             onToolStart,

@@ -1,4 +1,5 @@
 import { useTaskCatalogStore } from '@/stores/taskCatalog';
+import { canUseAiFeatures } from '@/utils/aiFeatureGate';
 
 /**
  * BPMN 속성 패널의 내장 필드 노출 제어 믹스인.
@@ -16,6 +17,10 @@ export default {
         builtinPanelTaskType(): string {
             const self = this as any;
             return self.builtinPanelTaskTypeOverride || self.element?.$type || '';
+        },
+        /** 패널 내 AI 생성 버튼(조건룰·cron·스크립트·API 등) 노출 여부 — aiFeatureGate */
+        aiDesignerEnabled(): boolean {
+            return canUseAiFeatures('DESIGNER');
         }
     },
     methods: {

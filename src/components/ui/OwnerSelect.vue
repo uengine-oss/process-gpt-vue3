@@ -13,7 +13,7 @@
         :hide-details="hideDetails"
         :density="density"
         item-title="name"
-        item-value="id"
+        item-value="value"
         :return-object="false"
         @update:search="onSearch"
         @update:model-value="onSelect"
@@ -24,11 +24,11 @@
                     <v-avatar size="32" :color="item.raw.avatar ? undefined : 'primary'" class="mr-2">
                         <v-img v-if="item.raw.avatar" :src="item.raw.avatar" />
                         <span v-else class="text-white text-body-2">
-                            {{ getInitials(item.raw.name) }}
+                            {{ getInitials(displayName(item.raw)) }}
                         </span>
                     </v-avatar>
                 </template>
-                <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                <v-list-item-title>{{ displayName(item.raw) }}</v-list-item-title>
                 <v-list-item-subtitle v-if="item.raw.department || item.raw.position">
                     {{ item.raw.department }}{{ item.raw.position ? ` / ${item.raw.position}` : '' }}
                 </v-list-item-subtitle>
@@ -40,10 +40,10 @@
                 <v-avatar size="24" :color="item.raw.avatar ? undefined : 'primary'" class="mr-2">
                     <v-img v-if="item.raw.avatar" :src="item.raw.avatar" />
                     <span v-else class="text-white text-caption">
-                        {{ getInitials(item.raw.name) }}
+                        {{ getInitials(displayName(item.raw)) }}
                     </span>
                 </v-avatar>
-                <span>{{ item.raw.name }}</span>
+                <span>{{ displayName(item.raw) }}</span>
             </div>
         </template>
 
@@ -60,6 +60,20 @@
 <script lang="ts">
 import { defineComponent, ref, computed, watch, onMounted, type PropType } from 'vue';
 import { getOrganizationProvider, type OrganizationMember } from '@/providers/organization';
+import BackendFactory from '@/components/api/BackendFactory';
+import { userIdentityFromSearchResult } from '@/utils/userIdentity';
+
+// 저장값은 이메일(신규) 또는 조직도 노드 id(과거 저장분)일 수 있어
+// value 필드에 저장값 원문을 그대로 유지한다.
+type OwnerItem = {
+    value: string;
+    id?: string;
+    name: string;
+    email?: string;
+    department?: string;
+    position?: string;
+    avatar?: string;
+};
 
 export default defineComponent({
     name: 'OwnerSelect',
@@ -122,23 +136,62 @@ export default defineComponent({
     emits: ['update:modelValue', 'select'],
     setup(props, { emit }) {
         const loading = ref(false);
-        const members = ref<OrganizationMember[]>([]);
+        const members = ref<OwnerItem[]>([]);
+        // 현재 선택값에 대응하는 항목(해석 결과 또는 placeholder).
+        // 목록 재로딩에 밀려나지 않도록 members 와 분리해 보관한다.
+        const selectionItems = ref<Record<string, OwnerItem>>({});
         const selectedOwner = ref<string | string[]>(props.modelValue);
         const searchQuery = ref('');
 
         const provider = getOrganizationProvider();
+        const backend = BackendFactory.createBackend();
+        let searchToken = 0;
 
-        // 멤버 목록을 아이템 형식으로 변환
-        const memberItems = computed(() => {
-            return members.value.map((m) => ({
-                id: m.id,
-                name: m.name,
-                email: m.email,
-                department: m.department,
-                position: m.position,
-                avatar: m.avatar
-            }));
+        const normalizeKey = (v: unknown): string =>
+            String(v ?? '')
+                .trim()
+                .toLowerCase();
+
+        const memberToItem = (m: OrganizationMember): OwnerItem => ({
+            value: m.email || m.id,
+            id: m.id,
+            name: m.name,
+            email: m.email,
+            department: m.department,
+            position: m.position,
+            avatar: m.avatar
         });
+
+        const searchUserToItem = (raw: any): OwnerItem | null => {
+            const identity = userIdentityFromSearchResult(raw);
+            const value = identity.email || identity.employee_no || identity.id || '';
+            if (!value) return null;
+            return {
+                value,
+                id: identity.id || undefined,
+                name: identity.username || value,
+                email: identity.email || undefined,
+                department: identity.org_name || undefined
+            };
+        };
+
+        const memberItems = computed<OwnerItem[]>(() => {
+            const seen = new Set<string>();
+            const result: OwnerItem[] = [];
+            for (const item of [...Object.values(selectionItems.value), ...members.value]) {
+                const key = normalizeKey(item.value);
+                if (!key || seen.has(key)) continue;
+                seen.add(key);
+                result.push(item);
+            }
+            return result;
+        });
+
+        const displayName = (raw: unknown): string => {
+            if (typeof raw === 'string') return raw;
+            const item = raw as OwnerItem | null;
+            return item?.name || item?.value || '';
+        };
 
         // 이니셜 추출
         const getInitials = (name: string): string => {
@@ -150,33 +203,115 @@ export default defineComponent({
             return name.substring(0, 2).toUpperCase();
         };
 
-        // 멤버 목록 로드
+        const selectedValues = (): string[] => {
+            const raw = Array.isArray(selectedOwner.value) ? selectedOwner.value : [selectedOwner.value];
+            return raw.map((v) => String(v ?? '').trim()).filter(Boolean);
+        };
+
+        // 저장값 하나를 표시 가능한 항목으로 해석한다.
+        // 조직도(노드 id → 이메일) → resolveUserIdentities → 사용자 검색 순으로 시도.
+        const resolveSelectionItem = async (value: string): Promise<OwnerItem | null> => {
+            try {
+                if (provider.initialize) await provider.initialize();
+                const byId = await provider.getMember(value);
+                if (byId) return { ...memberToItem(byId), value };
+                const candidates = await provider.searchMembers(value, { limit: 10 });
+                const byEmail = candidates.find((m) => normalizeKey(m.email) === normalizeKey(value));
+                if (byEmail) return { ...memberToItem(byEmail), value };
+            } catch {
+                // 조직도 미구성(예: PAL SSO 테넌트) — 백엔드 조회로 계속
+            }
+            try {
+                const identityMap = await backend.resolveUserIdentities([value]);
+                const identity = identityMap?.[value];
+                if (identity) {
+                    return {
+                        value,
+                        id: identity.id || undefined,
+                        name: identity.name || identity.username || value,
+                        email: identity.email || undefined,
+                        department: identity.org_name || undefined
+                    };
+                }
+            } catch {
+                // 미지원 백엔드 — 검색으로 계속
+            }
+            try {
+                const result = await backend.searchUsersByName(value, 0, 5);
+                const users = Array.isArray(result) ? result : result?.users || [];
+                for (const raw of users) {
+                    const item = searchUserToItem(raw);
+                    if (!item) continue;
+                    const keys = [item.value, item.email, item.id].filter(Boolean).map(normalizeKey);
+                    if (keys.includes(normalizeKey(value))) return { ...item, value };
+                }
+            } catch {
+                // 해석 실패 시 placeholder(값 그대로)가 유지된다
+            }
+            return null;
+        };
+
+        const ensureSelectionItems = () => {
+            const values = selectedValues();
+            for (const key of Object.keys(selectionItems.value)) {
+                if (!values.includes(key)) delete selectionItems.value[key];
+            }
+            for (const value of values) {
+                if (selectionItems.value[value]) continue;
+                const inList = members.value.find((m) => m.value === value);
+                if (inList) {
+                    selectionItems.value[value] = inList;
+                    continue;
+                }
+                // 우선 값 그대로 표시(빈 칸 방지)하고, 해석되면 이름으로 교체
+                selectionItems.value[value] = { value, name: value };
+                resolveSelectionItem(value).then((item) => {
+                    if (item && selectionItems.value[value]) selectionItems.value[value] = item;
+                });
+            }
+        };
+
+        // 멤버 목록 로드 (조직도 + 백엔드 사용자 검색 병합)
         const loadMembers = async (query?: string) => {
+            const token = ++searchToken;
             loading.value = true;
             try {
-                if (provider.initialize) {
-                    await provider.initialize();
+                let orgMembers: OrganizationMember[] = [];
+                try {
+                    if (provider.initialize) await provider.initialize();
+                    orgMembers =
+                        query && query.length >= props.minSearchLength
+                            ? await provider.searchMembers(query, { limit: 20 })
+                            : await provider.getMembers({ limit: 50 });
+                } catch (error) {
+                    console.warn('[OwnerSelect] 조직도 로드 실패:', error);
                 }
 
-                if (query && query.length >= props.minSearchLength) {
-                    members.value = await provider.searchMembers(query, { limit: 20 });
-                } else if (props.loadAllOnMount || !query) {
-                    members.value = await provider.getMembers({ limit: 50 });
-                }
-
-                // 선택된 값이 있는데 목록에 없으면 해당 멤버 추가
-                const selectedIds = Array.isArray(selectedOwner.value) ? selectedOwner.value : [selectedOwner.value].filter(Boolean);
-                for (const selectedId of selectedIds) {
-                    if (!members.value.find((m) => m.id === selectedId)) {
-                        const selectedMember = await provider.getMember(selectedId);
-                        if (selectedMember) members.value = [selectedMember, ...members.value];
+                let searched: OwnerItem[] = [];
+                const keyword = String(query || '').trim();
+                if (keyword && keyword.length >= Math.max(props.minSearchLength, 1)) {
+                    try {
+                        const result = await backend.searchUsersByName(keyword, 0, 20);
+                        const users = Array.isArray(result) ? result : result?.users || [];
+                        searched = users.map(searchUserToItem).filter((item: OwnerItem | null): item is OwnerItem => !!item);
+                    } catch {
+                        // 사용자 검색 미지원 백엔드 — 조직도 결과만 사용
                     }
                 }
-            } catch (error) {
-                console.error('[OwnerSelect] 멤버 로드 실패:', error);
-                members.value = [];
+
+                if (token !== searchToken) return; // 이후 검색이 시작됐으면 이 결과는 버린다
+                const seen = new Set<string>();
+                const merged: OwnerItem[] = [];
+                for (const item of [...orgMembers.map(memberToItem), ...searched]) {
+                    const key = normalizeKey(item.value);
+                    if (!key || seen.has(key)) continue;
+                    seen.add(key);
+                    merged.push(item);
+                }
+                members.value = merged;
+                ensureSelectionItems();
             } finally {
-                loading.value = false;
+                if (token === searchToken) loading.value = false;
             }
         };
 
@@ -188,6 +323,10 @@ export default defineComponent({
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
             }
+
+            // 선택 직후 검색창에 표시명이 들어간 경우는 재검색하지 않는다
+            const selectedNames = selectedValues().map((v) => normalizeKey(selectionItems.value[v]?.name));
+            if (query && selectedNames.includes(normalizeKey(query))) return;
 
             searchTimeout = setTimeout(() => {
                 if (query && query.length >= props.minSearchLength) {
@@ -202,34 +341,21 @@ export default defineComponent({
         const onSelect = (value: string | string[] | null) => {
             emit('update:modelValue', value || (props.multiple ? [] : ''));
 
+            const list = memberItems.value;
             const selectedMembers = Array.isArray(value)
-                ? members.value.filter((m) => value.includes(m.id))
-                : members.value.find((m) => m.id === value) || null;
+                ? list.filter((m) => value.includes(m.value))
+                : list.find((m) => m.value === value) || null;
             emit('select', selectedMembers);
         };
 
         // modelValue 변경 감지
         watch(
             () => props.modelValue,
-            async (newVal) => {
+            (newVal) => {
                 selectedOwner.value = newVal;
-                // 새 값이 목록에 없으면 해당 멤버 로드
-                const newIds = Array.isArray(newVal) ? newVal : [newVal].filter(Boolean);
-                if (newIds.some((id) => !members.value.find((m) => m.id === id))) {
-                    try {
-                        if (provider.initialize) {
-                            await provider.initialize();
-                        }
-                        for (const id of newIds) {
-                            if (members.value.find((m) => m.id === id)) continue;
-                            const member = await provider.getMember(id);
-                            if (member) members.value = [member, ...members.value];
-                        }
-                    } catch (error) {
-                        console.warn('[OwnerSelect] 멤버 로드 실패:', error);
-                    }
-                }
-            }
+                ensureSelectionItems();
+            },
+            { immediate: true }
         );
 
         // 초기 로드
@@ -243,6 +369,7 @@ export default defineComponent({
             loading,
             memberItems,
             selectedOwner,
+            displayName,
             getInitials,
             onSearch,
             onSelect

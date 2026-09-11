@@ -364,6 +364,7 @@ export default class StorageBaseSupabase {
             // autoconfirm 환경에서는 가입 즉시 session이 발급되므로
             // 메일 확인 안내 대신 바로 서비스로 이동한다.
             result.data['isNewUser'] = !result.data.session;
+            result.data['approvalPending'] = !!window.$pal;
             return result.data;
         } catch (e) {
             throw new StorageBaseError('error in signUp', e, arguments);
@@ -444,10 +445,10 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
-                // 루트 페이지('/') 및 인증 플로우 페이지에서는 로그인 체크 시 리다이렉트하지 않음
-                // (비밀번호 재설정 링크 등 세션 없이 접근해야 하는 경로)
+                // 루트 페이지('/'), 인증 플로우, BPMN E2E 화면에서는 로그인 체크 시 리다이렉트하지 않음
+                // (E2E 화면은 로컬 자동 레이아웃을 세션 없이 검증하는 공개 테스트 경로)
                 const path = window.location.pathname;
-                if (path === '/' || path.startsWith('/auth/')) {
+                if (path === '/' || path.startsWith('/auth/') || path.startsWith('/bpmn-auto-layout-e2e')) {
                     return null;
                 }
 

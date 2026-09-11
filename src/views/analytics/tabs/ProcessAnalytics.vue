@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
  * View 2: Process Analytics
- * 시스템 활용 맵, R&R 히트맵, Task 유형 분포, 프로세스별 Task 비율, Top5 이상 프로세스
+ * 시스템 활용 맵, R&R 히트맵, Task 유형 분포, 프로세스별 Task 비율, 구조별 프로세스 Top 5
  */
-import { onMounted, ref, computed } from 'vue';
+import { watch, ref, computed } from 'vue';
 import { fetchProcessAnalytics } from '@/services/dashboardDataService';
 import type { ProcessAnalyticsData } from '@/services/dashboardDataService';
 
@@ -25,7 +25,7 @@ async function load() {
     }
 }
 
-onMounted(load);
+watch(() => props.filters?.domains, load, { immediate: true, deep: true });
 
 // ─── Computed ────────────────────────────────────────────────────────
 const systemMap = computed(() => d.value?.system_map || []);
@@ -53,11 +53,17 @@ const visibleTaskRatio = computed(() => (showAllProcesses.value ? taskRatio.valu
 const automationScore = computed(() => d.value?.automation_score || { overall: 0, total_count: 0, by_domain: [] });
 
 const TASK_COLORS: Record<string, string> = {
+    task: '#64748B', script: '#6366F1', businessrule: '#8B5CF6', callActivity: '#14B8A6',
     manual: '#F59E0B', service: '#10B981', user: '#3B82F6',
     send: '#EC4899', receive: '#06B6D4',
     'Manual Task': '#F59E0B', 'Service Task': '#10B981', 'User Task': '#3B82F6',
     'Send Task': '#EC4899', 'Receive Task': '#06B6D4', 'Script Task': '#6366F1',
     'Business Rule Task': '#EC4899'
+};
+const TASK_LABELS: Record<string, string> = {
+    task: '일반 Task', user: '사용자 Task', manual: '수작업 Task', service: '서비스 Task',
+    script: '스크립트 Task', businessrule: '업무 규칙 Task', callActivity: '호출 활동',
+    send: '송신 Task', receive: '수신 Task'
 };
 const TYPE_COLORS = ['#F59E0B', '#3B82F6', '#10B981', '#6366F1', '#EC4899', '#06B6D4', '#8B5CF6'];
 
@@ -66,24 +72,24 @@ const SYSTEM_COLORS = ['#3B82F6', '#8B5CF6', '#06B6D4', '#F59E0B', '#10B981', '#
 // TopN
 const TOPN_META: Record<string, { label: string; color: string; icon: string; metric: string; desc: string }> = {
     handoff: {
-        label: 'Hand-off 과다', color: '#F59E0B', icon: '↔', metric: '부서 간 인수인계 횟수',
-        desc: '담당자나 부서 간 업무 넘기기가 잦아 대기 시간이 길어지고 병목이 발생하기 쉬운 구간입니다.'
+        label: '역할 간 인수인계', color: '#F59E0B', icon: '↔', metric: '역할이 바뀌는 연결선 수',
+        desc: '역할이 지정된 두 Task 사이에서 역할 구성이 바뀌는 연결선을 집계합니다.'
     },
     xor: {
-        label: 'XOR 분기 과다', color: '#8B5CF6', icon: '⊕', metric: '배타적 게이트웨이 수',
-        desc: '조건에 따른 예외 처리나 갈림길이 지나치게 많아 표준화가 부족하고 관리 복잡도가 높은 상태입니다.'
+        label: '배타적 분기', color: '#8B5CF6', icon: '⊕', metric: '배타적 게이트웨이 수',
+        desc: '순서도에 정의된 배타적 게이트웨이 수입니다. 분기 수만으로 프로세스의 이상 여부를 판단하지 않습니다.'
     },
     manual: {
-        label: 'Manual Task 과다', color: '#EF4444', icon: 'M', metric: '수작업 Task 수',
-        desc: '시스템 자동화 없이 작업자가 직접 수기로 처리하는 비중이 높아 효율 저하와 인적 오류가 발생하기 쉬운 상태입니다.'
+        label: '수작업 Task', color: '#EF4444', icon: 'M', metric: '수작업 Task 수',
+        desc: 'Manual Task로 명시된 활동 수입니다. 일반 Task나 User Task를 수작업으로 간주하지 않습니다.'
     },
     decision: {
         label: '판단/분석 Task', color: '#06B6D4', icon: 'D', metric: '판단/분석 Task 수',
-        desc: '단순 반복이 아니라 실무자의 전문 검토나 의사결정이 요구되는 핵심 업무로 인적 역량이 중요한 구간입니다.'
+        desc: 'Task 이름의 판단·분석 관련 키워드 또는 Business Rule 유형으로 분류한 참고 지표입니다.'
     },
     loop: {
-        label: '루프/재작업', color: '#10B981', icon: '↺', metric: '반복·재처리 구간 수',
-        desc: '반려나 오류로 앞 단계로 돌아가 업무를 반복하는 상태로 비용 낭비와 처리 시간 지연의 주요 원인입니다.'
+        label: '순환 구조', color: '#10B981', icon: '↺', metric: '순환을 만드는 연결선 수',
+        desc: '순서도를 탐색할 때 앞선 요소로 돌아가는 연결선을 집계합니다. 실제 반려·재작업 횟수는 실행 이력이 필요합니다.'
     }
 };
 const activeTopN = ref('handoff');
@@ -124,12 +130,11 @@ function getProcessTotal(proc: { tasks: Record<string, number> }) {
 }
 function getAutoScore(proc: any): number {
     if ('automation_score' in proc && typeof proc.automation_score === 'number') return proc.automation_score;
-    // fallback: TM Forum 기반 가중 평균 (5점 만점)
-    const SCORE_MAP: Record<string, number> = { manual: 1, send: 1, receive: 1, user: 2, service: 3, script: 3, businessrule: 3, other: 1 };
+    // Share of explicitly modeled automatic task types.
     const total = getProcessTotal(proc);
     if (!total) return 0;
-    const totalScore = Object.entries(proc.tasks).reduce((s, [k, v]) => s + (SCORE_MAP[k] || 1) * (v as number), 0);
-    return Math.round((totalScore / total / 3) * 5 * 10) / 10;
+    const totalScore = ['service', 'script', 'businessrule'].reduce((sum, kind) => sum + (proc.tasks[kind] || 0), 0);
+    return Math.round(totalScore / total * 1000) / 10;
 }
 
 const domainBadgeClass: Record<string, string> = {
@@ -162,6 +167,7 @@ const domainBadgeClass: Record<string, string> = {
                         <div class="oss-col-task">연결 Task 수</div>
                     </div>
                     <div class="oss-list system-list">
+                        <p v-if="!systemMap.length" class="ds-empty-mini">등록된 시스템이 없습니다. Task에 시스템을 연결하면 활용 현황을 집계합니다.</p>
                         <div v-for="(item, idx) in systemMap" :key="item.system_id || item.tool_name" class="oss-row">
                             <div class="oss-col-sys">
                                 <span class="oss-dot" :style="{ backgroundColor: SYSTEM_COLORS[idx % SYSTEM_COLORS.length] }"></span>
@@ -203,7 +209,7 @@ const domainBadgeClass: Record<string, string> = {
                     <div class="task-type-list">
                         <div v-for="(t, idx) in taskTypes" :key="t.type" class="task-type-item">
                             <div class="task-type-label-row">
-                                <span class="text-slate-400">{{ t.type }}</span>
+                                <span class="text-slate-400">{{ TASK_LABELS[t.type] || t.type }}</span>
                                 <span class="task-type-count">{{ t.count }}건 ({{ t.pct }}%)</span>
                             </div>
                             <div class="task-type-bar-bg">
@@ -214,18 +220,18 @@ const domainBadgeClass: Record<string, string> = {
                 </div>
             </v-col>
 
-            <!-- 자동화 점수 -->
+            <!-- 자동 처리 Task 비율 -->
             <v-col cols="12">
                 <div class="ds-card automation-card">
                     <div class="ds-card-header">
                         <div>
-                            <h3 class="ds-card-title">자동화 점수</h3>
-                            <p class="ds-card-subtitle">TM Forum 기준 Task 유형별 가중 평균 (5점 만점)</p>
+                            <h3 class="ds-card-title">자동 처리 Task 비율</h3>
+                            <p class="ds-card-subtitle">Service·Script·Business Rule Task / 전체 Task. 실제 실행 실적이 아닌 순서도 유형 기준입니다.</p>
                         </div>
                         <div class="automation-overall">
                             <span class="automation-label">전체</span>
-                            <strong :class="automationScore.overall >= 4 ? 'text-emerald' : automationScore.overall >= 2.5 ? 'text-amber' : 'text-red'">
-                                {{ automationScore.overall }}<span class="text-slate-500" style="font-size:14px">/5</span>
+                            <strong :class="automationScore.overall >= 80 ? 'text-emerald' : automationScore.overall >= 50 ? 'text-amber' : 'text-red'">
+                                {{ automationScore.overall }}<span class="text-slate-500" style="font-size:14px">%</span>
                             </strong>
                         </div>
                     </div>
@@ -233,12 +239,12 @@ const domainBadgeClass: Record<string, string> = {
                         <div v-for="item in automationScore.by_domain" :key="item.domain" class="automation-domain-item">
                             <div class="automation-domain-row">
                                 <span class="automation-domain-name">{{ item.domain }}</span>
-                                <span :class="['automation-domain-score', item.automation_score >= 4 ? 'text-emerald' : item.automation_score >= 2.5 ? 'text-amber' : 'text-red']">
-                                    {{ item.automation_score }}<span class="text-slate-500" style="font-size:10px">/5</span>
+                                <span :class="['automation-domain-score', item.automation_score >= 80 ? 'text-emerald' : item.automation_score >= 50 ? 'text-amber' : 'text-red']">
+                                    {{ item.automation_score }}<span class="text-slate-500" style="font-size:10px">%</span>
                                 </span>
                             </div>
                             <div class="progress-bar">
-                                <div class="progress-fill" :style="{ width: (item.automation_score / 5 * 100) + '%', backgroundColor: item.automation_score >= 4 ? '#10B981' : item.automation_score >= 2.5 ? '#F59E0B' : '#EF4444' }"></div>
+                                <div class="progress-fill" :style="{ width: item.automation_score + '%', backgroundColor: item.automation_score >= 80 ? '#10B981' : item.automation_score >= 50 ? '#F59E0B' : '#EF4444' }"></div>
                             </div>
                             <p class="automation-domain-sub">/ {{ item.total_count }} Task</p>
                         </div>
@@ -252,14 +258,14 @@ const domainBadgeClass: Record<string, string> = {
                     <div class="ds-card-header">
                         <div>
                             <h3 class="ds-card-title">R&R 집중도 히트맵</h3>
-                            <p class="ds-card-subtitle">부서/Role별 Task 총량</p>
+                            <p class="ds-card-subtitle">도메인·역할별 Task 수 (역할 미지정 포함)</p>
                         </div>
                     </div>
                     <div v-if="heatmapData.length" class="heatmap-wrap">
                         <table class="heatmap-table">
                             <thead>
                                 <tr>
-                                    <th class="heatmap-th">Role \ 부서</th>
+                                    <th class="heatmap-th">역할 \ 도메인</th>
                                     <th v-for="dep in depts" :key="dep" class="heatmap-th">{{ dep }}</th>
                                 </tr>
                             </thead>
@@ -275,7 +281,7 @@ const domainBadgeClass: Record<string, string> = {
                             </tbody>
                         </table>
                     </div>
-                    <div v-else class="ds-empty-mini">데이터 없음</div>
+                    <div v-else class="ds-empty-mini">Task에 역할을 지정하면 역할별 분포가 표시됩니다.</div>
                     <div class="heat-legend">
                         <span class="text-xs text-slate-500">낮음</span>
                         <div v-for="(c, i) in ['#e8edf3','#93c5fd','#3b82f6','#2563eb','#1d4ed8']" :key="i" class="heat-legend-box" :style="{ backgroundColor: c }"></div>
@@ -327,7 +333,7 @@ const domainBadgeClass: Record<string, string> = {
                         <div><p class="oss-sum-val text-violet">{{ projectMap.reduce((s, i) => s + i.task_count, 0).toLocaleString() }}건</p><p class="oss-sum-label">연결 Task</p></div>
                     </div>
                     </template>
-                    <div v-else class="ds-empty-mini">과제 연결 데이터 없음</div>
+                    <div v-else class="ds-empty-mini">Task에 연결된 과제가 없습니다. 과제 속성을 등록하면 표시됩니다.</div>
                 </div>
             </v-col>
 
@@ -337,7 +343,8 @@ const domainBadgeClass: Record<string, string> = {
                     <div class="ds-card-header">
                         <div>
                             <h3 class="ds-card-title">프로세스별 Task 유형 비율</h3>
-                            <p class="ds-card-subtitle">Task 구성 비율</p>
+                            <p class="ds-card-subtitle">현재 저장된 순서도 기준. 일반 Task·호출 활동을 구분하며 호출 대상의 내부 Task는 중복 합산하지 않습니다.</p>
+                            <p class="ds-card-subtitle">막대: Task 유형별 비율과 건수 · 오른쪽 수치: 자동 처리 Task 비율</p>
                         </div>
                         <button v-if="taskRatio.length > 10" class="text-toggle" @click="showAllProcesses = !showAllProcesses">
                             {{ showAllProcesses ? 'Top 10 보기' : '전체 보기' }}
@@ -356,7 +363,7 @@ const domainBadgeClass: Record<string, string> = {
                                 <div class="ratio-stacked-bar">
                                     <template v-for="([key, val]) in Object.entries(proc.tasks)" :key="key">
                                         <div v-if="val > 0" class="ratio-bar-seg"
-                                            :title="`${key}: ${val}건`"
+                                            :title="`${TASK_LABELS[key] || key}: ${val}건 (${Math.round(val / getProcessTotal(proc) * 100)}%)`"
                                             :style="{ width: Math.round((val / getProcessTotal(proc)) * 100) + '%', backgroundColor: (TASK_COLORS[key] || '#64748B') + 'CC', minWidth: '24px' }">
                                             <span>{{ val }}</span>
                                         </div>
@@ -364,16 +371,16 @@ const domainBadgeClass: Record<string, string> = {
                                 </div>
                             </div>
                             <div class="ratio-col-auto">
-                                <span :class="['ratio-auto-pct', getAutoScore(proc) >= 4 ? 'text-emerald' : getAutoScore(proc) >= 2.5 ? 'text-amber' : 'text-red']">
-                                    {{ getAutoScore(proc) }}<span class="text-slate-500 text-xs">/5</span>
+                                <span :class="['ratio-auto-pct', getAutoScore(proc) >= 80 ? 'text-emerald' : getAutoScore(proc) >= 50 ? 'text-amber' : 'text-red']">
+                                    {{ getAutoScore(proc) }}<span class="text-slate-500 text-xs">%</span>
                                 </span>
                                 <div class="progress-bar">
-                                    <div class="progress-fill" :style="{ width: (getAutoScore(proc) / 5 * 100) + '%', backgroundColor: getAutoScore(proc) >= 4 ? '#10B981' : getAutoScore(proc) >= 2.5 ? '#F59E0B' : '#EF4444' }"></div>
+                                    <div class="progress-fill" :style="{ width: getAutoScore(proc) + '%', backgroundColor: getAutoScore(proc) >= 80 ? '#10B981' : getAutoScore(proc) >= 50 ? '#F59E0B' : '#EF4444' }"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div v-else class="ds-empty-mini">데이터 없음</div>
+                    <div v-else class="ds-empty-mini">Task가 포함된 순서도를 등록하면 유형별 비율이 표시됩니다.</div>
                 </div>
             </v-col>
 
@@ -382,7 +389,7 @@ const domainBadgeClass: Record<string, string> = {
                 <div class="ds-card">
                     <div class="ds-card-header">
                         <div>
-                            <h3 class="ds-card-title">Top 5 이상 프로세스</h3>
+                            <h3 class="ds-card-title">구조별 프로세스 Top 5</h3>
                             <p class="ds-card-subtitle">유형별 상위 5개 프로세스</p>
                         </div>
                     </div>
@@ -415,7 +422,7 @@ const domainBadgeClass: Record<string, string> = {
                             </div>
                         </v-col>
                     </v-row>
-                    <div v-else class="ds-empty-mini">해당 유형 데이터 없음</div>
+                    <div v-else class="ds-empty-mini">현재 순서도에 해당 유형의 요소 또는 연결이 없습니다.</div>
                 </div>
             </v-col>
         </v-row>

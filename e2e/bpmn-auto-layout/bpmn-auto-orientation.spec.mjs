@@ -223,6 +223,59 @@ test.describe('process-gpt bpmn auto orientation on viewport ratio change', () =
         expect(autoLayoutCount).toBe(0);
     });
 
+    for (const caseIndex of [3, 2]) test(`palette rotation in both directions does not trigger auto layout (case ${caseIndex})`, async ({ page }) => {
+        await setAutoOrientationMode(page, 'none');
+        await page.setViewportSize({ width: 1366, height: 900 });
+        await page.goto('/bpmn-auto-layout-e2e');
+        await page.locator('.djs-palette [data-action="change-orientation"]').waitFor();
+        await loadCaseByIndex(page, caseIndex);
+        await installAutoLayoutCounter(page);
+        const before = await getParticipantOrientation(page);
+
+        await page.locator('.djs-palette [data-action="change-orientation"]').click();
+        await page.waitForTimeout(1500);
+        expect((await getParticipantOrientation(page)).isHorizontal).toBe(!before.isHorizontal);
+        expect(await getAutoLayoutApplyCount(page)).toBe(0);
+        const rotationErrors = await page.evaluate(() => {
+            const registry = window.$bpmnAutoLayoutE2E.$refs.bpmn.bpmnViewer.get('elementRegistry');
+            return registry.filter(element => element.type === 'bpmn:SequenceFlow').flatMap(edge =>
+                edge.waypoints.slice(1).flatMap((point, index) => {
+                    const previous = edge.waypoints[index];
+                    return Math.abs(point.x - previous.x) > 0.1 && Math.abs(point.y - previous.y) > 0.1
+                        ? [`${edge.id}:${index}`] : [];
+                }));
+        });
+        expect(rotationErrors).toEqual([]);
+        await page.evaluate(() => window.$bpmnAutoLayoutE2E.$refs.bpmn.resetZoom());
+        await screenshotCanvas(page, `11-palette-rotation-only-${caseIndex}`);
+
+        await page.locator('.djs-palette [data-action="change-orientation"]').click();
+        await page.waitForTimeout(1500);
+        expect((await getParticipantOrientation(page)).isHorizontal).toBe(before.isHorizontal);
+        expect(await getAutoLayoutApplyCount(page)).toBe(0);
+
+        await page.locator('.e2e-auto-layout-button').click();
+        await expect.poll(() => getAutoLayoutApplyCount(page)).toBeGreaterThan(0);
+    });
+
+    test('manual rotation does not run auto layout afterwards', async ({ page }) => {
+        await setAutoOrientationMode(page, 'none');
+        await page.setViewportSize({ width: 1366, height: 768 });
+        await openE2EPage(page);
+        await loadCaseByIndex(page, 3);
+        await installAutoLayoutCounter(page);
+        const before = await getParticipantOrientation(page);
+
+        await page.evaluate(() => window.$bpmnAutoLayoutE2E?.$refs?.bpmn?.changeOrientation?.());
+        await page.waitForTimeout(1000);
+        await screenshotCanvas(page, '10-manual-rotate-only');
+        const after = await getParticipantOrientation(page);
+        const autoLayoutCount = await getAutoLayoutApplyCount(page);
+
+        expect(after.isHorizontal).toBe(!before.isHorizontal);
+        expect(autoLayoutCount).toBe(0);
+    });
+
     test('none auto orientation mode keeps current orientation on viewport ratio change', async ({ page }) => {
         await setAutoOrientationMode(page, 'none');
         await page.setViewportSize({ width: 1366, height: 768 });

@@ -217,6 +217,8 @@ declare global {
         $paletteSettings: any;
         $paletteTaskTypes: any[];
         $enabledPaletteTaskTypes: any[];
+        $visibleTaskTypes: string[] | null;
+        $visibleEventTypes: string[] | null;
     }
 }
 

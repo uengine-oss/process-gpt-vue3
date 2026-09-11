@@ -159,7 +159,7 @@
             </div>
 
             <div
-                v-if="selectedProcessId"
+                v-if="selectedProcessId && aiCopilotEnabled"
                 v-show="showCopilotPanel"
                 class="hierarchy-copilot-panel"
                 :style="{ width: copilotPanelWidth + 'px' }"
@@ -210,7 +210,7 @@
                     :definitionId="selectedProcessId"
                     :processName="selectedProcessName"
                     :userInfo="currentUserInfo"
-                    :agentCommandEnabled="hasEditAccess && !isReadOnlyMode"
+                    :agentCommandEnabled="hasEditAccess && !isReadOnlyMode && aiCopilotEnabled"
                     :agentCommandHandler="handleTeamChatAgentCommand"
                     :livePartitions="livePartitions"
                     :partitionEditable="partitionEditable"
@@ -466,7 +466,7 @@
 
         <!-- AN Transformation: To-Be Studio Dialog (파티셔닝 / To-Be 도면 / As-Is 비교) -->
         <ProcessBlueprintStudio
-            v-if="selectedProcessId && processDefinition"
+            v-if="selectedProcessId && processDefinition && aiCopilotEnabled"
             v-model="toBeDialogOpen"
             :process-definition="processDefinition"
             :as-is-xml="anStudio.asIsXml.value || bpmnXml"
@@ -477,8 +477,8 @@
         />
 
         <!-- AN Transformation: 챗 명령 결과 경량 다이얼로그 -->
-        <AnOrchestratorDialog v-model="orchestratorDialogOpen" />
-        <AnRoadmapDialog v-model="roadmapDialogOpen" :roadmap="aiCopilotRoadmap" />
+        <AnOrchestratorDialog v-if="aiCopilotEnabled" v-model="orchestratorDialogOpen" />
+        <AnRoadmapDialog v-if="aiCopilotEnabled" v-model="roadmapDialogOpen" :roadmap="aiCopilotRoadmap" />
 
         <!-- Edit Lock Dialog (다른 사용자가 편집 중일 때 팝업) -->
         <v-dialog v-model="editLockDialog" max-width="440">
@@ -579,6 +579,7 @@
 
         <!-- 실행 인스턴스/태스크 ID 확인 패널 (exec 사용자 전용) -->
         <ExecInstancePanel
+            v-if="isExecUser"
             v-model="execInfoOpen"
             :def-id="selectedProcessId"
             :def-name="selectedProcessName"
@@ -587,6 +588,7 @@
 
         <!-- 다중 시작 정의 실행 시 시작 이벤트 선택 (specs/010) -->
         <StartEventSelectDialog
+            v-if="isExecUser"
             v-model="startSelectOpen"
             :start-events="startSelectEvents"
             :definition="startSelectDefinition"
@@ -595,7 +597,7 @@
         />
 
         <!-- 첫 태스크가 userTask 인 경우: 폼 데이터를 입력하며 인스턴스 시작 -->
-        <v-dialog v-model="startFormOpen" persistent fullscreen>
+        <v-dialog v-if="isExecUser" v-model="startFormOpen" persistent fullscreen>
             <ProcessGPTExecute
                 v-if="startFormDefinition"
                 :key="startFormKey"
@@ -632,6 +634,7 @@ import AnOrchestratorDialog from './blueprint/AnOrchestratorDialog.vue';
 import AnRoadmapDialog from './blueprint/AnRoadmapDialog.vue';
 import { useAnStudio, AN_STUDIO_KEY } from '@/composables/anStudio/useAnStudio';
 import { canUseExecFeatures } from '@/utils/execFeatureGate';
+import { canUseAiFeatures } from '@/utils/aiFeatureGate';
 import { buildChildBpmn, validateBpmn, makeChildDefId, rewireOriginalBpmn } from '@/composables/anStudio/callActivityModularizer';
 import { splitTmfCodes } from '@/composables/blueprint/blueprintModel';
 import { ensurePartitionColors, movePartitionTask } from '@/composables/blueprint/partitionEditing';
@@ -890,6 +893,14 @@ export default {
         }
     },
     computed: {
+        /** 실행 기능 노출 여부 — execFeatureGate 단일 게이트 (엔진 모드 + 플래그 + admin) */
+        isExecUser() {
+            return canUseExecFeatures();
+        },
+        /** AI Copilot 계열(Copilot 패널·Blueprint/AN·/agent 명령) 노출 여부 — aiFeatureGate */
+        aiCopilotEnabled() {
+            return canUseAiFeatures('COPILOT');
+        },
         /** Legacy AN blueprint XML is no longer a source for the flowchart To-Be canvas. */
         anBlueprintXml() {
             return '';
@@ -1499,7 +1510,7 @@ export default {
                 state.rightTab === PROCESS_HIERARCHY_RIGHT_TAB.AI_GUIDE ? PROCESS_HIERARCHY_RIGHT_TAB.PROPERTIES : state.rightTab;
             this.isLeftCollapsed = state.left === PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED;
             this.showProperties = state.right === PROCESS_HIERARCHY_PANEL_STATE.OPEN;
-            this.showCopilotPanel = state.rightTab === PROCESS_HIERARCHY_RIGHT_TAB.AI_GUIDE;
+            this.showCopilotPanel = this.aiCopilotEnabled && state.rightTab === PROCESS_HIERARCHY_RIGHT_TAB.AI_GUIDE;
 
             if (
                 state.entry === PROCESS_HIERARCHY_ENTRY.ARCHITECTURE ||
@@ -2944,6 +2955,9 @@ export default {
         },
 
         handleUpdateXml(xml) {
+            // update-xml은 현재 modeler의 command stack 변경 결과다. 같은 XML을 다시
+            // prop으로 주입하면 Designer watcher가 캔버스를 재마운트하고 zoom을 초기화한다.
+            this.$refs.designer?.acceptCurrentBpmnSnapshot?.(xml);
             this.bpmnXml = xml;
             // As-Is 모드 편집 중에는 AN 파티셔닝 입력(As-Is XML)도 최신으로 유지
             if (this.designerActiveMode === 'as-is') {
@@ -4204,6 +4218,7 @@ export default {
                     await backend.updateProcessDefinitionMetadata(this.selectedProcessId, { definition: updatedDef }, '속성 저장');
                     this.processDefinition.definition = updatedDef;
                     designer.toBeBlueprintXml = xml;
+                    if (options.notifyOnSuccess) this.$toast?.success(options.successMessage || '속성값이 저장되었습니다.');
                     return;
                 }
 
@@ -4257,6 +4272,9 @@ export default {
                     await this.acquireProcessEditLock(this.selectedProcessId);
                 }
 
+                // 속성은 이미 현재 modeler에 반영되어 있다. 실제 캔버스 컴포넌트에도
+                // 이 prop 변경이 재-import 대상이 아님을 먼저 전달한다.
+                designer?.acceptCurrentBpmnSnapshot?.(xml);
                 this.bpmnXml = xml;
                 this.savedBpmnXml = xml;
                 this.processDefinition.bpmn = xml;
@@ -4279,6 +4297,7 @@ export default {
 
                 // 영구 반영 완료 → 버퍼된 속성 감사 로그 즉시 기록
                 this.flushPropertyAudits();
+                if (options.notifyOnSuccess) this.$toast?.success(options.successMessage || '속성값이 저장되었습니다.');
             } catch (e) {
                 console.error('[ProcessHierarchy] 속성값 즉시 반영 실패:', e);
                 this.$toast?.error('속성값 서버 반영에 실패했습니다. 프로세스 저장 버튼으로 다시 저장해 주세요.');

@@ -7338,9 +7338,41 @@ export default {
             return parsed.artifact_type === 'docx' || ct.includes('wordprocessingml') || fn.toLowerCase().endsWith('.docx');
         },
 
+        /**
+         * 서버가 정한 표시 방법(view). 확장자별 뷰어 지식은 서버에 두고 여기선 실행만 한다.
+         *
+         * - `view.renderer` 가 뷰어를 고른다(pdf | html | slides | none).
+         * - `view.of_sha256` 이 이 렌더가 '어느 판'의 것인지 밝힌다. 파일 해시와 다르면
+         *   옛 렌더다 — 고쳐지기 전 문서를 새 문서인 양 보여주는 것이 미리보기가
+         *   없는 것보다 위험하므로 띄우지 않는다.
+         * - `view` 가 없는 옛 서버 응답은 기존 `preview` 로 폴백한다.
+         */
+        resolveArtifactView(file) {
+            if (!file || typeof file !== 'object') return null;
+            const view = file.view;
+            if (view && view.url && view.renderer && view.renderer !== 'none') {
+                const fileSha = (file.sha256 || '').toString();
+                const ofSha = (view.of_sha256 || '').toString();
+                if (fileSha && ofSha && fileSha !== ofSha) return null;
+                return { renderer: view.renderer, url: view.url, pageCount: view.page_count || null };
+            }
+            const preview = file.preview;
+            if (preview?.kind === 'pdf' && preview.url) return { renderer: 'pdf', url: preview.url, pageCount: preview.page_count || null };
+            if (preview?.kind === 'file' && preview.url) return { renderer: 'html', url: preview.url, pageCount: null };
+            return null;
+        },
+
+        /** 산출물의 검수 판정. 뷰 표시 여부와 무관하게 배지로만 쓴다. */
+        resolveArtifactStatus(file) {
+            const gate = (file?.status?.quality_gate || file?.quality_gate || '').toString();
+            if (!gate || gate === 'passed') return null;
+            return { gate, detail: (file?.status?.detail || file?.quality_gate_detail || '').toString() };
+        },
+
         /** done.files와 저장된 pdfFiles 모두 같은 서버 PDF 미리보기 계약을 사용한다. */
         pushRenderedDocxArtifact(file, msgIdxOrRef) {
-            if (!this.isDocxPayload(file) || file.preview?.kind !== 'pdf' || !file.preview.url) return false;
+            const view = this.resolveArtifactView(file);
+            if (!this.isDocxPayload(file) || view?.renderer !== 'pdf') return false;
             const fileUrl = file.file_url || file.fileUrl || file.url || '';
             if (!fileUrl) return false;
             const fileName = file.file_name || file.fileName || file.name || 'document.docx';
@@ -7349,44 +7381,18 @@ export default {
             this.artifactPanels = this.artifactPanels.filter(
                 (panel) => !(panel.data?.draft === true && panel.data?.fileName === fileName)
             );
+            const status = this.resolveArtifactStatus(file);
             this.pushArtifactPanel({
                 type: 'docx',
                 label: fileName,
                 data: {
-                    fileUrl, fileName, previewUrl: file.preview.url, messageId: msg?.uuid || null,
+                    fileUrl, fileName, previewUrl: view.url, messageId: msg?.uuid || null,
+                    // 같은 산출물의 새 판은 같은 탭을 덮어쓴다(버전은 배지로 보인다).
                     artifactKey: file.artifact_id || file.file_id || fileUrl,
-                    fileId: file.file_id || '', sha256: file.sha256 || '', turnId: file.turn_id || ''
-                }
-            });
-            return true;
-        },
-
-        /**
-         * 작성 중인 문서의 현재 렌더를 같은 탭에 갱신한다.
-         *
-         * 제안서 턴은 10분 넘게 돈다. 최종본이 나올 때까지 스피너만 보이면
-         * 진행 중인지 멈춘 건지 알 수 없다. 서버의 렌더 채널이 중간 페이지를
-         * 이미 만들고 있으므로 그걸 그대로 보여준다.
-         *
-         * artifactKey 가 렌더마다 같아서 pushArtifactPanel 이 카드를 쌓지 않고
-         * 교체한다. 검수를 통과하지 않은 문서이므로 다운로드는 주지 않는다.
-         */
-        pushDraftDocxArtifact(file, msgIdxOrRef) {
-            if (!file || file.preview?.kind !== 'pdf' || !file.preview.url) return false;
-            const fileName = file.file_name || file.fileName || 'document.docx';
-            const pages = file.preview.page_count || 0;
-            const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
-            this.pushArtifactPanel({
-                type: 'docx',
-                label: pages ? `${fileName} (작성 중 · ${pages}쪽)` : `${fileName} (작성 중)`,
-                data: {
-                    fileUrl: '',
-                    fileName,
-                    previewUrl: file.preview.url,
-                    messageId: msg?.uuid || null,
-                    artifactKey: file.artifact_id,
-                    draft: true,
-                    pageCount: pages
+                    fileId: file.file_id || '', sha256: file.sha256 || '', turnId: file.turn_id || '',
+                    pageCount: view.pageCount,
+                    // 검수 미통과여도 문서는 보여준다. 판정은 배지로만 알린다.
+                    qualityGate: status?.gate || '', qualityGateDetail: status?.detail || ''
                 }
             });
             return true;
@@ -8554,8 +8560,17 @@ export default {
                         } catch (e) {}
                     },
                     onDraft: (file) => {
+                        // 중간 렌더는 문서로 띄우지 않는다 — 에이전트가 중간에 만든 파일이
+                        // 산출물처럼 보이고, 저장·복원 배선만 늘어난다. 진행만 활동에 남긴다.
                         try {
-                            this.pushDraftDocxArtifact(file, this.activeStreams[agentId]);
+                            const name = (file?.file_name || file?.fileName || '문서').toString();
+                            const pages = Number(file?.page_count) || 0;
+                            this.recordActivity({
+                                id: `draft:${name}`,
+                                tool: '문서 작성',
+                                title: pages ? `${name} · ${pages}쪽까지 작성` : `${name} 작성 중`,
+                                status: 'running'
+                            });
                         } catch (e) {}
                     },
                     onToolStart: (tool, input, rawEvent) => {

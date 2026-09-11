@@ -165,7 +165,7 @@ async function load() {
 onMounted(load);
 
 // ─── Computed helpers ────────────────────────────────────────────────
-const ANNUAL_TARGET_COUNT = 70;
+const annualTargetCount = computed(() => d.value?.overview.target_count || 0);
 
 const cumulativeStages = computed(() =>
     STAGE_DEFS.map((def) => ({
@@ -180,7 +180,7 @@ const progressPct = computed(() => {
     if (!total) return 0;
     return Math.round((stateCounts.value.published / total) * 1000) / 10;
 });
-const targetPct = computed(() => Math.round((stateCounts.value.published / ANNUAL_TARGET_COUNT) * 1000) / 10);
+const targetPct = computed(() => annualTargetCount.value ? Math.round((stateCounts.value.published / annualTargetCount.value) * 1000) / 10 : 0);
 const velocity = computed(() => {
     const raw = d.value?.velocity || [];
     return raw.map((w) => ({
@@ -325,12 +325,12 @@ function toggleChurn(row: typeof churnData.value[0]) {
                                 <p class="stat-label">연간 목표 대비</p>
                                 <div class="stat-value-row">
                                     <span class="stat-big text-emerald">{{ stateCounts.published }}</span>
-                                    <span class="stat-sub">/ {{ ANNUAL_TARGET_COUNT }}건</span>
+                                    <span class="stat-sub">{{ annualTargetCount ? `/ ${annualTargetCount}건` : '목표 미설정' }}</span>
                                 </div>
                                 <div class="progress-bar mt-2">
                                     <div class="progress-fill bg-emerald" :style="{ width: Math.min(targetPct || 0, 100) + '%' }"></div>
                                 </div>
-                                <p class="stat-pct text-emerald">{{ targetPct || 0 }}% 달성</p>
+                                <p class="stat-pct text-emerald">{{ annualTargetCount ? `${targetPct}% 달성` : 'KPI 목표 등록 후 표시됩니다.' }}</p>
                             </div>
                         </v-col>
                     </v-row>
@@ -349,8 +349,8 @@ function toggleChurn(row: typeof churnData.value[0]) {
                 <div class="ds-card">
                     <div class="ds-card-header">
                         <div>
-                            <h3 class="ds-card-title">본부별 KPI 달성 현황</h3>
-                            <p class="ds-card-subtitle">본부당 KPI · 단계별 현황</p>
+                            <h3 class="ds-card-title">조직별 KPI 달성 현황</h3>
+                            <p class="ds-card-subtitle">등록된 조직 목표의 단계별 현황</p>
                         </div>
                     </div>
                     <div class="kpi-legend">
@@ -360,6 +360,7 @@ function toggleChurn(row: typeof churnData.value[0]) {
                         </span>
                     </div>
                     <div class="kpi-org-list">
+                        <p v-if="!kpiDivisions.length" class="ds-empty-mini">올해 등록된 KPI 목표가 없습니다.</p>
                         <div v-for="org in kpiDivisions" :key="org.division" class="kpi-org-item">
                             <div class="kpi-org-header">
                                 <div class="kpi-org-name">
@@ -420,26 +421,24 @@ function toggleChurn(row: typeof churnData.value[0]) {
                 <div class="ds-card">
                     <div class="ds-card-header">
                         <div>
-                            <h3 class="ds-card-title">Weekly Velocity</h3>
-                            <p class="ds-card-subtitle">주차별 과제 처리 건수 및 목표선</p>
+                            <h3 class="ds-card-title">주차별 프로세스 게시 이력</h3>
+                            <p class="ds-card-subtitle">승인 이력의 게시 완료 프로세스 수를 집계합니다.</p>
                         </div>
                     </div>
                     <div v-if="velocity.length" class="velocity-chart">
                         <div v-for="w in velocity" :key="w.week" class="velocity-col">
                             <div class="velocity-bar-area">
-                                <div class="velocity-target-line" :style="{ bottom: Math.round((w.target / velocityMax) * 100) + '%' }"></div>
                                 <div class="velocity-bar"
-                                    :style="{ height: Math.round((w.actual / velocityMax) * 100) + '%', backgroundColor: w.actual >= w.target ? '#10B981CC' : '#3B82F6CC' }">
+                                    :title="`${w.actual}개 게시`"
+                                    :style="{ height: Math.round((w.actual / velocityMax) * 100) + '%', backgroundColor: '#3B82F6CC' }">
                                 </div>
                             </div>
                             <span class="velocity-label">{{ w.week }}</span>
                         </div>
                     </div>
-                    <div v-else class="ds-empty-mini">데이터 없음</div>
+                    <div v-else class="ds-empty-mini">등록된 승인 이력이 없습니다. 게시 완료 시 주차별 실적이 표시됩니다.</div>
                     <div class="velocity-legend">
                         <span class="legend-item"><span class="legend-swatch bg-blue-500"></span>실적</span>
-                        <span class="legend-item"><span class="legend-swatch bg-emerald-500"></span>목표 초과</span>
-                        <span class="legend-item"><span class="legend-line"></span>목표선</span>
                     </div>
                 </div>
             </v-col>

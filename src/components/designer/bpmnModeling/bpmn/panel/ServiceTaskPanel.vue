@@ -52,7 +52,7 @@
                 />
             </v-row>
         </div>
-        <div v-if="isBuiltinPropVisible('generate_api')" align="right" @click="generateAPI">
+        <div v-if="aiDesignerEnabled && isBuiltinPropVisible('generate_api')" align="right" @click="generateAPI">
             <v-btn prepend-icon rounded color="primary">
                 <template v-slot:prepend>
                     <Icons :icon="'magic'" />

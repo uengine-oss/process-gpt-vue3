@@ -120,4 +120,9 @@ qa_report/
 .playwright-mcp
 CLAUDE.md
 
+# 테스트 결과물
+test-results/
+
+# 스크린샷
+Screenshot*.png
 dist-mobile

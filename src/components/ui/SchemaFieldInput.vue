@@ -142,9 +142,16 @@
             <input ref="fileInput" type="file" style="display: none" :accept="fileAccept || undefined" :multiple="fileMultiple" @change="onFilePicked" />
             <div v-for="(f, idx) in fileList" :key="f.path || idx" class="file-row">
                 <v-icon size="15" color="indigo">mdi-paperclip</v-icon>
-                <a v-if="f.publicUrl" class="file-name" :href="f.publicUrl" target="_blank" rel="noopener">{{ f.fileName || f.path }}</a>
-                <span v-else class="file-name">{{ f.fileName || f.path }}</span>
-                <v-btn v-if="!isDisabled" icon variant="text" size="x-small" @click="removeFile(idx)">
+                <button type="button" class="file-name file-download-name" @click="downloadFile(f)">{{ f.fileName || f.path }}</button>
+                <v-btn
+                    icon variant="text" size="x-small"
+                    :loading="fileDownloadingPath === (f.path || f.publicUrl)"
+                    title="파일 다운로드"
+                    @click="downloadFile(f)"
+                >
+                    <v-icon size="14">mdi-download</v-icon>
+                </v-btn>
+                <v-btn v-if="!isDisabled" :disabled="fileUploading" title="첨부 해제" icon variant="text" size="x-small" @click="removeFile(idx)">
                     <v-icon size="13">mdi-close</v-icon>
                 </v-btn>
             </div>
@@ -157,6 +164,28 @@
             >
                 파일 업로드
             </v-btn>
+            <v-btn v-if="policyLibrary && !isDisabled && (fileMultiple || fileList.length === 0)"
+                size="small" variant="tonal" class="ml-2" :disabled="fileUploading || preview"
+                prepend-icon="mdi-folder-open-outline" @click="openPolicyPicker">
+                사내 정책문서에서 선택
+            </v-btn>
+            <div v-if="policyLibrary" class="file-hint">업로드한 파일은 사내 정책문서에 등록됩니다. 사용 프로세스는 순서도 저장 후 반영됩니다.</div>
+            <v-dialog v-model="policyPicker" max-width="640">
+                <v-card title="사내 정책문서에서 선택">
+                    <v-card-text>
+                        <v-alert v-if="policyPickerError" type="error" class="mb-3">{{ policyPickerError }}</v-alert>
+                        <v-autocomplete v-model="selectedPolicy" :items="policyFiles" item-title="name" item-value="id"
+                            label="문서명 검색" :loading="policyLoading" return-object clearable
+                            no-data-text="선택 가능한 파일이 없습니다." />
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-btn :loading="policyLoading" @click="openPolicyPicker">새로고침</v-btn>
+                        <v-spacer />
+                        <v-btn @click="policyPicker = false">취소</v-btn>
+                        <v-btn color="primary" :disabled="!selectedPolicy || policyLoading" @click="selectPolicyFile">선택</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
             <div v-if="fileHint" class="file-hint">{{ fileHint }}</div>
             <div v-if="fileError" class="file-error">{{ fileError }}</div>
         </div>
@@ -247,6 +276,7 @@
  */
 import BackendFactory from '@/components/api/BackendFactory';
 import { PROPERTY_TYPES } from '@/stores/taskCatalog';
+import { listPolicyDocuments, policyFileAttachment, registerPolicyAttachment } from '@/services/policyDocumentService';
 
 const backend = BackendFactory.createBackend();
 
@@ -256,6 +286,20 @@ const remoteItemsCache = new Map();
 function toSafeText(value) {
     if (value === null || value === undefined) return '';
     return String(value);
+}
+
+/** randomUUID가 없는 브라우저/비보안 컨텍스트에서도 충돌 방지용 파일 suffix를 만든다. */
+function createFileId() {
+    const webCrypto = typeof window !== 'undefined' ? window.crypto : null;
+    if (typeof webCrypto?.randomUUID === 'function') {
+        return webCrypto.randomUUID().replace(/-/g, '').substring(0, 8);
+    }
+    if (typeof webCrypto?.getRandomValues === 'function') {
+        const bytes = new Uint8Array(4);
+        webCrypto.getRandomValues(bytes);
+        return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    }
+    return Math.random().toString(36).slice(2, 10).padEnd(8, '0');
 }
 
 export default {
@@ -271,6 +315,7 @@ export default {
         showLabel: { type: Boolean, default: true },
         /** 미리보기 모드 — 파일 업로드 등 실제 부수효과를 막는다 */
         preview: { type: Boolean, default: false },
+        policyLibrary: { type: Boolean, default: false },
         /** model 에서 읽고 쓸 키 재지정 — 내장 필드처럼 스키마 키와 모델 키가 다를 때 사용 */
         modelKey: { type: String, default: '' }
     },
@@ -284,6 +329,12 @@ export default {
             apiSearchText: '',
             _apiSearchTimer: null,
             fileUploading: false,
+            policyPicker: false,
+            policyFiles: [],
+            selectedPolicy: null,
+            policyLoading: false,
+            policyPickerError: '',
+            fileDownloadingPath: '',
             fileError: ''
         };
     },
@@ -615,8 +666,10 @@ export default {
                 const result = await backend.searchUsersByName(normalized);
                 const current = toSafeText(this.value).trim();
                 const preserved = current ? this.userItems.filter((it) => toSafeText(it?.id).trim() === current) : [];
-                const items = (Array.isArray(result) ? result : []).map((u) => ({
-                    id: toSafeText(u.id ?? u.email ?? u.uid).trim(),
+                // searchUsersByName 은 { users, page } 형태로 응답한다 (구형 배열 응답도 방어)
+                const users = Array.isArray(result) ? result : Array.isArray(result?.users) ? result.users : [];
+                const items = users.map((u) => ({
+                    id: toSafeText(u.id ?? u.email ?? u.user_id ?? u.uid).trim(),
                     name: toSafeText(u.name ?? u.username ?? u.email).trim()
                 }));
                 this.userItems = [...preserved, ...items.filter((it) => toSafeText(it.id).trim() !== current)];
@@ -656,10 +709,32 @@ export default {
         },
 
         // ── file 업로드 ───────────────────────────────────
+        async openPolicyPicker() {
+            if (this.isDisabled || this.preview) return;
+            this.policyPicker = true;
+            this.selectedPolicy = null;
+            this.policyLoading = true;
+            this.policyPickerError = '';
+            try {
+                this.policyFiles = await listPolicyDocuments(true);
+            } catch (e) {
+                this.policyFiles = [];
+                this.policyPickerError = '정책문서 목록을 불러오지 못했습니다. 다시 시도해 주세요.';
+            } finally {
+                this.policyLoading = false;
+            }
+        },
+        selectPolicyFile() {
+            if (!this.selectedPolicy || this.isDisabled || this.preview) return;
+            const file = policyFileAttachment(this.selectedPolicy);
+            const duplicate = this.fileList.some((f) => (f.bucket || 'files') === file.bucket && f.path === file.path);
+            if (!duplicate) this.value = this.fileMultiple ? [...this.fileList, file] : file;
+            this.policyPicker = false;
+        },
         async onFilePicked(event) {
             const files = Array.from(event?.target?.files || []);
             if (event?.target) event.target.value = '';
-            if (!files.length || this.isDisabled) return;
+            if (!files.length || this.isDisabled || this.fileUploading) return;
             this.fileError = '';
 
             if (this.preview) {
@@ -679,11 +754,11 @@ export default {
 
             this.fileUploading = true;
             try {
-                const uploaded = [];
                 for (const f of files) {
-                    uploaded.push(await this.uploadOne(f));
+                    const uploaded = await this.uploadOne(f);
+                    this.value = this.fileMultiple ? [...this.fileList, uploaded] : uploaded;
+                    if (!this.fileMultiple) break;
                 }
-                this.value = this.fileMultiple ? [...this.fileList, ...uploaded] : uploaded[0];
             } catch (e) {
                 console.error('[SchemaFieldInput] 파일 업로드 실패:', e);
                 this.fileError = '파일 업로드 중 오류가 발생했습니다.';
@@ -697,19 +772,63 @@ export default {
             const prefix = toSafeText(cfg.path_prefix).trim().replace(/^\/+|\/+$/g, '') || 'uploads';
             const ext = file.name.includes('.') ? file.name.substring(file.name.lastIndexOf('.')) : '';
             const base =
-                cfg.name_strategy === 'original'
+                !this.policyLibrary && cfg.name_strategy === 'original'
                     ? file.name.replace(/[^\w.\-가-힣]/g, '_')
-                    : `${Date.now()}_${crypto.randomUUID().substring(0, 8)}${ext}`;
+                    : `${Date.now()}_${createFileId()}${ext}`;
             const path = `${prefix}/${base}`;
             const supabase = window.$supabase;
+            if (!supabase?.storage) throw new Error('Supabase Storage client is not available.');
             const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
                 cacheControl: '3600',
-                upsert: cfg.name_strategy === 'original',
+                upsert: !this.policyLibrary && cfg.name_strategy === 'original',
                 metadata: { original_filename: file.name }
             });
             if (error) throw error;
             const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
-            return { fileName: file.name, path: data.path, bucket, publicUrl: urlData?.publicUrl || '' };
+            const attachment = { fileName: file.name, path: data.path, bucket, publicUrl: urlData?.publicUrl || '', size: file.size };
+            if (!this.policyLibrary) return attachment;
+            try {
+                return await registerPolicyAttachment(attachment);
+            } catch (e) {
+                await supabase.storage.from(bucket).remove([data.path]);
+                throw e;
+            }
+        },
+        async downloadFile(file) {
+            if (this.preview || !file) return;
+            const downloadKey = file.path || file.publicUrl;
+            if (!downloadKey || this.fileDownloadingPath) return;
+            this.fileError = '';
+            this.fileDownloadingPath = downloadKey;
+            try {
+                if (file.path) {
+                    const supabase = window.$supabase;
+                    if (!supabase?.storage) throw new Error('Supabase Storage client is not available.');
+                    const bucket = toSafeText(file.bucket).trim() || toSafeText(this.fileConfig.bucket).trim() || 'files';
+                    const { data, error } = await supabase.storage.from(bucket).download(file.path);
+                    if (error) throw error;
+                    const objectUrl = URL.createObjectURL(data);
+                    const anchor = document.createElement('a');
+                    anchor.href = objectUrl;
+                    anchor.download = file.fileName || file.path.split('/').pop() || 'download';
+                    document.body.appendChild(anchor);
+                    anchor.click();
+                    anchor.remove();
+                    URL.revokeObjectURL(objectUrl);
+                } else if (file.publicUrl) {
+                    const anchor = document.createElement('a');
+                    anchor.href = file.publicUrl;
+                    anchor.download = file.fileName || 'download';
+                    anchor.target = '_blank';
+                    anchor.rel = 'noopener';
+                    anchor.click();
+                }
+            } catch (e) {
+                console.error('[SchemaFieldInput] 파일 다운로드 실패:', e);
+                this.fileError = '파일을 다운로드할 수 없습니다.';
+            } finally {
+                this.fileDownloadingPath = '';
+            }
         },
         // ── table 행 편집 ─────────────────────────────────
         addTableRow() {
@@ -840,6 +959,8 @@ export default {
 }
 
 .file-name {
+    flex: 1;
+    min-width: 0;
     font-size: 12px;
     color: rgb(var(--v-theme-textPrimary));
     overflow: hidden;
@@ -848,7 +969,15 @@ export default {
     text-decoration: none;
 }
 
-a.file-name:hover {
+button.file-download-name {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+
+button.file-download-name:hover {
     text-decoration: underline;
 }
 

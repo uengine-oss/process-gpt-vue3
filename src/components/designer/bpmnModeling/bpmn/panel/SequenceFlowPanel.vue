@@ -25,7 +25,7 @@
         <div v-else>
             <ConditionField v-if="isBuiltinPropVisible('condition_legacy')" :value="copyUengineProperties.condition" @update:value="updateCondition" />
         </div>
-        <div v-if="mode == 'ProcessGPT' && isBuiltinPropVisible('condition_rule_generator')" class="mt-4 d-flex justify-end">
+        <div v-if="aiDesignerEnabled && mode == 'ProcessGPT' && isBuiltinPropVisible('condition_rule_generator')" class="mt-4 d-flex justify-end">
             <v-btn @click="generateRule" color="primary" density="compact" rounded variant="flat">
                 <span v-if="isRuleGenerating" class="thinking-wave-text">
                     <span
