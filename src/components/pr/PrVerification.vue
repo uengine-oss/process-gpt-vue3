@@ -26,7 +26,7 @@
                     </div>
                     <div v-if="backfillError" class="pv-error mt-3" style="text-align: left">{{ backfillError }}</div>
 
-                    <button class="pv-run-btn mt-3" @click="generate">
+                    <button class="pv-run-btn mt-3" @click="generate(false)">
                         {{ backfillFailed ? $t('pr.verify.rebuildScenarios') : $t('pr.verify.buildScenarios') }}
                     </button>
                 </template>
@@ -38,7 +38,7 @@
 
                     <div v-if="backfillError" class="pv-error mt-3" style="text-align: left">{{ backfillError }}</div>
 
-                    <button class="pv-run-btn mt-3" :disabled="buildingScenarios" @click="generate">
+                    <button class="pv-run-btn mt-3" :disabled="buildingScenarios" @click="generate(false)">
                         {{ buildingScenarios ? $t('pr.verify.building') : $t('pr.verify.buildScenarios') }}
                     </button>
                 </template>
@@ -52,7 +52,7 @@
 
                     <div v-if="backfillError" class="pv-error mt-3" style="text-align: left">{{ backfillError }}</div>
 
-                    <button class="pv-run-btn mt-3" :disabled="buildingScenarios" @click="generate">
+                    <button class="pv-run-btn mt-3" :disabled="buildingScenarios" @click="generate(false)">
                         {{ buildingScenarios ? $t('pr.verify.building') : $t('pr.verify.buildScenarios') }}
                     </button>
                 </template>
@@ -233,25 +233,67 @@
                 <!-- 자동으로 뽑은 시나리오가 늘 기준선으로 쓸 만한 것은 아니다. 리뷰어가
                      읽어 보고 미덥지 않다고 판단하면 현재 버전 기준으로 다시 뽑을 수 있어야
                      한다. 지금 것을 지우는 일이라 확인을 한 번 받는다. -->
+                <!-- 이 스위트가 어느 버전 기준인지. 통과/실패 숫자는 이 기준에 대한 상대값이라,
+                     기준 버전이 보이지 않으면 숫자가 무엇을 뜻하는지 읽을 수 없다. -->
+                <span v-if="baselineRef" class="pv-sec-baseline">{{ $t('pr.verify.baselineLabel', { ref: baselineRef }) }}</span>
                 <span class="pv-sec-actions">
                     <template v-if="backfilling || buildingScenarios">
                         <v-progress-circular indeterminate size="12" width="2" color="primary" class="mr-1" />
                         {{ regeneratingLabel }}
                     </template>
-                    <template v-else-if="confirmingRegenerate">
-                        <span class="pv-confirm-text">{{ $t('pr.verify.confirmRegenerate') }}</span>
-                        <button class="pv-link danger" :disabled="running" @click="regenerate">
-                            {{ $t('pr.verify.confirmRegenerateYes') }}
-                        </button>
-                        <button class="pv-link" @click="confirmingRegenerate = false">
-                            {{ $t('pr.verify.confirmRegenerateNo') }}
-                        </button>
-                    </template>
-                    <button v-else class="pv-link" :disabled="running" @click="confirmingRegenerate = true">
+                    <button v-else class="pv-link" :disabled="running" @click="openRegenerate">
                         {{ $t('pr.verify.rebuildScenarios') }}
                     </button>
                 </span>
             </div>
+
+            <!--
+                다시 만들기는 지금 시나리오를 지우는 일이라 늘 한 번 물어본다. 고를 기준이
+                둘이면(초기 / 최신) 그 선택을 같은 다이얼로그에서 받는다 — 확인과 선택을
+                서로 다른 방식으로 물으면 같은 동작이 두 가지 모양으로 나타난다.
+            -->
+            <v-dialog v-model="regenerateDialog" max-width="440">
+                <v-card rounded="lg" elevation="8">
+                    <v-card-title class="text-subtitle-1 font-weight-bold">{{ $t('pr.verify.rebuildScenarios') }}</v-card-title>
+                    <v-card-text class="pt-0">
+                        <template v-if="baselineOptions.length">
+                            <div class="pv-baseline-q">{{ $t('pr.verify.chooseBaseline') }}</div>
+                            <label v-for="opt in baselineOptions" :key="opt.ref" class="pv-baseline-opt">
+                                <input v-model="chosenBaseline" type="radio" name="pv-baseline" :value="opt.ref" />
+                                <span class="pv-baseline-body">
+                                    <span class="pv-baseline-name">
+                                        {{ $t(opt.kind === 'fork' ? 'pr.verify.baselineFork' : 'pr.verify.baselineCurrent') }}
+                                        <span class="pv-baseline-ver">{{ opt.ref }}</span>
+                                    </span>
+                                    <span class="pv-baseline-desc">
+                                        {{ $t(opt.kind === 'fork' ? 'pr.verify.baselineForkDesc' : 'pr.verify.baselineCurrentDesc') }}
+                                    </span>
+                                </span>
+                            </label>
+                        </template>
+                        <div v-else class="pv-baseline-q">{{ $t('pr.verify.confirmRegenerate') }}</div>
+                        <!-- 다시 뽑는 동안 무슨 일이 일어나는지 이 자리에서 말한다. 파생은 1초도
+                             걸리지 않아, 다이얼로그를 먼저 닫아 버리면 진행도 결과도 스쳐 지나간다. -->
+                        <div v-if="buildingScenarios" class="pv-baseline-progress">
+                            <v-progress-circular indeterminate size="13" width="2" color="primary" class="mr-2" />
+                            {{ regeneratingLabel }}
+                        </div>
+                        <div v-else class="pv-baseline-note">{{ $t('pr.verify.baselineReplaceNote') }}</div>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer />
+                        <v-btn variant="text" :disabled="buildingScenarios" @click="regenerateDialog = false">
+                            {{ $t('pr.verify.confirmRegenerateNo') }}
+                        </v-btn>
+                        <v-btn variant="text" color="error" :loading="buildingScenarios" :disabled="running" @click="regenerate">
+                            {{ $t('pr.verify.confirmRegenerateYes') }}
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+            <!-- 다시 만든 결과. 케이스 수만 조용히 바뀌면 리뷰어는 자기가 누른 것이
+                 실제로 일어났는지 알 수 없다 — 몇 건을 어느 기준으로 만들었는지 말해 준다. -->
+            <div v-if="rebuildNotice" class="pv-note">{{ rebuildNotice }}</div>
             <div v-if="backfillFailed && hasSuite" class="pv-error">
                 {{ $t('pr.verify.rebuildFailed', { reason: backfill.error }) }}
             </div>
@@ -315,6 +357,26 @@ import { buildActivityLabels, labelOf, labelPath, relabelText } from '@/shared/a
 // 검증이 도는 동안의 폴링 간격(ms). 실행은 수 분 걸리므로 촘촘히 볼 이유가 없다.
 const POLL_MS = 5000;
 
+/** 프로세스·의사결정의 버전 표기는 `v4.0-abc` 처럼 앞에 v 가 붙는다. */
+function stripVersionPrefix(ref) {
+    return String(ref || '').replace(/^v/i, '');
+}
+
+/** 버전 문자열을 자리별 숫자로 비교한다(`10.0` 이 `9.0` 보다 크다). */
+function compareVersion(a, b) {
+    const pa = String(a)
+        .split('.')
+        .map((n) => parseInt(n, 10) || 0);
+    const pb = String(b)
+        .split('.')
+        .map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i += 1) {
+        const diff = (pa[i] || 0) - (pb[i] || 0);
+        if (diff) return diff > 0 ? 1 : -1;
+    }
+    return 0;
+}
+
 export default {
     name: 'PrVerification',
     props: {
@@ -325,7 +387,10 @@ export default {
         resourceType: { type: String, default: 'skill' },
         prId: { type: String, default: '' },
         // 변경 전 버전. 의사결정 시나리오를 이 버전의 규칙 표에서 뽑는다.
-        baseRef: { type: String, default: '' }
+        baseRef: { type: String, default: '' },
+        // 변경 후(초안) 버전. 예전 요청은 base_branch 에 "병합이 만들 다음 메이저" 를 적어 두어
+        // 갈라져 나온 버전을 base_branch 로는 찾지 못한다 — 그럴 때 초안에서 부모를 되짚는다.
+        headRef: { type: String, default: '' }
     },
     emits: ['status'],
     data() {
@@ -340,12 +405,20 @@ export default {
             // 시나리오 확보(backfill) 회차 — 시나리오가 없는 스킬에서만 의미가 있다.
             backfill: null,
             backfillError: '',
-            confirmingRegenerate: false,
             buildingScenarios: false,
             pollTimer: null,
+            // 이 스위트가 기준으로 굳힌 버전(백엔드 기록). 빈 문자열이면 기록이 없는 예전 스위트다.
+            baselineRef: '',
+            // 다시 만들기를 물어보는 다이얼로그. 확인과 기준 선택을 같은 자리에서 받는다.
+            regenerateDialog: false,
+            chosenBaseline: '',
+            // 방금 다시 만든 결과 한 줄. 다음에 다시 만들기를 열 때 지운다.
+            rebuildNotice: '',
             // 프로세스 요소 ID → 이름. 실행 경로·근거를 ID 대신 이름으로 보여 줄 때 쓴다.
             activityLabels: {},
-            activityLabelsLoaded: false
+            // 프로세스·의사결정의 버전 목록. 요소 이름표와 기준 버전 후보를 여기서 얻는다.
+            versionRows: [],
+            versionsLoaded: false
         };
     },
     computed: {
@@ -364,6 +437,52 @@ export default {
             if (this.isDmn) return this.$t('pr.verify.regenerateDmn');
             if (this.isProcess) return this.$t('pr.verify.regenerateProcess');
             return this.backfillPhaseTitle;
+        },
+        /**
+         * 기준 버전 후보. 고를 것이 없으면 빈 배열(=지금까지처럼 확인만 받는다).
+         *
+         * 스킬은 base 가 늘 `main`(=최신 병합 상태) 하나뿐이라 고를 것이 없다. 프로세스·
+         * 의사결정은 병합이 새 버전을 만들기 때문에, 이 요청이 갈라져 나온 뒤 다른 요청이
+         * 병합되면 기준으로 삼을 버전이 둘로 갈린다.
+         */
+        baselineOptions() {
+            if (this.isSkill) return [];
+            const fork = this.forkVersion;
+            const current = this.currentVersion;
+            const options = [];
+            if (fork) options.push({ ref: fork, kind: 'fork' });
+            if (current && current !== fork) options.push({ ref: current, kind: 'current' });
+            // 하나뿐이면 선택이 아니다 — 물어봐야 할 것이 없는데 화면만 한 단계 늘어난다.
+            return options.length > 1 ? options : [];
+        },
+        /** 이 요청이 갈라져 나온 버전(`v1.0`). 버전 목록에서 실재를 확인한 것만 돌려준다. */
+        forkVersion() {
+            const known = new Set(this.versionRows.map((row) => String(row.version)));
+            const base = stripVersionPrefix(this.baseRef);
+            if (base && known.has(base)) return `v${base}`;
+            // base_branch 가 아직 없는 버전을 가리키는 예전 요청은 초안에서 부모를 되짚는다
+            // (usePrChanges 의 스냅샷 짝짓기와 같은 규칙).
+            const head = stripVersionPrefix(this.headRef);
+            const headRow = this.versionRows.find((row) => String(row.version) === head);
+            const parent = String(headRow?.parent_version || '') || (head.includes('-') ? head.split('-')[0] : '');
+            if (parent && known.has(parent)) return `v${parent}`;
+            return base ? `v${base}` : '';
+        },
+        /**
+         * 지금 운영 중인(= 마지막으로 병합된) 버전.
+         *
+         * 병합은 새 메이저 버전을 만든다(usePrMerge.mergeDefinitionPr) — 그래서 메이저 중
+         * 가장 큰 것이 현재 정의다. 초안(`4.0-h10y6`)은 아직 병합되지 않은 것이라 세지 않는다.
+         */
+        currentVersion() {
+            const merged = this.versionRows.filter((row) => row.version_tag === 'major' && !String(row.version || '').includes('-'));
+            let latest = '';
+            for (const row of merged) {
+                const version = String(row.version || '');
+                if (!version) continue;
+                if (!latest || compareVersion(version, latest) > 0) latest = version;
+            }
+            return latest ? `v${latest}` : '';
         },
         /** 이 병합 요청을 가리킬 수 있는가 — 스킬은 깃 PR 번호, 나머지는 요청 id. */
         addressed() {
@@ -605,24 +724,33 @@ export default {
         displayText(text) {
             return this.isProcess ? relabelText(text, this.activityLabels) : text;
         },
-        /** 프로세스 모든 버전의 정의에서 요소 이름표를 한 번 받아 둔다. */
-        async loadActivityLabels() {
-            if (!this.isProcess || this.activityLabelsLoaded || !this.skillName) return;
-            this.activityLabelsLoaded = true;
+        /**
+         * 프로세스·의사결정의 버전 목록을 한 번 받아 둔다.
+         *
+         * 두 가지를 여기서 얻는다 — 실행 경로를 ID 대신 이름으로 보여 줄 요소 이름표(프로세스),
+         * 그리고 시나리오를 다시 만들 때 고를 기준 버전 후보. 한 번의 조회로 둘 다 얻으므로
+         * 따로 받지 않는다.
+         */
+        async loadVersions() {
+            if (this.isSkill || this.versionsLoaded || !this.skillName) return;
+            this.versionsLoaded = true;
             try {
                 const rows = await this.backend.getDefinitionVersions(this.skillName, { orderBy: 'timeStamp', sort: 'desc' });
-                const versions = Array.isArray(rows) ? rows : [];
+                this.versionRows = Array.isArray(rows) ? rows : [];
                 // 오래된 버전부터 쌓아 최신 이름이 이기게 한다. 변경 후에만 있는(새로 추가한) 요소와
                 // 변경 전에만 있던(삭제된) 요소 모두 이름으로 보인다.
-                this.activityLabels = buildActivityLabels(
-                    versions
-                        .slice()
-                        .reverse()
-                        .map((row) => row.definition)
-                );
+                if (this.isProcess) {
+                    this.activityLabels = buildActivityLabels(
+                        this.versionRows
+                            .slice()
+                            .reverse()
+                            .map((row) => row.definition)
+                    );
+                }
             } catch (e) {
-                // 이름표를 못 받아도 검증 결과는 보여야 한다 — ID 그대로 두고 다음 새로고침에서 다시 받는다.
-                this.activityLabelsLoaded = false;
+                // 버전 목록을 못 받아도 검증 결과는 보여야 한다 — 이름표는 ID 그대로 두고,
+                // 기준 버전 선택은 나타나지 않는다(다음 새로고침에서 다시 받는다).
+                this.versionsLoaded = false;
             }
         },
         /**
@@ -637,7 +765,7 @@ export default {
         async reload() {
             if (!this.backend || !this.skillName || !this.addressed) return;
             // 기다리지 않는다 — 이름표가 늦어도 검증 결과는 먼저 보이고, 도착하면 이름으로 바뀐다.
-            this.loadActivityLabels();
+            this.loadVersions();
             const data = this.isSkill
                 ? await this.backend.getPrVerification(this.skillName, this.prNumber)
                 : await this.backend.getResourceVerification(this.resourceType, this.skillName, this.prId);
@@ -650,21 +778,28 @@ export default {
             this.run = data.run || null;
             this.results = data.results || [];
             this.backfill = data.backfill || null;
+            this.baselineRef = data.baseline_ref || '';
             this.loaded = true;
             this.emitStatus();
             if (this.running || this.backfilling) this.startPolling();
             else this.stopPolling();
         },
 
-        /** 변경 전 버전의 동작을 기준으로 시나리오를 만든다. */
-        async generate(replace = false) {
+        /**
+         * 시나리오를 만든다. 기준은 `baseRef`(없으면 이 요청의 변경 전 버전)다.
+         *
+         * 프로세스·의사결정은 리뷰어가 다시 만들 때 기준 버전을 고를 수 있어, 고른 값이
+         * 여기로 들어온다. 스킬은 base 가 늘 `main` 하나뿐이라 고를 것이 없다.
+         */
+        async generate(replace = false, baseRef = '') {
             this.backfillError = '';
+            const ref = baseRef || this.baseRef;
             if (this.isDmn) {
                 // 규칙 표에서 파생하므로 바로 끝난다 — 폴링할 회차가 없다.
                 this.buildingScenarios = true;
                 try {
                     const built = await this.backend.buildDmnScenarios(this.skillName, {
-                        baseRef: this.baseRef,
+                        baseRef: ref,
                         replace
                     });
                     if (built?.error) {
@@ -672,6 +807,7 @@ export default {
                         return;
                     }
                     await this.reload();
+                    this.noteRebuilt(ref);
                 } finally {
                     this.buildingScenarios = false;
                 }
@@ -682,7 +818,7 @@ export default {
                 this.buildingScenarios = true;
                 try {
                     const built = await this.backend.buildProcessScenarios(this.skillName, {
-                        baseRef: this.baseRef,
+                        baseRef: ref,
                         replace
                     });
                     if (built?.error) {
@@ -690,6 +826,7 @@ export default {
                         return;
                     }
                     await this.reload();
+                    this.noteRebuilt(ref);
                 } finally {
                     this.buildingScenarios = false;
                 }
@@ -704,10 +841,29 @@ export default {
             this.emitStatus();
             this.startPolling();
         },
-        /** 지금 시나리오를 버리고 현재(변경 전) 버전 기준으로 다시 뽑는다. */
+        /** 방금 다시 만든 결과를 한 줄로 남긴다. 화면에 남는 것은 이 문장과 기준 버전 칩이다. */
+        noteRebuilt(ref) {
+            this.rebuildNotice = this.$t('pr.verify.rebuildDone', {
+                count: this.cases.length,
+                ref: this.baselineRef || ref
+            });
+        },
+        /** 다시 만들기를 누른 순간. 기본 선택은 초기 버전 — 지금 기준을 그대로 유지하는 쪽이다. */
+        openRegenerate() {
+            this.rebuildNotice = '';
+            this.chosenBaseline = this.baselineOptions.length ? this.baselineOptions[0].ref : '';
+            this.regenerateDialog = true;
+        },
+        /**
+         * 지금 시나리오를 버리고 고른(또는 이 요청의 변경 전) 버전 기준으로 다시 뽑는다.
+         *
+         * 끝난 뒤에 닫는다 — 먼저 닫아 버리면 진행 표시가 섹션 구석에서 1초도 안 되게
+         * 스쳐 지나가, 누른 사람은 무엇이 일어났는지 보지 못한다.
+         */
         async regenerate() {
-            this.confirmingRegenerate = false;
-            await this.generate(true);
+            const baseRef = this.chosenBaseline;
+            await this.generate(true, baseRef);
+            this.regenerateDialog = false;
         },
         async start() {
             this.startError = '';
@@ -1010,8 +1166,75 @@ export default {
     text-transform: none;
     letter-spacing: 0;
 }
-.pv-confirm-text {
+/* 이 스위트가 어느 버전 기준인지 — 섹션 제목 곁에 조용히 붙어 있는다. */
+.pv-sec-baseline {
+    font-weight: 400;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    background: rgba(var(--v-theme-on-surface), 0.06);
+    border-radius: 5px;
+    padding: 1px 6px;
+}
+
+/* ── 다시 만들기 다이얼로그: 기준 선택 ── */
+/* 다시 만든 결과 한 줄 — 에러와 같은 자리, 다른 톤. */
+.pv-note {
+    font-size: 12px;
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.07);
+    border-radius: 8px;
+    padding: 8px 11px;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+.pv-baseline-progress {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    font-size: 12px;
     color: rgba(var(--v-theme-on-surface), 0.7);
+}
+.pv-baseline-q {
+    font-size: 13px;
+    color: rgba(var(--v-theme-on-surface), 0.8);
+    margin-bottom: 10px;
+}
+.pv-baseline-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 7px 0;
+    cursor: pointer;
+}
+.pv-baseline-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.pv-baseline-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.87);
+}
+/* 어느 버전인지는 필요할 때 확인할 보조 정보다 — 선택은 초기/최신으로 한다. */
+.pv-baseline-ver {
+    margin-left: 5px;
+    font-size: 10.5px;
+    font-weight: 400;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+}
+.pv-baseline-desc {
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(var(--v-theme-on-surface), 0.55);
+}
+.pv-baseline-note {
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: rgba(var(--v-theme-on-surface), 0.45);
 }
 .pv-link {
     background: none;

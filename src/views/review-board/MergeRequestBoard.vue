@@ -527,6 +527,7 @@ onBeforeUnmount(onDragEnd);
                                         :resource-type="selectedPr.resource_type || 'skill'"
                                         :pr-id="selectedPr.id"
                                         :base-ref="selectedPr.base_branch"
+                                        :head-ref="selectedPr.branch_name"
                                         @status="onVerificationStatus"
                                     />
                                 </template>
