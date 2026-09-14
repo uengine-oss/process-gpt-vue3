@@ -3265,7 +3265,8 @@ export default {
 
                 // 재접속도 방의 오케스트레이션(deepagents/codex)에 맞는 서버로 붙어야 한다.
                 const attachRouter = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
-                // 재접속을 지원하지 않는 런타임(codex)은 건너뛴다 — 없는 엔드포인트로 404 를 내지 않게.
+                // 재접속 엔드포인트가 없는 런타임만 건너뛴다 — 없는 주소로 404 를 내지 않게.
+                // codex·deepagents 는 /chat/stream/attach 를 제공하므로 여기서 걸리지 않는다.
                 if (typeof attachRouter?.attachToStream !== 'function' || attachRouter.supportsStreamAttach === false) return;
                 await attachRouter.attachToStream(
                     roomId,
@@ -3300,8 +3301,47 @@ export default {
                             }
                             this.$nextTick(() => this.scrollToBottomSafe());
                         },
-                        onDone: () => {
-                            // 최종 메시지는 Realtime INSERT(handleRealtimeMessage)가 처리한다.
+                        onDone: (content, payload) => {
+                            if ((this.currentChatRoom?.id || this.roomId) !== roomId) return;
+                            this.setAgentStatus(agentId, { state: 'ready', message: '' });
+                            const msg = this.activeStreams[agentId];
+                            if (!msg) return;
+                            // Realtime INSERT 는 streamMsg 를 activeStreams 에 남겨 두고 돌아간다
+                            // — 끝내는 것은 여기다. 안 끝내면 isLoading 말풍선이 남아 스피너가
+                            // 영원히 돈다.
+                            const doneFiles = Array.isArray(payload?.files) ? payload.files : [];
+                            for (const file of doneFiles) this.pushRenderedDocxArtifact(file, msg);
+                            if (doneFiles.length) {
+                                const existing = Array.isArray(msg.pdfFiles) ? msg.pdfFiles : [];
+                                const seen = new Set(existing.map((f) => (f?.url || f?.fileUrl || f?.name || '').toString()));
+                                msg.pdfFiles = [
+                                    ...existing,
+                                    ...doneFiles.filter((f) => f && !seen.has((f.url || f.fileUrl || f.name || '').toString()))
+                                ];
+                            }
+                            const finalContent = (content ?? '').toString();
+                            if (finalContent && finalContent !== 'NO_RESPONSE') msg.content = finalContent;
+                            msg.toolCalls = (Array.isArray(msg.toolCalls) ? msg.toolCalls : []).map((tc) =>
+                                tc?.status === 'running' ? { ...tc, status: 'done', endedAt: new Date().toISOString() } : tc
+                            );
+                            msg.isLoading = false;
+                            msg.openuiIsStreaming = false;
+                            delete this.activeStreams[agentId];
+                            const keys = new Set([msg.rowUuid, msg.uuid, msg.clientUuid].filter(Boolean));
+                            const landedIdx = this.messages.findIndex(
+                                (m) => m && (keys.has(m.uuid) || keys.has(m.rowUuid) || keys.has(m.clientUuid))
+                            );
+                            let landed;
+                            if (landedIdx === -1) {
+                                landed = this.normalizeAssistantMessageForDisplay(msg);
+                                this.messages.push(landed);
+                                this._stableSortMessages(this.messages);
+                            } else {
+                                landed = this.messages[landedIdx];
+                                this.carryOptimisticOnlyFields(msg, landed);
+                            }
+                            this.persistMessageFrontendState(landed, roomId, { force: true });
+                            this.$nextTick(() => this.scrollToBottomSafe());
                         },
                         onError: (err) => {
                             console.warn('[ChatRoomPage] attachToStream 오류(무시):', err?.message || err);
@@ -7378,21 +7418,25 @@ export default {
             const fileName = file.file_name || file.fileName || file.name || 'document.docx';
             const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
             // 완성본은 자기 초안 탭을 대신한다 — 남겨두면 '작성 중' 카드가 계속 붙어 있다.
-            this.artifactPanels = this.artifactPanels.filter(
-                (panel) => !(panel.data?.draft === true && panel.data?.fileName === fileName)
-            );
+            this.artifactPanels = this.artifactPanels.filter((panel) => !(panel.data?.draft === true && panel.data?.fileName === fileName));
             const status = this.resolveArtifactStatus(file);
             this.pushArtifactPanel({
                 type: 'docx',
                 label: fileName,
                 data: {
-                    fileUrl, fileName, previewUrl: view.url, messageId: msg?.uuid || null,
+                    fileUrl,
+                    fileName,
+                    previewUrl: view.url,
+                    messageId: msg?.uuid || null,
                     // 같은 산출물의 새 판은 같은 탭을 덮어쓴다(버전은 배지로 보인다).
                     artifactKey: file.artifact_id || file.file_id || fileUrl,
-                    fileId: file.file_id || '', sha256: file.sha256 || '', turnId: file.turn_id || '',
+                    fileId: file.file_id || '',
+                    sha256: file.sha256 || '',
+                    turnId: file.turn_id || '',
                     pageCount: view.pageCount,
                     // 검수 미통과여도 문서는 보여준다. 판정은 배지로만 알린다.
-                    qualityGate: status?.gate || '', qualityGateDetail: status?.detail || ''
+                    qualityGate: status?.gate || '',
+                    qualityGateDetail: status?.detail || ''
                 }
             });
             return true;
@@ -7405,8 +7449,10 @@ export default {
             const data = panel.data;
             return {
                 fileName: data.fileName || panel.label,
-                file_id: data.fileId || '', artifact_id: data.artifactKey || data.fileUrl,
-                sha256: data.sha256 || '', turn_id: data.turnId || ''
+                file_id: data.fileId || '',
+                artifact_id: data.artifactKey || data.fileUrl,
+                sha256: data.sha256 || '',
+                turn_id: data.turnId || ''
             };
         },
 
