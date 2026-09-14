@@ -7419,7 +7419,10 @@ export default {
         /** done.files와 저장된 pdfFiles 모두 같은 서버 PDF 미리보기 계약을 사용한다. */
         pushRenderedDocxArtifact(file, msgIdxOrRef) {
             const view = this.resolveArtifactView(file);
-            if (!this.isDocxPayload(file) || view?.renderer !== 'pdf') return false;
+            // 서버가 PDF 뷰를 붙였다는 것이 이 패널을 띄울 조건 전부다. 확장자는 보지 않는다 —
+            // .docx 만 통과시키던 탓에 서버가 18쪽 렌더까지 붙여 보낸 hwpx 가 미리보기 없이
+            // 다운로드 버튼만 남았다(복원 경로도 같은 문을 지나므로 새로고침해도 안 떴다).
+            if (view?.renderer !== 'pdf') return false;
             const fileUrl = file.file_url || file.fileUrl || file.url || '';
             if (!fileUrl) return false;
             const fileName = file.file_name || file.fileName || file.name || 'document.docx';
