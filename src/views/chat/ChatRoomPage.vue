@@ -10913,7 +10913,10 @@ export default {
                 'openuiIsStreaming',
                 'openuiStreamQuestionId',
                 'agentLogs',
-                'agentPlan'
+                'agentPlan',
+                // 서버가 chats row 에 넣는 산출물 링크. 여기 없으면 프런트 객체로 row 를
+                // 저장할 때 통째로 지워져 다운로드 버튼과 아티팩트 미리보기가 사라진다.
+                'pdfFiles'
             ];
             for (const key of carryKeys) {
                 const incomingVal = toMsg[key];
