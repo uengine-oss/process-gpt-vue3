@@ -3447,6 +3447,13 @@ export default {
                             streamMsg.uuid = incoming.uuid || streamMsg.uuid;
                             streamMsg.clientUuid = incoming.clientUuid || streamMsg.clientUuid || streamMsg.uuid;
                             this.carryOptimisticOnlyFields(incoming, streamMsg);
+                            // 서버가 본문을 확정해 보냈으면 그것이 이 턴의 답이다. 아래
+                            // persist 가 streamMsg 를 통째로 다시 쓰므로, 여기서 받아두지
+                            // 않으면 서버가 저장한 답변이 '생각 중...' 으로 되돌아간다.
+                            // (SSE 가 끊겨 onDone 이 오지 않은 18분짜리 제안서 턴이 파일
+                            // 링크만 남고 본문을 잃었다.) 시작 시점의 placeholder INSERT 는
+                            // content 가 placeholder 라 이 분기에 걸리지 않는다.
+                            this.adoptServerFinalContent(streamMsg, incoming, matchKey);
                             this.persistMessageFrontendState(streamMsg, roomId);
                             return;
                         }
@@ -9022,7 +9029,9 @@ export default {
                                 console.warn('[ChatRoomPage] onDone hwpx/artifact 파싱 실패(무시):', e?.message || e);
                             }
 
-                            msg.content = msg.__humanFeedback ? '' : safeFinal || full || '';
+                            // __serverContent: realtime 으로 이미 받아둔 서버 확정 본문.
+                            // done 이 빈 본문으로 오더라도 그걸 지우지는 않는다.
+                            msg.content = msg.__humanFeedback ? '' : safeFinal || full || msg.__serverContent || '';
                             displayContent = this.extractDisplayAssistantContent(msg.content);
                             msg.isLoading = false;
                             msg.contentType = 'text';
@@ -10944,6 +10953,37 @@ export default {
             });
         },
 
+        /**
+         * 서버가 확정한 본문을 스트리밍 말풍선에 반영한다.
+         *
+         * 서버는 턴 시작에 '생각 중...' row 를 넣고 끝에 같은 uuid 로 본문을 덮어쓴다.
+         * 따라서 placeholder 가 아닌 content 가 realtime 으로 오면 그 턴은 서버에서
+         * 끝난 것이다. SSE 가 끊겨 onDone 이 못 오면 이 신호가 유일한 완료 통지라,
+         * 여기서 본문을 받고 로딩도 내려야 말풍선이 영원히 돌지 않는다.
+         * 늦게 도착한 onDone 은 같은 객체를 다시 확정하므로 충돌하지 않는다.
+         */
+        adoptServerFinalContent(streamMsg, incoming, agentId) {
+            if (!streamMsg || !incoming || typeof incoming !== 'object') return false;
+            const serverContent = (incoming.content ?? '').toString();
+            if (!serverContent.trim() || this._isPlaceholderContent(serverContent)) return false;
+            // persistMessageFrontendState 가 placeholder 로 되덮는 것을 막는 안전망.
+            streamMsg.__serverContent = serverContent;
+            if (serverContent === (streamMsg.content ?? '').toString()) return false;
+            streamMsg.content = serverContent;
+            streamMsg.contentType = incoming.contentType || streamMsg.contentType || 'text';
+            if (incoming.timeStamp) streamMsg.timeStamp = incoming.timeStamp;
+            streamMsg.isLoading = false;
+            // 도구 타임라인이 'running' 으로 얼어붙으면 완료된 턴이 진행 중처럼 보인다.
+            if (Array.isArray(streamMsg.toolCalls)) {
+                streamMsg.toolCalls = streamMsg.toolCalls.map((toolCall) =>
+                    toolCall?.status === 'running' ? { ...toolCall, status: 'done', endedAt: new Date().toISOString() } : toolCall
+                );
+            }
+            if (agentId) this.setAgentStatus(agentId, { state: 'ready', message: '' });
+            this.$nextTick(() => this.scrollToBottomSafe());
+            return true;
+        },
+
         carryOptimisticOnlyFields(fromMsg, toMsg) {
             if (!fromMsg || !toMsg || typeof fromMsg !== 'object' || typeof toMsg !== 'object') return toMsg;
             const carryKeys = [
@@ -11094,6 +11134,13 @@ export default {
                     msg.__humanFeedbackPersisted = true;
                 }
                 const messagesToSave = { ...msg };
+                // 이 저장은 messages jsonb 를 통째로 교체한다. 서버가 확정한 본문 위에
+                // 아직 placeholder 인 클라이언트 본문을 쓰면 답변이 사라지므로, 그때는
+                // content 만 서버가 쓴 값으로 되돌려 둔다. 다른 필드는 그대로 저장한다.
+                if (this._isPlaceholderContent(messagesToSave.content) && msg.__serverContent) {
+                    messagesToSave.content = msg.__serverContent;
+                }
+                delete messagesToSave.__serverContent;
                 delete messagesToSave.rowUuid;
                 delete messagesToSave.isOptimistic;
                 delete messagesToSave.isLoading;
