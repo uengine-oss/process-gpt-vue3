@@ -7240,6 +7240,22 @@ export default {
         },
 
         /**
+         * 이 메시지가 같은 파일을 이미 산출물로 들고 있는가.
+         *
+         * 본문에서 hwpx 링크를 긁어 파일 카드를 만드는 아래 경로는 서버가 산출물을
+         * 안 실어 보내던 시절의 보완책이다. 지금은 서버가 `pdfFiles` 로 제대로 주므로,
+         * 그대로 두면 같은 파일이 두 번 뜨고 긁어 만든 쪽은 이름이 스토리지 uuid 로 나온다.
+         */
+        hasPublishedArtifactFor(msg, url) {
+            const bare = (value) => (value || '').toString().split('?')[0];
+            const target = bare(url);
+            if (!target) return false;
+            return (Array.isArray(msg?.pdfFiles) ? msg.pdfFiles : []).some(
+                (file) => bare(file?.url) === target || bare(file?.fileUrl) === target
+            );
+        },
+
+        /**
          * 텍스트 메시지에 raw hwpx/html 마크다운 링크가 있는 경우:
          * - 링크 줄 제거 (정제된 텍스트 반환)
          * - message.pdfFile 세팅 (hwpx 파일 카드)
@@ -7268,7 +7284,7 @@ export default {
                 // 빈 줄 3개 이상 → 2개로 정리
                 .replace(/\n{3,}/g, '\n\n')
                 .trim();
-            if (hwpxFileUrl && !msg.pdfFile) {
+            if (hwpxFileUrl && !msg.pdfFile && !this.hasPublishedArtifactFor(msg, hwpxFileUrl)) {
                 const fileName = decodeURIComponent(hwpxFileUrl.split('/').pop() || 'document.hwpx');
                 msg.pdfFile = {
                     url: hwpxFileUrl,
@@ -7295,7 +7311,7 @@ export default {
                 const content = (msg.content || '').toString();
 
                 // ① 이미 hwpxFileUrl이 확인된 메시지: pdfFile 세팅
-                if (msg.hwpxFileUrl && !msg.pdfFile) {
+                if (msg.hwpxFileUrl && !msg.pdfFile && !this.hasPublishedArtifactFor(msg, msg.hwpxFileUrl)) {
                     const fileName = decodeURIComponent(msg.hwpxFileUrl.split('/').pop() || 'document.hwpx');
                     msg.pdfFile = {
                         url: msg.hwpxFileUrl,
