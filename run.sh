@@ -42,4 +42,12 @@ else
 fi
 
 # HTTP 서버 실행
-exec http-server /opt/www -p 8080 -d false --push-state
+#
+# -c-1 을 반드시 붙인다. http-server 는 -c 를 안 주면 모든 응답에 max-age=3600 을
+# 붙인다. 그러면 index.html 이 한 시간 캐시되어, 배포를 해도 사용자는 최대
+# 한 시간 동안 예전 번들 해시를 물고 있게 된다.
+#
+# 에셋까지 캐시가 풀리는 것은 감수한다. 파일명에 내용 해시가 박혀 있어 재검증이
+# 돌아도 304 로 끝나고, 그 비용보다 배포가 즉시 반영되는 쪽이 크다.
+# (http-server 에는 경로별 캐시 설정이 없어 전체로밖에 못 준다.)
+exec http-server /opt/www -p 8080 -c-1 -d false --push-state
