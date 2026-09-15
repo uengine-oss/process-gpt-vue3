@@ -18,13 +18,16 @@
                             {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
-                    <v-tabs-items v-model="activeTab">
-                        <v-tab-item v-if="activeTab == 0">
+                    <!-- 이 자리의 Vuetify 2 탭 패널 컴포넌트는 3.4 에 없어 미해석 엘리먼트로 떨어졌고,
+                         v-window 로 바꿔 보니 전환 애니메이션이 패널을 비워 버렸다.
+                         어차피 전환은 아래 v-if 가 해 왔으므로, 감싸는 것은 평범한 상자면 충분하다. -->
+                    <div class="chat-tab-panels">
+                        <div v-if="activeTab == 0">
                             <!-- <ChatProfile style="margin-bottom: -15px;" /> -->
                             <!-- <v-divider class="my-2"></v-divider> -->
                             <UserListing :userList="userList" @selectedUser="selectedUser" @startChat="startChat" />
-                        </v-tab-item>
-                        <v-tab-item v-if="activeTab == 1">
+                        </div>
+                        <div v-if="activeTab == 1">
                             <ChatListing
                                 :chatRoomList="filteredChatRoomList"
                                 :userList="userList"
@@ -35,8 +38,8 @@
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
                             />
-                        </v-tab-item>
-                    </v-tabs-items>
+                        </div>
+                    </div>
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -106,13 +109,16 @@
                             {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
-                    <v-tabs-items v-model="activeTab">
-                        <v-tab-item v-if="activeTab == 0">
+                    <!-- 이 자리의 Vuetify 2 탭 패널 컴포넌트는 3.4 에 없어 미해석 엘리먼트로 떨어졌고,
+                         v-window 로 바꿔 보니 전환 애니메이션이 패널을 비워 버렸다.
+                         어차피 전환은 아래 v-if 가 해 왔으므로, 감싸는 것은 평범한 상자면 충분하다. -->
+                    <div class="chat-tab-panels">
+                        <div v-if="activeTab == 0">
                             <!-- <ChatProfile style="margin-bottom: -15px;" /> -->
                             <!-- <v-divider class="my-2"></v-divider> -->
                             <UserListing :userList="userList" @selectedUser="selectedUser" @startChat="startChat" />
-                        </v-tab-item>
-                        <v-tab-item v-if="activeTab == 1">
+                        </div>
+                        <div v-if="activeTab == 1">
                             <ChatListing
                                 :chatRoomList="filteredChatRoomList"
                                 :userList="userList"
@@ -123,8 +129,8 @@
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
                             />
-                        </v-tab-item>
-                    </v-tabs-items>
+                        </div>
+                    </div>
                 </div>
             </template>
         </AppBaseCard>
@@ -248,21 +254,6 @@ export default {
         AssistantChats,
         Attachments
     },
-    data() {
-        return {
-            /**
-             * 좁은 화면에서 대화 목록을 본문에 보여 줄지.
-             *
-             * chatRoomId 로 판단하지 않는다. 그 값은 지난번에 보던 대화가 남아
-             * 있어서, 휴대폰으로 새로 들어와도 목록 대신 옛 대화가 열린다.
-             * 들어올 때는 목록부터 보여 주고, 하나 고르면 그 대화로 넘어간다.
-             *
-             * 주소에 대화가 지정돼 있으면(알림을 눌러 들어온 경우) 아래
-             * chatRoomSelected 가 불리면서 곧바로 꺼진다.
-             */
-            mobileListOpen: true
-        };
-    },
     emits: ['selectedUser', 'startChat', 'chat-selected', 'create-chat-room', 'delete-chat-room', 'genFinished', 'clickedWorkOrder'],
     props: {
         isInstanceChat: {
@@ -295,6 +286,19 @@ export default {
         chatRenderKey: 0,
         generatedWorkList: [],
         activeTab: 1,
+
+        /**
+         * 좁은 화면에서 대화 목록을 본문에 보여 줄지.
+         *
+         * 반드시 이 data 안에 있어야 한다. 예전에는 위쪽에 data() 를 따로 두었는데,
+         * 같은 객체에 data 키가 둘이라 뒤에 오는 이 쪽이 앞을 덮어서
+         * 그 블록은 한 번도 만들어지지 않았다 — preferLeftOnMobile 이 항상 undefined 라
+         * 목록이 본문으로 오지 못하고 서랍에만 남아 있었다.
+         *
+         * chatRoomId 로 판단하지 않는다. 그 값은 지난번에 보던 대화가 남아 있어서,
+         * 휴대폰으로 새로 들어와도 목록 대신 옛 대화가 열린다.
+         */
+        mobileListOpen: true,
 
         // assistantChat
         checked: true,
