@@ -98,7 +98,7 @@ const requiredRoleForRoute = computed(() => lookupRequiredRole(route.path));
 .admin-content > :deep(*) {
     width: 100%;
     min-width: 0;
-    height: 100% !important;
+    min-height: 100%;
     margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;

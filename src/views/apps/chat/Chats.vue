@@ -1,6 +1,11 @@
 <template>
     <v-card elevation="10">
-        <AppBaseCard :isInstanceChat="isInstanceChat">
+        <!--
+          좁은 화면에서 아직 대화를 고르지 않았으면 목록을 본문에 보여 준다.
+          그러지 않으면 휴대폰으로 들어왔을 때 빈 화면만 뜬다 — 목록이
+          서랍 안에 있다는 것을 알 방법이 없다.
+        -->
+        <AppBaseCard :isInstanceChat="isInstanceChat" :preferLeftOnMobile="mobileListOpen">
             <template v-if="!isInstanceChat" v-slot:leftpart="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab" grow color="primary">
@@ -13,25 +18,28 @@
                             {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
-                    <v-tabs-items v-model="activeTab">
-                        <v-tab-item v-if="activeTab == 0">
+                    <!-- 이 자리의 Vuetify 2 탭 패널 컴포넌트는 3.4 에 없어 미해석 엘리먼트로 떨어졌고,
+                         v-window 로 바꿔 보니 전환 애니메이션이 패널을 비워 버렸다.
+                         어차피 전환은 아래 v-if 가 해 왔으므로, 감싸는 것은 평범한 상자면 충분하다. -->
+                    <div class="chat-tab-panels">
+                        <div v-if="activeTab == 0">
                             <!-- <ChatProfile style="margin-bottom: -15px;" /> -->
                             <!-- <v-divider class="my-2"></v-divider> -->
                             <UserListing :userList="userList" @selectedUser="selectedUser" @startChat="startChat" />
-                        </v-tab-item>
-                        <v-tab-item v-if="activeTab == 1">
+                        </div>
+                        <div v-if="activeTab == 1">
                             <ChatListing
                                 :chatRoomList="filteredChatRoomList"
                                 :userList="userList"
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
                                 :closeDrawer="closeDrawer"
-                                @chat-selected="chatRoomSelected"
+                                @chat-selected="pickChatRoom"
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
                             />
-                        </v-tab-item>
-                    </v-tabs-items>
+                        </div>
+                    </div>
                 </div>
             </template>
             <template v-slot:rightpart>
@@ -91,6 +99,20 @@
 
             <template v-if="!isInstanceChat" v-slot:mobileLeftContent="{ closeDrawer }">
                 <div class="no-scrollbar">
+                    <!--
+                        첫 화면의 새 대화 진입점.
+
+                        정의 체계도 맨 위에 있는 것과 **같은 컴포넌트**다. 새로 만들지
+                        않는다 — 보내는 흐름도 같은 함수(startMainChat)를 쓴다.
+                        지난 대화는 바로 아래 목록에 그대로 있다.
+                    -->
+                    <div class="pg-home">
+                        <MainChatInput
+                            :agentInfo="mainChatAgentInfo"
+                            :userId="userInfo && (userInfo.uid || userInfo.id)"
+                            @submit="handleMainChatSubmit"
+                        />
+                    </div>
                     <v-tabs v-model="activeTab">
                         <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-account</v-icon>
@@ -101,25 +123,28 @@
                             {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
-                    <v-tabs-items v-model="activeTab">
-                        <v-tab-item v-if="activeTab == 0">
+                    <!-- 이 자리의 Vuetify 2 탭 패널 컴포넌트는 3.4 에 없어 미해석 엘리먼트로 떨어졌고,
+                         v-window 로 바꿔 보니 전환 애니메이션이 패널을 비워 버렸다.
+                         어차피 전환은 아래 v-if 가 해 왔으므로, 감싸는 것은 평범한 상자면 충분하다. -->
+                    <div class="chat-tab-panels">
+                        <div v-if="activeTab == 0">
                             <!-- <ChatProfile style="margin-bottom: -15px;" /> -->
                             <!-- <v-divider class="my-2"></v-divider> -->
                             <UserListing :userList="userList" @selectedUser="selectedUser" @startChat="startChat" />
-                        </v-tab-item>
-                        <v-tab-item v-if="activeTab == 1">
+                        </div>
+                        <div v-if="activeTab == 1">
                             <ChatListing
                                 :chatRoomList="filteredChatRoomList"
                                 :userList="userList"
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
                                 :closeDrawer="closeDrawer"
-                                @chat-selected="chatRoomSelected"
+                                @chat-selected="pickChatRoom"
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
                             />
-                        </v-tab-item>
-                    </v-tabs-items>
+                        </div>
+                    </div>
                 </div>
             </template>
         </AppBaseCard>
@@ -219,6 +244,9 @@
 import AssistantChats from '../chat/AssistantChats.vue';
 import Attachments from './Attachments.vue';
 import ChatModule from '@/components/ChatModule.vue';
+import MainChatInput from '@/components/MainChatInput.vue';
+import { startMainChat, hasSomethingToSend } from '@/composables/useMainChatStart';
+import { processGptAgent } from '@/constants/processGptAgent';
 import { findStartActivity } from '@/utils/processStart';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
@@ -235,6 +263,7 @@ export default {
     mixins: [ChatModule],
     name: 'Chats',
     components: {
+        MainChatInput,
         Chat,
         AppBaseCard,
         ChatListing,
@@ -276,6 +305,19 @@ export default {
         generatedWorkList: [],
         activeTab: 1,
 
+        /**
+         * 좁은 화면에서 대화 목록을 본문에 보여 줄지.
+         *
+         * 반드시 이 data 안에 있어야 한다. 예전에는 위쪽에 data() 를 따로 두었는데,
+         * 같은 객체에 data 키가 둘이라 뒤에 오는 이 쪽이 앞을 덮어서
+         * 그 블록은 한 번도 만들어지지 않았다 — preferLeftOnMobile 이 항상 undefined 라
+         * 목록이 본문으로 오지 못하고 서랍에만 남아 있었다.
+         *
+         * chatRoomId 로 판단하지 않는다. 그 값은 지난번에 보던 대화가 남아 있어서,
+         * 휴대폰으로 새로 들어와도 목록 대신 옛 대화가 열린다.
+         */
+        mobileListOpen: true,
+
         // assistantChat
         checked: true,
         openWorkOrderDialog: false,
@@ -289,6 +331,10 @@ export default {
         attachments: []
     }),
     computed: {
+        /** 정의 체계도가 쓰는 기본 업무 지원 에이전트와 같은 것. */
+        mainChatAgentInfo() {
+            return processGptAgent;
+        },
         filteredChatRoomList() {
             return this.chatRoomList.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
         }
@@ -336,6 +382,8 @@ export default {
         });
 
         if (this.$route.query.id) {
+            // 알림 등으로 특정 대화를 지정해 들어온 경우다. 목록을 거치지 않는다.
+            this.mobileListOpen = false;
             this.chatRoomSelected(this.chatRoomList.find((room) => room.id === this.$route.query.id));
         }
 
@@ -618,6 +666,47 @@ export default {
                 );
             }
         },
+        /**
+         * 사용자가 목록에서 하나 골랐다.
+         *
+         * 자동 선택(첫 대화를 미리 열어 두는 것)과 구분해야 한다. 둘을 같이
+         * 두었더니 화면에 들어오자마자 목록이 접혀, 좁은 화면에서는 **목록을
+         * 볼 기회가 없었다.**
+         */
+        /** 첫 화면에서 보냈다. 정의 체계도와 같은 함수로 방을 만들고 그 방으로 간다. */
+        async handleMainChatSubmit(message) {
+            if (!hasSomethingToSend(message)) return;
+            await startMainChat(message, { currentUser: this.userInfo, router: this.$router, eventBus: this.EventBus });
+        },
+
+        /** 좁은 화면인가. 목록과 대화를 한 화면에 같이 둘 수 없는 폭. */
+        isNarrow() {
+            return !this.$vuetify?.display?.lgAndUp;
+        },
+
+        /**
+         * 좁은 화면에서 대화 하나를 연다.
+         *
+         * 왜 이 화면(Chats.vue) 안에서 열지 않는가
+         *   여기 붙은 대화창은 목록과 나란히 놓으려고 줄여 놓은 것이라, 생성된
+         *   BPMN 미리보기·OpenUI 폼·휴먼 피드백을 받아 주는 곳이 없다. 실제로
+         *   프로세스를 만들어 놓고도 결과를 볼 수가 없었다.
+         *   /chat 은 그 모두를 갖춘 전용 화면이다. 휴대폰에서는 어차피 한 번에
+         *   하나만 보이므로 나란히 둘 이유도 없다.
+         */
+        openRoomOnMobile(roomId) {
+            this.$router.push({ path: '/chat', query: { roomId: roomId } });
+        },
+
+        pickChatRoom(chatRoomInfo) {
+            if (this.isNarrow() && chatRoomInfo && chatRoomInfo.id) {
+                this.openRoomOnMobile(chatRoomInfo.id);
+                return;
+            }
+            this.mobileListOpen = false;
+            this.chatRoomSelected(chatRoomInfo);
+        },
+
         chatRoomSelected(chatRoomInfo) {
             // 현재 진행 중인 AI 생성 작업이 있으면 백그라운드 모드로 전환 (새로운 채팅방 정보 설정 전에 호출)
             this.handleChatRoomChange();

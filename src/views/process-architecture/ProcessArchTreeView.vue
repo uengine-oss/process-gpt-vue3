@@ -26,11 +26,8 @@
                         { 'sunset-row': showToBe && row.type === 'sub' && row.status?.status === 'sunset' }
                     ]"
                     :style="{ paddingLeft: `${row.level * 24 + 12}px` }"
-                    :draggable="row.type === 'sub' && !props.readonly"
                     :title="row.description || ''"
                     @click="row.type === 'sub' ? $emit('navigate', row.id, row.name) : null"
-                    @dragstart="row.type === 'sub' ? onDragStart($event, row) : null"
-                    @dragend="onDragEnd"
                     @dragover.prevent="onDragOver($event, row)"
                     @dragleave="onDragLeave(row)"
                     @drop.prevent="onDrop($event, row)"
@@ -47,7 +44,17 @@
                     <div v-else style="width: 28px" class="mr-1"></div>
 
                     <!-- Drag handle (only for sub-processes) -->
-                    <v-icon v-if="row.type === 'sub'" size="14" color="grey-lighten-1" class="drag-handle mr-1" title="Drag to move">
+                    <v-icon
+                        v-if="row.type === 'sub' && !props.readonly"
+                        size="14"
+                        color="grey-lighten-1"
+                        class="drag-handle mr-1"
+                        title="Drag to move"
+                        draggable="true"
+                        @click.stop
+                        @dragstart.stop="onDragStart($event, row)"
+                        @dragend="onDragEnd"
+                    >
                         mdi-drag-vertical
                     </v-icon>
 

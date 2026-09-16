@@ -33,6 +33,7 @@
                 </div>
             </div>
             <v-btn
+                v-if="aiEnabled"
                 color="teal"
                 variant="flat"
                 size="large"
@@ -96,7 +97,7 @@
                 </v-tooltip>
                 <span class="execview__summary">{{ executable?.summary }}</span>
                 <v-spacer />
-                <v-btn size="small" variant="tonal" color="teal" :loading="generating" :disabled="readonly" @click="$emit('generate')">
+                <v-btn v-if="aiEnabled" size="small" variant="tonal" color="teal" :loading="generating" :disabled="readonly" @click="$emit('generate')">
                     <v-icon start size="15">mdi-refresh</v-icon>
                     재변환
                 </v-btn>
@@ -614,6 +615,9 @@ import { ref, computed, watch } from 'vue';
 import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { extractBpmnSkeleton, cleanStringArray, type ExecutableData } from '@/composables/blueprint/executableModel';
+import { canUseAiFeatures } from '@/utils/aiFeatureGate';
+
+const aiEnabled = computed(() => canUseAiFeatures('COPILOT'));
 
 const props = defineProps<{
     executable: ExecutableData | null;

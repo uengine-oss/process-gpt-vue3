@@ -12,7 +12,7 @@ import AnalysisDashboardSettings from './AnalysisDashboardSettings.vue';
 import { defineAsyncComponent } from 'vue';
 
 const nativeComponentMap: Record<NativeDashboardView, Component> = {
-    'operational-board': defineAsyncComponent(() => import('./tabs/OperationalBoard.vue')),
+    'operational-board': defineAsyncComponent(() => import('./tabs/ModelOperationalBoard.vue')),
     'executive-summary': defineAsyncComponent(() => import('./tabs/ExecutiveSummary.vue')),
     'process-analytics': defineAsyncComponent(() => import('./tabs/ProcessAnalytics.vue')),
     'governance-quality': defineAsyncComponent(() => import('./tabs/GovernanceQuality.vue'))
@@ -45,7 +45,7 @@ const orgList = ref<Array<{ org_code: string; org_name: string }>>([]);
 
 const domainScopeOptions = computed(() => {
     const base = dashboardStore.domainOptions;
-    return base.length > 0 ? base : ['Access', 'Core', 'IP'];
+    return base;
 });
 
 const dateRangeOptions = computed(() => [
@@ -233,9 +233,11 @@ function stopOperationalRefresh() {
     }
 }
 
-async function refreshOperationalBoard() {
+const nativeDashboardRef = ref<{ reload?: () => Promise<void> } | null>(null);
+async function refreshOperationalBoard(reloadModel = true) {
     dashboardStore.setFilters(dashboardFilters);
     await dashboardStore.fetchAllTabB();
+    if (reloadModel) await nativeDashboardRef.value?.reload?.();
 }
 
 function startOperationalRefresh(tab?: DashboardTab) {
@@ -251,7 +253,7 @@ watch(
     currentTab,
     (tab) => {
         if (tab?.mode === 'native' && tab.nativeView === 'operational-board') {
-            void refreshOperationalBoard();
+            void refreshOperationalBoard(false);
         }
         startOperationalRefresh(tab);
     },
@@ -466,7 +468,7 @@ onUnmounted(stopOperationalRefresh);
 
                 <div v-if="currentTab" class="tab-content-area">
                     <div v-if="currentTab.mode === 'native'" class="native-board-wrap">
-                        <component :is="getNativeComponent(currentTab)" v-if="getNativeComponent(currentTab)" :filters="dashboardFilters" />
+                        <component :is="getNativeComponent(currentTab)" v-if="getNativeComponent(currentTab)" ref="nativeDashboardRef" :filters="dashboardFilters" />
 
                         <div v-else class="grafana-empty-state">
                             <div class="empty-icon">

@@ -253,6 +253,18 @@ export async function refreshAuthClaims(session?: any) {
     return state;
 }
 
+/** Apply the current DB membership returned by the approval gate, not a stale role token. */
+export function applyMembershipClaims(membership: { status: string; role?: string; is_admin?: boolean; tenant_id?: string }) {
+    const approved = membership.status === 'approved';
+    const role = approved ? membership.role || 'viewer' : 'viewer';
+    const admin = approved && (!!membership.is_admin || isAdminRole(role));
+    applyClaims({ user_role: role, is_admin: admin, tenant_id: membership.tenant_id });
+    const changed = localStorage.getItem('role') !== role || localStorage.getItem('isAdmin') !== String(admin);
+    localStorage.setItem('role', role);
+    localStorage.setItem('isAdmin', String(admin));
+    if (changed) window.dispatchEvent(new CustomEvent('localStorageChange', { detail: { key: 'isAdmin', value: admin } }));
+}
+
 async function resolveCurrentUserId(session?: any): Promise<string | null> {
     if (session?.user?.id) return session.user.id;
 

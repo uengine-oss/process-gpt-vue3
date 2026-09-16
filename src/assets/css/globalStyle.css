@@ -1748,3 +1748,87 @@ hr {
     cursor: pointer;
 }
 
+
+/* Call Activity inline drilldown: the return card lives inside the BPMN canvas. */
+.djs-container {
+    position: relative;
+}
+.bjs-drilldown.ca-drilldown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--cds-border-subtle, #cbd5e1);
+    border-radius: 5px;
+    color: var(--cds-text-primary, #1e293b);
+    background: var(--cds-surface-1, #fff);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+    cursor: pointer;
+}
+.ca-drilldown__icon {
+    font-size: 18px;
+    line-height: 1;
+}
+.ca-drilldown--loading {
+    opacity: .55;
+    cursor: wait;
+}
+.ca-drilldown-breadcrumbs {
+    display: none;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 30;
+    max-width: calc(100% - 100px);
+    padding: 10px 12px;
+    border: 1px solid var(--cds-border-subtle, #cbd5e1);
+    border-radius: 8px;
+    background: var(--cds-surface-1, #fff);
+    color: var(--cds-text-primary, #1e293b);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+    font-size: 13px;
+}
+.ca-drilldown-breadcrumbs--visible {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.ca-drilldown-breadcrumbs__actions {
+    display: flex;
+    gap: 8px;
+}
+.ca-drilldown-btn {
+    padding: 5px 9px;
+    border: 1px solid var(--cds-border-subtle, #cbd5e1);
+    border-radius: 4px;
+    background: var(--cds-surface-2, #f8fafc);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.ca-drilldown-btn:disabled {
+    opacity: .5;
+    cursor: wait;
+}
+.ca-drilldown-btn:focus-visible,
+.bjs-drilldown.ca-drilldown:focus-visible {
+    outline: 2px solid var(--cds-link-primary, #2563eb);
+    outline-offset: 2px;
+}
+.ca-drilldown-breadcrumbs__trail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.ca-drilldown-breadcrumbs__item + .ca-drilldown-breadcrumbs__item::before {
+    content: '›';
+    margin-right: 6px;
+}
+.ca-drilldown-breadcrumbs__link {
+    overflow-wrap: anywhere;
+}
+.ca-drilldown-breadcrumbs__link--current {
+    font-weight: 600;
+}

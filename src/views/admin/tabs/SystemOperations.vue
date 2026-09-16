@@ -709,7 +709,16 @@ export default defineComponent({
     display: flex;
     flex-direction: column;
     gap: 16px;
-    min-height: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-sizing: border-box;
+}
+
+.sysops-wrapper > .page-header,
+.sysops-wrapper > .section-card {
+    flex-shrink: 0;
 }
 
 /* ── Section Card ────────────────────────────────────────────── */

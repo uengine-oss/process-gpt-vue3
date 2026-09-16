@@ -6,6 +6,11 @@ const AuthRoutes = {
     },
     children: [
         {
+            name: 'Signup Approval Pending',
+            path: '/auth/signup-pending',
+            component: () => import('@/views/authentication/SignupPending.vue')
+        },
+        {
             name: 'Landing Page',
             path: '/',
             component: () => import('@/views/pages/landingpage/index.vue')
@@ -51,6 +56,12 @@ const AuthRoutes = {
             name: 'Side Initial Setting',
             path: '/auth/initial-setting',
             component: () => import('@/views/authentication/SideInitialSetting.vue')
+        },
+        {
+            // PAL 점검 모드 안내 화면 — 라우터 가드(maintenanceGate)가 비관리자를 이 경로로 보낸다
+            name: 'Maintenance',
+            path: '/auth/maintenance',
+            component: () => import('@/views/authentication/PalMaintenance.vue')
         }
         // {
         //     name: 'Boxed Forgot Password',

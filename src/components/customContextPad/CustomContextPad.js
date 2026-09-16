@@ -984,34 +984,8 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
             existingMenu.remove();
         }
 
-        // 사용 가능한 Task 타입 목록
-        const taskTypes = [
-            { type: 'bpmn:ManualTask', label: i18n.global.t('CustomReplaceElement.replace-with-manual-task') || 'Manual Task', icon: '✋' },
-            {
-                type: 'bpmn:ServiceTask',
-                label: i18n.global.t('CustomReplaceElement.replace-with-service-task') || 'Service Task',
-                icon: '⚙️'
-            },
-            { type: 'bpmn:UserTask', label: i18n.global.t('CustomReplaceElement.replace-with-user-task') || 'User Task', icon: '👤' },
-            { type: 'bpmn:ScriptTask', label: i18n.global.t('CustomReplaceElement.replace-with-script-task') || 'Script Task', icon: '📜' },
-            {
-                type: 'bpmn:BusinessRuleTask',
-                label: i18n.global.t('CustomReplaceElement.replace-with-rule-task') || 'Business Rule Task',
-                icon: '📋'
-            },
-            { type: 'bpmn:SendTask', label: i18n.global.t('CustomReplaceElement.replace-with-send-task') || 'Send Task', icon: '📤' },
-            {
-                type: 'bpmn:ReceiveTask',
-                label: i18n.global.t('CustomReplaceElement.replace-with-receive-task') || 'Receive Task',
-                icon: '📥'
-            }
-        ];
-
-        // 활성화된 Task 타입만 필터링
-        const enabledTypes = window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
-            window.$paletteSettings?.visibleTaskTypes || ['bpmn:UserTask'];
-
-        const filteredTaskTypes = taskTypes.filter((t) => enabledTypes.includes(t.type));
+        // 사용 가능한 Task 타입 목록 (관리자 'Task 종류 설정'과 동기화)
+        const filteredTaskTypes = getMultiTaskReplaceOptions();
 
         // 메뉴 컨테이너 생성
         const menu = document.createElement('div');
@@ -1201,16 +1175,24 @@ ContextPadProvider.prototype.getMultiElementContextPadEntries = function (elemen
     return actions;
 };
 
-// 다중 Task 타입 변경 메뉴 (다중 선택용)
-function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, selection) {
-    // 기존 메뉴 제거
-    const existingMenu = document.getElementById('multi-task-replace-menu');
-    if (existingMenu) {
-        existingMenu.remove();
+// 다중 선택 '타입 변경' 메뉴가 노출할 Task 타입 목록. 설정이 없으면 null(필터하지 않음).
+// (window 전역은 stores/taskCatalog 의 publishPaletteSettingsToWindow 가 발행)
+function getEnabledTaskTypesForReplaceMenu() {
+    if (Array.isArray(window.$visibleTaskTypes)) {
+        return window.$visibleTaskTypes;
     }
+    const dbTypes = window.$enabledPaletteTaskTypes;
+    if (Array.isArray(dbTypes) && dbTypes.length > 0) {
+        return dbTypes.map((t) => t.task_type);
+    }
+    const legacy = window.$paletteSettings?.visibleTaskTypes;
+    return Array.isArray(legacy) && legacy.length > 0 ? legacy : null;
+}
 
-    // 사용 가능한 Task 타입 목록
+// 다중 선택 일괄 변환 옵션 — 컨테이너형(SubProcess/AdHocSubProcess/Transaction)은 일괄 변환 대상에서 제외
+function getMultiTaskReplaceOptions() {
     const taskTypes = [
+        { type: 'bpmn:Task', label: i18n.global.t('CustomReplaceElement.replace-with-task') || 'Task', icon: '📄' },
         { type: 'bpmn:ManualTask', label: i18n.global.t('CustomReplaceElement.replace-with-manual-task') || 'Manual Task', icon: '✋' },
         { type: 'bpmn:ServiceTask', label: i18n.global.t('CustomReplaceElement.replace-with-service-task') || 'Service Task', icon: '⚙️' },
         { type: 'bpmn:UserTask', label: i18n.global.t('CustomReplaceElement.replace-with-user-task') || 'User Task', icon: '👤' },
@@ -1221,14 +1203,27 @@ function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, 
             icon: '📋'
         },
         { type: 'bpmn:SendTask', label: i18n.global.t('CustomReplaceElement.replace-with-send-task') || 'Send Task', icon: '📤' },
-        { type: 'bpmn:ReceiveTask', label: i18n.global.t('CustomReplaceElement.replace-with-receive-task') || 'Receive Task', icon: '📥' }
+        { type: 'bpmn:ReceiveTask', label: i18n.global.t('CustomReplaceElement.replace-with-receive-task') || 'Receive Task', icon: '📥' },
+        {
+            type: 'bpmn:CallActivity',
+            label: i18n.global.t('CustomReplaceElement.replace-with-call-activity') || 'Call Activity',
+            icon: '🔗'
+        }
     ];
+    const enabledTypes = getEnabledTaskTypesForReplaceMenu();
+    return enabledTypes ? taskTypes.filter((t) => enabledTypes.includes(t.type)) : taskTypes;
+}
 
-    // 활성화된 Task 타입만 필터링
-    const enabledTypes = window.$enabledPaletteTaskTypes?.map((t) => t.task_type) ||
-        window.$paletteSettings?.visibleTaskTypes || ['bpmn:UserTask'];
+// 다중 Task 타입 변경 메뉴 (다중 선택용)
+function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, selection) {
+    // 기존 메뉴 제거
+    const existingMenu = document.getElementById('multi-task-replace-menu');
+    if (existingMenu) {
+        existingMenu.remove();
+    }
 
-    const filteredTaskTypes = taskTypes.filter((t) => enabledTypes.includes(t.type));
+    // 사용 가능한 Task 타입 목록 (관리자 'Task 종류 설정'과 동기화)
+    const filteredTaskTypes = getMultiTaskReplaceOptions();
 
     // 메뉴 컨테이너 생성
     const menu = document.createElement('div');

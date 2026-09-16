@@ -644,6 +644,7 @@ export const useTaskCatalogStore = defineStore({
                     config.widget = config.widget || panelProperty.widget;
                     config.binding = config.binding ?? panelProperty.binding ?? null;
                     config.tab = config.tab ?? panelProperty.tab ?? null;
+                    Object.assign(config, panelProperty.config || {});
                 } else {
                     delete config.renderer;
                     delete config.panelProperty;
@@ -679,7 +680,8 @@ export const useTaskCatalogStore = defineStore({
                         widget: prop.widget,
                         binding: prop.binding || null,
                         labelI18n: prop.labelI18n || null,
-                        tab: prop.tab || null
+                        tab: prop.tab || null,
+                        ...(prop.config || {})
                     }
                 });
             }
@@ -710,8 +712,22 @@ export const useTaskCatalogStore = defineStore({
         // ============================================
         // Palette Settings
         // ============================================
+        // 디자이너(순서도)의 팔레트·변경 메뉴가 window 전역으로 설정을 읽으므로,
+        // 로드/변경 시마다 실효 목록을 함께 발행해 열린 디자이너와 동기화한다
+        publishPaletteSettingsToWindow() {
+            if (typeof window === 'undefined') return;
+            window.$paletteSettings = this.paletteSettings;
+            window.$paletteTaskTypes = this.paletteTaskTypes;
+            window.$enabledPaletteTaskTypes = this.enabledPaletteTaskTypes;
+            window.$visibleTaskTypes = this.effectiveVisibleTaskTypes;
+            window.$visibleEventTypes = this.effectiveVisibleEventTypes;
+        },
+
         async loadPaletteSettings() {
-            if (this.paletteSettingsLoaded) return;
+            if (this.paletteSettingsLoaded) {
+                this.publishPaletteSettingsToWindow();
+                return;
+            }
             this.loading = true;
             this.error = null;
             try {
@@ -725,6 +741,7 @@ export const useTaskCatalogStore = defineStore({
                     : [...DEFAULT_VISIBLE_EVENT_TYPES];
                 this.paletteSettings = { ...(settings || {}), visibleTaskTypes, visibleEventTypes };
                 this.paletteSettingsLoaded = true;
+                this.publishPaletteSettingsToWindow();
             } catch (error: any) {
                 console.error('Failed to load palette settings:', error);
                 this.error = error.message;
@@ -745,9 +762,7 @@ export const useTaskCatalogStore = defineStore({
                     visibleEventTypes: [...(settings.visibleEventTypes || [])]
                 };
                 this.paletteSettingsLoaded = true;
-                if (typeof window !== 'undefined') {
-                    window.$paletteSettings = this.paletteSettings;
-                }
+                this.publishPaletteSettingsToWindow();
             } catch (error: any) {
                 console.error('Failed to save palette settings:', error);
                 this.error = error.message;
@@ -829,13 +844,17 @@ export const useTaskCatalogStore = defineStore({
         // Palette Task Types (new table-based)
         // ============================================
         async loadPaletteTaskTypes() {
-            if (this.paletteTaskTypesLoaded) return;
+            if (this.paletteTaskTypesLoaded) {
+                this.publishPaletteSettingsToWindow();
+                return;
+            }
             this.loading = true;
             this.error = null;
             try {
                 const backend = BackendFactory.createBackend();
                 this.paletteTaskTypes = await backend.getPaletteTaskTypes();
                 this.paletteTaskTypesLoaded = true;
+                this.publishPaletteSettingsToWindow();
             } catch (error: any) {
                 console.error('Failed to load palette task types:', error);
                 this.error = error.message;
@@ -856,10 +875,7 @@ export const useTaskCatalogStore = defineStore({
                 const beforeEnabled = taskType.is_enabled;
                 await backend.updatePaletteTaskType(id, newEnabled);
                 taskType.is_enabled = newEnabled;
-                if (typeof window !== 'undefined') {
-                    window.$paletteTaskTypes = this.paletteTaskTypes;
-                    window.$enabledPaletteTaskTypes = this.enabledPaletteTaskTypes;
-                }
+                this.publishPaletteSettingsToWindow();
                 await useAdminConsoleStore().writeAdminAuditLog({
                     action: 'task_type_visibility_update',
                     target_type: 'task_event_type',
@@ -1033,6 +1049,21 @@ export const useTaskCatalogStore = defineStore({
         // Get enabled palette task types (new table-based)
         enabledPaletteTaskTypes: (state) => {
             return state.paletteTaskTypes.filter((t) => t.is_enabled);
+        },
+
+        // 관리자 화면(TaskTypeSettings)과 동일한 병합 규칙의 실효 노출 목록:
+        // palette_task_types DB 행이 있으면 그 행이, 없으면 legacy visibleTaskTypes 가 결정한다
+        effectiveVisibleTaskTypes: (state): string[] => {
+            const byType = new Map(state.paletteTaskTypes.map((t) => [t.task_type, t]));
+            const legacy = new Set(state.paletteSettings.visibleTaskTypes || DEFAULT_VISIBLE_TASK_TYPES);
+            return AVAILABLE_TASK_TYPES.map((t) => t.value).filter((value) => {
+                const row = byType.get(value);
+                return row ? row.is_enabled !== false : legacy.has(value);
+            });
+        },
+
+        effectiveVisibleEventTypes: (state): string[] => {
+            return [...(state.paletteSettings.visibleEventTypes || DEFAULT_VISIBLE_EVENT_TYPES)];
         },
 
         // Check if task type is enabled (new table-based)

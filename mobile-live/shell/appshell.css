@@ -1,0 +1,225 @@
+/*
+ * 모바일 껍데기.
+ *
+ * 이 앱은 포털을 그대로 띄우지만, 포털 전체를 열어 주지는 않는다. 앱에서
+ * 지원하기로 한 몇 가지만 탭으로 두고, 나머지로 새어 나가는 길을 막는다.
+ * 그래야 작은 화면에서 쓸 수 없는 화면(BPMN 편집기·프로세스 맵 같은)에
+ * 사용자가 빠지지 않는다.
+ *
+ * 안쪽 화면은 손대지 않는다 — 그것이 이 앱의 요점이다. 여기서 하는 것은
+ * 바깥 테두리(하단 탭)를 두르고, 포털이 스스로 그리는 길잡이를 감추는 일뿐이다.
+ *
+ * 색은 모바일 전용 앱(mobile/src/styles/base.css)의 값을 그대로 옮겨 왔다.
+ * 두 앱이 다른 색이면 같은 제품으로 보이지 않는다.
+ */
+
+:root {
+    --pg-surface: hsl(0 0% 100%);
+    --pg-rule: hsl(210 25% 92%);
+    --pg-ink-faint: hsl(206 6% 47%);
+    --pg-brand: hsl(202 100% 43%);
+    --pg-tap: 56px;
+    --pg-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --pg-surface: hsl(60 2.1% 18.4%);
+        --pg-rule: hsl(51 16.5% 84.5% / 0.18);
+        --pg-ink-faint: hsl(48 4.8% 59.2%);
+    }
+}
+
+/* 탭 높이만큼 아래를 비워 준다. 없으면 마지막 내용이 탭에 가린다. */
+body.pg-shell {
+    padding-bottom: calc(var(--pg-tap) + var(--pg-safe-bottom)) !important;
+}
+
+.pg-tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2147483000; /* 포털의 다이얼로그·오버레이보다 위 */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--pg-surface);
+    border-top: 1px solid var(--pg-rule);
+    padding-bottom: var(--pg-safe-bottom);
+    font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', system-ui, sans-serif;
+}
+
+.pg-tab {
+    /* 손가락으로 누를 수 있는 크기. */
+    min-height: var(--pg-tap);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 4px;
+    border: 0;
+    background: none;
+    color: var(--pg-ink-faint);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pg-tab svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.pg-tab--on {
+    color: var(--pg-brand);
+}
+
+/*
+ * 포털의 사이드바는 **남겨 둔다.**
+ *
+ * 처음에는 통째로 감췄는데, 그러자 채팅 탭이 빈 화면이 됐다. 포털은 대화
+ * 목록을 사이드바 안에 두기 때문이다 — 감추면 대화를 고를 방법이 사라진다.
+ *
+ * 대신 그 안에서 **갈 수 없는 곳으로 가는 링크만** 지운다(appshell.js).
+ * 어디로 갈 수 있는지는 앱이 정하되, 화면은 포털 것을 그대로 쓴다는 원칙은
+ * 그대로다.
+ */
+/*
+ * 포털의 메인 메뉴를 통째로 감춘다.
+ *
+ * 왜 링크를 하나씩 지우지 않는가
+ *   appshell.js 의 pruneLinks 는 a[href] 만 본다. 메뉴 항목이 앵커가
+ *   아니거나 서랍이 열릴 때 비로소 그려지면 그 사이로 새어나간다.
+ *   실제로 사이드바 버튼으로 허용하지 않은 메뉴에 닿는 일이 있었다.
+ *   메뉴 자체를 없애면 새는 길이 남지 않는다 — 앞으로 포털이
+ *   메뉴를 다시 짜도 마찬가지다.
+ *
+ * 대화 목록 서랍(.mobile-menu-toggle-btn / .mobile-menu-nav)은 건드리지
+ * 않는다. 그것은 메뉴가 아니라 대화를 고르는 자리다.
+ */
+.pg-shell .leftSidebar,
+.pg-shell .mobile-side-bar-btn {
+    display: none !important;
+}
+
+.pg-shell .v-app-bar {
+    display: none !important;
+}
+
+/* 앱이 정한 곳 밖으로 나가는 길. 자바스크립트가 이 표시를 붙인다. */
+.pg-shell .pg-hidden {
+    display: none !important;
+}
+
+/* 사이드바가 탭을 가리지 않게 한다. */
+.pg-shell .v-navigation-drawer {
+    bottom: calc(var(--pg-tap) + var(--pg-safe-bottom)) !important;
+}
+
+/*
+ * 할 일 카드의 설명을 몇 줄로 잘라 둔다.
+ *
+ * 왜 필요한가
+ *   카드에 들어가는 설명은 사람이 쓴 한 줄이 아니라 에이전트가 받은 지시문
+ *   전문이다. 몇백 줄짜리에 
+ 같은 글자까지 그대로 들어 있다.
+ *   데스크톱에서는 칸반 열이 높이를 잡고 안에서 스크롤되어 드러나지 않았는데,
+ *   좁은 화면에서는 그 제한이 풀려 **카드 하나가 화면을 다 먹었다.**
+ *   목록은 훑어보는 자리다. 전문은 카드를 열면 나온다.
+ */
+.pg-shell[data-pg="todolist"] .v-card .text-subtitle-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    /* 긴 영문 토큰이 칸을 밀어내지 않게 한다. */
+    overflow-wrap: anywhere;
+}
+
+/*
+ * 칸반 열은 한 번에 하나씩, 화면 폭을 다 쓴다.
+ *
+ * 데스크톱에서는 열 여럿을 가로로 나란히려고 v-col 로 폭을 나눈다.
+ * 그 비율이 휴대폰에서도 그대로 살아 있어, 열이 화면의 절반만 차지하고
+ * 오른쪽이 비었다. 좌우로 나란히는 것 자체가 좁은 화면에서는 의미가 없으므로
+ * 한 열씩 세로로 쌓는다.
+ */
+.pg-shell[data-pg="todolist"] .kanban-column {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+}
+
+/*
+ * 칸반 안쪽의 오른쪽 여백을 거둑다.
+ *
+ * 포털의 모바일 규칙이 .todo-list-card-box 에 padding-right: 40px 를,
+ * 그 밖 상자에 20px 를 !important 로 붙인다. 태블릿에서는 그럴듯했을
+ * 테지만 400px 남줩7 화면에서는 카드가 왜쪽으로 쓸리고 오른쪽이 통째로 비었다.
+ */
+.pg-shell[data-pg="todolist"] .todo-list-card-box {
+    padding-right: 8px !important;
+}
+
+.pg-shell[data-pg="todolist"] .todo-task-column-box-pc {
+    padding-right: 0 !important;
+}
+
+/*
+ * 목록이 하단 탭 밑으로 기어들어 마지막 카드가 잘리던 것을 막는다.
+ * 포털은 100vh 기준으로 높이를 잡는데, 그 100vh 안에 우리 탭이 있다.
+ */
+.pg-shell[data-pg="todolist"] .todo-list-card-box {
+    max-height: calc(100vh - 100px - var(--pg-tap) - var(--pg-safe-bottom)) !important;
+}
+
+/*
+ * 대화상자를 화면만큼 쓴다.
+ *
+ * 포털은 max-width 를 px 로 잡아 둔다(BPMN 미리보기는 900px).
+ * 데스크톱에서는 맞는 값이지만 휴대폰에서는 그 안에 다이어그램을
+ * 우겨넣어 23% 로 줌아들고, 정작 위아래는 빈 채로 남았다.
+ * 좁은 화면에서는 상자가 공간을 다 쓰는 편이 잎히는 데 낫다.
+ */
+.pg-shell .v-overlay__content {
+    max-width: 96vw !important;
+    max-height: calc(100vh - var(--pg-tap) - var(--pg-safe-bottom) - 16px) !important;
+}
+
+/* 미리보기 안의 도표 자리를 넓혔다. */
+.pg-shell .bpmn-diagram-container {
+    min-height: 60vh;
+}
+
+/*
+ * 목록 위 '새 대화방' 버튼.
+ *
+ * v-btn block 을 주었는데도 폭을 다 쓰지 못하고 위가 잘렸다.
+ * 목록 서랍을 여는 띄운 동그란 버튼이 같은 자리에 있어 서로 겹친다.
+ * 자리를 비워 주고 폭을 채운다.
+ */
+.pg-shell[data-pg="chats"] .no-scrollbar > .v-btn {
+    width: 100% !important;
+    margin-top: 44px !important;
+}
+
+/*
+ * 목록 서랍을 여는 단추를 감춘다.
+ *
+ * 대화 목록이 이제 본문에 그대로 있어 서랍을 따로 열 이유가 없다.
+ * 남겨 두면 왼쪽 위에 띄운 단추로 남아 입력창을 가리고, 메뉴로 오해되기도 한다.
+ */
+.pg-shell[data-pg="chats"] .mobile-menu-toggle-btn {
+    display: none !important;
+}
+
+/* 첫 화면 진입점의 위아래 여백. */
+.pg-shell[data-pg="chats"] .pg-home {
+    padding: 8px 2px 12px;
+}

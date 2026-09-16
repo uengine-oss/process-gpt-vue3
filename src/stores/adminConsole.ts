@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import BackendFactory from '@/components/api/BackendFactory';
+import { invalidateMaintenanceCache } from '@/utils/maintenanceGate';
 import { getCurrentUserForSoftDelete } from '@/utils/softDeleteUser';
 import { collectHierarchyProcIds } from '@/utils/processStages';
 
@@ -1422,6 +1423,8 @@ export const useAdminConsoleStore = defineStore({
                 };
                 await backend.setMaintenanceMode(config);
                 this.maintenanceMode = config;
+                // 라우터 가드가 30초 TTL 캐시로 판정하므로 토글 즉시 재조회되도록 무효화
+                invalidateMaintenanceCache();
                 await this.writeAdminAuditLog({
                     action: 'maintenance_toggle',
                     target_type: 'system',

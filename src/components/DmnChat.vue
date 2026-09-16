@@ -733,6 +733,8 @@ export default {
             if (!me.savePrTitle.trim()) return;
             me.savePrSubmitting = true;
             me.savePrError = '';
+            // 이 요청이 갈라져 나온 버전. 저장이 현재 버전을 갱신하기 전에 잡아 둔다.
+            const baseVersion = me.saveCurrentVersion;
             try {
                 const xml = await me.$refs.dmnModeler.saveDMN();
                 await me.saveDmn({
@@ -748,11 +750,12 @@ export default {
                 me.isChanged = false;
 
                 const user = me.userInfo || (await me.backend.getUserInfo());
-                const majorNum = (parseInt(String(me.saveCurrentVersion).split('.')[0]) || 0) + 1;
                 await me.backend.createResourcePrRecord('dmn', {
                     resourceId: me.dmnIdToSave,
                     branchName: `v${me.saveNewVersion}`,
-                    baseBranch: `v${majorNum}.0`,
+                    // 기준은 이 초안이 갈라져 나온 버전이다. 병합이 만들 다음 메이저는 아직
+                    // 없는 버전이라 기준으로 적으면 변경 비교·병합 전 검증이 기준을 찾지 못한다.
+                    baseBranch: `v${baseVersion}`,
                     title: me.savePrTitle.trim(),
                     description: me.saveMessage || null,
                     requesterId: user.uid,

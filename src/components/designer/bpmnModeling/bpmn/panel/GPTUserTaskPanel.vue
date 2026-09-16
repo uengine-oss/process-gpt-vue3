@@ -29,7 +29,7 @@
 
                 <!-- AI Summary Button (Phase 2-6) -->
                 <v-btn
-                    v-if="!isViewMode"
+                    v-if="!isViewMode && aiDesignerEnabled"
                     size="small"
                     variant="tonal"
                     color="primary"
@@ -164,6 +164,7 @@ const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefin
 
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessSummaryGenerator from '@/components/ai/ProcessSummaryGenerator.js';
+import { canUseAiFeatures } from '@/utils/aiFeatureGate';
 import { useBpmnStore } from '@/stores/bpmn';
 
 export default {
@@ -401,6 +402,9 @@ export default {
         }
     },
     computed: {
+        aiDesignerEnabled() {
+            return canUseAiFeatures('DESIGNER');
+        },
         // Phase 2-2: Future Status options
         futureStatusOptions() {
             return [

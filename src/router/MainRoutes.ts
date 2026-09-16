@@ -97,6 +97,19 @@ const allRoutes: RouteRecordRaw[] = [
             window.$pal ? import('@/views/organization/OrganizationChartView.vue') : import('@/components/OrganizationChartChat.vue')
     },
     {
+        name: 'Role Request',
+        path: '/admin-request',
+        component: () => import('@/views/organization/RoleRequestPage.vue')
+    },
+    {
+        path: '/admin-console/admin-requests',
+        redirect: '/organization?approvals=1'
+    },
+    {
+        path: '/admin-console/signup-approvals',
+        redirect: '/organization?approvals=1'
+    },
+    {
         name: 'organization-before',
         path: '/organization-before',
         // 개편 전 조직도 화면(읽기 전용). 사이드바 메뉴에는 노출하지 않고 URL 직접 접근만 지원한다.

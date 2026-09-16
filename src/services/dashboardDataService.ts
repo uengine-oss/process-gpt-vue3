@@ -1,11 +1,11 @@
 /**
  * Dashboard Data Service
- * 백엔드 /dashboard/* 엔드포인트에서 실 데이터를 가져온다.
+ * completion의 /dashboard/* 엔드포인트에서 실 데이터를 가져온다.
  */
-import axios from 'axios';
-
-const http = axios.create();
-const API = '/pi-system-backend/dashboard';
+import { dashboardHttp as http } from './dashboardHttp';
+// Vite와 nginx가 /completion 접두사를 제거해 completion FastAPI의
+// /dashboard/* 라우트로 전달한다.
+const API = '/completion/dashboard';
 
 // ── 공통 ──
 
@@ -65,6 +65,7 @@ export async function fetchExecutiveSummary(domains?: string[]): Promise<Executi
 // ── View 2: Process Analytics ──
 
 export interface ProcessAnalyticsData {
+    model_summary?: { process_count: number; task_count: number; role_assigned_count: number; system_mapped_count: number };
     system_map: Array<{
         system_id?: string | null;
         tool_name: string;
@@ -82,6 +83,7 @@ export interface ProcessAnalyticsData {
         domain: string;
         tasks: Record<string, number>;
         automation_pct?: number;
+        automation_score?: number;
     }>;
     top_n: {
         handoff: Array<{ process: string; proc_def_id?: string; count: number; domain: string }>;
@@ -92,9 +94,8 @@ export interface ProcessAnalyticsData {
     };
     automation_score?: {
         overall: number;
-        auto_count: number;
         total_count: number;
-        by_domain: Array<{ domain: string; automation_pct: number; auto_count: number; total_count: number }>;
+        by_domain: Array<{ domain: string; automation_score: number; total_count: number }>;
     };
     project_map?: Array<{
         project_name: string;
@@ -112,6 +113,7 @@ export async function fetchProcessAnalytics(domains?: string[]): Promise<Process
 // ── View 3: Governance & Quality ──
 
 export interface GovernanceQualityData {
+    validation_summary?: { total_count: number; checked_count: number; unchecked_count: number; error_process_count: number; valid_count: number; checked_at: string };
     asset_status: Array<{
         domain: string;
         active_count: number;
@@ -123,10 +125,12 @@ export interface GovernanceQualityData {
     dq_scores: Array<{
         field_key: string;
         label: string;
-        score: number;
+        score: number | null;
         trend: 'up' | 'down' | 'flat';
     }>;
     grammar_errors: Array<{
+        proc_def_id: string;
+        issues?: Array<{ code: string; element_id: string; message: string }>;
         proc_def_name: string;
         error_count: number;
         primary_error_type: string;

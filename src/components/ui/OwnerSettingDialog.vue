@@ -18,7 +18,7 @@
 
                 <div class="d-flex flex-column ga-3">
                     <OwnerSelect v-model="primaryOwner" label="프로세스 담당자" placeholder="프로세스 담당자를 선택하세요" hide-details />
-                    <OwnerSelect v-model="fieldOwners" label="현업 담당자" placeholder="현업 담당자를 선택하세요" multiple hide-details />
+                    <OwnerSelect v-model="fieldOwners" label="현업담당자" placeholder="현업담당자를 선택하세요" multiple hide-details />
                     <OwnerSelect v-model="hqOwners" label="검토담당자" placeholder="검토담당자를 선택하세요" multiple hide-details />
                     <OwnerSelect v-model="masterOwner" label="최종검토자" placeholder="최종검토자를 선택하세요" hide-details />
                 </div>
@@ -90,15 +90,29 @@ export default defineComponent({
             emit('update:modelValue', newVal);
         });
 
+        // 저장값은 이메일 문자열이 표준이지만, 과거 데이터에 객체·사번 형태가 섞여 있어 정규화한다
+        const normalizeOwnerValue = (item: unknown): string => {
+            if (item && typeof item === 'object') {
+                const record = item as Record<string, unknown>;
+                return String(record.email || record.employee_no || record.user_id || record.id || record.name || '').trim();
+            }
+            return String(item ?? '').trim();
+        };
+
+        const normalizeOwnerValues = (value: unknown): string[] => {
+            const list = Array.isArray(value) ? value : value ? [value] : [];
+            return list.map(normalizeOwnerValue).filter(Boolean);
+        };
+
         // 현재 owner 로드
         const loadCurrentOwner = async () => {
             try {
                 const procDef = await backend.getRawDefinition(props.process.id);
                 const owners = procDef?.definition?.meta?.owners || {};
-                primaryOwner.value = owners.primaryOwner || procDef?.owner || '';
-                fieldOwners.value = Array.isArray(owners.fieldOwners) ? owners.fieldOwners : [];
-                hqOwners.value = Array.isArray(owners.hqOwners) ? owners.hqOwners : [];
-                masterOwner.value = owners.masterOwner || '';
+                primaryOwner.value = normalizeOwnerValue(owners.primaryOwner) || normalizeOwnerValue(procDef?.owner);
+                fieldOwners.value = normalizeOwnerValues(owners.fieldOwners);
+                hqOwners.value = normalizeOwnerValues(owners.hqOwners);
+                masterOwner.value = normalizeOwnerValue(owners.masterOwner);
             } catch (error) {
                 console.error('Owner 로드 실패:', error);
                 resetOwners();
@@ -126,7 +140,8 @@ export default defineComponent({
                 const supabase = window.$supabase;
                 if (supabase) {
                     const procDef = await backend.getRawDefinition(props.process.id);
-                    const definition = { ...(procDef?.definition || {}) };
+                    if (!procDef) throw new Error(`프로세스 정의를 찾을 수 없습니다: ${props.process.id}`);
+                    const definition = { ...(procDef.definition || {}) };
                     definition.meta = { ...(definition.meta || {}) };
                     definition.meta.owners = {
                         ...(definition.meta.owners || {}),
@@ -135,13 +150,18 @@ export default defineComponent({
                         hqOwners: [...hqOwners.value],
                         masterOwner: masterOwner.value || null
                     };
-                    const { error } = await supabase
+                    // getRawDefinition 은 id 를 소문자 정규화해 조회하므로,
+                    // update 도 실제 조회된 행의 id 로 걸어야 0행 매칭이 안 난다
+                    const rowId = procDef.id || props.process.id;
+                    const { data, error } = await supabase
                         .from('proc_def')
                         .update({ owner: primaryOwner.value || null, definition })
-                        .eq('id', props.process.id)
-                        .eq('tenant_id', window.$tenantName);
+                        .eq('id', rowId)
+                        .eq('tenant_id', window.$tenantName)
+                        .select('id');
 
                     if (error) throw error;
+                    if (!data || data.length === 0) throw new Error(`담당자 저장 대상 행이 없습니다: ${rowId}`);
                 }
 
                 emit('saved', {

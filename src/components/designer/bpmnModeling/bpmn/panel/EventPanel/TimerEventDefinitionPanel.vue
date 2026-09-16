@@ -73,7 +73,7 @@
             @update:mode="updateExpressionMode"
             @update:conditionFunction="updateExpressionFunction"
         />
-        <div class="mt-2 d-flex justify-end" v-if="isBuiltinPropVisible('cron_rule_generator')">
+        <div class="mt-2 d-flex justify-end" v-if="aiDesignerEnabled && isBuiltinPropVisible('cron_rule_generator')">
             <v-btn @click="generateCronRule" color="primary" density="compact" variant="flat" rounded :disabled="isCronGenerating">
                 <span v-if="isCronGenerating">{{ $t('TimerEventDefinitionPanel.ruleGenerating') }}</span>
                 <span v-else>{{ $t('TimerEventDefinitionPanel.ruleGenerator') }}</span>

@@ -194,15 +194,16 @@
 </template>
 
 <script>
-import BackendFactory from '@/components/api/BackendFactory';
 import UiParentCard from '@/components/shared/UiParentCard.vue';
+
+// PI Flag 포함 후보 판별 토큰 (관리자 PiFlagBoard 와 동일 규약, piFlagParser.ts 참조)
+const PI_FLAG_PROBE_TOKENS = ['uengine:Properties', '"comments"'];
 
 export default {
     name: 'PiFlagBoard',
     components: { UiParentCard },
     data() {
         return {
-            backend: null,
             loading: false,
             error: '',
             rows: [],
@@ -309,7 +310,6 @@ export default {
         }
     },
     mounted() {
-        this.backend = BackendFactory.createBackend();
         this.loadBoard();
     },
     methods: {
@@ -317,7 +317,7 @@ export default {
             this.loading = true;
             this.error = '';
             try {
-                const defs = await this.backend.listDefinition('', { match: { tenant_id: window.$tenantName } });
+                const defs = await this.fetchDefinitionsWithBpmn();
                 const rows = [];
                 (defs || []).forEach((def) => {
                     const xml = def?.bpmn;
@@ -335,6 +335,28 @@ export default {
             } finally {
                 this.loading = false;
             }
+        },
+        // backend.listDefinition 은 payload 절감을 위해 bpmn 컬럼을 반환하지 않는다
+        // (이 보드가 항상 비어 보이던 원인). 관리자 PI Flag 보드와 동일하게
+        // proc_def 에서 PI Flag 포함 후보만 bpmn 포함으로 직접 조회한다.
+        async fetchDefinitionsWithBpmn() {
+            const supabase = window.$supabase;
+            const tenantId = window.$tenantName;
+            if (!supabase || !tenantId) {
+                // uEngine 원격 모드 등 supabase 미사용 환경 — bpmn 일괄 조회 수단이 없다
+                console.warn('[PiFlagBoard] supabase 미초기화 — 이 모드에서는 PI Flag 보드를 지원하지 않습니다.');
+                return [];
+            }
+            const orFilter = PI_FLAG_PROBE_TOKENS.map((token) => `bpmn.ilike.%${token}%`).join(',');
+            const { data, error } = await supabase
+                .from('proc_def')
+                .select('id,name,bpmn')
+                .eq('tenant_id', tenantId)
+                .is('deleted_at', null)
+                .or(orFilter)
+                .order('name', { ascending: true });
+            if (error) throw error;
+            return data || [];
         },
         // 하나의 프로세스 XML 에서 PI Flag 추출 → groupId 로 묶어 행 생성
         parsePiFlags(xml, procDefId, procDefName) {

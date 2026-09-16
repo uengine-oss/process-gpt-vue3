@@ -4,6 +4,7 @@
  * 지정된 baseUrl로 스트리밍 요청을 보낸다.
  */
 import { buildAgentHeaders } from './agentRequestHeaders';
+import { assertAiEnabled } from '@/utils/aiFeatureGate';
 
 class FixedBaseWorkAssistantAgentService {
     constructor(baseUrl) {
@@ -11,6 +12,7 @@ class FixedBaseWorkAssistantAgentService {
     }
 
     async sendMessageStream(params, callbacks = {}, options = {}) {
+        assertAiEnabled();
         const {
             onToken,
             onToolStart,

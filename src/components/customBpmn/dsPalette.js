@@ -32,7 +32,12 @@ const TOKENS = {
     danger: { var: '--cds-text-danger', fallback: '#8e2626' },
     accent: { var: '--cds-text-accent', fallback: '#184f95' },
     warning: { var: '--cds-text-warning', fallback: '#734500' },
-    warningBg: { channels: '--accent-brand', fallback: '#d97757' }
+    warningBg: { channels: '--accent-brand', fallback: '#d97757' },
+    // 이벤트 — BPMN 관례대로 시작(녹색)·종료(적색)를 색으로 구분한다 (PAL 모드 한정 사용)
+    eventStart: { fallback: '#5b9e66' },
+    eventStartStroke: { fallback: '#3d7a48' },
+    eventEnd: { fallback: '#c2564a' },
+    eventEndStroke: { fallback: '#8e2f26' }
 };
 
 let cache = null;

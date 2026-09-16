@@ -91,35 +91,26 @@ onMounted(() => store.fetchNoticeBanner());
 </template>
 
 <style scoped>
+/* 문서 흐름에 참여하는 배너 — 레이아웃(FullLayout)이 콘텐츠 프레임 위에
+   배치한다. 이전에는 position: fixed 오버레이여서 레이아웃 공간을 차지하지
+   않았고, 모든 페이지에서 같은 높이에 놓인 첫 입력 필드의 상단을 정확히
+   덮었다. 흐름에 두면 콘텐츠가 자연스럽게 아래로 밀려난다. */
 .global-notice-banner {
-    position: fixed;
-    z-index: 1100;
-    top: 94px;
-    right: 20px;
-    left: calc(var(--v-layout-left) + 40px);
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 16px;
-    width: auto;
+    flex: 0 0 auto;
+    width: 100%;
     max-width: 1100px;
     min-height: 42px;
-    margin: 0 auto;
+    margin: 0 auto 16px;
     padding: 9px 12px 9px 16px;
     border: 1px solid transparent;
     border-radius: 8px;
     font-size: 13px;
     line-height: 1.5;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
-}
-
-:global(.sidebar-closed) .global-notice-banner,
-:global(.horizontalLayout) .global-notice-banner {
-    left: 20px;
-}
-
-:global(.pal-main-no-header) .global-notice-banner {
-    top: 20px;
 }
 
 .global-notice-banner__message {
@@ -204,13 +195,9 @@ onMounted(() => store.fetchNoticeBanner());
 
 @media (max-width: 600px) {
     .global-notice-banner {
-        top: 12px;
-        right: 8px;
-        left: 8px;
         grid-template-columns: minmax(0, 1fr);
         gap: 4px;
-        width: auto;
-        margin: 0;
+        margin: 0 0 12px;
     }
 
     .global-notice-banner__message {

@@ -12,6 +12,14 @@ export interface BpmnElement {
     attrs: Record<string, string>;
 }
 
+/** 속성 하나의 변경 전/후. 요약 비교가 좌우 두 칸으로 세운다. */
+export interface BpmnFieldDiff {
+    /** 검토자가 읽는 항목 이름 (예: '이름', '분기 조건', '담당 역할') */
+    label: string;
+    before: string;
+    after: string;
+}
+
 export interface BpmnChange {
     type: 'added' | 'removed' | 'modified';
     id: string;
@@ -19,6 +27,19 @@ export interface BpmnChange {
     elementType: string;
     description: string;
     fieldChanges?: string[];
+    /**
+     * 변경 전/후 값 짝. `fieldChanges` 는 이미 한 문장으로 뭉쳐진 영어 문자열이라
+     * 좌우 비교로 세울 수 없어, 값 자체를 따로 남긴다.
+     */
+    fields?: BpmnFieldDiff[];
+    /** 연결선일 때 어디서 어디로 가는지. 이름을 못 찾으면 id 가 들어온다. */
+    flow?: { from: string; to: string };
+    /**
+     * 무엇이 바뀌었는지를 가리키는 속성 키들 (예: 'description', 'checkpoints', 'role').
+     * `fieldChanges` 는 `Extension fields added: json.description` 같은 개발자 문장이라
+     * 화면에 그대로 내보낼 수 없다 — 화면은 이 키를 제 언어로 옮겨 부른다.
+     */
+    changedKeys?: string[];
 }
 
 export interface BpmnDiffResult {
@@ -193,7 +214,9 @@ export function extractBpmnElements(xml: string): BpmnElement[] {
                                 extensionKeys.add(`${childName}.${child.attributes[a].name}`);
                             }
                             if (childName === 'json') {
-                                flattenJsonPaths(tryParseJson(child.textContent || '')).forEach((path) => extensionKeys.add(`json.${path}`));
+                                flattenJsonPaths(tryParseJson(child.textContent || '')).forEach((path) =>
+                                    extensionKeys.add(`json.${path}`)
+                                );
                             }
                         }
                     }
@@ -290,6 +313,97 @@ function formatFieldLabel(key: string): string {
         .trim();
 }
 
+/**
+ * 좌우 비교로 세울 값이 있는 속성만 고른다.
+ *
+ * `__childXml` 처럼 통째로 XML 이 들어 있는 값은 좌우에 늘어놓아 봐야 읽히지 않는다 —
+ * 그런 항목은 '바뀌었다' 는 사실만 문장(`fieldChanges`)으로 남기고 여기서는 뺀다.
+ */
+const COMPARABLE_FIELD_LABELS: Record<string, string> = {
+    name: '이름',
+    __conditionExpression: '분기 조건',
+    sourceRef: '출발',
+    targetRef: '도착',
+    description: '설명',
+    instruction: '수행 지침',
+    role: '담당 역할',
+    duration: '소요 기간'
+};
+
+function collectFieldDiffs(oldEl: BpmnElement, newEl: BpmnElement): BpmnFieldDiff[] {
+    const diffs: BpmnFieldDiff[] = [];
+    if (oldEl.name !== newEl.name) {
+        diffs.push({ label: COMPARABLE_FIELD_LABELS.name, before: oldEl.name, after: newEl.name });
+    }
+
+    const keys = new Set([...Object.keys(oldEl.attrs), ...Object.keys(newEl.attrs)]);
+    for (const key of Array.from(keys).sort()) {
+        if (key === 'name') continue;
+        const label = COMPARABLE_FIELD_LABELS[key];
+        if (!label) continue;
+        const before = String(oldEl.attrs[key] || '');
+        const after = String(newEl.attrs[key] || '');
+        if (before === after) continue;
+        // 한쪽이 통째로 XML/JSON 이면 좌우로 읽히지 않는다.
+        if (before.length > 400 || after.length > 400) continue;
+        diffs.push({ label, before, after });
+    }
+    return diffs;
+}
+
+/**
+ * 확장 속성 키를 사람이 부르는 이름의 뿌리로 줄인다.
+ * `json.outputMapping[0].dataFieldId` → `outputMapping`.
+ */
+function rootKey(key: string): string {
+    return String(key || '')
+        .replace(/^json\./, '')
+        .replace(/^properties\./, '')
+        .split(/[.[]/)[0]
+        .trim();
+}
+
+/**
+ * 그릇 이름은 무엇이 바뀌었는지 말해 주지 못한다.
+ * `properties`, `json` 은 확장 속성이 담기는 자리일 뿐이라 화면에 내보내면 잡음만 된다.
+ */
+const CONTAINER_KEYS = new Set(['json', 'properties', 'extensionElements', 'extension', 'uengine']);
+
+/** 이 변경이 건드린 속성들. 화면이 제 언어로 옮겨 부를 수 있게 키로만 남긴다. */
+function collectChangedKeys(oldEl: BpmnElement, newEl: BpmnElement): string[] {
+    const keys = new Set<string>();
+    if (oldEl.name !== newEl.name) keys.add('name');
+    if (oldEl.sourceRef !== newEl.sourceRef || oldEl.targetRef !== newEl.targetRef) keys.add('connection');
+
+    const all = new Set([...Object.keys(oldEl.attrs), ...Object.keys(newEl.attrs)]);
+    for (const key of all) {
+        const before = oldEl.attrs[key] || '';
+        const after = newEl.attrs[key] || '';
+        if (before === after) continue;
+
+        if (key === '__extensionKeys') {
+            [...splitValueList(before), ...splitValueList(after)].forEach((item) => {
+                const root = rootKey(item);
+                if (root) keys.add(root);
+            });
+            continue;
+        }
+        // 좌표·내부 XML 은 무엇이 달라졌는지 말해 주지 못한다.
+        if (key === '__waypoints' || key === '__childXml' || key === '__extensionElementsXml') continue;
+        if (key === '__conditionExpression') {
+            keys.add('condition');
+            continue;
+        }
+        if (key === '__flowNodeRefs') {
+            keys.add('lane');
+            continue;
+        }
+        const root = rootKey(key.replace(/^__/, ''));
+        if (root) keys.add(root);
+    }
+    return [...keys].filter((key) => !CONTAINER_KEYS.has(key));
+}
+
 function splitValueList(value: string | undefined): string[] {
     return String(value || '')
         .split(',')
@@ -373,6 +487,20 @@ export function computeBpmnDiff(oldXml: string, newXml: string): BpmnDiffResult 
     const oldMap = new Map(oldElements.map((el) => [el.id, el]));
     const newMap = new Map(newElements.map((el) => [el.id, el]));
 
+    /**
+     * 연결선이 어디서 어디로 가는지를 이름으로 옮긴다.
+     * `sequence_a_b` 같은 id 만으로는 무엇이 이어졌는지 읽을 수 없는데, 정작 흐름이
+     * 어떻게 달라지는지는 이 연결선들이 말해 준다.
+     */
+    const nodeLabel = (id: string): string => {
+        const el = newMap.get(id) || oldMap.get(id);
+        return (el?.name || '').trim() || id;
+    };
+    const flowOf = (el: BpmnElement) =>
+        el.elementType === 'sequenceFlow' && (el.sourceRef || el.targetRef)
+            ? { from: nodeLabel(el.sourceRef), to: nodeLabel(el.targetRef) }
+            : undefined;
+
     const changes: BpmnChange[] = [];
     const diffActivitiesA: Record<string, string> = {};
     const diffActivitiesB: Record<string, string> = {};
@@ -385,7 +513,8 @@ export function computeBpmnDiff(oldXml: string, newXml: string): BpmnDiffResult 
                 id,
                 name: el.name,
                 elementType: el.elementType,
-                description: buildDescription('added', el)
+                description: buildDescription('added', el),
+                flow: flowOf(el)
             });
             diffActivitiesA[id] = 'added';
         }
@@ -399,7 +528,8 @@ export function computeBpmnDiff(oldXml: string, newXml: string): BpmnDiffResult 
                 id,
                 name: el.name,
                 elementType: el.elementType,
-                description: buildDescription('removed', el)
+                description: buildDescription('removed', el),
+                flow: flowOf(el)
             });
             diffActivitiesB[id] = 'deleted';
         }
@@ -443,7 +573,10 @@ export function computeBpmnDiff(oldXml: string, newXml: string): BpmnDiffResult 
                         name: newEl.name || oldEl.name,
                         elementType: newEl.elementType,
                         description: buildModifiedDescription(oldEl, newEl),
-                        fieldChanges
+                        fieldChanges,
+                        fields: collectFieldDiffs(oldEl, newEl),
+                        changedKeys: collectChangedKeys(oldEl, newEl),
+                        flow: flowOf(newEl)
                     });
                     diffActivitiesA[id] = 'modified';
                     diffActivitiesB[id] = 'modified';
@@ -461,7 +594,10 @@ export function computeBpmnDiff(oldXml: string, newXml: string): BpmnDiffResult 
                     name: newEl.name || oldEl.name,
                     elementType: newEl.elementType,
                     description: buildModifiedDescription(oldEl, newEl),
-                    fieldChanges
+                    fieldChanges,
+                    fields: collectFieldDiffs(oldEl, newEl),
+                    changedKeys: collectChangedKeys(oldEl, newEl),
+                    flow: flowOf(newEl)
                 });
                 diffActivitiesA[id] = 'modified';
                 diffActivitiesB[id] = 'modified';

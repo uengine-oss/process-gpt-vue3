@@ -5,8 +5,18 @@
    큰 라운드, 대문자 버튼, 촘촘한 리플)가 남는다. 여기서 형태·타이포·그림자·경계를
    토큰 값으로 덮어 화면 전체가 새 디자인 시스템으로 보이게 한다.
 
-   Vuetify 스타일보다 뒤에 로드되어야 한다 (main.ts 의 import 순서).
+   로드 순서에 의존하지 않는다: Vite 개발 서버는 Vuetify 컴포넌트 CSS 를
+   컴포넌트가 처음 로드될 때 지연 주입하므로, 이 파일이 "마지막"이라는 보장이
+   없다 (지연 라우트가 로드되면 VField.sass 등이 이 파일 뒤에 끼어들어 같은
+   특이성의 규칙을 순서로 이겨 버려, 세션·HMR 이력에 따라 입력 외곽선 등이
+   반쯤만 덮인 혼합 상태가 됐다). 그래서 전체를 body { } 로 감싸(CSS 중첩)
+   모든 셀렉터에 타입 특이성 +1 을 더해 순서와 무관하게 Vuetify 의 동특이성
+   규칙을 이긴다. Vuetify 가 의도적으로 더 높은 특이성으로 덮는 규칙(예:
+   .v-field--active 의 notch 상단선 숨김)은 여전히 Vuetify 가 이긴다.
    ========================================================================== */
+
+/* prettier-ignore */
+body {
 
 .v-application,
 .v-application__wrap {
@@ -221,34 +231,42 @@
     font-size: var(--cds-font-size-body);
     background: var(--cds-surface-2);
 }
-/* Vuetify는 outline 세그먼트(start/notch/end)의 "안쪽" 면(예: start의 오른쪽,
-   end의 왼쪽, notch의 좌우/아래)은 border-*-width 를 개별적으로 0으로 비워
-   두고 --v-field-border-width 변수만 특정 면에 적용한다(포커스 시 라벨이
-   떠 있는 노치 틈을 만들기 위함). 여기서 border-width 를 shorthand 로 주면
-   4면 모두에 두께가 생겨 Vuetify가 비워둔 안쪽 면까지 선이 그려지고, 그 결과
-   포커스된 입력 필드에서 라벨 옆에 세로선이 튀어나오는 것처럼 보인다.
-   반드시 --v-field-border-width 변수로만 두께를 지정해 Vuetify 자체 규칙이
-   올바른 면에만 적용하도록 한다. */
-.v-field--variant-outlined .v-field__outline__start,
-.v-field--variant-outlined .v-field__outline__notch::before,
-.v-field--variant-outlined .v-field__outline__notch::after,
-.v-field--variant-outlined .v-field__outline__end {
-    --v-field-border-width: 0.5px;
-    border-color: var(--cds-border-strong);
-    opacity: 1;
+/* Vuetify 의 outlined 외곽선은 start(12px)/notch(라벨 폭)/end 세 요소의
+   개별 테두리를 이어 붙여 그린다. 이 구조는 세그먼트 이음새·노치 폭(폰트
+   메트릭 의존)·요소별 픽셀 스냅에 따라 특정 변만 끊기거나 사라지는 문제가
+   실사용 환경(macOS, dpr 1)에서 재현됐다 — 3px 불투명 테두리조차 끊겼다.
+   그래서 세그먼트 테두리는 --v-field-border-width: 0 으로 전부 끄고,
+   .v-field 요소 자체에 연속된 사각형 테두리 하나를 그린다. 떠 있는 라벨은
+   노치 틈 대신 필드와 같은 배경을 깔아 선 위에 얹는다. */
+.v-field--variant-outlined {
+    border: 1px solid var(--cds-border-stronger);
 }
-.v-field--variant-outlined:hover .v-field__outline__start,
-.v-field--variant-outlined:hover .v-field__outline__notch::before,
-.v-field--variant-outlined:hover .v-field__outline__notch::after,
-.v-field--variant-outlined:hover .v-field__outline__end {
-    border-color: var(--cds-border-stronger);
+/* 포커스 시 Vuetify 가 .v-field--variant-outlined.v-field--focused .v-field__outline
+   (0,3,0)으로 세그먼트 두께를 2px 로 되살리므로, 동일 특이성 이상으로 모든
+   상태에서 세그먼트 두께를 0 으로 고정한다. */
+.v-field--variant-outlined .v-field__outline,
+.v-field--variant-outlined.v-field--focused .v-field__outline {
+    --v-field-border-width: 0px;
 }
-.v-field--focused.v-field--variant-outlined .v-field__outline__start,
-.v-field--focused.v-field--variant-outlined .v-field__outline__notch::before,
-.v-field--focused.v-field--variant-outlined .v-field__outline__notch::after,
-.v-field--focused.v-field--variant-outlined .v-field__outline__end {
-    --v-field-border-width: 1.5px;
+/* 0.5px 이 장치 픽셀 1개에 정확히 대응하는 고밀도에서만 헤어라인 */
+@media (min-resolution: 2dppx) {
+    .v-field--variant-outlined {
+        border-width: 0.5px;
+    }
+}
+.v-field--variant-outlined:hover {
+    border-color: color-mix(in srgb, var(--cds-border-stronger) 60%, var(--cds-text-secondary));
+}
+.v-field--focused.v-field--variant-outlined {
     border-color: hsl(var(--accent-100));
+    box-shadow: 0 0 0 1px hsl(var(--accent-100));
+}
+/* 떠 있는 라벨: 노치 대신 배경 패치로 테두리 선을 가리고 그 위에 얹힌다 */
+.v-field--variant-outlined .v-field-label--floating {
+    background: var(--cds-surface-2);
+    padding-inline: 4px;
+    margin-inline-start: -4px;
+    border-radius: var(--cds-radius--xs);
 }
 .v-field__input {
     font-weight: 430;
@@ -449,3 +467,5 @@
         transition: none;
     }
 }
+
+} /* body — 특이성 래퍼 끝 */

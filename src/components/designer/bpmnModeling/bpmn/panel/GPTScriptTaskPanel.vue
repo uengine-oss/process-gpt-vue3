@@ -19,7 +19,7 @@
                         ></v-textarea>
 
                         <GenerateScriptPanel
-                            v-if="isBuiltinPropVisible('generate_script')"
+                            v-if="aiDesignerEnabled && isBuiltinPropVisible('generate_script')"
                             v-model="copyUengineProperties.script"
                             :language="language"
                             :processDefinition="processDefinition"

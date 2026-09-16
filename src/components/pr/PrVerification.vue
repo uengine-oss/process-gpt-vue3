@@ -6,11 +6,7 @@
             <template v-if="backfilling">
                 <v-progress-circular indeterminate size="30" width="2.5" color="primary" />
                 <div class="pv-empty-title">{{ backfillPhaseTitle }}</div>
-                <div class="pv-empty-desc">
-                    변경 전(<code>{{ backfill.base_ref }}</code
-                    >) 버전으로 후보 시나리오를 실제로 실행해 보고, 지금 버전이 실제로 통과하는 단계만 남깁니다. 몇 분 걸립니다 — 이 탭을
-                    벗어나도 계속 진행됩니다.
-                </div>
+                <div class="pv-empty-desc" v-html="$t('pr.verify.backfillDesc', { ref: `<code>${backfill.base_ref}</code>` })"></div>
             </template>
 
             <!-- 생성해 볼 수 있는 상태 -->
@@ -18,44 +14,32 @@
                 <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.35">
                     <path d="M9 3h6M10 3v6l-5.5 9A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-3L14 9V3" />
                 </svg>
-                <div class="pv-empty-title">병합 전에 비교할 시나리오가 없습니다</div>
+                <div class="pv-empty-title">{{ $t('pr.verify.emptyTitle') }}</div>
 
                 <!-- 스킬: 지금 만들어 둘 수 있다 -->
                 <template v-if="isSkill">
-                    <div class="pv-empty-desc">
-                        이 스킬은 주요 시나리오를 확보하는 단계를 거치지 않고 만들어졌습니다. 비교 기준이 없어 이 병합이 기존 동작을
-                        깨뜨리는지 자동으로 확인할 수 없습니다.
-                    </div>
-                    <div class="pv-empty-desc mt-2">
-                        지금 <b>변경 전 버전의 동작</b>을 기준으로 시나리오를 만들어 둘 수 있습니다. 만든 뒤에는 이 병합은 물론 앞으로의
-                        변경도 검증할 수 있습니다.
-                    </div>
+                    <div class="pv-empty-desc">{{ $t('pr.verify.emptySkill1') }}</div>
+                    <div class="pv-empty-desc mt-2" v-html="$t('pr.verify.emptySkill2')"></div>
 
                     <div v-if="backfillFailed" class="pv-error mt-3" style="text-align: left">
-                        시나리오를 만들지 못했습니다. {{ backfill.error }}
+                        {{ $t('pr.verify.buildFailed', { reason: backfill.error }) }}
                     </div>
                     <div v-if="backfillError" class="pv-error mt-3" style="text-align: left">{{ backfillError }}</div>
 
-                    <button class="pv-run-btn mt-3" @click="generate">
-                        {{ backfillFailed ? '시나리오 다시 만들기' : '시나리오 만들기' }}
+                    <button class="pv-run-btn mt-3" @click="generate(false)">
+                        {{ backfillFailed ? $t('pr.verify.rebuildScenarios') : $t('pr.verify.buildScenarios') }}
                     </button>
                 </template>
 
                 <!-- 의사결정: 규칙 표에서 바로 파생할 수 있다(모델 호출 없음). -->
                 <template v-else-if="isDmn">
-                    <div class="pv-empty-desc">
-                        이 의사결정에는 병합 전에 비교할 시나리오가 아직 없습니다. 비교 기준이 없어 이 병합이 기존 판정을 바꾸는지 자동으로
-                        확인할 수 없습니다.
-                    </div>
-                    <div class="pv-empty-desc mt-2">
-                        <b>변경 전 규칙 표</b>에서 시나리오를 만들 수 있습니다 — 규칙 행마다 그 행을 맞히는 입력과 임계값 경계, 어느 행에도
-                        맞지 않는 입력을 뽑아 지금 표가 내는 결론을 기준으로 굳힙니다.
-                    </div>
+                    <div class="pv-empty-desc">{{ $t('pr.verify.emptyDmn1') }}</div>
+                    <div class="pv-empty-desc mt-2" v-html="$t('pr.verify.emptyDmn2')"></div>
 
                     <div v-if="backfillError" class="pv-error mt-3" style="text-align: left">{{ backfillError }}</div>
 
-                    <button class="pv-run-btn mt-3" :disabled="buildingScenarios" @click="generate">
-                        {{ buildingScenarios ? '만드는 중…' : '시나리오 만들기' }}
+                    <button class="pv-run-btn mt-3" :disabled="buildingScenarios" @click="generate(false)">
+                        {{ buildingScenarios ? $t('pr.verify.building') : $t('pr.verify.buildScenarios') }}
                     </button>
                 </template>
 
@@ -63,23 +47,17 @@
                      병합 전 검증도 저장된 분기 판정으로 정의를 재생하는 방식이라, 시나리오에
                      필요한 것은 실행 기록이 아니라 정의뿐이다(모델·엔진 호출 없음). -->
                 <template v-else>
-                    <div class="pv-empty-desc">
-                        이 프로세스는 만들 때 <b>실행 엔진 검증</b>을 거치지 않아 비교에 쓸 시나리오가 남아 있지 않습니다. 비교 기준이 없어
-                        이 병합이 기존 흐름을 바꾸는지 자동으로 확인할 수 없습니다.
-                    </div>
-                    <div class="pv-empty-desc mt-2">
-                        <b>변경 전 정의</b>에서 시나리오를 만들 수 있습니다 — 갈림길마다 어느 분기로 갔을 때 어떤 경로를 지나는지를 지금
-                        정의가 내는 흐름 그대로 굳힙니다.
-                    </div>
+                    <div class="pv-empty-desc" v-html="$t('pr.verify.emptyProcess1')"></div>
+                    <div class="pv-empty-desc mt-2" v-html="$t('pr.verify.emptyProcess2')"></div>
 
                     <div v-if="backfillError" class="pv-error mt-3" style="text-align: left">{{ backfillError }}</div>
 
-                    <button class="pv-run-btn mt-3" :disabled="buildingScenarios" @click="generate">
-                        {{ buildingScenarios ? '만드는 중…' : '시나리오 만들기' }}
+                    <button class="pv-run-btn mt-3" :disabled="buildingScenarios" @click="generate(false)">
+                        {{ buildingScenarios ? $t('pr.verify.building') : $t('pr.verify.buildScenarios') }}
                     </button>
                 </template>
 
-                <div class="pv-empty-note">직접 검토하려면 변경사항 탭의 diff 를 보세요.</div>
+                <div class="pv-empty-note">{{ $t('pr.verify.emptyNote') }}</div>
             </template>
         </div>
 
@@ -87,25 +65,33 @@
             <!-- 자동 생성된 스위트라는 사실을 숨기지 않는다: 사람이 고른 시나리오가 아니라
                  변경 전 버전의 동작에서 뽑아낸 기준선이므로, "무엇을 지키는 중인지" 는
                  리뷰어가 직접 읽고 판단해야 한다. -->
-            <div v-if="isSkill && generatedSuite" class="pv-origin">
-                이 시나리오는 변경 전(<code>{{ backfill.base_ref }}</code
-                >) 버전의 동작에서 자동으로 만들어졌습니다. 후보 {{ backfill.summary?.proposed }}건 중 그 버전이 실제로 통과한
-                {{ backfill.summary?.accepted }}건만 남겼습니다.
-            </div>
+            <div
+                v-if="isSkill && generatedSuite"
+                class="pv-origin"
+                v-html="
+                    $t('pr.verify.origin', {
+                        ref: `<code>${backfill.base_ref}</code>`,
+                        proposed: backfill.summary?.proposed,
+                        accepted: backfill.summary?.accepted
+                    })
+                "
+            ></div>
 
             <!-- 실행 컨트롤 -->
             <div class="pv-bar">
                 <div class="pv-bar-text">
                     <template v-if="running">
                         <v-progress-circular indeterminate size="14" width="2" color="primary" class="mr-2" />
-                        변경 전 / 변경 후 두 벌로 시나리오 {{ cases.length }}건을 실행하는 중…
+                        {{ $t('pr.verify.runningBar', { count: cases.length }) }}
                     </template>
-                    <template v-else-if="run && run.status === 'failed'"> 검증이 완료되지 못했습니다. </template>
-                    <template v-else-if="run"> {{ formatRelativeTime(run.finished_at || run.started_at) }} 검증 </template>
-                    <template v-else> 시나리오 {{ cases.length }}건으로 병합 전후 동작을 비교합니다. </template>
+                    <template v-else-if="run && run.status === 'failed'">{{ $t('pr.verify.runFailed') }}</template>
+                    <template v-else-if="run">
+                        {{ $t('pr.verify.lastRun', { time: formatRelativeTime(run.finished_at || run.started_at) }) }}
+                    </template>
+                    <template v-else>{{ $t('pr.verify.idleBar', { count: cases.length }) }}</template>
                 </div>
                 <button class="pv-run-btn" :disabled="running" @click="start">
-                    {{ run ? '다시 검증' : '검증 실행' }}
+                    {{ run ? $t('pr.verify.rerun') : $t('pr.verify.run') }}
                 </button>
             </div>
 
@@ -119,25 +105,75 @@
                     <span class="pv-verdict-ref">{{ run.base_ref }} → {{ run.head_ref }}</span>
                 </div>
                 <div class="pv-verdict-sub">{{ verdictDesc }}</div>
+
+                <!--
+                    Pass/Fail 한 글자로는 병합 판단이 서지 않는다. 몇 건을 돌렸고, 그중 몇이
+                    통과했고, **변경 전후로 결과가 달라진 것이 몇 건인지** 를 같이 세워 둔다 —
+                    마지막 숫자가 이 병합이 실제로 무엇을 바꾸는지 말해 주는 자리다.
+                -->
+                <div class="pv-stats">
+                    <div class="pv-stat">
+                        <span class="pv-stat-n">{{ stats.total }}</span>
+                        <span class="pv-stat-l">{{ $t('pr.verify.statTotal') }}</span>
+                    </div>
+                    <!--
+                        세 칸이 겹치지 않게 나뉜다: 정상 유지 · 기존 실패 유지 · 새로운 실패.
+                        변경 전에도 실패하던 시나리오를 빨갛게 칠하면 "깨진 곳 없음" 배너와
+                        정면으로 엇갈려 읽힌다 — 병합을 멈춰 세울 이유는 '새로운 실패' 뿐이다.
+                    -->
+                    <div class="pv-stat ok">
+                        <span class="pv-stat-n">{{ stats.passed }}</span>
+                        <span class="pv-stat-l">{{ $t('pr.verify.statPassed') }}</span>
+                    </div>
+                    <div class="pv-stat">
+                        <span class="pv-stat-n">{{ stats.stillFailing }}</span>
+                        <span class="pv-stat-l">{{ $t('pr.verify.statStillFailing') }}</span>
+                    </div>
+                    <div class="pv-stat" :class="{ bad: stats.newlyFailed }">
+                        <span class="pv-stat-n">{{ stats.newlyFailed }}</span>
+                        <span class="pv-stat-l">{{ $t('pr.verify.statNewlyFailed') }}</span>
+                    </div>
+                    <div v-if="stats.inconclusive" class="pv-stat warn">
+                        <span class="pv-stat-n">{{ stats.inconclusive }}</span>
+                        <span class="pv-stat-l">{{ $t('pr.verify.statInconclusive') }}</span>
+                    </div>
+                </div>
             </div>
+
+            <!-- 변경 전후로 결과가 달라진 시나리오 -->
+            <template v-if="succeeded && changedList.length">
+                <div class="pv-sec">{{ $t('pr.verify.changedSection') }}</div>
+                <div class="pv-changed">
+                    <div v-for="c in changedList" :key="c.name" class="pv-changed-row">
+                        <span class="pv-changed-name">{{ c.name }}</span>
+                        <span class="pv-cmp">
+                            <span class="chip base">{{ $t('pr.verify.beforeCount', { label: c.baseLabel }) }}</span>
+                            <span class="chip arrow">→</span>
+                            <span class="chip head" :class="c.worse ? 'bad' : 'good'">
+                                {{ $t('pr.verify.afterCount', { label: c.headLabel }) }}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </template>
 
             <!-- 깨진 단계 -->
             <template v-if="succeeded && brokenByCase.length">
-                <div class="pv-sec">병합하면 깨지는 단계</div>
+                <div class="pv-sec">{{ $t('pr.verify.brokenSection') }}</div>
                 <div v-for="grp in brokenByCase" :key="grp.eval_name" class="pv-case broken">
                     <div class="pv-case-head">
                         <span class="pv-case-name">{{ grp.eval_name }}</span>
                         <span class="pv-cmp">
-                            <span class="chip base">변경 전 {{ grp.baseLabel }}</span>
+                            <span class="chip base">{{ $t('pr.verify.beforeCount', { label: grp.baseLabel }) }}</span>
                             <span class="chip arrow">→</span>
-                            <span class="chip head bad">변경 후 {{ grp.headLabel }}</span>
+                            <span class="chip head bad">{{ $t('pr.verify.afterCount', { label: grp.headLabel }) }}</span>
                         </span>
                     </div>
                     <div v-for="(b, i) in grp.broken" :key="i" class="pv-step broken">
                         <span class="pv-step-mark">✕</span>
                         <div>
-                            <div class="pv-step-text">{{ b.step }}</div>
-                            <div v-if="b.evidence" class="pv-step-ev">{{ b.evidence }}</div>
+                            <div class="pv-step-text">{{ displayText(b.step) }}</div>
+                            <div v-if="b.evidence" class="pv-step-ev">{{ displayText(b.evidence) }}</div>
                         </div>
                     </div>
                 </div>
@@ -145,12 +181,12 @@
 
             <!-- 좋아진 단계 -->
             <template v-if="succeeded && fixed.length">
-                <div class="pv-sec">이 변경으로 통과하게 된 단계</div>
+                <div class="pv-sec">{{ $t('pr.verify.fixedSection') }}</div>
                 <div class="pv-case fixed">
                     <div v-for="(f, i) in fixed" :key="i" class="pv-step fixed">
                         <span class="pv-step-mark ok">✓</span>
                         <div>
-                            <div class="pv-step-text">{{ f.step }}</div>
+                            <div class="pv-step-text">{{ displayText(f.step) }}</div>
                             <div class="pv-step-sub">{{ f.eval_name }}</div>
                         </div>
                     </div>
@@ -159,16 +195,16 @@
 
             <!-- 신호를 얻지 못한 시나리오 -->
             <template v-if="succeeded && noSignal.length">
-                <div class="pv-sec">판단할 수 없는 시나리오</div>
+                <div class="pv-sec">{{ $t('pr.verify.noSignalSection') }}</div>
                 <div class="pv-case warn">
                     <div v-for="name in noSignal" :key="name" class="pv-step">
                         <span class="pv-step-mark warn">!</span>
                         <div>
                             <div class="pv-step-text">{{ name }}</div>
                             <div class="pv-step-sub">
-                                변경 전/후 모두 한 단계도 통과하지 못했습니다 — 달라졌는지 알 수 없습니다.
+                                {{ $t('pr.verify.noSignalDesc') }}
                                 <template v-if="missingInputs[name]">
-                                    시나리오가 참조하는 첨부 문서를 가져오지 못했습니다({{ missingInputs[name].join(', ') }}).
+                                    {{ $t('pr.verify.missingInputs', { files: missingInputs[name].join(', ') }) }}
                                 </template>
                             </div>
                         </div>
@@ -178,13 +214,13 @@
 
             <!-- 비교하지 못한 시나리오 -->
             <template v-if="succeeded && incomparable.length">
-                <div class="pv-sec">비교하지 못한 시나리오</div>
+                <div class="pv-sec">{{ $t('pr.verify.incomparableSection') }}</div>
                 <div class="pv-case">
                     <div class="pv-step">
                         <span class="pv-step-mark warn">!</span>
                         <div>
                             <div class="pv-step-text">{{ incomparable.join(', ') }}</div>
-                            <div class="pv-step-sub">두 버전 중 한쪽 실행이 완료되지 않아 달라졌는지 판단할 수 없습니다.</div>
+                            <div class="pv-step-sub">{{ $t('pr.verify.incomparableDesc') }}</div>
                         </div>
                     </div>
                 </div>
@@ -192,41 +228,121 @@
 
             <!-- 검증 대상 시나리오 -->
             <div class="pv-sec">
-                검증 대상 시나리오
+                {{ $t('pr.verify.casesSection') }}
                 <span class="pv-sec-n">{{ cases.length }}</span>
                 <!-- 자동으로 뽑은 시나리오가 늘 기준선으로 쓸 만한 것은 아니다. 리뷰어가
                      읽어 보고 미덥지 않다고 판단하면 현재 버전 기준으로 다시 뽑을 수 있어야
                      한다. 지금 것을 지우는 일이라 확인을 한 번 받는다. -->
+                <!-- 이 스위트가 어느 버전 기준인지. 통과/실패 숫자는 이 기준에 대한 상대값이라,
+                     기준 버전이 보이지 않으면 숫자가 무엇을 뜻하는지 읽을 수 없다. -->
+                <span v-if="baselineRef" class="pv-sec-baseline">{{ $t('pr.verify.baselineLabel', { ref: baselineRef }) }}</span>
                 <span class="pv-sec-actions">
                     <template v-if="backfilling || buildingScenarios">
                         <v-progress-circular indeterminate size="12" width="2" color="primary" class="mr-1" />
                         {{ regeneratingLabel }}
                     </template>
-                    <template v-else-if="confirmingRegenerate">
-                        <span class="pv-confirm-text">지금 시나리오를 버리고 다시 만들까요?</span>
-                        <button class="pv-link danger" :disabled="running" @click="regenerate">다시 만들기</button>
-                        <button class="pv-link" @click="confirmingRegenerate = false">취소</button>
-                    </template>
-                    <button v-else class="pv-link" :disabled="running" @click="confirmingRegenerate = true">시나리오 다시 만들기</button>
+                    <button v-else class="pv-link" :disabled="running" @click="openRegenerate">
+                        {{ $t('pr.verify.rebuildScenarios') }}
+                    </button>
                 </span>
             </div>
+
+            <!--
+                다시 만들기는 지금 시나리오를 지우는 일이라 늘 한 번 물어본다. 고를 기준이
+                둘이면(초기 / 최신) 그 선택을 같은 다이얼로그에서 받는다 — 확인과 선택을
+                서로 다른 방식으로 물으면 같은 동작이 두 가지 모양으로 나타난다.
+            -->
+            <v-dialog v-model="regenerateDialog" max-width="440">
+                <v-card rounded="lg" elevation="8">
+                    <v-card-title class="text-subtitle-1 font-weight-bold">{{ $t('pr.verify.rebuildScenarios') }}</v-card-title>
+                    <v-card-text class="pt-0">
+                        <template v-if="baselineOptions.length">
+                            <div class="pv-baseline-q">{{ $t('pr.verify.chooseBaseline') }}</div>
+                            <label v-for="opt in baselineOptions" :key="opt.ref" class="pv-baseline-opt">
+                                <input v-model="chosenBaseline" type="radio" name="pv-baseline" :value="opt.ref" />
+                                <span class="pv-baseline-body">
+                                    <span class="pv-baseline-name">
+                                        {{ $t(opt.kind === 'fork' ? 'pr.verify.baselineFork' : 'pr.verify.baselineCurrent') }}
+                                        <span class="pv-baseline-ver">{{ opt.ref }}</span>
+                                    </span>
+                                    <span class="pv-baseline-desc">
+                                        {{ $t(opt.kind === 'fork' ? 'pr.verify.baselineForkDesc' : 'pr.verify.baselineCurrentDesc') }}
+                                    </span>
+                                </span>
+                            </label>
+                        </template>
+                        <div v-else class="pv-baseline-q">{{ $t('pr.verify.confirmRegenerate') }}</div>
+                        <!-- 다시 뽑는 동안 무슨 일이 일어나는지 이 자리에서 말한다. 파생은 1초도
+                             걸리지 않아, 다이얼로그를 먼저 닫아 버리면 진행도 결과도 스쳐 지나간다. -->
+                        <div v-if="buildingScenarios" class="pv-baseline-progress">
+                            <v-progress-circular indeterminate size="13" width="2" color="primary" class="mr-2" />
+                            {{ regeneratingLabel }}
+                        </div>
+                        <div v-else class="pv-baseline-note">{{ $t('pr.verify.baselineReplaceNote') }}</div>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer />
+                        <v-btn variant="text" :disabled="buildingScenarios" @click="regenerateDialog = false">
+                            {{ $t('pr.verify.confirmRegenerateNo') }}
+                        </v-btn>
+                        <v-btn variant="text" color="error" :loading="buildingScenarios" :disabled="running" @click="regenerate">
+                            {{ $t('pr.verify.confirmRegenerateYes') }}
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+            <!-- 다시 만든 결과. 케이스 수만 조용히 바뀌면 리뷰어는 자기가 누른 것이
+                 실제로 일어났는지 알 수 없다 — 몇 건을 어느 기준으로 만들었는지 말해 준다. -->
+            <div v-if="rebuildNotice" class="pv-note">{{ rebuildNotice }}</div>
             <div v-if="backfillFailed && hasSuite" class="pv-error">
-                시나리오를 다시 만들지 못했습니다. {{ backfill.error }} — 기존 시나리오는 그대로 남아 있습니다.
+                {{ $t('pr.verify.rebuildFailed', { reason: backfill.error }) }}
             </div>
             <div v-if="backfillError && hasSuite" class="pv-error">{{ backfillError }}</div>
             <div v-for="c in cases" :key="c.eval_name" class="pv-case">
                 <div class="pv-case-head">
                     <span class="pv-case-name">{{ c.eval_name }}</span>
                     <span v-if="caseCompare[c.eval_name]" class="pv-cmp">
-                        <span class="chip base">변경 전 {{ caseCompare[c.eval_name].baseLabel }}</span>
+                        <span class="chip base">
+                            {{ $t('pr.verify.beforeCount', { label: caseCompare[c.eval_name].baseLabel }) }}
+                        </span>
                         <span class="chip arrow">→</span>
                         <span class="chip head" :class="caseCompare[c.eval_name].headClass">
-                            변경 후 {{ caseCompare[c.eval_name].headLabel }}
+                            {{ $t('pr.verify.afterCount', { label: caseCompare[c.eval_name].headLabel }) }}
                         </span>
                     </span>
-                    <span v-else class="pv-case-n">검증 {{ (c.assertions || []).length }}단계</span>
+                    <span v-else class="pv-case-n">{{ $t('pr.verify.steps', { count: (c.assertions || []).length }) }}</span>
                 </div>
-                <div class="pv-case-prompt">{{ casePromptText(c) }}</div>
+                <!--
+                    의사결정 시나리오는 "무엇을 넣어(입력) 어느 조건을 맞히면(조건)
+                    어떤 결론이 나와야 하는가(기대)" 다. 입력값만 늘어놓으면 그 셋 중
+                    하나만 보여 주는 셈이라, 검증 결과가 왜 그런지 표를 따로 열어야 했다.
+                -->
+                <div v-if="isDmn && caseFacts(c)" class="pv-facts">
+                    <div class="pv-fact">
+                        <span class="pv-fact-k">{{ $t('pr.verify.caseInput') }}</span>
+                        <span class="pv-fact-v">{{ caseFacts(c).inputs }}</span>
+                    </div>
+                    <div class="pv-fact">
+                        <span class="pv-fact-k">{{ $t('pr.verify.caseCondition') }}</span>
+                        <span class="pv-fact-v">{{ caseFacts(c).condition }}</span>
+                    </div>
+                    <div class="pv-fact">
+                        <span class="pv-fact-k">{{ $t('pr.verify.caseExpected') }}</span>
+                        <span class="pv-fact-v pv-fact-v--out">{{ caseFacts(c).expected }}</span>
+                    </div>
+                    <!-- 실제로 무엇이 나왔는지. 판정이 왜 그런지가 여기서 끝나야 한다. -->
+                    <div v-if="caseActual[c.eval_name]" class="pv-fact">
+                        <span class="pv-fact-k">{{ $t('pr.verify.caseActual') }}</span>
+                        <span class="pv-fact-v">
+                            {{ $t('pr.verify.beforeCount', { label: caseActual[c.eval_name].base }) }}
+                            <span class="pv-fact-arrow">→</span>
+                            <span :class="{ 'pv-fact-bad': caseActual[c.eval_name].worse }">
+                                {{ $t('pr.verify.afterCount', { label: caseActual[c.eval_name].head }) }}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+                <div v-else class="pv-case-prompt">{{ casePromptText(c) }}</div>
             </div>
         </template>
     </div>
@@ -235,9 +351,31 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import { formatRelativeTime } from '@/composables/usePrUtils';
+import { computeVerifyStats, changedCases } from '@/composables/usePrVerification';
+import { buildActivityLabels, labelOf, labelPath, relabelText } from '@/shared/activityLabels/index.js';
 
 // 검증이 도는 동안의 폴링 간격(ms). 실행은 수 분 걸리므로 촘촘히 볼 이유가 없다.
 const POLL_MS = 5000;
+
+/** 프로세스·의사결정의 버전 표기는 `v4.0-abc` 처럼 앞에 v 가 붙는다. */
+function stripVersionPrefix(ref) {
+    return String(ref || '').replace(/^v/i, '');
+}
+
+/** 버전 문자열을 자리별 숫자로 비교한다(`10.0` 이 `9.0` 보다 크다). */
+function compareVersion(a, b) {
+    const pa = String(a)
+        .split('.')
+        .map((n) => parseInt(n, 10) || 0);
+    const pb = String(b)
+        .split('.')
+        .map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i += 1) {
+        const diff = (pa[i] || 0) - (pb[i] || 0);
+        if (diff) return diff > 0 ? 1 : -1;
+    }
+    return 0;
+}
 
 export default {
     name: 'PrVerification',
@@ -249,7 +387,10 @@ export default {
         resourceType: { type: String, default: 'skill' },
         prId: { type: String, default: '' },
         // 변경 전 버전. 의사결정 시나리오를 이 버전의 규칙 표에서 뽑는다.
-        baseRef: { type: String, default: '' }
+        baseRef: { type: String, default: '' },
+        // 변경 후(초안) 버전. 예전 요청은 base_branch 에 "병합이 만들 다음 메이저" 를 적어 두어
+        // 갈라져 나온 버전을 base_branch 로는 찾지 못한다 — 그럴 때 초안에서 부모를 되짚는다.
+        headRef: { type: String, default: '' }
     },
     emits: ['status'],
     data() {
@@ -264,9 +405,20 @@ export default {
             // 시나리오 확보(backfill) 회차 — 시나리오가 없는 스킬에서만 의미가 있다.
             backfill: null,
             backfillError: '',
-            confirmingRegenerate: false,
             buildingScenarios: false,
-            pollTimer: null
+            pollTimer: null,
+            // 이 스위트가 기준으로 굳힌 버전(백엔드 기록). 빈 문자열이면 기록이 없는 예전 스위트다.
+            baselineRef: '',
+            // 다시 만들기를 물어보는 다이얼로그. 확인과 기준 선택을 같은 자리에서 받는다.
+            regenerateDialog: false,
+            chosenBaseline: '',
+            // 방금 다시 만든 결과 한 줄. 다음에 다시 만들기를 열 때 지운다.
+            rebuildNotice: '',
+            // 프로세스 요소 ID → 이름. 실행 경로·근거를 ID 대신 이름으로 보여 줄 때 쓴다.
+            activityLabels: {},
+            // 프로세스·의사결정의 버전 목록. 요소 이름표와 기준 버전 후보를 여기서 얻는다.
+            versionRows: [],
+            versionsLoaded: false
         };
     },
     computed: {
@@ -282,9 +434,55 @@ export default {
         },
         /** 시나리오를 다시 뽑는 동안 그 자리에 띄울 문구. */
         regeneratingLabel() {
-            if (this.isDmn) return '규칙 표에서 시나리오를 다시 뽑는 중…';
-            if (this.isProcess) return '변경 전 정의에서 시나리오를 다시 뽑는 중…';
+            if (this.isDmn) return this.$t('pr.verify.regenerateDmn');
+            if (this.isProcess) return this.$t('pr.verify.regenerateProcess');
             return this.backfillPhaseTitle;
+        },
+        /**
+         * 기준 버전 후보. 고를 것이 없으면 빈 배열(=지금까지처럼 확인만 받는다).
+         *
+         * 스킬은 base 가 늘 `main`(=최신 병합 상태) 하나뿐이라 고를 것이 없다. 프로세스·
+         * 의사결정은 병합이 새 버전을 만들기 때문에, 이 요청이 갈라져 나온 뒤 다른 요청이
+         * 병합되면 기준으로 삼을 버전이 둘로 갈린다.
+         */
+        baselineOptions() {
+            if (this.isSkill) return [];
+            const fork = this.forkVersion;
+            const current = this.currentVersion;
+            const options = [];
+            if (fork) options.push({ ref: fork, kind: 'fork' });
+            if (current && current !== fork) options.push({ ref: current, kind: 'current' });
+            // 하나뿐이면 선택이 아니다 — 물어봐야 할 것이 없는데 화면만 한 단계 늘어난다.
+            return options.length > 1 ? options : [];
+        },
+        /** 이 요청이 갈라져 나온 버전(`v1.0`). 버전 목록에서 실재를 확인한 것만 돌려준다. */
+        forkVersion() {
+            const known = new Set(this.versionRows.map((row) => String(row.version)));
+            const base = stripVersionPrefix(this.baseRef);
+            if (base && known.has(base)) return `v${base}`;
+            // base_branch 가 아직 없는 버전을 가리키는 예전 요청은 초안에서 부모를 되짚는다
+            // (usePrChanges 의 스냅샷 짝짓기와 같은 규칙).
+            const head = stripVersionPrefix(this.headRef);
+            const headRow = this.versionRows.find((row) => String(row.version) === head);
+            const parent = String(headRow?.parent_version || '') || (head.includes('-') ? head.split('-')[0] : '');
+            if (parent && known.has(parent)) return `v${parent}`;
+            return base ? `v${base}` : '';
+        },
+        /**
+         * 지금 운영 중인(= 마지막으로 병합된) 버전.
+         *
+         * 병합은 새 메이저 버전을 만든다(usePrMerge.mergeDefinitionPr) — 그래서 메이저 중
+         * 가장 큰 것이 현재 정의다. 초안(`4.0-h10y6`)은 아직 병합되지 않은 것이라 세지 않는다.
+         */
+        currentVersion() {
+            const merged = this.versionRows.filter((row) => row.version_tag === 'major' && !String(row.version || '').includes('-'));
+            let latest = '';
+            for (const row of merged) {
+                const version = String(row.version || '');
+                if (!version) continue;
+                if (!latest || compareVersion(version, latest) > 0) latest = version;
+            }
+            return latest ? `v${latest}` : '';
         },
         /** 이 병합 요청을 가리킬 수 있는가 — 스킬은 깃 PR 번호, 나머지는 요청 id. */
         addressed() {
@@ -304,9 +502,9 @@ export default {
             const phase = this.backfill?.summary?.phase;
             if (phase === 'calibrating') {
                 const n = this.backfill?.summary?.proposed;
-                return n ? `후보 시나리오 ${n}건을 변경 전 버전으로 확인하는 중…` : '변경 전 버전으로 확인하는 중…';
+                return n ? this.$t('pr.verify.backfillPhaseCalibrating', { count: n }) : this.$t('pr.verify.backfillPhaseCalibratingPlain');
             }
-            return '변경 전 버전을 읽고 시나리오를 만드는 중…';
+            return this.$t('pr.verify.backfillPhaseReading');
         },
         /** 이 스위트가 사람 손이 아니라 현재 동작에서 자동으로 뽑힌 것인지. */
         generatedSuite() {
@@ -314,6 +512,13 @@ export default {
         },
         succeeded() {
             return this.run?.status === 'succeeded';
+        },
+        /** 전체 / 통과 / 실패 / 결과 달라짐 — 배너·탭·목록이 같은 기준으로 말하도록 한 곳에서 센다. */
+        stats() {
+            return computeVerifyStats({ hasSuite: this.hasSuite, cases: this.cases, run: this.run, backfill: this.backfill });
+        },
+        changedList() {
+            return changedCases(this.run);
         },
         summary() {
             return this.run?.summary || {};
@@ -343,21 +548,74 @@ export default {
             return this.inconclusive ? 'warn' : 'ok';
         },
         verdictTitle() {
-            if (this.broken.length) return `기존 동작 ${this.broken.length}개 단계가 깨집니다`;
-            if (this.inconclusive) return `시나리오 ${this.inconclusive}건은 판단할 수 없습니다`;
-            return '기존 동작이 깨지지 않습니다';
+            if (this.broken.length) return this.$t('pr.verify.verdictBroken', { count: this.broken.length });
+            if (this.inconclusive) return this.$t('pr.verify.verdictInconclusive', { count: this.inconclusive });
+            return this.$t('pr.verify.verdictOk');
         },
         verdictDesc() {
-            if (this.broken.length) {
-                return '변경 전에는 통과하던 단계입니다. 병합하면 이 동작이 사라집니다.';
+            if (this.broken.length) return this.$t('pr.verify.verdictBrokenDesc');
+            if (this.noSignal.length) return this.$t('pr.verify.verdictNoSignalDesc');
+            if (this.incomparable.length) return this.$t('pr.verify.verdictIncomparableDesc');
+            return this.$t('pr.verify.verdictOkDesc', { count: this.cases.length });
+        },
+        /**
+         * 시나리오 한 건을 입력·조건·기대 세 줄로 옮긴다.
+         *
+         * 조건과 기대 결론은 시나리오를 만들 때 함께 굳혀 둔 값(expected_output)이다.
+         * 예전에 만든 시나리오에는 그 정보가 없어 null 을 돌려주고, 화면은 예전처럼
+         * 입력값 한 줄만 보여 준다.
+         */
+        caseFacts() {
+            return (c) => {
+                let expected;
+                try {
+                    expected = JSON.parse(c.expected_output || '{}');
+                } catch (e) {
+                    return null;
+                }
+                const index = expected?.matched_rule_index;
+                // 예전에 만든 시나리오에는 조건 문구가 없다 — 그래도 행 번호와 기대 결론은
+                // 들어 있으므로, 있는 만큼이라도 문장으로 세운다.
+                if (!expected || !(expected.rule_label || typeof index === 'number')) return null;
+                const ruleLabel =
+                    expected.rule_label ||
+                    (typeof index === 'number' && index >= 0
+                        ? this.$t('pr.verify.ruleLabel', { index: index + 1 })
+                        : this.$t('pr.verify.noMatch'));
+
+                let inputs = {};
+                try {
+                    inputs = JSON.parse(c.prompt || '{}').inputs || {};
+                } catch (e) {
+                    inputs = {};
+                }
+                const inputText = Object.entries(inputs)
+                    .map(([key, value]) => `${key} = ${value}`)
+                    .join(' · ');
+
+                const conditions = expected.conditions || [];
+                return {
+                    inputs: inputText || this.$t('pr.verify.noInputs'),
+                    // 맞히는 행이 없는 시나리오(=매칭 없음)는 그 자체가 지키려는 결론이다.
+                    condition: conditions.length ? `${conditions.join(' AND ')} (${ruleLabel})` : ruleLabel,
+                    expected: expected.outcome || this.$t('pr.verify.noOutcome')
+                };
+            };
+        },
+        /** eval_name → 변경 전/후 **실제 산출값**. 근거 문장에서 결론만 떼어 온다. */
+        caseActual() {
+            const out = {};
+            for (const [name, value] of Object.entries(this.summary.per_case || {})) {
+                const base = this.outcomeOf(value.base);
+                const head = this.outcomeOf(value.head);
+                if (!base && !head) continue;
+                out[name] = {
+                    base: base || '—',
+                    head: head || '—',
+                    worse: (value.broken || []).length > 0 || (value.comparable && base !== head)
+                };
             }
-            if (this.noSignal.length) {
-                return '두 버전 모두 한 단계도 통과하지 못해 달라졌는지 알 수 없습니다. 깨진 곳이 없다는 뜻이 아닙니다.';
-            }
-            if (this.incomparable.length) {
-                return '비교된 시나리오에서는 깨진 단계가 없지만, 한쪽 실행이 끝나지 않아 확인하지 못한 시나리오가 있습니다.';
-            }
-            return `시나리오 ${this.cases.length}건을 변경 전/후로 돌린 결과, 통과하던 단계가 깨진 곳이 없습니다.`;
+            return out;
         },
         /** eval_name → 변경 전/후 통과 수 비교 라벨 */
         caseCompare() {
@@ -420,22 +678,22 @@ export default {
                 const pairs = Object.entries(values)
                     .filter(([, v]) => v !== '' && v !== null && v !== undefined)
                     .map(([k, v]) => `${k}=${v}`);
-                return pairs.length ? pairs.join(', ') : '입력값 없음';
+                return pairs.length ? pairs.join(', ') : this.$t('pr.verify.noInputs');
             }
             const inputs = parsed.activity_inputs || {};
             for (const [activityId, values] of Object.entries(inputs)) {
                 const pairs = Object.entries(values || {})
                     .map(([k, v]) => `${k}=${v}`)
                     .join(', ');
-                if (pairs) parts.push(`${activityId}: ${pairs}`);
+                if (pairs) parts.push(`${labelOf(activityId, this.activityLabels)}: ${pairs}`);
             }
             const decisions = parsed.gateway_decisions || {};
             for (const [gatewayId, d] of Object.entries(decisions)) {
                 const seqs = (d && d.sequences) || {};
                 const chosen = ((d && d.selected) || [])
-                    .map((seqId) => (seqs[seqId] && (seqs[seqId].condition || seqs[seqId].target)) || seqId)
+                    .map((seqId) => (seqs[seqId] && (seqs[seqId].condition || labelOf(seqs[seqId].target, this.activityLabels))) || seqId)
                     .join(', ');
-                if (chosen) parts.push(`${gatewayId} → ${chosen}`);
+                if (chosen) parts.push(`${labelOf(gatewayId, this.activityLabels)} → ${chosen}`);
             }
             if (parts.length) return parts.join(' · ');
             // 갈림길이 없는 프로세스는 고를 것도 넣을 것도 없다. 그렇다고 입력 JSON 을
@@ -452,13 +710,62 @@ export default {
                 return '';
             }
             const order = (expected && expected.activity_order) || [];
-            return order.length ? `경로 ${order.join(' → ')}` : '';
+            return order.length ? this.$t('pr.verify.path', { path: labelPath(order, this.activityLabels).join(' → ') }) : '';
         },
         countLabel(v) {
             return v ? `${v.passed}/${v.total}` : '—';
         },
+        /**
+         * 단계 문구·근거를 화면에 보일 모양으로.
+         *
+         * 프로세스 단계는 실행 엔진이 요소 ID 로 적는다(`실행 경로가 ship_order → Activity_0q13olf 다`).
+         * 저장된 문구는 변경 전/후 단계를 짝짓는 열쇠라 그대로 두고, 보여 줄 때만 이름으로 바꾼다.
+         */
+        displayText(text) {
+            return this.isProcess ? relabelText(text, this.activityLabels) : text;
+        },
+        /**
+         * 프로세스·의사결정의 버전 목록을 한 번 받아 둔다.
+         *
+         * 두 가지를 여기서 얻는다 — 실행 경로를 ID 대신 이름으로 보여 줄 요소 이름표(프로세스),
+         * 그리고 시나리오를 다시 만들 때 고를 기준 버전 후보. 한 번의 조회로 둘 다 얻으므로
+         * 따로 받지 않는다.
+         */
+        async loadVersions() {
+            if (this.isSkill || this.versionsLoaded || !this.skillName) return;
+            this.versionsLoaded = true;
+            try {
+                const rows = await this.backend.getDefinitionVersions(this.skillName, { orderBy: 'timeStamp', sort: 'desc' });
+                this.versionRows = Array.isArray(rows) ? rows : [];
+                // 오래된 버전부터 쌓아 최신 이름이 이기게 한다. 변경 후에만 있는(새로 추가한) 요소와
+                // 변경 전에만 있던(삭제된) 요소 모두 이름으로 보인다.
+                if (this.isProcess) {
+                    this.activityLabels = buildActivityLabels(
+                        this.versionRows
+                            .slice()
+                            .reverse()
+                            .map((row) => row.definition)
+                    );
+                }
+            } catch (e) {
+                // 버전 목록을 못 받아도 검증 결과는 보여야 한다 — 이름표는 ID 그대로 두고,
+                // 기준 버전 선택은 나타나지 않는다(다음 새로고침에서 다시 받는다).
+                this.versionsLoaded = false;
+            }
+        },
+        /**
+         * 채점 근거에서 실제 결론만 떼어 온다.
+         * 근거는 `결론 '(매칭 없음)' (기대 '20')` 꼴이라, 앞의 따옴표 안이 그 버전이 낸 답이다.
+         */
+        outcomeOf(brief) {
+            const evidence = String(brief?.evidence || '');
+            const matched = evidence.match(/'([^']*)'/);
+            return matched ? matched[1] : '';
+        },
         async reload() {
             if (!this.backend || !this.skillName || !this.addressed) return;
+            // 기다리지 않는다 — 이름표가 늦어도 검증 결과는 먼저 보이고, 도착하면 이름으로 바뀐다.
+            this.loadVersions();
             const data = this.isSkill
                 ? await this.backend.getPrVerification(this.skillName, this.prNumber)
                 : await this.backend.getResourceVerification(this.resourceType, this.skillName, this.prId);
@@ -471,21 +778,28 @@ export default {
             this.run = data.run || null;
             this.results = data.results || [];
             this.backfill = data.backfill || null;
+            this.baselineRef = data.baseline_ref || '';
             this.loaded = true;
             this.emitStatus();
             if (this.running || this.backfilling) this.startPolling();
             else this.stopPolling();
         },
 
-        /** 변경 전 버전의 동작을 기준으로 시나리오를 만든다. */
-        async generate(replace = false) {
+        /**
+         * 시나리오를 만든다. 기준은 `baseRef`(없으면 이 요청의 변경 전 버전)다.
+         *
+         * 프로세스·의사결정은 리뷰어가 다시 만들 때 기준 버전을 고를 수 있어, 고른 값이
+         * 여기로 들어온다. 스킬은 base 가 늘 `main` 하나뿐이라 고를 것이 없다.
+         */
+        async generate(replace = false, baseRef = '') {
             this.backfillError = '';
+            const ref = baseRef || this.baseRef;
             if (this.isDmn) {
                 // 규칙 표에서 파생하므로 바로 끝난다 — 폴링할 회차가 없다.
                 this.buildingScenarios = true;
                 try {
                     const built = await this.backend.buildDmnScenarios(this.skillName, {
-                        baseRef: this.baseRef,
+                        baseRef: ref,
                         replace
                     });
                     if (built?.error) {
@@ -493,6 +807,7 @@ export default {
                         return;
                     }
                     await this.reload();
+                    this.noteRebuilt(ref);
                 } finally {
                     this.buildingScenarios = false;
                 }
@@ -503,7 +818,7 @@ export default {
                 this.buildingScenarios = true;
                 try {
                     const built = await this.backend.buildProcessScenarios(this.skillName, {
-                        baseRef: this.baseRef,
+                        baseRef: ref,
                         replace
                     });
                     if (built?.error) {
@@ -511,6 +826,7 @@ export default {
                         return;
                     }
                     await this.reload();
+                    this.noteRebuilt(ref);
                 } finally {
                     this.buildingScenarios = false;
                 }
@@ -525,10 +841,29 @@ export default {
             this.emitStatus();
             this.startPolling();
         },
-        /** 지금 시나리오를 버리고 현재(변경 전) 버전 기준으로 다시 뽑는다. */
+        /** 방금 다시 만든 결과를 한 줄로 남긴다. 화면에 남는 것은 이 문장과 기준 버전 칩이다. */
+        noteRebuilt(ref) {
+            this.rebuildNotice = this.$t('pr.verify.rebuildDone', {
+                count: this.cases.length,
+                ref: this.baselineRef || ref
+            });
+        },
+        /** 다시 만들기를 누른 순간. 기본 선택은 초기 버전 — 지금 기준을 그대로 유지하는 쪽이다. */
+        openRegenerate() {
+            this.rebuildNotice = '';
+            this.chosenBaseline = this.baselineOptions.length ? this.baselineOptions[0].ref : '';
+            this.regenerateDialog = true;
+        },
+        /**
+         * 지금 시나리오를 버리고 고른(또는 이 요청의 변경 전) 버전 기준으로 다시 뽑는다.
+         *
+         * 끝난 뒤에 닫는다 — 먼저 닫아 버리면 진행 표시가 섹션 구석에서 1초도 안 되게
+         * 스쳐 지나가, 누른 사람은 무엇이 일어났는지 보지 못한다.
+         */
         async regenerate() {
-            this.confirmingRegenerate = false;
-            await this.generate(true);
+            const baseRef = this.chosenBaseline;
+            await this.generate(true, baseRef);
+            this.regenerateDialog = false;
         },
         async start() {
             this.startError = '';
@@ -556,12 +891,12 @@ export default {
         /** 병합 폼이 "깨진 단계가 있는데 병합하려는 상황" 을 알 수 있게 알린다. */
         emitStatus() {
             this.$emit('status', {
-                hasSuite: this.hasSuite,
+                ...this.stats,
+                // 예전 이름들 — 병합 폼이 "깨진 단계가 있는데 병합하려는 상황" 을 이 이름으로 읽는다.
                 status: this.run?.status || null,
                 brokenCount: this.broken.length,
                 incomparableCount: this.incomparable.length,
-                noSignalCount: this.noSignal.length,
-                backfillStatus: this.backfill?.status || null
+                noSignalCount: this.noSignal.length
             });
         }
     }
@@ -712,6 +1047,102 @@ export default {
     color: rgba(var(--v-theme-on-surface), 0.6);
 }
 
+/* ── 판정 배너 아래 숫자 네 칸 ── */
+.pv-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+.pv-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: rgba(var(--v-theme-on-surface), 0.05);
+}
+.pv-stat-n {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(var(--v-theme-on-surface), 0.8);
+}
+.pv-stat-l {
+    font-size: 11px;
+    color: rgba(var(--v-theme-on-surface), 0.55);
+}
+.pv-stat.ok .pv-stat-n {
+    color: #2e6b16;
+}
+.pv-stat.bad .pv-stat-n {
+    color: rgb(var(--v-theme-error));
+}
+.pv-stat.warn .pv-stat-n {
+    color: #92610a;
+}
+
+/* ── 시나리오 한 건: 입력 · 조건 · 기대 · 실제 ── */
+.pv-facts {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+}
+.pv-fact {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+.pv-fact-k {
+    flex: none;
+    width: 42px;
+    color: rgba(var(--v-theme-on-surface), 0.42);
+}
+.pv-fact-v {
+    min-width: 0;
+    color: rgba(var(--v-theme-on-surface), 0.75);
+    overflow-wrap: anywhere;
+}
+.pv-fact-v--out {
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.87);
+}
+.pv-fact-arrow {
+    color: rgba(var(--v-theme-on-surface), 0.3);
+    margin: 0 2px;
+}
+.pv-fact-bad {
+    color: rgb(var(--v-theme-error));
+    font-weight: 600;
+}
+
+/* ── 결과가 달라진 시나리오 ── */
+.pv-changed {
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 8px;
+    overflow: hidden;
+}
+.pv-changed-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px 11px;
+    font-size: 12.5px;
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+.pv-changed-row:last-child {
+    border-bottom: none;
+}
+.pv-changed-name {
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.8);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 /* ── 섹션 ── */
 .pv-sec {
     font-size: 11.5px;
@@ -735,8 +1166,75 @@ export default {
     text-transform: none;
     letter-spacing: 0;
 }
-.pv-confirm-text {
+/* 이 스위트가 어느 버전 기준인지 — 섹션 제목 곁에 조용히 붙어 있는다. */
+.pv-sec-baseline {
+    font-weight: 400;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    background: rgba(var(--v-theme-on-surface), 0.06);
+    border-radius: 5px;
+    padding: 1px 6px;
+}
+
+/* ── 다시 만들기 다이얼로그: 기준 선택 ── */
+/* 다시 만든 결과 한 줄 — 에러와 같은 자리, 다른 톤. */
+.pv-note {
+    font-size: 12px;
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.07);
+    border-radius: 8px;
+    padding: 8px 11px;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+.pv-baseline-progress {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    font-size: 12px;
     color: rgba(var(--v-theme-on-surface), 0.7);
+}
+.pv-baseline-q {
+    font-size: 13px;
+    color: rgba(var(--v-theme-on-surface), 0.8);
+    margin-bottom: 10px;
+}
+.pv-baseline-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 7px 0;
+    cursor: pointer;
+}
+.pv-baseline-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.pv-baseline-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.87);
+}
+/* 어느 버전인지는 필요할 때 확인할 보조 정보다 — 선택은 초기/최신으로 한다. */
+.pv-baseline-ver {
+    margin-left: 5px;
+    font-size: 10.5px;
+    font-weight: 400;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+}
+.pv-baseline-desc {
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(var(--v-theme-on-surface), 0.55);
+}
+.pv-baseline-note {
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: rgba(var(--v-theme-on-surface), 0.45);
 }
 .pv-link {
     background: none;

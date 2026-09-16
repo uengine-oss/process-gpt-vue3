@@ -1,6 +1,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { getLLMConfig } from './llmConfig.js';
+import { canUseAiFeatures, AI_DISABLED_MESSAGE } from '@/utils/aiFeatureGate';
 const storage = StorageBaseFactory.getStorage();
 
 export default class AIGenerator {
@@ -235,6 +236,13 @@ export default class AIGenerator {
     }
 
     async generate() {
+        // 마스터 AI 플래그(VITE_FF_AI) 가드 — 레거시 생성기 전체의 단일 차단 지점
+        if (!canUseAiFeatures()) {
+            console.warn('[AIGenerator]', AI_DISABLED_MESSAGE);
+            if (this.client && this.client.onError) this.client.onError({ message: AI_DISABLED_MESSAGE });
+            this.state = 'error';
+            return;
+        }
         this.state = 'running';
         let me = this;
 

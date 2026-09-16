@@ -121,6 +121,7 @@
                                             :animation="200"
                                             ghost-class="ghost-sub"
                                             group="subProcesses"
+                                            handle=".sub-drag-handle"
                                             :disabled="!!props.readonly"
                                             class="sub-draggable-zone"
                                             :data-major-id="major.id"
@@ -133,7 +134,6 @@
                                                 :key="sub.id"
                                                 :class="[
                                                     'sub-item d-flex flex-column pa-2 rounded cursor-pointer',
-                                                    { 'cursor-grab': !props.readonly },
                                                     {
                                                         'wip-item': showToBe && getStatus(sub.id)?.status === 'wip',
                                                         'sunset-item': showToBe && getStatus(sub.id)?.status === 'sunset'
@@ -151,6 +151,13 @@
                                                 <v-divider v-if="subIdx > 0" class="sub-item-divider" />
                                                 <!-- 1행: sub-process 이름 (잘림 없음) -->
                                                 <div class="d-flex align-center sub-name-row">
+                                                    <v-icon
+                                                        v-if="!props.readonly"
+                                                        size="14"
+                                                        class="sub-drag-handle cursor-grab mr-2 text-grey flex-shrink-0"
+                                                        title="드래그하여 이동"
+                                                        @click.stop
+                                                    >mdi-drag-vertical</v-icon>
                                                     <v-icon size="14" class="mr-2 text-grey flex-shrink-0">mdi-file-document-outline</v-icon>
                                                     <v-icon v-if="isUpdatedSinceLastVisit?.(sub)" size="8" color="info" class="mr-1 flex-shrink-0">mdi-circle</v-icon>
                                                     <span class="text-body-2 sub-name-text">{{ sub.name }}</span>

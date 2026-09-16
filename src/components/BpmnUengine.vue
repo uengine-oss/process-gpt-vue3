@@ -87,8 +87,7 @@ import paletteProvider from './customPalette/PaletteProvider';
 import customContextPadModule from './customContextPad';
 import customReplaceElement from './customReplaceElement';
 import customPopupMenu from './customPopupMenu';
-// skt 마이그레이션 요소 변경 비활성화
-// import customReplaceModule from './customReplace';
+import customReplaceModule from './customReplace';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
@@ -100,6 +99,10 @@ import '@/components/autoLayout/edge-router-orthogonal.js';
 import '@/components/autoLayout/bpmn-waypoints-refresh.js';
 import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequence-flow-final-module.js';
 import sequenceFlowManualCropSkipModule from '@/components/autoLayout/sequence-flow-manual-crop-skip-module.js';
+import customDrilldownModule from './customDrilldown';
+import { resolveLinkedProcessXml } from './customDrilldown/resolveLinkedProcessXml';
+import { openLinkedProcessInNewTab, PROCESS_HIERARCHY_MODE } from '@/views/process-hierarchy/navigation';
+import { resolveProcessRouteId } from '@/utils/processRouteId';
 import { markRaw } from 'vue';
 import minimapModule from 'diagram-js-minimap';
 import {
@@ -113,6 +116,7 @@ import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 import { BPMN_AUTO_ORIENTATION_MODES, getAutoOrientationRotateOptions, getBpmnAutoOrientationMode } from '@/utils/bpmnAutoOrientationMode';
 
 const backend = BackendFactory.createBackend();
+const MINIMAP_OPEN_STORAGE_KEY = 'process-gpt:bpmn:minimap-open';
 
 const WARNING = 0,
     ERROR = 1;
@@ -150,6 +154,9 @@ export default {
         isViewMode: {
             type: Boolean
         },
+        enableLinkedNavigation: { type: Boolean, default: true },
+        rootProcessName: { type: String, default: '' },
+        diagramMode: { type: String, default: 'as-is' },
         isPreviewMode: {
             type: Boolean
         },
@@ -205,6 +212,7 @@ export default {
         return {
             diagramXML: null,
             bpmnXML: null,
+            acceptedCurrentBpmnSnapshot: null,
             openPanel: false,
             moddle: null,
             bpmnStore: null,
@@ -339,8 +347,6 @@ export default {
             .finally(() => {
                 try {
                     this.onLoadEnd();
-                    const minimap = this.bpmnViewer.get('minimap');
-                    if (minimap) minimap.open();
                 } catch (_) {}
             });
         this.initResizeObserver();
@@ -391,6 +397,15 @@ export default {
                     if (!this.bpmnViewer) return;
 
                     const normalizedNewVal = newVal.trim();
+
+                    // 현재 modeler에서 export해 영구 저장한 XML이 prop으로 돌아온 경우다.
+                    // 이미 캔버스에 반영된 상태이므로 importXML을 다시 실행하지 않는다.
+                    if (this.acceptedCurrentBpmnSnapshot === normalizedNewVal) {
+                        this.acceptedCurrentBpmnSnapshot = null;
+                        this.bpmnXML = newVal;
+                        this.diagramXML = newVal;
+                        return;
+                    }
 
                     // registerToStore 모드에서는 내부 편집(changeElement)로 올라온 동일 XML은 다시 import하지 않는다.
                     // 단, 외부(생성/로드/롤백 등)에서 변경된 BPMN은 import해서 화면을 동기화한다.
@@ -521,6 +536,9 @@ export default {
         }
     },
     methods: {
+        acceptCurrentBpmnSnapshot(xml) {
+            this.acceptedCurrentBpmnSnapshot = typeof xml === 'string' ? xml.trim() : null;
+        },
         /**
          * 색상 테마 변경 시 캔버스 도형을 다시 그린다.
          *
@@ -902,17 +920,18 @@ export default {
                 // Load new table-based palette task types
                 await catalogStore.loadPaletteTaskTypes();
 
-                // Set enabled palette task types to window for PaletteProvider access
-                window.$enabledPaletteTaskTypes = catalogStore.enabledPaletteTaskTypes;
-
                 // Legacy support: also load old palette settings
                 await catalogStore.loadPaletteSettings();
-                window.$paletteSettings = catalogStore.paletteSettings;
+
+                // 팔레트·변경 메뉴가 읽는 window 전역(실효 노출 목록 포함) 발행
+                catalogStore.publishPaletteSettingsToWindow();
             } catch (error) {
                 console.error('Failed to load palette settings:', error);
                 // Set default settings
                 window.$enabledPaletteTaskTypes = [];
                 window.$paletteSettings = { visibleTaskTypes: ['bpmn:UserTask'] };
+                window.$visibleTaskTypes = null;
+                window.$visibleEventTypes = null;
             }
         },
         applyAutoLayout() {
@@ -1653,50 +1672,6 @@ export default {
                 setTimeout(() => safeZoom(), 50);
                 // you may hook into any of the following events
                 if (self.isViewMode) {
-                    const elementRegistry = self.bpmnViewer.get('elementRegistry');
-                    const overlays = self.bpmnViewer.get('overlays');
-
-                    const callActivities = elementRegistry.filter((element) => element.type === 'bpmn:CallActivity');
-
-                    callActivities.forEach((element) => {
-                        const businessObject = element.businessObject;
-                        if (
-                            businessObject.extensionElements &&
-                            businessObject.extensionElements.values &&
-                            businessObject.extensionElements.values.length > 0
-                        ) {
-                            const json = businessObject.extensionElements.values[0].json;
-                            if (json) {
-                                try {
-                                    const properties = JSON.parse(json);
-                                    if (properties.definitionId) {
-                                        const html = document.createElement('div');
-                                        html.className = 'call-activity-link-btn';
-                                        html.style.cssText =
-                                            'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
-                                        html.innerHTML =
-                                            '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: var(--cds-text-primary);"></i>';
-
-                                        html.addEventListener('click', function (e) {
-                                            e.stopPropagation(); // Prevent element selection
-                                            window.open(`/definitions/${properties.definitionId.replace('.bpmn', '')}`, '_blank');
-                                        });
-
-                                        overlays.add(element.id, {
-                                            position: {
-                                                top: -10,
-                                                right: -10
-                                            },
-                                            html: html
-                                        });
-                                    }
-                                } catch (err) {
-                                    console.error('Failed to parse CallActivity properties', err);
-                                }
-                            }
-                        }
-                    });
-
                     // View 모드: 더블클릭 시 CallActivity/SubProcess(definitionId 있음)면 프로세스로 이동(openDefinition), 그 외는 패널 열기
                     // Pal 모드에서는 속성 패널을 우클릭(contextmenu)으로만 연다 — 더블클릭은 연결 프로세스 이동 전용
                     trackListener('element.dblclick', function (e) {
@@ -1855,6 +1830,7 @@ export default {
                 // Phase 4-2: Business ID auto-assignment on task creation
                 trackListener('shape.added', function (event) {
                     const element = event.element;
+                    if (element?._caDrilldown) return;
                     if (!element || !element.type || !element.type.includes('Task')) return;
                     // Only assign if no businessId already
                     const extEls = element.businessObject?.extensionElements;
@@ -2016,6 +1992,33 @@ export default {
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
+            const moddleExtensions = {
+                uengine: uEngineModdleDescriptor,
+                zeebe: zeebeModdleDescriptor,
+                phase: phaseModdle,
+                ...self.options?.moddleExtensions
+            };
+            const drilldownModules = [customDrilldownModule, {
+                callActivityDrilldownConfig: ['value', {
+                    enabled: self.enableLinkedNavigation,
+                    isViewMode: self.isViewMode,
+                    rootLabel: self.rootProcessName,
+                    moddleExtensions,
+                    resolveXml: async (id) => {
+                        const definitionId = (await resolveProcessRouteId(id)) || id;
+                        const xml = await resolveLinkedProcessXml(backend, definitionId, self.diagramMode);
+                        return xml ? uengineJsonElementToAttr(xml) : null;
+                    },
+                    onOpenInNew: (id, name) => openLinkedProcessInNewTab(self.$router, {
+                        id, name, mode: PROCESS_HIERARCHY_MODE.EDIT
+                    }),
+                    onAfterEnter: () => self.resetZoom(),
+                    onError: (error) => {
+                        console.warn('CallActivity 펼쳐보기 실패', error);
+                        self.$emit('error', error);
+                    }
+                }]
+            }];
             if (self.isViewMode) {
                 var Blocker = function (eventBus, elementRegistry, graphicsFactory) {
                     const ignoreEvent = (event) => {
@@ -2106,6 +2109,8 @@ export default {
                     },
                     self.options
                 );
+                viewerOptions.moddleExtensions = moddleExtensions;
+                viewerOptions.additionalModules = [...viewerOptions.additionalModules, ...drilldownModules];
                 self.bpmnViewer = markRaw(new BpmnModeler(viewerOptions));
             } else {
                 var _options = Object.assign({
@@ -2130,19 +2135,49 @@ export default {
                         customContextPadModule,
                         customReplaceElement,
                         customPopupMenu,
-                        // skt 마이그레이션 요소 변경 비활성화
-                        // customReplaceModule,
+                        // 변경(replace) 메뉴를 관리자 'Task/Event 종류 설정'과 동기화 — PAL 모드에만 적용
+                        ...(window.$pal ? [customReplaceModule] : []),
                         ZoomScroll,
                         MoveCanvas,
                         minimapModule
                     ]
                 });
+                _options.moddleExtensions = moddleExtensions;
+                _options.additionalModules = [..._options.additionalModules, ...drilldownModules];
                 self.bpmnViewer = markRaw(new BpmnModeler(_options));
             }
+
+            self.setupMinimapPreference();
 
             if (self.registerToStore) {
                 self.bpmnStore = useBpmnStore();
                 self.bpmnStore.setModeler(self.bpmnViewer);
+            }
+        },
+        setupMinimapPreference() {
+            if (!this.bpmnViewer) return;
+
+            let shouldOpen = true;
+            try {
+                const storedValue = window.localStorage.getItem(MINIMAP_OPEN_STORAGE_KEY);
+                shouldOpen = storedValue === null ? true : storedValue === 'true';
+            } catch (_) {
+                // 저장소 접근이 제한된 환경에서는 기존 기본값(열림)을 사용한다.
+            }
+
+            try {
+                const minimap = this.bpmnViewer.get('minimap');
+                const eventBus = this.bpmnViewer.get('eventBus');
+                minimap.toggle(shouldOpen);
+                eventBus.on('minimap.toggle', ({ open }) => {
+                    try {
+                        window.localStorage.setItem(MINIMAP_OPEN_STORAGE_KEY, String(open));
+                    } catch (_) {
+                        // 저장소 접근이 제한된 환경에서는 현재 화면의 토글만 유지한다.
+                    }
+                });
+            } catch (_) {
+                // minimap 모듈을 사용할 수 없는 임베드 환경은 기존 동작을 유지한다.
             }
         },
         extendUEngineProperties(businessObject) {
@@ -2383,7 +2418,9 @@ export default {
                 /* ignore */
             }
 
-            var allPools = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+            var allPools = elementRegistry.filter((element) =>
+                element.type === 'bpmn:Participant' && canvas.findRoot(element) === canvas.getRootElement()
+            );
 
             try {
                 zoomScroll.reset();
