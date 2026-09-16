@@ -91,6 +91,24 @@ body.pg-shell {
  * 어디로 갈 수 있는지는 앱이 정하되, 화면은 포털 것을 그대로 쓴다는 원칙은
  * 그대로다.
  */
+/*
+ * 포털의 메인 메뉴를 통째로 감춘다.
+ *
+ * 왜 링크를 하나씩 지우지 않는가
+ *   appshell.js 의 pruneLinks 는 a[href] 만 본다. 메뉴 항목이 앵커가
+ *   아니거나 서랍이 열릴 때 비로소 그려지면 그 사이로 새어나간다.
+ *   실제로 사이드바 버튼으로 허용하지 않은 메뉴에 닿는 일이 있었다.
+ *   메뉴 자체를 없애면 새는 길이 남지 않는다 — 앞으로 포털이
+ *   메뉴를 다시 짜도 마찬가지다.
+ *
+ * 대화 목록 서랍(.mobile-menu-toggle-btn / .mobile-menu-nav)은 건드리지
+ * 않는다. 그것은 메뉴가 아니라 대화를 고르는 자리다.
+ */
+.pg-shell .leftSidebar,
+.pg-shell .mobile-side-bar-btn {
+    display: none !important;
+}
+
 .pg-shell .v-app-bar {
     display: none !important;
 }
@@ -103,4 +121,60 @@ body.pg-shell {
 /* 사이드바가 탭을 가리지 않게 한다. */
 .pg-shell .v-navigation-drawer {
     bottom: calc(var(--pg-tap) + var(--pg-safe-bottom)) !important;
+}
+
+/*
+ * 할 일 카드의 설명을 몇 줄로 잘라 둔다.
+ *
+ * 왜 필요한가
+ *   카드에 들어가는 설명은 사람이 쓴 한 줄이 아니라 에이전트가 받은 지시문
+ *   전문이다. 몇백 줄짜리에 
+ 같은 글자까지 그대로 들어 있다.
+ *   데스크톱에서는 칸반 열이 높이를 잡고 안에서 스크롤되어 드러나지 않았는데,
+ *   좁은 화면에서는 그 제한이 풀려 **카드 하나가 화면을 다 먹었다.**
+ *   목록은 훑어보는 자리다. 전문은 카드를 열면 나온다.
+ */
+.pg-shell[data-pg="todolist"] .v-card .text-subtitle-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    /* 긴 영문 토큰이 칸을 밀어내지 않게 한다. */
+    overflow-wrap: anywhere;
+}
+
+/*
+ * 칸반 열은 한 번에 하나씩, 화면 폭을 다 쓴다.
+ *
+ * 데스크톱에서는 열 여럿을 가로로 나란히려고 v-col 로 폭을 나눈다.
+ * 그 비율이 휴대폰에서도 그대로 살아 있어, 열이 화면의 절반만 차지하고
+ * 오른쪽이 비었다. 좌우로 나란히는 것 자체가 좁은 화면에서는 의미가 없으므로
+ * 한 열씩 세로로 쌓는다.
+ */
+.pg-shell[data-pg="todolist"] .kanban-column {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+}
+
+/*
+ * 칸반 안쪽의 오른쪽 여백을 거둑다.
+ *
+ * 포털의 모바일 규칙이 .todo-list-card-box 에 padding-right: 40px 를,
+ * 그 밖 상자에 20px 를 !important 로 붙인다. 태블릿에서는 그럴듯했을
+ * 테지만 400px 남줩7 화면에서는 카드가 왜쪽으로 쓸리고 오른쪽이 통째로 비었다.
+ */
+.pg-shell[data-pg="todolist"] .todo-list-card-box {
+    padding-right: 8px !important;
+}
+
+.pg-shell[data-pg="todolist"] .todo-task-column-box-pc {
+    padding-right: 0 !important;
+}
+
+/*
+ * 목록이 하단 탭 밑으로 기어들어 마지막 카드가 잘리던 것을 막는다.
+ * 포털은 100vh 기준으로 높이를 잡는데, 그 100vh 안에 우리 탭이 있다.
+ */
+.pg-shell[data-pg="todolist"] .todo-list-card-box {
+    max-height: calc(100vh - 100px - var(--pg-tap) - var(--pg-safe-bottom)) !important;
 }

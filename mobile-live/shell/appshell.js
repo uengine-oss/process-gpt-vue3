@@ -34,6 +34,10 @@
         // 대화 하나를 여는 화면. 목록에서 고르면 이리로 온다.
         '/chat',
         '/todolist',
+        // 전용 UI 의 /instances/:id 에 해당한다. 이것을 닫아 두면 할 일에서
+        // 진행 중인 인스턴스로 들어갈 수 없다.
+        '/instancelist',
+        '/instance-viewer',
         '/account-settings',
         '/auth',
         '/tenant',
@@ -87,6 +91,29 @@
         }
     }
 
+    /** 이 탭이 맡는 자리에 지금 있는가. 채팅 탭은 새 대화와 목록 둘을 맡는다. */
+    function onTab(tab, p) {
+        var spots = tab.alt ? [tab.path, tab.alt] : [tab.path];
+        for (var i = 0; i < spots.length; i++) {
+            if (p === spots[i] || p.indexOf(spots[i] + '/') === 0) return true;
+        }
+        return false;
+    }
+
+    /**
+     * 지금 어느 화면인지를 body 에 적어 둔다.
+     *
+     * CSS 는 경로를 모른다. 그런데 고쳐야 할 것은 화면마다 다르다 —
+     * 할 일 카드의 설명만 줄이고 싶지, 대화 글을 줄이고 싶지는 않다.
+     * 이 표시가 있어야 규칙을 그 화면에만 묶을 수 있다.
+     */
+    function markPath() {
+        var seg = path().split('/')[1] || 'root';
+        if (document.body.getAttribute('data-pg') !== seg) {
+            document.body.setAttribute('data-pg', seg);
+        }
+    }
+
     function render() {
         document.body.classList.add('pg-shell');
 
@@ -108,12 +135,17 @@
                     '<span></span>';
                 btn.querySelector('span').textContent = tab.label;
                 btn.addEventListener('click', function () {
-                    // 같은 탭을 다시 누르면 목록을 다시 펼친다 — 대화를 고른 뒤
-                    // 다른 대화로 옮기고 싶을 때 돌아갈 길이 된다.
-                    // 채팅 탭에서 다시 누르면 목록으로 돌아온다 — 대화를 하나
-                    // 열어 본 뒤 다른 대화로 옮기고 싶을 때 쓰는 길이다.
-                    // 채팅 탭에서 다시 누르면 목록으로 돌아온다. 방 번호를 떼면
-                    // 목록이 다시 펼쳐진다 — 다른 대화로 옮기는 길이다.
+                    // 채팅 탭은 자리가 둘이다 — 새 대화(/chat)와 대화 목록(/chats).
+                    //
+                    // 왜 둘인가
+                    //   포털의 /chat 화면(ChatRoomPage)에는 대화 목록이 없다. 단일
+                    //   대화만 그리는 화면이다. 그래서 새 대화로 시작하면 다른 대화로
+                    //   옮길 길이 사라진다. 탭을 다시 누르면 목록으로 가게 해서 그
+                    //   길을 만든다 — 전용 UI 의 /chat/history 가 있던 자리다.
+                    if (tab.alt && onTab(tab, path())) {
+                        go(path() === tab.alt ? tab.path : tab.alt);
+                        return;
+                    }
                     go(tab.path);
                 });
                 bar.appendChild(btn);
@@ -125,7 +157,7 @@
         TABS.forEach(function (tab) {
             var btn = bar.querySelector('[data-name="' + tab.name + '"]');
             if (!btn) return;
-            var on = here === tab.path || here.indexOf(tab.path + '/') === 0;
+            var on = onTab(tab, here);
             btn.classList.toggle('pg-tab--on', on);
         });
     }
@@ -225,6 +257,7 @@
             return;
         }
         if (guard()) return;
+        markPath();
         render();
         pruneLinks();
         pruneSettings();

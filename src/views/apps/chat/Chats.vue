@@ -99,6 +99,13 @@
 
             <template v-if="!isInstanceChat" v-slot:mobileLeftContent="{ closeDrawer }">
                 <div class="no-scrollbar">
+                    <!--
+                        좁은 화면에는 새 대화를 시작할 자리가 없었다. 웹에서는 그 일을
+                        사이드바가 맡는데, 휴대폰에서는 사이드바를 열 수 없기 때문이다.
+                    -->
+                    <v-btn block color="primary" variant="flat" class="mb-2" prepend-icon="mdi-plus" @click="startNewChat">
+                        {{ $t('chatListing.newChatRoom') }}
+                    </v-btn>
                     <v-tabs v-model="activeTab">
                         <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-account</v-icon>
@@ -651,9 +658,63 @@ export default {
          * 두었더니 화면에 들어오자마자 목록이 접혀, 좁은 화면에서는 **목록을
          * 볼 기회가 없었다.**
          */
+        /** 좁은 화면인가. 목록과 대화를 한 화면에 같이 둘 수 없는 폭. */
+        isNarrow() {
+            return !this.$vuetify?.display?.lgAndUp;
+        },
+
+        /**
+         * 좁은 화면에서 대화 하나를 연다.
+         *
+         * 왜 이 화면(Chats.vue) 안에서 열지 않는가
+         *   여기 붙은 대화창은 목록과 나란히 놓으려고 줄여 놓은 것이라, 생성된
+         *   BPMN 미리보기·OpenUI 폼·휴먼 피드백을 받아 주는 곳이 없다. 실제로
+         *   프로세스를 만들어 놓고도 결과를 볼 수가 없었다.
+         *   /chat 은 그 모두를 갖춘 전용 화면이다. 휴대폰에서는 어차피 한 번에
+         *   하나만 보이므로 나란히 둘 이유도 없다.
+         */
+        openRoomOnMobile(roomId) {
+            this.$router.push({ path: '/chat', query: { roomId: roomId } });
+        },
+
         pickChatRoom(chatRoomInfo) {
+            if (this.isNarrow() && chatRoomInfo && chatRoomInfo.id) {
+                this.openRoomOnMobile(chatRoomInfo.id);
+                return;
+            }
             this.mobileListOpen = false;
             this.chatRoomSelected(chatRoomInfo);
+        },
+
+        /**
+         * 새 대화를 시작한다.
+         *
+         * 방은 여기서 목록에만 담고, 실제 저장은 첫 메시지를 보낼 때 일어난다.
+         * 그래서 열어만 보고 나가면 아무것도 남지 않는다 — 화면을 열 때마다
+         * 자동으로 만들지 않는 이유도 같다. 눌러서 시작한 것만 남긴다.
+         */
+        startNewChat() {
+            const room = {
+                id: this.uuid(),
+                name: this.$t('chatListing.newChatRoom'),
+                participants: [
+                    {
+                        email: 'system@uengine.org',
+                        id: 'system_id',
+                        username: 'System',
+                        is_admin: true,
+                        notifications: null
+                    }
+                ]
+            };
+            this.createChatRoom(room);
+
+            if (this.isNarrow()) {
+                this.openRoomOnMobile(room.id);
+                return;
+            }
+            this.mobileListOpen = false;
+            this.chatRoomSelected(room);
         },
 
         chatRoomSelected(chatRoomInfo) {
