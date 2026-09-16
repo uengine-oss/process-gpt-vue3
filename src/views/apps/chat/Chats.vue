@@ -100,12 +100,37 @@
             <template v-if="!isInstanceChat" v-slot:mobileLeftContent="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <!--
-                        좁은 화면에는 새 대화를 시작할 자리가 없었다. 웹에서는 그 일을
-                        사이드바가 맡는데, 휴대폰에서는 사이드바를 열 수 없기 때문이다.
+                        앱의 첫 화면.
+
+                        목록이 아니라 **빈 입력창**이 먼저 온다. 앱을 여는 이유의 대부분은
+                        무언가를 물어보려는 것이지 지난 대화를 뒤지려는 것이 아니다.
+                        지난 대화는 바로 아래 목록에 그대로 있다.
                     -->
-                    <v-btn block color="primary" variant="flat" class="mb-2" prepend-icon="mdi-plus" @click="startNewChat">
-                        {{ $t('chatListing.newChatRoom') }}
-                    </v-btn>
+                    <div class="pg-home">
+                        <div class="pg-home__greeting">{{ homeGreeting }}</div>
+                        <v-textarea
+                            v-model="homeDraft"
+                            placeholder="오늘 어떤 도움을 드릴까요?"
+                            rows="2"
+                            auto-grow
+                            max-rows="6"
+                            variant="outlined"
+                            density="comfortable"
+                            hide-details
+                            @keydown.enter.exact.prevent="startNewChat"
+                        ></v-textarea>
+                        <div class="d-flex justify-end mt-2 mb-1">
+                            <v-btn
+                                color="primary"
+                                variant="flat"
+                                :disabled="!homeDraft.trim()"
+                                prepend-icon="mdi-send"
+                                @click="startNewChat"
+                            >
+                                보내기
+                            </v-btn>
+                        </div>
+                    </div>
                     <v-tabs v-model="activeTab">
                         <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-account</v-icon>
@@ -307,6 +332,9 @@ export default {
          */
         mobileListOpen: true,
 
+        /** 첫 화면 입력창에 적히는 글. 보내면 새 방을 만들어 그 방이 보낸다. */
+        homeDraft: '',
+
         // assistantChat
         checked: true,
         openWorkOrderDialog: false,
@@ -320,6 +348,13 @@ export default {
         attachments: []
     }),
     computed: {
+        /** 시간대에 맞춘 인사. 이름을 모르면 이름 없이 인사만 한다. */
+        homeGreeting() {
+            const h = new Date().getHours();
+            const when = h < 6 ? '밤' : h < 12 ? '아침' : h < 18 ? '오후' : '저녁';
+            const name = this.userInfo && this.userInfo.name ? this.userInfo.name : '';
+            return name ? name + '님, ' + when + '이에요' : when + '이에요';
+        },
         filteredChatRoomList() {
             return this.chatRoomList.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
         }
@@ -694,6 +729,7 @@ export default {
          * 자동으로 만들지 않는 이유도 같다. 눌러서 시작한 것만 남긴다.
          */
         startNewChat() {
+            const first = (this.homeDraft || '').trim();
             const room = {
                 id: this.uuid(),
                 name: this.$t('chatListing.newChatRoom'),
@@ -708,6 +744,15 @@ export default {
                 ]
             };
             this.createChatRoom(room);
+
+            // 첫 글은 여기서 보내지 않는다. 보내는 도중에 화면을 옮기면 스트리밍
+            // 응답을 받을 곳이 사라진다. 방을 먼저 열고 그 방이 보내게 맡긴다.
+            if (first) {
+                try {
+                    sessionStorage.setItem('pg-first-message:' + room.id, first);
+                } catch (e) {}
+            }
+            this.homeDraft = '';
 
             if (this.isNarrow()) {
                 this.openRoomOnMobile(room.id);

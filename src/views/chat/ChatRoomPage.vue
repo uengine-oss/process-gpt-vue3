@@ -1471,6 +1471,8 @@ export default {
                 } else {
                     await this.bootstrapRoom(newRoomId);
                 }
+
+                await this.sendHandedOverFirstMessage(newRoomId);
             }
         },
         userId: {
@@ -4853,6 +4855,32 @@ export default {
                 const errMsg = this.createMessageObj('HITL 응답 전달 중 오류가 발생했습니다. 다시 시도해 주세요.', 'assistant');
                 this.messages.push(errMsg);
             }
+        },
+
+        /**
+         * 다른 화면에서 시작한 첫 글을 이어서 보낸다.
+         *
+         * 첫 화면(목록 위 입력창)에서 글을 쓰면 방을 만들고 이리로 넘어온다.
+         * 그 글을 거기서 보내지 않는 이유는, 보내는 도중에 화면이 바뀌면
+         * 스트리밍으로 돌아오는 답을 받을 곳이 사라지기 때문이다. 방이 다 뜬
+         * 뒤에 이 자리에서 보내야 답이 그대로 쌓인다.
+         *
+         * 한 번 보내고 지운다. 남겨 두면 이 방에 다시 들어올 때마다 같은 말을
+         * 되풀이한다.
+         */
+        async sendHandedOverFirstMessage(roomId) {
+            if (!roomId) return;
+            const key = 'pg-first-message:' + roomId;
+            let text = null;
+            try {
+                text = sessionStorage.getItem(key);
+                if (text) sessionStorage.removeItem(key);
+            } catch (e) {
+                return;
+            }
+            if (!text || !text.trim()) return;
+
+            await this.handleSendMessage({ text: text.trim() });
         },
 
         async handleSendMessage(payload) {
