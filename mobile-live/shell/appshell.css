@@ -178,3 +178,33 @@ body.pg-shell {
 .pg-shell[data-pg="todolist"] .todo-list-card-box {
     max-height: calc(100vh - 100px - var(--pg-tap) - var(--pg-safe-bottom)) !important;
 }
+
+/*
+ * 대화상자를 화면만큼 쓴다.
+ *
+ * 포털은 max-width 를 px 로 잡아 둔다(BPMN 미리보기는 900px).
+ * 데스크톱에서는 맞는 값이지만 휴대폰에서는 그 안에 다이어그램을
+ * 우겨넣어 23% 로 줌아들고, 정작 위아래는 빈 채로 남았다.
+ * 좁은 화면에서는 상자가 공간을 다 쓰는 편이 잎히는 데 낫다.
+ */
+.pg-shell .v-overlay__content {
+    max-width: 96vw !important;
+    max-height: calc(100vh - var(--pg-tap) - var(--pg-safe-bottom) - 16px) !important;
+}
+
+/* 미리보기 안의 도표 자리를 넓혔다. */
+.pg-shell .bpmn-diagram-container {
+    min-height: 60vh;
+}
+
+/*
+ * 목록 위 '새 대화방' 버튼.
+ *
+ * v-btn block 을 주었는데도 폭을 다 쓰지 못하고 위가 잘렸다.
+ * 목록 서랍을 여는 띄운 동그란 버튼이 같은 자리에 있어 서로 겹친다.
+ * 자리를 비워 주고 폭을 채운다.
+ */
+.pg-shell[data-pg="chats"] .no-scrollbar > .v-btn {
+    width: 100% !important;
+    margin-top: 44px !important;
+}
