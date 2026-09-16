@@ -223,3 +223,27 @@ body.pg-shell {
 .pg-shell[data-pg="chats"] .pg-home {
     padding: 8px 2px 12px;
 }
+
+/*
+ * 대화 옆에 붙는 패널을 화면 전체로 덮는다.
+ *
+ * 데스크톱에서는 대화 오른쪽에 나란히 놓이는 산출물 패널이다. 그 배치가
+ * 휴대폰에서도 그대로 살아 있어, 패널이 열리면 **대화가 손가락 하나 폭으로
+ * 눌려** 글을 읽을 수 없게 된다. 좁은 화면에서는 나란히 놓을 자리가 없으므로
+ * 위로 덮고, 닫기(X)로 대화로 돌아가게 한다.
+ */
+.pg-shell .right-sidebar.is-open {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: calc(var(--pg-tap) + var(--pg-safe-bottom)) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    z-index: 1200;
+}
+
+/* 폭을 손으로 끌던 손잡이는 필요 없다. */
+.pg-shell .right-sidebar__resizer {
+    display: none !important;
+}
