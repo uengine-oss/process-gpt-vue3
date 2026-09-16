@@ -208,15 +208,3 @@ body.pg-shell {
     width: 100% !important;
     margin-top: 44px !important;
 }
-
-/* 첫 화면의 인사말과 입력창. */
-.pg-shell[data-pg="chats"] .pg-home {
-    padding: 56px 4px 8px;
-}
-
-.pg-shell[data-pg="chats"] .pg-home__greeting {
-    font-size: 1.25rem;
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 14px;
-}
