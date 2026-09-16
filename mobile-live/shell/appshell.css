@@ -208,3 +208,18 @@ body.pg-shell {
     width: 100% !important;
     margin-top: 44px !important;
 }
+
+/*
+ * 목록 서랍을 여는 단추를 감춘다.
+ *
+ * 대화 목록이 이제 본문에 그대로 있어 서랍을 따로 열 이유가 없다.
+ * 남겨 두면 왼쪽 위에 띄운 단추로 남아 입력창을 가리고, 메뉴로 오해되기도 한다.
+ */
+.pg-shell[data-pg="chats"] .mobile-menu-toggle-btn {
+    display: none !important;
+}
+
+/* 첫 화면 진입점의 위아래 여백. */
+.pg-shell[data-pg="chats"] .pg-home {
+    padding: 8px 2px 12px;
+}

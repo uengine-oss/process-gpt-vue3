@@ -100,12 +100,19 @@
             <template v-if="!isInstanceChat" v-slot:mobileLeftContent="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <!--
-                        좁은 화면에는 새 대화를 시작할 자리가 없었다. 웹에서는 그 일을
-                        사이드바가 맡는데, 휴대폰에서는 사이드바를 열 수 없기 때문이다.
+                        첫 화면의 새 대화 진입점.
+
+                        정의 체계도 맨 위에 있는 것과 **같은 컴포넌트**다. 새로 만들지
+                        않는다 — 보내는 흐름도 같은 함수(startMainChat)를 쓴다.
+                        지난 대화는 바로 아래 목록에 그대로 있다.
                     -->
-                    <v-btn block color="primary" variant="flat" class="mb-2" prepend-icon="mdi-plus" @click="startNewChat">
-                        {{ $t('chatListing.newChatRoom') }}
-                    </v-btn>
+                    <div class="pg-home">
+                        <MainChatInput
+                            :agentInfo="mainChatAgentInfo"
+                            :userId="userInfo && (userInfo.uid || userInfo.id)"
+                            @submit="handleMainChatSubmit"
+                        />
+                    </div>
                     <v-tabs v-model="activeTab">
                         <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-account</v-icon>
@@ -237,6 +244,9 @@
 import AssistantChats from '../chat/AssistantChats.vue';
 import Attachments from './Attachments.vue';
 import ChatModule from '@/components/ChatModule.vue';
+import MainChatInput from '@/components/MainChatInput.vue';
+import { startMainChat, hasSomethingToSend } from '@/composables/useMainChatStart';
+import { processGptAgent } from '@/constants/processGptAgent';
 import { findStartActivity } from '@/utils/processStart';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
@@ -253,6 +263,7 @@ export default {
     mixins: [ChatModule],
     name: 'Chats',
     components: {
+        MainChatInput,
         Chat,
         AppBaseCard,
         ChatListing,
@@ -320,6 +331,10 @@ export default {
         attachments: []
     }),
     computed: {
+        /** 정의 체계도가 쓰는 기본 업무 지원 에이전트와 같은 것. */
+        mainChatAgentInfo() {
+            return processGptAgent;
+        },
         filteredChatRoomList() {
             return this.chatRoomList.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
         }
@@ -658,6 +673,12 @@ export default {
          * 두었더니 화면에 들어오자마자 목록이 접혀, 좁은 화면에서는 **목록을
          * 볼 기회가 없었다.**
          */
+        /** 첫 화면에서 보냈다. 정의 체계도와 같은 함수로 방을 만들고 그 방으로 간다. */
+        async handleMainChatSubmit(message) {
+            if (!hasSomethingToSend(message)) return;
+            await startMainChat(message, { currentUser: this.userInfo, router: this.$router, eventBus: this.EventBus });
+        },
+
         /** 좁은 화면인가. 목록과 대화를 한 화면에 같이 둘 수 없는 폭. */
         isNarrow() {
             return !this.$vuetify?.display?.lgAndUp;
@@ -684,37 +705,6 @@ export default {
             }
             this.mobileListOpen = false;
             this.chatRoomSelected(chatRoomInfo);
-        },
-
-        /**
-         * 새 대화를 시작한다.
-         *
-         * 방은 여기서 목록에만 담고, 실제 저장은 첫 메시지를 보낼 때 일어난다.
-         * 그래서 열어만 보고 나가면 아무것도 남지 않는다 — 화면을 열 때마다
-         * 자동으로 만들지 않는 이유도 같다. 눌러서 시작한 것만 남긴다.
-         */
-        startNewChat() {
-            const room = {
-                id: this.uuid(),
-                name: this.$t('chatListing.newChatRoom'),
-                participants: [
-                    {
-                        email: 'system@uengine.org',
-                        id: 'system_id',
-                        username: 'System',
-                        is_admin: true,
-                        notifications: null
-                    }
-                ]
-            };
-            this.createChatRoom(room);
-
-            if (this.isNarrow()) {
-                this.openRoomOnMobile(room.id);
-                return;
-            }
-            this.mobileListOpen = false;
-            this.chatRoomSelected(room);
         },
 
         chatRoomSelected(chatRoomInfo) {

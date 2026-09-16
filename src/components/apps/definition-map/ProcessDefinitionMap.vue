@@ -788,6 +788,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { PROC_DEF_LIST_COLUMNS } from '@/components/api/ProcessGPTBackend';
 const backend = BackendFactory.createBackend();
 import { processGptAgent } from '@/constants/processGptAgent';
+import { startMainChat } from '@/composables/useMainChatStart';
 import { getTenantId } from '@/utils/tenant';
 
 export default {
@@ -1395,168 +1396,6 @@ export default {
             if (a.id && b.id && a.id === b.id) return true;
             return false;
         },
-        async createRoomAndNavigateFromMainChat(message) {
-            const userInfo = this.userInfo || (await backend.getUserInfo());
-            const me = this.normalizeParticipant(userInfo);
-
-            const text = (message?.text || '').toString().trim();
-            const hasImages = Array.isArray(message?.images) && message.images.length > 0;
-            const messageFiles = Array.isArray(message?.files) ? message.files.filter(Boolean) : message?.file ? [message.file] : [];
-            const hasFile = messageFiles.length > 0;
-            const primaryFile = messageFiles[0] || null;
-            const orchestration = (message?.orchestration || '').toString().trim() || 'langchain-react';
-
-            const roomId = this.uuid();
-            const nowIso = new Date().toISOString();
-            const roomName = '새 대화';
-            // 채팅방 생성/이동을 지연시키지 않고, 첫 요청을 요약한 이름은 백그라운드에서 생성한다.
-            const generatedNamePromise = text ? backend.generateSemanticName('chat', text) : null;
-
-            // raw File 객체가 있으면 ChatRoomPage에서 memento 업로드하도록 임시 전달
-            // (File 객체는 sessionStorage에 직렬화 불가 → window 임시 변수 사용)
-            const rawFiles = Array.isArray(message?.rawFiles) ? message.rawFiles.filter(Boolean) : [];
-            if (rawFiles.length > 0) {
-                window.__pendingMementoFiles = { roomId, files: rawFiles };
-            }
-
-            const participants = [
-                me,
-                // 가상 에이전트는 DB에 저장되지 않으며 방 참가자에만 포함
-                this.normalizeParticipant(processGptAgent) || processGptAgent
-            ].filter(Boolean);
-
-            const room = {
-                id: roomId,
-                name: roomName,
-                // primary_agent_id는 DB에 실제로 존재하는 에이전트가 아닐 수 있어 저장하지 않음
-                participants,
-                message: { msg: 'NEW', type: 'text', createdAt: nowIso },
-                // chat_rooms.context에 orchestration 저장 (tools/skills/todos와 충돌 방지: 최상위 키로 둔다)
-                context: {
-                    orchestration,
-                    auto_name_pending: !!generatedNamePromise,
-                    updatedAt: nowIso
-                }
-            };
-
-            await backend.putObject('db://chat_rooms', room);
-
-            const msgUuid = this.uuid();
-            const msg = {
-                uuid: msgUuid,
-                role: 'user',
-                // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
-                content: text || '',
-                timeStamp: nowIso,
-                email: userInfo?.email || null,
-                name: userInfo?.username || userInfo?.name || userInfo?.email || '',
-                userName: userInfo?.username || userInfo?.name || userInfo?.email || '',
-                images: message?.images || [],
-                pdfFile: primaryFile,
-                pdfFiles: messageFiles
-            };
-
-            await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
-
-            // 첨부 파일은 chat_attachments 테이블에 저장 (ChatRoomPage로 넘어가기 전에 선저장)
-            // Raw files are uploaded and saved by ChatRoomPage. Saving placeholder
-            // metadata here creates a second attachment row after the upload finishes.
-            if (hasFile && rawFiles.length === 0) {
-                try {
-                    const tenantId = getTenantId();
-                    const userName = userInfo?.name || userInfo?.username || userInfo?.email || '';
-                    for (const f of messageFiles) {
-                        const fileName = (f?.fileName || f?.name || '').toString().trim();
-                        const filePath = (f?.fileUrl || f?.url || f?.publicUrl || f?.fullPath || f?.path || '').toString() || '';
-                        if (!fileName && !filePath) continue;
-                        // eslint-disable-next-line no-await-in-loop
-                        await backend.putObject('db://chat_attachments', {
-                            id: this.uuid(),
-                            file_name: fileName || (filePath ? String(filePath).split('/').pop() : '') || 'attachment',
-                            file_path: filePath,
-                            chat_room_id: roomId,
-                            user_name: userName,
-                            tenant_id: tenantId
-                        });
-                    }
-                } catch (e) {
-                    // ignore
-                }
-            }
-            // last message preview는 첨부 요약을 사용 (content는 비워둠)
-            const fileName = (primaryFile?.name || primaryFile?.fileName || '').toString();
-            const preview =
-                (text || '').substring(0, 50) ||
-                (hasFile ? (messageFiles.length > 1 ? `${fileName} 외 ${messageFiles.length - 1}개` : fileName).substring(0, 50) : '') ||
-                (hasImages ? `이미지 ${(message?.images || []).length || 0}장` : '');
-            room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
-            await backend.putObject('db://chat_rooms', room);
-
-            if (generatedNamePromise) {
-                generatedNamePromise
-                    .then(async (generatedName) => {
-                        if (!generatedName) return;
-
-                        // 응답 스트리밍 중 변경된 방 데이터를 덮어쓰지 않도록 최신 context를 합쳐 필요한 필드만 갱신한다.
-                        const supabase = window.$supabase;
-                        if (supabase) {
-                            const { data: latestRoom } = await supabase.from('chat_rooms').select('context').eq('id', roomId).maybeSingle();
-                            const { error } = await supabase
-                                .from('chat_rooms')
-                                .update({
-                                    name: generatedName,
-                                    context: {
-                                        ...(latestRoom?.context || room.context || {}),
-                                        auto_name_pending: false
-                                    }
-                                })
-                                .eq('id', roomId);
-                            if (error) throw error;
-                        } else {
-                            const latestRoom = await backend.getObject(`db://chat_rooms/${roomId}`, { key: 'id' });
-                            await backend.putObject('db://chat_rooms', {
-                                ...(latestRoom || room),
-                                name: generatedName,
-                                context: {
-                                    ...(latestRoom?.context || room.context || {}),
-                                    auto_name_pending: false
-                                }
-                            });
-                        }
-                        this.EventBus.emit('chat-rooms-updated');
-                    })
-                    .catch(() => {});
-            }
-
-            // ChatRoomPage에서 첫 메시지에 대한 에이전트 응답만 kick-off 하도록 sessionStorage에 전달
-            try {
-                sessionStorage.setItem(
-                    `chatKickoff:${roomId}`,
-                    JSON.stringify({
-                        roomId,
-                        msgUuid,
-                        // 서버 dedupe용: 클라이언트에서 생성한 user 메시지 UUID
-                        message_uuid: msgUuid,
-                        text,
-                        images: message?.images || [],
-                        file: primaryFile,
-                        files: messageFiles,
-                        orchestration,
-                        // 지식 선택은 전역 스토어(useKnowledgeSelectionStore)가 단일 소스라 kickoff 로 안 넘긴다.
-                        // 스토어는 앱 전역이라 메인→채팅 이동에도 살아있고, 새 방이 bindRoom 으로 이월받는다.
-                        createdAt: nowIso
-                    })
-                );
-            } catch (e) {
-                // ignore
-            }
-
-            // definition-map 패널은 열지 않고 /chat으로 이동
-            this.showFullScreenChat = false;
-            this.pendingChatMessage = null;
-            this.pendingHistoryRoom = null;
-            await this.$router.push({ path: '/chat', query: { roomId } });
-        },
         getActiveChatPanel() {
             return this.chatPanelMode === 'user' ? this.$refs.userChatRooms : this.$refs.workAssistantChatPanel;
         },
@@ -1784,8 +1623,12 @@ export default {
             const hasImages = Array.isArray(message?.images) && message.images.length > 0;
             if (!message || (!message.text && !hasFiles && !hasImages)) return;
 
-            // 메인 채팅 전송 시: process-gpt-agent(가상) + 나 로 방 생성 후 /chat으로 이동
-            await this.createRoomAndNavigateFromMainChat(message);
+            // 메인 채팅 전송 시: process-gpt-agent(가상) + 나 로 방 생성 후 /chat으로 이동.
+            // 이 흐름은 휴대폰 첫 화면도 그대로 쓰므로 공용으로 뺐다.
+            this.showFullScreenChat = false;
+            this.pendingChatMessage = null;
+            this.pendingHistoryRoom = null;
+            await startMainChat(message, { currentUser: this.userInfo, router: this.$router, eventBus: this.EventBus });
         },
 
         // 히스토리 항목 열기
