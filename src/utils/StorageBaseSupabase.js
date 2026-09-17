@@ -7,9 +7,33 @@ import { deviceId, deviceType } from '@/shared/deviceIdentity/index.js';
 
 class StorageBaseError extends Error {
     constructor(message, cause, args) {
-        super(message, { cause: cause });
+        // 원인을 message 에도 적는다.
+        //
+        // `cause` 속성만으로는 부족하다 — 번들된 코드에서는 이 값이 남지 않는 경우가
+        // 있어서, 화면에는 'error in putObject' 한 줄만 남고 무엇 때문에 실패했는지가
+        // 통째로 사라진다. 운영에서 실제로 그랬다: 저장 실패로 채팅이 멎었는데
+        // 사용자에게 보여 줄 원인이 없었다.
+        //
+        // 호출부가 48곳이라 각자 고치지 않고 여기서 한 번에 처리한다.
+        const causeText = StorageBaseError.describeCause(cause);
+        super(causeText && !String(message).includes(causeText) ? `${message}: ${causeText}` : message, { cause });
 
         this.args = args;
+    }
+
+    /** 원인에서 사람이 읽을 한 줄을 뽑는다. Error 도, PostgREST 가 주는 평범한 객체도 온다. */
+    static describeCause(cause) {
+        if (!cause) return '';
+        if (typeof cause === 'string') return cause.trim();
+        const parts = [cause.message, cause.details, cause.hint, cause.code]
+            .map((v) => (v == null ? '' : String(v).trim()))
+            .filter(Boolean);
+        if (parts.length === 0) {
+            const s = String(cause);
+            return s === '[object Object]' ? '' : s;
+        }
+        // 같은 말이 반복되는 경우가 잦아 중복은 접는다.
+        return [...new Set(parts)].join(' ');
     }
 }
 
