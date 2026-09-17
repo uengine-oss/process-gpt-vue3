@@ -102,3 +102,27 @@ test('기본 한도가 있다', () => {
     for (let i = 0; i < PERSIST_FAILURE_LIMIT; i++) c.recordFailure();
     assert.equal(c.shouldAttempt(), false);
 });
+
+test('감싸인 오류의 원인 사슬을 끝까지 따라간다', () => {
+    // 저장 계층이 원본을 감싼다: StorageBaseError('error in putObject', 원본).
+    // 겉만 보면 무엇 때문에 실패했는지가 통째로 가려진다.
+    const inner = new Error('net::ERR_INSUFFICIENT_RESOURCES');
+    const outer = new Error('error in putObject', { cause: inner });
+    const text = errorText(outer);
+    assert.match(text, /putObject/);
+    assert.match(text, /ERR_INSUFFICIENT_RESOURCES/);
+    assert.equal(explainChatFailure(outer).id, 'browser-resources', '감싸여 있어도 진짜 원인으로 판정해야 한다');
+});
+
+test('원인을 특정 못 해도 저장 실패라는 것은 알려 준다', () => {
+    const r = explainChatFailure(new Error('error in putObject'));
+    assert.equal(r.id, 'persist');
+    assert.match(r.text, /저장/);
+});
+
+test('순환 참조가 있어도 터지지 않는다', () => {
+    const a = new Error('a');
+    const b = new Error('b', { cause: a });
+    a.cause = b;
+    assert.ok(errorText(b).length > 0);
+});

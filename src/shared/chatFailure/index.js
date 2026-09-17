@@ -56,14 +56,40 @@ const CAUSES = [
         id: 'server',
         match: (t) => t.includes('500') || t.includes('502') || t.includes('503'),
         text: '서버에서 오류가 났습니다. 잠시 뒤 다시 보내 주세요.'
+    },
+    {
+        // 위의 어느 것도 아니지만 저장 계층에서 난 것은 알아볼 수 있다. 원인을
+        // 특정하지 못하더라도 "대화를 저장하다 실패했다" 는 것만 알려 줘도,
+        // 사용자는 다시 보내면 되는지 기다려야 하는지를 판단할 수 있다.
+        id: 'persist',
+        match: (t) => t.includes('putobject') || t.includes('putstring') || t.includes('storagebase'),
+        text: '대화를 저장하지 못해 메시지를 보내지 못했습니다. 잠시 뒤 다시 보내 주세요.'
     }
 ];
 
-/** 오류 객체에서 사람이 읽을 원문을 뽑는다. */
+/**
+ * 오류 객체에서 사람이 읽을 원문을 뽑는다.
+ *
+ * `cause` 사슬을 끝까지 따라간다. 저장 계층이 원본을 감싸기 때문이다
+ * (`StorageBaseError('error in putObject', 원본)`). 겉만 보면 "error in putObject"
+ * 하나뿐이라, 무엇 때문에 실패했는지가 통째로 가려진다.
+ */
 export function errorText(error) {
     if (!error) return '';
     if (typeof error === 'string') return error;
-    return (error.message || error.toString?.() || '').toString();
+
+    const parts = [];
+    const seen = new Set();
+    let cur = error;
+    while (cur && typeof cur === 'object' && !seen.has(cur)) {
+        seen.add(cur);
+        const m = (cur.message || '').toString().trim();
+        if (m && !parts.includes(m)) parts.push(m);
+        cur = cur.cause;
+    }
+    if (typeof cur === 'string' && cur.trim() && !parts.includes(cur.trim())) parts.push(cur.trim());
+    if (parts.length === 0) return (error.toString?.() || '').toString();
+    return parts.join(' ← ');
 }
 
 /**
