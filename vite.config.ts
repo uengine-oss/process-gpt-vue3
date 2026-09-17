@@ -4,10 +4,17 @@ import vue from '@vitejs/plugin-vue';
 import vuetify from 'vite-plugin-vuetify';
 import dotenv from 'dotenv';
 import path from 'path';
+import { buildAgentProxies } from './src/services/agentProxyRules.js';
 dotenv.config();
 const env = loadEnv('development', process.cwd(), '');
 
 const uengineGatewayTarget = env.VITE_UENGINE_GATEWAY_URL || 'http://127.0.0.1:8088';
+
+// 에이전트 채팅(`/process-gpt-<agent>/**`)을 게이트웨이를 거쳐 보낼 때의 타깃.
+// 비워 두면 예전처럼 각 에이전트 프로세스로 직접 간다.
+// 규칙 자체는 src/services/agentProxyRules.js 에 있다 — 단위 테스트가 보게 하려고
+// 뺐다. prefix 를 벗길지, Host 를 보존할지가 거기 적혀 있다.
+const agentGatewayTarget = (env.VITE_AGENT_GATEWAY_URL || '').trim();
 
 function spaFallbackPlugin() {
     return {
@@ -241,14 +248,10 @@ export default defineConfig({
                 proxyTimeout: 0,
                 rewrite: (path) => path.replace(/^\/claude-skills/, '')
             },
-            // DeepAgents Router API
-            '/process-gpt-deepagents/': {
-                target: 'http://127.0.0.1:8888',
-                changeOrigin: true,
-                timeout: 0,
-                proxyTimeout: 0,
-                rewrite: (path) => path.replace(/^\/process-gpt-deepagents/, '')
-            },
+            // DeepAgents Router API 와 Codex Router API.
+            // codex 항목이 없어서 dev 화면에서는 codex 대화를 열어도 요청이 프록시를
+            // 타지 못했다(SPA 라우트로 떨어져 index.html 이 돌아온다).
+            ...buildAgentProxies(agentGatewayTarget),
             // 스킬 피드백 제안 조회/승인/반려 API (agent-feedback 서비스)
             '/feedback-proposals': {
                 target: 'http://127.0.0.1:6789',
