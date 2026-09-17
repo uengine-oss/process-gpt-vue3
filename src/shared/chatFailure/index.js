@@ -115,6 +115,39 @@ export function explainChatFailure(error, { online } = {}) {
     };
 }
 
+/** 말풍선에 넣을 원문의 길이 상한. 넘으면 뒤를 자른다. */
+export const DETAIL_MAX = 200;
+
+/**
+ * 원문을 사람이 읽을 만한 한 줄로 다듬는다.
+ *
+ * 다듬지 않으면 스택 트레이스가 통째로 말풍선에 들어가고("at https://…/index.js:47:53373"),
+ * 계층마다 감싸며 같은 말이 서너 번 반복된다. 화면에서 실제로 그렇게 나왔다.
+ */
+export function tidyDetail(detail) {
+    const firstLine = (detail || '').split('\n')[0].trim();
+    if (!firstLine) return '';
+
+    // 감싸인 계층이 같은 말을 여러 번 싣는다. 구분자도 계층마다 달라서("A: B", "A B")
+    // 조각으로 잘라 비교하는 것만으로는 남는다. 바로 뒤에 되풀이되는 구절을 접는다.
+    let collapsed = firstLine;
+    for (let i = 0; i < 5; i++) {
+        const next = collapsed.replace(/(\S.{3,}?)(?:[:\s]+\1)+/g, '$1');
+        if (next === collapsed) break;
+        collapsed = next;
+    }
+
+    // 그러고도 똑같이 되풀이되는 조각은 접는다.
+    const kept = [];
+    for (const piece of collapsed.split(/\s*(?:←|:)\s*/)) {
+        const t = piece.trim();
+        if (!t || kept.includes(t)) continue;
+        kept.push(t);
+    }
+    const joined = kept.join(': ');
+    return joined.length > DETAIL_MAX ? `${joined.slice(0, DETAIL_MAX)}…` : joined;
+}
+
 /**
  * 채팅 말풍선에 넣을 본문.
  *
@@ -123,8 +156,8 @@ export function explainChatFailure(error, { online } = {}) {
  */
 export function chatFailureMessage(error, { online } = {}) {
     const { text, detail } = explainChatFailure(error, { online });
-    const trimmed = (detail || '').trim();
-    return trimmed ? `⚠️ ${text}\n\n(원인: ${trimmed})` : `⚠️ ${text}`;
+    const tidy = tidyDetail(detail);
+    return tidy ? `⚠️ ${text}\n\n(원인: ${tidy})` : `⚠️ ${text}`;
 }
 
 /**

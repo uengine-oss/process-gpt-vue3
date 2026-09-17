@@ -6,7 +6,9 @@ import {
     createPersistCircuit,
     errorText,
     explainChatFailure,
-    PERSIST_FAILURE_LIMIT
+    PERSIST_FAILURE_LIMIT,
+    tidyDetail,
+    DETAIL_MAX
 } from './index.js';
 
 test('브라우저 자원 고갈은 탭을 닫고 새로고침하라고 안내한다', () => {
@@ -125,4 +127,38 @@ test('순환 참조가 있어도 터지지 않는다', () => {
     const b = new Error('b', { cause: a });
     a.cause = b;
     assert.ok(errorText(b).length > 0);
+});
+
+test('원문에서 스택 트레이스를 걷어낸다', () => {
+    // 다듬지 않으면 "at https://…/index.js:47:53373" 같은 줄이 말풍선에 들어간다.
+    const e = new Error('TypeError: Failed to fetch\n    at https://x/assets/index.js:47:53373\n    at async q6 (...)');
+    const body = chatFailureMessage(e, { online: true });
+    assert.doesNotMatch(body, /\bat https?:\/\//);
+    assert.match(body, /Failed to fetch/);
+});
+
+test('겹겹이 감싸며 반복된 조각을 접는다', () => {
+    const raw = 'error in putObject: error in putObject:0 TypeError: Failed to fetch: TypeError: Failed to fetch';
+    assert.equal(tidyDetail(raw).match(/Failed to fetch/g).length, 1);
+});
+
+test('원문이 길면 잘라 낸다', () => {
+    const long = 'x'.repeat(DETAIL_MAX * 3);
+    const tidy = tidyDetail(long);
+    assert.ok(tidy.length <= DETAIL_MAX + 1, '말풍선이 원문으로 뒤덮이면 안 된다');
+    assert.ok(tidy.endsWith('…'));
+});
+
+test('다듬어도 원인 판정은 그대로다', () => {
+    const e = new Error('error in putObject: net::ERR_INSUFFICIENT_RESOURCES\n    at https://x/y.js:1:1');
+    const body = chatFailureMessage(e);
+    assert.match(body, /탭/, '조치 안내는 살아 있어야 한다');
+});
+
+test('구분자가 달라도 되풀이를 접는다', () => {
+    // 계층마다 "A: B" 로도, "A B" 로도 이어 붙여서 정확히 일치하는 것만 접으면 남는다.
+    const raw = 'error in putObject: error in putObject:0 TypeError: Failed to fetch: TypeError: Failed to fetch TypeError: Failed to fetch';
+    const tidy = tidyDetail(raw);
+    assert.equal(tidy.match(/Failed to fetch/g).length, 1, `되풀이가 남았다: ${tidy}`);
+    assert.match(tidy, /putObject/, '무엇이 실패했는지는 남아야 한다');
 });
