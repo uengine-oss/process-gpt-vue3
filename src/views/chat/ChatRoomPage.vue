@@ -817,6 +817,7 @@ import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/proce
 import { buildHitlPanel, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
 import { shouldGenerateChatRoomName as sharedShouldGenerateChatRoomName } from '@/shared/chatRoom/index.js';
 import { formatToolName as sharedFormatToolName } from '@/shared/toolNames/index.js';
+import { chatFailureMessage, createPersistCircuit } from '@/shared/chatFailure/index.js';
 import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
@@ -896,6 +897,9 @@ export default {
             // 서버(SDK)가 chats row 를 INSERT 하기 전까지 프런트엔드 전용 상태 저장을 보류할 때 쓰는
             // 마지막 안전망 timer. { [roomId:msgUuid]: timeoutId }
             _serverRowPersistFallbackTimers: {},
+            // 프런트엔드 전용 상태 저장의 연속 실패 차단기. 실패하는 저장을 계속 다시
+            // 부르면 브라우저 커넥션 풀이 말라 채팅 요청까지 막힌다(운영 사고).
+            _persistCircuit: createPersistCircuit(),
             // deepagent HITL(request_human_input)로 멈춘 방의 run_state 보관.
             // 사용자가 패널 대신 일반 입력창으로 답해도 같은 그래프 세션으로 resume 되게 하는 안전망.
             // { [roomId]: run_state }
@@ -5093,7 +5097,12 @@ export default {
                     await this.streamAgents(agentTargets, msg.content || '', payload);
                 }
             } catch (e) {
-                // ignore
+                // 여기를 조용히 넘기면 안 된다. 스트림이 시작되기 전에 실패하면
+                // (chats 저장, 방 갱신, 첨부 저장 …) onError 가 불릴 일도 없어서,
+                // 사용자에게는 자기 말풍선만 남고 아무 설명도 없다. 운영에서 실제로
+                // 그렇게 채팅이 멎었고 원인은 로그를 봐야 알 수 있었다.
+                console.error('[handleSendMessage] 전송 실패:', e);
+                this.showChatFailure(e);
             } finally {
                 this.isSending = false;
                 this.focusComposerInput();
@@ -11079,6 +11088,33 @@ export default {
             }, delay);
         },
 
+        /**
+         * 채팅이 실패했다는 것을 화면에 남긴다.
+         *
+         * 토스트가 아니라 대화 말풍선으로 남기는 이유: 실패는 그 자리에 남아 있어야
+         * 한다. 토스트는 몇 초 뒤 사라지고, 잠깐 자리를 비운 사용자는 자기 질문에
+         * 답이 없는 것만 보게 된다.
+         */
+        showChatFailure(error) {
+            try {
+                const online = typeof navigator !== 'undefined' ? navigator.onLine : undefined;
+                this.messages.push(
+                    this.normalizeAssistantMessageForDisplay({
+                        uuid: this.uuid(),
+                        role: 'assistant',
+                        content: chatFailureMessage(error, { online }),
+                        timeStamp: new Date().toISOString(),
+                        isError: true,
+                        isLoading: false
+                    })
+                );
+                this.$nextTick(() => this.scrollToBottomSafe());
+            } catch (e) {
+                // 실패를 알리다 또 실패하면 조용히 넘긴다 — 여기서 던지면 원래 오류까지 가린다.
+                console.warn('[showChatFailure] 실패 표시 자체가 실패:', e);
+            }
+        },
+
         async persistMessageFrontendState(msg, roomId, { force = false } = {}) {
             try {
                 if (!msg || typeof msg !== 'object') return;
@@ -11167,14 +11203,44 @@ export default {
                 delete messagesToSave.__feStateKey;
                 delete messagesToSave.__humanFeedbackPersisted;
                 delete messagesToSave.__serverPersisted;
+                // 실패하는 저장을 계속 다시 부르면 브라우저 커넥션 풀이 마르고, 그러면
+                // 채팅 요청 자체가 나가지 못한다. 운영에서 그렇게 채팅이 멎었다
+                // (putObject 95회 연속 실패 → ERR_INSUFFICIENT_RESOURCES).
+                // 이건 화면 보조 상태라, 못 남기더라도 채팅을 막아서는 안 된다.
+                if (!this._persistCircuit.shouldAttempt()) return;
                 await backend.putObject(`db://chats/${msgUuid}`, {
                     uuid: msgUuid,
                     id: targetRoomId,
                     messages: messagesToSave
                 });
+                this._persistCircuit.recordSuccess();
             } catch (e) {
                 console.warn('[FrontendState] persistMessageFrontendState 실패:', e);
+                // 저장 실패로 상태 키를 이미 갱신해 두면, 같은 상태를 다시 시도하지
+                // 않게 되어 회복 기회를 잃는다. 되돌린다.
+                if (msg && typeof msg === 'object') delete msg.__feStateKey;
+                if (this._persistCircuit.recordFailure()) {
+                    this.cancelServerRowPersistFallbacks();
+                    this.showChatFailure(
+                        new Error(
+                            `대화 상태 저장에 반복 실패했습니다. 화면 표시용 정보(도구 실행 내역 등)가 일부 저장되지 않을 수 있습니다. 원인: ${
+                                (e && (e.message || e.toString())) || '알 수 없음'
+                            }`
+                        )
+                    );
+                }
             }
+        },
+
+        /** 차단기가 열렸을 때, 예약돼 있던 저장 타이머도 함께 거둔다. */
+        cancelServerRowPersistFallbacks() {
+            try {
+                const timers = this._serverRowPersistFallbackTimers || {};
+                for (const key of Object.keys(timers)) {
+                    clearTimeout(timers[key]);
+                    delete timers[key];
+                }
+            } catch (e) {}
         },
 
         /**

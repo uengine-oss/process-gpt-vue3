@@ -15,6 +15,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { createPersistCircuit } from '../../shared/chatFailure/index.js';
+
 const FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'ChatRoomPage.vue');
 const source = fs.readFileSync(FILE, 'utf8');
 
@@ -46,17 +48,35 @@ function extractMethod(name) {
 
 const METHODS = ['_isPlaceholderContent', 'carryOptimisticOnlyFields', 'adoptServerFinalContent', 'persistMessageFrontendState'];
 
-function buildComponent() {
+function buildComponent({ failPut = false } = {}) {
     const writes = [];
-    globalThis.backend = { putObject: async (key, row) => writes.push({ key, row }) };
+    const attempts = [];
+    globalThis.backend = {
+        putObject: async (key, row) => {
+            attempts.push({ key, row });
+            if (failPut) throw new Error('error in putObject: net::ERR_INSUFFICIENT_RESOURCES');
+            writes.push({ key, row });
+        }
+    };
     // eslint-disable-next-line no-eval
     const methods = (0, eval)(`({${METHODS.map(extractMethod).join(',\n')}})`);
+    const failures = [];
     return {
         writes,
+        attempts,
+        failures,
         vm: {
             ...methods,
             _frontendStatePersistTimers: {},
             _serverRowPersistFallbackTimers: {},
+            // 실패하는 저장을 계속 다시 부르면 브라우저 커넥션 풀이 말라 채팅이 막힌다.
+            // 화면 코드가 쓰는 것과 같은 차단기를 여기서도 쓴다.
+            _persistCircuit: createPersistCircuit(),
+            cancelServerRowPersistFallbacks() {},
+            showChatFailure(error) {
+                failures.push(error);
+            },
+            uuid: () => 'err-' + failures.length,
             currentChatRoom: { id: 'room-1' },
             roomId: 'room-1',
             setAgentStatus() {},
@@ -154,4 +174,66 @@ test('placeholder 를 저장하려 해도 확정 본문이 살아남는다', asy
     await vm.persistMessageFrontendState(streamMsg, 'room-1', { force: true });
 
     assert.strictEqual(writes.at(-1).row.messages.content, incoming.content);
+});
+
+/**
+ * 저장이 계속 실패할 때 채팅까지 막지 않는가.
+ *
+ * 실제 사고: chats 저장이 실패하기 시작하자 프런트가 상태가 바뀔 때마다 새 요청을
+ * 띄웠고, 95번째쯤에서 브라우저가 ERR_INSUFFICIENT_RESOURCES 를 내며 커넥션을 더
+ * 열지 못했다. 그 상태에서는 채팅 요청도 나가지 못해, 사용자에게는 자기 말풍선만
+ * 남고 아무 설명도 없었다.
+ */
+test('저장이 계속 실패하면 더 부르지 않는다', async () => {
+    const { vm, attempts } = buildComponent({ failPut: true });
+
+    for (let i = 0; i < 20; i++) {
+        const msg = streamingBubble();
+        msg.rowUuid = `row-${i}`;
+        await vm.persistMessageFrontendState(msg, 'room-1', { force: true });
+    }
+
+    assert.ok(attempts.length > 0, '한 번은 시도해야 한다');
+    assert.ok(
+        attempts.length <= 5,
+        `연속 실패하면 멈춰야 한다 — 실제 시도 ${attempts.length}회. 이 재시도가 채팅을 막았다`
+    );
+});
+
+test('저장 실패는 화면에 원인과 함께 한 번 알린다', async () => {
+    const { vm, failures } = buildComponent({ failPut: true });
+
+    for (let i = 0; i < 20; i++) {
+        const msg = streamingBubble();
+        msg.rowUuid = `row-${i}`;
+        await vm.persistMessageFrontendState(msg, 'room-1', { force: true });
+    }
+
+    assert.strictEqual(failures.length, 1, '같은 말을 반복하지 않는다');
+    const text = (failures[0] && failures[0].message) || '';
+    assert.match(text, /저장/, '무엇이 실패했는지 말해야 한다');
+    assert.match(text, /ERR_INSUFFICIENT_RESOURCES/, '원인 원문도 남겨야 한다');
+});
+
+test('저장 실패는 예외로 새어 나가지 않는다', async () => {
+    // 이건 화면 보조 상태다. 못 남기더라도 호출한 쪽(채팅 흐름)을 끊어서는 안 된다.
+    const { vm } = buildComponent({ failPut: true });
+    const msg = streamingBubble();
+    msg.rowUuid = 'row-x';
+    await vm.persistMessageFrontendState(msg, 'room-1', { force: true });
+});
+
+test('한 번 성공하면 다시 저장한다', async () => {
+    const { vm, attempts } = buildComponent({ failPut: true });
+    const failing = streamingBubble();
+    failing.rowUuid = 'row-a';
+    for (let i = 0; i < 10; i++) await vm.persistMessageFrontendState(failing, 'room-1', { force: true });
+    const stopped = attempts.length;
+
+    vm._persistCircuit.recordSuccess();
+    const ok = streamingBubble();
+    ok.rowUuid = 'row-b';
+    await vm.persistMessageFrontendState(ok, 'room-1', { force: true });
+
+    assert.ok(attempts.length > stopped, '회복되면 다시 시도해야 한다');
 });
