@@ -335,11 +335,19 @@ export default {
             return '이전';
         },
 
-        /** 앞 줄과 묶음이 다를 때만 머리글을 세운다. */
+        /**
+         * 앞 줄과 묶음이 다를 때만 머리글을 세운다.
+         *
+         * 단, 전부 한 묶음이면 머리글을 세우지 않는다. 묶음은 가르라고 있는
+         * 것인데 가를 것이 없으면 알려 주는 게 없다 — 목록 전체가 '이전' 일 때
+         * 맨 위에 '이전' 한 줄만 뜨는 것이 그랬했다.
+         */
         isGroupHead(list, room) {
+            const mine = this.groupOf(room);
+            if (!list.some((r) => this.groupOf(r) !== mine)) return false;
             const i = list.indexOf(room);
             if (i <= 0) return true;
-            return this.groupOf(list[i - 1]) !== this.groupOf(room);
+            return this.groupOf(list[i - 1]) !== mine;
         },
 
         toggleSearch() {
