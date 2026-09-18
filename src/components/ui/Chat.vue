@@ -3166,24 +3166,11 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip> -->
-                                <v-tooltip v-if="!compactTools" :text="$t('chat.addFile')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            icon
-                                            variant="text"
-                                            class="text-medium-emphasis"
-                                            @click="
-                                                openChatMenu();
-                                                uploadImage();
-                                            "
-                                            v-bind="props"
-                                            style="width: 30px; height: 30px; margin-left: 5px"
-                                            :disabled="disableChat || isGenerationFinished"
-                                        >
-                                            <v-icon size="20">mdi-attachment</v-icon>
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
+                                <!--
+                                    클립(파일 첨부) 단추는 없앤다. 입력창의 '+' 안에 같은 것이
+                                    들어 있어 둘이 나란히 보였다 — 같은 일을 하는 단추가 둘이면
+                                    무엇이 다른지 눈으로 판단할 수 없다. 붙이는 길은 '+' 하나로 모은다.
+                                -->
                                 <v-select
                                     v-if="selectableOrchestration && isOrchestrationSelectableRoute"
                                     v-model="orchestration"
