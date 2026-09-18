@@ -1,8 +1,20 @@
 <template>
     <nav v-if="show" class="pg-tabbar" aria-label="주요 화면">
-        <RouterLink v-for="tab in tabs" :key="tab.name" :to="tab.to" class="pg-tabbar__item" :class="{ 'pg-tabbar__item--on': isOn(tab) }">
-            <v-icon size="22">{{ isOn(tab) ? tab.iconOn : tab.icon }}</v-icon>
-            <span>{{ tab.label }}</span>
+        <!--
+            글자는 뺀다. 세 칸뿐이고 모양도 흔한 것이라 아이콘만으로 알아볼 수 있는데,
+            그 한 줄 때문에 막대가 두 층이 되어 본문을 그만큼 먹었다. 이름은 aria-label 로
+            남겨 둔다 — 화면을 읽어 주는 사람에게까지 없애는 것은 아니다.
+        -->
+        <RouterLink
+            v-for="tab in tabs"
+            :key="tab.name"
+            :to="tab.to"
+            class="pg-tabbar__item"
+            :class="{ 'pg-tabbar__item--on': isOn(tab) }"
+            :aria-label="tab.label"
+            :aria-current="isOn(tab) ? 'page' : undefined"
+        >
+            <v-icon size="24">{{ isOn(tab) ? tab.iconOn : tab.icon }}</v-icon>
         </RouterLink>
     </nav>
 </template>
@@ -94,7 +106,7 @@ function isOn(tab: { match: string[] }) {
  * 그 대상이 이 컴포넌트 밖(v-main, 채팅 입력창)에 있기 때문이다.
  */
 :root {
-    --pg-tabbar-h: 56px;
+    --pg-tabbar-h: 48px;
 }
 
 @media (max-width: 768px) {
@@ -136,13 +148,9 @@ function isOn(tab: { match: string[] }) {
 
 .pg-tabbar__item {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    padding: 8px 4px;
-    font-size: 0.7rem;
-    font-weight: 600;
+    padding: 4px;
     text-decoration: none;
     color: var(--cds-text-muted, #6b7280);
     -webkit-tap-highlight-color: transparent;
