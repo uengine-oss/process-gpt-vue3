@@ -3320,7 +3320,15 @@
                             </v-btn>
                         </template>
                         <template v-else>
+                            <!--
+                                받아쓰기와 음성 에이전트를 마이크 하나로 모은다.
+                                둘 다 '말로 하는 일' 인데 단추가 나란히 있으면 무엇이 다른지
+                                누를 때까지 알 수 없다. 눌러서 고르게 하면 이름이 함께 나온다.
+                                단, 녹음 중에는 멈추는 것만 필요하므로 바로 멈춘다 —
+                                멈추려고 메뉴를 한 번 더 거치게 할 까닭이 없다.
+                            -->
                             <v-btn
+                                v-if="isMicRecording || isMicRecorderLoading"
                                 class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
@@ -3328,24 +3336,22 @@
                                 size="small"
                                 style="border-color: var(--cds-border) !important"
                                 :disabled="isGenerationFinished || isMicRecorderLoading"
-                                @click="isMicRecording ? stopVoiceRecording() : startVoiceRecording()"
+                                @click="stopVoiceRecording()"
                             >
                                 <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" :size="'16'" />
-                                <Icons v-else-if="isMicRecording" :icon="'stop'" :size="'16'" />
-                                <Icons v-else :icon="'sharp-mic'" :size="'16'" />
+                                <Icons v-else :icon="'stop'" :size="'16'" />
                             </v-btn>
 
-                            <v-tooltip v-if="enableDesktopVoice || !compactTools" :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
+                            <v-menu v-else location="top end">
                                 <template v-slot:activator="{ props }">
                                     <v-btn
-                                        @click="enableDesktopVoice && !isGenerationFinished && (openChatMenu(), handleVoiceButtonClick())"
+                                        v-bind="props"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
                                         variant="outlined"
                                         size="small"
-                                        v-bind="props"
-                                        :disabled="!enableDesktopVoice || isGenerationFinished"
+                                        :disabled="isGenerationFinished"
                                         :color="desktopVoiceActive ? 'primary' : undefined"
                                         :style="
                                             desktopVoiceActive
@@ -3353,10 +3359,20 @@
                                                 : 'border-color: var(--cds-border) !important;'
                                         "
                                     >
-                                        <Icons :icon="'voice'" :size="'16'" />
+                                        <Icons :icon="'sharp-mic'" :size="'16'" />
                                     </v-btn>
                                 </template>
-                            </v-tooltip>
+                                <v-list density="compact" min-width="200">
+                                    <v-list-item @click="startVoiceRecording()" prepend-icon="mdi-microphone" title="음성으로 입력"></v-list-item>
+                                    <v-list-item
+                                        :disabled="!enableDesktopVoice"
+                                        :subtitle="enableDesktopVoice ? '' : '에이전트와 1:1 대화에서만'"
+                                        prepend-icon="mdi-headset"
+                                        :title="$t('chat.headset')"
+                                        @click="enableDesktopVoice && (openChatMenu(), handleVoiceButtonClick())"
+                                    ></v-list-item>
+                                </v-list>
+                            </v-menu>
 
                             <v-btn
                                 v-if="!(showStopButton || isLoading) && !isGenerationFinished"

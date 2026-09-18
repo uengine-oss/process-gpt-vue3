@@ -82,12 +82,13 @@
             </div>
         </div>
 
-        <form class="pg-tl__composer" @submit.prevent="send">
-            <textarea v-model="draft" rows="1" placeholder="메시지 입력" @keydown.enter.exact.prevent="send"></textarea>
-            <v-btn icon variant="text" size="small" type="submit" :disabled="!draft.trim()">
-                <v-icon size="18">mdi-send</v-icon>
-            </v-btn>
-        </form>
+        <!--
+            입력창은 채팅이 쓰는 것을 그대로 가지와 쓴다.
+            지금까지 여기만 별도의 textarea 여서 보내기 단추 하나밖에 없었다 —
+            파일을 붙이거나 말로 적는 일은 인스턴스 대화에서도 마찬가지로 필요하고,
+            달리 만들어 두면 채팅 쓰다 이리 오는 사람이 다시 배우게 된다.
+        -->
+        <UnifiedChatInput ref="composer" variant="inline" class="pg-tl__composer" @sendMessage="send" />
     </div>
 </template>
 
@@ -113,6 +114,7 @@
 import ChatThread from '@/components/chat/ChatThread.vue';
 import agentEventTimeline from '@/components/ui/agentEventTimeline.js';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
+import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { fileNameOf, isWorkspacePath, workspaceFileUrl } from '@/utils/workspaceFile';
 
@@ -128,7 +130,7 @@ function hasAgent(raw) {
 
 export default {
     name: 'InstanceTimeline',
-    components: { ChatThread, DynamicForm },
+    components: { ChatThread, DynamicForm, UnifiedChatInput },
     mixins: [agentEventTimeline],
     props: {
         instance: Object,
@@ -142,8 +144,6 @@ export default {
         workList: [],
         chatRows: [],
         userList: [],
-
-        draft: '',
 
         // 내 차례 업무에 붙은 입력 폼
         formDefs: [],
@@ -504,15 +504,23 @@ export default {
             this.chatRows = (data || [])
                 .map((r) => {
                     const m = r.messages;
-                    if (!m || !m.content) return null;
+                    if (!m) return null;
+                    const images = Array.isArray(m.images) && m.images.length ? m.images : null;
+                    const pdfFile = m.pdfFile || null;
+                    // 그림만 붙이고 글은 안 쓰는 일은 흔하다. 글이 없다고 버리면 그 말은 사라진다.
+                    if (!m.content && !images && !pdfFile) return null;
                     return {
                         uuid: r.uuid,
                         role: 'user',
                         name: m.name || m.email || '',
                         email: m.email || '',
                         isAgent: false,
-                        avatar: m.image || this.avatarOf(m.email) || this.avatarOf(m.name),
-                        content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+                        // m.image 는 첫 번째 첨부 그림이다(채팅방과 같은 모양). 아바타가 아니므로
+                        // 그것을 아바타 자리에 놓으면 붙인 사진이 사람 얼굴처럼 둔갑한다.
+                        avatar: this.avatarOf(m.email) || this.avatarOf(m.name),
+                        content: typeof m.content === 'string' ? m.content : m.content ? JSON.stringify(m.content) : '',
+                        images,
+                        pdfFile,
                         timeStamp: m.timeStamp || r.created_at
                     };
                 })
@@ -800,10 +808,21 @@ export default {
             this.$router.push(`/todolist/${t.taskId}`);
         },
 
-        send() {
-            const text = this.draft.trim();
-            if (!text || !this.instId) return;
-            this.draft = '';
+        /**
+         * 사람이 남긴 말을 저장한다.
+         *
+         * 채팅방이 넣는 것과 같은 모양으로 넣는다 — 같은 chats 표이고
+         * 그리는 것도 같은 ChatThread 라, 다르게 넣으면 그쪽에서만 첨부가
+         * 사라진다. 그림은 images, 그 밖의 파일은 pdfFile 로 간다.
+         */
+        send(message) {
+            if (!this.instId || !message) return;
+            const text = (message.text || '').trim();
+            const images = Array.isArray(message.images) && message.images.length ? message.images : null;
+            const files = Array.isArray(message.files) && message.files.length ? message.files : null;
+            const attachment = files ? files[0] : message.file || null;
+            // 글도 첨부도 없으면 보낼 것이 없다.
+            if (!text && !images && !attachment) return;
             let name = '';
             try {
                 name = localStorage.getItem('userName') || '';
@@ -818,7 +837,9 @@ export default {
                         name,
                         role: 'user',
                         email: this.myEmail,
-                        image: '',
+                        image: images && images[0] ? images[0].url || '' : '',
+                        images,
+                        pdfFile: attachment,
                         content: text,
                         timeStamp: new Date().toISOString()
                     });
@@ -971,30 +992,10 @@ export default {
 }
 
 .pg-tl__composer {
+    /* 입력창은 이제 채팅의 것을 그대로 쓴다. 여기서는 자리만 잡아 준다. */
     flex: 0 0 auto;
-    display: flex;
-    align-items: flex-end;
-    gap: 6px;
-    padding: 8px 10px;
+    padding: 6px 8px;
     border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 
-.pg-tl__composer textarea {
-    flex: 1 1 auto;
-    min-height: 34px;
-    max-height: 120px;
-    padding: 7px 10px;
-    border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
-    border-radius: 10px;
-    font-size: 0.875rem;
-    font-family: inherit;
-    resize: none;
-    outline: none;
-    color: rgb(var(--v-theme-on-surface));
-    background: transparent;
-}
-
-.pg-tl__composer textarea:focus {
-    border-color: rgb(var(--v-theme-primary));
-}
 </style>

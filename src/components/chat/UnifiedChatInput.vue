@@ -52,13 +52,13 @@
                 @recording-mode-change="(v) => $emit('recording-mode-change', v)"
                 @desktop-voice-toggle="$emit('desktop-voice-toggle')"
             >
-                <template v-if="enableKnowledgeBase || compactTools" v-slot:custom-input-tools>
+                <template v-slot:custom-input-tools>
                     <!--
-                        간소화 모드: 파일 · 지식 베이스 · 폴더를 '+' 하나로 모은다.
+                        파일 · 지식 베이스 · 폴더를 '+' 하나로 모은다.
                         각각 단추로 내놓으면 입력창 아래가 단추 줄이 되어, 정작 무엇을
                         쓰는 자리인지가 흐려진다. 고르는 일은 드물고 쓰는 일은 잦다.
                     -->
-                    <v-menu v-if="compactTools" location="top start">
+                    <v-menu location="top start">
                         <template v-slot:activator="{ props }">
                             <v-btn
                                 v-bind="props"
@@ -92,37 +92,6 @@
                         </v-list>
                     </v-menu>
 
-                    <template v-else>
-                    <v-btn
-                        @click="openKnowledgePicker"
-                        class="ml-2 text-medium-emphasis knowledge-tool-btn"
-                        :class="{ 'has-selected': knowledgeSelectionCount > 0 }"
-                        variant="outlined"
-                        rounded="pill"
-                        prepend-icon="mdi-bookshelf"
-                    >
-                        <span class="knowledge-tool-btn__label">지식 베이스</span>
-                        <span v-if="knowledgeSelectionCount > 0" class="knowledge-tool-btn__count">
-                            {{ knowledgeSelectionCount }}
-                        </span>
-                    </v-btn>
-                    <!-- 폴더 통째 업로드(webkitdirectory).
-                         codex: 원본 그대로 대화 워크스페이스로. 그 외: 허용 확장자만 지식 첨부로. -->
-                    <v-btn
-                        @click="uploadFolder"
-                        class="ml-2 text-medium-emphasis knowledge-tool-btn"
-                        :class="{ 'has-selected': folderBadgeCount > 0 }"
-                        :loading="folderUploading"
-                        variant="outlined"
-                        rounded="pill"
-                        prepend-icon="mdi-folder-upload-outline"
-                    >
-                        <span class="knowledge-tool-btn__label">폴더 업로드</span>
-                        <span v-if="folderBadgeCount > 0" class="knowledge-tool-btn__count">
-                            {{ folderBadgeCount }}
-                        </span>
-                    </v-btn>
-                    </template>
                 </template>
             </Chat>
             <!-- codex 전용 폴더 입력. Chat 의 것과 달리 accept 제한이 없다 —
