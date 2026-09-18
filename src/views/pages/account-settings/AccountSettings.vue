@@ -284,10 +284,10 @@
                             </div>
                         </v-window-item>
 
-                        <!-- KnowledgeFiles: 지식 베이스 파일 관리 -->
+                        <!-- KnowledgeFiles: 지식 베이스 지도 -->
                         <v-window-item v-if="!isUEngineMode" value="KnowledgeFiles">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
-                                <KnowledgeFilesTab />
+                            <div :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: 80vh'">
+                                <KnowledgeMap />
                             </div>
                         </v-window-item>
 
@@ -374,7 +374,7 @@ import { getMainDomainUrl } from '@/utils/domainUtils';
 import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
 import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
-import KnowledgeFilesTab from '@/components/pages/account-settings/KnowledgeFilesTab.vue';
+import KnowledgeMap from '@/components/knowledge/map/KnowledgeMap.vue';
 import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import CodeEditTab from '@/components/pages/account-settings/CodeEditTab.vue';
@@ -399,7 +399,7 @@ export default {
         AccountTab,
         ManageAccessTab,
         DriveTab,
-        KnowledgeFilesTab,
+        KnowledgeMap,
         MCPServerTab,
         MCPEnvSecretTab,
         CodeEditTab,

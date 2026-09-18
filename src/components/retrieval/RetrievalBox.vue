@@ -36,7 +36,6 @@
 
 <script>
 import { Icon } from '@iconify/vue';
-import GPTMemento from '../../utils/GPTMemento';
 
 export default {
     name: 'RetrievalBox',
@@ -78,9 +77,6 @@ export default {
             });
             return sources;
         }
-    },
-    created() {
-        //    this.retrievalJS = new GPTMemento();
     },
     methods: {
         // async query(str){

@@ -1,16 +1,26 @@
 <template>
-    <v-row class="justify-center ma-0 pa-0">
-        <v-col cols="12" md="12" class="pa-3">
-            <KnowledgeFilesTab />
-        </v-col>
-    </v-row>
+    <div class="kb-page">
+        <KnowledgeMap />
+    </div>
 </template>
 
 <script>
-import KnowledgeFilesTab from '@/components/pages/account-settings/KnowledgeFilesTab.vue';
+import KnowledgeMap from '@/components/knowledge/map/KnowledgeMap.vue';
 
 export default {
     name: 'KnowledgeBasePage',
-    components: { KnowledgeFilesTab }
+    components: { KnowledgeMap }
 };
 </script>
+
+<style scoped>
+.kb-page {
+    height: calc(100vh - 88px);
+    min-height: 480px;
+    margin: 0 12px 12px;
+    border: 1px solid var(--cds-border);
+    border-radius: var(--cds-radius, 10px);
+    overflow: hidden;
+    background: var(--cds-surface-2, #fff);
+}
+</style>
