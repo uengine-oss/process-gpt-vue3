@@ -71,6 +71,17 @@
                                             >
                                                 {{ participantsPreviewText }}
                                             </span>
+                                            <v-chip
+                                                v-if="roomOrchestrationLabel"
+                                                size="x-small"
+                                                variant="tonal"
+                                                color="primary"
+                                                class="orchestration-chip"
+                                                :title="roomOrchestrationLabel"
+                                            >
+                                                <v-icon size="12" start>mdi-robot-outline</v-icon>
+                                                {{ roomOrchestrationLabel }}
+                                            </v-chip>
                                             <!-- 에이전트 연결중(웜업) 표시: 참가자 옆 원형 로딩 -->
                                             <template v-if="hasAgentWarming">
                                                 <v-progress-circular indeterminate color="primary" :size="14" :width="2" />
@@ -1029,6 +1040,20 @@ export default {
         };
     },
     computed: {
+        /**
+         * 이 방이 쓰는 에이전트 서비스(오케스트레이션) 표시 라벨.
+         *
+         * 대화가 시작된 방은 오케스트레이션을 바꿀 수 없다(선택 UI 비노출).
+         * 그래서 과거 방을 열면 어떤 에이전트가 답하는지 알 수 없었다 — 헤더에 읽기 전용으로 보여준다.
+         * 방 컨텍스트에 명시적 값이 없으면 실제로 쓰이는 기본값(deepagents)을 그대로 표시한다.
+         */
+        roomOrchestrationLabel() {
+            const ctx = this.readChatRoomContext(this.currentChatRoom);
+            const value = normalizeOrchestration(ctx?.orchestration);
+            const key =
+                value === 'codex' ? 'chats.codexAgent' : value === 'langchain-react' ? 'chats.basicAgent' : 'chats.deepAgent';
+            return this.$t(key);
+        },
         // 지식 선택 — 전역 스토어 프록시(읽기 전용). 쓰기는 knowledgeStore 액션 사용.
         selectedKnowledgeDocs() {
             return this.knowledgeStore.docs;
@@ -11580,6 +11605,10 @@ export default {
 
 .header-title {
     min-width: 0;
+}
+
+.orchestration-chip {
+    flex: 0 0 auto;
 }
 
 .room-name {
