@@ -183,6 +183,13 @@ export default defineConfig({
                 rewrite: (path) => path.replace(/^\/pi-system-backend/, '')
             },
             // Work Assistant Agent API
+            // 에이전트가 만든 산출물 파일. 워크스페이스 경로로 내려받는다.
+            // (운영에서는 nginx 가 같은 prefix 를 deepagents 로 보낸다.)
+            '/deepagents/': {
+                target: 'http://127.0.0.1:8888',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/deepagents/, '')
+            },
             '/agent/': {
                 // Windows에서 localhost가 IPv6(::1)로 붙으면서 WSL/Docker 리스너로 가는 경우가 있어 IPv4로 고정
                 target: 'http://127.0.0.1:8008',

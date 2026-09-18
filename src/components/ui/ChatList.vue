@@ -37,9 +37,17 @@
         <ExpandableList v-else :items="filteredChatRooms" :limit="5" :incremental="true" :step="10">
             <template #items="{ displayedItems }">
                 <v-list density="compact" class="pa-0">
+                    <template v-for="room in displayedItems" :key="room.id">
+                    <!--
+                        간소화에서는 줄마다 날짜를 적지 않는다. 좁은 사이드바에서
+                        '9월 3일' 이 오른쪽을 차지하면 그만큼 제목이 잘리는데,
+                        정작 알고 싶은 것은 정확한 날짜가 아니라 '언제쯤' 이다.
+                        클로드처럼 오늘 · 어제 · 이전으로 묶어 머리글 한 줄만 둔다.
+                    -->
+                    <div v-if="customizer.simpleUi && isGroupHead(displayedItems, room)" class="chat-room-group">
+                        {{ groupOf(room) }}
+                    </div>
                     <v-list-item
-                        v-for="room in displayedItems"
-                        :key="room.id"
                         class="chat-room-item sidebar-list-hover-bg"
                         :class="{
                             'sidebar-list-hover-bg--active': room.id === currentChatRoomId,
@@ -47,7 +55,12 @@
                         }"
                         @click="openChatRoom(room)"
                     >
-                        <template v-slot:prepend>
+                        <!--
+                            간소화에서는 상대 아바타를 두지 않는다. 대화 목록에서 찾는 것은
+                            얼굴이 아니라 제목이고, 28px 짜리 원이 줄마다 붙으면 그만큼
+                            제목이 밀려 잘린다. 클로드·ChatGPT 의 목록에도 아바타가 없다.
+                        -->
+                        <template v-if="!customizer.simpleUi" v-slot:prepend>
                             <v-avatar size="28" color="grey-lighten-3" class="chat-room-avatar">
                                 <template v-if="getDisplayParticipants(room).length === 1">
                                     <img
@@ -81,12 +94,13 @@
                         <v-list-item-subtitle class="chat-room-subtitle">
                             {{ truncateMessage(room.message?.msg) }}
                         </v-list-item-subtitle>
-                        <template v-slot:append>
+                        <template v-if="!customizer.simpleUi" v-slot:append>
                             <span class="chat-room-date text-caption">
                                 {{ formatDate(room.message?.createdAt) }}
                             </span>
                         </template>
                     </v-list-item>
+                    </template>
                 </v-list>
             </template>
         </ExpandableList>
@@ -184,6 +198,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
+import { useCustomizerStore } from '@/stores/customizer';
 import { processGptAgent } from '@/constants/processGptAgent';
 
 const backend = BackendFactory.createBackend();
@@ -193,6 +208,7 @@ export default {
     components: { ExpandableList },
     data: () => ({
         defaultSetting: useDefaultSetting(),
+        customizer: useCustomizerStore(),
         chatRooms: [],
         isLoadingChatRooms: false,
         currentChatRoomId: null,
@@ -305,6 +321,27 @@ export default {
         }
     },
     methods: {
+        /** 이 대화가 속한 묶음. 오늘 · 어제 · 이전 셋이면 충분하다. */
+        groupOf(room) {
+            const at = room && room.message && room.message.createdAt;
+            if (!at) return '이전';
+            const d = new Date(at);
+            if (isNaN(d.getTime())) return '이전';
+            const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+            const today = day(new Date());
+            const diff = Math.round((today - day(d)) / 86400000);
+            if (diff <= 0) return '오늘';
+            if (diff === 1) return '어제';
+            return '이전';
+        },
+
+        /** 앞 줄과 묶음이 다를 때만 머리글을 세운다. */
+        isGroupHead(list, room) {
+            const i = list.indexOf(room);
+            if (i <= 0) return true;
+            return this.groupOf(list[i - 1]) !== this.groupOf(room);
+        },
+
         toggleSearch() {
             this.searchOpen = !this.searchOpen;
             if (this.searchOpen) {
@@ -689,6 +726,14 @@ export default {
 </script>
 
 <style scoped>
+/* 대화 묶음 머리글. 목록 자체가 아니라 안내라 작고 옅게. */
+.chat-room-group {
+    padding: 10px 8px 2px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
 .chat-room-item {
     cursor: pointer;
 }

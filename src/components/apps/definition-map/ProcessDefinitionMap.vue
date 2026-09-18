@@ -7,13 +7,56 @@
             class="is-work-height definition-map-card"
             style="overflow: auto; flex-shrink: 0"
         >
-            <div v-if="mode !== 'uEngine' && !gs && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
-                <MainChatInput :agentInfo="mainChatAgentInfo" :userId="userInfo.uid || userInfo.id" @submit="handleMainChatSubmit" />
+            <div
+                v-if="mode !== 'uEngine' && !gs && componentName == 'DefinitionMapList' && !openConsultingDialog"
+                class="pa-4"
+                :class="{ 'pg-simple-start': simpleUi, 'pg-simple-start--compact': simpleUi && showMapInSimple }"
+            >
+                <!--
+                    간소화 모드의 시작 화면.
+
+                    한 줄 입력창 하나만 두고 나머지는 접는다. 지금까지는 처음 들어오자마자
+                    제목·마켓플레이스·필터·도메인 칩·프로세스 목록이 한꺼번에 나와서,
+                    무엇부터 해야 할지 고르는 데 시간이 든다는 이야기가 있었다.
+                    목록은 '프로세스 목록' 버튼으로 필요할 때만 연다.
+                -->
+                <!--
+                    휴대폰에서는 이 화면이 앞으로 첫 탭이다. 지난 대화로 갈 길이
+                    없어지므로 오른쪽 위에 히스토리 단추를 둔다 — 채팅 첫 화면이
+                    쓰던 것과 같은 자리·같은 아이콘이라 어디로 가는지 다시 배우지 않아도 된다.
+                    넓은 화면에서는 왼쪽 사이드바가 그 일을 하므로 두지 않는다.
+                -->
+                <div v-if="simpleUi && globalIsMobile.value" class="pg-simple-start__bar">
+                    <v-spacer></v-spacer>
+                    <v-btn icon variant="text" size="small" aria-label="지난 대화" @click="goHistory">
+                        <v-icon>mdi-history</v-icon>
+                    </v-btn>
+                </div>
+
+                <div v-if="simpleUi" class="pg-simple-start__hello">
+                    <img class="pg-simple-start__logo" src="/process-gpt-favicon.png" alt="" />
+                    <div class="pg-simple-start__ask">무엇을 도와드릴까요?</div>
+                    <p class="pg-simple-start__sub">프로세스 생성 · 실행 · 조회를 말로 요청하세요.</p>
+                </div>
+
+                <MainChatInput
+                    :agentInfo="mainChatAgentInfo"
+                    :userId="userInfo.uid || userInfo.id"
+                    :compactTools="simpleUi"
+                    @submit="handleMainChatSubmit"
+                />
+
+                <div v-if="simpleUi" class="pg-simple-start__more">
+                    <v-btn variant="text" size="small" :loading="mapLoading" @click="toggleProcessList">
+                        <v-icon size="18" class="mr-1">{{ showMapInSimple ? 'mdi-chevron-up' : 'mdi-format-list-bulleted' }}</v-icon>
+                        프로세스 목록
+                    </v-btn>
+                </div>
             </div>
 
             <!-- 헤더 영역 -->
             <div
-                v-if="componentName != 'SubProcessDetail'"
+                v-if="componentName != 'SubProcessDetail' && (!simpleUi || showMapInSimple)"
                 class="header-section"
                 style="position: sticky; top: 0; z-index: 2; background-color: var(--cds-surface-2); border-bottom: 1px solid rgba(0, 0, 0, 0.08)"
             >
@@ -244,7 +287,7 @@
                 </span>
             </div>
             <!-- route path 별 컴포넌트 호출 -->
-            <div id="processMap">
+            <div id="processMap" v-show="!simpleUi || showMapInSimple || componentName != 'DefinitionMapList'">
                 <div v-if="componentName == 'ViewProcessDetails'">
                     <ViewProcessDetails class="pa-5" :value="value" :enableEdit="enableEdit" />
                 </div>
@@ -790,8 +833,13 @@ const backend = BackendFactory.createBackend();
 import { processGptAgent } from '@/constants/processGptAgent';
 import { startMainChat } from '@/composables/useMainChatStart';
 import { getTenantId } from '@/utils/tenant';
+import { useCustomizerStore } from '@/stores/customizer';
 
 export default {
+    setup() {
+        // 설정 화면의 '화면 간소화' 스위치를 읽기 위한 것.
+        return { customizer: useCustomizerStore() };
+    },
     mixins: [ChatModule],
     components: {
         ViewProcessDetails,
@@ -940,9 +988,28 @@ export default {
             newMajorName: ''
         },
         showNewMegaInput: false,
-        showNewMajorInput: false
+        showNewMajorInput: false,
+
+        /**
+         * 간소화 모드에서 프로세스 목록을 펼쳐 둘지.
+         * 기본은 접어 둔다 — 시작 화면에 입력창 하나만 남기는 것이 목적이다.
+         * 화면을 떠나면 초기화된다(설정이 아니라 그때그때의 선택이므로).
+         */
+        showMapInSimple: false,
+
+        /**
+         * 간소화 모드에서 프로세스 목록을 실제로 받아 왔는지.
+         * 시작 화면에는 입력창만 있으므로 체계도·지표를 미리 받을 이유가 없다.
+         * 목록을 처음 펼칠 때 한 번만 받는다.
+         */
+        mapLoaded: false,
+        mapLoading: false
     }),
     computed: {
+        /** 설정 > 화면 간소화. 켜져 있으면 시작 화면을 입력창 하나로 줄인다. */
+        simpleUi() {
+            return !!this.customizer.simpleUi;
+        },
         isPalMode() {
             return !!(window.$pal && window.$mode === 'uEngine');
         },
@@ -1171,9 +1238,14 @@ export default {
                     me.isAdmin = true;
                 }
 
+                // 간소화 시작 화면에는 목록이 없다. 체계도와 지표는 목록을 펼칠 때 받는다.
+                // (상세·서브프로세스 화면은 체계도가 있어야 그려지므로 그대로 받는다.)
+                const deferMap = me.simpleUi && me.componentName === 'DefinitionMapList';
+                me.mapLoaded = !deferMap;
+
                 const [, , userInfo] = await Promise.all([
-                    me.getProcessMap(),
-                    me.getMetricsMap().then(() => me.ensureUncategorizedDomainTab()),
+                    deferMap ? Promise.resolve() : me.getProcessMap(),
+                    deferMap ? Promise.resolve() : me.getMetricsMap().then(() => me.ensureUncategorizedDomainTab()),
                     backend.getUserInfo(),
                     me.loadOrganizationOptions(),
                     me.useLock ? me.checkedLock() : Promise.resolve()
@@ -1227,6 +1299,33 @@ export default {
         }
     },
     methods: {
+        /** 간소화 시작 화면에서 프로세스 목록을 펼치고 접는다. 펼칠 때 한 번만 받아 온다. */
+        /**
+         * 지난 대화로. 목록을 여기에 다시 만들지 않고 이미 있는 채팅 화면으로 보낸다 —
+         * 거기가 휴대폰에서 지난 대화를 보여 주는 자리다. 하단 탭은 그곳도
+         * 같은 탭으로 친다(match 에 /chats 가 들어 있다).
+         */
+        goHistory() {
+            this.$router.push({ path: '/chats', query: { history: '1' } });
+        },
+
+        async toggleProcessList() {
+            if (this.showMapInSimple) {
+                this.showMapInSimple = false;
+                return;
+            }
+            if (!this.mapLoaded && !this.mapLoading) {
+                this.mapLoading = true;
+                try {
+                    await Promise.all([this.getProcessMap(), this.getMetricsMap().then(() => this.ensureUncategorizedDomainTab())]);
+                    this.mapLoaded = true;
+                } finally {
+                    this.mapLoading = false;
+                }
+            }
+            this.showMapInSimple = true;
+        },
+
         subscribeLockChanges() {
             const supabase = window.$supabase;
             if (!supabase || !this.useLock) return;
@@ -2973,5 +3072,84 @@ export default {
 
 .orphan-process-item:last-child {
     border-bottom: none;
+}
+
+/*
+ * 간소화 시작 화면.
+ *
+ * 세로 가운데에 로고 · 인사말 · 입력창만 둔다. 폭은 좁게 묶는다 —
+ * 넓은 화면에서 입력창이 끝까지 늘어나면 글이 눈을 가로질러야 해서
+ * 오히려 읽기 힘들다. 흔히 쓰는 도구들이 720px 안팎으로 묶는 이유다.
+ */
+.pg-simple-start {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: min(520px, 58vh);
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* 목록을 펼치면 인사말을 접고 위로 붙인다 — 목록이 화면 밖으로 밀리지 않도록. */
+.pg-simple-start--compact {
+    min-height: 0;
+}
+
+.pg-simple-start--compact .pg-simple-start__hello {
+    display: none;
+}
+
+.pg-simple-start > * {
+    width: 100%;
+}
+
+/* 휴대폰의 히스토리 단추 줄. 채팅 첫 화면처럼 오른쪽 위에 붙인다. */
+.pg-simple-start__bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.pg-simple-start__hello {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.pg-simple-start__logo {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 14px;
+}
+
+.pg-simple-start__ask {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: rgb(var(--v-theme-on-surface));
+}
+
+.pg-simple-start__sub {
+    margin: 6px 0 0;
+    font-size: 0.875rem;
+    color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.pg-simple-start__more {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+    .pg-simple-start {
+        min-height: 52vh;
+    }
+
+    .pg-simple-start__ask {
+        font-size: 1.25rem;
+    }
 }
 </style>

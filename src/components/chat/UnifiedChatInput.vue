@@ -42,6 +42,7 @@
                 :showStopButton="showStopButton"
                 :deferFileUploadToParent="deferFileUploadToParent"
                 :isMobile="false"
+                :compactTools="compactTools"
                 :userList="userList"
                 :currentChatRoom="currentChatRoom"
                 :desktopVoiceActive="desktopVoiceActive"
@@ -51,7 +52,47 @@
                 @recording-mode-change="(v) => $emit('recording-mode-change', v)"
                 @desktop-voice-toggle="$emit('desktop-voice-toggle')"
             >
-                <template v-if="enableKnowledgeBase" v-slot:custom-input-tools>
+                <template v-if="enableKnowledgeBase || compactTools" v-slot:custom-input-tools>
+                    <!--
+                        간소화 모드: 파일 · 지식 베이스 · 폴더를 '+' 하나로 모은다.
+                        각각 단추로 내놓으면 입력창 아래가 단추 줄이 되어, 정작 무엇을
+                        쓰는 자리인지가 흐려진다. 고르는 일은 드물고 쓰는 일은 잦다.
+                    -->
+                    <v-menu v-if="compactTools" location="top start">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                class="text-medium-emphasis pg-plus-btn"
+                                :loading="folderUploading"
+                                :disabled="disableChat"
+                            >
+                                <v-icon size="22">mdi-plus</v-icon>
+                                <span v-if="attachedCount > 0" class="pg-plus-btn__count">{{ attachedCount }}</span>
+                            </v-btn>
+                        </template>
+                        <v-list density="compact" min-width="200">
+                            <v-list-item @click="pickFile" prepend-icon="mdi-paperclip" title="파일 첨부"></v-list-item>
+                            <v-list-item
+                                v-if="enableKnowledgeBase"
+                                @click="openKnowledgePicker"
+                                prepend-icon="mdi-bookshelf"
+                                title="지식 베이스"
+                            >
+                                <template v-if="knowledgeSelectionCount > 0" v-slot:append>
+                                    <span class="text-caption text-medium-emphasis">{{ knowledgeSelectionCount }}</span>
+                                </template>
+                            </v-list-item>
+                            <v-list-item v-if="enableKnowledgeBase" @click="uploadFolder" prepend-icon="mdi-folder-upload-outline" title="폴더 업로드">
+                                <template v-if="folderBadgeCount > 0" v-slot:append>
+                                    <span class="text-caption text-medium-emphasis">{{ folderBadgeCount }}</span>
+                                </template>
+                            </v-list-item>
+                        </v-list>
+                    </v-menu>
+
+                    <template v-else>
                     <v-btn
                         @click="openKnowledgePicker"
                         class="ml-2 text-medium-emphasis knowledge-tool-btn"
@@ -81,6 +122,7 @@
                             {{ folderBadgeCount }}
                         </span>
                     </v-btn>
+                    </template>
                 </template>
             </Chat>
             <!-- codex 전용 폴더 입력. Chat 의 것과 달리 accept 제한이 없다 —
@@ -149,6 +191,14 @@ export default {
             type: Boolean,
             default: false
         },
+        /**
+         * 입력창 아래 도구를 '+' 메뉴 하나로 모은다.
+         * 설정의 '화면 간소화'가 켜졌을 때 쓴다.
+         */
+        compactTools: {
+            type: Boolean,
+            default: false
+        },
         disableChat: {
             type: Boolean,
             default: false
@@ -194,6 +244,14 @@ export default {
             return this.variant === 'inline' ? 'main-chat-input-container--inline' : 'main-chat-input-container--panel';
         },
         examples() {
+            // 간소화에서는 만들기 · 실행 둘만. 넷은 입력창보다 예시가 커 보이고,
+            // 조회·질문은 그냥 말로 쓰면 되는 것이라 굳이 단추로 둘 이유가 없다.
+            if (this.compactTools) {
+                return [
+                    { icon: 'mdi-plus-circle-outline', text: this.$t('mainChat.examples.createProcess'), type: 'create' },
+                    { icon: 'mdi-play-circle-outline', text: this.$t('mainChat.examples.executeProcess'), type: 'execute' }
+                ];
+            }
             return [
                 {
                     icon: 'mdi-plus-circle-outline',
@@ -226,6 +284,10 @@ export default {
         },
         selectedKnowledgeFolders() {
             return this.knowledgeStore.folders;
+        },
+        /** '+' 옆에 붙는 숫자 — 지식 베이스와 폴더를 합친 것. */
+        attachedCount() {
+            return this.knowledgeSelectionCount + this.folderBadgeCount;
         },
         // 버튼 배지 — 폴더 + 파일 (폴더-only 면 docs 가 비어도 폴더로 카운트)
         knowledgeSelectionCount() {
@@ -284,6 +346,11 @@ export default {
     },
     methods: {
         mimeIcon,
+        /** '+' 메뉴의 '파일 첨부'. 입력창이 원래 갖고 있는 파일 고르기를 그대로 부른다. */
+        pickFile() {
+            const chat = this.$refs.inputChat;
+            if (chat && typeof chat.uploadImage === 'function') chat.uploadImage();
+        },
         /** 메인에서 골라 대기시켜 둔 폴더를 이 방으로 올린다. */
         async flushPendingFolder(conversationId) {
             const files = this.folderStore.takePending();
@@ -587,14 +654,50 @@ export default {
         padding: 0px;
     }
 
-    .example-prompts {
-        gap: 6px;
-        margin-bottom: 8px;
+    /*
+     * 입력창 아래 도구 줄(딥 에이전트 · 지식 베이스 · 폴더 업로드 · 보내기).
+     * 390px 에서는 한 줄에 다 들어가지 않아 오른쪽 끝의 보내기 단추가 잘려
+     * 화면 밖으로 나갔다. 줄을 넘기게 두고, 안쪽 항목이 줄어들 수 있게 한다.
+     */
+    .main-chat-input-container :deep(.d-flex.justify-space-between.align-center.w-100.pl-1) {
+        flex-wrap: wrap;
+        row-gap: 6px;
     }
 
-    .example-chip {
-        padding: 6px 10px;
-        font-size: 12px;
+    .main-chat-input-container :deep(.d-flex.justify-space-between.align-center.w-100.pl-1 > *) {
+        min-width: 0;
     }
+
+    /* 그 줄 안의 도구 묶음도 한 줄에 다 놓으려 해서 마지막 항목이 잘렸다. */
+    .main-chat-input-container :deep(.definition-map-chat-menu-background) {
+        flex-wrap: wrap;
+        row-gap: 6px;
+    }
+
+}
+
+/*
+ * '+' 단추. 옆의 숫자는 붙여 둔 지식 문서와 폴더 파일 수.
+ *
+ * 이 단추는 슬롯으로 들어가 도구 줄 맨 뒤에 그려진다. 먼저 손이 가는 것은
+ * 무엇을 붙일지이지 어떤 에이전트로 할지가 아니라, 자리만 앞으로 당긴다.
+ */
+.pg-plus-btn {
+    width: 34px;
+    height: 34px;
+    order: -1;
+}
+
+.pg-plus-btn__count {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    min-width: 15px;
+    padding: 0 3px;
+    border-radius: 8px;
+    background: rgb(var(--v-theme-primary));
+    color: #fff;
+    font-size: 10px;
+    line-height: 15px;
 }
 </style>

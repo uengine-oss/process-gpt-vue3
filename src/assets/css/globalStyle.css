@@ -1230,6 +1230,41 @@ hr {
     height: calc(100vh - 131px);
 }
 
+/*
+ * 간소화 화면에는 상단바가 없다. 그 자리(75px)를 본문이 쓰지 않으면
+ * 카드 아래로 빈 띠가 남는다 — 화면이 짧아 보이는 것이 아니라 실제로 짧다.
+ *
+ * 위아래는 사이드바에 맞춘다. 사이드바는 화면에서 20px 씩 떨어져 있는데
+ * 본문 컨테이너는 36px 이라, 나란히 놓으면 본문만 내려앉아 보였다.
+ */
+.pg-no-header .page-wrapper {
+    padding-top: 20px !important;
+}
+
+.pg-no-header .is-work-height {
+    height: calc(100vh - 40px);
+}
+
+/* 카드가 커진 만큼 안의 두 칸도 같이 커져야 아래에 빈 띠가 남지 않는다. */
+.pg-no-header .pg-three {
+    --pg-three-chrome: 116px;
+}
+
+/*
+ * 사이드바가 서랍으로 바뀌는 구간에서는 여는 단추 자리(52px)만큼 본문을 내렸다.
+ * 카드 높이도 그만큼 줄여야 아래가 화면 밖으로 넘어가지 않는다.
+ */
+@media only screen and (max-width: 1279px) {
+    /* 여는 단추 자리(16px)만큼 본문이 내려가므로 카드도 그만큼 줄인다. */
+    .pg-no-header .is-work-height {
+        height: calc(100vh - 56px);
+    }
+
+    .pg-no-header .pg-three {
+        --pg-three-chrome: 132px;
+    }
+}
+
 .todolist-card-box {
     padding: 4px !important;
     height: calc(100vh - 130px);
@@ -1653,10 +1688,40 @@ hr {
         max-height: calc(100vh - 100px) !important;
         height: 100% !important;
         overflow: auto;
-        padding-right: 40px !important;
+        /*
+         * 40px 이던 것을 줄인다. 태블릿에서는 그럴듯했을지 몰라도 390px 폭에서는
+         * 카드가 왼쪽으로 쏠리고 오른쪽이 통째로 비어 보였다.
+         */
+        padding-right: 12px !important;
     }
+
+    /*
+     * 업무 카드의 설명을 몇 줄로 자른다.
+     *
+     * 이 칸에는 사람이 쓴 한 줄이 아니라 에이전트가 받은 지시문 전문이 들어온다.
+     * 데스크톱에서는 칸반 열 높이에 가려 드러나지 않았는데, 좁은 화면에서는 그
+     * 제한이 풀려 카드 하나가 화면을 다 먹었다. 목록은 훑어보는 자리이고,
+     * 전문은 카드를 열면 나온다.
+     */
+    .todo-list-card-box .v-card .text-subtitle-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+    }
+    /* 열을 좌우로 나란히 두는 것은 좁은 화면에서 뜻이 없다. 세로로 쌓는다. */
+    .kanban-column {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
     .todo-task-column-box-pc {
-        padding-right: 20px !important;
+        /*
+         * 오른쪽에만 20px 이 붙어 있었다. 그래서 카드가 왼쪽 38px · 오른쪽 54px
+         * 로 앉아 화면 가운데가 아니라 왼쪽으로 쏠려 보였다. 좌우를 같게 둔다.
+         */
+        padding-right: 0 !important;
     }
     .instance-card-title {
         padding-top: 16px !important;
@@ -1666,8 +1731,17 @@ hr {
     }
     
     .is-work-height {
+        /*
+         * 화면 높이를 그대로 쓰면 아래 탭이 덮는 만큼(탭 높이 + 홈 인디케이터)이
+         * 잠긴다. 채팅 입력창이 딱 그 자리에 있어서, 실제로 보내기 버튼이
+         * 탭 밑으로 들어가 눌리지 않았다. 탭이 있을 때만 그만큼 뺀다.
+         */
         height: 100vh;
         overflow: auto;
+    }
+
+    body:has(.pg-tabbar) .is-work-height {
+        height: calc(100vh - var(--pg-tabbar-h, 56px) - env(safe-area-inset-bottom, 0px));
     }
 
     

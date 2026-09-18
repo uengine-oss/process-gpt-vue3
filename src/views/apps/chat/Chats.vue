@@ -5,7 +5,7 @@
           그러지 않으면 휴대폰으로 들어왔을 때 빈 화면만 뜬다 — 목록이
           서랍 안에 있다는 것을 알 방법이 없다.
         -->
-        <AppBaseCard :isInstanceChat="isInstanceChat" :preferLeftOnMobile="mobileListOpen">
+        <AppBaseCard :isInstanceChat="isInstanceChat" :preferLeftOnMobile="!isInstanceChat && mobileListOpen">
             <template v-if="!isInstanceChat" v-slot:leftpart="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab" grow color="primary">
@@ -98,21 +98,44 @@
             </template>
 
             <template v-if="!isInstanceChat" v-slot:mobileLeftContent="{ closeDrawer }">
-                <div class="no-scrollbar">
+                <div class="no-scrollbar pg-home-screen">
                     <!--
-                        첫 화면의 새 대화 진입점.
+                        작은 화면의 채팅 첫 화면.
 
-                        정의 체계도 맨 위에 있는 것과 **같은 컴포넌트**다. 새로 만들지
-                        않는다 — 보내는 흐름도 같은 함수(startMainChat)를 쓴다.
-                        지난 대화는 바로 아래 목록에 그대로 있다.
+                        목록을 여기 깔지 않는다. 앱이나 좁은 창을 여는 이유의 대부분은
+                        무언가를 물어보려는 것이지 지난 대화를 뒤지려는 것이 아니다.
+                        지난 대화는 오른쪽 위 버튼으로 연다.
+
+                        진입점은 정의 체계도 맨 위에 있는 것과 **같은 컴포넌트**이고,
+                        보내는 흐름도 같은 함수(startMainChat)를 쓴다.
                     -->
-                    <div class="pg-home">
+                    <div class="pg-home__bar">
+                        <h2 class="pg-home__title">채팅</h2>
+                        <v-btn
+                            icon
+                            variant="text"
+                            size="small"
+                            :aria-label="showHistory ? '새 대화' : '지난 대화'"
+                            @click="showHistory = !showHistory"
+                        >
+                            <v-icon>{{ showHistory ? 'mdi-plus' : 'mdi-history' }}</v-icon>
+                        </v-btn>
+                    </div>
+
+                    <div v-if="!showHistory" class="pg-home">
+                        <div class="pg-home__hello">
+                            <img class="pg-home__logo" src="/process-gpt-favicon.png" alt="" />
+                            <div class="pg-home__ask">무엇을 도와드릴까요?</div>
+                            <p class="pg-home__sub">프로세스 생성 · 실행 · 조회를 말로 요청하세요.</p>
+                        </div>
                         <MainChatInput
                             :agentInfo="mainChatAgentInfo"
                             :userId="userInfo && (userInfo.uid || userInfo.id)"
                             @submit="handleMainChatSubmit"
                         />
                     </div>
+
+                    <template v-if="showHistory">
                     <v-tabs v-model="activeTab">
                         <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-account</v-icon>
@@ -145,6 +168,7 @@
                             />
                         </div>
                     </div>
+                    </template>
                 </div>
             </template>
         </AppBaseCard>
@@ -317,6 +341,15 @@ export default {
          * 휴대폰으로 새로 들어와도 목록 대신 옛 대화가 열린다.
          */
         mobileListOpen: true,
+
+        /**
+         * 작은 화면에서 지난 대화 목록을 펼쳤는지. 오른쪽 위 버튼이 여닫는다.
+         *
+         * ?history=1 로 들어오면 처음부터 펼친다. 정의 체계도의 히스토리 단추가 여기로
+         * 보내는데, 그걸 누른 사람은 지난 대화를 보려는 것이다 — 똑같은 시작
+         * 화면을 한 번 더 보여 주고 또 누르게 할 까닭이 없다.
+         */
+        showHistory: typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('history') === '1',
 
         // assistantChat
         checked: true,
@@ -1560,5 +1593,69 @@ export default {
 
 .custom-top-area .v-btn {
     background-color: var(--cds-surface-2);
+}
+
+/*
+ * 작은 화면의 채팅 첫 화면.
+ *
+ * 화면 전체를 세로로 쓰고, 입력창을 아래에 붙인다. 인사와 예시는 가운데다.
+ * 이 규칙은 폭으로만 갈리므로 앱이든 좁은 브라우저 창이든 똑같이 보인다.
+ */
+.pg-home-screen {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    /*
+     * 좌우를 같은 만큼 띄운다. 이것이 없으면 예시 줄과 입력창이 화면 가장자리에
+     * 딱 붙어(측정값 1px) 답답하고, 아래 카드들과도 선이 맞지 않는다.
+     */
+    padding: 0 12px;
+}
+
+.pg-home__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 8px;
+}
+
+.pg-home__title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.pg-home {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+}
+
+/* 인사는 가운데에, 예시와 입력창은 아래쪽에 모인다. */
+.pg-home__hello {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    padding: 24px 0 28px;
+    text-align: center;
+}
+
+.pg-home__logo {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 12px;
+}
+
+.pg-home__ask {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.pg-home__sub {
+    margin: 6px 0 0;
+    font-size: 0.82rem;
+    color: var(--cds-text-muted, #6b7280);
 }
 </style>

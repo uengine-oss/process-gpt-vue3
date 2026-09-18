@@ -1,8 +1,9 @@
 <template>
     <UnifiedChatInput
-        :showExamples="true"
+        :showExamples="!compactTools"
         :disableChat="isUploading"
         :enableKnowledgeBase="true"
+        :compactTools="compactTools"
         @sendMessage="handleUnifiedSend"
         @recording-mode-change="handleRecordingModeChange"
     />
@@ -24,6 +25,11 @@ export default {
         userId: {
             type: String,
             default: null
+        },
+        /** 입력창 아래 도구를 '+' 메뉴 하나로 모은다(설정 > 화면 간소화). */
+        compactTools: {
+            type: Boolean,
+            default: false
         }
     },
     data() {

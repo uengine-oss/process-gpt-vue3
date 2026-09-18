@@ -22,16 +22,20 @@
                 }"
             >
                 <div v-if="!isMyMessage(msg)" class="message-avatar">
-                    <v-avatar size="32" :color="msg.role === 'user' ? 'primary' : 'grey-lighten-2'">
-                        <v-icon size="18" :color="msg.role === 'user' ? 'white' : 'grey-darken-1'">
-                            {{ msg.role === 'user' ? 'mdi-account' : 'mdi-robot-outline' }}
+                    <!--
+                        보낸 이가 사람이면 그 사람 얼굴을, 에이전트일 때만 로봇을 쓴다.
+                        사람 얼굴 자리에 로봇이 서 있으면 누가 한 일인지 알 수 없다.
+                    -->
+                    <v-avatar size="32" :color="msg.avatar ? undefined : isAgentMessage(msg) ? 'grey-lighten-2' : 'primary'">
+                        <v-img v-if="msg.avatar" :src="msg.avatar" />
+                        <v-icon v-else size="18" :color="isAgentMessage(msg) ? 'grey-darken-1' : 'white'">
+                            {{ isAgentMessage(msg) ? 'mdi-robot-outline' : 'mdi-account' }}
                         </v-icon>
                     </v-avatar>
                 </div>
                 <div class="message-content" :class="{ 'message-content--my': isMyMessage(msg) }">
                     <div v-if="!isMyMessage(msg)" class="message-header">
                         <span class="message-sender">{{ assistantLabel(msg) }}</span>
-                        <span class="message-time">{{ formatTime(msg.timeStamp) }}</span>
                     </div>
 
                     <div class="bubble-wrap" :class="{ 'bubble-wrap--my': isMyMessage(msg) }">
@@ -301,6 +305,15 @@ export default {
     },
     emits: ['preview-image', 'preview-bpmn', 'open-external-url', 'human-feedback-submit', 'human-feedback-skip'],
     methods: {
+        /**
+         * 로봇 얼굴을 쓸 메시지인가.
+         * isAgent 를 실어 보내면 그 말을 따르고, 없으면 예전처럼 역할로 본다 —
+         * 채팅방은 이 값을 보내지 않으므로 사람만 사람 얼굴을 갖는다.
+         */
+        isAgentMessage(msg) {
+            if (msg && typeof msg.isAgent === 'boolean') return msg.isAgent;
+            return !!msg && msg.role !== 'user';
+        },
         isMyMessage(msg) {
             const myEmail = (this.currentUserEmail || '').toString();
             if (!myEmail) return false;
@@ -565,6 +578,14 @@ export default {
 
 .message-item.my-message {
     justify-content: flex-end;
+
+    /*
+     * Chat.vue 가 전역으로 `.my-message { background: … !important }` 를 깔아 둔다.
+     * 거기서는 그 클래스가 말풍선 자체에 붙지만, 여기서는 줄 전체에 붙어 있어
+     * 말풍선 밖까지 색이 번졌다. 줄에서는 지우고 말풍선에만 남긴다.
+     */
+    background-color: transparent !important;
+    border-radius: 0 !important;
 }
 
 .message-avatar {
@@ -591,13 +612,20 @@ export default {
 
 .bubble-wrap--my {
     align-items: flex-end;
+    /* 내 말은 화면 절반을 넘지 않게 — 넘으면 판때기처럼 보인다. */
+    max-width: min(560px, 76%);
 }
 
 .bubble {
     background: var(--cds-bg-neutral);
     border-radius: 12px;
     padding: 10px 12px;
-    width: fit-content;
+    /*
+     * 글 너비에 맞춘다. fit-content 는 줄바꿈이 없는 긴 글에서 허용 폭까지
+     * 부풀 수 있어, 줄바꿈이 있는 글의 가장 긴 줄에 맞도록 max-content 로 못 박고
+     * 넘칠 때만 max-width 가 잡아 준다.
+     */
+    width: max-content;
     max-width: 100%;
 }
 
@@ -613,7 +641,8 @@ export default {
 }
 
 .bubble-time--my {
-    align-self: flex-start; /* 말풍선 좌측 하단 느낌 */
+    /* 말풍선과 같은 쪽에 붙인다 — 왼쪽에 떨어져 있으면 말풍선 안의 글처럼 보였다. */
+    align-self: flex-end;
 }
 
 .message-header {

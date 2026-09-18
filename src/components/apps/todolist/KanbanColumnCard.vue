@@ -233,6 +233,7 @@ import { format } from 'date-fns';
 import TodoDialog from './TodoDialog.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
+import { useCustomizerStore } from '@/stores/customizer';
 const backend = BackendFactory.createBackend();
 export default {
     components: {
@@ -525,7 +526,27 @@ export default {
                 return v.toString(16);
             });
         },
+        /**
+         * 카드를 누르면 어디로 가는가.
+         *
+         * 간소화 화면에서는 인스턴스의 대화로 보낸다. 거기에 지금까지의 경과와
+         * 산출물이 함께 있고, 내 차례면 그 자리에서 바로 적어 낸다 — 업무 하나만
+         * 떼어 다른 화면에서 여는 것보다 무슨 일인지 알기 쉽다.
+         *
+         * 기존 화면은 그대로 둔다. 간소화를 끈 사람은 지금까지처럼 업무 화면으로 간다.
+         */
         executeTask() {
+            const simple = useCustomizerStore().simpleUi;
+            const instId = this.task && this.task.instId;
+            if (simple && instId) {
+                // 주소에서 점은 경로 구분으로 읽힐 수 있어 InstanceCard 가 정해 둔 표기를 따른다.
+                this.$router.push({
+                    path: `/instancelist/${String(instId).replace(/\./g, '_DOT_')}`,
+                    // 인스턴스가 없는 업무도 있다. 그때 돌아갈 곳을 알려 둔다.
+                    query: { task: this.task.taskId }
+                });
+                return;
+            }
             this.$router.push(`/todolist/${this.task.taskId}`);
         },
         closeDialog() {

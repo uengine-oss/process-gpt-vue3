@@ -3166,7 +3166,7 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip> -->
-                                <v-tooltip :text="$t('chat.addFile')">
+                                <v-tooltip v-if="!compactTools" :text="$t('chat.addFile')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
                                             icon
@@ -3335,7 +3335,7 @@
                                 <Icons v-else :icon="'sharp-mic'" :size="'16'" />
                             </v-btn>
 
-                            <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
+                            <v-tooltip v-if="enableDesktopVoice || !compactTools" :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
                                 <template v-slot:activator="{ props }">
                                     <v-btn
                                         @click="enableDesktopVoice && !isGenerationFinished && (openChatMenu(), handleVoiceButtonClick())"
@@ -3562,6 +3562,17 @@ export default {
         isAgentMode: Boolean,
         chatRoomId: String,
         isMobile: Boolean,
+        /**
+         * 도구 줄을 줄여서 그린다.
+         *
+         * 클립·지식 베이스·폴더 업로드·마이크·헤드셋·보내기가 한 줄에 늘어서 있으면
+         * 입력창보다 단추가 더 눈에 띈다. 켜면 클립은 바깥의 '+' 메뉴로 옮겨 가고,
+         * 쓸 수 없는 헤드셋 단추는 아예 그리지 않는다.
+         */
+        compactTools: {
+            type: Boolean,
+            default: false
+        },
         // 데스크탑 음성 에이전트 모드 활성화 여부 (ChatRoomPage에서 제어)
         desktopVoiceActive: {
             type: Boolean,
@@ -4298,6 +4309,9 @@ export default {
         resolvedPlaceholder() {
             // definition-map 에서만 긴 예시 placeholder 사용
             try {
+                // 간소화 모드에서는 예시를 늘어놓지 않는다. 두 줄짜리 안내문이
+                // 입력창을 채우고 있으면 정작 쓸 자리가 좁아 보인다.
+                if (this.compactTools) return this.$t('chat.inputMessage');
                 const path = this.$route?.path || '';
                 const isDefinitionMap = path.includes('definition-map');
                 return this.$t(isDefinitionMap ? 'chat.definitionMapInputMessage' : 'chat.inputMessage');
