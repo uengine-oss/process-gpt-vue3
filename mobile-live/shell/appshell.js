@@ -54,7 +54,8 @@
     }
 
     function allowed(p) {
-        // 루트는 포털이 알아서 로그인이나 조직으로 보낸다. 막지 않는다.
+        // 루트는 막지 않는다. 로그인 전이라면 포털이 로그인·조직으로 보낸다.
+        // 로그인 뒤에는 guard 가 첫 화면으로 옮긴다.
         if (p === '/' || p === '') return true;
         for (var i = 0; i < ALLOWED.length; i++) {
             if (p === ALLOWED[i] || p.indexOf(ALLOWED[i] + '/') === 0) return true;
@@ -180,7 +181,15 @@
 
     /** 허용하지 않은 곳이면 되돌린다. */
     function guard() {
-        if (allowed(path())) return false;
+        // 로그인한 뒤의 루트는 홍보 페이지다. 앱을 켜는 사람은 그것을 보려는 게
+        // 아니므로 첫 화면을 채팅 자리로 옮긴다 — 아래 탭의 첫 칸을 누른 것과 같다.
+        // (로그인 전에는 여기까지 오지 않는다. sync 가 먼저 돌려보낸다.)
+        var here = path();
+        if (here === '/' || here === '') {
+            go(HOME);
+            return true;
+        }
+        if (allowed(here)) return false;
         go(HOME);
         return true;
     }
