@@ -816,6 +816,8 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import { agentStableId, isUuid as isUuidStable, slugToUuid } from '@/utils/agentId.js';
+import axios from 'axios';
+import { isArtifactUrlFresh, usableArtifactUrl } from '@/utils/artifactLinks.js';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import Chat from '@/components/ui/Chat.vue';
 import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
@@ -1050,8 +1052,7 @@ export default {
         roomOrchestrationLabel() {
             const ctx = this.readChatRoomContext(this.currentChatRoom);
             const value = normalizeOrchestration(ctx?.orchestration);
-            const key =
-                value === 'codex' ? 'chats.codexAgent' : value === 'langchain-react' ? 'chats.basicAgent' : 'chats.deepAgent';
+            const key = value === 'codex' ? 'chats.codexAgent' : value === 'langchain-react' ? 'chats.basicAgent' : 'chats.deepAgent';
             return this.$t(key);
         },
         // 지식 선택 — 전역 스토어 프록시(읽기 전용). 쓰기는 knowledgeStore 액션 사용.
@@ -7451,11 +7452,32 @@ export default {
                 const fileSha = (file.sha256 || '').toString();
                 const ofSha = (view.of_sha256 || '').toString();
                 if (fileSha && ofSha && fileSha !== ofSha) return null;
-                return { renderer: view.renderer, url: view.url, pageCount: view.page_count || null };
+                return {
+                    renderer: view.renderer,
+                    url: view.url,
+                    pageCount: view.page_count || null,
+                    // 렌더도 비공개 버킷에 있다. 주소는 만료되므로 되살릴 열쇠를 함께 넘긴다.
+                    fileId: view.file_id || '',
+                    urlExpiresAt: view.url_expires_at || ''
+                };
             }
             const preview = file.preview;
-            if (preview?.kind === 'pdf' && preview.url) return { renderer: 'pdf', url: preview.url, pageCount: preview.page_count || null };
-            if (preview?.kind === 'file' && preview.url) return { renderer: 'html', url: preview.url, pageCount: null };
+            if (preview?.kind === 'pdf' && preview.url)
+                return {
+                    renderer: 'pdf',
+                    url: preview.url,
+                    pageCount: preview.page_count || null,
+                    fileId: preview.file_id || '',
+                    urlExpiresAt: preview.url_expires_at || ''
+                };
+            if (preview?.kind === 'file' && preview.url)
+                return {
+                    renderer: 'html',
+                    url: preview.url,
+                    pageCount: null,
+                    fileId: preview.file_id || '',
+                    urlExpiresAt: preview.url_expires_at || ''
+                };
             return null;
         },
 
@@ -7480,17 +7502,24 @@ export default {
             // 완성본은 자기 초안 탭을 대신한다 — 남겨두면 '작성 중' 카드가 계속 붙어 있다.
             this.artifactPanels = this.artifactPanels.filter((panel) => !(panel.data?.draft === true && panel.data?.fileName === fileName));
             const status = this.resolveArtifactStatus(file);
+            const artifactKey = file.artifact_id || file.file_id || fileUrl;
             this.pushArtifactPanel({
                 type: 'docx',
                 label: fileName,
                 data: {
                     fileUrl,
                     fileName,
-                    previewUrl: view.url,
+                    // 이 탭이 PDF 미리보기라는 사실은 주소와 별개다. 주소가 만료돼 비어 있어도
+                    // 뷰어는 떠 있어야 한다 — 아래에서 새 주소를 받아 채운다.
+                    isPdfPreview: true,
+                    previewUrl: isArtifactUrlFresh({ url_expires_at: view.urlExpiresAt }) ? view.url : '',
+                    previewFileId: view.fileId || '',
+                    previewExpiresAt: view.urlExpiresAt || '',
                     messageId: msg?.uuid || null,
                     // 같은 산출물의 새 판은 같은 탭을 덮어쓴다(버전은 배지로 보인다).
-                    artifactKey: file.artifact_id || file.file_id || fileUrl,
+                    artifactKey,
                     fileId: file.file_id || '',
+                    fileExpiresAt: file.url_expires_at || '',
                     sha256: file.sha256 || '',
                     turnId: file.turn_id || '',
                     pageCount: view.pageCount,
@@ -7499,7 +7528,55 @@ export default {
                     qualityGateDetail: status?.detail || ''
                 }
             });
+            // 주소가 죽어 있으면 지금 되살린다. 기다리지 않는다 — 탭은 이미 떠 있고
+            // 뷰어가 "새로 받는 중" 을 보여준다.
+            this.refreshArtifactPanelUrls(artifactKey);
             return true;
+        },
+
+        /**
+         * 패널이 들고 있는 주소를 살아 있는 것으로 바꾼다.
+         *
+         * 산출물과 그 렌더는 비공개 버킷에 있고 주소는 한 시간이면 죽는다. 만료된 주소를
+         * 그대로 iframe 에 걸면 브라우저가 저장소의 오류 JSON 을 문서인 양 그린다 —
+         * 사용자에게는 문서가 깨진 것처럼 보인다. 실제로 그렇게 나갔다.
+         *
+         * 미리보기(렌더)와 원본은 각자 다른 객체라 각자 되살린다.
+         */
+        async refreshArtifactPanelUrls(artifactKey) {
+            const panel = this.artifactPanels.find((p) => p.type === 'docx' && p.data?.artifactKey === artifactKey);
+            if (!panel) return;
+            const data = panel.data;
+
+            if (data.previewFileId) {
+                const holder = {
+                    url: data.previewUrl,
+                    file_id: data.previewFileId,
+                    url_expires_at: data.previewExpiresAt
+                };
+                const fresh = await usableArtifactUrl(holder, this.requestArtifactUrl);
+                if (fresh) {
+                    data.previewUrl = fresh;
+                    data.previewExpiresAt = holder.url_expires_at || '';
+                }
+            }
+
+            if (data.fileId) {
+                const holder = { url: data.fileUrl, file_id: data.fileId, url_expires_at: data.fileExpiresAt };
+                const fresh = await usableArtifactUrl(holder, this.requestArtifactUrl);
+                if (fresh) {
+                    data.fileUrl = fresh;
+                    data.fileExpiresAt = holder.url_expires_at || '';
+                }
+            }
+        },
+
+        /** Memento 에 새 주소를 청한다. 산출물은 비공개 버킷에 있고 주소는 한 시간이면 죽는다. */
+        async requestArtifactUrl(fileId) {
+            const { data } = await axios.get('/memento/artifact-url', {
+                params: { tenant_id: window.$tenantName, file_id: fileId }
+            });
+            return data;
         },
 
         activeDocumentContext() {
