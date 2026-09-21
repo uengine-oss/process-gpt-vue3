@@ -4699,7 +4699,7 @@ export default {
         /**
          * 스트리밍 중(isLoading=true) 단계의 마크다운 렌더.
          * 토큰이 도착하기 전이거나 placeholder 만 있는 경우엔 회색 안내 텍스트,
-         * 실제 콘텐츠가 들어오면 marked() + linkify 로 마크다운 렌더링.
+         * 실제 콘텐츠가 들어오면 marked() 로 마크다운 렌더링.
          */
         renderStreamingMarkdown(message) {
             const raw = (message?.content || '').toString();
@@ -4716,7 +4716,7 @@ export default {
                 return '<span style="color:rgba(0,0,0,0.55)">생각 중...</span>';
             }
             marked.setOptions({ breaks: true, gfm: true });
-            return this.withMermaidContainers(marked(this.linkify(raw)));
+            return this.withExternalLinks(this.withMermaidContainers(marked(raw)));
         },
         /** 채팅 메시지 하단 인라인 '도구 사용 내역'(Claude Desktop식) 용 정규화 목록 */
         getToolCallList(message) {
@@ -5427,7 +5427,24 @@ export default {
                 gfm: true
             });
 
-            return this.withMermaidContainers(marked(text));
+            return this.withExternalLinks(this.withMermaidContainers(marked(text)));
+        },
+        /**
+         * marked() 가 만든 바깥 링크를 새 탭으로 연다.
+         *
+         * 예전에는 marked() 에 넣기 **전에** linkify() 로 URL 을 `<a>` 로 감쌌다. 그러면
+         * `[파일명](주소)` 의 주소 자리가 이미 태그라서 마크다운 링크 문법이 깨지고,
+         * 화면에는 대괄호가 글자 그대로 남았다 — 산출물 링크가 실제로 그렇게 보였다.
+         *
+         * marked 는 gfm 으로 맨 URL·www·이메일을 모두 스스로 링크로 만든다. 그래서 앞의
+         * linkify 는 필요 없고, 그것이 주던 것 중 남길 건 `target="_blank"` 뿐이다.
+         */
+        withExternalLinks(html) {
+            if (!html) return html;
+            return html.replace(
+                /<a href="(https?:\/\/[^"]*)"/g,
+                '<a href="$1" target="_blank" rel="noopener noreferrer"'
+            );
         },
         /**
          * marked()가 만든 ```mermaid 코드펜스(<pre><code class="language-mermaid">...)를
@@ -6238,7 +6255,7 @@ export default {
                 }
 
                 marked.setOptions({ breaks: true, gfm: true });
-                return this.withMermaidContainers(marked(this.linkify(displayContent)));
+                return this.withExternalLinks(this.withMermaidContainers(marked(displayContent)));
             }
         },
         setTableName(content) {
