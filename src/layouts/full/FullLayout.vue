@@ -5,6 +5,7 @@ import VerticalHeaderVue from './vertical-header/VerticalHeader.vue';
 import HorizontalHeader from './horizontal-header/HorizontalHeader.vue';
 import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
 import GlobalNoticeBanner from './GlobalNoticeBanner.vue';
+import MobileTabBar from './MobileTabBar.vue';
 import { useCustomizerStore } from '../../stores/customizer';
 import { ref, computed, getCurrentInstance, onMounted, onBeforeUnmount } from 'vue';
 const customizer = useCustomizerStore();
@@ -48,6 +49,17 @@ const showSidebarOpenButton = computed(() => {
     );
 });
 
+/**
+ * 간소화 화면에서 사이드바를 여는 단추.
+ *
+ * 상단바를 걷어내면서 거기 있던 메뉴 단추도 같이 사라졌다. 1280px 아래에서는
+ * 사이드바가 서랍이라 닫히면 여는 방법이 없어진다 — 폰은 아래 탭이 대신하지만
+ * 그 사이 폭(769~1279)은 갈 곳이 없었다. 클로드처럼 왼쪽 위에 둔다.
+ */
+const showSimpleSidebarButton = computed(() => {
+    return customizer.simpleUi && !globalIsMobile.value && !isModelingTab.value && !customizer.Sidebar_drawer;
+});
+
 const openSidebar = () => {
     if (!customizer.Sidebar_drawer) {
         customizer.SET_SIDEBAR_DRAWER();
@@ -69,9 +81,22 @@ const openSidebar = () => {
             ]"
         >
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
-            <div v-if="!isPalMode && !globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
+            <!--
+                간소화 화면에는 상단바가 없다. 거기 있던 단추들은 사이드바로 옮겼다
+                (SimpleSidebarTools) — 갈 곳이 한 군데면 찾으러 다닐 일이 없다.
+            -->
+            <div v-if="!isPalMode && !globalIsMobile && !customizer.simpleUi" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             </div>
+            <v-btn
+                v-if="showSimpleSidebarButton"
+                icon="mdi-menu"
+                variant="text"
+                density="comfortable"
+                class="pg-open-sidebar-btn"
+                aria-label="사이드바 열기"
+                @click="openSidebar"
+            />
             <v-tooltip v-if="showSidebarOpenButton" text="사이드바 펼치기" location="right">
                 <template #activator="{ props }">
                     <v-btn
@@ -89,7 +114,7 @@ const openSidebar = () => {
                 <HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" />
             </div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
-            <v-main :class="{ 'pal-main-no-header': isPalMode }">
+            <v-main :class="{ 'pal-main-no-header': isPalMode, 'pg-no-header': customizer.simpleUi && !globalIsMobile }">
                 <div class="rtl-lyt mb-3 hr-layout">
                     <v-container
                         fluid
@@ -125,9 +150,22 @@ const openSidebar = () => {
             ]"
         >
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
-            <div v-if="!isPalMode && !globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
+            <!--
+                간소화 화면에는 상단바가 없다. 거기 있던 단추들은 사이드바로 옮겼다
+                (SimpleSidebarTools) — 갈 곳이 한 군데면 찾으러 다닐 일이 없다.
+            -->
+            <div v-if="!isPalMode && !globalIsMobile && !customizer.simpleUi" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
                 <VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             </div>
+            <v-btn
+                v-if="showSimpleSidebarButton"
+                icon="mdi-menu"
+                variant="text"
+                density="comfortable"
+                class="pg-open-sidebar-btn"
+                aria-label="사이드바 열기"
+                @click="openSidebar"
+            />
             <v-tooltip v-if="showSidebarOpenButton" text="사이드바 펼치기" location="right">
                 <template #activator="{ props }">
                     <v-btn
@@ -146,7 +184,10 @@ const openSidebar = () => {
             </div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
 
-            <v-main :class="{ 'pal-main-no-header': isPalMode }" :style="globalIsMobile ? 'padding-top: 0px;' : ''">
+            <v-main
+                :class="{ 'pal-main-no-header': isPalMode, 'pg-no-header': customizer.simpleUi && !globalIsMobile }"
+                :style="globalIsMobile ? 'padding-top: 0px;' : ''"
+            >
                 <div class="hr-layout">
                     <v-container
                         fluid
@@ -168,6 +209,8 @@ const openSidebar = () => {
                     <Footer />
                 </footer> -->
             </v-main>
+            <!-- 작은 화면의 아래 탭. 스스로 폭과 로그인 여부를 보고 필요할 때만 나온다. -->
+            <MobileTabBar />
         </v-app>
     </v-locale-provider>
 </template>
@@ -246,6 +289,38 @@ const openSidebar = () => {
     min-height: 100%;
     max-width: 100%;
     max-height: 100%;
+}
+
+/*
+ * 왼쪽 위 모서리. 본문 카드가 시작되기 전 여백에 얹는다.
+ * 카드가 화면 가장자리에서 20px 떨어져 있으므로 단추도 같은 만큼 띄운다 —
+ * 모서리에 딱 붙여 두면 화면에 눌러 붙은 것처럼 보인다.
+ */
+.pg-open-sidebar-btn {
+    position: fixed !important;
+    top: 6px;
+    left: 10px;
+    z-index: 1210;
+}
+
+/*
+ * 단추가 본문 위에 얹히면 제목과 붙어 보인다. 사이드바가 서랍으로 바뀌는
+ * 구간에서는 그 높이만큼 본문을 내려, 단추가 제 줄을 갖게 한다.
+ * 서랍을 여닫아도 이 여백은 그대로라 화면이 튀지 않는다.
+ */
+@media only screen and (max-width: 1279px) {
+    /*
+     * 본문 컨테이너가 이미 36px 쯤 띄워 놓는다. 단추(6~42px) 아래로 10px 만
+     * 더 벌어지면 충분하다 — 그래서 여기서 보태는 것은 16px 이다.
+     */
+    .pg-no-header {
+        padding-top: 16px !important;
+    }
+}
+
+[dir='rtl'] .pg-open-sidebar-btn {
+    left: auto;
+    right: 20px;
 }
 
 [dir='rtl'] .sidebar-open-floating-button {

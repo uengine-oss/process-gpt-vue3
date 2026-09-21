@@ -3166,24 +3166,11 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip> -->
-                                <v-tooltip :text="$t('chat.addFile')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            icon
-                                            variant="text"
-                                            class="text-medium-emphasis"
-                                            @click="
-                                                openChatMenu();
-                                                uploadImage();
-                                            "
-                                            v-bind="props"
-                                            style="width: 30px; height: 30px; margin-left: 5px"
-                                            :disabled="disableChat || isGenerationFinished"
-                                        >
-                                            <v-icon size="20">mdi-attachment</v-icon>
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
+                                <!--
+                                    클립(파일 첨부) 단추는 없앤다. 입력창의 '+' 안에 같은 것이
+                                    들어 있어 둘이 나란히 보였다 — 같은 일을 하는 단추가 둘이면
+                                    무엇이 다른지 눈으로 판단할 수 없다. 붙이는 길은 '+' 하나로 모은다.
+                                -->
                                 <v-select
                                     v-if="selectableOrchestration && isOrchestrationSelectableRoute"
                                     v-model="orchestration"
@@ -3320,7 +3307,15 @@
                             </v-btn>
                         </template>
                         <template v-else>
+                            <!--
+                                받아쓰기와 음성 에이전트를 마이크 하나로 모은다.
+                                둘 다 '말로 하는 일' 인데 단추가 나란히 있으면 무엇이 다른지
+                                누를 때까지 알 수 없다. 눌러서 고르게 하면 이름이 함께 나온다.
+                                단, 녹음 중에는 멈추는 것만 필요하므로 바로 멈춘다 —
+                                멈추려고 메뉴를 한 번 더 거치게 할 까닭이 없다.
+                            -->
                             <v-btn
+                                v-if="isMicRecording || isMicRecorderLoading"
                                 class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
@@ -3328,24 +3323,22 @@
                                 size="small"
                                 style="border-color: var(--cds-border) !important"
                                 :disabled="isGenerationFinished || isMicRecorderLoading"
-                                @click="isMicRecording ? stopVoiceRecording() : startVoiceRecording()"
+                                @click="stopVoiceRecording()"
                             >
                                 <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" :size="'16'" />
-                                <Icons v-else-if="isMicRecording" :icon="'stop'" :size="'16'" />
-                                <Icons v-else :icon="'sharp-mic'" :size="'16'" />
+                                <Icons v-else :icon="'stop'" :size="'16'" />
                             </v-btn>
 
-                            <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
+                            <v-menu v-else location="top end">
                                 <template v-slot:activator="{ props }">
                                     <v-btn
-                                        @click="enableDesktopVoice && !isGenerationFinished && (openChatMenu(), handleVoiceButtonClick())"
+                                        v-bind="props"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
                                         variant="outlined"
                                         size="small"
-                                        v-bind="props"
-                                        :disabled="!enableDesktopVoice || isGenerationFinished"
+                                        :disabled="isGenerationFinished"
                                         :color="desktopVoiceActive ? 'primary' : undefined"
                                         :style="
                                             desktopVoiceActive
@@ -3353,10 +3346,20 @@
                                                 : 'border-color: var(--cds-border) !important;'
                                         "
                                     >
-                                        <Icons :icon="'voice'" :size="'16'" />
+                                        <Icons :icon="'sharp-mic'" :size="'16'" />
                                     </v-btn>
                                 </template>
-                            </v-tooltip>
+                                <v-list density="compact" min-width="200">
+                                    <v-list-item @click="startVoiceRecording()" prepend-icon="mdi-microphone" title="음성으로 입력"></v-list-item>
+                                    <v-list-item
+                                        :disabled="!enableDesktopVoice"
+                                        :subtitle="enableDesktopVoice ? '' : '에이전트와 1:1 대화에서만'"
+                                        prepend-icon="mdi-headset"
+                                        :title="$t('chat.headset')"
+                                        @click="enableDesktopVoice && (openChatMenu(), handleVoiceButtonClick())"
+                                    ></v-list-item>
+                                </v-list>
+                            </v-menu>
 
                             <v-btn
                                 v-if="!(showStopButton || isLoading) && !isGenerationFinished"
@@ -3562,6 +3565,17 @@ export default {
         isAgentMode: Boolean,
         chatRoomId: String,
         isMobile: Boolean,
+        /**
+         * 도구 줄을 줄여서 그린다.
+         *
+         * 클립·지식 베이스·폴더 업로드·마이크·헤드셋·보내기가 한 줄에 늘어서 있으면
+         * 입력창보다 단추가 더 눈에 띈다. 켜면 클립은 바깥의 '+' 메뉴로 옮겨 가고,
+         * 쓸 수 없는 헤드셋 단추는 아예 그리지 않는다.
+         */
+        compactTools: {
+            type: Boolean,
+            default: false
+        },
         // 데스크탑 음성 에이전트 모드 활성화 여부 (ChatRoomPage에서 제어)
         desktopVoiceActive: {
             type: Boolean,
@@ -4298,6 +4312,9 @@ export default {
         resolvedPlaceholder() {
             // definition-map 에서만 긴 예시 placeholder 사용
             try {
+                // 간소화 모드에서는 예시를 늘어놓지 않는다. 두 줄짜리 안내문이
+                // 입력창을 채우고 있으면 정작 쓸 자리가 좁아 보인다.
+                if (this.compactTools) return this.$t('chat.inputMessage');
                 const path = this.$route?.path || '';
                 const isDefinitionMap = path.includes('definition-map');
                 return this.$t(isDefinitionMap ? 'chat.definitionMapInputMessage' : 'chat.inputMessage');

@@ -33,6 +33,23 @@
                     >
                         {{ instance.is_deleted ? 'DELETED' : instance.status }}
                     </v-chip>
+
+                    <!--
+                        대화와 프로세스를 갈아 끼우는 단추. 칸 안이 아니라 제목 줄에 둔다 —
+                        지금 무엇을 보고 있는지는 화면 전체의 이야기이지 대화 칸만의 일이 아니다.
+                    -->
+                    <v-btn
+                        v-if="simpleUi && !isNew"
+                        variant="text"
+                        size="x-small"
+                        class="ml-3"
+                        @click="chatView = chatView === 'chat' ? 'process' : 'chat'"
+                    >
+                        <v-icon size="16" class="mr-1">
+                            {{ chatView === 'chat' ? 'mdi-sitemap-outline' : 'mdi-message-outline' }}
+                        </v-icon>
+                        {{ chatView === 'chat' ? '프로세스 보기' : '대화로 돌아가기' }}
+                    </v-btn>
                     <div v-for="event in eventList" :key="event.tracingTag">
                         <v-btn
                             @click="fireMessage(event)"
@@ -98,6 +115,59 @@
             <div v-if="isNew" class="instance-card-Process-instance-running-box">
                 <ProcessInstanceRunning :instance="instance" @updated="handleInstanceUpdated" />
             </div>
+            <!--
+                간소화 모드: 대화 · 산출물.
+
+                세 요소 중 '목록'은 왼쪽 사이드바(채팅 · 인스턴스 목록)가 이미 맡고 있다.
+                그래서 본문에는 나머지 둘만 둔다 — 가운데에서 지시하고, 오른쪽에서 결과를 받는다.
+                탭 일곱 개로 흩어져 있던 간트 · 칸반 · 진행도 · 소스는 '프로세스 보기'로
+                필요할 때만 연다.
+
+                좁은 화면에서는 두 칸이 나란히 들어가지 않으므로 위의 단추로 하나씩 바꿔 본다.
+            -->
+            <div v-else-if="simpleUi" class="pg-three">
+                <div v-if="isMobile" class="pg-three__switch">
+                    <v-btn
+                        v-for="p in simplePanes"
+                        :key="p.key"
+                        :variant="simplePane === p.key ? 'flat' : 'text'"
+                        :color="simplePane === p.key ? 'primary' : 'default'"
+                        size="small"
+                        rounded
+                        @click="simplePane = p.key"
+                    >
+                        {{ p.label }}
+                    </v-btn>
+                </div>
+
+                <div ref="paneGrid" class="pg-three__grid" :style="gridStyle">
+                    <section class="pg-three__col pg-three__col--main" v-show="!isMobile || simplePane === 'chat'">
+                        <div class="pg-three__body">
+                            <!-- 새 창을 띄우지 않고 같은 자리를 바꿔 쓴다 — 돌아올 곳이 분명하다. -->
+                            <InstanceProgress
+                                v-if="chatView === 'process'"
+                                :key="`simple-progress-${instance?.instId}`"
+                                :instance="instance"
+                            />
+                            <InstanceTimeline v-else :instance="instance" :participantUsers="participantUsers" />
+                        </div>
+                    </section>
+
+                    <!--
+                        두 칸 사이를 잡아 끌어 넓이를 바꾼다. 대화를 길게 읽을 때와
+                        산출물을 들여다볼 때 필요한 넓이가 다르다.
+                        좁은 화면에서는 칸을 하나씩 보므로 손잡이가 없다.
+                    -->
+                    <div v-if="!isMobile" class="pg-three__resizer" @mousedown="startPaneResize" @dblclick="resetPaneRatio"></div>
+
+                    <section class="pg-three__col" v-show="!isMobile || simplePane === 'output'">
+                        <div class="pg-three__body">
+                            <InstanceOutput :instance="instance" :compact="true" />
+                        </div>
+                    </section>
+                </div>
+            </div>
+
             <div v-else style="height: 100%">
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
@@ -243,6 +313,7 @@
 // import InstanceTodo from './InstanceTodo.vue';
 import InstanceProgress from './InstanceProgress.vue';
 import InstanceWorkHistory from './InstanceWorkHistory.vue';
+import InstanceTimeline from './InstanceTimeline.vue';
 import ProcessInstanceRunning from '@/components/ProcessInstanceRunning.vue';
 import GanttChart from '@/components/apps/todolist/GanttChart.vue';
 import KanbanBoard from '@/components/apps/todolist/KanbanBoard.vue';
@@ -253,13 +324,22 @@ import InstanceSource from './InstanceSource.vue';
 import InstanceOutput from './InstanceOutput.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
+import { useCustomizerStore } from '@/stores/customizer';
 const backend = BackendFactory.createBackend();
 
+/** 대화 : 산출물 비율을 기억해 두는 자리. */
+const CHAT_RATIO_KEY = 'pg.instanceChatRatio';
+
 export default {
+    setup() {
+        // 설정 > 화면 간소화 스위치를 읽기 위한 것.
+        return { customizer: useCustomizerStore() };
+    },
     mixins: [KanbanColumnConfig],
     components: {
         InstanceProgress,
         InstanceWorkHistory,
+        InstanceTimeline,
         ProcessInstanceRunning,
         GanttChart,
         KanbanBoard,
@@ -285,10 +365,31 @@ export default {
             { value: 'output', label: 'InstanceCard.output', mobile: true }
         ],
 
+        // 간소화 모드에서 좁은 화면일 때 보여 줄 칸.
+        simplePane: 'chat',
+        simplePanes: [
+            { key: 'chat', label: '대화' },
+            { key: 'output', label: '산출물' }
+        ],
+        /** 대화 칸에 무엇을 띄울지 — 'chat' 또는 'process'. */
+        chatView: 'chat',
+
+        /**
+         * 대화가 차지하는 비율(%). 나머지가 산출물이다.
+         * 기본 70 — 읽는 자리가 대화이고, 산출물은 곁눈으로 확인하는 자리다.
+         * 사람마다 다르게 쓰므로 브라우저에 남긴다.
+         */
+        chatRatio: 70,
+        resizing: false,
+        resizeStartX: 0,
+        resizeStartRatio: 70,
+
         updatedKey: 0,
         deleteDialog: false,
         participantUsers: [],
         parentRedirectWatchRef: null,
+        /** 이 인스턴스 자체(이름 · 상태)를 보는 구독. 남이 진행시키면 여기로 온다. */
+        instanceWatchRef: null,
         workListWatchRefs: [],
         callActivityIds: new Set()
     }),
@@ -360,17 +461,38 @@ export default {
         }
     },
     mounted() {
+        this.watchThisInstance();
+        try {
+            const saved = parseInt(localStorage.getItem(CHAT_RATIO_KEY) || '', 10);
+            if (!isNaN(saved) && saved >= 35 && saved <= 85) this.chatRatio = saved;
+        } catch (e) {
+            /* 저장소를 막아 둔 환경 */
+        }
+
         this.tab = this.resolveInitialTab('workhistory');
         this.init({ noLoading: true });
 
         this.EventBus.on('todolist-updated', this.handleTodolistUpdated);
     },
     unmounted() {
+        if (this.instanceWatchRef) {
+            backend.watchOff(this.instanceWatchRef);
+            this.instanceWatchRef = null;
+        }
         this.clearParentRedirectWatch();
         this.clearWorkListWatch();
         this.EventBus.off('todolist-updated', this.handleTodolistUpdated);
     },
     computed: {
+        /** 대화 : 산출물 = chatRatio : 나머지. 손잡이 자리(6px)는 사이에 둔다. */
+        gridStyle() {
+            if (this.isMobile) return {};
+            return { gridTemplateColumns: `minmax(0, ${this.chatRatio}fr) 6px minmax(0, ${100 - this.chatRatio}fr)` };
+        },
+        /** 설정 > 화면 간소화. 켜면 탭 대신 목록 · 대화 · 산출물 세 칸으로 본다. */
+        simpleUi() {
+            return !!this.customizer.simpleUi;
+        },
         id() {
             if (this.$route.params.instId) {
                 return this.$route.params.instId.replace(/_DOT_/g, '.');
@@ -430,6 +552,56 @@ export default {
         }
     },
     methods: {
+        /**
+         * 이 인스턴스가 바뀌면 화면을 다시 읽는다.
+         *
+         * 업무(todolist)는 대화 쪽에서 이미 보고 있지만, 인스턴스의 이름과 상태는
+         * 따로 있는 표라 아무도 보고 있지 않았다 — 남이 마지막 단계를 끝내도
+         * 이쪽 제목은 RUNNING 그대로였다.
+         */
+        async watchThisInstance() {
+            if (!this.id) return;
+            this.instanceWatchRef = await backend.watchInstance(this.id, (latest) => {
+                if (latest) this.instance = { ...this.instance, ...latest };
+            });
+        },
+
+        /** 손잡이를 잡는다. /chats 의 리사이즈 핸들과 같은 방식이다. */
+        startPaneResize(e) {
+            this.resizing = true;
+            this.resizeStartX = e.clientX;
+            this.resizeStartRatio = this.chatRatio;
+            document.addEventListener('mousemove', this.doPaneResize);
+            document.addEventListener('mouseup', this.stopPaneResize);
+            e.preventDefault();
+        },
+
+        doPaneResize(e) {
+            if (!this.resizing) return;
+            const box = this.$refs.paneGrid;
+            if (!box) return;
+            const next = this.resizeStartRatio + ((e.clientX - this.resizeStartX) / box.clientWidth) * 100;
+            // 어느 쪽도 사라지지 않게 막는다 — 너무 좁으면 어차피 읽을 수 없다.
+            this.chatRatio = Math.min(85, Math.max(35, next));
+        },
+
+        stopPaneResize() {
+            this.resizing = false;
+            document.removeEventListener('mousemove', this.doPaneResize);
+            document.removeEventListener('mouseup', this.stopPaneResize);
+            try {
+                localStorage.setItem(CHAT_RATIO_KEY, String(Math.round(this.chatRatio)));
+            } catch (e) {
+                /* 저장하지 못해도 이번 화면에는 적용된다 */
+            }
+        },
+
+        /** 손잡이를 두 번 누르면 기본 비율로 돌아간다. */
+        resetPaneRatio() {
+            this.chatRatio = 70;
+            this.stopPaneResize();
+        },
+
         resolveInitialTab(defaultTab = 'workhistory') {
             const requestedTab = this.$route.query?.tab;
             if (typeof requestedTab === 'string' && this.tabItems.some((item) => item.value === requestedTab)) {
@@ -543,6 +715,17 @@ export default {
                         }
                     } else {
                         me.instance = serverInstance;
+                    }
+
+                    // 업무는 있는데 인스턴스가 없는 경우가 있다 — 엔진이 아직 줄을 남기기 전이거나,
+                    // 지워진 인스턴스의 업무가 남은 경우다. 그때 빈 화면을 내밀면 고장으로 보이므로,
+                    // 어느 업무에서 왔는지 알면 그 업무 화면으로 돌려보낸다.
+                    if (!me.instance) {
+                        const fromTask = me.$route.query && me.$route.query.task;
+                        if (fromTask) {
+                            me.$router.replace(`/todolist/${fromTask}`);
+                            return;
+                        }
                     }
 
                     if (me.instance) {
@@ -861,5 +1044,102 @@ export default {
     justify-content: flex-start !important;
     text-align: left;
     min-height: 48px;
+}
+
+/*
+ * 간소화 인스턴스 화면 — 목록 · 대화 · 산출물.
+ *
+ * 높이를 뷰포트에서 직접 계산한다. 위쪽 조상들(v-card 안의 래퍼)에 높이가
+ * 없어서 백분율이 이어지지 않기 때문이다. 카드 자체가 쓰는 계산식
+ * (.is-work-height)에 제목 줄 높이를 더 뺀 값이다.
+ */
+.pg-three {
+    --pg-three-chrome: 240px;
+    padding: 0 12px 12px;
+}
+
+.pg-three__switch {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 0;
+}
+
+.pg-three__grid {
+    display: grid;
+    /* 기본 7 : 3. 실제 값은 gridStyle 이 덮어쓴다. */
+    grid-template-columns: minmax(0, 70fr) 6px minmax(0, 30fr);
+    gap: 6px;
+    height: calc(100vh - var(--pg-three-chrome));
+    min-height: 360px;
+}
+
+.pg-three__col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgb(var(--v-theme-surface));
+}
+
+/*
+ * 대화는 카드 본문 그 자체다. 테두리를 두르면 카드 안에 카드가 생겨
+ * 선이 두 겹으로 보인다. 옆의 산출물만 따로 담긴 것으로 두른다.
+ */
+.pg-three__col:not(.pg-three__col--main) {
+    border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+}
+
+
+
+.pg-three__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+/*
+ * 안에 들어가는 화면들은 원래 화면 높이(100vh 계산식)를 스스로 정한다.
+ * 칸 안에 넣으면 그 값이 칸보다 커져서 아래쪽 — 채팅 입력줄 — 이 잘려 나간다.
+ * 칸 안에서는 칸 높이를 따르게 한다.
+ */
+.pg-three__body > .v-card,
+.pg-three__body .mainbox,
+.pg-three__body .right-part,
+.pg-three__body .chat-info-view-wrapper-chats {
+    height: 100% !important;
+    min-height: 0 !important;
+}
+
+/* 두 칸 사이의 손잡이. 평소에는 옅은 선이고, 올리면 또렷해진다. */
+.pg-three__resizer {
+    align-self: stretch;
+    width: 6px;
+    border-radius: 3px;
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.15s ease;
+}
+
+.pg-three__resizer:hover,
+.pg-three__resizer:active {
+    background: rgba(var(--v-theme-primary), 0.35);
+}
+
+@media (max-width: 768px) {
+    /* 한 칸씩 본다 — 위의 단추로 고른다. */
+    .pg-three {
+        --pg-three-chrome: 200px;
+        padding: 0 8px 8px;
+    }
+
+    .pg-three__grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        /* 보이는 칸 하나가 남은 높이를 다 쓰게 한다 — 숨긴 칸은 줄을 차지하지 않는다. */
+        grid-auto-rows: minmax(0, 1fr);
+    }
 }
 </style>

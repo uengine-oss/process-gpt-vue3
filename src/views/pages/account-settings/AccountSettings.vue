@@ -122,7 +122,24 @@
                             <v-icon class="mr-2" size="16">mdi-view-dashboard-outline</v-icon>{{ $t('headerMenu.layoutSetting') }}
                         </v-btn>
 
-                        <template v-if="admin">
+                        <!--
+                            관리자 갈래는 접어 둔다.
+
+                            휴대폰 폭에서 이 버튼들이 세 줄을 차지해 정작 계정·테마가
+                            화면 밖으로 밀렸다. 지우지는 않는다 — 급할 때 여기서 들어갈
+                            길은 남겨 두고, 평소에는 접어 둔다.
+                        -->
+                        <v-btn
+                            v-if="admin"
+                            variant="text"
+                            color="default"
+                            size="small"
+                            @click="showAdminTools = !showAdminTools"
+                        >
+                            <v-icon class="mr-2" size="16">{{ showAdminTools ? 'mdi-chevron-up' : 'mdi-cog-outline' }}</v-icon>관리
+                        </v-btn>
+
+                        <template v-if="admin && showAdminTools">
                             <v-btn
                                 variant="text"
                                 color="default"
@@ -227,7 +244,14 @@
                             </template>
                         </template>
 
-                        <v-btn v-if="!gs" variant="text" color="default" size="small" @click="goToTenantManage">
+                        <!-- 조직 만들기·전환은 PC 에서 하는 일이다. '관리' 안으로 넣는다. -->
+                        <v-btn
+                            v-if="!gs && showAdminTools"
+                            variant="text"
+                            color="default"
+                            size="small"
+                            @click="goToTenantManage"
+                        >
                             <Icons :icon="'office'" :size="16" class="mr-2" />{{ $t('accountTab.tenantManage') }}
                         </v-btn>
                     </div>
@@ -414,6 +438,8 @@ export default {
     },
     data() {
         return {
+            /** 작은 화면에서 관리자 갈래를 펼쳤는지. 기본은 접힘. */
+            showAdminTools: false,
             tab: '',
             superAdmin: localStorage.getItem('role') === 'superAdmin',
             tabItems: [
@@ -450,7 +476,12 @@ export default {
             return window.$gs;
         },
         isMobile() {
-            return window.innerWidth <= 768;
+            /*
+             * window.innerWidth 를 그대로 읽으면 한 번 계산되고 끝난다 — 창을
+             * 좁히거나 넓혀도 새로고침 전까지 레이아웃이 그대로였다.
+             * globalIsMobile 은 main.ts 가 resize 마다 갱신하는 반응형 값이다.
+             */
+            return this.globalIsMobile ? this.globalIsMobile.value : window.innerWidth <= 768;
         }
     },
     watch: {

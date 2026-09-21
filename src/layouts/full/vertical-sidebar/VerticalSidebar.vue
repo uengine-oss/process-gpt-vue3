@@ -38,7 +38,9 @@
         <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc">
             <Logo :style="logoPadding" />
             <v-spacer></v-spacer>
-            <v-tooltip v-if="!pal && isAdmin" :text="$t('processDefinitionMap.title')" location="bottom">
+            <SimpleSidebarTools v-if="customizer.simpleUi" row="search" />
+            <SimpleSidebarTools v-if="customizer.simpleUi" row="nav" />
+            <v-tooltip v-if="!pal && isAdmin && !customizer.simpleUi" :text="$t('processDefinitionMap.title')" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn
                         icon
@@ -68,10 +70,22 @@
             </v-tooltip>
         </div>
         <div class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
-            <v-row class="ma-0 pa-0" align="center">
+            <v-row class="ma-0 pa-0 flex-nowrap" align="center">
                 <Logo />
                 <v-spacer></v-spacer>
-                <Icons @click.stop="customizer.SET_SIDEBAR_DRAWER" style="margin-top: -8px; cursor: pointer" :icon="'close'" :size="16" />
+                <!--
+                    1280px 아래에서는 사이드바가 서랍이라 이 줄이 대신 쓰인다.
+                    검색과 '⋯' 를 여기에도 두지 않으면, 서랍을 열어도 갈 곳이 없다.
+                -->
+                <SimpleSidebarTools v-if="customizer.simpleUi" row="search" />
+                <SimpleSidebarTools v-if="customizer.simpleUi" row="nav" />
+                <Icons
+                    v-if="!customizer.simpleUi"
+                    @click.stop="customizer.SET_SIDEBAR_DRAWER"
+                    style="margin-top: -8px; margin-left: 8px; cursor: pointer"
+                    :icon="'close'"
+                    :size="16"
+                />
             </v-row>
         </div>
         <!-- ---------------------------------------------- -->
@@ -427,7 +441,9 @@
             <Footer class="mt-2" />
         </div>
         <div class="pa-4 px-4 bg-containerBg">
-            <ExtraBox />
+            <!-- 간소화에서는 계정 줄 하나로 — 누르면 설정 · 로그아웃이 나온다. -->
+            <SimpleSidebarTools v-if="customizer.simpleUi" row="account" class="hide-menu" />
+            <ExtraBox v-else />
         </div>
     </v-navigation-drawer>
 
@@ -479,6 +495,7 @@ import NavCollapse from './NavCollapse/NavCollapse.vue';
 import NavGroup from './NavGroup/index.vue';
 import NavItem from './NavItem/index.vue';
 import ExtraBox from './extrabox/ExtraBox.vue';
+import SimpleSidebarTools from './SimpleSidebarTools.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { PROC_DEF_LIST_COLUMNS } from '@/components/api/ProcessGPTBackend';
 
@@ -501,6 +518,7 @@ export default {
         SidebarUserList,
         ExpandableList,
         Logo,
+        SimpleSidebarTools,
         NavCollapse,
         NavGroup,
         NavItem,

@@ -18,7 +18,7 @@
     'use strict';
 
     var TABS = [
-        { name: 'chat', label: '채팅', path: '/chats', icon: 'M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.4 8.4 0 0 1 8.4-8.4h.5a8.4 8.4 0 0 1 8.1 8.1z' },
+        { name: 'chat', label: '채팅', path: '/definition-map', alt: '/chats', icon: 'M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.4 8.4 0 0 1 8.4-8.4h.5a8.4 8.4 0 0 1 8.1 8.1z' },
         { name: 'tasks', label: '할 일', path: '/todolist', icon: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11' },
         { name: 'me', label: '내 정보', path: '/account-settings', icon: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z' }
     ];
@@ -30,6 +30,8 @@
      * 연다. 로그인·조직 선택은 열어 두어야 한다 — 막으면 처음 들어올 수가 없다.
      */
     var ALLOWED = [
+        // 첫 탭이 닿는 곳. 간소화 화면에서는 빈 입력창 하나라 작은 화면에도 맞는다.
+        '/definition-map',
         '/chats',
         // 대화 하나를 여는 화면. 목록에서 고르면 이리로 온다.
         '/chat',
@@ -45,14 +47,15 @@
     ];
 
     /** 어디로도 못 갈 때 돌아갈 곳. */
-    var HOME = '/chats';
+    var HOME = '/definition-map';
 
     function path() {
         return location.pathname || '/';
     }
 
     function allowed(p) {
-        // 루트는 포털이 알아서 로그인이나 조직으로 보낸다. 막지 않는다.
+        // 루트는 막지 않는다. 로그인 전이라면 포털이 로그인·조직으로 보낸다.
+        // 로그인 뒤에는 guard 가 첫 화면으로 옮긴다.
         if (p === '/' || p === '') return true;
         for (var i = 0; i < ALLOWED.length; i++) {
             if (p === ALLOWED[i] || p.indexOf(ALLOWED[i] + '/') === 0) return true;
@@ -117,6 +120,14 @@
     function render() {
         document.body.classList.add('pg-shell');
 
+        // 포털이 스스로 아래 탭을 그리면(작은 화면 규칙) 껍데기는 손을 뗀다.
+        // 둘 다 그리면 탭이 두 줄로 겹쳐 화면을 갉아먹는다. 탭이 사라지는 것이
+        // 아니라 **그리는 쪽이 하나로 정해지는** 것이다.
+        if (document.querySelector('.pg-tabbar')) {
+            hideBar();
+            return;
+        }
+
         var bar = document.getElementById('pg-tabs');
         if (!bar) {
             bar = document.createElement('nav');
@@ -170,7 +181,15 @@
 
     /** 허용하지 않은 곳이면 되돌린다. */
     function guard() {
-        if (allowed(path())) return false;
+        // 로그인한 뒤의 루트는 홍보 페이지다. 앱을 켜는 사람은 그것을 보려는 게
+        // 아니므로 첫 화면을 채팅 자리로 옮긴다 — 아래 탭의 첫 칸을 누른 것과 같다.
+        // (로그인 전에는 여기까지 오지 않는다. sync 가 먼저 돌려보낸다.)
+        var here = path();
+        if (here === '/' || here === '') {
+            go(HOME);
+            return true;
+        }
+        if (allowed(here)) return false;
         go(HOME);
         return true;
     }
@@ -277,6 +296,11 @@
     // 포털이 화면을 다시 그리면 지웠던 링크가 되살아난다. 짧게 되풀이한다.
     setInterval(function () {
         if (!signedIn()) return;
+        // 포털의 아래 탭은 Vue 가 올라온 뒤에야 생긴다. 내가 먼저 그렸다면
+        // 그때는 없었던 것이므로, 나중에 나타나는지를 계속 살핀다 —
+        // 한 번만 보고 말면 탭이 두 줄로 겹쳐 화면을 갉아먹는다.
+        if (document.querySelector('.pg-tabbar')) hideBar();
+        else render();
         pruneLinks();
         pruneSettings();
     }, 1200);

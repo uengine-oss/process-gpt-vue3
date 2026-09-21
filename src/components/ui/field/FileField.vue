@@ -40,6 +40,11 @@
                     >편집</v-btn
                 >
             </div>
+            <!--
+                볼 수 없는 이유를 말해 준다. 전에는 두 버튼이 그냥 회색으로 눠있어,
+                누르는 사람은 고장인지 준비 중인지 알 길이 없었다.
+            -->
+            <div v-if="!canPreview" class="hwpx-hint">변환본이 아직 없어 미리보기·편집은 할 수 없습니다. 내려받기는 가능합니다.</div>
         </div>
 
         <!-- 비-hwpx 파일: 제출 후(readonly)만 다운로드 카드 표시 -->
@@ -73,6 +78,7 @@
 import { commonSettingInfos } from './CommonSettingInfos.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import HwpxEditorDialog from './HwpxEditorDialog.vue';
+import { fileNameOf, isWorkspacePath, withWorkspaceUrl } from '@/utils/workspaceFile';
 
 export default {
     components: { HwpxEditorDialog },
@@ -218,15 +224,21 @@ export default {
             }
         },
         captureHwpxMeta(value) {
+            // 에이전트가 남긴 작업 공간 경로(/workspace/…)는 브라우저가 바로 열 수 없다.
+            // 그대로 두면 다운로드를 눌렀을 때 '찾을 수 없다'로 끝난다.
+            const raw = value;
+            value = withWorkspaceUrl(value);
             // 폼값에서 hwpx 미리보기/편집에 필요한 메타(html_url·file_url·name)를 뽑아둔다.
             if (value && typeof value === 'object') {
                 this.hwpxHtmlUrl = value.html_url || value.htmlUrl || '';
                 this.hwpxFileUrl = value.path || value.fullPath || value.file_path || '';
                 this.hwpxName = value.name || this.guessNameFromPath(this.hwpxFileUrl);
             } else if (typeof value === 'string') {
-                if (value.split('?')[0].toLowerCase().endsWith('.hwpx')) {
+                // 이름은 바꾸기 전 값에서 뽑는다 — 바뀐 주소의 끝은 질의 문자라 이름이 아니다.
+                const name = this.guessNameFromPath(typeof raw === 'string' ? raw : value);
+                if (String(name).toLowerCase().endsWith('.hwpx')) {
                     this.hwpxFileUrl = value;
-                    this.hwpxName = this.guessNameFromPath(value);
+                    this.hwpxName = name;
                 }
             }
         },
@@ -264,6 +276,10 @@ export default {
             });
         },
         async applyModelValue(value) {
+            // 작업 공간 경로는 바로 받을 수 있는 주소로 바꿔 두고 시작한다.
+            // 이름은 원래 값에만 남아 있으므로 먼저 떠 둔다.
+            const workspaceName = isWorkspacePath(value) ? fileNameOf(String(value)) : '';
+            value = withWorkspaceUrl(value);
             this.captureHwpxMeta(value);
             const currentPath =
                 this.selectedFiles && this.selectedFiles.length > 0
@@ -328,7 +344,7 @@ export default {
 
             if (value && typeof value === 'string') {
                 try {
-                    const displayName = this.guessNameFromPath(value);
+                    const displayName = workspaceName || this.guessNameFromPath(value);
                     if (this.isRemoteUrl(value)) {
                         const remoteFile = await this.fetchFileFromUrl(value, displayName);
                         if (remoteFile) {
@@ -505,6 +521,11 @@ export default {
 }
 .form-file-field .file-link-card {
     margin-top: 10px;
+}
+.form-file-field .hwpx-hint {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .hwpx-panel {
     margin-top: 10px;
