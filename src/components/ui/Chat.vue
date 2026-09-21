@@ -3460,7 +3460,13 @@ import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
 import HumanFeedbackPanel from './HumanFeedbackPanel.vue';
 import axios from 'axios';
-import { artifactIdOf, reissueArtifactUrl, usableArtifactUrl } from '@/utils/artifactLinks';
+import {
+    artifactIdOf,
+    artifactIdFromUrl,
+    fileNameFromArtifactId,
+    reissueArtifactUrl,
+    usableArtifactUrl
+} from '@/utils/artifactLinks';
 import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
 import SummaryButton from '@/components/ui/SummaryButton.vue';
@@ -3821,6 +3827,10 @@ export default {
     },
     mounted() {
         var me = this;
+        // 답변 본문에 박힌 산출물 링크는 그 답변을 쓰던 순간의 주소다. 한 시간이 지나면
+        // 죽는다. 눌렀을 때 살려 내려면 여기서 가로채야 한다.
+        this._artifactLinkClickHandler = (event) => this.handleArtifactLinkClick(event);
+        document.addEventListener('click', this._artifactLinkClickHandler);
         mermaid.initialize({
             startOnLoad: false,
             theme: 'default',
@@ -3893,6 +3903,10 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.handleResize);
+        if (this._artifactLinkClickHandler) {
+            document.removeEventListener('click', this._artifactLinkClickHandler);
+            this._artifactLinkClickHandler = null;
+        }
         if (this._autocompleteOutsideClickHandler) {
             document.removeEventListener('click', this._autocompleteOutsideClickHandler);
         }
@@ -5264,6 +5278,37 @@ export default {
         /** 지금 쓸 수 있는 주소. 만료됐으면 file_id 로 다시 발급받는다. */
         async usableArtifactUrl(fileObj) {
             return await usableArtifactUrl(fileObj, this.requestArtifactUrl);
+        },
+        /**
+         * 답변 본문의 산출물 링크를 누르면 주소를 새로 받아 내려준다.
+         *
+         * 본문 링크에는 레코드가 없다 — `file_id` 도 만료 시각도 들고 있지 않다. 하지만
+         * 주소의 경로가 객체 키를 그대로 말하고 있어서 거기서 되찾을 수 있다. 그래서
+         * 첨부 칩이 없는 옛 메시지에서도 이 길로 파일을 받을 수 있다.
+         *
+         * 살아 있는지 물어보지 않고 항상 새로 받는다. 본문 링크는 쓰인 순간의 눈금이라
+         * 대개 이미 지났고, 죽은 주소를 새 탭에 여는 것은 오류 화면만 보여 준다.
+         */
+        async handleArtifactLinkClick(event) {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey) return;
+            const anchorEl = event.target?.closest?.('a[href]');
+            if (!anchorEl) return;
+            const fileId = artifactIdFromUrl(anchorEl.getAttribute('href'));
+            if (!fileId) return;
+
+            event.preventDefault();
+            const fresh = await this.reissueArtifactUrl({ file_id: fileId });
+            if (!fresh) {
+                // 발급받지 못하면 원래 하던 대로 둔다 — 지어낸 주소로 보내지 않는다.
+                this.emitOpenExternalUrl(anchorEl.getAttribute('href'));
+                return;
+            }
+            // 같은 링크를 또 눌러도 되도록 주소를 갈아 끼운다.
+            anchorEl.setAttribute('href', fresh);
+            const label = (anchorEl.textContent || '').trim();
+            const name = label && !/^https?:/i.test(label) ? label : fileNameFromArtifactId(fileId);
+            const ok = await this.downloadAttachment(fresh, name, { silent: true });
+            if (!ok) this.emitOpenExternalUrl(fresh);
         },
         /** 산출물을 새 탭에서 연다. 만료된 주소면 먼저 다시 발급받는다. */
         async openMessageFile(fileObj) {

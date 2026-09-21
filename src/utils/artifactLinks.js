@@ -61,6 +61,46 @@ export async function reissueArtifactUrl(fileObj, request) {
     return fresh;
 }
 
+/**
+ * 서명 주소의 경로에서 객체 키를 되찾는다.
+ *
+ *   .../storage/v1/object/sign/artifacts/artifacts/<uuid>.docx?token=...
+ *                              └ 버킷 ┘ └──────── 키 ────────┘
+ *
+ * 답변 본문에 박힌 링크는 그 답변을 쓰던 순간의 주소다. 한 시간이 지나면 죽고, 레코드와
+ * 달리 `file_id` 를 들고 있지 않다. 하지만 주소 자체가 키를 말하고 있으므로 거기서
+ * 되찾으면 된다 — 그래야 옛 메시지의 링크도 되살릴 수 있다.
+ *
+ * `artifacts/` 로 시작하는 키만 산출물로 본다. 공개 버킷의 주소는 만료되지 않으므로
+ * 건드릴 이유가 없다.
+ */
+export function artifactIdFromUrl(url) {
+    const text = String(url || '');
+    const marker = '/object/sign/';
+    const at = text.indexOf(marker);
+    if (at < 0) return '';
+    // 주소만 보면 된다 — 창(window)도 DOM 도 필요 없다.
+    const afterBucket = text.slice(at + marker.length).split(/[?#]/)[0];
+    const slash = afterBucket.indexOf('/');
+    if (slash < 0) return '';
+    let key;
+    try {
+        key = decodeURIComponent(afterBucket.slice(slash + 1));
+    } catch (e) {
+        key = afterBucket.slice(slash + 1);
+    }
+    return key.startsWith('artifacts/') ? key : '';
+}
+
+/** 객체 키 끝의 파일 이름. 링크 글자가 주소뿐일 때 쓸 이름이다. */
+export function fileNameFromArtifactId(fileId) {
+    return (
+        String(fileId || '')
+            .split('/')
+            .pop() || 'download'
+    );
+}
+
 /** 지금 쓸 수 있는 주소. 만료됐으면 다시 발급받아 돌려준다. */
 export async function usableArtifactUrl(fileObj, request) {
     const current = artifactUrlOf(fileObj);
