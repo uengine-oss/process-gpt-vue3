@@ -19,6 +19,19 @@
         </div>
 
         <div class="kbt__list" @contextmenu.prevent="openMenu($event, null)">
+            <!-- 루트 행 — 최상위에 폴더를 통째로 올리는 자리. 항상 보여야 돌아올 길이 있다. -->
+            <div
+                class="kbt__row kbt__row--root"
+                :class="{ 'is-active': !current }"
+                style="padding-left: 8px"
+                title="지식베이스 전체"
+                @click="$emit('select', '')"
+            >
+                <span class="kbt__caret kbt__caret--spacer" />
+                <v-icon size="14" color="primary">mdi-map-outline</v-icon>
+                <span class="kbt__name">전체</span>
+            </div>
+
             <div v-if="creating.active && creating.parent === ''" class="kbt__row kbt__row--input" style="padding-left: 8px">
                 <span class="kbt__caret kbt__caret--spacer" />
                 <v-icon size="14" color="#ffa726">mdi-folder-plus</v-icon>
@@ -95,7 +108,7 @@
 </template>
 
 <script>
-import { DOC_STATES } from './kbRoles';
+import { DOC_STATES } from './kbConstants';
 
 export default {
     name: 'KbFolderTree',
@@ -231,6 +244,15 @@ export default {
 }
 .kbt__row.is-active {
     background: rgba(var(--v-theme-primary), 0.1);
+}
+.kbt__row--root {
+    margin-bottom: 4px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--cds-border);
+    border-radius: 4px 4px 0 0;
+}
+.kbt__row--root .kbt__name {
+    font-weight: 600;
 }
 .kbt__caret {
     flex: 0 0 16px;

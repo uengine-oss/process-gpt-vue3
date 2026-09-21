@@ -16,7 +16,7 @@
             <div class="kfp__card kfp__card--root">
                 <div class="kfp__card-head">
                     <v-icon size="18" color="primary">mdi-map-search-outline</v-icon>
-                    <span class="kfp__card-title">{{ role.label }} 지도</span>
+                    <span class="kfp__card-title">지식 지도</span>
                 </div>
                 <p class="kfp__lead">
                     폴더마다 무엇이 있고 무엇부터 읽어야 하는지가 카드로 정리됩니다. 채팅에서 폴더를 고르면 에이전트가 이 지도를 보고
@@ -34,8 +34,10 @@
                         <div v-else class="kfp__sub-summary kfp__sub-summary--empty">아직 폴더 카드가 없습니다</div>
                     </button>
                 </div>
-                <div v-else class="kfp__empty">왼쪽에서 폴더를 만들고 문서를 올리면 여기에 지도가 생깁니다.</div>
+                <div v-else class="kfp__empty">폴더를 통째로 올리면 여기에 지도가 생깁니다.</div>
             </div>
+
+            <KbUploadZone folder-path="" class="mt-3" @uploaded="$emit('uploaded', $event)" @notify="$emit('notify', $event)" />
         </template>
 
         <template v-else>
@@ -79,10 +81,10 @@
                             :key="name"
                             type="button"
                             class="kfp__start-chip"
-                            :disabled="!docByName(name)"
-                            @click="docByName(name) && $emit('open-doc', docByName(name))"
+                            :disabled="!startTarget(name)"
+                            @click="openStart(name)"
                         >
-                            <v-icon size="13">mdi-file-document-outline</v-icon>{{ name }}
+                            <v-icon size="13">{{ isFolderRef(name) ? 'mdi-folder-outline' : 'mdi-file-document-outline' }}</v-icon>{{ name }}
                         </button>
                     </div>
                 </template>
@@ -111,7 +113,7 @@
                 </button>
             </div>
 
-            <KbUploadZone :folder-path="folderPath" :role="role.value" class="mt-3" @uploaded="$emit('uploaded', $event)" @notify="$emit('notify', $event)" />
+            <KbUploadZone :folder-path="folderPath" class="mt-3" @uploaded="$emit('uploaded', $event)" @notify="$emit('notify', $event)" />
 
             <div class="kfp__docs">
                 <div class="kfp__docs-head">
@@ -128,7 +130,6 @@
 import KbUploadZone from './KbUploadZone.vue';
 import KbDocList from './KbDocList.vue';
 import KbReadiness from './KbReadiness.vue';
-import { roleMeta } from './kbRoles';
 import { formatDate, leafOf, ancestorsOf } from './kbFormat';
 
 export default {
@@ -136,7 +137,6 @@ export default {
     components: { KbUploadZone, KbDocList, KbReadiness },
     props: {
         folderPath: { type: String, default: '' },
-        roleValue: { type: String, default: 'content' },
         // /folders/open 응답
         data: { type: Object, default: null },
         // 트리의 이 폴더 노드(readiness, nTotal)
@@ -149,9 +149,6 @@ export default {
     },
     emits: ['select', 'open-doc', 'uploaded', 'notify', 'rebuild-card', 'query'],
     computed: {
-        role() {
-            return roleMeta(this.roleValue);
-        },
         leaf() {
             return leafOf(this.folderPath);
         },
@@ -184,6 +181,22 @@ export default {
         formatDate,
         docByName(name) {
             return this.docs.find((d) => d.file_name === name) || null;
+        },
+        // start_with 는 문서 파일명 또는 하위 폴더명('이름/')이다.
+        isFolderRef(name) {
+            return String(name || '').endsWith('/');
+        },
+        startTarget(name) {
+            if (!this.isFolderRef(name)) return this.docByName(name);
+            const leaf = String(name).replace(/\/+$/, '');
+            const path = [this.folderPath, leaf].filter(Boolean).join('/');
+            return this.subfolders.some((s) => s.folder_path === path) ? path : null;
+        },
+        openStart(name) {
+            const target = this.startTarget(name);
+            if (!target) return;
+            if (this.isFolderRef(name)) this.$emit('select', target);
+            else this.$emit('open-doc', target);
         }
     }
 };

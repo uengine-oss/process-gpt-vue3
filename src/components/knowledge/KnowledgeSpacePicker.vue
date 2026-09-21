@@ -36,32 +36,6 @@
             </v-tabs>
             <v-divider />
 
-            <!-- 역할(doc_role) 필터 — Storage 탭에서만. 자료 종류별로 좁혀 보기. -->
-            <div v-if="activeSource === 'upload'" class="ksp-role-bar">
-                <button
-                    v-for="r in roleFilterOptions"
-                    :key="r.value"
-                    class="ksp-role-chip"
-                    :class="{ 'is-active': currentRole === r.value, [`is-${r.value}`]: true }"
-                    @click="currentRole = r.value"
-                >
-                    <v-icon size="13" class="mr-1">{{ r.icon }}</v-icon>
-                    <span>{{ r.label }}</span>
-                    <span class="ksp-role-chip-count">{{ roleCounts[r.value] || 0 }}</span>
-                </button>
-            </div>
-
-            <!-- 자동 활용 안내 배너 — 사전/양식이 선택돼 있으면 사용자가 의미를 알도록 -->
-            <div v-if="autoUseHints.length > 0" class="ksp-auto-banner">
-                <v-icon size="14" color="primary" class="mr-1">mdi-auto-fix</v-icon>
-                <span class="text-caption">
-                    <span v-for="(h, i) in autoUseHints" :key="h.role">
-                        <span v-if="i > 0"> · </span>
-                        <strong>{{ h.label }} {{ h.count }}개</strong> {{ h.action }}
-                    </span>
-                </span>
-            </div>
-
             <div class="ksp-toolbar">
                 <v-text-field
                     v-model="search"
@@ -148,13 +122,6 @@
                         <div class="ksp-file-body">
                             <div class="ksp-file-name">
                                 {{ f.name }}
-                                <span
-                                    v-if="f.docRole && f.docRole !== 'content'"
-                                    class="ksp-role-badge"
-                                    :class="`is-${f.docRole}`"
-                                >
-                                    {{ roleMeta(f.docRole).short }}
-                                </span>
                                 <span class="ksp-status-badge" :class="`is-${f.indexStatus}`" v-if="f.indexStatus">
                                     {{ statusLabel(f.indexStatus) }}
                                 </span>
@@ -211,7 +178,7 @@
 
             <div class="ksp-footer">
                 <span v-if="!loading && !error && hasStructure" class="text-caption text-medium-emphasis">
-                    Storage · {{ roleIndexedTotal }}개 문서 · {{ folderCount }}개 폴더
+                    Storage · {{ indexedTotal }}개 문서 · {{ folderCount }}개 폴더
                 </span>
                 <v-spacer />
                 <v-btn variant="text" @click="$emit('update:modelValue', false)">취소</v-btn>
@@ -265,7 +232,6 @@ function mapDetail(d) {
         indexStatus: d.index_status,
         indexError: d.index_error,
         indexedAt: d.indexed_at,
-        docRole: d.doc_role || 'content'
     };
 }
 
@@ -341,8 +307,8 @@ export default {
             // lazy 누적 — 펼치거나 검색해 로드된 파일만 담긴다(전체 아님)
             allFiles: [],
             loadedFolders: new Set(), // 직속 파일을 이미 로드한 폴더 경로
-            folders: [], // [{ folder_path, doc_role }] — 경량 폴더 목록
-            folderCounts: { role_totals: {}, folder_direct: {}, folder_direct_indexed: {}, status_totals: {} },
+            folders: [], // [{ folder_path }] — 경량 폴더 목록
+            folderCounts: { total: 0, folder_direct: {}, folder_direct_indexed: {}, status_totals: {} },
             expandedPaths: new Set(),
             selectedKeysSet: new Set(),
             // key → emit 형태 doc. lazy 로드 사이에도 선택을 보존해 confirm 시 누락되지 않게 한다.
@@ -354,15 +320,6 @@ export default {
             searchToken: 0,
             searchTimer: null,
             activeSource: 'upload', // 'drive' | 'upload' — Google Drive 탭 숨김으로 항상 upload
-            currentRole: 'content',
-            roleFilterOptions: [
-                { value: 'content',   label: '일반',     icon: 'mdi-file-document-outline',   short: '일반' },
-                { value: 'glossary',  label: '용어 사전', icon: 'mdi-book-alphabet',           short: '사전' },
-                { value: 'template',  label: '양식',     icon: 'mdi-file-document-edit-outline', short: '양식' },
-                { value: 'reference', label: '참조',     icon: 'mdi-bookmark-outline',        short: '참조' },
-                { value: 'dataset',   label: '데이터',    icon: 'mdi-table',                   short: '데이터' },
-                { value: 'legal_review', label: '검토 사례', icon: 'mdi-gavel',                  short: '검토' }
-            ]
         };
     },
     computed: {
@@ -383,28 +340,20 @@ export default {
             return parts.length ? parts.join(' · ') : '0';
         },
         counts() {
-            const rt = this.folderCounts.role_totals || {};
-            const upload = Object.values(rt).reduce((s, n) => s + (n || 0), 0);
-            return { drive: 0, upload };
+            return { drive: 0, upload: this.folderCounts.total || 0 };
         },
-        // 역할별 총계 (role 칩 카운트) — 경량 카운트 엔드포인트 기준(전역 정확)
-        roleCounts() {
-            return this.folderCounts.role_totals || {};
-        },
-        // 현재 role 의 폴더 목록(권한 필터는 로드 시 적용됨)
         tabFolders() {
-            return this.folders.filter((f) => (f.doc_role || 'content') === this.currentRole);
+            return this.folders;
         },
-        // 현재 role 의 폴더별 인덱싱 직속 카운트
+        // 폴더별 인덱싱 직속 카운트
         directIndexed() {
-            return (this.folderCounts.folder_direct_indexed && this.folderCounts.folder_direct_indexed[this.currentRole]) || {};
+            return this.folderCounts.folder_direct_indexed || {};
         },
-        // 로드된 인덱싱 파일을 폴더별로 (현재 탭/역할 한정) — 트리 노드 file 목록 + 선택 카운트용
+        // 로드된 인덱싱 파일을 폴더별로 (현재 탭 한정) — 트리 노드 file 목록 + 선택 카운트용
         filesByFolder() {
             const m = {};
             for (const f of this.allFiles) {
                 if (f.sourceType !== this.activeSource) continue;
-                if ((f.docRole || 'content') !== this.currentRole) continue;
                 if (f.indexStatus !== 'indexed') continue;
                 const p = f.folderPath || '__root__';
                 (m[p] = m[p] || []).push(f);
@@ -421,30 +370,9 @@ export default {
         hasStructure() {
             return this.tree.length > 0;
         },
-        // 현재 role 전체 인덱싱 문서 수(푸터 표시)
-        roleIndexedTotal() {
+        // 전체 인덱싱 문서 수(푸터 표시)
+        indexedTotal() {
             return Object.values(this.directIndexed).reduce((sum, count) => sum + (count || 0), 0);
-        },
-        // 선택된 자료 중 사전·양식이 있으면 사용자에게 자동 활용 의미 안내 (선택 doc 기준)
-        autoUseHints() {
-            const hits = { glossary: 0, template: 0, dataset: 0 };
-            for (const k of this.selectedKeysSet) {
-                const d = this.selectedDocsMap[k];
-                if (!d) continue;
-                const r = d.docRole || d.doc_role || 'content';
-                if (r in hits) hits[r]++;
-            }
-            const out = [];
-            if (hits.glossary > 0) {
-                out.push({ role: 'glossary', label: '용어 사전', count: hits.glossary, action: '→ 답변 작성 시 용어 매핑으로 자동 참조됩니다' });
-            }
-            if (hits.template > 0) {
-                out.push({ role: 'template', label: '양식', count: hits.template, action: '→ DOCX 생성 시 양식으로 활용됩니다' });
-            }
-            if (hits.dataset > 0) {
-                out.push({ role: 'dataset', label: '데이터', count: hits.dataset, action: '→ 정량 분석 질문 시 코드 실행으로 처리됩니다' });
-            }
-            return out;
         },
         // 폴더경로 → 그 하위에서 선택된 (로드된)파일 수. buildLazyTree 와 동일한 경로 규칙.
         folderSelCounts() {
@@ -488,12 +416,6 @@ export default {
         activeSource() {
             this.search = '';
             this.searchResults = [];
-            this.currentRole = 'content';
-            this.collapseAll();
-        },
-        currentRole() {
-            this.search = '';
-            this.searchResults = [];
             this.collapseAll();
         },
         search(v) {
@@ -504,9 +426,6 @@ export default {
         if (this.searchTimer) clearTimeout(this.searchTimer);
     },
     methods: {
-        roleMeta(role) {
-            return this.roleFilterOptions.find((r) => r.value === role) || this.roleFilterOptions[0];
-        },
         iconOf(name) {
             return mimeIcon(extToMime(name));
         },
@@ -584,12 +503,12 @@ export default {
                 const raw = Array.isArray(foldersRes.data?.folders) ? foldersRes.data.folders : [];
                 this.folders = raw.map((f) =>
                     typeof f === 'string'
-                        ? { folder_path: f, doc_role: 'content' }
-                        : { folder_path: f?.folder_path || '', doc_role: f?.doc_role || 'content' }
+                        ? { folder_path: f }
+                        : { folder_path: f?.folder_path || '' }
                 ).filter((f) => f.folder_path);
                 const c = countsRes.data || {};
                 this.folderCounts = {
-                    role_totals: c.role_totals || {},
+                    total: c.total || 0,
                     folder_direct: c.folder_direct || {},
                     folder_direct_indexed: c.folder_direct_indexed || {},
                     status_totals: c.status_totals || {}
@@ -654,15 +573,11 @@ export default {
                 sourceRef: f.sourceRef,
                 sizeBytes: f.sizeBytes,
                 modifiedTime: f.modifiedTime,
-                owner: f.owner,
-                // 역할(양식/사업개요 등) — 백엔드가 템플릿/자료 구분에 사용. 누락 시 초안 템플릿 인식 불가.
-                doc_role: f.docRole || 'content',
-                docRole: f.docRole || 'content'
+                owner: f.owner
             };
         },
         // 부모가 넘긴 doc → confirm emit shape 로 정규화(id 키 보존)
         normalizeDoc(d) {
-            const role = d.docRole || d.doc_role || 'content';
             const folderPath = d.folderPath || d.drive_folder_name || '';
             return {
                 id: d.id,
@@ -675,9 +590,7 @@ export default {
                 sourceRef: d.sourceRef,
                 sizeBytes: d.sizeBytes,
                 modifiedTime: d.modifiedTime,
-                owner: d.owner,
-                doc_role: role,
-                docRole: role
+                owner: d.owner
             };
         },
         toggleFolder(path) {
@@ -777,7 +690,7 @@ export default {
             this.searchLoading = true;
             this.searchTimer = setTimeout(() => this.doSearch(q), 300);
         },
-        // 서버측 파일명 검색 — 전체 로드 없이 상위 N건만. 현재 탭/역할로 좁힘.
+        // 서버측 파일명 검색 — 전체 로드 없이 상위 N건만. 현재 탭으로 좁힘.
         async doSearch(q) {
             const tenantId = (typeof window !== 'undefined' && window.$tenantName) || '';
             if (!tenantId) {
@@ -792,7 +705,7 @@ export default {
                 if (token !== this.searchToken) return; // stale
                 const files = (Array.isArray(data?.file_details) ? data.file_details : [])
                     .map(mapDetail)
-                    .filter((f) => f.sourceType === this.activeSource && (f.docRole || 'content') === this.currentRole);
+                    .filter((f) => f.sourceType === this.activeSource);
                 this.mergeFiles(files); // 선택/토글이 트리와 일관되게
                 this.searchResults = files;
             } catch (e) {
@@ -884,80 +797,6 @@ export default {
     padding: 0 12px;
     flex: 0 0 auto;
 }
-
-/* ─── 역할(doc_role) 필터 칩 바 ─── */
-.ksp-role-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 10px 20px 4px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-}
-
-.ksp-role-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    padding: 4px 10px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 14px;
-    background: var(--cds-surface-2);
-    cursor: pointer;
-    font-size: 12px;
-    color: rgba(0, 0, 0, 0.7);
-    transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-
-.ksp-role-chip:hover {
-    background: rgba(0, 0, 0, 0.04);
-}
-
-.ksp-role-chip.is-active.is-all       { background: rgba(97, 97, 97, 0.12); border-color: rgba(97, 97, 97, 0.4); color: #424242; }
-.ksp-role-chip.is-active.is-content   { background: rgba(25, 118, 210, 0.12); border-color: rgba(25, 118, 210, 0.5); color: hsl(var(--accent-brand)); }
-.ksp-role-chip.is-active.is-glossary  { background: rgba(123, 31, 162, 0.12); border-color: rgba(123, 31, 162, 0.5); color: #7b1fa2; }
-.ksp-role-chip.is-active.is-template  { background: rgba(239, 108, 0, 0.12); border-color: rgba(239, 108, 0, 0.5); color: var(--cds-text-warning); }
-.ksp-role-chip.is-active.is-reference { background: rgba(56, 142, 60, 0.12); border-color: rgba(56, 142, 60, 0.5); color: var(--cds-text-success); }
-.ksp-role-chip.is-active.is-dataset   { background: rgba(0, 137, 123, 0.12); border-color: rgba(0, 137, 123, 0.5); color: #00897b; }
-
-.ksp-role-chip-count {
-    margin-left: 4px;
-    font-size: 10px;
-    padding: 1px 6px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.06);
-    color: rgba(0, 0, 0, 0.55);
-}
-
-.ksp-role-chip.is-active .ksp-role-chip-count {
-    background: rgba(255, 255, 255, 0.6);
-    color: inherit;
-}
-
-/* ─── 자동 활용 안내 배너 ─── */
-.ksp-auto-banner {
-    display: flex;
-    align-items: center;
-    padding: 8px 20px;
-    margin: 8px 20px 0;
-    background: rgba(var(--v-theme-primary), 0.07);
-    border-left: 3px solid rgb(var(--v-theme-primary));
-    border-radius: 4px;
-}
-
-/* ─── 행에 표시되는 role badge ─── */
-.ksp-role-badge {
-    display: inline-block;
-    margin-left: 6px;
-    font-size: 10px;
-    padding: 1px 7px;
-    border-radius: 8px;
-    font-weight: 500;
-    vertical-align: middle;
-}
-
-.ksp-role-badge.is-glossary  { background: rgba(123, 31, 162, 0.12); color: #7b1fa2; }
-.ksp-role-badge.is-template  { background: rgba(239, 108, 0, 0.12);  color: var(--cds-text-warning); }
-.ksp-role-badge.is-reference { background: rgba(56, 142, 60, 0.12);  color: var(--cds-text-success); }
 
 .ksp-toolbar {
     display: flex;

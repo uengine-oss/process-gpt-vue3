@@ -13,21 +13,6 @@
             </div>
         </header>
 
-        <div class="kbm__roles">
-            <button
-                v-for="r in ROLE_OPTIONS"
-                :key="r.value"
-                type="button"
-                class="kbm__role"
-                :class="{ 'is-active': role === r.value }"
-                @click="role = r.value"
-            >
-                <v-icon size="15" class="mr-1">{{ r.icon }}</v-icon>{{ r.label }}
-                <span class="kbm__role-count">{{ roleCounts[r.value] || 0 }}</span>
-            </button>
-            <span class="kbm__role-desc"><v-icon size="13" class="mr-1">mdi-information-outline</v-icon>{{ roleMeta.desc }}</span>
-        </div>
-
         <div class="kbm__body">
             <aside class="kbm__side">
                 <KbFolderTree
@@ -47,7 +32,6 @@
             <main class="kbm__main">
                 <KbFolderPanel
                     :folder-path="current"
-                    :role-value="role"
                     :data="folderData"
                     :node="currentNode"
                     :roots="rootNodes"
@@ -126,11 +110,9 @@
 import KbFolderTree from './KbFolderTree.vue';
 import KbFolderPanel from './KbFolderPanel.vue';
 import KbDocDrawer from './KbDocDrawer.vue';
-import { ROLE_OPTIONS, roleMeta } from './kbRoles';
 import { ancestorsOf, leafOf, parentOf } from './kbFormat';
 import * as api from './kbApi';
 
-const LS_ROLE = 'kb.map.role';
 const LS_EXPANDED = 'kb.map.expanded';
 const LS_FOLDER = 'kb.map.folder';
 const POLL_MS = 4000;
@@ -149,9 +131,7 @@ export default {
     components: { KbFolderTree, KbFolderPanel, KbDocDrawer },
     data() {
         return {
-            ROLE_OPTIONS,
             me: api.requester(),
-            role: localStorage.getItem(LS_ROLE) || 'content',
             tree: [],
             overallReadiness: null,
             emptyFolders: [],
@@ -173,12 +153,6 @@ export default {
         };
     },
     computed: {
-        roleMeta() {
-            return roleMeta(this.role);
-        },
-        roleCounts() {
-            return this.counts.role_totals || {};
-        },
         // 트리(/folders/tree) + 빈 폴더 레지스트리를 경로순 평탄 목록으로.
         nodes() {
             const byPath = new Map();
@@ -195,7 +169,6 @@ export default {
             };
             this.tree.forEach(walk);
             for (const f of this.emptyFolders) {
-                if ((f.doc_role || 'content') !== this.role) continue;
                 for (const p of ancestorsOf(f.folder_path)) {
                     if (!byPath.has(p)) byPath.set(p, { path: p, name: leafOf(p), nDirect: 0, nTotal: 0, readiness: null, card: null });
                 }
@@ -212,20 +185,14 @@ export default {
         }
     },
     watch: {
-        role(v) {
-            localStorage.setItem(LS_ROLE, v);
-            this.current = localStorage.getItem(`${LS_FOLDER}.${v}`) || '';
-            this.drawerDoc = null;
-            this.reload();
-        },
         current(v) {
-            localStorage.setItem(`${LS_FOLDER}.${this.role}`, v || '');
+            localStorage.setItem(LS_FOLDER, v || '');
             this.query = '';
             this.openCurrent();
         }
     },
     mounted() {
-        this.current = localStorage.getItem(`${LS_FOLDER}.${this.role}`) || '';
+        this.current = localStorage.getItem(LS_FOLDER) || '';
         this.reload().then(() => {
             if (!Object.keys(this.expanded).length) this.rootNodes.forEach((n) => (this.expanded[n.path] = true));
             for (const p of ancestorsOf(parentOf(this.current))) this.expanded[p] = true;
@@ -248,7 +215,7 @@ export default {
             this.loadingTree = true;
             try {
                 const [tree, empty, counts] = await Promise.all([
-                    api.fetchTree({ docRole: this.role }),
+                    api.fetchTree(),
                     api.listEmptyFolders(),
                     api.fetchCounts()
                 ]);
@@ -272,7 +239,7 @@ export default {
             const path = this.current;
             this.loadingFolder = true;
             try {
-                const data = await api.openFolder(path, { docRole: this.role, query: this.query });
+                const data = await api.openFolder(path, { query: this.query });
                 if (this.current === path) this.folderData = data;
             } catch (e) {
                 if (this.current === path) this.folderData = null;
@@ -303,7 +270,7 @@ export default {
         },
         async createFolder(path) {
             try {
-                await api.createFolder(path, this.role);
+                await api.createFolder(path);
                 await this.reload();
                 this.select(path);
             } catch (e) {
@@ -323,7 +290,7 @@ export default {
             const newPath = [parentOf(node.path), name].filter(Boolean).join('/');
             this.rename.loading = true;
             try {
-                await api.renameFolder(node.path, newPath, this.role);
+                await api.renameFolder(node.path, newPath);
                 if (this.current === node.path || this.current.startsWith(node.path + '/')) {
                     this.current = newPath + this.current.slice(node.path.length);
                 }
@@ -344,7 +311,7 @@ export default {
             if (!node) return;
             this.removeFolder.loading = true;
             try {
-                const res = await api.deleteFolder(node.path, this.role);
+                const res = await api.deleteFolder(node.path);
                 if (res && res.ok === false) throw new Error('일부 문서를 지우지 못했습니다');
                 if (this.current === node.path || this.current.startsWith(node.path + '/')) this.current = parentOf(node.path);
                 this.removeFolder.show = false;
@@ -395,10 +362,10 @@ export default {
             const before = (this.folderData?.card?.built_at || this.currentNode?.card?.built_at) ?? null;
             this.rebuilding = true;
             try {
-                await api.refreshFolderCards([path], this.role);
+                await api.refreshFolderCards([path]);
                 for (let i = 0; i < 12; i++) {
                     await new Promise((r) => setTimeout(r, 5000));
-                    const res = await api.fetchFolderCard(path, this.role);
+                    const res = await api.fetchFolderCard(path);
                     if (res?.card && res.built_at && res.built_at !== before) break;
                 }
                 await this.reload();
@@ -478,47 +445,6 @@ export default {
     align-items: center;
     gap: 8px;
 }
-.kbm__roles {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 6px 16px 10px;
-    border-bottom: 1px solid var(--cds-border);
-}
-.kbm__role {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    font: inherit;
-    font-size: 12.5px;
-    padding: 4px 10px;
-    border-radius: 14px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--cds-text-secondary);
-    cursor: pointer;
-}
-.kbm__role:hover {
-    background: var(--cds-bg-neutral);
-}
-.kbm__role.is-active {
-    background: rgba(var(--v-theme-primary), 0.1);
-    color: rgb(var(--v-theme-primary));
-    font-weight: 600;
-}
-.kbm__role-count {
-    margin-left: 4px;
-    font-size: 11px;
-    opacity: 0.8;
-}
-.kbm__role-desc {
-    margin-left: auto;
-    font-size: 11.5px;
-    color: var(--cds-text-muted);
-    display: inline-flex;
-    align-items: center;
-}
 .kbm__body {
     flex: 1;
     display: flex;
@@ -535,9 +461,6 @@ export default {
     overflow: auto;
 }
 @media (max-width: 900px) {
-    .kbm__role-desc {
-        display: none;
-    }
     .kbm__body {
         flex-direction: column;
     }

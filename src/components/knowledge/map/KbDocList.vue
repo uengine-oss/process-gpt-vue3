@@ -61,7 +61,7 @@
 </template>
 
 <script>
-import { DOC_STATES, INDEX_STATES, CARDLESS_ROLES } from './kbRoles';
+import { DOC_STATES, INDEX_STATES } from './kbConstants';
 import { iconOf, formatBytes } from './kbFormat';
 
 export default {
@@ -119,12 +119,7 @@ export default {
         titleOf(d) {
             return (d.card && d.card.title) || d.file_name || '';
         },
-        // 카드를 만들지 않는 분류(용어사전·양식·데이터)는 인제스트가 끝나면 곧 읽을 수 있음이다.
         stateOf(d) {
-            if (CARDLESS_ROLES.has(d.doc_role)) {
-                if (d.index_status === 'failed') return 'failed';
-                return d.index_status === 'indexed' ? 'ready' : 'pending';
-            }
             if (d.index_status === 'pending' || d.index_status === 'processing') return 'pending';
             if (d.index_status === 'failed') return 'failed';
             return (d.card && d.card.state) || 'pending';

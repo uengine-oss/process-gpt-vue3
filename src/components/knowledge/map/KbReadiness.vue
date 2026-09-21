@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import { DOC_STATES } from './kbRoles';
+import { DOC_STATES } from './kbConstants';
 
 // 지도가 얼마나 채워졌는지 — 백엔드 readiness {ready,pending,failed,no_text,total} 그대로.
 export default {

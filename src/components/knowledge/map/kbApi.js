@@ -28,20 +28,19 @@ export function requester() {
     };
 }
 
-export async function fetchTree({ docRole, depth = 6 } = {}) {
+export async function fetchTree({ depth = 6 } = {}) {
     const { data } = await axios.get(`${BASE}/folders/tree`, {
-        params: { tenant_id: tenantId(), doc_role: docRole, depth }
+        params: { tenant_id: tenantId(), depth }
     });
     return data;
 }
 
 // 관리 화면은 에이전트보다 큰 목록을 감당하므로 나열 임계를 서버 상한(2000)까지 올린다.
-export async function openFolder(folderPath, { docRole, query, limit = 300, listThreshold = 2000 } = {}) {
+export async function openFolder(folderPath, { query, limit = 300, listThreshold = 2000 } = {}) {
     const { data } = await axios.get(`${BASE}/folders/open`, {
         params: {
             tenant_id: tenantId(),
             folder_path: folderPath,
-            doc_role: docRole,
             query: query || undefined,
             limit,
             list_threshold: listThreshold,
@@ -51,9 +50,9 @@ export async function openFolder(folderPath, { docRole, query, limit = 300, list
     return data;
 }
 
-export async function fetchFolderCard(folderPath, docRole) {
+export async function fetchFolderCard(folderPath) {
     const { data } = await axios.get(`${BASE}/folders/card`, {
-        params: { tenant_id: tenantId(), folder_path: folderPath, doc_role: docRole }
+        params: { tenant_id: tenantId(), folder_path: folderPath }
     });
     return data;
 }
@@ -80,14 +79,13 @@ export async function checkHash(fileHash) {
     return !!(data?.exists && data.existing);
 }
 
-export async function uploadFile(file, { folderPath, fileHash, docRole }) {
+export async function uploadFile(file, { folderPath, fileHash }) {
     const who = requester();
     const baseName = (file.name || 'file').replace(/\\/g, '/').split('/').pop() || 'file';
     const fd = form({
         tenant_id: tenantId(),
         folder_path: folderPath,
         file_hash: fileHash,
-        doc_role: docRole,
         uploaded_by_uid: who.uid,
         uploaded_by_name: who.name
     });
@@ -95,35 +93,35 @@ export async function uploadFile(file, { folderPath, fileHash, docRole }) {
     await axios.post(`${BASE}/knowledge/files/upload`, fd, multipart);
 }
 
-export async function createFolder(folderPath, docRole) {
+export async function createFolder(folderPath) {
     const { data } = await axios.post(
         `${BASE}/knowledge/folders`,
-        form({ tenant_id: tenantId(), folder_path: folderPath, doc_role: docRole, requester_uid: requester().uid }),
+        form({ tenant_id: tenantId(), folder_path: folderPath, requester_uid: requester().uid }),
         multipart
     );
     return data;
 }
 
-export async function renameFolder(oldPath, newPath, docRole) {
+export async function renameFolder(oldPath, newPath) {
     const { data } = await axios.post(
         `${BASE}/knowledge/folders/rename`,
-        form({ tenant_id: tenantId(), old_path: oldPath, new_path: newPath, doc_role: docRole, requester_uid: requester().uid }),
+        form({ tenant_id: tenantId(), old_path: oldPath, new_path: newPath, requester_uid: requester().uid }),
         multipart
     );
     return data;
 }
 
-export async function deleteFolder(folderPath, docRole) {
+export async function deleteFolder(folderPath) {
     const { data } = await axios.delete(`${BASE}/knowledge/folders`, {
-        params: { tenant_id: tenantId(), folder_path: folderPath, doc_role: docRole, requester_uid: requester().uid }
+        params: { tenant_id: tenantId(), folder_path: folderPath, requester_uid: requester().uid }
     });
     return data;
 }
 
-export async function refreshFolderCards(folderPaths, docRole) {
+export async function refreshFolderCards(folderPaths) {
     await axios.post(
         `${BASE}/knowledge/folders/refresh-cards`,
-        form({ tenant_id: tenantId(), folder_paths: folderPaths, doc_role: docRole }),
+        form({ tenant_id: tenantId(), folder_paths: folderPaths }),
         multipart
     );
 }

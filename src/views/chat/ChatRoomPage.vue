@@ -8469,9 +8469,7 @@ export default {
                                           source_type: d.sourceType || 'drive',
                                           file_name: d.file_name || d.name || '',
                                           mime_type: d.mimeType || '',
-                                          folder_path: d.folderPath || '',
-                                          // 역할(양식/사업개요 등) — 백엔드 초안 템플릿/자료 구분에 필수
-                                          doc_role: d.docRole || d.doc_role || 'content'
+                                          folder_path: d.folderPath || ''
                                       }))
                                 : [];
                             // 이번 메시지에 첨부·업로드된 파일도 memento file_id(=storage path)로

@@ -6,34 +6,34 @@
             @dragover.prevent="dragOver = canUpload"
             @dragleave.prevent="dragOver = false"
             @drop.prevent="onDrop"
-            @click="canUpload ? $refs.fileInput.click() : null"
+            @click="uploading ? null : $refs[atRoot ? 'folderInput' : 'fileInput'].click()"
         >
-            <v-icon size="22" :color="canUpload ? meta.color : 'grey'">
-                {{ canUpload ? 'mdi-cloud-upload-outline' : 'mdi-folder-alert-outline' }}
-            </v-icon>
+            <v-icon size="22" color="primary">mdi-cloud-upload-outline</v-icon>
             <div class="kbu__text">
-                <template v-if="canUpload">
-                    <strong>이 폴더에 문서 추가</strong>
-                    <span class="kbu__hint">끌어다 놓거나 클릭 · 허용 {{ acceptLabel }} · 올리면 페이지를 저장하고 카드를 만듭니다</span>
+                <template v-if="atRoot">
+                    <strong>폴더를 통째로 올려 시작하기</strong>
+                    <span class="kbu__hint">폴더를 끌어다 놓으면 그 구조 그대로 지도가 만들어집니다 · 낱개 파일은 폴더를 먼저 고르세요</span>
                 </template>
                 <template v-else>
-                    <strong>폴더를 먼저 선택하세요</strong>
-                    <span class="kbu__hint">루트에는 올릴 수 없습니다</span>
+                    <strong>이 폴더에 문서 추가</strong>
+                    <span class="kbu__hint">파일도 폴더도 그대로 끌어다 놓으세요 · 허용 {{ acceptLabel }} · 올리면 페이지를 저장하고 카드를 만듭니다</span>
                 </template>
             </div>
             <v-btn
                 size="small"
                 variant="text"
-                :color="meta.color"
+                color="primary"
                 prepend-icon="mdi-folder-upload-outline"
-                :disabled="!canUpload"
+                :disabled="uploading"
                 @click.stop="$refs.folderInput.click()"
             >
                 폴더째 올리기
             </v-btn>
-            <input ref="fileInput" type="file" multiple :accept="accept" class="d-none" @change="onFileInput" />
-            <input ref="folderInput" type="file" webkitdirectory directory multiple class="d-none" @change="onFolderInput" />
         </div>
+        <!-- 드롭존 *밖*에 둔다 — 안에 두면 folderInput.click() 이 드롭존으로 버블링돼
+             드롭존 핸들러가 fileInput 을 열고, 파일 선택창이 폴더 선택창을 덮어쓴다. -->
+        <input ref="fileInput" type="file" multiple :accept="accept" class="d-none" @change="onFileInput" />
+        <input ref="folderInput" type="file" webkitdirectory directory multiple class="d-none" @change="onFolderInput" />
 
         <div v-if="uploading || stats.total > 0 || skipped > 0" class="kbu__progress">
             <div v-if="skipped > 0" class="kbu__line text-warning">
@@ -89,18 +89,37 @@
 </template>
 
 <script>
-import { allowedExtensions, roleMeta } from './kbRoles';
+import { ALLOWED_EXTENSIONS, ACCEPT_ATTR, ACCEPT_LABEL } from './kbConstants';
 import { checkHash, sha256, uploadFile, errorText } from './kbApi';
 import { extOf } from './kbFormat';
 
 const SKIP_NAMES = new Set(['.gitkeep', '.ds_store', 'thumbs.db', 'desktop.ini']);
 const CONCURRENCY = 8;
 
+// 드롭된 디렉터리를 재귀 순회해 File[] 로. 각 File 에 relPath 를 달아 폴더 구조를 보존한다.
+async function readEntry(entry, prefix) {
+    if (entry.isFile) {
+        const file = await new Promise((resolve, reject) => entry.file(resolve, reject));
+        file.relPath = prefix ? `${prefix}/${file.name}` : file.name;
+        return [file];
+    }
+    if (!entry.isDirectory) return [];
+    const reader = entry.createReader();
+    const dir = prefix ? `${prefix}/${entry.name}` : entry.name;
+    let out = [];
+    // readEntries 는 한 번에 일부만 준다 — 빈 배열이 올 때까지 반복해야 전부 읽힌다.
+    for (;;) {
+        const batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+        if (!batch.length) break;
+        for (const child of batch) out = out.concat(await readEntry(child, dir));
+    }
+    return out;
+}
+
 export default {
     name: 'KbUploadZone',
     props: {
-        folderPath: { type: String, default: '' },
-        role: { type: String, default: 'content' }
+        folderPath: { type: String, default: '' }
     },
     emits: ['uploaded', 'notify'],
     data() {
@@ -116,20 +135,19 @@ export default {
         };
     },
     computed: {
+        atRoot() {
+            return !this.folderPath;
+        },
+        // 루트에서도 *폴더째* 는 받는다 — 떨군 폴더 이름이 곧 최상위 폴더가 된다.
+        // 낱개 파일만 폴더가 필요하다(폴더 없는 문서는 폴더 카드가 없어 지도에 안 잡힌다).
         canUpload() {
-            return !!this.folderPath && !this.uploading;
-        },
-        meta() {
-            return roleMeta(this.role);
-        },
-        exts() {
-            return allowedExtensions(this.role);
+            return !this.uploading;
         },
         accept() {
-            return this.exts.map((e) => '.' + e).join(',');
+            return ACCEPT_ATTR;
         },
         acceptLabel() {
-            return this.exts.map((e) => e.toUpperCase()).join(', ');
+            return ACCEPT_LABEL;
         },
         pct() {
             const t = this.stats.total || 0;
@@ -142,17 +160,41 @@ export default {
             e.target.value = '';
             this.upload(files);
         },
-        onDrop(e) {
+        async onDrop(e) {
             this.dragOver = false;
+            if (!this.canUpload) return;
+            // dataTransfer.files 는 드롭된 폴더를 확장자 없는 항목 하나로 준다 → 전부 필터에 걸린다.
+            // 디렉터리는 entry API 로 훑어야 하위 파일과 경로가 나온다.
+            const entries = Array.from(e.dataTransfer?.items || [])
+                .map((it) => (it.webkitGetAsEntry ? it.webkitGetAsEntry() : null))
+                .filter(Boolean);
+            if (entries.some((en) => en.isDirectory)) {
+                this.uploading = true;
+                let files = [];
+                try {
+                    for (const en of entries) files = files.concat(await readEntry(en, ''));
+                } catch (err) {
+                    this.uploading = false;
+                    this.$emit('notify', { text: errorText(err, '폴더를 읽지 못했습니다'), color: 'error' });
+                    return;
+                }
+                this.uploading = false;
+                this.uploadKeepingTree(files);
+                return;
+            }
             this.upload(Array.from(e.dataTransfer?.files || []));
         },
         onFolderInput(e) {
             const files = Array.from(e.target.files || []);
             e.target.value = '';
+            this.uploadKeepingTree(files);
+        },
+        // 하위 폴더 구조를 그대로 살려 올린다 (webkitRelativePath 또는 entry 순회가 넣어준 relPath).
+        uploadKeepingTree(files) {
             const usable = files.filter((f) => f && f.name && !SKIP_NAMES.has(f.name.toLowerCase()) && (f.size ?? 1) > 0);
             const base = this.folderPath;
             this.upload(usable, (file) => {
-                const rel = (file.webkitRelativePath || file.name).replace(/\\/g, '/');
+                const rel = (file.relPath || file.webkitRelativePath || file.name).replace(/\\/g, '/');
                 const dir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
                 return [base, dir].filter(Boolean).join('/').replace(/^\/+|\/+$/g, '');
             });
@@ -169,7 +211,7 @@ export default {
         },
         async upload(files, folderResolver = null) {
             if (!this.folderPath && !folderResolver) {
-                this.$emit('notify', { text: '업로드할 폴더를 먼저 선택하세요', color: 'warning' });
+                this.$emit('notify', { text: '낱개 파일은 폴더를 먼저 고르세요. 폴더째라면 그대로 끌어다 놓으면 됩니다', color: 'warning' });
                 return;
             }
             if (!files.length) return;
@@ -180,7 +222,7 @@ export default {
             this.showFailed = false;
             this.uploading = true;
 
-            const allowed = new Set(this.exts);
+            const allowed = new Set(ALLOWED_EXTENSIONS);
             const bad = files.filter((f) => !allowed.has(extOf(f.name)));
             this.skipped = bad.length;
             files = files.filter((f) => allowed.has(extOf(f.name)));
@@ -244,7 +286,7 @@ export default {
                     const name = (file.name || 'file').replace(/\\/g, '/').split('/').pop() || 'file';
                     this.active.push({ id, name, folder });
                     try {
-                        await uploadFile(file, { folderPath: folder, fileHash: hash, docRole: this.role });
+                        await uploadFile(file, { folderPath: folder, fileHash: hash });
                         this.stats.done += 1;
                         ctrl.ok += 1;
                         if (ctrl.ok >= 3 && ctrl.limit < CONCURRENCY) {

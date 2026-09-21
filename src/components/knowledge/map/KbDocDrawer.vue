@@ -16,9 +16,6 @@
                         <v-icon start size="14">{{ stateMeta.icon }}</v-icon>{{ stateMeta.label }}
                     </v-chip>
                     <v-chip v-if="card.doc_type" size="small" variant="outlined">{{ card.doc_type }}</v-chip>
-                    <v-chip size="small" variant="outlined" :color="role.color">
-                        <v-icon start size="13">{{ role.icon }}</v-icon>{{ role.label }}
-                    </v-chip>
                     <v-chip v-if="doc.index_status && doc.index_status !== 'indexed'" size="small" :color="indexMeta.color" variant="tonal">
                         처리 {{ indexMeta.label }}
                     </v-chip>
@@ -54,9 +51,6 @@
                         <template v-if="card.coverage.windows_failed"> · 조각 {{ card.coverage.windows_failed }}개 실패</template>
                     </section>
                 </template>
-                <section v-else-if="cardless" class="kdd__sec kdd__sec--muted">
-                    이 분류는 문서 카드를 만들지 않습니다. 에이전트는 본문을 직접 읽습니다.
-                </section>
                 <section v-else-if="state === 'pending'" class="kdd__sec kdd__sec--muted">
                     <v-progress-circular indeterminate size="14" width="2" class="mr-2" />문서 카드를 만드는 중입니다. 본문은 이미 읽을 수 있습니다.
                 </section>
@@ -79,7 +73,7 @@
             <div class="kdd__actions">
                 <v-btn size="small" variant="tonal" prepend-icon="mdi-download-outline" :loading="busy.download" @click="download">원문</v-btn>
                 <v-btn size="small" variant="tonal" prepend-icon="mdi-file-search-outline" :disabled="!canPreview" :loading="busy.preview" @click="preview">저장된 본문</v-btn>
-                <v-btn v-if="canManage && !cardless" size="small" variant="tonal" color="primary" prepend-icon="mdi-card-text-outline" :loading="busy.card" @click="rebuild">카드 다시 만들기</v-btn>
+                <v-btn v-if="canManage" size="small" variant="tonal" color="primary" prepend-icon="mdi-card-text-outline" :loading="busy.card" @click="rebuild">카드 다시 만들기</v-btn>
                 <v-btn v-if="canManage" size="small" variant="text" prepend-icon="mdi-refresh" :loading="busy.reindex" @click="reindex">전체 재처리</v-btn>
                 <v-spacer />
                 <v-btn v-if="canManage" size="small" variant="text" color="error" prepend-icon="mdi-delete-outline" @click="$emit('delete', doc)">삭제</v-btn>
@@ -107,7 +101,7 @@
 
 <script>
 import ParsedPagesView from '@/components/knowledge/ParsedPagesView.vue';
-import { DOC_STATES, INDEX_STATES, CARDLESS_ROLES, roleMeta } from './kbRoles';
+import { DOC_STATES, INDEX_STATES } from './kbConstants';
 import { iconOf, formatBytes, formatDate } from './kbFormat';
 import { fileUrl, storedPages, rebuildCard, reindexFile, errorText } from './kbApi';
 
@@ -131,17 +125,10 @@ export default {
         card() {
             return (this.doc && this.doc.card) || {};
         },
-        role() {
-            return roleMeta(this.doc?.doc_role);
-        },
-        cardless() {
-            return CARDLESS_ROLES.has(this.doc?.doc_role);
-        },
         state() {
             const d = this.doc || {};
             if (d.index_status === 'pending' || d.index_status === 'processing') return 'pending';
             if (d.index_status === 'failed') return 'failed';
-            if (this.cardless) return d.index_status === 'indexed' ? 'ready' : 'pending';
             return this.card.state || 'pending';
         },
         stateMeta() {
