@@ -645,14 +645,7 @@
                                                                                             background: var(--cds-surface-2);
                                                                                             max-width: min(520px, 80vw);
                                                                                         "
-                                                                                        @click="
-                                                                                            emitOpenExternalUrl(
-                                                                                                attachedFile.url ||
-                                                                                                    attachedFile.fileUrl ||
-                                                                                                    attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
-                                                                                            )
-                                                                                        "
+                                                                                        @click="openMessageFile(attachedFile)"
                                                                                     >
                                                                                         <div
                                                                                             style="
@@ -710,19 +703,11 @@
                                                                                                     attachedFile.url ||
                                                                                                     attachedFile.fileUrl ||
                                                                                                     attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
+                                                                                                    attachedFile.signedUrl ||
+                                                                                                    attachedFile.file_id
                                                                                                 )
                                                                                             "
-                                                                                            @click.stop="
-                                                                                                downloadAttachment(
-                                                                                                    attachedFile.url ||
-                                                                                                        attachedFile.fileUrl ||
-                                                                                                        attachedFile.publicUrl ||
-                                                                                                        attachedFile.signedUrl,
-                                                                                                    attachedFile.name ||
-                                                                                                        attachedFile.fileName
-                                                                                                )
-                                                                                            "
+                                                                                            @click.stop="downloadMessageFile(attachedFile)"
                                                                                         >
                                                                                             <v-icon size="14">mdi-download</v-icon>
                                                                                         </v-btn>
@@ -872,14 +857,7 @@
                                                                                             background: rgba(var(--v-theme-primary), 0.06);
                                                                                             max-width: min(520px, 80vw);
                                                                                         "
-                                                                                        @click="
-                                                                                            emitOpenExternalUrl(
-                                                                                                attachedFile.url ||
-                                                                                                    attachedFile.fileUrl ||
-                                                                                                    attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
-                                                                                            )
-                                                                                        "
+                                                                                        @click="openMessageFile(attachedFile)"
                                                                                     >
                                                                                         <div
                                                                                             style="
@@ -937,19 +915,11 @@
                                                                                                     attachedFile.url ||
                                                                                                     attachedFile.fileUrl ||
                                                                                                     attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
+                                                                                                    attachedFile.signedUrl ||
+                                                                                                    attachedFile.file_id
                                                                                                 )
                                                                                             "
-                                                                                            @click.stop="
-                                                                                                downloadAttachment(
-                                                                                                    attachedFile.url ||
-                                                                                                        attachedFile.fileUrl ||
-                                                                                                        attachedFile.publicUrl ||
-                                                                                                        attachedFile.signedUrl,
-                                                                                                    attachedFile.name ||
-                                                                                                        attachedFile.fileName
-                                                                                                )
-                                                                                            "
+                                                                                            @click.stop="downloadMessageFile(attachedFile)"
                                                                                         >
                                                                                             <v-icon size="14">mdi-download</v-icon>
                                                                                         </v-btn>
@@ -1594,14 +1564,7 @@
                                                                                             background: rgba(var(--v-theme-primary), 0.06);
                                                                                             max-width: min(520px, 80vw);
                                                                                         "
-                                                                                        @click="
-                                                                                            emitOpenExternalUrl(
-                                                                                                attachedFile.url ||
-                                                                                                    attachedFile.fileUrl ||
-                                                                                                    attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
-                                                                                            )
-                                                                                        "
+                                                                                        @click="openMessageFile(attachedFile)"
                                                                                     >
                                                                                         <div
                                                                                             style="
@@ -1659,19 +1622,11 @@
                                                                                                     attachedFile.url ||
                                                                                                     attachedFile.fileUrl ||
                                                                                                     attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
+                                                                                                    attachedFile.signedUrl ||
+                                                                                                    attachedFile.file_id
                                                                                                 )
                                                                                             "
-                                                                                            @click.stop="
-                                                                                                downloadAttachment(
-                                                                                                    attachedFile.url ||
-                                                                                                        attachedFile.fileUrl ||
-                                                                                                        attachedFile.publicUrl ||
-                                                                                                        attachedFile.signedUrl,
-                                                                                                    attachedFile.name ||
-                                                                                                        attachedFile.fileName
-                                                                                                )
-                                                                                            "
+                                                                                            @click.stop="downloadMessageFile(attachedFile)"
                                                                                         >
                                                                                             <v-icon size="14">mdi-download</v-icon>
                                                                                         </v-btn>
@@ -3505,6 +3460,7 @@ import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
 import HumanFeedbackPanel from './HumanFeedbackPanel.vue';
 import axios from 'axios';
+import { artifactIdOf, reissueArtifactUrl, usableArtifactUrl } from '@/utils/artifactLinks';
 import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
 import SummaryButton from '@/components/ui/SummaryButton.vue';
@@ -5295,8 +5251,43 @@ export default {
                 return '';
             }
         },
-        async downloadAttachment(url, filename) {
+        /** Memento 에 새 주소를 청한다. 산출물은 비공개 버킷에 있고 주소는 한 시간이면 죽는다. */
+        async requestArtifactUrl(fileId) {
+            const { data } = await axios.get('/memento/artifact-url', {
+                params: { tenant_id: window.$tenantName, file_id: fileId }
+            });
+            return data;
+        },
+        async reissueArtifactUrl(fileObj) {
+            return await reissueArtifactUrl(fileObj, this.requestArtifactUrl);
+        },
+        /** 지금 쓸 수 있는 주소. 만료됐으면 file_id 로 다시 발급받는다. */
+        async usableArtifactUrl(fileObj) {
+            return await usableArtifactUrl(fileObj, this.requestArtifactUrl);
+        },
+        /** 산출물을 새 탭에서 연다. 만료된 주소면 먼저 다시 발급받는다. */
+        async openMessageFile(fileObj) {
+            const url = await this.usableArtifactUrl(fileObj);
+            if (url) this.emitOpenExternalUrl(url);
+        },
+        /**
+         * 메시지에 붙은 산출물을 내려받는다.
+         *
+         * 저장된 주소를 그대로 쓰되, 만료됐거나 실패하면 `file_id` 로 새로 받아 한 번 더
+         * 시도한다. 주소만 들고 있던 때는 새로고침 한 번에 파일이 사라졌다.
+         */
+        async downloadMessageFile(fileObj) {
+            const name = fileObj?.name || fileObj?.fileName || '';
+            const url = await this.usableArtifactUrl(fileObj);
             if (!url) return;
+            const ok = await this.downloadAttachment(url, name, { silent: !!artifactIdOf(fileObj) });
+            if (ok) return;
+            // 만료 시각을 안 싣고 저장된 옛 레코드도 있다. 한 번 실패하면 그때 다시 받아 본다.
+            const fresh = await this.reissueArtifactUrl(fileObj);
+            if (fresh && fresh !== url) await this.downloadAttachment(fresh, name);
+        },
+        async downloadAttachment(url, filename, options = {}) {
+            if (!url) return false;
             const name = filename || this.getFilenameFromUrl(url) || 'download';
             try {
                 const res = await fetch(url);
@@ -5313,8 +5304,12 @@ export default {
                 a.remove();
 
                 setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+                return true;
             } catch (e) {
-                this.emitOpenExternalUrl(url);
+                // 다시 발급받아 한 번 더 해 볼 수 있는 산출물이면 창을 띄우지 않는다.
+                // 죽은 주소를 새 탭에 여는 것은 사용자에게 오류 화면만 보여 준다.
+                if (!options.silent) this.emitOpenExternalUrl(url);
+                return false;
             }
         },
         getProgressChipColor(status) {
