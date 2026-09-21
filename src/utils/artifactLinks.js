@@ -58,6 +58,12 @@ export async function reissueArtifactUrl(fileObj, request) {
     fileObj.url = fresh;
     fileObj.fileUrl = fresh;
     if (data.url_expires_at) fileObj.url_expires_at = data.url_expires_at;
+    // 본문 링크에는 이름이 없다. 서버가 아는 이름을 채워 둬야 받는 파일이 객체 키로
+    // 떨어지지 않는다. 이미 아는 이름이 있으면 그쪽이 사용자가 본 이름이므로 존중한다.
+    if (data.file_name && !fileObj.name && !fileObj.fileName) {
+        fileObj.name = data.file_name;
+        fileObj.fileName = data.file_name;
+    }
     return fresh;
 }
 

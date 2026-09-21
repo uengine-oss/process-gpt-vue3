@@ -5297,7 +5297,13 @@ export default {
             if (!fileId) return;
 
             event.preventDefault();
-            const fresh = await this.reissueArtifactUrl({ file_id: fileId });
+            // 링크 글자가 파일 이름이면 그게 사용자가 본 이름이다. 주소뿐이면(마크다운이
+            // 풀려 버린 경우) 비워 두고 서버가 아는 이름을 받아 쓴다.
+            const label = (anchorEl.textContent || '').trim();
+            const holder = { file_id: fileId };
+            if (label && !/^https?:/i.test(label)) holder.name = label;
+
+            const fresh = await this.reissueArtifactUrl(holder);
             if (!fresh) {
                 // 발급받지 못하면 원래 하던 대로 둔다 — 지어낸 주소로 보내지 않는다.
                 this.emitOpenExternalUrl(anchorEl.getAttribute('href'));
@@ -5305,8 +5311,7 @@ export default {
             }
             // 같은 링크를 또 눌러도 되도록 주소를 갈아 끼운다.
             anchorEl.setAttribute('href', fresh);
-            const label = (anchorEl.textContent || '').trim();
-            const name = label && !/^https?:/i.test(label) ? label : fileNameFromArtifactId(fileId);
+            const name = holder.name || fileNameFromArtifactId(fileId);
             const ok = await this.downloadAttachment(fresh, name, { silent: true });
             if (!ok) this.emitOpenExternalUrl(fresh);
         },

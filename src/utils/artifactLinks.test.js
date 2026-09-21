@@ -38,11 +38,15 @@ function expired() {
     };
 }
 
-function issuer(url = 'https://signed.test/a.docx?token=new') {
+function issuer(url = 'https://signed.test/a.docx?token=new', fileName) {
     const calls = [];
     const request = async (fileId) => {
         calls.push(fileId);
-        return { file_url: url, url_expires_at: new Date(NOW + 3600 * 1000).toISOString() };
+        return {
+            file_url: url,
+            url_expires_at: new Date(NOW + 3600 * 1000).toISOString(),
+            ...(fileName ? { file_name: fileName } : {})
+        };
     };
     return { calls, request };
 }
@@ -173,4 +177,25 @@ test('되찾은 키로 새 주소를 받는다', async () => {
 
     assert.equal(await reissueArtifactUrl(holder, request), 'https://signed.test/new.docx');
     assert.deepEqual(calls, ['artifacts/9ab16634-2ab3-4eed-b75d-a85a2d0ea0e4.docx']);
+});
+
+test('이름을 모르면 서버가 아는 이름을 받아 쓴다', async () => {
+    // 본문 링크에는 이름이 없다. 이게 없으면 받는 파일이 객체 키로 떨어진다.
+    const holder = { file_id: 'artifacts/9ab16634.docx' };
+    const { request } = issuer('https://signed.test/new.docx', '사내 안내문.docx');
+
+    await reissueArtifactUrl(holder, request);
+
+    assert.equal(holder.name, '사내 안내문.docx');
+    assert.equal(holder.fileName, '사내 안내문.docx');
+});
+
+test('이미 아는 이름은 서버 이름으로 덮지 않는다', async () => {
+    // 링크 글자가 곧 사용자가 본 이름이다 — 그쪽을 존중한다.
+    const holder = { file_id: 'artifacts/9ab16634.docx', name: '사용자가 본 이름.docx' };
+    const { request } = issuer('https://signed.test/new.docx', '저장소 이름.docx');
+
+    await reissueArtifactUrl(holder, request);
+
+    assert.equal(holder.name, '사용자가 본 이름.docx');
 });
