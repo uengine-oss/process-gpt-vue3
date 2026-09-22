@@ -132,14 +132,15 @@ export default {
                     decidedBy: this.userInfo?.uid,
                     decidedByName: this.userInfo?.name,
                     decidedByEmail: this.userInfo?.email,
-                    decisionNote: this.decisionNotes[item.key]
+                    decisionNote: this.decisionNotes[item.key],
+                    targetIndex: item.targetIndex
                 });
 
-                // The approve/reject API only confirms that *a* PENDING target of this type was
-                // decided, not which one — the underlying RPC resolves the first PENDING target of
-                // the given type in array order, so when a batch has SKILL targets for multiple
-                // skills (or even the same skill twice), this call may have resolved a different
-                // target than the one the user clicked. Re-fetch and verify by exact array position
+                // targetIndex makes the server decide exactly this target. An agent-feedback server
+                // that predates target_index ignores it and resolves the first PENDING target of
+                // the given type in array order instead, so when a batch has SKILL targets for
+                // multiple skills (or even the same skill twice), this call may have resolved a
+                // different target than the one the user clicked. Re-fetch and verify by exact array position
                 // (targetIndex) rather than skill_name: targetIndex already uniquely identifies the
                 // target, and skill_name may legitimately be absent when this item was matched via
                 // the candidate_skill_names hint fallback (item.isHintMatch), so requiring equality

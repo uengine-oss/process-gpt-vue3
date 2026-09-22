@@ -1,5 +1,5 @@
 import axios from '@/utils/axios';
-import deepagentsApi from '@/utils/deepagentsApi';
+import deepagentsApi, { getAgentApiToken } from '@/utils/deepagentsApi';
 import { recordUsageEvent } from '@/services/usageAnalytics';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 // 웹과 앱이 같은 규칙으로 기기를 구분한다. 자세한 이유는 그 파일에.
@@ -8722,6 +8722,20 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * 워크아이템마다, 거기 남겨진 피드백(작성자 포함)이 어떤 처리 회차로 묶여 어느 단계인지
+     * (수집 중·폐기·승인 대기·반영됨…)와 무엇으로 분류돼 어떤 병합 요청이 됐는지를 받는다.
+     * 처리 단위는 워크아이템이다 — 워크아이템 하나에 회차가 여럿일 수 있다.
+     */
+    async getMyFeedback(tenantId: string, userId: string, scope: 'participating' | 'mine' = 'participating') {
+        // participating: 내가 참여 중인 인스턴스·담당 워크아이템까지 — 누가 남긴 피드백이든 함께 본다.
+        // mine: 내가 피드백을 남긴 워크아이템만.
+        const response = await axios.get('/feedback-proposals/my-feedback', {
+            params: { tenant_id: tenantId, user_id: userId, scope }
+        });
+        return Array.isArray(response.data?.workitems) ? response.data.workitems : [];
+    }
+
     async watchFeedbackProposals(callback: (payload: any) => void, options: any = {}) {
         try {
             const channel = options?.channel || `feedback-proposals-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -8749,20 +8763,27 @@ class ProcessGPTBackend implements Backend {
         decidedByName?: string;
         decidedByEmail?: string;
         decisionNote?: string;
+        // 누른 target 의 배열 위치. 같은 종류의 target 이 여럿이어도 그 target 만 결정된다.
+        targetIndex?: number;
     }) {
         try {
             // APPROVED SKILL targets trigger apply_approved_proposal (deep agent run) as a
             // background task on the agent-feedback service — a direct DB write here would
             // mark the decision but silently skip that application step.
             const action = params.status === 'APPROVED' ? 'approve' : 'reject';
+            // 승인된 스킬 target 은 agent-feedback 이 승인자 권한으로 스킬 API 에 커밋한다 —
+            // 스킬 API 는 요청자 JWT 로 테넌트를 검증하므로 토큰이 없으면 병합 요청이 열리지 않는다.
+            const token = await getAgentApiToken();
             const response = await axios.post(
                 `/feedback-proposals/${encodeURIComponent(params.batchId)}/targets/${encodeURIComponent(params.targetType)}/${action}`,
                 {
                     approver_id: params.decidedBy,
                     approver_name: params.decidedByName || null,
                     approver_email: params.decidedByEmail || null,
-                    decision_note: params.decisionNote || null
-                }
+                    decision_note: params.decisionNote || null,
+                    target_index: Number.isInteger(params.targetIndex) ? params.targetIndex : null
+                },
+                token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
             );
             return response.data;
         } catch (error) {

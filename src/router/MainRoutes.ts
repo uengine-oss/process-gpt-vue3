@@ -689,6 +689,11 @@ const allRoutes: RouteRecordRaw[] = [
         name: 'Merge Request Board',
         path: '/merge-requests',
         component: () => import('@/views/review-board/MergeRequestBoard.vue')
+    },
+    {
+        name: 'My Feedback',
+        path: '/my-feedback',
+        component: () => import('@/views/feedback/MyFeedback.vue')
     }
 ];
 

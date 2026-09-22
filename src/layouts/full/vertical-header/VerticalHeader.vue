@@ -38,6 +38,15 @@ function goToKnowledgeBase() {
     }
 }
 
+function goToMyFeedback() {
+    if (router.currentRoute.value.path !== '/my-feedback') {
+        router.push('/my-feedback');
+    }
+    if (window.innerWidth <= 768) {
+        customizer.SET_SIDEBAR_DRAWER();
+    }
+}
+
 function goToMergeRequests() {
     if (router.currentRoute.value.path !== '/merge-requests') {
         router.push('/merge-requests');
@@ -278,6 +287,12 @@ function handleNotificationBadgeUpdate(event: Event) {
                         </v-btn>
                     </div>
                     <div class="mr-2">
+                        <v-btn @click="goToMyFeedback" class="mobile-nav-btn pr-2 pl-2" variant="text">
+                            <v-icon class="mr-2">mdi-message-text-clock-outline</v-icon>
+                            {{ $t('headerMenu.myFeedback') }}
+                        </v-btn>
+                    </div>
+                    <div class="mr-2">
                         <v-btn @click="goToMergeRequests" class="mobile-nav-btn pr-2 pl-2" variant="text">
                             <v-icon class="mr-2">mdi-source-pull</v-icon>
                             {{ $t('headerMenu.mergeRequests') }}
@@ -321,6 +336,13 @@ function handleNotificationBadgeUpdate(event: Event) {
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon @click="goToKnowledgeBase">
                                 <v-icon>mdi-bookshelf</v-icon>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                    <v-tooltip :text="$t('headerMenu.myFeedback')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon @click="goToMyFeedback">
+                                <v-icon>mdi-message-text-clock-outline</v-icon>
                             </v-btn>
                         </template>
                     </v-tooltip>

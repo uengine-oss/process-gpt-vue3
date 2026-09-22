@@ -212,6 +212,7 @@
         "layoutSetting": "Appearance",
         "knowledgeBase": "Knowledge Base",
         "mergeRequests": "Merge Requests",
+        "myFeedback": "My feedback",
         "admin": "Admin Page",
         "setting": "Setting",
         "search": "Search",
@@ -5426,5 +5427,98 @@
             "noOutcome": "no outcome (no match)",
                 "path": "path {path}"
             }
-        }
+        },
+    "myFeedback": {
+        "title": "My feedback",
+        "subtitle": "See, per work item, what your feedback was classified as and which knowledge it became.",
+        "refresh": "Refresh",
+        "retry": "Retry",
+        "loadError": "Couldn't load feedback processing status.",
+        "empty": "You haven't left any feedback yet. You can leave feedback on a completed work item's result.",
+        "emptyFilter": "No feedback matches this filter.",
+        "openWorkItem": "Open work item",
+        "stepsLabel": "Processing steps",
+        "filter": {
+            "all": "All",
+            "progress": "In progress",
+            "applied": "Applied",
+            "closed": "Discarded/Rejected"
+        },
+        "step": {
+            "submit": "Submitted",
+            "collect": "Collected",
+            "classify": "Classified",
+            "review": "Approval",
+            "apply": "Applied",
+            "merge": "Merged"
+        },
+        "stage": {
+            "WAITING_DONE": "After completion",
+            "CLASSIFYING": "Classifying",
+            "WAITING": "Waiting",
+            "COLLECTING": "Collecting",
+            "NOT_ELIGIBLE": "Not collected",
+            "UNTRACKED": "No record",
+            "DISCARDED": "Discarded",
+            "PENDING_REVIEW": "Awaiting approval",
+            "REJECTED": "Rejected",
+            "APPROVED": "Approved",
+            "APPLYING": "Applying",
+            "APPLY_FAILED": "Apply failed",
+            "NO_CHANGE": "No change",
+            "APPLIED": "Applied",
+            "MERGED": "Merged"
+        },
+        "targetStage": {
+            "PENDING_REVIEW": "Awaiting approval",
+            "REJECTED": "Rejected",
+            "APPROVED": "Approved (no apply record)",
+            "APPLYING": "Applying",
+            "APPLY_FAILED": "Apply failed",
+            "NO_CHANGE": "Approved · no change",
+            "APPLIED": "Merge request opened",
+            "MERGED": "Merged"
+        },
+        "targetType": {
+            "SKILL": "Skill",
+            "DMN_RULE": "DMN rule",
+            "PROCESS_DEFINITION": "Process definition"
+        },
+        "collectingReady": "The batch is full ({count} work items) and will be classified shortly.",
+        "collectingHint": "Collecting work item feedback for this activity ({count}/{total} work items). It will be classified by {deadline} at the latest.",
+        "waitingHint": "Will be collected shortly.",
+        "notEligibleHint": "This task isn't part of a process, so it isn't collected for improvement.",
+        "untrackedHint": "Processed by an earlier version; no record remains.",
+        "discardReason": "Reason",
+        "discardReasonUnknown": "Not recorded (discarded by an earlier version)",
+        "droppedTitle": "Nothing to apply it to",
+        "dropped": "Dropped",
+        "feedbackCount": "{count} feedback",
+        "lastFeedback": "last {at}",
+        "round": "Round {n} · {count} feedback",
+        "nextRound": "Next round · {count} feedback",
+        "classifyingHint": "This round's feedback is being classified. Feedback left from now on goes to the next round.",
+        "pendingHint": {
+            "WAITING_DONE": "Once the work item is completed, all feedback left until then is collected together.",
+            "WAITING": "Will be collected shortly and processed in the next round.",
+            "NOT_ELIGIBLE": "This task isn't part of a process, so it isn't collected for improvement."
+        },
+        "inProgressBadge": "{count} in progress",
+        "searchPlaceholder": "Search activity, process, feedback",
+        "collapseList": "Collapse list",
+        "expandList": "Expand list",
+        "selectHint": "Select a work item to see how its feedback was processed",
+        "noInstance": "No instance",
+        "unknownAuthor": "Unknown author",
+        "me": "Me",
+        "authorCount": "{count} authors",
+        "scope": {
+            "participating": "Instances I take part in",
+            "mine": "Feedback I left"
+        },
+        "classification": "{count} classification result(s)",
+        "decidedBy": "{name} · {at}",
+        "draftVersion": "minor version {version}",
+        "branch": "branch {branch}"
+    }
 }

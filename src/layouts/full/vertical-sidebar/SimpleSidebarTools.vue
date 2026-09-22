@@ -123,6 +123,7 @@ export default {
             if (!this.isUEngine) {
                 items.push({ to: '/knowledge', icon: 'folder-with-files', label: this.$t('headerMenu.knowledgeBase') });
             }
+            items.push({ to: '/my-feedback', icon: 'chat-round-line-linear', label: this.$t('headerMenu.myFeedback') });
             items.push({ to: '/merge-requests', icon: 'branch', label: this.$t('headerMenu.mergeRequests') });
             if (this.isAdmin) {
                 items.push({ to: '/admin', icon: 'user-admin', label: this.$t('headerMenu.admin') });
