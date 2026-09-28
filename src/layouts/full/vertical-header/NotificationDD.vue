@@ -2,9 +2,9 @@
     <!-- ---------------------------------------------- -->
     <!-- notifications DD -->
     <!-- ---------------------------------------------- -->
-    <v-menu v-model="menuOpen" :close-on-content-click="true" class="notification_popup">
+    <v-menu v-model="menuOpen" :close-on-content-click="true" :location="menuLocation" class="notification_popup">
         <template v-slot:activator="{ props }">
-            <v-btn icon flat v-bind="props" size="small" @click="isConfirm = true">
+            <v-btn icon flat v-bind="props" size="small" :aria-label="$t('NotificationDD.notification') || '알림'" @click="isConfirm = true">
                 <div class="position-realtive">
                     <div class="notify" v-if="!isConfirm && notiCount > 0">
                         <span class="heartbit"></span>
@@ -55,6 +55,12 @@ import { useDefaultSetting } from '@/stores/defaultSetting';
 const backend = BackendFactory.createBackend();
 
 export default {
+    props: {
+        menuLocation: {
+            type: String,
+            default: 'bottom'
+        }
+    },
     data: () => ({
         menuOpen: false,
         isConfirm: false,

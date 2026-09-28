@@ -46,7 +46,14 @@ function extractMethod(name) {
     return `${name}: ${isAsync ? 'async ' : ''}function ${signature}${source.slice(bodyStart, end + 1)}`;
 }
 
-const METHODS = ['_isPlaceholderContent', 'carryOptimisticOnlyFields', 'adoptServerFinalContent', 'persistMessageFrontendState'];
+const METHODS = [
+    '_isPlaceholderContent',
+    'carryOptimisticOnlyFields',
+    'adoptServerFinalContent',
+    'persistMessageFrontendState',
+    'parseToolOutput',
+    'openExecutedInstance'
+];
 
 function buildComponent({ failPut = false } = {}) {
     const writes = [];
@@ -61,10 +68,14 @@ function buildComponent({ failPut = false } = {}) {
     // eslint-disable-next-line no-eval
     const methods = (0, eval)(`({${METHODS.map(extractMethod).join(',\n')}})`);
     const failures = [];
+    const routes = [];
+    const events = [];
     return {
         writes,
         attempts,
         failures,
+        routes,
+        events,
         vm: {
             ...methods,
             _frontendStatePersistTimers: {},
@@ -79,6 +90,8 @@ function buildComponent({ failPut = false } = {}) {
             uuid: () => 'err-' + failures.length,
             currentChatRoom: { id: 'room-1' },
             roomId: 'room-1',
+            EventBus: { emit: (name) => events.push(name) },
+            $router: { push: (route) => routes.push(route) },
             setAgentStatus() {},
             scrollToBottomSafe() {},
             scheduleServerRowPersistFallback() {},
@@ -88,6 +101,20 @@ function buildComponent({ failPut = false } = {}) {
         }
     };
 }
+
+test('프로세스 실행이 끝나면 결과 인스턴스 채팅방으로 바로 이동한다', () => {
+    const { vm, routes, events } = buildComponent();
+    vm.openExecutedInstance('{"process_instance_id":"vacation.1234"}');
+
+    assert.deepStrictEqual(routes, ['/instancelist/vacation_DOT_1234']);
+    assert.deepStrictEqual(events, ['instances-updated']);
+});
+
+test('실행 오류 응답은 인스턴스 화면으로 이동하지 않는다', () => {
+    const { vm, routes } = buildComponent();
+    vm.openExecutedInstance('{"error":"실행 실패","process_instance_id":"vacation.1234"}');
+    assert.deepStrictEqual(routes, []);
+});
 
 function streamingBubble() {
     return {

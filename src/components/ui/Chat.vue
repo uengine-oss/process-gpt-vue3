@@ -4918,7 +4918,9 @@ export default {
         submitFormFields(message) {
             const formData = this.getFormFieldsFromToolCalls(message);
             const values = this.formFieldsFormValues[message.uuid] || {};
-            const lines = [];
+            const lines = [
+                `[프로세스 시작 폼 제출] form_key=${formData?.formId || ''} activity_id=${formData?.activityName || ''}`
+            ];
             if (formData && Array.isArray(formData.fieldsJson)) {
                 formData.fieldsJson.forEach((f) => {
                     const label = f.label || f.key || '';

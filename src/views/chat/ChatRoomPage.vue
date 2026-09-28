@@ -8869,6 +8869,9 @@ export default {
                                 }
                             }
                             msg.toolCalls = toolCalls;
+                            if (lastRunningTool?.name?.includes('execute_process')) {
+                                this.openExecutedInstance(output);
+                            }
                             // file_artifact can persist the message just before tool_end.
                             // Persist the terminal state as well so reopening the room does
                             // not restore a stale "실행 중" bubble for a completed call.
@@ -11487,6 +11490,19 @@ export default {
 
             console.warn('[ChatRoomPage.parseToolOutput] JSON 파싱 실패');
             return null;
+        },
+
+        openExecutedInstance(output) {
+            try {
+                const parsed = this.parseToolOutput(output);
+                const instanceId = parsed?.process_instance_id || parsed?.processInstanceId || parsed?.instance_id || null;
+                if (!instanceId || parsed?.error) return;
+                this.EventBus.emit('instances-updated');
+                const routeId = String(instanceId).replace(/\./g, '_DOT_');
+                this.$router.push(`/instancelist/${routeId}`);
+            } catch (error) {
+                console.error('[ChatRoomPage] 실행된 인스턴스로 이동하지 못했습니다.', error);
+            }
         }
     }
 };

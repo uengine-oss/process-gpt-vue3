@@ -1,5 +1,7 @@
 <template>
     <div class="pg-tl">
+        <InstanceFlow :instance="instance" :workList="workList" />
+
         <ChatThread
             ref="thread"
             class="pg-tl__thread"
@@ -115,6 +117,7 @@ import ChatThread from '@/components/chat/ChatThread.vue';
 import agentEventTimeline from '@/components/ui/agentEventTimeline.js';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
+import InstanceFlow from './InstanceFlow.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { fileNameOf, isWorkspacePath, workspaceFileUrl } from '@/utils/workspaceFile';
 
@@ -130,7 +133,7 @@ function hasAgent(raw) {
 
 export default {
     name: 'InstanceTimeline',
-    components: { ChatThread, DynamicForm, UnifiedChatInput },
+    components: { ChatThread, DynamicForm, UnifiedChatInput, InstanceFlow },
     mixins: [agentEventTimeline],
     props: {
         instance: Object,
@@ -355,9 +358,39 @@ export default {
                 .filter(Boolean);
         },
 
+        /**
+         * 단계가 시작될 때마다 봇이 알려 주는 줄.
+         *
+         * 업무 결과만 쌓이면 대화가 뜸기게 이어진다 — 누가 무엇을 마치자
+         * 다음에 무슨 일이 시작됐는지가 어디에도 적혀 있지 않다. 그래서 단계가
+         * 열릴 때 그 사실을 한 줄로 남긴다. 내가 할 차례면 그것도 밝힌다.
+         */
+        stepMessages() {
+            return this.workList
+                .filter((w) => w && w.taskId && w.startDate)
+                .map((w) => {
+                    const who = this.displayName(w) || (this.isAgentAssignee(w) ? '에이전트' : '담당자');
+                    const mine = this.isMine(w);
+                    const tail = mine ? '내 차례입니다.' : `${who} 님이 수행합니다.`;
+                    return {
+                        uuid: `step-${w.taskId}`,
+                        role: 'system',
+                        email: '',
+                        name: 'Process GPT',
+                        // 마크다운을 쓰지 않는다 — 이 대화창은 **굵게** 를 모르고 별표를 그대로 보인다.
+                        content: `다음 단계로 ${w.name}${this.subjectJosa(w.name)} 진행되며, ${tail}`,
+                        timeStamp: w.startDate,
+                        isAgent: true,
+                        avatar: ''
+                    };
+                });
+        },
+
         /** 업무 메시지와 사람이 남긴 말을 시간순으로. */
         messages() {
-            return [...this.workMessages, ...this.chatRows].sort((a, b) => new Date(a.timeStamp || 0) - new Date(b.timeStamp || 0));
+            return [...this.stepMessages, ...this.workMessages, ...this.chatRows].sort(
+                (a, b) => new Date(a.timeStamp || 0) - new Date(b.timeStamp || 0)
+            );
         }
     },
     watch: {
@@ -466,6 +499,21 @@ export default {
          * 보낸이 이름.
          * 업무에 적힌 username 이 이메일인 경우가 있다 — 사람 이름이 있으면 그걸 쓴다.
          */
+        /**
+         * 받침에 따라 '이' 와 '가' 를 고른다.
+         *
+         * '이(가)' 로 적으면 틀리지는 않지만 사람이 쓴 문장처럼 읽히지 않는다.
+         * 한글은 마지막 글자의 받침만 보면 정해지므로 그만큼은 맞춘다.
+         * 한글이 아니면(영문·숫자) 굴리지 않고 둘 다 적는다.
+         */
+        subjectJosa(word) {
+            const last = String(word || '').trim().slice(-1);
+            const code = last.charCodeAt(0);
+            if (!last || Number.isNaN(code)) return '이(가)';
+            if (code < 0xac00 || code > 0xd7a3) return '이(가)';
+            return (code - 0xac00) % 28 === 0 ? '가' : '이';
+        },
+
         displayName(w) {
             const u = this.userOf(w.endpoint) || this.userOf(w.username);
             return (u && u.username) || w.username || '';
