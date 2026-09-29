@@ -107,6 +107,14 @@ function newChat() {
     color: var(--pg-m-text);
 }
 
+/* 종 아이콘은 기본 24px 로 그려져 옆의 20px 아이콘들보다 커 보였다. 같은 20px 로 맞춘다
+   (Icons 가 크기를 인라인 스타일로 넣으므로 !important 로 덮는다). */
+.pg-m-appbar__noti :deep([icon]),
+.pg-m-appbar__noti :deep([icon] svg) {
+    width: 20px !important;
+    height: 20px !important;
+}
+
 .pg-m-appbar__title {
     flex: 1 1 auto;
     min-width: 0;

@@ -20,9 +20,7 @@
         :aria-label="`${title} — 인스턴스 채팅 열기`"
         @click="open"
     >
-        <span class="pg-launch-card__icon" aria-hidden="true">
-            <v-icon size="18">mdi-play-circle-outline</v-icon>
-        </span>
+        <v-icon size="18" class="pg-launch-card__icon" aria-hidden="true">mdi-play-circle-outline</v-icon>
         <span class="pg-launch-card__body">
             <span class="pg-launch-card__title">{{ title }}</span>
             <span class="pg-launch-card__meta">{{ meta }}</span>
@@ -162,9 +160,9 @@ export default {
 .pg-launch-card {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     width: min(100%, 420px);
-    padding: 10px 12px 10px 14px;
+    padding: 10px 12px;
     border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
     border-radius: 12px;
     background: rgb(var(--v-theme-surface));
@@ -180,16 +178,10 @@ export default {
     outline: none;
 }
 
+/* 아이콘은 무엇인지 알리는 표시일 뿐이라 칸을 따로 두지 않는다 — 34px 칸이 카드 폭을 많이 먹었다. */
 .pg-launch-card__icon {
     flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
     color: rgb(var(--v-theme-primary));
-    background: rgba(var(--v-theme-primary), 0.1);
 }
 
 .pg-launch-card__body {

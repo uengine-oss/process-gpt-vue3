@@ -3304,6 +3304,7 @@ export default {
         },
 
         async attachToActiveStream(roomId) {
+            let attachKey = '';
             try {
                 if (!roomId) return;
                 // 단일 에이전트 방에서만 시도한다 — attach 응답에 agentId가 없어도
@@ -3316,11 +3317,19 @@ export default {
                 // 이미 스트리밍 중(예: 방금 내가 보낸 메시지의 sendMessageStream)이면 건너뜀
                 if (this.activeStreams[agentId]) return;
 
+                // 재접속도 방의 오케스트레이션(deepagents/codex)에 맞는 서버로 붙어야 한다.
+                const attachRouter = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
+                // 재접속 엔드포인트가 없는 런타임(기본 에이전트 등)은 건너뛴다 — 없는 주소로 404 를 내지 않게.
+                // 중지 컨트롤러를 등록하기 **전에** 판단해야 한다. 등록한 뒤에 돌아가면 컨트롤러가 남아,
+                // 아무것도 돌지 않는 방에서 입력창이 계속 '중지' 단추로 보였다.
+                if (typeof attachRouter?.attachToStream !== 'function' || attachRouter.supportsStreamAttach === false) return;
+
                 const userJwt = (await getValidToken()) || '';
                 const tenantId = getTenantId();
 
                 const abortController = new AbortController();
                 const abortKey = `${roomId}:attach:${agentId}`;
+                attachKey = abortKey;
                 this.agentAbortControllers[abortKey] = abortController;
 
                 let seeded = false;
@@ -3340,11 +3349,6 @@ export default {
                     this.messages.splice(idx, 1);
                 };
 
-                // 재접속도 방의 오케스트레이션(deepagents/codex)에 맞는 서버로 붙어야 한다.
-                const attachRouter = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
-                // 재접속 엔드포인트가 없는 런타임만 건너뛴다 — 없는 주소로 404 를 내지 않게.
-                // codex·deepagents 는 /chat/stream/attach 를 제공하므로 여기서 걸리지 않는다.
-                if (typeof attachRouter?.attachToStream !== 'function' || attachRouter.supportsStreamAttach === false) return;
                 await attachRouter.attachToStream(
                     roomId,
                     {
@@ -3432,6 +3436,8 @@ export default {
             } catch (e) {
                 // attach는 부가 기능이므로 실패해도 기존 흐름에 영향 없이 조용히 무시
                 console.warn('[ChatRoomPage] attachToActiveStream 실패(무시):', e?.message || e);
+                // 실패했어도 붙잡은 스트림은 없다 — 중지 단추가 남지 않게 컨트롤러를 거둔다.
+                if (attachKey) delete this.agentAbortControllers[attachKey];
             }
         },
         /** 방을 나가거나 전환할 때 그 방의 attach 재접속 연결만 정리한다(일반 에이전트 생성 스트림은 유지). */
@@ -9105,6 +9111,10 @@ export default {
                     onDone: async (content, doneEvent) => {
                         // 60ms 배칭으로 아직 반영되지 않은 마지막 토큰들을 먼저 확정한다.
                         flushStreamedContentNow();
+                        // 스트림은 여기서 끝났다 — 더 중지할 것이 없으므로 중지 단추도 바로 거둔다.
+                        // 예전에는 이 함수 맨 끝에서 지웠는데, 중간의 HITL return 이나 저장(await) 실패로
+                        // 그 줄에 닿지 못하면 답이 끝난 뒤에도 입력창이 계속 '중지' 로 남아 있었다.
+                        delete this.agentAbortControllers[abortKey];
                         const finalContent = (content || full || '').toString().trim();
 
                         // deepagent interrupt(request_human_input) 종료 마커 처리:
@@ -9424,6 +9434,8 @@ export default {
                     clearTimeout(streamFlushTimer);
                     streamFlushTimer = null;
                 }
+                // 스트림 호출이 돌아왔으면 중지할 것이 없다 — 콜백이 하나도 불리지 않았어도 중지 단추를 거둔다.
+                delete this.agentAbortControllers[abortKey];
             });
 
             await Promise.all(promises);
