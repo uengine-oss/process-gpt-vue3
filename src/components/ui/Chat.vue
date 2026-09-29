@@ -4746,7 +4746,7 @@ export default {
                 return '<span style="color:rgba(0,0,0,0.55)">생각 중...</span>';
             }
             marked.setOptions({ breaks: true, gfm: true });
-            return this.withMermaidContainers(marked(this.linkify(raw)));
+            return this.withMermaidContainers(marked(this.linkify(this.escapeSingleTildes(raw))));
         },
         /** 채팅 메시지 하단 인라인 '도구 사용 내역'(Claude Desktop식) 용 정규화 목록 */
         getToolCallList(message) {
@@ -5382,7 +5382,20 @@ export default {
                 gfm: true
             });
 
-            return this.withMermaidContainers(marked(text));
+            return this.withMermaidContainers(marked(this.escapeSingleTildes(text)));
+        },
+        /**
+         * marked의 GFM 파서는 단일 물결표도 취소선으로 해석한다.
+         * 일반 문장의 물결표는 보존하되, 의도한 Markdown 취소선(~~...~~)은 유지한다.
+         */
+        escapeSingleTildes(text) {
+            if (!text) return text;
+            return text.toString().replace(/~/g, (match, index, source) => {
+                const prev = source[index - 1];
+                const next = source[index + 1];
+                if (prev === '~' || next === '~') return match;
+                return '&#126;';
+            });
         },
         /**
          * marked()가 만든 ```mermaid 코드펜스(<pre><code class="language-mermaid">...)를
@@ -6193,7 +6206,9 @@ export default {
                 }
 
                 marked.setOptions({ breaks: true, gfm: true });
-                return this.withMermaidContainers(marked(this.linkify(displayContent)));
+                return this.withMermaidContainers(
+                    marked(this.linkify(this.escapeSingleTildes(displayContent)))
+                );
             }
         },
         setTableName(content) {
