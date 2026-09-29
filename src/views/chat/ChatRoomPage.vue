@@ -9012,6 +9012,8 @@ export default {
                                     ...doneFiles.filter((f) => f && !seen.has((f.url || f.fileUrl || f.name || '').toString()))
                                 ];
                             }
+                            // 지식베이스 블록 인용(file_id·블록 범위·발췌). pdfFiles 와 같은 이유로 메시지에 싣는다.
+                            if (Array.isArray(doneEvent?.sources) && doneEvent.sources.length) msg.sources = doneEvent.sources;
                             const msgToolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
                             msg.toolCalls = msgToolCalls.map((toolCall) =>
                                 toolCall?.status === 'running'
@@ -11053,7 +11055,9 @@ export default {
                 'agentPlan',
                 // 서버가 chats row 에 넣는 산출물 링크. 여기 없으면 프런트 객체로 row 를
                 // 저장할 때 통째로 지워져 다운로드 버튼과 아티팩트 미리보기가 사라진다.
-                'pdfFiles'
+                'pdfFiles',
+                // 서버가 넣는 지식베이스 인용 출처(done.sources).
+                'sources'
             ];
             for (const key of carryKeys) {
                 const incomingVal = toMsg[key];

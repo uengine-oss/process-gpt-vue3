@@ -210,6 +210,11 @@ const allRoutes: RouteRecordRaw[] = [
         path: '/knowledge',
         component: () => import('@/views/knowledge/KnowledgeBasePage.vue')
     },
+    {
+        name: 'Citation Lab',
+        path: '/knowledge/citation-lab',
+        component: () => import('@/views/knowledge/CitationLabPage.vue')
+    },
 
     {
         name: 'Skills Management',

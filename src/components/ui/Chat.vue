@@ -1421,7 +1421,8 @@
                                                                             />
                                                                             <div
                                                                                 class="ml-2 markdown-content streaming-content"
-                                                                                v-html="renderStreamingMarkdown(message)"
+                                                                                v-html="withKbCitations(renderStreamingMarkdown(message))"
+                                                                                @click="onKbCitationClick"
                                                                             ></div>
                                                                         </div>
                                                                     </div>
@@ -1708,10 +1709,13 @@
                                                                                 v-else
                                                                                 class="text-body-1 markdown-content"
                                                                                 v-html="
-                                                                                    setMessageForUser(
-                                                                                        getDisplayMessageContent(message, index)
+                                                                                    withKbCitations(
+                                                                                        setMessageForUser(
+                                                                                            getDisplayMessageContent(message, index)
+                                                                                        )
                                                                                     )
                                                                                 "
+                                                                                @click="onKbCitationClick"
                                                                             ></div>
                                                                             <div v-if="message.openuiLang" class="mt-2">
                                                                                 <OpenUiRenderer
@@ -3494,6 +3498,28 @@
             </v-card-actions>
         </v-card>
     </v-dialog>
+    <v-dialog v-model="kbCitation.open" max-width="960">
+        <v-card class="kb-citation-dialog">
+            <div class="d-flex align-center px-3 pt-2">
+                <span class="text-subtitle-2">출처</span>
+                <v-spacer />
+                <v-btn icon variant="text" size="small" @click="kbCitation.open = false">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </div>
+            <div class="kb-citation-dialog__body">
+                <CitationViewer
+                    v-if="kbCitation.open"
+                    :path="kbCitation.path"
+                    :start-block="kbCitation.start"
+                    :end-block="kbCitation.end"
+                    :page-hint="kbCitation.page"
+                    :section-title="kbCitation.title"
+                    :quote="kbCitation.quote"
+                />
+            </div>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -3517,6 +3543,8 @@ import AgentMessagePanel from '@/components/ui/AgentMessagePanel.vue';
 import { marked } from 'marked';
 import mermaid from 'mermaid';
 import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
+import CitationViewer from '@/components/knowledge/citation/CitationViewer.vue';
+import { withKbCitations } from '@/components/knowledge/citation/kbCitations';
 
 import BackendFactory from '@/components/api/BackendFactory';
 import { getTenantId } from '@/utils/tenant';
@@ -3533,6 +3561,7 @@ const _toolCallListCache = new WeakMap();
 
 export default {
     components: {
+        CitationViewer,
         Icon,
         RetrievalBox,
         AgentsChat,
@@ -3703,6 +3732,7 @@ export default {
     ],
     data() {
         return {
+            kbCitation: { open: false, path: '', start: null, end: null, page: null, title: '', quote: '' },
             workIcons: {
                 ScheduleQuery: 'calendar-line-duotone', // 달력 아이콘
                 ScheduleRegistration: 'calendar-line-duotone', // 달력 아이콘
@@ -4731,6 +4761,24 @@ export default {
          * 토큰이 도착하기 전이거나 placeholder 만 있는 경우엔 회색 안내 텍스트,
          * 실제 콘텐츠가 들어오면 marked() + linkify 로 마크다운 렌더링.
          */
+        withKbCitations(html) {
+            return withKbCitations(html);
+        },
+        onKbCitationClick(event) {
+            const el = event.target && event.target.closest ? event.target.closest('[data-kb-path]') : null;
+            if (!el) return;
+            event.preventDefault();
+            const num = (value) => (value === undefined || value === '' ? null : Number(value));
+            this.kbCitation = {
+                open: true,
+                path: el.dataset.kbPath,
+                start: num(el.dataset.kbStart),
+                end: num(el.dataset.kbEnd),
+                page: num(el.dataset.kbPage),
+                title: el.dataset.kbTitle || '',
+                quote: el.dataset.kbQuote || ''
+            };
+        },
         renderStreamingMarkdown(message) {
             const raw = (message?.content || '').toString();
             const t = raw.trim();
@@ -8178,5 +8226,72 @@ pre {
 .mermaid svg {
     max-width: 100%;
     height: auto;
+}
+</style>
+<style>
+/* 지식베이스 블록 인용 — v-html 안이라 전역 선택자로 둔다 */
+.markdown-content a.kb-cite {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    margin: 0 2px;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    vertical-align: 2px;
+    text-decoration: none;
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.12);
+}
+.markdown-content a.kb-cite:hover {
+    background: rgba(var(--v-theme-primary), 0.22);
+}
+.markdown-content .kb-cite-list {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(var(--v-border-color), 0.2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+.markdown-content .kb-cite-list__label {
+    font-size: 12px;
+    color: rgba(var(--v-theme-on-surface), 0.6);
+    margin-right: 2px;
+}
+.markdown-content a.kb-cite-item {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: rgba(var(--v-theme-on-surface), 0.85);
+    border: 1px solid rgba(var(--v-border-color), 0.35);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.markdown-content a.kb-cite-item:hover {
+    border-color: rgb(var(--v-theme-primary));
+}
+.markdown-content .kb-cite-group {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 1px 4px 1px 0;
+    border-radius: 12px;
+    border: 1px solid rgba(var(--v-border-color), 0.35);
+}
+.markdown-content .kb-cite-group a.kb-cite-item {
+    border: none;
+}
+.kb-citation-dialog__body {
+    height: 82vh;
+    padding: 4px 12px 12px;
 }
 </style>
