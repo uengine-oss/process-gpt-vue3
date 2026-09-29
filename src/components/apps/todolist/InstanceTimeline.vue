@@ -316,7 +316,9 @@ export default {
                 agentMode: raw.agent_mode || '',
                 draftStatus: raw.draft_status || '',
                 draft: raw.draft || null,
-                description: this.shorten(w.description, 200)
+                // 액티비티 설명은 편집기에서 HTML(<p>…</p>)로 저장되기도 한다. 글자로 그대로 두면
+                // 태그가 보이므로 본문만 꺼낸다.
+                description: this.shorten(this.plainText(w.description), 200)
             };
         },
 
@@ -888,6 +890,13 @@ export default {
             // 빈 폼으로 제출됐거나 값이 모두 비어 있으면(파일 칸이 null 등) 보일 것이 없다 — 빈 카드를 달지 않는다.
             if (!hasValue(inner)) return null;
             return { name: w.name, type: form ? 'form' : 'value', html: form ? form.html : null, output: inner };
+        },
+
+        /** HTML 조각에서 본문 글자만. 줄을 나누는 태그는 공백으로 두어 낱말이 붙지 않게 한다. */
+        plainText(s) {
+            if (!s) return '';
+            const html = String(s).replace(/<\s*(br|\/p|\/div|\/li|\/h[1-6])\s*\/?>/gi, ' ');
+            return new DOMParser().parseFromString(html, 'text/html').body.textContent || '';
         },
 
         shorten(s, n) {
