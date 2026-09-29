@@ -42,7 +42,13 @@
                 <span class="pg-m-row__icon pg-m-row__icon--plus"><v-icon size="16">mdi-plus</v-icon></span>
                 <span class="pg-m-row__label">새 채팅</span>
             </button>
-            <button type="button" class="pg-m-row" :class="{ 'pg-m-row--on': isOn(todoItem) }" @click="go(todoItem)">
+            <button
+                type="button"
+                class="pg-m-row"
+                :class="{ 'pg-m-row--on': isOn(todoItem) }"
+                data-testid="mobile-sidebar-todo"
+                @click="go(todoItem)"
+            >
                 <span class="pg-m-row__icon"><Icons icon="overview" :size="18" /></span>
                 <span class="pg-m-row__label">{{ todoItem.label }}</span>
             </button>

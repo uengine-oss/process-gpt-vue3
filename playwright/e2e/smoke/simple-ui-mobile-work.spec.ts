@@ -34,7 +34,8 @@ test.describe('simple UI mobile work surface', () => {
         const nav = page.getByTestId('mobile-sidebar-nav');
         await expect(nav).toBeVisible();
 
-        await nav.getByRole('button', { name: /나의 업무|할 일|To-?Do/i }).click();
+        // 이름으로 찾지 않는다 — 화면 언어에 따라 '나의 업무' / 'My Task List' 로 바뀐다(CI 는 영어).
+        await nav.getByTestId('mobile-sidebar-todo').click();
         await expect(page).toHaveURL(/\/todolist/);
         await expect(nav).toBeHidden();
     });
