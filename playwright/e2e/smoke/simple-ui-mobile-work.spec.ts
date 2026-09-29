@@ -32,11 +32,12 @@ test.describe('simple UI mobile work surface', () => {
 
         await page.getByTestId('mobile-sidebar-open').click();
         const nav = page.getByTestId('mobile-sidebar-nav');
-        await expect(nav).toBeVisible();
+        // 닫힌 드로어는 DOM 에 남은 채 화면 밖으로 밀려난다 — 보임/숨김이 아니라 화면 안에 있는지로 본다.
+        await expect(nav).toBeInViewport();
 
         // 이름으로 찾지 않는다 — 화면 언어에 따라 '나의 업무' / 'My Task List' 로 바뀐다(CI 는 영어).
         await nav.getByTestId('mobile-sidebar-todo').click();
         await expect(page).toHaveURL(/\/todolist/);
-        await expect(nav).toBeHidden();
+        await expect(nav).not.toBeInViewport();
     });
 });
