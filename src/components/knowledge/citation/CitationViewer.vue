@@ -194,9 +194,11 @@ export default {
             }
             return matches[0];
         },
+        // 인용 제목(`제2장 · 제26조(해고의 예고)`)의 한 조각이 섹션 제목과 같을 때만. 부분 문자열은 짧은 제목이 엉뚱하게 걸린다.
         titleHas(section) {
             const squash = (s) => (s || '').replace(/\s+/g, '');
-            return !!section && !!this.sectionTitle && squash(this.sectionTitle).includes(squash(section));
+            const target = squash(section);
+            return !!target && (this.sectionTitle || '').split(/[·›>]/).some((part) => squash(part) === target);
         },
         async narrow() {
             const given = this.givenRange();
