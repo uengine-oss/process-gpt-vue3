@@ -90,6 +90,11 @@
                                     </div>
                                 </div>
                                 <div class="header-right">
+                                    <!--
+                                        휴대폰 간소화 화면에서는 이 머리 줄 대신 앱바를 쓴다(클로드 모바일처럼
+                                        제목 한 줄 + 오른쪽 단추). 단추는 새로 만들지 않고 앱바로 옮겨 간다.
+                                    -->
+                                    <Teleport to="#pg-m-appbar-actions" :disabled="!phoneShell">
                                     <v-btn
                                         v-if="hasArtifactPanel"
                                         icon
@@ -97,6 +102,7 @@
                                         density="comfortable"
                                         size="small"
                                         :color="artifactSidebarVisible ? 'primary' : undefined"
+                                        aria-label="산출물"
                                         @click="toggleArtifactSidebar"
                                     >
                                         <v-icon size="18">mdi-file-document-outline</v-icon>
@@ -148,6 +154,7 @@
                                             </v-list>
                                         </v-card>
                                     </v-menu>
+                                    </Teleport>
                                 </div>
                             </div>
                             <v-divider class="header-divider" />
@@ -830,11 +837,14 @@ import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/proce
 import { buildHitlPanel, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
 import { shouldGenerateChatRoomName as sharedShouldGenerateChatRoomName } from '@/shared/chatRoom/index.js';
 import { formatToolName as sharedFormatToolName } from '@/shared/toolNames/index.js';
+import { parseMcpToolOutput } from '@/shared/toolOutput';
+import { askUserFeedbackOf } from '@/shared/askUser';
 import { chatFailureMessage, createPersistCircuit } from '@/shared/chatFailure/index.js';
 import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 import { useCodexFolderStore } from '@/stores/codexFolder';
+import { usePhoneShell, setPhoneShellTitle } from '@/shared/phoneShell';
 import { normalizeOrchestration } from '@/utils/orchestration';
 import agentRouterService from '@/services/AgentRouterService';
 import deepAgentRouterService, { DeepAgentRouterService } from '@/services/DeepAgentRouterService';
@@ -874,10 +884,12 @@ export default {
     name: 'ChatRoomPage',
     // 지식 선택은 전역 스토어(단일 소스). 이 페이지가 방 lifecycle(로드/저장/이월)을 이 스토어로 조율.
     setup() {
+        const { active: phoneShellActive } = usePhoneShell();
         return {
             knowledgeStore: useKnowledgeSelectionStore(),
             // 원본 폴더 업로드 게이트 — 덜 올라온 상태로 턴이 시작되지 않게 한다.
-            codexFolderStore: useCodexFolderStore()
+            codexFolderStore: useCodexFolderStore(),
+            phoneShellActive
         };
     },
     props: {
@@ -1042,6 +1054,13 @@ export default {
         };
     },
     computed: {
+        /**
+         * 휴대폰 간소화 화면의 앱 틀 안에 있는가.
+         * 다른 화면에 끼워 넣은 채팅(embedded)은 앱바의 주인이 아니므로 제외한다.
+         */
+        phoneShell() {
+            return !!this.phoneShellActive && !this.embedded;
+        },
         /**
          * 이 방이 쓰는 에이전트 서비스(오케스트레이션) 표시 라벨.
          *
@@ -1448,6 +1467,12 @@ export default {
         }
     },
     async mounted() {
+        // 산출물 패널을 폰에서 '사람이 눌렀을 때만' 열기 위해 마지막으로 누른 때를 적어 둔다
+        // (watch.artifactSidebarVisible). 캡처 단계에서 들어 어느 단추든 놓치지 않는다.
+        this._phoneTapListener = () => {
+            this._phoneLastTapAt = Date.now();
+        };
+        document.addEventListener('pointerdown', this._phoneTapListener, true);
         try {
             if (!this.userInfo) this.userInfo = await backend.getUserInfo();
         } catch (e) {
@@ -1471,6 +1496,27 @@ export default {
         }
     },
     watch: {
+        /** 휴대폰 앱바 제목은 방 이름이다. 이름을 바꾸면 그대로 따라간다. */
+        'currentChatRoom.name': {
+            immediate: true,
+            handler(name) {
+                if (!this.embedded) setPhoneShellTitle(name || '', '/chat');
+            }
+        },
+        /**
+         * 휴대폰에서는 산출물 패널이 화면 전체를 덮는다.
+         *
+         * 데스크톱에서는 옆에 붙는 패널이라 에이전트가 도구를 쓰거나 파일을 만들 때
+         * 저절로 열어도 대화가 가려지지 않는다. 폰에서 똑같이 열면 방에 들어가자마자,
+         * 또 답이 오는 중간에 화면이 통째로 가려진다. 클로드 모바일처럼 사람이 눌렀을
+         * 때만 연다 — 방금 화면을 누른 적이 없는데 열리려 하면 도로 닫는다.
+         * 여는 곳이 여러 군데(스트리밍 이벤트, 복원, 카드 클릭)라 하나하나 막지 않고 여기서 거른다.
+         */
+        artifactSidebarVisible(open) {
+            if (!open || !this.phoneShell) return;
+            const tappedJustNow = Date.now() - (this._phoneLastTapAt || 0) < 1500;
+            if (!tappedJustNow) this.artifactSidebarVisible = false;
+        },
         selectedKnowledgeDocs() {
             this.onKnowledgeSelectionChanged();
         },
@@ -1522,6 +1568,7 @@ export default {
         }
     },
     async beforeUnmount() {
+        if (this._phoneTapListener) document.removeEventListener('pointerdown', this._phoneTapListener, true);
         this.stopChatAccessHeartbeat();
         this.EventBus.emit('chat-room-unselected');
         try {
@@ -8870,7 +8917,7 @@ export default {
                             }
                             msg.toolCalls = toolCalls;
                             if (lastRunningTool?.name?.includes('execute_process')) {
-                                this.openExecutedInstance(output);
+                                this.noteExecutedInstance(output);
                             }
                             // file_artifact can persist the message just before tool_end.
                             // Persist the terminal state as well so reopening the room does
@@ -8921,26 +8968,25 @@ export default {
                             // human feedback 도구 결과 감지 (일반화)
                             if (lastRunningTool && lastRunningTool.name) {
                                 try {
-                                    const fbParsed = typeof output === 'string' ? JSON.parse(output) : output;
+                                    // MCP 결과는 content=[{'type':'text', ...}] 로 감싸여 오기도 한다 — 같은 파서로 읽는다.
+                                    const fbParsed = this.parseToolOutput(output);
                                     if (fbParsed && typeof fbParsed === 'object') {
                                         const isLegacyListRef =
                                             lastRunningTool.name.includes('list_reference_documents') &&
                                             fbParsed.user_request_type === 'select_items' &&
                                             Array.isArray(fbParsed.items);
-                                        const isAskUserWithUI =
-                                            fbParsed.user_request_type === 'ask_user' &&
-                                            (typeof fbParsed.feedback_type === 'string' ||
-                                                Array.isArray(fbParsed.items) ||
-                                                (fbParsed.option_meta && typeof fbParsed.option_meta === 'object'));
-                                        if (isLegacyListRef || isAskUserWithUI) {
-                                            lastRunningTool.__humanFeedback = fbParsed;
+                                        // 질문 + 제안만 오는 ask_user(MCP)도 패널로 띄운다(shared/askUser).
+                                        const askUser = isLegacyListRef ? null : askUserFeedbackOf(fbParsed);
+                                        if (isLegacyListRef || askUser) {
+                                            const feedback = askUser || fbParsed;
+                                            lastRunningTool.__humanFeedback = feedback;
                                             hasHumanFeedback = true;
                                             const fallbackText = isLegacyListRef
                                                 ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
-                                                : fbParsed.question || '생성 옵션을 선택해 주세요.';
+                                                : feedback.question || '생성 옵션을 선택해 주세요.';
                                             msg.content = fallbackText;
                                             if (!msg.__humanFeedback) {
-                                                msg.__humanFeedback = fbParsed;
+                                                msg.__humanFeedback = feedback;
                                             }
                                         }
                                     }
@@ -11358,150 +11404,25 @@ export default {
 
         // MCP 도구 output 파싱 (WorkAssistantChatPanel의 구현을 동일하게 사용)
         parseToolOutput(outputStr) {
-            if (!outputStr) return null;
-            if (typeof outputStr === 'object') return outputStr;
-
-            const sanitizeForJsonParse = (s) => {
-                if (typeof s !== 'string') return s;
-                let out = '';
-                let inString = false;
-                let escaped = false;
-
-                for (let i = 0; i < s.length; i++) {
-                    const ch = s[i];
-
-                    if (ch === '\n' || ch === '\r' || ch === '\t') continue;
-
-                    if (inString) {
-                        out += ch;
-                        if (escaped) {
-                            escaped = false;
-                        } else if (ch === '\\') {
-                            escaped = true;
-                        } else if (ch === '"') {
-                            inString = false;
-                        }
-                        continue;
-                    }
-
-                    if (ch === '"') {
-                        inString = true;
-                        out += ch;
-                        continue;
-                    }
-
-                    if (ch === '\\') {
-                        const next = s[i + 1];
-                        if (next === 'n' || next === 'r' || next === 't') {
-                            i++;
-                            continue;
-                        }
-                    }
-
-                    out += ch;
-                }
-
-                return out.trim();
-            };
-
-            const normalizeNewlines = (val) => {
-                if (typeof val !== 'string') return val;
-                return val.replace(/\\\\\\\\n/g, '\\\\n').replace(/\\\\n/g, '\n');
-            };
-
-            const normalizeParsedObject = (parsed) => {
-                if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
-                    parsed.image_analysis_result = normalizeNewlines(parsed.image_analysis_result);
-                }
-                return parsed;
-            };
-
-            const tryParseJsonSafely = (source) => {
-                if (typeof source !== 'string') return null;
-                const trimmed = source.trim();
-                if (!trimmed) return null;
-
-                const candidates = [
-                    trimmed,
-                    sanitizeForJsonParse(trimmed),
-                    trimmed.replace(/\\'/g, "'"),
-                    sanitizeForJsonParse(trimmed.replace(/\\'/g, "'")),
-                    trimmed.replace(/\\\\/g, '\\').replace(/\\'/g, "'"),
-                    sanitizeForJsonParse(trimmed.replace(/\\\\/g, '\\').replace(/\\'/g, "'"))
-                ];
-
-                for (const candidate of candidates) {
-                    try {
-                        return normalizeParsedObject(JSON.parse(candidate));
-                    } catch (e) {
-                        // 다음 후보로 재시도
-                    }
-                }
-                return null;
-            };
-
-            const extractContentField = (rawText) => {
-                if (typeof rawText !== 'string' || !rawText.startsWith('content=')) return null;
-                const quote = rawText[8];
-                if (quote !== "'" && quote !== '"') return null;
-                // 원래는 (?:\\.|(?!\1)[\s\S])* 형태의 백트래킹 정규식을 썼는데, 이스케이프 문자(\)가
-                // 많이 섞인 큰 문자열(예: read_file로 읽은 스킬 문서 원문)에 대해 catastrophic
-                // backtracking을 일으켜 메인 스레드가 무한정 멈추는 원인이었다(CPU 프로파일로 확인).
-                // "이스케이프 아닌 문자 연속" / "이스케이프 쌍" 을 겹치지 않게 번갈아 매칭하는
-                // 선형 시간 패턴으로 교체한다.
-                const body = rawText.slice(9);
-                const safePattern = quote === "'" ? /^[^'\\]*(?:\\.[^'\\]*)*/ : /^[^"\\]*(?:\\.[^"\\]*)*/;
-                const m = safePattern.exec(body);
-                const content = m[0];
-                const rest = body.slice(content.length);
-                if (rest[0] !== quote) return null;
-                const afterQuote = rest.slice(1);
-                if (afterQuote === '' || /^\s+\w+=/.test(afterQuote)) {
-                    return content;
-                }
-                return null;
-            };
-
-            const tryParseFromText = (rawText) => {
-                if (typeof rawText !== 'string') return null;
-
-                const directParsed = tryParseJsonSafely(rawText);
-                if (directParsed) return directParsed;
-
-                const contentField = extractContentField(rawText);
-                if (contentField) {
-                    const parsedFromContent = tryParseJsonSafely(contentField);
-                    if (parsedFromContent) return parsedFromContent;
-                }
-
-                const firstBrace = rawText.indexOf('{');
-                const lastBrace = rawText.lastIndexOf('}');
-                if (firstBrace >= 0 && lastBrace > firstBrace) {
-                    const jsonSlice = rawText.substring(firstBrace, lastBrace + 1);
-                    const parsedFromSlice = tryParseJsonSafely(jsonSlice);
-                    if (parsedFromSlice) return parsedFromSlice;
-                }
-
-                return null;
-            };
-
-            const parsed = tryParseFromText(outputStr);
-            if (parsed) return parsed;
-
-            console.warn('[ChatRoomPage.parseToolOutput] JSON 파싱 실패');
-            return null;
+            return parseMcpToolOutput(outputStr);
         },
 
-        openExecutedInstance(output) {
+        /**
+         * 채팅에서 프로세스를 시작했다.
+         *
+         * 전에는 여기서 곧장 인스턴스 화면으로 넘겼다. 그러면 대화하던 채팅방을 잃고, 나중에
+         * 채팅방을 다시 열어도 무엇을 시작했는지 보이지 않았다. 이제 채팅방에 머물고, 대화 안의
+         * 실행 카드(Chat.vue — shared/processLaunch)를 눌러야 인스턴스 채팅으로 넘어간다.
+         * 여기서는 사이드바의 인스턴스 목록만 새로 고친다.
+         */
+        noteExecutedInstance(output) {
             try {
                 const parsed = this.parseToolOutput(output);
                 const instanceId = parsed?.process_instance_id || parsed?.processInstanceId || parsed?.instance_id || null;
                 if (!instanceId || parsed?.error) return;
                 this.EventBus.emit('instances-updated');
-                const routeId = String(instanceId).replace(/\./g, '_DOT_');
-                this.$router.push(`/instancelist/${routeId}`);
             } catch (error) {
-                console.error('[ChatRoomPage] 실행된 인스턴스로 이동하지 못했습니다.', error);
+                console.error('[ChatRoomPage] 실행된 인스턴스를 알리지 못했습니다.', error);
             }
         }
     }
