@@ -89,7 +89,7 @@
                             <v-tooltip activator="parent" location="right">
                                 {{ room.name || $t('chatListing.newChat') }}
                             </v-tooltip>
-                            {{ room.name || '새 대화' }}
+                            {{ rowLabel(room) }}
                         </v-list-item-title>
                         <v-list-item-subtitle class="chat-room-subtitle">
                             {{ truncateMessage(room.message?.msg) }}
@@ -199,6 +199,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useCustomizerStore } from '@/stores/customizer';
+import { usePhoneShell } from '@/shared/phoneShell';
 import { processGptAgent } from '@/constants/processGptAgent';
 
 const backend = BackendFactory.createBackend();
@@ -206,6 +207,10 @@ const backend = BackendFactory.createBackend();
 export default {
     name: 'ChatList',
     components: { ExpandableList },
+    setup() {
+        const { active: phoneShell } = usePhoneShell();
+        return { phoneShell };
+    },
     data: () => ({
         defaultSetting: useDefaultSetting(),
         customizer: useCustomizerStore(),
@@ -705,6 +710,22 @@ export default {
             } catch (e) {
                 console.log(e);
             }
+        },
+        /**
+         * 목록 한 줄에 적을 이름.
+         *
+         * 휴대폰에서는 클로드처럼 한 줄에 제목만 둔다. 그런데 이름을 따로 짓지 않은 방은
+         * 모두 '새 대화' 라, 제목만 남기면 똑같은 줄이 늘어서 고를 수가 없다.
+         * 그런 방은 마지막 말을 이름 자리에 쓴다 — 무엇을 하던 방인지는 그게 알려 준다.
+         */
+        rowLabel(room) {
+            const name = room && room.name;
+            const unnamed = !name || name === '새 대화' || name === this.$t('chatListing.newChat');
+            if (this.phoneShell && unnamed) {
+                const msg = room && room.message && room.message.msg;
+                if (msg && msg !== 'NEW') return msg;
+            }
+            return name || '새 대화';
         },
         truncateMessage(msg) {
             if (!msg) return '';

@@ -1,0 +1,480 @@
+/* ==========================================================================
+   휴대폰 간소화 화면 — 클로드·ChatGPT 모바일 모양
+   --------------------------------------------------------------------------
+   body.pg-m 은 FullLayout 이 폭 768px 이하 + 간소화 켬 + 로그인 일 때만 단다.
+   이 파일의 규칙은 모두 그 안에서만 걸린다. 데스크톱과 간소화를 끈 화면은
+   이 파일의 영향을 받지 않는다.
+
+   수치는 claude.ai 모바일(375px 폭)을 직접 열어 잰 값이다(2026-09-29).
+     본문 산문      16px / 24px, 서체 --cds-font-voice, 문단 사이 12px
+     사용자 말풍선  15px / 20px, 배경 검정 5%, 모서리 12px, 안쪽 12px 16px
+     상태 한 줄     14px / 20px (도구 호출 요약 · 생각 요약), 흐린 글자
+     펼친 도구 목록 테두리 10%, 모서리 12px, 줄마다 8px 12px + 구분선
+     파일 카드      테두리 20%, 모서리 12px, 제목 15/20, 설명 13/17 흐림
+     입력창         흰 바탕, 모서리 14px, 안쪽 8px, 좌우 16px 띄움
+     사이드바 줄    44px 높이, 14px, 보조 글자색
+     시트 줄        15px / 22px, 안쪽 9px 10px, 모서리 10px
+
+   건드리지 않는 것 — Process GPT 에만 있는 것
+     진행 흐름 띠(InstanceFlow), 인라인 시작 폼, 역할 배정 대화, 인스턴스 화면의
+     BPMN 은 모양을 바꾸지 않는다. 주변 여백과 글자만 맞춘다.
+   ========================================================================== */
+
+:root {
+    /* 폰 틀은 테마(스카이 등)와 상관없이 클로드의 중립색을 쓴다. */
+    --pg-m-page: #fcfcfb;
+    --pg-m-surface: #ffffff;
+    --pg-m-text: #0b0b0b;
+    --pg-m-text-2: #52514e;
+    --pg-m-muted: #898781;
+    --pg-m-border: rgba(11, 11, 11, 0.1);
+    --pg-m-border-strong: rgba(11, 11, 11, 0.2);
+    --pg-m-hover: rgba(11, 11, 11, 0.05);
+    --pg-m-bubble: rgba(11, 11, 11, 0.05);
+    --pg-m-font-sans: var(--cds-font-sans, system-ui, 'Segoe UI', Roboto, sans-serif);
+    --pg-m-font-prose: var(--cds-font-voice, Georgia, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans CJK KR', serif);
+    --pg-m-appbar-h: 48px;
+}
+
+/* 어두운 모드에서는 기존 다크 토큰을 따른다. */
+[data-mode='dark'] {
+    --pg-m-page: var(--cds-surface-0, #262624);
+    --pg-m-surface: var(--cds-surface-1, #30302e);
+    --pg-m-text: var(--cds-text-primary, #faf9f5);
+    --pg-m-text-2: var(--cds-text-secondary, #c2c0b6);
+    --pg-m-muted: var(--cds-text-muted, #9a9890);
+    --pg-m-border: var(--cds-border, rgba(255, 255, 255, 0.12));
+    --pg-m-border-strong: rgba(255, 255, 255, 0.2);
+    --pg-m-hover: rgba(255, 255, 255, 0.06);
+    --pg-m-bubble: rgba(255, 255, 255, 0.06);
+}
+
+/* --------------------------------------------------------------------------
+   1. 틀 — 앱바 아래로 본문을 내리고, 카드 테두리·그림자를 걷는다.
+      클로드 모바일은 화면 전체가 하나의 면이다. 가장자리에 카드를 띄우지 않는다.
+   -------------------------------------------------------------------------- */
+body.pg-m {
+    background: var(--pg-m-page);
+
+    .v-application,
+    .v-main,
+    .page-wrapper {
+        background: var(--pg-m-page) !important;
+    }
+
+    .v-main {
+        padding-top: calc(var(--pg-m-appbar-h) + env(safe-area-inset-top, 0px)) !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* 화면들이 쓰는 바깥 카드(v-card elevation=10). 폰에서는 면 하나로 둔다. */
+    .v-main .page-wrapper > div > div > .v-card,
+    .v-main .page-wrapper > div > .v-card,
+    .chat-room-page-card {
+        background: var(--pg-m-page) !important;
+        box-shadow: none !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+    }
+
+    /* 앱바가 제목·메뉴를 맡으므로 화면마다 떠 있던 여는 단추는 치운다. */
+    .mobile-menu-toggle-btn,
+    .pg-open-sidebar-btn {
+        display: none !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   2. 사이드바 — 화면 전체를 덮는 목록.
+   -------------------------------------------------------------------------- */
+body.pg-m .pg-m-sidebar {
+    margin: 0 !important;
+    top: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0 !important;
+    background: var(--pg-m-page) !important;
+    font-family: var(--pg-m-font-sans);
+    color: var(--pg-m-text);
+
+    .v-navigation-drawer__content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* 데스크톱용 머리 줄은 폰 머리가 대신한다. */
+    .is-sidebar-pc {
+        display: none !important;
+    }
+
+    .scrollnavbar {
+        background: var(--pg-m-page) !important;
+        height: auto !important;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .scrollnavbar > .v-list {
+        background: transparent !important;
+        padding: 0 8px !important;
+    }
+
+    /* 맨 아래 계정 줄 */
+    .scrollnavbar + div {
+        background: var(--pg-m-page) !important;
+        padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+        border-top: 1px solid var(--pg-m-border);
+    }
+}
+
+body.pg-m .v-navigation-drawer.pg-m-sidebar {
+    /* 앱바(1004)보다 위. 사이드바를 열면 앱바까지 덮어야 머리의 × 가 보인다. */
+    z-index: 1010 !important;
+}
+
+body.pg-m .v-navigation-drawer__scrim {
+    /* 전체 화면이라 뒤를 어둡게 할 까닭이 없다. */
+    opacity: 0 !important;
+}
+
+/* 검색 — 클로드처럼 폭 전체를 쓰는 알약. 누르면 기존 검색 상자가 열린다. */
+body.pg-m .pg-sidetools__phone-search {
+    margin: 0 4px 8px;
+
+    .header-search {
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        height: 40px;
+        padding: 0 14px !important;
+        border-radius: 999px !important;
+        border: 1px solid var(--pg-m-border) !important;
+        background: var(--pg-m-surface);
+        color: var(--pg-m-text-2);
+    }
+
+    .header-search .v-text-field {
+        margin-left: 8px !important;
+    }
+
+    .header-search .v-field__input {
+        min-height: 38px;
+        padding: 0 !important;
+        font-size: 15px;
+        color: var(--pg-m-text);
+    }
+}
+
+/* 목록의 머리글(대화목록 · 인스턴스 …). 클로드의 '채팅 및 작업' 처럼 작고 흐리게. */
+body.pg-m .pg-m-sidebar {
+    .cp-menu {
+        font-size: 13px !important;
+        line-height: 17px;
+        color: var(--pg-m-muted) !important;
+        opacity: 1 !important;
+    }
+
+    .scrollnavbar .d-flex.align-center.mt-3.ml-2,
+    .scrollnavbar .v-col.pa-0 > .d-flex.align-center {
+        margin: 20px 0 4px !important;
+        padding: 0 10px;
+    }
+
+    .chat-room-group {
+        padding: 12px 10px 4px;
+        font-size: 12px;
+        line-height: 17px;
+        color: var(--pg-m-muted);
+    }
+
+    /* 대화 한 줄. 제목만, 44px. 마지막 말은 이름이 없을 때 제목 자리로 올라간다(ChatList.rowLabel). */
+    .chat-room-item {
+        min-height: 44px !important;
+        padding: 0 10px !important;
+        border-radius: 8px !important;
+        margin: 0 !important;
+    }
+
+    .chat-room-item .chat-room-title {
+        font-family: var(--pg-m-font-sans);
+        font-size: 14px !important;
+        line-height: 21px !important;
+        font-weight: 400 !important;
+        color: var(--pg-m-text-2) !important;
+    }
+
+    .chat-room-item--unread .chat-room-title {
+        color: var(--pg-m-text) !important;
+        font-weight: 600 !important;
+    }
+
+    .chat-room-item .chat-room-subtitle {
+        display: none !important;
+    }
+
+    .sidebar-list-hover-bg--active {
+        background: var(--pg-m-hover) !important;
+    }
+
+    /* 인스턴스 한 줄도 같은 치수로. */
+    .item-hover .v-list-item {
+        min-height: 44px !important;
+        padding: 0 10px !important;
+    }
+
+    .item-hover .v-list-item-title {
+        font-family: var(--pg-m-font-sans);
+        font-size: 14px !important;
+        line-height: 21px !important;
+        font-weight: 400 !important;
+        color: var(--pg-m-text-2) !important;
+    }
+
+    /* 목록 끝의 '더보기 (477)' — 카드가 아니라 흐린 글자 한 줄. */
+    .expandable-list > .v-card {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: 0 !important;
+        min-height: 40px;
+    }
+
+    .expandable-list > .v-card .v-card-text {
+        justify-content: flex-start !important;
+        text-align: left !important;
+        padding: 0 10px !important;
+    }
+
+    .expandable-list > .v-card .text-caption {
+        font-size: 13px !important;
+        color: var(--pg-m-muted);
+    }
+}
+
+.pg-m-sidebar__head {
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 8px 4px;
+}
+
+.pg-m-sidebar__top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    margin-bottom: 12px;
+    padding: 0 4px;
+}
+
+.pg-m-sidebar__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--pg-m-text);
+}
+
+.pg-m-sidebar__close:active {
+    background: var(--pg-m-hover);
+}
+
+.pg-m-sidebar__logo {
+    max-height: 28px;
+    overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   3. 할 일(인스턴스 목록) — 클로드 목록 페이지 모양.
+      큰 세리프 제목(24/32), 카드 대신 얇은 구분선이 있는 행.
+      '새 할 일' 표시와 진행 상태는 Process GPT 의 것이라 남긴다.
+   -------------------------------------------------------------------------- */
+body.pg-m {
+    .pg-instance-inbox {
+        background: var(--pg-m-page) !important;
+        box-shadow: none !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+    }
+
+    .pg-instance-inbox__header {
+        padding: 8px 20px 12px !important;
+        align-items: center !important;
+    }
+
+    .pg-instance-inbox__header h1 {
+        font-family: var(--pg-m-font-prose);
+        font-size: 24px !important;
+        line-height: 32px !important;
+        font-weight: 500 !important;
+        letter-spacing: normal !important;
+        color: var(--pg-m-text) !important;
+    }
+
+    .pg-instance-inbox__header p {
+        margin-top: 2px !important;
+        font-size: 13px !important;
+        line-height: 17px;
+        color: var(--pg-m-muted) !important;
+    }
+
+    .pg-instance-inbox__header .v-btn {
+        color: var(--pg-m-text-2) !important;
+    }
+
+    .pg-instance-inbox__list {
+        padding: 0 8px !important;
+        gap: 0 !important;
+    }
+
+    .pg-instance-row {
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        min-height: 53px;
+        padding: 10px 12px !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-bottom: 1px solid var(--pg-m-border) !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        text-align: left;
+    }
+
+    .pg-instance-row:active {
+        background: var(--pg-m-hover) !important;
+    }
+
+    .pg-instance-row__icon,
+    .pg-instance-row__chevron {
+        display: none !important;
+    }
+
+    .pg-instance-row__title-line {
+        gap: 6px !important;
+    }
+
+    .pg-instance-row__title-line strong {
+        font-family: var(--pg-m-font-sans);
+        font-size: 15px !important;
+        line-height: 20px !important;
+        font-weight: 400 !important;
+        color: var(--pg-m-text) !important;
+    }
+
+    /* 새 할 일이 있는 행 — 제목을 조금 진하게, 딱지는 작게. */
+    .pg-instance-row--new .pg-instance-row__title-line strong {
+        font-weight: 600 !important;
+    }
+
+    .pg-instance-row__title-line .v-chip {
+        height: 18px !important;
+        padding: 0 6px !important;
+        font-size: 11px !important;
+    }
+
+    .pg-instance-row__task {
+        margin-top: 2px !important;
+        font-size: 13px !important;
+        line-height: 17px !important;
+        color: var(--pg-m-text-2) !important;
+    }
+
+    .pg-instance-row__meta {
+        margin-top: 2px !important;
+        gap: 6px !important;
+        font-size: 12px !important;
+        line-height: 17px;
+        color: var(--pg-m-muted) !important;
+    }
+
+    /* 상태도 칩이 아니라 같은 줄의 흐린 글자로 — '진행 중 · 16시간 전 · 할 일 5개'. */
+    .pg-instance-row__meta .v-chip {
+        height: auto !important;
+        padding: 0 !important;
+        background: transparent !important;
+        color: var(--pg-m-muted) !important;
+        font-size: 12px !important;
+    }
+
+    .pg-instance-row__meta .v-chip .v-chip__underlay,
+    .pg-instance-row__meta .v-chip .v-icon {
+        display: none !important;
+    }
+
+    .pg-instance-row__meta .v-chip {
+        border: 0 !important;
+    }
+
+    .pg-instance-row__meta > * + *::before {
+        content: '·';
+        margin-right: 6px;
+    }
+
+    .pg-instance-row__body {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .pg-instance-row__title-line {
+        min-width: 0;
+    }
+
+    .pg-instance-row__title-line strong,
+    .pg-instance-row__task {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+/* 사이드바의 한 줄(이동 · 대화). 클로드 사이드바 줄과 같은 치수. */
+.pg-m-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-family: var(--pg-m-font-sans);
+    font-size: 14px;
+    line-height: 21px;
+    color: var(--pg-m-text);
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pg-m-row:active,
+.pg-m-row--on {
+    background: var(--pg-m-hover);
+}
+
+.pg-m-row--muted {
+    color: var(--pg-m-text-2);
+}
+
+.pg-m-row__icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: var(--pg-m-text-2);
+}
+
+.pg-m-row__icon--plus {
+    border-radius: 50%;
+    background: var(--pg-m-hover);
+    color: var(--pg-m-text);
+}
+
+.pg-m-row__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

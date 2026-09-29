@@ -58,7 +58,15 @@
                         각각 단추로 내놓으면 입력창 아래가 단추 줄이 되어, 정작 무엇을
                         쓰는 자리인지가 흐려진다. 고르는 일은 드물고 쓰는 일은 잦다.
                     -->
-                    <v-menu location="top start">
+                    <!--
+                        휴대폰 간소화 화면에서는 클로드 모바일처럼 아래에서 올라오는 시트로 연다
+                        (손잡이 · '추가' 머리글 · 큰 줄). 작은 팝업은 엄지로 누르기 어렵다.
+                    -->
+                    <v-menu
+                        location="top start"
+                        :content-class="phoneShell ? 'pg-plus-sheet' : ''"
+                        :scrim="phoneShell ? 'rgba(0, 0, 0, 0.25)' : false"
+                    >
                         <template v-slot:activator="{ props }">
                             <v-btn
                                 v-bind="props"
@@ -73,6 +81,10 @@
                             </v-btn>
                         </template>
                         <v-list density="compact" min-width="200">
+                            <template v-if="phoneShell">
+                                <div class="pg-plus-sheet__handle" aria-hidden="true"></div>
+                                <div class="pg-plus-sheet__title">추가</div>
+                            </template>
                             <v-list-item @click="pickFile" prepend-icon="mdi-paperclip" title="파일 첨부"></v-list-item>
                             <v-list-item
                                 v-if="enableKnowledgeBase"
@@ -98,6 +110,8 @@
                  원본 그대로 올리는 게 목적이라 확장자로 거르지 않는다. -->
             <input ref="codexFolderInput" type="file" class="d-none" webkitdirectory directory multiple @change="onCodexFolderPicked" />
         </div>
+        <!-- 클로드 모바일의 입력창 아래 한 줄. 답을 그대로 믿지 말라는 안내는 늘 보이는 곳에 둔다. -->
+        <div v-if="phoneShell" class="pg-composer-note">Process GPT는 AI이므로 실수를 할 수 있습니다.</div>
 
         <!-- 대기/진행/결과 (codex 원본 폴더) -->
         <div v-if="folderBadgeCount > 0 || folderUploading" class="codex-folder-status">
@@ -135,16 +149,19 @@ import { normalizeOrchestration } from '@/utils/orchestration';
 import codexSessionFolderService from '@/services/CodexSessionFolderService';
 import { getTenantId } from '@/utils/tenant';
 import { useCodexFolderStore } from '@/stores/codexFolder';
+import { usePhoneShell } from '@/shared/phoneShell';
 
 export default {
     name: 'UnifiedChatInput',
     components: { Chat, KnowledgeSpacePicker },
     // 지식 선택은 전역 스토어가 단일 소스 — props/emit 복사본을 두지 않는다.
     setup() {
+        const { active: phoneShell } = usePhoneShell();
         return {
             knowledgeStore: useKnowledgeSelectionStore(),
             // 메인에서 고른 폴더를 새 방으로 이월하는 대기소
-            folderStore: useCodexFolderStore()
+            folderStore: useCodexFolderStore(),
+            phoneShell
         };
     },
     props: {
