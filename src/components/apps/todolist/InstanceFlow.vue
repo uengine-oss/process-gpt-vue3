@@ -1,57 +1,160 @@
 <template>
     <!--
-        인스턴스의 전체 흐름을 한 줄로 보여 준다.
+        인스턴스가 지금 어디쯤인지. 같은 계산(shared/instanceSteps)을 세 모양으로 그린다.
 
-        대화만 있으면 "지금 어디쯤인지" 를 알 수 없다. 지나간 말을 거슬러 세어야
-        하고, 앞으로 무엇이 남았는지는 아예 알 길이 없다. 단계를 한 줄로 늘어놓고
-        끝난 것·하는 중인 것·남은 것을 색으로 갈라 둔다.
-
-        가로로 미는 까닭은 휴대폰 폭 때문이다. 세로로 쌓으면 대화가 시작되기도
-        전에 화면이 다 찬다. 지금 단계는 열 때 자동으로 보이는 자리로 끌어온다.
+        strip  가로 띠 — 넓은 화면의 대화 칸 위. 끝난 것·하는 중인 것·남은 것을 색으로 가른다.
+        pill   한 줄 알약 — 휴대폰 입력창 바로 위. 대화 위에 띠를 얹으면 화면을 너무 먹고
+               대화와 따로 노는 것처럼 보였다. Claude Code 가 할 일을 입력창 위 한 줄로
+               접어 두는 것처럼 '지금 단계 · 끝난 수/전체' 만 두고, 누르면 목록을 연다.
+        list   세로 체크리스트 — 진행 상황 패널 안. 클로드 Cowork 의 '진행 상황' 과 같은 자리다.
     -->
-    <div v-if="steps.length > 0" class="pg-flow" data-testid="instance-flow">
+    <div v-if="steps.length > 0 && variant === 'strip'" class="pg-flow" data-testid="instance-flow">
         <div ref="track" class="pg-flow__track">
-            <div
-                v-for="(step, i) in steps"
-                :key="step.id"
-                class="pg-flow__step"
-                :class="`pg-flow__step--${step.state}`"
-                :ref="step.state === 'current' ? 'current' : undefined"
-                :data-testid="`flow-step-${step.state}`"
-            >
-                <div class="pg-flow__mark">
-                    <span v-if="i > 0" class="pg-flow__line"></span>
-                    <span class="pg-flow__dot">
-                        <v-icon v-if="step.state === 'done'" size="12">mdi-check</v-icon>
-                        <v-icon v-else-if="step.state === 'current'" size="12">mdi-circle-medium</v-icon>
-                    </span>
+            <template v-for="(item, i) in items" :key="itemKey(item)">
+                <div
+                    v-if="item.type === 'step'"
+                    class="pg-flow__step"
+                    :class="`pg-flow__step--${item.step.state}`"
+                    :ref="item.step.state === 'current' ? 'current' : undefined"
+                    :data-testid="`flow-step-${item.step.state}`"
+                >
+                    <div class="pg-flow__mark">
+                        <span v-if="i > 0" class="pg-flow__line"></span>
+                        <span class="pg-flow__dot">
+                            <v-icon v-if="item.step.state === 'done'" size="12">mdi-check</v-icon>
+                            <v-icon v-else-if="item.step.state === 'current'" size="12">mdi-circle-medium</v-icon>
+                        </span>
+                    </div>
+                    <div class="pg-flow__name" :title="item.step.name">{{ item.step.name }}</div>
+                    <div v-if="item.step.state === 'skipped'" class="pg-flow__who">건너뜀</div>
+                    <div v-else-if="item.step.who" class="pg-flow__who">{{ item.step.who }}</div>
                 </div>
-                <div class="pg-flow__name" :title="step.name">{{ step.name }}</div>
-                <div v-if="step.who" class="pg-flow__who">{{ step.who }}</div>
-            </div>
+
+                <!-- 분기: 갈래들을 한 칸에 겹쳐 쌓는다. 간 갈래는 표시, 가지 않은 갈래는 줄을 긋는다. -->
+                <div
+                    v-else
+                    class="pg-flow__step pg-flow__step--branch"
+                    :class="{ 'pg-flow__step--done': laneDone(item) }"
+                    :ref="hasCurrent(item) ? 'current' : undefined"
+                    data-testid="flow-branch"
+                >
+                    <div class="pg-flow__mark">
+                        <span v-if="i > 0" class="pg-flow__line"></span>
+                        <span class="pg-flow__diamond" :class="{ 'pg-flow__diamond--decided': item.decided }"></span>
+                    </div>
+                    <div class="pg-flow__name" :title="branchTitle(item)">{{ branchTitle(item) }}</div>
+                    <div
+                        v-for="lane in item.lanes"
+                        :key="lane.lane"
+                        class="pg-flow__lane"
+                        :class="`pg-flow__lane--${lane.state}`"
+                        :title="laneName(lane)"
+                    >
+                        <v-icon v-if="lane.state === 'taken' && laneFinished(lane)" size="11">mdi-check</v-icon>
+                        <v-icon v-else-if="lane.state === 'taken'" size="11">mdi-circle-medium</v-icon>
+                        <span class="pg-flow__lane-name">{{ laneName(lane) }}</span>
+                    </div>
+                </div>
+            </template>
         </div>
     </div>
+
+    <button
+        v-else-if="steps.length > 0 && variant === 'pill'"
+        type="button"
+        class="pg-flow-pill"
+        data-testid="instance-flow-pill"
+        :aria-label="`진행 상황 — ${pillText}`"
+        @click="$emit('open')"
+    >
+        <span class="pg-flow-pill__ring" :style="ringStyle" aria-hidden="true"></span>
+        <span class="pg-flow-pill__text">
+            <strong v-if="summary.current && summary.current.mine">내 차례</strong>
+            {{ pillText }}
+        </span>
+        <span class="pg-flow-pill__count">{{ summary.done }}/{{ summary.total }}</span>
+        <v-icon size="16" class="pg-flow-pill__chev">mdi-chevron-up</v-icon>
+    </button>
+
+    <ol v-else-if="steps.length > 0 && variant === 'list'" class="pg-flow-list" data-testid="instance-flow-list">
+        <template v-for="item in items" :key="itemKey(item)">
+            <li v-if="item.type === 'step'" class="pg-flow-list__item" :class="`pg-flow-list__item--${item.step.state}`">
+                <span class="pg-flow-list__mark" aria-hidden="true">
+                    <v-icon v-if="item.step.state === 'done'" size="12">mdi-check</v-icon>
+                </span>
+                <span class="pg-flow-list__body">
+                    <span class="pg-flow-list__name">{{ item.step.name }}</span>
+                    <span v-if="item.step.who && item.step.state !== 'skipped'" class="pg-flow-list__who">{{ item.step.who }}</span>
+                </span>
+                <span v-if="item.step.state === 'current'" class="pg-flow-list__tag">{{ item.step.mine ? '내 차례' : '진행 중' }}</span>
+                <span v-else-if="item.step.state === 'skipped'" class="pg-flow-list__tag pg-flow-list__tag--muted">건너뜀</span>
+            </li>
+
+            <!--
+                분기 — 1 > 2 > (3-a 또는 3-b 또는 3-c) > 4.
+                갈래를 모두 보여 주되, 실제로 간 갈래만 체크하고 나머지는 '건너뜀' 으로 둔다.
+            -->
+            <li v-else class="pg-flow-list__item pg-flow-list__item--branch" data-testid="flow-branch">
+                <span
+                    class="pg-flow-list__mark pg-flow-list__mark--gw"
+                    :class="{ 'pg-flow-list__mark--decided': item.decided }"
+                    aria-hidden="true"
+                ></span>
+                <span class="pg-flow-list__body">
+                    <span class="pg-flow-list__name">{{ branchTitle(item) }}</span>
+                    <span class="pg-flow-list__who">{{ item.decided ? '조건에 따라 한 갈래로 진행했습니다' : `${item.lanes.length}갈래 중 하나로 진행합니다` }}</span>
+                    <span class="pg-flow-lanes">
+                        <template v-for="(lane, li) in item.lanes" :key="lane.lane">
+                            <span v-if="li > 0" class="pg-flow-lanes__or">또는</span>
+                            <span class="pg-flow-lanes__lane" :class="`pg-flow-lanes__lane--${lane.state}`" data-testid="flow-lane" :data-state="lane.state">
+                                <span
+                                    v-for="step in lane.steps"
+                                    :key="step.id"
+                                    class="pg-flow-list__item pg-flow-list__item--sub"
+                                    :class="`pg-flow-list__item--${step.state}`"
+                                >
+                                    <span class="pg-flow-list__mark" aria-hidden="true">
+                                        <v-icon v-if="step.state === 'done'" size="12">mdi-check</v-icon>
+                                    </span>
+                                    <span class="pg-flow-list__body">
+                                        <span class="pg-flow-list__name">{{ step.name }}</span>
+                                        <span v-if="step.who && step.state !== 'skipped'" class="pg-flow-list__who">{{ step.who }}</span>
+                                    </span>
+                                    <span v-if="step.state === 'current'" class="pg-flow-list__tag">{{ step.mine ? '내 차례' : '진행 중' }}</span>
+                                    <span v-else-if="step.state === 'skipped'" class="pg-flow-list__tag pg-flow-list__tag--muted">건너뜀</span>
+                                </span>
+                            </span>
+                        </template>
+                    </span>
+                </span>
+            </li>
+        </template>
+    </ol>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { buildSteps, groupSteps, summarizeSteps } from '@/shared/instanceSteps';
 
 const backend = BackendFactory.createBackend();
-
-/** 아직 끝나지 않았지만 이미 시작된 업무. 이 상태면 그 단계가 '진행 중' 이다. */
-const LIVE = new Set(['IN_PROGRESS', 'SUBMITTED', 'PENDING', 'TODO', 'NEW', 'RUNNING', 'Running']);
 
 export default {
     name: 'InstanceFlow',
     props: {
         instance: { type: Object, default: null },
         /** 이 인스턴스의 업무 목록. 대화 화면이 이미 들고 있는 것을 그대로 받는다. */
-        workList: { type: Array, default: () => [] }
+        workList: { type: Array, default: () => [] },
+        /** 'strip' | 'pill' | 'list' */
+        variant: { type: String, default: 'strip' },
+        /** 지금 내 차례인 업무. 알약과 목록에 '내 차례' 로 표시한다. */
+        mineTaskId: { type: String, default: '' }
     },
+    emits: ['open'],
     data: () => ({
         activities: [],
         sequences: [],
-        events: []
+        events: [],
+        gateways: []
     }),
     mounted() {
         this.loadDefinition();
@@ -74,80 +177,69 @@ export default {
             return this.instance && this.instance.defId;
         },
 
-        /** 업무를 액티비티 아이디로 묶는다. 같은 단계를 다시 한 경우 마지막 것만 본다. */
-        taskByActivity() {
-            const map = new Map();
-            (this.workList || []).forEach((w) => {
-                const key = w && (w.tracingTag || (w.task && w.task.activity_id));
-                if (!key) return;
-                const prev = map.get(key);
-                const at = (x) => new Date((x && (x.endDate || x.startDate)) || 0).getTime();
-                if (!prev || at(w) >= at(prev)) map.set(key, w);
-            });
-            return map;
-        },
-
         steps() {
-            return this.orderedActivities.map((activity) => {
-                const work = this.taskByActivity.get(activity.id);
-                let state = 'todo';
-                if (work) {
-                    if (work.status === 'DONE') state = 'done';
-                    else if (work.status === 'CANCELLED') state = 'skipped';
-                    else if (LIVE.has(work.status)) state = 'current';
-                }
-                return {
-                    id: activity.id,
-                    name: activity.name || activity.id,
-                    who: this.displayName(work) || activity.role || '',
-                    state
-                };
+            return buildSteps({
+                activities: this.activities,
+                sequences: this.sequences,
+                events: this.events,
+                gateways: this.gateways,
+                workList: this.workList,
+                whoOf: this.displayName,
+                mineTaskId: this.mineTaskId,
+                finished: /^(COMPLETED|DONE)$/i.test(String((this.instance && this.instance.status) || ''))
             });
         },
 
-        /**
-         * 정의에 적힌 차례대로 액티비티를 늘어놓는다.
-         *
-         * 시작 이벤트에서 출발해 sequences 를 따라간다. 정의 파일의 배열 순서는
-         * 그린 순서라 흐름과 다를 수 있다 — 실제로 이 저장소의 정의도 마지막
-         * 단계가 배열 맨 앞에 있다.
-         *
-         * 갈래(gateway)가 있으면 나오는 차례대로 줄을 세운다. 가지 않은 가지는
-         * 업무가 없으므로 '대기' 로 남는다.
-         */
-        orderedActivities() {
-            const all = this.activities || [];
-            if (all.length === 0) return [];
+        /** 그릴 줄 — 단계 하나, 또는 한 게이트웨이의 갈래 묶음. */
+        items() {
+            return groupSteps(this.steps);
+        },
 
-            const byId = new Map(all.map((a) => [a.id, a]));
-            const next = new Map();
-            (this.sequences || []).forEach((seq) => {
-                if (!seq || !seq.source) return;
-                if (!next.has(seq.source)) next.set(seq.source, []);
-                next.get(seq.source).push(seq.target);
-            });
+        summary() {
+            return summarizeSteps(this.steps);
+        },
 
-            const start = (this.events || []).find((e) => e && e.type === 'startEvent');
-            if (!start || next.size === 0) return all;
+        pillText() {
+            const s = this.summary;
+            if (s.current) return s.current.name;
+            if (s.finished) return '모든 단계를 마쳤습니다';
+            return s.next ? `다음: ${s.next.name}` : '';
+        },
 
-            const ordered = [];
-            const seen = new Set();
-            const walk = (id) => {
-                if (!id || seen.has(id)) return;
-                seen.add(id);
-                if (byId.has(id)) ordered.push(byId.get(id));
-                (next.get(id) || []).forEach(walk);
-            };
-            walk(start.id);
-
-            // 흐름에서 닿지 못한 것(끊긴 정의 등)도 뒤에 붙인다. 빠뜨리는 것보다 낫다.
-            all.forEach((a) => {
-                if (!seen.has(a.id)) ordered.push(a);
-            });
-            return ordered;
+        /** 끝난 만큼 채운 작은 원. 몇 단계 남았는지를 숫자 전에 먼저 보여 준다. */
+        ringStyle() {
+            const s = this.summary;
+            const pct = s.total ? Math.round((s.done / s.total) * 100) : 0;
+            return { '--pg-ring': `${pct}%` };
         }
     },
     methods: {
+        itemKey(item) {
+            return item.type === 'step' ? item.step.id : `gw-${item.id}`;
+        },
+
+        /** 게이트웨이 이름이 없으면 '분기' 로. */
+        branchTitle(item) {
+            return item.name || '분기';
+        },
+
+        laneName(lane) {
+            return lane.steps.map((s) => s.name).join(' → ');
+        },
+
+        laneFinished(lane) {
+            return lane.steps.every((s) => s.state === 'done' || s.state === 'skipped');
+        },
+
+        /** 간 갈래가 끝까지 끝났는가 — 띠에서 분기 칸을 '끝난 칸' 으로 칠한다. */
+        laneDone(item) {
+            return item.lanes.some((l) => l.state === 'taken' && this.laneFinished(l));
+        },
+
+        hasCurrent(item) {
+            return item.lanes.some((l) => l.steps.some((s) => s.state === 'current'));
+        },
+
         displayName(work) {
             if (!work) return '';
             const raw = work.username || '';
@@ -164,12 +256,14 @@ export default {
                 this.activities = (def && def.activities) || [];
                 this.sequences = (def && def.sequences) || [];
                 this.events = (def && def.events) || [];
+                this.gateways = (def && def.gateways) || [];
                 this.$nextTick(this.scrollToCurrent);
             } catch (e) {
                 // 흐름을 못 읽어도 대화는 열려야 한다. 줄만 접는다.
                 this.activities = [];
                 this.sequences = [];
                 this.events = [];
+                this.gateways = [];
             }
         },
 
@@ -288,5 +382,251 @@ export default {
 .pg-flow__step--skipped .pg-flow__who {
     text-decoration: line-through;
     opacity: 0.6;
+}
+
+/* ---- pill: 입력창 위 한 줄 ---------------------------------------------- */
+.pg-flow-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 12px;
+    border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+    border-radius: 10px;
+    background: rgb(var(--v-theme-surface));
+    font-size: 13px;
+    line-height: 18px;
+    color: rgba(var(--v-theme-on-surface), 0.7);
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pg-flow-pill__ring {
+    flex: 0 0 auto;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: conic-gradient(rgb(var(--v-theme-primary)) var(--pg-ring, 0%), rgba(var(--v-theme-on-surface), 0.12) 0);
+    -webkit-mask: radial-gradient(circle, transparent 3.5px, #000 4px);
+    mask: radial-gradient(circle, transparent 3.5px, #000 4px);
+}
+
+.pg-flow-pill__text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pg-flow-pill__text strong {
+    margin-right: 4px;
+    font-weight: 600;
+    color: rgb(var(--v-theme-primary));
+}
+
+.pg-flow-pill__count {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+    font-variant-numeric: tabular-nums;
+}
+
+.pg-flow-pill__chev {
+    flex: 0 0 auto;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+/* ---- list: 진행 상황 패널의 세로 체크리스트 -------------------------------- */
+.pg-flow-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pg-flow-list__item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+/* 앞뒤 단계를 잇는 세로 선 — 표시(점) 가운데를 지난다. */
+.pg-flow-list__item + .pg-flow-list__item::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: -6px;
+    height: 12px;
+    width: 1px;
+    background: rgba(var(--v-theme-on-surface), 0.15);
+}
+
+.pg-flow-list__mark {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+    margin-top: 1px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(var(--v-theme-on-surface), 0.25);
+    color: #fff;
+}
+
+.pg-flow-list__item--done .pg-flow-list__mark {
+    border-color: rgba(var(--v-theme-on-surface), 0.55);
+    background: rgba(var(--v-theme-on-surface), 0.55);
+}
+
+.pg-flow-list__item--current .pg-flow-list__mark {
+    border-color: rgb(var(--v-theme-primary));
+    box-shadow: inset 0 0 0 3px rgb(var(--v-theme-surface)), inset 0 0 0 8px rgb(var(--v-theme-primary));
+}
+
+.pg-flow-list__body {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.pg-flow-list__name {
+    font-size: 14px;
+    line-height: 20px;
+    color: rgba(var(--v-theme-on-surface), 0.85);
+}
+
+.pg-flow-list__item--todo .pg-flow-list__name {
+    color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.pg-flow-list__item--current .pg-flow-list__name {
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.95);
+}
+
+.pg-flow-list__item--skipped .pg-flow-list__name {
+    text-decoration: line-through;
+    color: rgba(var(--v-theme-on-surface), 0.4);
+}
+
+.pg-flow-list__who {
+    font-size: 12px;
+    line-height: 17px;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+.pg-flow-list__tag {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 18px;
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.1);
+}
+
+.pg-flow-list__tag--muted {
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    background: rgba(var(--v-theme-on-surface), 0.06);
+}
+/* 분기 — 띠에서는 갈래를 한 칸에 겹쳐 쌓는다. */
+.pg-flow__step--branch {
+    width: 120px;
+}
+
+.pg-flow__diamond {
+    position: relative;
+    z-index: 1;
+    width: 12px;
+    height: 12px;
+    transform: rotate(45deg);
+    border: 2px solid rgba(var(--v-theme-on-surface), 0.3);
+    background: rgb(var(--v-theme-surface));
+}
+
+.pg-flow__diamond--decided {
+    border-color: rgb(var(--v-theme-primary));
+    background: rgb(var(--v-theme-primary));
+}
+
+.pg-flow__lane {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 0.625rem;
+    line-height: 1.5;
+    padding: 0 4px;
+    color: rgba(var(--v-theme-on-surface), 0.55);
+}
+
+.pg-flow__lane-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pg-flow__lane--taken {
+    color: rgb(var(--v-theme-primary));
+    font-weight: 700;
+}
+
+.pg-flow__lane--skipped {
+    text-decoration: line-through;
+    opacity: 0.55;
+}
+
+/* ---- list: 분기 묶음 ---------------------------------------------------- */
+.pg-flow-list__mark--gw {
+    width: 12px;
+    height: 12px;
+    margin: 3px 2px 0;
+    border-radius: 2px;
+    transform: rotate(45deg);
+    border: 1.5px solid rgba(var(--v-theme-on-surface), 0.35);
+}
+
+.pg-flow-list__mark--decided {
+    border-color: rgba(var(--v-theme-on-surface), 0.55);
+    background: rgba(var(--v-theme-on-surface), 0.55);
+}
+
+.pg-flow-lanes {
+    display: flex;
+    flex-direction: column;
+    margin-top: 6px;
+    padding-left: 10px;
+    border-left: 1px dashed rgba(var(--v-theme-on-surface), 0.2);
+}
+
+.pg-flow-lanes__or {
+    font-size: 11px;
+    line-height: 16px;
+    color: rgba(var(--v-theme-on-surface), 0.4);
+}
+
+.pg-flow-lanes__lane {
+    display: flex;
+    flex-direction: column;
+}
+
+.pg-flow-list__item--sub {
+    padding: 3px 0;
+}
+
+/* 갈래 안의 단계끼리는 세로 선을 잇지 않는다 — 갈래를 가르는 것은 '또는' 과 점선이다. */
+.pg-flow-list__item--sub::before {
+    display: none;
+}
+
+.pg-flow-lanes__lane--skipped .pg-flow-list__mark {
+    border-style: dashed;
 }
 </style>

@@ -1,8 +1,15 @@
+/**
+ * 지금 손댈 수 있는 업무의 상태.
+ *
+ * TODO 는 넣지 않는다. 엔진은 인스턴스를 시작할 때 닿을 수 있는 뒤 단계를 모두
+ * TODO 로 미리 만들어 둔다(예정 업무 — polling_service/database.py). 실제로 차례가
+ * 오면 IN_PROGRESS 로 바뀐다. TODO 를 세면 배타 게이트웨이의 가지까지 '할 일' 로
+ * 잡혀, 아직 오지도 않은 일이 여러 건 쌓인 것처럼 보인다.
+ */
 export const SIMPLE_INBOX_ACTIONABLE_STATUSES = new Set([
     'IN_PROGRESS',
     'SUBMITTED',
     'PENDING',
-    'TODO',
     'NEW',
     'DRAFT',
     'RUNNING',

@@ -1,6 +1,7 @@
 <template>
     <div class="pg-tl">
-        <InstanceFlow :instance="instance" :workList="workList" />
+        <!-- 휴대폰 간소화 화면에서는 띠 대신 입력창 위 한 줄 + 진행 상황 패널로 보인다(아래). -->
+        <InstanceFlow v-if="!phoneShell" :instance="instance" :workList="workList" />
 
         <ChatThread
             ref="thread"
@@ -11,21 +12,22 @@
         />
 
         <!--
-            지금 누가 무엇을 하고 있는지. 말풍선이 아니라 아래에 따로 둔다 —
-            이건 누가 한 말이 아니라 화면의 상태다.
+            지금 누가 무엇을 하고 있는지. 말풍선이 아니라 대화 끝에 붙는 상태 한 줄이다 —
+            누가 한 말이 아니라 화면의 상태이기 때문이다.
+            에이전트·엔진이 일하는 중이면 클로드처럼 '✻ 작업 중…' 으로 움직이게 보이고,
+            사람이 맡고 있으면 누가 하고 있는지만 조용히 적는다.
         -->
-        <div v-if="statusLine" class="pg-tl__status">
-            <v-progress-circular indeterminate :size="14" :width="2" color="primary" class="mr-2"></v-progress-circular>
-            <span>{{ statusLine }}</span>
-        </div>
-
-        <!--
-            에이전트가 끝까지 맡는 업무(COMPLETE)는 내 몫이어도 손댈 것이 없다.
-            제출까지 에이전트가 하므로 입력창을 내면 오히려 헷갈린다 — 알리기만 한다.
-        -->
-        <div v-if="autoTurn" class="pg-tl__auto">
-            <v-progress-circular indeterminate :size="15" :width="2" color="primary" class="mr-2"></v-progress-circular>
-            <span>{{ autoTurn.name }} — 에이전트가 처리하고 제출까지 맡습니다.</span>
+        <div
+            v-if="working"
+            class="pg-working"
+            :class="{ 'pg-working--busy': working.busy }"
+            role="status"
+            aria-live="polite"
+            data-testid="instance-working"
+        >
+            <span v-if="working.busy" class="pg-working__spark" aria-hidden="true">✻</span>
+            <span class="pg-working__text">{{ working.text }}</span>
+            <span v-if="working.what" class="pg-working__what">{{ working.what }}</span>
         </div>
 
         <!--
@@ -35,7 +37,12 @@
         <div v-if="myTurn" class="pg-tl__hitl">
             <div class="pg-tl__hitl-head">
                 <v-icon size="15" color="primary" class="mr-1">mdi-hand-back-right-outline</v-icon>
-                <span>내 차례입니다 — {{ myTurn.name }}</span>
+                <!--
+                    초안(DRAFT) 모드는 에이전트가 폼을 채우고 제출은 내가 한다. 그냥 '내 차례' 라고만
+                    하면 자동으로 끝나야 할 일이 왜 멈춰 있느냐고 읽힌다 — 무엇을 하면 되는지 적는다.
+                -->
+                <span v-if="myTurn.agentMode === 'DRAFT' && !draftRunning">초안 확인 후 제출해 주세요 — {{ myTurn.name }}</span>
+                <span v-else>내 차례입니다 — {{ myTurn.name }}</span>
                 <v-spacer></v-spacer>
                 <v-btn size="x-small" variant="text" @click="goTask(myTurn)">따로 열기</v-btn>
             </div>
@@ -46,7 +53,7 @@
                 먼저 적어 둔 값이 있으면 초안이 와도 덮어쓰지 않는다.
             -->
             <div v-if="draftRunning" class="pg-tl__draft pg-tl__draft--busy">
-                <v-progress-circular indeterminate :size="14" :width="2" color="primary" class="mr-2"></v-progress-circular>
+                <!-- 돌아가는 표시는 대화 끝의 '작업 중…' 한 곳에만 둔다. 여기는 할 수 있는 일을 알린다. -->
                 에이전트가 초안을 만드는 중입니다. 먼저 적어 넣으셔도 됩니다.
             </div>
 
@@ -90,7 +97,67 @@
             파일을 붙이거나 말로 적는 일은 인스턴스 대화에서도 마찬가지로 필요하고,
             달리 만들어 두면 채팅 쓰다 이리 오는 사람이 다시 배우게 된다.
         -->
+        <!--
+            휴대폰: 지금 어디쯤인지 한 줄. 누르면 진행 상황 패널이 열린다.
+            대화 위에 띠를 얹으면 화면을 먹고 대화와 따로 노는 것처럼 보였다 —
+            Claude Code 가 할 일을 입력창 위 한 줄로 접어 두는 자리에 둔다.
+        -->
+        <div v-if="phoneShell" class="pg-tl__pill">
+            <InstanceFlow
+                variant="pill"
+                :instance="instance"
+                :workList="workList"
+                :mineTaskId="(myTurn && myTurn.taskId) || ''"
+                @open="openPanel('progress')"
+            />
+        </div>
+
         <UnifiedChatInput ref="composer" variant="inline" class="pg-tl__composer" @sendMessage="send" />
+
+        <!--
+            휴대폰: 앱바 오른쪽 패널 단추 → 클로드 Cowork 의 오른쪽 패널처럼
+            '진행 상황' 과 '산출물' 을 접이식 칸으로 모아 보인다. 바깥을 누르면 닫힌다.
+        -->
+        <template v-if="phoneShell">
+            <Teleport to="#pg-m-appbar-actions">
+                <button
+                    type="button"
+                    class="pg-tl__panel-btn"
+                    :class="{ 'pg-tl__panel-btn--on': panelOpen }"
+                    aria-label="진행 상황 · 산출물"
+                    data-testid="instance-panel-toggle"
+                    @click="panelOpen ? (panelOpen = false) : openPanel('progress')"
+                >
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <rect x="2.75" y="3.75" width="14.5" height="12.5" rx="2.25" stroke="currentColor" stroke-width="1.5" />
+                        <path d="M12.5 4v12" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
+                </button>
+            </Teleport>
+            <Teleport to="body">
+                <div v-if="panelOpen" class="pg-m-side-scrim" @click="panelOpen = false"></div>
+                <aside v-if="panelOpen" class="pg-m-side" data-testid="instance-side-panel">
+                    <section class="pg-m-side__sec">
+                        <button type="button" class="pg-m-side__head" :aria-expanded="sections.progress" @click="sections.progress = !sections.progress">
+                            진행 상황
+                            <v-icon size="16">{{ sections.progress ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                        </button>
+                        <div v-if="sections.progress" class="pg-m-side__body">
+                            <InstanceFlow variant="list" :instance="instance" :workList="workList" :mineTaskId="(myTurn && myTurn.taskId) || ''" />
+                        </div>
+                    </section>
+                    <section class="pg-m-side__sec">
+                        <button type="button" class="pg-m-side__head" :aria-expanded="sections.output" @click="sections.output = !sections.output">
+                            산출물
+                            <v-icon size="16">{{ sections.output ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                        </button>
+                        <div v-if="sections.output" class="pg-m-side__body">
+                            <InstanceOutput :instance="instance" :compact="true" />
+                        </div>
+                    </section>
+                </aside>
+            </Teleport>
+        </template>
     </div>
 </template>
 
@@ -118,23 +185,28 @@ import agentEventTimeline from '@/components/ui/agentEventTimeline.js';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import InstanceFlow from './InstanceFlow.vue';
+import InstanceOutput from './InstanceOutput.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import { usePhoneShell } from '@/shared/phoneShell';
 import { fileNameOf, isWorkspacePath, workspaceFileUrl } from '@/utils/workspaceFile';
+import { fetchFormDefs, formIdOf, hasValue, stripScopeSuffix } from '@/shared/workItemOutput';
 
 const backend = BackendFactory.createBackend();
-
-/** 말풍선 안에서 문단을 가르는 빈 줄. */
-const SEP = String.fromCharCode(10) + String.fromCharCode(10);
 
 /** 에이전트가 손을 대는 업무인가. agent_mode 가 붙으면 에이전트가 관여한다. */
 function hasAgent(raw) {
     return !!(raw && (raw.agent_mode || raw.agent_orch));
 }
 
+
 export default {
     name: 'InstanceTimeline',
-    components: { ChatThread, DynamicForm, UnifiedChatInput, InstanceFlow },
+    components: { ChatThread, DynamicForm, UnifiedChatInput, InstanceFlow, InstanceOutput },
     mixins: [agentEventTimeline],
+    setup() {
+        const { active: phoneShell } = usePhoneShell();
+        return { phoneShell };
+    },
     props: {
         instance: Object,
         participantUsers: {
@@ -150,6 +222,11 @@ export default {
 
         // 내 차례 업무에 붙은 입력 폼
         formDefs: [],
+        // 폼 정의를 받아 본 정의 id · 폼 id. 같은 것을 두 번 받지 않는다.
+        formTried: new Set(),
+        /** 휴대폰의 진행 상황 · 산출물 패널. */
+        panelOpen: false,
+        sections: { progress: true, output: true },
         formData: {},
         formLoading: false,
         submitting: false,
@@ -195,18 +272,29 @@ export default {
         },
 
         /**
-         * 지금 누가 무엇을 하고 있는지 한 줄.
+         * 지금 누가 무엇을 하고 있는지 한 줄 — { busy, text, what } 또는 null.
          *
          * 아직 끝나지 않은 업무는 '한 말'이 없으니 말풍선으로 세우지 않는다.
-         * 내 차례이거나 에이전트가 대신 하는 중이면 아래 상자가 이미 알리므로 비운다.
+         * 기계(에이전트 · 엔진)가 일하는 중이면 busy — 클로드의 '작업 중…' 처럼 움직이게 보인다.
+         * 사람이 맡고 있으면 누가 하고 있는지만 적는다. 기다리는 것 말고 할 일이 없기 때문이다.
+         * 내 차례(초안이 끝난 뒤)는 아래 '내 차례' 상자가 알리므로 비운다.
          */
-        statusLine() {
-            const w = this.workList.find((x) => x.status === 'IN_PROGRESS' || x.status === 'PENDING');
-            if (!w) return '';
-            if (this.myTurn && this.myTurn.taskId === w.taskId) return '';
-            if (this.autoTurn && this.autoTurn.taskId === w.taskId) return '';
-            const who = this.displayName(w) || (this.isAgentAssignee(w) ? '에이전트' : '담당자');
-            return `${w.name} · ${who} 진행 중`;
+        working() {
+            if (this.draftRunning) return { busy: true, text: '작업 중…', what: `${this.myTurn.name} 초안` };
+            if (this.autoTurn) return { busy: true, text: '작업 중…', what: this.autoTurn.name };
+
+            // 제출된 뒤 엔진이 다음 단계를 여는 사이.
+            const submitted = this.workList.find((x) => x.status === 'SUBMITTED');
+            if (submitted) return { busy: true, text: '다음 단계로 넘기는 중…', what: submitted.name };
+
+            // PENDING(서브 프로세스를 기다리는 부모 등)은 누가 '하고 있는' 것이 아니라 건너뛴다 —
+            // 그 아래에서 실제로 돌아가는 자식 단계가 IN_PROGRESS 로 따로 있다.
+            const w = this.workList.find((x) => x.status === 'IN_PROGRESS' && !(this.myTurn && this.myTurn.taskId === x.taskId));
+            if (!w) return null;
+            const byAgent = this.isAgentAssignee(w) || (w.task || {}).agent_mode === 'COMPLETE';
+            const who = this.displayName(w) || (byAgent ? '에이전트' : '담당자');
+            if (byAgent) return { busy: true, text: '작업 중…', what: `${w.name} · ${who}` };
+            return { busy: false, text: `${who} 님이 진행 중`, what: w.name };
         },
 
         /**
@@ -277,9 +365,8 @@ export default {
         },
 
         /**
-         * 에이전트 이벤트를 업무별 결과와 도구 목록으로 접는다.
-         * 카드 여러 장 대신 말풍선 하나로 합친다 — 같은 업무의 도구 사용은
-         * '실행 상세' 안으로 들어가고, 겉에는 결과만 남는다.
+         * 에이전트 이벤트를 업무별 도구 목록과 실제로 돈 시각으로 접는다.
+         * 결과 값은 산출물 카드가 보이므로 여기서 글로 옮기지 않는다.
          */
         agentResultByTodo() {
             const todoByJob = {};
@@ -292,17 +379,10 @@ export default {
             this.tasks.forEach((t) => {
                 const todoId = todoByJob[t.jobId];
                 if (!todoId) return;
-                const bucket = (out[todoId] = out[todoId] || { content: '', toolCalls: [], at: null });
+                const bucket = (out[todoId] = out[todoId] || { toolCalls: [], at: null });
                 // 언제 실제로 돌았는지. 업무의 start_date 는 '언제 하기로 되어 있었는지'라
                 // 미래 날짜인 경우가 흔하다 — 대화 순서는 실제로 벌어진 시각을 따라야 한다.
                 if (t.startTime && (!bucket.at || new Date(t.startTime) < new Date(bucket.at))) bucket.at = t.startTime;
-
-                // 같은 결과가 에이전트 태스크와 '최종 결과 반환' 태스크로 두 번 온다.
-                // 그대로 이으면 같은 말을 두 번 하는 말풍선이 된다.
-                const text = this.asText(t.content);
-                if (text && !bucket.content.includes(text)) {
-                    bucket.content = bucket.content ? [bucket.content, text].join(SEP) : text;
-                }
 
                 (this.toolUsageStatusByTask[t.jobId] || []).forEach((u) => {
                     bucket.toolCalls.push({
@@ -324,35 +404,33 @@ export default {
             return this.workList
                 .filter((w) => STARTED.includes(w.status))
                 .map((w) => {
-                    const agent = hasAgent(w.task);
                     const found = byTodo[w.taskId];
-                    // 아직 끝나지 않은 업무는 남긴 말이 없다 — 아래 상태 줄이 대신 알린다.
-                    // 에이전트가 중간 결과를 내놓은 것만 예외로 말풍선에 올린다.
-                    if (w.status !== 'DONE' && w.status !== 'CANCELLED' && !(agent && found)) return null;
+                    // 끝난 단계가 남긴 것은 제출한 폼 하나다 — 산출물 카드로만 붙인다(누르면 원본 폼).
+                    // 대화에 말을 지어 넣지 않는다: '아래 내용으로 제출했습니다', '작업을 마치고 아래 내용을
+                    // 남겼습니다', '· 키: 값' 줄, 에이전트 결과를 풀어 쓴 글 모두 카드와 같은 것을 한 번 더
+                    // 말할 뿐이다. 진행 중인 단계는 대화 아래 '작업 중…' 표시가, 시작은 봇 줄이 알린다.
+                    if (w.status !== 'DONE') return null;
+                    const card = this.outputCardOf(w);
+                    if (!card) return null;
 
+                    // 에이전트가 끝까지 맡아 제출한 일만 '에이전트가 한 일' 이다(도구 실행 요약을 단다).
+                    // 초안(DRAFT) 모드는 에이전트가 채운 것을 사람이 확인해 제출했으므로 사람이 한 일이다.
+                    const agent = hasAgent(w.task) && (w.task || {}).agent_mode !== 'DRAFT';
                     // 내가 맡은 업무는 내 말로 취급한다 — 시작한 사람이 나인데 남처럼
                     // 왼쪽에 서 있으면 누가 한 일인지 오히려 헷갈린다.
                     const mine = this.isMine(w);
                     const agentAssignee = this.isAgentAssignee(w);
-
-                    // 무슨 일이 있었는지 한 줄, 그 아래에 남긴 값.
-                    // 에이전트가 한 일이라고 값만 툭 던지면 읽는 사람은 그게 결과인지
-                    // 중간 기록인지 알 수 없다 — 사람이 한 일과 똑같이 설명을 붙인다.
-                    const body = agent && found ? found.content : this.outputText(w.task && w.task.output);
-                    const lead = this.leadLine(w, mine, agent);
-                    const content = body ? [lead, body].join(SEP) : lead;
-                    if (!content) return null;
-
                     return {
                         uuid: `w-${w.taskId}`,
                         role: mine ? 'user' : 'system',
                         email: mine ? this.myEmail : '',
                         name: mine ? w.name : `${w.name} · ${this.displayName(w) || (agentAssignee ? '에이전트' : '담당자')}`,
-                        content,
+                        content: '',
                         timeStamp: this.happenedAt(w, found),
                         isAgent: agentAssignee,
                         avatar: mine || agentAssignee ? '' : this.avatarOf(w.endpoint) || this.avatarOf(w.username),
-                        toolCalls: agent && found ? found.toolCalls : []
+                        toolCalls: agent && found ? found.toolCalls : [],
+                        outputCard: card
                     };
                 })
                 .filter(Boolean);
@@ -363,23 +441,27 @@ export default {
          *
          * 업무 결과만 쌓이면 대화가 뜸기게 이어진다 — 누가 무엇을 마치자
          * 다음에 무슨 일이 시작됐는지가 어디에도 적혀 있지 않다. 그래서 단계가
-         * 열릴 때 그 사실을 한 줄로 남긴다. 내가 할 차례면 그것도 밝힌다.
+         * 열릴 때 그 사실을 한 줄로 남긴다.
+         *
+         * 누가 하는지는 붙이지 않는다. 내 차례면 아래 '내 차례' 상자와 진행 알약이,
+         * 남의 차례면 '○○ 님이 진행 중' 줄이 이미 알린다 — 여기서 또 말하면 겹친다.
          */
         stepMessages() {
+            // 실제로 열린 단계만 알린다. TODO 는 엔진이 미리 만들어 둔 '예정' 이라 아직
+            // 시작되지 않았다 — 이걸 알리면 배타 게이트웨이의 가지 전부와 마지막 단계까지
+            // '진행됩니다' 가 한꺼번에 찍혀, 인스턴스가 다 끝난 것처럼 보였다.
+            const STARTED = ['IN_PROGRESS', 'PENDING', 'SUBMITTED', 'DONE', 'CANCELLED'];
             return this.workList
-                .filter((w) => w && w.taskId && w.startDate)
+                .filter((w) => w && w.taskId && STARTED.includes(w.status))
                 .map((w) => {
-                    const who = this.displayName(w) || (this.isAgentAssignee(w) ? '에이전트' : '담당자');
-                    const mine = this.isMine(w);
-                    const tail = mine ? '내 차례입니다.' : `${who} 님이 수행합니다.`;
                     return {
                         uuid: `step-${w.taskId}`,
                         role: 'system',
                         email: '',
                         name: 'Process GPT',
                         // 마크다운을 쓰지 않는다 — 이 대화창은 **굵게** 를 모르고 별표를 그대로 보인다.
-                        content: `다음 단계로 ${w.name}${this.subjectJosa(w.name)} 진행되며, ${tail}`,
-                        timeStamp: w.startDate,
+                        content: `다음 단계로 ${w.name}${this.subjectJosa(w.name)} 진행됩니다.`,
+                        timeStamp: this.openedAt(w),
                         isAgent: true,
                         avatar: ''
                     };
@@ -434,8 +516,17 @@ export default {
             this.width = window.innerWidth;
         },
 
+        /** 진행 상황 · 산출물 패널을 연다. 알약에서 열면 진행 상황이 펼쳐진 채로 연다. */
+        openPanel(section) {
+            if (section) this.sections[section] = true;
+            this.panelOpen = true;
+        },
+
         async reload() {
+            this.panelOpen = false;
             this.teardown();
+            this.formDefs = [];
+            this.formTried = new Set();
             if (!this.instId) return;
             await Promise.all([this.loadWorkList(), this.loadEvents(), this.loadChats(), this.loadUsers()]);
             await this.subscribe();
@@ -466,7 +557,14 @@ export default {
                 action: async () => {
                     const list = await backend.getAllWorkListByInstId(this.instId);
                     list.sort((a, b) => new Date(a.startDate || 0) - new Date(b.startDate || 0));
+                    // 서브 프로세스 단계는 엔진이 이름 뒤에 실행 범위 표시를 붙인다('현장조사: (:0)').
+                    // 사람이 읽을 이름이 아니므로 떼어 낸다.
+                    list.forEach((w) => {
+                        if (w && typeof w.name === 'string') w.name = stripScopeSuffix(w.name);
+                    });
                     this.workList = list;
+                    // 새로 열린 서브 프로세스가 있으면 그 정의의 폼도 받는다(이미 받은 정의는 건너뛴다).
+                    this.loadFormDefs();
                 }
             });
         },
@@ -496,9 +594,21 @@ export default {
         },
 
         /**
-         * 보낸이 이름.
-         * 업무에 적힌 username 이 이메일인 경우가 있다 — 사람 이름이 있으면 그걸 쓴다.
+         * 단계가 실제로 열린 시각.
+         *
+         * start_date 는 '언제 하기로 되어 있었는지' 라 미래 날짜인 경우가 흔하다(기간을 더해
+         * 미리 잡아 둔다). 그걸 쓰면 알림이 대화 맨 끝으로 밀리거나 앞뒤가 뒤집힌다.
+         * 상태가 바뀔 때 DB 트리거가 적는 actual_start_date 를 먼저 쓰고, 없으면(처음 단계 등)
+         * 미래가 아닌 한 start_date 를 쓴다.
          */
+        openedAt(w) {
+            const raw = w.task || {};
+            if (raw.actual_start_date) return raw.actual_start_date;
+            const planned = new Date(w.startDate || 0).getTime();
+            if (planned && planned <= Date.now()) return w.startDate;
+            return raw.updated_at || w.startDate;
+        },
+
         /**
          * 받침에 따라 '이' 와 '가' 를 고른다.
          *
@@ -514,6 +624,10 @@ export default {
             return (code - 0xac00) % 28 === 0 ? '가' : '이';
         },
 
+        /**
+         * 보낸이 이름.
+         * 업무에 적힌 username 이 이메일인 경우가 있다 — 사람 이름이 있으면 그걸 쓴다.
+         */
         displayName(w) {
             const u = this.userOf(w.endpoint) || this.userOf(w.username);
             return (u && u.username) || w.username || '';
@@ -627,8 +741,16 @@ export default {
         },
 
         /** 내가 지금 손대야 하는(또는 에이전트가 대신 하는) 업무인가. */
+        /**
+         * 지금 내가 손댈 업무인가.
+         *
+         * IN_PROGRESS 만 센다. PENDING 은 엔진 쪽 대기다 — 서브 프로세스를 부른 부모 단계가
+         * 자식이 끝나길 기다리거나(폼이 없다), 체크포인트를 다시 따지는 중이다. 이걸 내 차례로
+         * 잡으면 '교통 민원 처리' 같은 부모가 내 차례로 뜨고, 정작 해야 할 자식 단계
+         * ('현장조사')는 남의 일처럼 '진행 중' 줄로 밀려났다.
+         */
         isMyPendingTask(w) {
-            return (w.status === 'IN_PROGRESS' || w.status === 'PENDING') && this.isMine(w);
+            return w.status === 'IN_PROGRESS' && this.isMine(w);
         },
 
         /**
@@ -689,16 +811,41 @@ export default {
             this.draftPreview = false;
         },
 
+        /**
+         * 이 인스턴스가 쓰는 폼 목록. 내 차례 폼뿐 아니라, 끝난 단계의 산출물 카드를 눌렀을 때
+         * 원본 폼을 그대로 그려 보이는 데도 쓴다.
+         *
+         * 서브 프로세스 단계의 폼은 부모가 아니라 서브 프로세스 정의에 딸려 있다. 부모 정의의
+         * 폼만 받으면 서브 프로세스의 내 차례에 입력 칸 없이 '제출' 만 보인다 — 업무들이
+         * 가리키는 정의마다 한 번씩 받아 합친다.
+         */
+        loadFormDefs(extraDefIds = []) {
+            // 업무 목록이 바뀔 때마다 불린다. 겹쳐 돌면 앞 호출이 받는 중인 폼을 뒤 호출이 없는 줄 알고
+            // id 로 또 받는다 — 한 줄로 세워 차례로 돈다.
+            this.formLoadChain = (this.formLoadChain || Promise.resolve()).then(async () => {
+                const tried = this.formTried;
+                const fresh = await fetchFormDefs(backend, {
+                    defIds: [this.instance && this.instance.defId, ...this.workList.map((w) => w.defId), ...extraDefIds],
+                    formIds: this.workList.map(formIdOf),
+                    have: this.formDefs,
+                    tried
+                });
+                // 받는 사이 다른 인스턴스로 넘어갔으면 버린다.
+                if (fresh.length && tried === this.formTried) this.formDefs = [...this.formDefs, ...fresh];
+            });
+            return this.formLoadChain;
+        },
+
         /** 내 차례 업무의 입력 폼을 받아 온다. 정의당 폼 목록은 한 번만 받는다. */
         async loadForm(turn) {
             this.loadedFormFor = turn.taskId;
             this.formData = {};
             this.formBaseline = '';
             if (!turn.tool || !turn.tool.startsWith('formHandler:') || !turn.defId) return;
-            if (this.formDefs.length) return;
+            if (this.myTurnForm) return;
             this.formLoading = true;
             try {
-                this.formDefs = (await backend.listDefinition('form_def', { match: { proc_def_id: turn.defId } })) || [];
+                await this.loadFormDefs([turn.defId]);
             } finally {
                 this.formLoading = false;
             }
@@ -728,107 +875,19 @@ export default {
             });
         },
 
-        // ---- 사람이 한 일을 말로 ----------------------------------------
-
         /**
-         * 무슨 일이 있었는지 한 줄로.
-         * 내가 한 일이면 '완료했습니다' 는 군더더기라 값만 남기지만,
-         * 그마저 없으면 아무 말도 없는 말풍선이 되므로 한 줄은 남긴다.
+         * 끝난 업무가 남긴 값을 산출물 카드(OutputCard)가 읽는 꼴로.
+         * 폼으로 남긴 값이면 그 폼을 함께 넘겨, 카드를 눌렀을 때 원본 폼 그대로 보이게 한다.
          */
-        leadLine(w, mine, agent) {
-            const hasValues = !!this.outputText(w.task && w.task.output) || (agent && !!(this.agentResultByTodo[w.taskId] || {}).content);
-            if (w.status === 'DONE') {
-                if (agent) return hasValues ? '작업을 마치고 아래 내용을 남겼습니다.' : '작업을 마쳤습니다.';
-                if (mine) return hasValues ? '아래 내용으로 제출했습니다.' : '완료했습니다.';
-                return hasValues ? '완료하고 아래 내용을 남겼습니다.' : '완료했습니다.';
-            }
-            if (w.status === 'SUBMITTED') return '제출했습니다. 다음 단계를 준비하는 중입니다.';
-            if (w.status === 'CANCELLED') return '취소되었습니다.';
-            if (agent) return '작업하는 중입니다.';
-            return mine ? '내가 맡고 있습니다.' : '맡고 있습니다.';
-        },
-
-        humanContent(w, mine) {
-            // 업무 이름은 보낸이 줄에 이미 있다. 본문에서 또 부르면 같은 말을 두 번 한다.
-            if (w.status === 'DONE') {
-                const out = this.outputText(w.task && w.task.output);
-                // 내가 한 일이면 '완료했습니다' 는 군더더기다. 내가 적어 넣은 값이
-                // 곧 내가 한 말이고, 남이 한 일일 때만 무슨 일이 있었는지 알려야 한다.
-                if (mine) return out || '완료했습니다.';
-                return out ? ['완료했습니다.', out].join(SEP) : '완료했습니다.';
-            }
-            if (w.status === 'SUBMITTED') return '제출했습니다. 다음 단계를 준비하는 중입니다.';
-            if (w.status === 'CANCELLED') return '취소되었습니다.';
-            return '맡고 있습니다.';
-        },
-
-        /** 업무가 남긴 값. 폼 아이디로 한 겹 감싸여 오므로 벗겨서 줄로 편다. */
-        outputText(output) {
-            if (!output || typeof output !== 'object') return '';
-            const lines = [];
-            const walk = (obj, depth) => {
-                if (depth > 2 || lines.length >= 8) return;
-                Object.keys(obj).forEach((k) => {
-                    if (lines.length >= 8) return;
-                    const v = obj[k];
-                    const label = String(k).replace(/_/g, ' ');
-                    const file = this.fileLink(v);
-                    if (file) lines.push(`· ${label}: ${file}`);
-                    else if (v && typeof v === 'object' && !Array.isArray(v)) walk(v, depth + 1);
-                    else if (v !== null && v !== undefined && v !== '')
-                        lines.push(`· ${label}: ${this.readable(Array.isArray(v) ? v.join(', ') : String(v))}`);
-                });
-            };
-            walk(output, 0);
-            return lines.join('\n');
-        },
-
-        /**
-         * 파일 하나를 가리키는 값이면 이름 한 줄짜리 링크로 돌려준다.
-         *
-         * 에이전트가 올린 문서는 {path, name, html_url, ext} 꼴로 남는다. 그것을 그대로
-         * 펌면 대화에 긴 저장소 주소가 네 줄 쌓인다 — 읽는 사람에게 필요한 것은
-         * 어떤 파일이 나왔는가이지, 그것이 어느 버킷에 있는가가 아니다.
-         */
-        fileLink(v) {
-            if (!v || typeof v !== 'object' || Array.isArray(v)) return '';
-            const path = v.path || v.fullPath || v.file_path || '';
-            if (!path) return '';
-            const name = v.name || fileNameOf(String(path));
-            const href = isWorkspacePath(path) ? workspaceFileUrl(String(path)) : String(path);
-            return /^https?:[/][/]/.test(href) ? `[${name}](${href})` : name;
-        },
-
-        /**
-         * 에이전트가 내놓은 값을 읽을 수 있는 글로 바꾼다.
-         * 결과가 JSON 문자열로 오는 경우가 흔한데 그대로 말풍선에 넣으면
-         * 중괄호와 따옴표가 화면을 덮는다. 펴서 항목 줄로 바꾼다.
-         */
-        asText(v) {
-            if (v === null || v === undefined) return '';
-            if (typeof v === 'object') return this.outputText(v);
-            const t = String(v).trim();
-            if (t.startsWith('{') || t.startsWith('[')) {
-                try {
-                    return this.outputText(JSON.parse(t)) || t;
-                } catch (e) {
-                    return t;
-                }
-            }
-            return t;
-        },
-
-        /**
-         * 값을 읽기 좋게.
-         * 파일은 작업 공간 경로(/workspace/…)로 온다. 대화에 그 경로를 그대로 적으면
-         * 어디에 있는지만 알 뿐 꺼내 볼 수가 없다. 이름으로 보이되, 누르면
-         * 받을 수 있게 링크로 남긴다(ChatThread 가 [이름](주소)를 링크로 그린다).
-         */
-        readable(v) {
-            const t = String(v).trim();
-            if (isWorkspacePath(t)) return `[${fileNameOf(t)}](${workspaceFileUrl(t)})`;
-            if (/^[\/].*[\/]/.test(t) && !t.includes(' ')) return t.split(/[\/]/).pop();
-            return this.shorten(t, 200);
+        outputCardOf(w) {
+            const out = w.task && w.task.output;
+            if (!out || typeof out !== 'object' || Object.keys(out).length === 0) return null;
+            const formId = (w.tool || '').replace('formHandler:', '');
+            const form = formId ? this.formDefs.find((f) => f.id === formId) : null;
+            const inner = formId && out[formId] && typeof out[formId] === 'object' ? out[formId] : out;
+            // 빈 폼으로 제출됐거나 값이 모두 비어 있으면(파일 칸이 null 등) 보일 것이 없다 — 빈 카드를 달지 않는다.
+            if (!hasValue(inner)) return null;
+            return { name: w.name, type: form ? 'form' : 'value', html: form ? form.html : null, output: inner };
         },
 
         shorten(s, n) {
@@ -913,28 +972,88 @@ export default {
 }
 
 /* 지금 진행 중인 것. 말풍선이 아니라 목록 아래 한 줄. */
-.pg-tl__status {
+/*
+ * 작업 중 표시 — 대화 끝에 붙는 상태 한 줄.
+ * 기계가 일하는 동안(busy)은 클로드처럼 별표가 돌고 글자에 빛이 지나간다.
+ * 말풍선이 아니므로 상자를 두르지 않는다.
+ */
+.pg-working {
     flex: 0 0 auto;
     display: flex;
     align-items: center;
-    margin: 0 10px 6px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    background: rgba(var(--v-theme-on-surface), 0.04);
-    font-size: 0.75rem;
-    color: rgba(var(--v-theme-on-surface), 0.65);
+    gap: 6px;
+    min-width: 0;
+    padding: 4px 16px 8px 20px;
+    font-size: 14px;
+    line-height: 20px;
+    color: rgba(var(--v-theme-on-surface), 0.55);
 }
 
-/* 에이전트가 제출까지 맡는 업무 알림. 손댈 것이 없으니 상자도 옅게. */
-.pg-tl__auto {
-    display: flex;
-    align-items: center;
-    margin: 0 10px 8px;
-    padding: 10px 14px;
-    border-radius: 12px;
-    background: rgba(var(--v-theme-on-surface), 0.05);
-    font-size: 0.8125rem;
-    color: rgba(var(--v-theme-on-surface), 0.7);
+.pg-working__spark {
+    flex: 0 0 auto;
+    display: inline-block;
+    font-size: 16px;
+    line-height: 1;
+    color: rgb(var(--v-theme-primary));
+    animation: pg-working-spark 1.6s ease-in-out infinite;
+}
+
+.pg-working__text {
+    flex: 0 0 auto;
+}
+
+.pg-working--busy .pg-working__text {
+    background: linear-gradient(
+        90deg,
+        rgba(var(--v-theme-on-surface), 0.45) 0%,
+        rgba(var(--v-theme-on-surface), 0.9) 50%,
+        rgba(var(--v-theme-on-surface), 0.45) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: pg-working-shimmer 1.8s linear infinite;
+}
+
+.pg-working__what {
+    min-width: 0;
+    font-size: 13px;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@keyframes pg-working-spark {
+    0% {
+        transform: rotate(0deg) scale(0.9);
+        opacity: 0.7;
+    }
+    50% {
+        transform: rotate(90deg) scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: rotate(180deg) scale(0.9);
+        opacity: 0.7;
+    }
+}
+
+@keyframes pg-working-shimmer {
+    from {
+        background-position: 200% 0;
+    }
+    to {
+        background-position: -200% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-working__spark,
+    .pg-working--busy .pg-working__text {
+        animation: none;
+    }
 }
 
 .pg-tl__hitl {

@@ -38,7 +38,8 @@
                         <span class="message-sender">{{ assistantLabel(msg) }}</span>
                     </div>
 
-                    <div class="bubble-wrap" :class="{ 'bubble-wrap--my': isMyMessage(msg) }">
+                    <!-- 글도 첨부도 없이 산출물 카드만 남은 말은 빈 말풍선을 그리지 않는다. -->
+                    <div v-if="hasBubbleBody(msg)" class="bubble-wrap" :class="{ 'bubble-wrap--my': isMyMessage(msg) }">
                         <div class="bubble" :class="{ 'bubble--my': isMyMessage(msg) }">
                             <div
                                 v-if="msg.content && msg.content.trim && msg.content.trim().length > 0"
@@ -101,10 +102,26 @@
                         </div>
                     </div>
 
+                    <!--
+                        이 말과 함께 남은 산출물. 글줄로 풀어 적지 않고 산출물 칸과 같은 카드로 보여 준다 —
+                        누르면 원본 폼이 열린다. 클로드가 대화 안의 파일을 카드로 보여 주는 것과 같다.
+                    -->
+                    <div v-if="msg.outputCard" class="message-output" :class="{ 'message-output--my': isMyMessage(msg) }">
+                        <OutputCard :item="msg.outputCard" />
+                    </div>
+                    <div
+                        v-if="msg.outputCard && !hasBubbleBody(msg) && msg.timeStamp"
+                        class="bubble-time message-output-time"
+                        :class="{ 'message-output-time--my': isMyMessage(msg) }"
+                    >
+                        {{ formatTime(msg.timeStamp) }}
+                    </div>
+
                     <details v-if="hasExecutionDetails(msg)" class="tool-calls">
                         <summary class="tool-calls__summary">
                             <v-icon size="14" color="primary" class="mr-1">mdi-timeline-check-outline</v-icon>
-                            실행 상세 {{ executionDetailCount(msg) }}건
+                            <!-- 휴대폰에서는 채팅방과 같은 클로드식 한 줄(Chat.toolSummaryLabel 참고). -->
+                            {{ phoneShell ? `도구 ${executionDetailCount(msg)}개 실행함` : `실행 상세 ${executionDetailCount(msg)}건` }}
                         </summary>
                         <div v-for="skill in msg.executionSkills || []" :key="`skill-${skill}`" class="tool-call-item">
                             <v-icon size="14" color="success" class="mr-1">mdi-lightning-bolt-outline</v-icon>
@@ -289,10 +306,16 @@
 
 <script>
 import HumanFeedbackPanel from '@/components/ui/HumanFeedbackPanel.vue';
+import OutputCard from '@/components/apps/todolist/OutputCard.vue';
+import { usePhoneShell } from '@/shared/phoneShell';
 
 export default {
     name: 'ChatThread',
-    components: { HumanFeedbackPanel },
+    components: { HumanFeedbackPanel, OutputCard },
+    setup() {
+        const { active: phoneShell } = usePhoneShell();
+        return { phoneShell };
+    },
     props: {
         messages: { type: Array, default: () => [] },
         currentUserEmail: { type: String, default: '' },
@@ -313,6 +336,11 @@ export default {
         isAgentMessage(msg) {
             if (msg && typeof msg.isAgent === 'boolean') return msg.isAgent;
             return !!msg && msg.role !== 'user';
+        },
+        /** 말풍선에 넣을 것(글 · 이미지 · 첨부 파일)이 있는가. */
+        hasBubbleBody(msg) {
+            const text = msg && typeof msg.content === 'string' ? msg.content.trim() : '';
+            return !!(text || (msg && msg.images && msg.images.length) || (msg && msg.pdfFile));
         },
         isMyMessage(msg) {
             const myEmail = (this.currentUserEmail || '').toString();
@@ -643,6 +671,21 @@ export default {
 .bubble-time--my {
     /* 말풍선과 같은 쪽에 붙인다 — 왼쪽에 떨어져 있으면 말풍선 안의 글처럼 보였다. */
     align-self: flex-end;
+}
+
+/* 말과 함께 남은 산출물 카드. 말풍선과 같은 쪽에, 너무 넓어지지 않게. */
+.message-output {
+    width: min(100%, 420px);
+    margin-top: 6px;
+}
+
+.message-output--my {
+    margin-left: auto;
+}
+
+/* 카드만 남은 말의 시각 — 카드와 같은 쪽 아래에. */
+.message-output-time--my {
+    text-align: right;
 }
 
 .message-header {
