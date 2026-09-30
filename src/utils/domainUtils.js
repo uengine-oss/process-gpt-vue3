@@ -1,3 +1,4 @@
+import { homePath } from '@/utils/homePath';
 /**
  * 도메인 관련 유틸리티 함수들
  */
@@ -33,10 +34,10 @@ export function getBaseDomain() {
 /**
  * 테넌트 도메인 URL을 생성합니다.
  * @param {string} tenantId - 테넌트 ID
- * @param {string} path - 경로 (기본값: '/process-architecture')
+ * @param {string} path - 경로 (기본값: 첫 화면 — 모바일은 정의 체계도, utils/homePath)
  * @returns {string} 완전한 테넌트 URL
  */
-export function getTenantUrl(tenantId, path = '/process-architecture') {
+export function getTenantUrl(tenantId, path = homePath()) {
     const baseDomain = getBaseDomain();
     const protocol = window.location.protocol;
     const port = window.location.port;
