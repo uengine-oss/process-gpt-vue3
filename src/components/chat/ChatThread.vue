@@ -44,7 +44,11 @@
 
                             <div v-if="msg.images && msg.images.length > 0" class="attached-images mt-2">
                                 <div v-for="(image, imgIdx) in msg.images" :key="imgIdx" class="attached-image-item">
-                                    <img :src="image.url || image" class="attached-image" @click="emitPreviewImage(image.url || image)" />
+                                    <img
+                                        :src="signedSrc(image, 'chat-images')"
+                                        class="attached-image"
+                                        @click="emitPreviewImage(image)"
+                                    />
                                     <v-btn
                                         icon
                                         size="x-small"
@@ -285,10 +289,13 @@
 
 <script>
 import HumanFeedbackPanel from '@/components/ui/HumanFeedbackPanel.vue';
+// 첨부 이미지·파일은 비공개 버킷에 있다. 주소는 그릴 때 서명해서 만든다.
+import { storageUrlMixin } from '@/utils/storageUrl';
 
 export default {
     name: 'ChatThread',
     components: { HumanFeedbackPanel },
+    mixins: [storageUrlMixin],
     props: {
         messages: { type: Array, default: () => [] },
         currentUserEmail: { type: String, default: '' },
@@ -312,17 +319,23 @@ export default {
                 if (container) container.scrollTop = container.scrollHeight;
             });
         },
-        emitPreviewImage(url) {
+        async emitPreviewImage(url) {
             if (!url) return;
-            this.$emit('preview-image', url);
+            // 메시지에 남은 값은 경로이거나 옛 공개 URL 이다. 열기 직전에 서명한다.
+            const signed = await this.signedUrl(url, 'chat-images');
+            if (!signed) return;
+            this.$emit('preview-image', signed);
         },
         emitPreviewBpmn(bpmn) {
             if (!bpmn) return;
             this.$emit('preview-bpmn', bpmn);
         },
-        emitOpenExternalUrl(url) {
+        async emitOpenExternalUrl(url) {
             if (!url) return;
-            this.$emit('open-external-url', url);
+            // 우리 저장소 주소면 서명하고, 바깥 주소면 그대로 넘긴다.
+            const resolved = await this.signedUrl(url);
+            if (!resolved) return;
+            this.$emit('open-external-url', resolved);
         },
         hasPdf2bpmnResultSections(message) {
             const result = message?.pdf2bpmnResult || {};
@@ -399,8 +412,10 @@ export default {
         async downloadAttachment(url, filename) {
             if (!url) return;
             const name = filename || this.getFilenameFromUrl(url) || 'download';
+            // 비공개 버킷이라 저장된 주소를 그냥 fetch 하면 400 이다. 먼저 서명한다.
+            const target = (await this.signedUrl(url)) || url;
             try {
-                const res = await fetch(url);
+                const res = await fetch(target);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const blob = await res.blob();
                 const objectUrl = URL.createObjectURL(blob);

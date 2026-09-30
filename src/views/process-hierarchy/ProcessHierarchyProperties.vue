@@ -53,10 +53,12 @@
                 <!-- ==================== Properties Tab ==================== -->
                 <v-window-item value="properties">
                     <!-- Sub-tabs: Process | Task -->
+                    <!-- PAL: 읽기모드에서도 탭 전환은 가능해야 하므로 readonly pointer-events 차단에서 제외 -->
                     <v-tabs
                         v-model="activeTab"
                         density="compact"
                         class="properties-tabs"
+                        :class="{ 'properties-tabs--clickable': isPalMode }"
                         color="primary"
                         height="32"
                     >
@@ -428,7 +430,126 @@
                                             :key="field.id"
                                             :field="field"
                                             :model="processForm"
+                                            :view-mode="isViewMode"
                                         />
+                                    </div>
+                                </div>
+
+                                <!-- 공개 범위 (PAL 전용) — docs/security.md "4-2. 프로세스 공개 범위" / 보안 항목 5.
+                                     값은 proc_def.visibility / proc_def.allowed_org_codes 컬럼에 저장되고
+                                     SELECT RLS(20260911_proc_def_visibility.sql)가 그대로 강제한다. -->
+                                <div v-if="isPalMode" class="section-group">
+                                    <div class="section-title" @click="toggle('proc-visibility')">
+                                        <v-icon size="14" class="mr-1">{{ isOpen('proc-visibility') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                        <v-icon size="14" class="mr-1" color="teal">mdi-shield-lock-outline</v-icon>
+                                        {{ $t('processVisibility.title') }}
+                                    </div>
+                                    <div v-show="isOpen('proc-visibility')" class="section-body">
+                                        <!-- 읽기 모드: 입력 위젯 대신 선택된 값만 조회용으로 표시 -->
+                                        <template v-if="isViewMode">
+                                            <div class="visibility-view-value">
+                                                <v-icon size="14" class="mr-1" color="teal">mdi-shield-lock-outline</v-icon>
+                                                {{ visibilityViewLabel }}
+                                            </div>
+                                            <div class="text-caption text-medium-emphasis mt-1">{{ visibilityHint }}</div>
+                                            <template v-if="processForm.visibility === 'org'">
+                                                <label class="field-label mt-3">{{ $t('processVisibility.orgLabel') }}</label>
+                                                <div v-if="(processForm.allowedOrgs || []).length" class="d-flex flex-wrap ga-1">
+                                                    <v-chip
+                                                        v-for="org in processForm.allowedOrgs"
+                                                        :key="org.id || org.name"
+                                                        size="small"
+                                                        label
+                                                        variant="tonal"
+                                                    >
+                                                        {{ org.name || org.id }}
+                                                    </v-chip>
+                                                </div>
+                                                <v-alert
+                                                    v-else
+                                                    type="warning"
+                                                    variant="tonal"
+                                                    density="compact"
+                                                    class="mt-2"
+                                                    :text="$t('processVisibility.orgEmptyWarning')"
+                                                />
+                                            </template>
+                                            <v-alert
+                                                v-else-if="processForm.visibility === 'private' && !processForm.owner"
+                                                type="warning"
+                                                variant="tonal"
+                                                density="compact"
+                                                class="mt-2"
+                                                :text="$t('processVisibility.privateNoOwnerWarning')"
+                                            />
+                                        </template>
+
+                                        <template v-else>
+                                        <v-select
+                                            v-model="processForm.visibility"
+                                            :items="visibilityOptions"
+                                            item-title="label"
+                                            item-value="value"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            @update:modelValue="onVisibilityChanged"
+                                        />
+                                        <div class="text-caption text-medium-emphasis mt-1">{{ visibilityHint }}</div>
+
+                                        <template v-if="processForm.visibility === 'org'">
+                                            <label class="field-label mt-3">{{ $t('processVisibility.orgLabel') }}</label>
+                                            <v-autocomplete
+                                                v-model="processForm.allowedOrgs"
+                                                :items="visibilityOrgOptions"
+                                                item-title="name"
+                                                item-value="id"
+                                                return-object
+                                                multiple
+                                                chips
+                                                closable-chips
+                                                density="compact"
+                                                variant="outlined"
+                                                hide-details
+                                                clearable
+                                                :loading="visibilityOrgSearchLoading"
+                                                :placeholder="$t('processVisibility.orgPlaceholder')"
+                                                :no-data-text="$t('processVisibility.orgNoData')"
+                                                :custom-filter="() => true"
+                                                @update:search="onVisibilityOrgSearch"
+                                            >
+                                                <template v-slot:item="{ item, props }">
+                                                    <v-list-item v-bind="props">
+                                                        <template v-if="item.raw.path" v-slot:subtitle>
+                                                            {{ item.raw.path }}
+                                                        </template>
+                                                        <template v-slot:append>
+                                                            <v-chip v-if="item.raw.member_count != null" size="x-small" color="grey" variant="tonal">
+                                                                {{ item.raw.member_count }}명
+                                                            </v-chip>
+                                                        </template>
+                                                    </v-list-item>
+                                                </template>
+                                            </v-autocomplete>
+                                            <v-alert
+                                                v-if="!(processForm.allowedOrgs || []).length"
+                                                type="warning"
+                                                variant="tonal"
+                                                density="compact"
+                                                class="mt-2"
+                                                :text="$t('processVisibility.orgEmptyWarning')"
+                                            />
+                                        </template>
+
+                                        <v-alert
+                                            v-else-if="processForm.visibility === 'private' && !processForm.owner"
+                                            type="warning"
+                                            variant="tonal"
+                                            density="compact"
+                                            class="mt-2"
+                                            :text="$t('processVisibility.privateNoOwnerWarning')"
+                                        />
+                                        </template>
                                     </div>
                                 </div>
 
@@ -449,6 +570,7 @@
                                             :key="field.id"
                                             :field="field"
                                             :model="processForm"
+                                            :view-mode="isViewMode"
                                         />
                                     </div>
                                 </div>
@@ -520,6 +642,111 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                                    </template>
+                                    <template v-if="sec.id === 'glossary'">
+                                <!-- 용어 정의 사전 (PAL): 이 프로세스에서 쓰는 용어 정리.
+                                     glossary_terms 테이블에 즉시 저장되며 통합 용어 사전(/glossary)·용어 재사용 자동완성과 연동 -->
+                                <div v-if="isPalMode && isBuiltinPropVisible('process', 'glossary')" class="section-group">
+                                    <div class="section-title" @click="toggle('proc-glossary')">
+                                        <v-icon size="14" class="mr-1">{{ isOpen('proc-glossary') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                        <v-icon size="14" class="mr-1" color="brown">mdi-book-open-variant</v-icon>
+                                        {{ builtinLabel('process', 'glossary', '용어 정의') }}
+                                        <v-chip v-if="processGlossaryTerms.length" size="x-small" variant="tonal" color="primary" class="ml-auto">
+                                            {{ processGlossaryTerms.length }}
+                                        </v-chip>
+                                    </div>
+                                    <div v-show="isOpen('proc-glossary')" class="section-body">
+                                        <div v-for="row in processGlossaryTerms" :key="row.id" class="glossary-row">
+                                            <template v-if="glossaryEditingId === row.id">
+                                                <v-text-field
+                                                    v-model="glossaryEditTerm"
+                                                    density="compact" variant="outlined" hide-details
+                                                    placeholder="용어" class="mb-1"
+                                                />
+                                                <v-textarea
+                                                    v-model="glossaryEditDefinition"
+                                                    density="compact" variant="outlined" hide-details rows="2" auto-grow
+                                                    placeholder="정의" class="mb-1"
+                                                />
+                                                <div class="d-flex justify-end ga-1">
+                                                    <v-btn size="x-small" variant="text" @click="cancelEditGlossaryTerm">취소</v-btn>
+                                                    <v-btn size="x-small" variant="tonal" color="primary" :disabled="!glossaryEditTerm.trim()" @click="saveEditGlossaryTerm">저장</v-btn>
+                                                </div>
+                                            </template>
+                                            <template v-else>
+                                                <div class="glossary-row__head">
+                                                    <span class="glossary-row__term">{{ row.term }}</span>
+                                                    <v-chip v-if="glossaryTermUsageCount(row.term) > 1" size="x-small" variant="tonal" class="ml-1" :title="'다른 프로세스 포함 ' + glossaryTermUsageCount(row.term) + '곳에서 사용'">
+                                                        {{ glossaryTermUsageCount(row.term) }}
+                                                    </v-chip>
+                                                    <span v-if="!isViewMode" class="glossary-row__actions">
+                                                        <v-btn icon variant="text" size="x-small" @click="startEditGlossaryTerm(row)">
+                                                            <v-icon size="13">mdi-pencil</v-icon>
+                                                        </v-btn>
+                                                        <v-btn icon variant="text" size="x-small" color="error" @click="removeGlossaryTerm(row)">
+                                                            <v-icon size="13">mdi-delete-outline</v-icon>
+                                                        </v-btn>
+                                                    </span>
+                                                </div>
+                                                <div class="glossary-row__definition">{{ row.definition || '-' }}</div>
+                                            </template>
+                                        </div>
+                                        <div v-if="!processGlossaryTerms.length" class="text-caption text-medium-emphasis mb-2">
+                                            등록된 용어가 없습니다.
+                                        </div>
+
+                                        <template v-if="!isViewMode">
+                                            <v-divider class="my-2" />
+                                            <label class="field-label">용어 추가</label>
+                                            <v-text-field
+                                                v-model="glossaryNewTerm"
+                                                density="compact" variant="outlined" hide-details
+                                                placeholder="용어 입력 — 기존 용어는 아래에 추천됩니다"
+                                                class="mb-1"
+                                                @focus="glossarySuggestOpen = true"
+                                                @blur="closeGlossarySuggest"
+                                            />
+                                            <!-- 기존 용어 추천 — 입력 전엔 전체(최대 표시 수 제한), 입력 중엔 부분 일치.
+                                                 mousedown.prevent: blur 로 목록이 닫히기 전에 클릭이 먼저 처리되게 -->
+                                            <div v-if="glossarySuggestOpen && glossaryMatchedSuggestions.length" class="glossary-suggest">
+                                                <div class="glossary-suggest__title">
+                                                    기존 용어 추천
+                                                    <span v-if="glossarySuggestOverflow > 0" class="glossary-suggest__more">외 {{ glossarySuggestOverflow }}개 — 계속 입력해 좁혀보세요</span>
+                                                </div>
+                                                <div
+                                                    v-for="s in glossaryMatchedSuggestions"
+                                                    :key="s.id"
+                                                    class="glossary-suggest__item"
+                                                    :class="{ 'glossary-suggest__item--used': s.alreadyInProcess }"
+                                                    @mousedown.prevent="pickGlossarySuggestion(s)"
+                                                >
+                                                    <div class="glossary-suggest__head">
+                                                        <span class="glossary-suggest__term">{{ s.term }}</span>
+                                                        <v-chip v-if="s.alreadyInProcess" size="x-small" variant="tonal" color="grey" class="ml-1">이 프로세스에 등록됨</v-chip>
+                                                        <span class="glossary-suggest__src">{{ s.proc_def_name || s.proc_def_id }}</span>
+                                                    </div>
+                                                    <div class="glossary-suggest__def">{{ s.definition || '-' }}</div>
+                                                </div>
+                                            </div>
+                                            <div v-if="glossaryReusedFrom" class="text-caption text-medium-emphasis mb-1">
+                                                기존 용어의 정의를 불러왔습니다 ({{ glossaryReusedFrom }})
+                                            </div>
+                                            <v-textarea
+                                                v-model="glossaryNewDefinition"
+                                                density="compact" variant="outlined" hide-details rows="2" auto-grow
+                                                placeholder="정의"
+                                                class="mb-1"
+                                            />
+                                            <div class="d-flex align-center">
+                                                <span class="text-caption text-medium-emphasis">추가·수정은 즉시 저장됩니다.</span>
+                                                <v-spacer />
+                                                <v-btn size="x-small" variant="tonal" color="primary" :disabled="!String(glossaryNewTerm || '').trim()" @click="addGlossaryTerm">
+                                                    <v-icon start size="13">mdi-plus</v-icon>추가
+                                                </v-btn>
+                                            </div>
+                                        </template>
                                     </div>
                                 </div>
                                     </template>
@@ -1051,6 +1278,63 @@
                                 <div class="pa-4">
                                     <!-- 섹션 순서는 속성 스키마의 display_order 를 따른다 (관리자 콘솔 → 속성 스키마 관리) -->
                                     <template v-for="sec in taskOrderedSections" :key="'task-sec-' + sec.id">
+                                        <template v-if="sec.id === 'task_catalog'">
+                                    <!-- Task Catalog 연동 (PAL 전용): 등록된 Task 적용 / 현재 Task 를 카탈로그에 등록.
+                                         변경(replace) 메뉴의 Task Catalog 그룹과 같은 적용 로직(taskCatalogApply)을 쓴다.
+                                         노출/순서는 스튜디오의 'Task 카탈로그' 행(task/task_catalog)이 제어한다. -->
+                                    <div
+                                        v-if="isPalMode && isCatalogApplicableElement && isBuiltinPropVisible('task', 'task_catalog')"
+                                        class="section-group"
+                                    >
+                                        <div class="section-title" @click="toggle('task-catalog')">
+                                            <v-icon size="14" class="mr-1">{{ isOpen('task-catalog') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                            <v-icon size="14" class="mr-1" color="amber-darken-2">mdi-folder-star</v-icon>
+                                            {{ builtinLabel('task', 'task_catalog', $t('taskCatalog.catalogSection')) }}
+                                            <v-chip v-if="appliedCatalogName" size="x-small" variant="tonal" color="primary" class="ml-auto">
+                                                {{ appliedCatalogName }}
+                                            </v-chip>
+                                        </div>
+                                        <div v-show="isOpen('task-catalog')" class="section-body">
+                                            <template v-if="!isViewMode">
+                                                <label class="field-label">{{ $t('taskCatalog.loadFromCatalog') }}</label>
+                                                <div class="d-flex align-center ga-2 mb-1">
+                                                    <v-autocomplete
+                                                        v-model="catalogApplySelectedId"
+                                                        :items="catalogApplyItems"
+                                                        item-title="title"
+                                                        item-value="value"
+                                                        density="compact" variant="outlined" hide-details clearable
+                                                        :placeholder="$t('taskCatalog.search')"
+                                                        :loading="catalogStore.loading"
+                                                    >
+                                                        <template v-slot:item="{ props: itemProps, item }">
+                                                            <v-list-item v-bind="itemProps" :title="item.raw.title" :subtitle="item.raw.subtitle" />
+                                                        </template>
+                                                    </v-autocomplete>
+                                                    <v-btn
+                                                        size="small" variant="tonal" color="primary"
+                                                        :disabled="!catalogApplySelectedId"
+                                                        @click="applyCatalogToElement"
+                                                    >
+                                                        {{ $t('taskCatalog.apply') }}
+                                                    </v-btn>
+                                                </div>
+                                                <div class="text-caption text-medium-emphasis mb-2">
+                                                    {{ $t('taskCatalog.applyHint') }}
+                                                </div>
+                                                <v-btn size="x-small" variant="tonal" color="primary" @click="openCatalogRegisterDialog">
+                                                    <v-icon start size="14">mdi-folder-plus</v-icon>
+                                                    {{ $t('taskCatalog.saveToCatalog') }}
+                                                </v-btn>
+                                            </template>
+                                            <template v-else>
+                                                <div class="text-caption text-medium-emphasis">
+                                                    {{ appliedCatalogName ? `${$t('taskCatalog.catalog')}: ${appliedCatalogName}` : '-' }}
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                        </template>
                                         <template v-if="sec.id === 'seqflow'">
                                     <!-- Relation / SequenceFlow 속성 -->
                                     <div v-if="isSequenceFlowElement" class="section-group">
@@ -1313,8 +1597,8 @@
                                                     hide-details
                                                     clearable
                                                     :loading="laneGroupSearchLoading"
-                                                    :placeholder="'조직명을 검색하세요'"
-                                                    :no-data-text="'조직명을 입력해 주세요'"
+                                                    :placeholder="laneOrgTeamsLoaded ? '조직도에서 부서를 선택하세요' : '조직명을 검색하세요'"
+                                                    :no-data-text="laneOrgTeamsLoaded ? '검색 결과가 없습니다' : '조직명을 입력해 주세요'"
                                                     :custom-filter="() => true"
                                                     class="mb-3"
                                                     @update:search="onLaneGroupSearch"
@@ -1322,6 +1606,9 @@
                                                 >
                                                     <template v-slot:item="{ item, props }">
                                                         <v-list-item v-bind="props">
+                                                            <template v-if="item.raw.path" v-slot:subtitle>
+                                                                {{ item.raw.path }}
+                                                            </template>
                                                             <template v-slot:append>
                                                                 <v-chip v-if="item.raw.member_count != null" size="x-small" color="grey" variant="tonal">
                                                                     {{ item.raw.member_count }}명
@@ -1762,6 +2049,7 @@
                                                 :key="field.id"
                                                 :field="field"
                                                 :model="field.__builtin ? taskForm : taskForm.schemaProps"
+                                                :view-mode="isViewMode"
                                                 @dirty="taskFormDirty = true"
                                             />
                                         </div>
@@ -1785,6 +2073,7 @@
                                                 :key="field.id"
                                                 :field="field"
                                                 :model="taskForm.schemaProps"
+                                                :view-mode="isViewMode"
                                                 @dirty="taskFormDirty = true"
                                             />
                                         </div>
@@ -1839,6 +2128,7 @@
                                                 v-model="taskForm.raci"
                                                 :readonly="isViewMode"
                                                 :suggestions="raciSuggestions"
+                                                :lane-name="activeElementLaneName"
                                                 :dialog-mode="true"
                                             />
                                         </div>
@@ -2031,6 +2321,7 @@
                                                 model-key="dataAttachmentFile"
                                                 policy-library
                                                 :disabled="isViewMode"
+                                                :view-mode="isViewMode"
                                                 @dirty="taskFormDirty = true"
                                             />
                                         </div>
@@ -2463,8 +2754,8 @@
                                                         <v-divider v-if="idx < elementComments.length - 1" class="my-1" />
                                                     </template>
                                                 </div>
-                                            <!-- 개선과제 입력 폼 -->
-                                            <div class="mt-2 px-1">
+                                            <!-- 개선과제 입력 폼 — 읽기 모드에선 숨기고 목록/빈 안내만 보여준다 -->
+                                            <div v-if="!isViewMode" class="mt-2 px-1">
                                                 <v-select
                                                     v-model="newCommentStatus"
                                                     :items="[
@@ -4022,6 +4313,13 @@
             </v-btn>
         </div>
 
+        <!-- 현재 Task 를 카탈로그에 등록 — Catalog 페이지의 등록 다이얼로그를 그대로 재사용 (같은 패널 필드 구성) -->
+        <TaskCatalogDialog
+            v-model="catalogRegisterDialogOpen"
+            :item="catalogRegisterItem"
+            @saved="onCatalogRegistered"
+        />
+
         <!-- PI Flag 작성 팝업 (제목/문제점/개선방향 + 경량 에디터) -->
         <PiFlagEditorDialog
             v-model:open="piFlagEditorOpen"
@@ -4044,6 +4342,7 @@ import {
 } from '@/stores/taskCatalog';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
 import BackendFactory from '@/components/api/BackendFactory';
+import { getAnnualWorkingHours, getCycleFactor } from '@/services/tenantCustomizationService';
 import { userIdentityFromSearchResult, formatIdentityWithTeam } from '@/utils/userIdentity';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import OwnerSettingDialog from '@/components/ui/OwnerSettingDialog.vue';
@@ -4054,6 +4353,9 @@ import PpiField from '@/components/designer/PpiField.vue';
 import BpmnReviewGuide from '@/components/ui/BpmnReviewGuide.vue';
 import PiFlagEditorDialog from '@/views/process-hierarchy/PiFlagEditorDialog.vue';
 import SchemaFieldInput from '@/components/ui/SchemaFieldInput.vue';
+import TaskCatalogDialog from '@/components/admin/TaskCatalogDialog.vue';
+import { applyCatalogItemToElement, snapshotElementForCatalog, readUenginePropsJson } from '@/components/designer/taskCatalogApply';
+import { useGlossaryStore } from '@/stores/glossary';
 import { AN_STUDIO_KEY } from '@/composables/anStudio/useAnStudio';
 import { readConditionExpressionBody } from '@/utils/bpmnSequenceFlowCondition';
 import { readElementUuid } from '@/utils/bpmnElementUuid';
@@ -4087,11 +4389,23 @@ import {
     formatOrganizationRuleInputs
 } from '@/utils/organizationDmnRule';
 import { navigateToProcessHierarchy, PROCESS_HIERARCHY_ENTRY } from '@/views/process-hierarchy/navigation';
+import { normalizeTree as normalizeOrgTree, collectTeams as collectOrgTeams, memberCount as orgMemberCount } from '@/views/organization/orgChartModel';
+import {
+    PROC_DEF_VISIBILITY_ALL,
+    PROC_DEF_VISIBILITY_ORG,
+    PROC_DEF_VISIBILITY_PRIVATE,
+    defaultVisibilityState,
+    fetchProcDefVisibility,
+    normalizeOrgCodes,
+    normalizeVisibility,
+    readVisibilityState
+} from '@/utils/procDefVisibility';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
 const backend = BackendFactory.createBackend();
-const ANNUAL_WORKING_HOURS = 2080; // 52 weeks x 40 hours
+// 연간 근무시간·주기 환산 계수는 테넌트 운영 정책(operation_policy)에서 읽는다. 미설정 = 2080h / 12·52·260.
+const ANNUAL_WORKING_HOURS = () => getAnnualWorkingHours();
 
 const TASK_TYPE_LABELS = {
     'bpmn:Task': 'Task',
@@ -4147,30 +4461,20 @@ function calcFte(fte) {
     const time = fte.timePerTask || 0;
     const count = fte.freqCount || 0;
     const head = fte.headcount || 1;
-    let annualFreq = count;
-    switch (fte.freqCycle) {
-        case 'Monthly': annualFreq = count * 12; break;
-        case 'Weekly': annualFreq = count * 52; break;
-        case 'Daily': annualFreq = count * 260; break;
-    }
-    const val = (time * annualFreq * head) / ANNUAL_WORKING_HOURS;
+    const annualFreq = count * getCycleFactor(fte.freqCycle);
+    const val = (time * annualFreq * head) / ANNUAL_WORKING_HOURS();
     return val > 0 ? val.toFixed(3) : '';
 }
 
 function calcAnnualHours(fte) {
     if (!fte) return 0;
     if (fte.inputMode === 'direct') {
-        return ((fte.directPercent || 0) / 100) * ANNUAL_WORKING_HOURS;
+        return ((fte.directPercent || 0) / 100) * ANNUAL_WORKING_HOURS();
     }
     const time = fte.timePerTask || 0;
     const count = fte.freqCount || 0;
     const head = fte.headcount || 1;
-    let annualFreq = count;
-    switch (fte.freqCycle) {
-        case 'Monthly': annualFreq = count * 12; break;
-        case 'Weekly': annualFreq = count * 52; break;
-        case 'Daily': annualFreq = count * 260; break;
-    }
+    const annualFreq = count * getCycleFactor(fte.freqCycle);
     return time * annualFreq * head;
 }
 
@@ -4237,6 +4541,7 @@ export default {
         PpiField,
         PiFlagEditorDialog,
         SchemaFieldInput,
+        TaskCatalogDialog,
     },
     props: {
         processDefinition: { type: Object, default: null },
@@ -4266,7 +4571,22 @@ export default {
         return {
             topTab: 'properties',
             activeTab: 'process',
-            openSections: new Set(['strategic', 'hybrid-costing', 'competency', 'general', 'manual-link', 'task-manual-link', 'task-manual-links', 'kpi-history', 'task-basic', 'task-raci', 'task-io', 'pool-ppi', 'proc-ppi', 'task-fte', 'task-opex', 'task-data-attachment', 'task-api', 'proc-api', 'relation-info', 'lane-assignee', 'lane-assignment', 'pool-exec', 'task-count', 'task-related-projects', 'proc-related-projects', 'proc-total-fte', 'proc-total-cost', 'call-activity-def', 'business-rule-dmn', 'task-data-io', 'service-agent', 'proc-system', 'task-system', 'element-comments']),
+            // 모든 섹션 패널은 기본 "열림"으로 시작한다. 사용자가 닫은 것만 여기 기록된다
+            // (허용 목록 방식이면 새 섹션을 추가할 때마다 등록을 빠뜨려 접힌 채 시작하게 된다).
+            // task-catalog 섹션은 부가 도구라 기본 접힘 — 기존 속성 편집 흐름을 가리지 않는다
+            closedSections: new Set(['task-catalog']),
+            // Task Catalog 연동 (PAL): 적용 대상 선택·현재 Task 등록 다이얼로그
+            catalogApplySelectedId: null,
+            catalogRegisterDialogOpen: false,
+            catalogRegisterItem: null,
+            // 용어 정의 사전 (PAL): 추가 입력·행 편집 상태
+            glossaryNewTerm: '',
+            glossaryNewDefinition: '',
+            glossaryReusedFrom: '',
+            glossarySuggestOpen: false,
+            glossaryEditingId: null,
+            glossaryEditTerm: '',
+            glossaryEditDefinition: '',
             closedPiFlagCards: new Set(),
             closedSchemaGroups: new Set(),
             // 깃발 클릭 시 그 깃발이 가리키는 코멘트(들)가 속한 항목만 보여주기 위한 포커스 (null 이면 전체)
@@ -4334,6 +4654,8 @@ export default {
             laneGroupOptions: [],
             laneGroupSearchLoading: false,
             _laneGroupSearchTimer: null,
+            // 조직도(configuration key='organization') 부서 목록 로드 여부 — true 면 담당 조직 옵션이 조직도 기반
+            laneOrgTeamsLoaded: false,
             laneSupplier: [],
             laneSupplierOptions: [],
             laneSupplierSearchLoading: false,
@@ -4363,7 +4685,14 @@ export default {
                 manualLinks: [],
                 kpiEnabled: false,
                 ppi: null,
+                // 공개 범위 (PAL 전용) — proc_def.visibility / allowed_org_codes
+                visibility: PROC_DEF_VISIBILITY_ALL,
+                allowedOrgs: [],   // [{ id, name, path, member_count }] — 저장 시 id 만 추린다
             },
+            // 저장 payload 최소화용: 로드 시점의 공개 범위 원본
+            loadedVisibilityState: defaultVisibilityState(),
+            visibilityOrgOptions: [],
+            visibilityOrgSearchLoading: false,
             taskForm: {
                 name: '',
                 description: '',
@@ -4522,6 +4851,28 @@ export default {
         };
     },
     computed: {
+        // 공개 범위 UI 는 PAL 모드 전용 (비 PAL 화면에는 노출하지 않는다)
+        isPalMode() {
+            return typeof window !== 'undefined' && !!window.$pal;
+        },
+        visibilityOptions() {
+            return [
+                { value: PROC_DEF_VISIBILITY_ALL, label: this.$t('processVisibility.all') },
+                { value: PROC_DEF_VISIBILITY_ORG, label: this.$t('processVisibility.org') },
+                { value: PROC_DEF_VISIBILITY_PRIVATE, label: this.$t('processVisibility.private') }
+            ];
+        },
+        // 읽기 모드에서 공개 범위를 값(라벨)으로만 표시
+        visibilityViewLabel() {
+            const current = toSafeText(this.processForm?.visibility).trim();
+            const found = this.visibilityOptions.find((opt) => opt.value === current);
+            return found?.label || current || '-';
+        },
+        visibilityHint() {
+            if (this.processForm.visibility === PROC_DEF_VISIBILITY_ORG) return this.$t('processVisibility.orgHint');
+            if (this.processForm.visibility === PROC_DEF_VISIBILITY_PRIVATE) return this.$t('processVisibility.privateHint');
+            return this.$t('processVisibility.allHint');
+        },
         reviewGuideWindowStyle() {
             return {
                 left: this.guideWindowPos.x + 'px',
@@ -4532,6 +4883,42 @@ export default {
         },
         catalogStore() {
             return useTaskCatalogStore();
+        },
+        glossaryStore() {
+            return useGlossaryStore();
+        },
+        // 이 프로세스의 용어 목록 (glossary_terms — definitionPath 기준)
+        processGlossaryTerms() {
+            const procDefId = toSafeText(this.definitionPath).trim();
+            if (!procDefId) return [];
+            return this.glossaryStore.termsByProcess(procDefId);
+        },
+        // 이 프로세스에 이미 등록된 용어 키 (추천 목록의 '등록됨' 표기용)
+        processGlossaryTermKeys() {
+            return new Set(this.processGlossaryTerms.map((t) => String(t.term).trim().toLowerCase()));
+        },
+        // 기존 용어 추천 — 입력 전엔 전체, 입력 중엔 부분 일치. 일치 정확도 순 정렬.
+        // 이 프로세스에 이미 있는 용어도 표시하되 '등록됨'으로 구분한다 (숨기면 목록이 비어 보인다).
+        glossaryAllMatchedSuggestions() {
+            const query = String(this.glossaryNewTerm || '').trim().toLowerCase();
+            const rankOf = (term) => {
+                const key = String(term).trim().toLowerCase();
+                if (!query) return 2;
+                if (key === query) return 0;
+                if (key.startsWith(query)) return 1;
+                if (key.includes(query)) return 2;
+                return -1;
+            };
+            return this.glossaryStore.reusableTerms
+                .map((t) => ({ ...t, __rank: rankOf(t.term), alreadyInProcess: this.processGlossaryTermKeys.has(String(t.term).trim().toLowerCase()) }))
+                .filter((t) => t.__rank >= 0)
+                .sort((a, b) => a.__rank - b.__rank || String(a.term).localeCompare(String(b.term)));
+        },
+        glossaryMatchedSuggestions() {
+            return this.glossaryAllMatchedSuggestions.slice(0, 8);
+        },
+        glossarySuggestOverflow() {
+            return Math.max(0, this.glossaryAllMatchedSuggestions.length - 8);
         },
         ownerHistoryCanLoadAll() {
             return !this.ownerHistoryLoadedAll && this.ownerHistoryHasMore;
@@ -4824,6 +5211,38 @@ export default {
             const type = toSafeText(this.element?.type || this.element?.$type).trim();
             return type === 'bpmn:UserTask' || type === 'bpmn:Task' || type === 'bpmn:ManualTask';
         },
+        // Task Catalog 적용/등록 대상 — 변경(replace) 메뉴의 카탈로그 그룹과 같은 Activity 계열 판정
+        isCatalogApplicableElement() {
+            const type = toSafeText(this.element?.type || this.element?.$type).trim();
+            return (
+                type.includes('Task') ||
+                type === 'bpmn:CallActivity' ||
+                type === 'bpmn:SubProcess' ||
+                type === 'bpmn:AdHocSubProcess' ||
+                type === 'bpmn:Transaction'
+            );
+        },
+        // 카탈로그 적용 선택 목록 (시스템·유형은 부제로 표시)
+        catalogApplyItems() {
+            const items = Array.isArray(this.catalogStore.catalogItems) ? this.catalogStore.catalogItems : [];
+            return items
+                .filter((item) => item && item.id)
+                .map((item) => ({
+                    value: item.id,
+                    title: item.display_name || item.name || item.id,
+                    subtitle: [item.system_name, toSafeText(item.task_type).replace('bpmn:', '')].filter(Boolean).join(' · ')
+                }));
+        },
+        // 현재 요소가 카탈로그에서 적용된 항목이면 그 이름 (uengine:json 의 _catalogId 역참조)
+        appliedCatalogName() {
+            void this.bpmnDataVersion;
+            const bo = this.activeElement?.businessObject;
+            if (!bo) return '';
+            const catalogId = toSafeText(readUenginePropsJson(bo)._catalogId).trim();
+            if (!catalogId) return '';
+            const item = (this.catalogStore.catalogItems || []).find((c) => c.id === catalogId);
+            return item ? item.display_name || item.name : '';
+        },
         // RACI 등록 대상 — 통합 매트릭스(RaciMatrixDialog)의 행 필터와 동일한 Task 계열 판정
         isRaciTaskElement() {
             const type = toSafeText(this.element?.type || this.element?.$type).trim();
@@ -4855,6 +5274,36 @@ export default {
             } catch (e) {
                 return [];
             }
+        },
+        // 현재 요소가 올라가 있는 Lane 이름 — RACI 편집 시작 시 R(책임) 기본값으로 쓴다
+        activeElementLaneName() {
+            void this.bpmnDataVersion;
+            const elId = toSafeText(this.element?.id).trim();
+            if (!elId) return '';
+            try {
+                const modeler = useBpmnStore().getModeler;
+                const el = modeler?.get('elementRegistry')?.get(elId);
+                if (!el) return '';
+                // 도형 부모 체인에서 가장 안쪽 Lane 을 찾는다
+                let parent = el.parent;
+                while (parent) {
+                    if (parent.type === 'bpmn:Lane') return toSafeText(parent.businessObject?.name).trim();
+                    if (parent.type === 'bpmn:Participant') break;
+                    parent = parent.parent;
+                }
+                // 부모 체인에 Lane 이 없으면 laneSets 의 flowNodeRef 로 역참조
+                const bo = el.businessObject;
+                for (const laneSet of bo?.$parent?.laneSets || []) {
+                    for (const lane of laneSet.lanes || []) {
+                        if (lane.flowNodeRef?.some((ref) => ref?.id === bo.id || ref === bo)) {
+                            return toSafeText(lane.name).trim();
+                        }
+                    }
+                }
+            } catch (e) {
+                // Lane 없음 / 모델 미준비 — 자동 입력 생략
+            }
+            return '';
         },
         // 폼 미연결 시 실행 엔진이 사용하는 네이밍 규칙 폼 ID (FormWorkItem 폴백과 동일)
         defaultFormIdForElement() {
@@ -4985,7 +5434,7 @@ export default {
         domainOptions() {
             // 신규 프로세스 다이얼로그와 동일한 source — metrics + procMap 의 union
             const fromMetrics = Array.isArray(this.metricsMap?.domains) ? this.metricsMap.domains : [];
-            const fromProcMap = deriveDomainsFromProcMap(this.procMap);
+            const fromProcMap = deriveDomainsFromProcMap(this.procMap, fromMetrics);
             return sortDomains(mergeDomainLists(fromMetrics, fromProcMap))
                 .map((d) => ({
                     id: toSafeText(d?.id || d?.name).trim(),
@@ -6497,6 +6946,10 @@ export default {
                         })
                         .filter(Boolean);
                     this.processForm.kpiEnabled = val.kpiEnabled ?? val.kpi_enabled ?? false;
+                    this.applyVisibilityState(readVisibilityState(val));
+                    // 조회 메서드(getDefinitionDetailLite 등)가 컬럼을 명시 나열해 공개 범위가 빠지므로
+                    // PAL 모드에서는 두 컬럼만 따로 읽어 덮어쓴다.
+                    if (this.isPalMode) this.loadProcessVisibility();
                     this.resolveOwnerInfo(val.owner);
                     // Load proc_def owners for governance
                     const metaOwners = val.definition?.meta?.owners || {};
@@ -6510,6 +6963,7 @@ export default {
                     this.loadProcessParentRefs();
                 } else {
                     this.processParentRefs = [];
+                    this.applyVisibilityState(defaultVisibilityState());
                 }
             },
             immediate: true,
@@ -6584,6 +7038,15 @@ export default {
     async mounted() {
         await this.ensureCurrentUser();
         await this.catalogStore.loadSchemas();
+        // PAL: Task Catalog 섹션(적용 목록·적용됨 표시)이 카탈로그 목록을 읽는다
+        if (this.isPalMode && !this.catalogStore.catalogLoaded) {
+            this.catalogStore.loadCatalog();
+        }
+        // PAL: 용어 정의 섹션의 목록·추천이 테넌트 전체 용어를 읽는다.
+        // 다른 화면/세션에서 추가된 용어가 캐시에 가려지지 않게 패널 진입 시마다 새로 로드한다.
+        if (this.isPalMode) {
+            this.glossaryStore.loadAllTerms(true);
+        }
         this.refreshPiFlagTypeOptions();
         this._piFlagTypesChangeHandler = () => this.refreshPiFlagTypeOptions();
         window.addEventListener(PI_FLAG_TYPES_CHANGE_EVENT, this._piFlagTypesChangeHandler);
@@ -7470,10 +7933,10 @@ export default {
             return toSafeText(this.ownerNameMap[key] || key);
         },
         toggle(name) {
-            if (this.openSections.has(name)) {
-                this.openSections.delete(name);
+            if (this.closedSections.has(name)) {
+                this.closedSections.delete(name);
             } else {
-                this.openSections.add(name);
+                this.closedSections.add(name);
             }
         },
         // 스키마 그룹 섹션은 키가 동적이라 기본 열림(closed set 방식)으로 관리한다
@@ -7488,7 +7951,7 @@ export default {
             return !this.closedSchemaGroups.has(key);
         },
         isOpen(name) {
-            return this.openSections.has(name);
+            return !this.closedSections.has(name);
         },
         // ---- Pool(Participant): 실행형 Pool 지정 (다중 가능, executable 컬럼 autosave) ----
         toggleExecPoolForElement() {
@@ -8083,16 +8546,56 @@ export default {
         onLaneGroupSearch(keyword) {
             clearTimeout(this._laneGroupSearchTimer);
             const normalizedKeyword = toSafeText(keyword).trim();
-            if (!normalizedKeyword) {
-                this.laneGroupOptions = [];
-                return;
+            this._laneGroupSearchTimer = setTimeout(() => this.searchLaneGroups(normalizedKeyword), normalizedKeyword ? 300 : 0);
+        },
+        // 조직도(configuration key='organization')의 부서 트리를 담당 조직 옵션의 1차 소스로 쓴다.
+        // 조직도 화면(src/views/organization/)과 같은 normalizeTree/collectTeams 를 재사용한다.
+        async loadLaneOrgTeams() {
+            if (this._laneOrgTeams) return this._laneOrgTeams;
+            if (!this._laneOrgTeamsPromise) {
+                this._laneOrgTeamsPromise = (async () => {
+                    try {
+                        const data = await backend.getData('configuration', { match: { key: 'organization' } });
+                        const root = normalizeOrgTree(data?.value?.chart, window.$tenantName || '조직');
+                        const teams = collectOrgTeams(root, false)
+                            .map(({ node, path }) => ({
+                                id: toSafeText(node.id).trim(),
+                                name: toSafeText(node.data?.name || node.name),
+                                path,
+                                member_count: orgMemberCount(node, true)
+                            }))
+                            .filter(t => t.id && t.name);
+                        this._laneOrgTeams = teams;
+                        this.laneOrgTeamsLoaded = teams.length > 0;
+                        return teams;
+                    } catch (e) {
+                        console.error('Failed to load org chart teams for lane assignment:', e);
+                        return null;
+                    } finally {
+                        this._laneOrgTeamsPromise = null;
+                    }
+                })();
             }
-            this._laneGroupSearchTimer = setTimeout(() => this.searchLaneGroups(normalizedKeyword), 300);
+            return this._laneOrgTeamsPromise;
         },
         async searchLaneGroups(keyword) {
             this.laneGroupSearchLoading = true;
             try {
-                const backend = BackendFactory.createBackend();
+                const teams = await this.loadLaneOrgTeams();
+                if (teams && teams.length) {
+                    const target = toSafeText(keyword).replace(/\s+/g, '').toLowerCase();
+                    this.laneGroupOptions = !target
+                        ? teams
+                        : teams.filter(t =>
+                            t.name.replace(/\s+/g, '').toLowerCase().includes(target) ||
+                            (t.path || '').replace(/\s+/g, '').toLowerCase().includes(target));
+                    return;
+                }
+                // 조직도에 부서가 없으면 기존 PI 백엔드 검색으로 폴백
+                if (!keyword) {
+                    this.laneGroupOptions = [];
+                    return;
+                }
                 const result = await backend.searchGroupsByName(keyword, 0, 500);
                 this.laneGroupOptions = (result.groups || []).map(g => ({
                     id: toSafeText(g.id).trim(),
@@ -8103,6 +8606,86 @@ export default {
                 console.error('Failed to search lane groups:', e);
             } finally {
                 this.laneGroupSearchLoading = false;
+            }
+        },
+
+        // ====== 공개 범위 (PAL 전용) — docs/security.md "4-2. 프로세스 공개 범위" ======
+        // 조직 옵션은 담당 조직(lane) 선택과 같은 조직도 소스를 재사용한다 (loadLaneOrgTeams).
+        applyVisibilityState(state) {
+            const visibility = normalizeVisibility(state?.visibility);
+            const codes = normalizeOrgCodes(state?.allowedOrgCodes);
+            this.loadedVisibilityState = { visibility, allowedOrgCodes: codes };
+            this.processForm.visibility = visibility;
+            this.processForm.allowedOrgs = codes.map((id) => ({ id, name: id, path: '' }));
+            if (visibility === PROC_DEF_VISIBILITY_ORG) {
+                this.searchVisibilityOrgs('');
+                if (codes.length) this.resolveVisibilityOrgNames();
+            }
+        },
+        async loadProcessVisibility() {
+            const procDefId = toSafeText(this.definitionPath).trim();
+            if (!procDefId) return;
+            const state = await fetchProcDefVisibility(procDefId);
+            // 비동기 응답 도착 시 다른 프로세스로 바뀌었으면 무시
+            if (toSafeText(this.definitionPath).trim() !== procDefId) return;
+            this.applyVisibilityState(state);
+        },
+        // 저장된 조직 코드(=조직도 노드 id)를 조직명으로 치환해 칩에 표시한다
+        async resolveVisibilityOrgNames() {
+            try {
+                const teams = await this.loadLaneOrgTeams();
+                if (!teams || !teams.length) return;
+                const byId = new Map(teams.map((t) => [toSafeText(t.id).trim().toLowerCase(), t]));
+                this.processForm.allowedOrgs = (this.processForm.allowedOrgs || []).map((item) => {
+                    const matched = byId.get(toSafeText(item?.id).trim().toLowerCase());
+                    return matched ? { ...matched } : item;
+                });
+                if (!this.visibilityOrgOptions.length) this.visibilityOrgOptions = teams;
+            } catch (e) {
+                console.warn('[ProcessHierarchyProperties] resolveVisibilityOrgNames failed', e);
+            }
+        },
+        onVisibilityChanged() {
+            if (this.processForm.visibility === PROC_DEF_VISIBILITY_ORG) {
+                this.searchVisibilityOrgs('');
+            } else {
+                // 'org' 이 아니면 조직 목록은 의미가 없으므로 비운다 (저장 payload 와 동일한 규약)
+                this.processForm.allowedOrgs = [];
+            }
+        },
+        onVisibilityOrgSearch(keyword) {
+            clearTimeout(this._visibilityOrgSearchTimer);
+            const normalizedKeyword = toSafeText(keyword).trim();
+            this._visibilityOrgSearchTimer = setTimeout(() => this.searchVisibilityOrgs(normalizedKeyword), normalizedKeyword ? 300 : 0);
+        },
+        async searchVisibilityOrgs(keyword) {
+            this.visibilityOrgSearchLoading = true;
+            try {
+                const teams = await this.loadLaneOrgTeams();
+                if (teams && teams.length) {
+                    const target = toSafeText(keyword).replace(/\s+/g, '').toLowerCase();
+                    this.visibilityOrgOptions = !target
+                        ? teams
+                        : teams.filter((t) =>
+                            t.name.replace(/\s+/g, '').toLowerCase().includes(target) ||
+                            (t.path || '').replace(/\s+/g, '').toLowerCase().includes(target));
+                    return;
+                }
+                // 조직도에 부서가 없으면 기존 PI 백엔드 검색으로 폴백
+                if (!keyword) {
+                    this.visibilityOrgOptions = [];
+                    return;
+                }
+                const result = await backend.searchGroupsByName(keyword, 0, 500);
+                this.visibilityOrgOptions = (result.groups || []).map((g) => ({
+                    id: toSafeText(g.id).trim(),
+                    name: toSafeText(g.name),
+                    member_count: g.member_count
+                }));
+            } catch (e) {
+                console.error('Failed to search organizations for process visibility:', e);
+            } finally {
+                this.visibilityOrgSearchLoading = false;
             }
         },
 
@@ -9922,14 +10505,33 @@ export default {
                 this.loadTaskProperties(changedElement);
             };
             eventBus.on('element.changed', this._bpmnElementChangedHandler);
+
+            // 카탈로그 적용(변경 메뉴/패널 공용 유틸) 완료 통지 — 패널이 열린 상태에서도 폼을 즉시 갱신.
+            // selection 재선택은 같은 요소일 때 prop 변화가 없어 element watcher 가 뜨지 않는다.
+            this._taskCatalogAppliedHandler = (event) => {
+                const applied = event?.element;
+                if (!applied) return;
+                const activeId = this.activeElement?.id || this.activeElement?.businessObject?.id;
+                if (activeId && activeId !== applied.id) return;
+                this.activeElement = applied;
+                this.activeTab = 'task';
+                this.loadTaskProperties(applied);
+                this.$nextTick(() => { this.taskFormDirty = false; });
+                this.bpmnDataVersion++;
+            };
+            eventBus.on('taskCatalog.applied', this._taskCatalogAppliedHandler);
         },
 
         unbindBpmnElementChangedHandler() {
             if (this._bpmnEventBus && this._bpmnElementChangedHandler) {
                 this._bpmnEventBus.off('element.changed', this._bpmnElementChangedHandler);
             }
+            if (this._bpmnEventBus && this._taskCatalogAppliedHandler) {
+                this._bpmnEventBus.off('taskCatalog.applied', this._taskCatalogAppliedHandler);
+            }
             this._bpmnEventBus = null;
             this._bpmnElementChangedHandler = null;
+            this._taskCatalogAppliedHandler = null;
         },
 
         // businessObject 에서 uengine:Properties JSON 을 파싱 (values[0] 고정 대신 타입으로 탐색
@@ -10001,6 +10603,199 @@ export default {
             if (this.apiParamDeleteRef) this.removeApiParam(this.apiParamDeleteRef.entry, this.apiParamDeleteRef.param);
             this.editingApiParam = null;
             this.cancelRemoveApiParam();
+        },
+
+        // ---- Task Catalog 연동 (PAL) ----
+        // 선택한 카탈로그 항목을 현재 요소에 적용 — 타입 전환 + 이름 + 속성 병합.
+        // 변경(replace) 메뉴의 카탈로그 엔트리와 같은 공용 로직(taskCatalogApply)을 사용한다.
+        applyCatalogToElement() {
+            if (this.isViewMode) return;
+            const item = (this.catalogStore.catalogItems || []).find((c) => c.id === this.catalogApplySelectedId);
+            const target = this.activeElement || this.element;
+            if (!item || !target) return;
+
+            if (this.taskFormDirty && !window.confirm('저장되지 않은 내용이 있습니다. 카탈로그 값으로 덮어쓸까요?')) {
+                return;
+            }
+
+            const modeler = useBpmnStore().getModeler;
+            if (!modeler) return;
+
+            try {
+                // 폼 재로드·dirty 초기화는 taskCatalog.applied 이벤트 핸들러가 수행한다
+                // (변경 메뉴 경로와 공용 — bindBpmnElementChangedHandler 참고)
+                const applied = applyCatalogItemToElement(modeler, target, item);
+                // 타입이 바뀌면 새 요소가 생성된다 — 캔버스 선택·바깥 디자이너 prop 을 새 요소로 동기화
+                try {
+                    modeler.get('selection').select(applied);
+                } catch (e) { /* selection 미지원 환경 무시 */ }
+                this.catalogApplySelectedId = null;
+                this.$emit('taskMappingChanged');
+                this.$emit('persistBpmn', { notifyOnSuccess: false });
+                this.showAppSnackbar(`카탈로그 Task '${item.display_name || item.name}'을(를) 적용했습니다.`);
+            } catch (e) {
+                console.error('Failed to apply catalog item:', e);
+                this.showAppSnackbar('카탈로그 적용에 실패했습니다.', 'error');
+            }
+        },
+        // 현재 요소를 카탈로그 등록 다이얼로그(Catalog 페이지와 동일 패널)에 프리필해서 연다
+        openCatalogRegisterDialog() {
+            const target = this.activeElement || this.element;
+            const snapshot = snapshotElementForCatalog(target);
+            if (!snapshot) return;
+            // 패널에서 수정 중(미저장)인 값이 있으면 스냅샷에 반영 — 보이는 값 그대로 등록되게
+            snapshot.name = toSafeText(this.taskForm.name) || snapshot.name;
+            snapshot.description = toSafeText(this.taskForm.description) || snapshot.description;
+            snapshot.properties = {
+                ...snapshot.properties,
+                ...this.taskForm.schemaProps,
+                description: snapshot.description
+            };
+            if (this.taskForm.raci && typeof this.taskForm.raci === 'object') {
+                snapshot.properties.raci = JSON.parse(JSON.stringify(this.taskForm.raci));
+            }
+            if (Array.isArray(this.taskForm.procedure)) {
+                snapshot.properties.procedure = [...this.taskForm.procedure];
+            }
+            if (Array.isArray(this.taskForm.manualLinks) && this.taskForm.manualLinks.length) {
+                snapshot.properties.manualLinks = this.taskForm.manualLinks.map((link) => ({ ...link }));
+            }
+            this.catalogRegisterItem = snapshot;
+            this.catalogRegisterDialogOpen = true;
+        },
+        // 등록 완료: 요소에 카탈로그 참조(_catalogId)를 남겨 이후 적용 이력 추적이 가능하게 한다
+        onCatalogRegistered(savedItem) {
+            this.catalogRegisterDialogOpen = false;
+            this.catalogRegisterItem = null;
+            this.catalogStore.loadCatalog();
+
+            const target = this.activeElement || this.element;
+            const modeler = useBpmnStore().getModeler;
+            if (savedItem?.id && target && modeler && !this.isViewMode) {
+                try {
+                    applyCatalogItemToElement(modeler, target, {
+                        id: savedItem.id,
+                        system_name: savedItem.system_name || '',
+                        task_type: target.type || target.businessObject?.$type,
+                        name: target.businessObject?.name,
+                        properties: {}
+                    });
+                    this.bpmnDataVersion++;
+                    this.$emit('persistBpmn', { notifyOnSuccess: false });
+                } catch (e) {
+                    console.warn('Failed to stamp catalog reference on element:', e);
+                }
+            }
+            this.showAppSnackbar('카탈로그에 등록되었습니다.');
+        },
+
+        // ---- 용어 정의 사전 (PAL) ----
+        // 같은 용어가 몇 개 프로세스에서 쓰이는지 (통합 사전과 같은 묶음 기준)
+        glossaryTermUsageCount(term) {
+            const key = String(term || '').trim().toLowerCase();
+            if (!key) return 0;
+            return this.glossaryStore.allTerms.filter((t) => String(t.term).trim().toLowerCase() === key).length;
+        },
+        // 추천 목록 닫기 — 항목 클릭(mousedown)이 먼저 처리되도록 blur 후 약간 지연
+        closeGlossarySuggest() {
+            setTimeout(() => {
+                this.glossarySuggestOpen = false;
+            }, 150);
+        },
+        // 추천 항목 선택: 용어·정의를 채운다 (재사용). 이미 등록된 용어는 안내만.
+        pickGlossarySuggestion(suggestion) {
+            if (suggestion.alreadyInProcess) {
+                this.showAppSnackbar('이미 이 프로세스에 등록된 용어입니다.', 'warning');
+                return;
+            }
+            this.glossaryNewTerm = suggestion.term;
+            this.glossaryNewDefinition = suggestion.definition || '';
+            this.glossaryReusedFrom = toSafeText(suggestion.proc_def_name || suggestion.proc_def_id);
+            this.glossarySuggestOpen = false;
+        },
+        async addGlossaryTerm() {
+            const term = String(this.glossaryNewTerm || '').trim();
+            const procDefId = toSafeText(this.definitionPath).trim();
+            if (!term) return;
+            if (!procDefId) {
+                this.showAppSnackbar('프로세스 식별자를 찾을 수 없어 용어를 저장할 수 없습니다.', 'error');
+                return;
+            }
+            // 직접 타이핑으로 기존 용어와 정확히 일치시킨 경우: 정의가 비어 있으면 재사용 프리필
+            if (!String(this.glossaryNewDefinition || '').trim()) {
+                const match = this.glossaryStore.reusableTerms.find(
+                    (t) => String(t.term).trim().toLowerCase() === term.toLowerCase()
+                );
+                if (match) this.glossaryNewDefinition = match.definition || '';
+            }
+            const duplicate = this.processGlossaryTerms.some((t) => String(t.term).trim().toLowerCase() === term.toLowerCase());
+            if (duplicate) {
+                this.showAppSnackbar('이미 이 프로세스에 등록된 용어입니다.', 'warning');
+                return;
+            }
+            try {
+                const maxOrder = Math.max(0, ...this.processGlossaryTerms.map((t) => Number(t.display_order) || 0));
+                await this.glossaryStore.saveTerm({
+                    proc_def_id: procDefId,
+                    proc_def_name: toSafeText(this.processForm?.title) || toSafeText(this.processDefinition?.name),
+                    term,
+                    definition: String(this.glossaryNewDefinition || '').trim(),
+                    display_order: maxOrder + 10
+                });
+                this.glossaryNewTerm = '';
+                this.glossaryNewDefinition = '';
+                this.glossaryReusedFrom = '';
+                this.glossarySuggestOpen = false;
+                this.showAppSnackbar('용어를 추가했습니다.');
+            } catch (e) {
+                console.error('Failed to add glossary term:', e);
+                this.showAppSnackbar('용어 추가에 실패했습니다.', 'error');
+            }
+        },
+        startEditGlossaryTerm(row) {
+            this.glossaryEditingId = row.id;
+            this.glossaryEditTerm = row.term || '';
+            this.glossaryEditDefinition = row.definition || '';
+        },
+        cancelEditGlossaryTerm() {
+            this.glossaryEditingId = null;
+            this.glossaryEditTerm = '';
+            this.glossaryEditDefinition = '';
+        },
+        async saveEditGlossaryTerm() {
+            const row = this.processGlossaryTerms.find((t) => t.id === this.glossaryEditingId);
+            const term = String(this.glossaryEditTerm || '').trim();
+            if (!row || !term) return;
+            const duplicate = this.processGlossaryTerms.some(
+                (t) => t.id !== row.id && String(t.term).trim().toLowerCase() === term.toLowerCase()
+            );
+            if (duplicate) {
+                this.showAppSnackbar('이미 이 프로세스에 등록된 용어입니다.', 'warning');
+                return;
+            }
+            try {
+                await this.glossaryStore.saveTerm({
+                    ...row,
+                    term,
+                    definition: String(this.glossaryEditDefinition || '').trim(),
+                    proc_def_name: toSafeText(this.processForm?.title) || row.proc_def_name
+                });
+                this.cancelEditGlossaryTerm();
+                this.showAppSnackbar('용어를 수정했습니다.');
+            } catch (e) {
+                console.error('Failed to update glossary term:', e);
+                this.showAppSnackbar('용어 수정에 실패했습니다.', 'error');
+            }
+        },
+        async removeGlossaryTerm(row) {
+            if (!window.confirm(`'${row.term}' 용어를 삭제할까요?`)) return;
+            try {
+                await this.glossaryStore.deleteTerm(row.id);
+                this.showAppSnackbar('용어를 삭제했습니다.');
+            } catch (e) {
+                console.error('Failed to delete glossary term:', e);
+                this.showAppSnackbar('용어 삭제에 실패했습니다.', 'error');
+            }
         },
 
         // ---- Task: BPMN data sync ----
@@ -10227,6 +11022,10 @@ export default {
                 if (this.laneOrganization.length) {
                     this.laneGroupOptions = [...this.laneOrganization];
                 }
+                // 조직도 부서 전체를 미리 로드해 검색어 없이도 드롭다운에서 바로 선택할 수 있게 한다
+                this.loadLaneOrgTeams().then((teams) => {
+                    if (teams && teams.length) this.laneGroupOptions = teams;
+                });
                 // 기존 'family' 로 저장된 데이터는 'internal' 로 자동 변환 (패밀리사 토글 제거됨)
                 if (savedResourceType === 'family') {
                     savedResourceType = 'internal';
@@ -10807,6 +11606,17 @@ export default {
                 kpiEnabled: this.processForm.kpiEnabled,
                 ppi: Array.isArray(this.processForm.ppi) && this.processForm.ppi.length ? JSON.parse(JSON.stringify(this.processForm.ppi)) : null,
             };
+
+            // 공개 범위 (PAL 전용) — 비 PAL 모드에서는 UI 자체가 없으므로 payload 에도 넣지 않는다.
+            if (this.isPalMode) {
+                data._visibility = {
+                    next: {
+                        visibility: normalizeVisibility(this.processForm.visibility),
+                        allowedOrgCodes: normalizeOrgCodes(this.processForm.allowedOrgs)
+                    },
+                    previous: this.loadedVisibilityState
+                };
+            }
             // Include schema-based props (active + deprecated-with-value merged via processFields)
             this.processFields.forEach(f => {
                 if (f.property_type === 'daterange') {
@@ -10863,7 +11673,7 @@ export default {
                     this.taskForm.dataAttachmentFile = {
                         fileName: file.name,
                         path: result.path,
-                        publicUrl: result.publicUrl || ''
+                        bucket: result.bucket || 'files'
                     };
                     this.taskFormDirty = true;
                 } else {
@@ -10886,7 +11696,7 @@ export default {
             const file = this.taskForm.dataAttachmentFile;
             if (!file || !file.path) return;
             try {
-                const url = file.publicUrl || await backend.getFileUrl(file.path);
+                const url = await backend.getFileUrl(file.path || file.publicUrl);
                 if (url) window.open(url, '_blank');
             } catch (err) {
                 console.error('데이터 첨부 파일 열기 실패:', err);
@@ -11670,6 +12480,15 @@ export default {
 .properties-content--readonly .task-empty-state {
     pointer-events: none;
 }
+/* PAL: 읽기모드에서도 Process/Task/PI Flag 탭 전환은 허용 (필드 편집은 위 차단 규칙 유지) */
+.properties-content--readonly .properties-tabs.properties-tabs--clickable {
+    pointer-events: auto;
+}
+/* 섹션 접기/펼치기는 조회 동작이다 — 읽기 모드에서도 헤더 클릭을 허용한다.
+   (헤더 안에는 입력 요소가 없어 pointer-events 를 되살려도 편집이 열리지 않는다) */
+.properties-content--readonly .section-title {
+    pointer-events: auto;
+}
 .properties-content--readonly .manual-link-open-icon {
     pointer-events: auto;
 }
@@ -11702,6 +12521,43 @@ export default {
    업로드/삭제 버튼은 SchemaFieldInput에서 읽기 모드일 때 렌더링하지 않는다. */
 .properties-content--readonly :deep(.schema-field-input .file-row) {
     pointer-events: auto;
+}
+
+/* 읽기 모드: 입력 위젯을 비활성 입력창이 아니라 값 표시(view)처럼 보이게 한다.
+   SchemaFieldInput 은 viewMode 로 실제 조회 UI를 렌더하고, 그 외의 개별
+   v-text-field/v-select 류는 여기서 테두리·아이콘·placeholder 등 입력 크롬을 걷어낸다. */
+.properties-content--readonly :deep(.v-field__outline),
+.properties-content--readonly :deep(.v-field__append-inner),
+.properties-content--readonly :deep(.v-field__clearable),
+.properties-content--readonly :deep(.v-input__append) {
+    display: none;
+}
+.properties-content--readonly :deep(.v-field) {
+    --v-field-padding-start: 0px;
+    --v-field-padding-end: 0px;
+    background: transparent;
+    box-shadow: none;
+}
+/* 값이 비어 있을 때 placeholder 가 값처럼 보이지 않게 숨긴다 */
+.properties-content--readonly :deep(.v-field input::placeholder),
+.properties-content--readonly :deep(.v-field textarea::placeholder) {
+    color: transparent;
+    opacity: 0;
+}
+/* disabled 흐림 없이 값이 또렷하게 읽히도록 */
+.properties-content--readonly :deep(.v-input--disabled),
+.properties-content--readonly :deep(.v-field--disabled) {
+    --v-disabled-opacity: 1;
+    opacity: 1;
+}
+
+/* 읽기 모드의 공개 범위 값 표시 */
+.visibility-view-value {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--cds-text-primary, rgba(0, 0, 0, 0.87));
 }
 
 .readonly-overlay {
@@ -12582,6 +13438,106 @@ export default {
     color: #64748b;
     font-size: 13px;
     text-align: center;
+}
+
+/* ── 용어 정의 사전 섹션 ── */
+.glossary-row {
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    background: #fafafa;
+}
+.glossary-row__head {
+    display: flex;
+    align-items: center;
+}
+.glossary-row__term {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1f2937;
+}
+.glossary-row__actions {
+    margin-left: auto;
+    display: inline-flex;
+}
+.glossary-row__definition {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #4b5563;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* 기존 용어 추천 목록 */
+.glossary-suggest {
+    margin-bottom: 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #fff;
+    max-height: 220px;
+    overflow-y: auto;
+}
+.glossary-suggest__title {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+}
+.glossary-suggest__more {
+    margin-left: auto;
+    font-weight: 400;
+    color: #94a3b8;
+}
+.glossary-suggest__item {
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.glossary-suggest__item + .glossary-suggest__item {
+    border-top: 1px dashed #eef2f7;
+}
+.glossary-suggest__item:hover {
+    background: #f1f5f9;
+}
+.glossary-suggest__item--used {
+    opacity: 0.6;
+    cursor: default;
+}
+.glossary-suggest__head {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+.glossary-suggest__term {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1f2937;
+    flex-shrink: 0;
+}
+.glossary-suggest__src {
+    margin-left: auto;
+    padding-left: 8px;
+    font-size: 10px;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 45%;
+}
+.glossary-suggest__def {
+    margin-top: 1px;
+    font-size: 11px;
+    color: #6b7280;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 </style>
 

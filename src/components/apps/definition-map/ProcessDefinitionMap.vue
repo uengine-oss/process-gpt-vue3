@@ -346,8 +346,8 @@
                                             >{{ getDomainProcessCount(domain.id) }}
                                         </v-chip>
 
-                                        <!-- 편집 모드일 때 수정/삭제 버튼 -->
-                                        <template v-if="enableEdit && selectedDomain === domain.name">
+                                        <!-- 편집 모드일 때 수정/삭제 버튼 (미분류는 시스템 예약 — 편집 불가) -->
+                                        <template v-if="enableEdit && selectedDomain === domain.name && !isUncategorizedDomain(domain)">
                                             <v-btn
                                                 icon
                                                 variant="text"
@@ -789,6 +789,7 @@ import { PROC_DEF_LIST_COLUMNS } from '@/components/api/ProcessGPTBackend';
 const backend = BackendFactory.createBackend();
 import { processGptAgent } from '@/constants/processGptAgent';
 import { getTenantId } from '@/utils/tenant';
+import { isUncategorizedProcess } from '@/utils/uncategorizedProcess';
 
 export default {
     mixins: [ChatModule],
@@ -1346,29 +1347,18 @@ export default {
             }
         },
         async ensureUncategorizedDomainTab() {
-            // '미분류' 도메인 탭이 없으면 추가 (데이터는 수정하지 않음, UI 탭만 추가)
-            if (!this.metricsValue || !this.metricsValue.domains) {
+            // '미분류'는 도메인이 아니라 "도메인 미지정"을 가리키는 시스템 예약 항목이다.
+            // 과거에는 이 탭을 metrics 에 저장했는데, 그러면 도메인 목록에 실제 행으로 남아
+            // 이름 변경·삭제가 가능해지고 체계도에도 도메인처럼 노출된다.
+            // 이제는 저장하지 않고, 이미 저장돼 있던 행이 있으면 화면 목록에서 걷어낸다.
+            if (!this.metricsValue || !Array.isArray(this.metricsValue.domains)) {
                 return;
             }
 
             const uncategorizedName = this.$t('processDefinitionMap.uncategorized');
-
-            let uncategorizedDomain = this.metricsValue.domains.find(
-                (d) => d.name === uncategorizedName || d.name === '미분류' || d.name === 'Uncategorized'
-            );
-
-            if (!uncategorizedDomain) {
-                uncategorizedDomain = {
-                    id: 'uncategorized',
-                    name: uncategorizedName,
-                    order: 0 // 첫 번째로 표시
-                };
-                this.metricsValue.domains.unshift(uncategorizedDomain);
-                try {
-                    await backend.putMetricsMap(this.metricsValue);
-                } catch (e) {
-                    console.warn('Failed to save uncategorized domain tab:', e);
-                }
+            const remaining = this.metricsValue.domains.filter((d) => !isUncategorizedProcess(d, uncategorizedName));
+            if (remaining.length !== this.metricsValue.domains.length) {
+                this.metricsValue.domains = remaining;
             }
         },
         uuid() {
@@ -1621,20 +1611,13 @@ export default {
             // 미분류 Mega 이름 목록 (동기화에서 제외)
             const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
 
-            // 1. Ensure "미분류" (Uncategorized) domain exists as default
+            // '미분류'는 시스템 예약 항목이라 도메인 목록에 저장하지 않는다.
+            // 도메인 미지정 프로세스에는 표식용 id 만 붙이고, 이미 저장돼 있던 행은 걷어낸다.
             const uncategorizedName = this.$t('processDefinitionMap.uncategorized');
-            let uncategorizedDomain = this.metricsValue.domains.find(
-                (d) => d.name === uncategorizedName || d.name === '미분류' || d.name === 'Uncategorized'
+            this.metricsValue.domains = (this.metricsValue.domains || []).filter(
+                (d) => !isUncategorizedProcess(d, uncategorizedName)
             );
-            if (!uncategorizedDomain) {
-                const newId = 'uncategorized';
-                uncategorizedDomain = {
-                    id: newId,
-                    name: uncategorizedName,
-                    order: this.metricsValue.domains.length + 1
-                };
-                this.metricsValue.domains.push(uncategorizedDomain);
-            }
+            const uncategorizedDomain = { id: 'uncategorized', name: uncategorizedName };
 
             // Rebuild mega_processes and processes to handle deletions
             const newMegaProcesses = [];
@@ -2374,10 +2357,16 @@ export default {
                 editItem: domain
             };
         },
+        // '미분류'(uncategorized)는 로드 시 임시 생성되는 시스템 예약 항목 — 이름 변경/삭제를 차단한다.
+        isUncategorizedDomain(domain) {
+            return isUncategorizedProcess(domain, this.$t('processDefinitionMap.uncategorized'));
+        },
         editDomain(domain) {
+            if (this.isUncategorizedDomain(domain)) return;
             this.openDomainDialog('edit', domain);
         },
         async deleteDomain(domain) {
+            if (this.isUncategorizedDomain(domain)) return;
             if (!confirm(this.$t('metricsView.confirmDeleteDomain') || '이 도메인을 삭제하시겠습니까?')) {
                 return;
             }
@@ -2391,6 +2380,14 @@ export default {
         async saveDomain() {
             const trimmedName = this.domainDialog.name.trim();
             if (!trimmedName) return;
+            // 예약어 '미분류'로의 생성/변경 및 미분류 항목 자체의 수정 차단
+            if (this.isUncategorizedDomain({ name: trimmedName })) {
+                alert(this.$t('processDefinitionMap.reservedName') || "'미분류'는 시스템 예약 이름입니다.");
+                return;
+            }
+            if (this.domainDialog.mode === 'edit' && this.domainDialog.editItem && this.isUncategorizedDomain(this.domainDialog.editItem)) {
+                return;
+            }
 
             if (this.domainDialog.mode === 'add') {
                 // Duplicate check

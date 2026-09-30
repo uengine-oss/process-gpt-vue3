@@ -6,6 +6,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { getResolvedRole, refreshAuthClaims } from '@/utils/authClaims';
 import { formatKST } from '@/utils/datetime';
 import { canAccessApprovalInbox, canManageReopenRequest, isSelfReviewSubmission } from '@/utils/reviewPermissions';
+import { getFeedbackAlertDays, getStalledDays } from '@/services/tenantCustomizationService';
 import { groupReviewItemsByProcess, type ReviewVersionGroup } from '@/utils/reviewVersionGrouping';
 import {
     buildProcessHierarchyQuery,
@@ -164,11 +165,11 @@ function getDueAlertLabel(item: any): string | null {
     const now = new Date();
     if (item.public_feedback_ends_at && item.state === 'public_feedback') {
         const daysLeft = differenceInDays(new Date(item.public_feedback_ends_at), now);
-        if (daysLeft <= 7 && daysLeft >= 0) return `D-${daysLeft}`;
+        if (daysLeft <= getFeedbackAlertDays() && daysLeft >= 0) return `D-${daysLeft}`;
     }
     if (item.updated_at) {
         const daysSinceUpdate = differenceInDays(now, new Date(item.updated_at));
-        if (daysSinceUpdate >= 7) return `${daysSinceUpdate}일 정체`;
+        if (daysSinceUpdate >= getStalledDays()) return `${daysSinceUpdate}일 정체`;
     }
     return null;
 }
@@ -188,7 +189,7 @@ function openInReviewMode(item: any) {
             name: item.process_name || procDefId,
             entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
             mode: PROCESS_HIERARCHY_MODE.VIEW,
-            left: PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED,
+            left: PROCESS_HIERARCHY_PANEL_STATE.EXPANDED,
             right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
             rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
             reviewId: item.review_id || item.id
@@ -211,7 +212,7 @@ async function handleApproveReopen(item: any) {
                     name: item.process_name || newDraft.proc_def_id,
                     entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
                     mode: PROCESS_HIERARCHY_MODE.EDIT,
-                    left: PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED,
+                    left: PROCESS_HIERARCHY_PANEL_STATE.EXPANDED,
                     right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
                     rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
                     reviewId: newDraft.id

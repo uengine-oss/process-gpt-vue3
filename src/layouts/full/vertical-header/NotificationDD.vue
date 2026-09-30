@@ -6,11 +6,20 @@
         <template v-slot:activator="{ props }">
             <v-btn icon flat v-bind="props" size="small" @click="isConfirm = true">
                 <div class="position-realtive">
-                    <div class="notify" v-if="!isConfirm && notiCount > 0">
-                        <span class="heartbit"></span>
-                        <span class="point"></span>
-                    </div>
-                    <Icons :icon="'bell-bing-line-duotone'" />
+                    <!-- PAL: 미확인 건수를 숫자 뱃지로 표시 / 비 PAL: 기존 하트비트 점 유지 -->
+                    <template v-if="isPal">
+                        <v-badge v-if="notiCount > 0" :content="notiCount > 99 ? '99+' : notiCount" color="error" offset-x="-2" offset-y="-2">
+                            <Icons :icon="'bell-bing-line-duotone'" />
+                        </v-badge>
+                        <Icons v-else :icon="'bell-bing-line-duotone'" />
+                    </template>
+                    <template v-else>
+                        <div class="notify" v-if="!isConfirm && notiCount > 0">
+                            <span class="heartbit"></span>
+                            <span class="point"></span>
+                        </div>
+                        <Icons :icon="'bell-bing-line-duotone'" />
+                    </template>
                 </div>
             </v-btn>
         </template>
@@ -26,8 +35,8 @@
                     <v-list-item v-for="item in notifications" :key="item.id" @click="checkNotification(item)">
                         <template v-slot:prepend>
                             <div class="mr-2">
-                                <v-chip color="primary" variant="tonal" size="x-small" label>
-                                    {{ item.type.includes('workitem') ? 'To-Do' : item.type === 'merge_request' ? 'PR' : 'Chat' }}
+                                <v-chip :color="isPal && item.type === 'download_anomaly' ? 'error' : 'primary'" variant="tonal" size="x-small" label>
+                                    {{ typeLabel(item.type) }}
                                 </v-chip>
                             </div>
                         </template>
@@ -45,6 +54,13 @@
                     </v-list-item>
                 </v-list>
             </div>
+            <!-- PAL: 전체 알림 페이지 링크 -->
+            <template v-if="isPal">
+                <v-divider></v-divider>
+                <v-btn block variant="text" color="primary" size="small" class="my-1" @click="goToNotificationsPage">
+                    {{ $t('NotificationDD.viewAll') }}
+                </v-btn>
+            </template>
         </v-sheet>
     </v-menu>
 </template>
@@ -59,7 +75,8 @@ export default {
         menuOpen: false,
         isConfirm: false,
         notifications: [],
-        defaultSetting: useDefaultSetting()
+        defaultSetting: useDefaultSetting(),
+        isPal: !!window.$pal
     }),
     computed: {
         notiCount() {
@@ -102,6 +119,26 @@ export default {
     methods: {
         async fetchNotifications() {
             this.notifications = await backend.fetchNotifications();
+        },
+        typeLabel(type) {
+            if (this.isPal) {
+                if (!type) return this.$t('NotificationDD.typeGeneral');
+                if (type.includes('workitem')) return 'To-Do';
+                const map = {
+                    merge_request: 'PR',
+                    chat: 'Chat',
+                    download_anomaly: this.$t('NotificationDD.typeSecurity'),
+                    survey: this.$t('NotificationDD.typeSurvey'),
+                    general: this.$t('NotificationDD.typeGeneral')
+                };
+                return map[type] || this.$t('NotificationDD.typeGeneral');
+            }
+            // 비 PAL: 기존 표기 그대로
+            return type && type.includes('workitem') ? 'To-Do' : type === 'merge_request' ? 'PR' : 'Chat';
+        },
+        goToNotificationsPage() {
+            this.menuOpen = false;
+            this.$router.push('/notifications');
         },
         getChatRoomIdFromUrl(url) {
             if (!url || typeof url !== 'string') return null;

@@ -90,6 +90,8 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+// 저장된 경로가 우리 저장소를 가리키면 비공개라 서명해야 열린다.
+import { resolveStorageUrl } from '@/shared/storageUrl';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -390,8 +392,11 @@ export default {
             return new Date(date).toLocaleString('ko-KR');
         },
 
-        downloadFile(file) {
-            window.open(file.path, '_blank');
+        async downloadFile(file) {
+            if (!file?.path) return;
+            // memento 가 준 바깥 주소는 그대로, 우리 버킷 주소·경로면 서명해서 연다.
+            const url = (await resolveStorageUrl(file.path)) || file.path;
+            window.open(url, '_blank');
         },
 
         async deleteFile(file) {

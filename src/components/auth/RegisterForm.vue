@@ -3,6 +3,7 @@ import { Form } from 'vee-validate';
 import { ref, computed, getCurrentInstance, defineProps } from 'vue';
 
 import { useAuthStore } from '@/stores/auth';
+import { createPasswordRules, getPasswordPolicyHint, getPasswordViolationMessage, isPasswordValid } from '@/utils/passwordPolicy';
 const authStore = useAuthStore();
 const { proxy } = getCurrentInstance();
 
@@ -16,12 +17,9 @@ const confirmPassword = ref('');
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const email = ref('');
-const passwordRules = ref([
-    (v: string) => !!v || proxy.$t('createAccount.enterPassword'),
-    (v: string) =>
-        (v.length >= 8 && /[a-zA-Z]/.test(v) && /[0-9]/.test(v) && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v)) ||
-        proxy.$t('createAccount.passwordRequirement')
-]);
+const translate = (key: string, named?: Record<string, unknown>) => proxy.$t(key, named);
+const passwordRules = ref(createPasswordRules(translate));
+const passwordPolicyHint = computed(() => getPasswordPolicyHint(translate));
 const emailRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterEmail'),
     (v: string) => /.+@.+\..+/.test(v) || proxy.$t('createAccount.invalidEmailFormat')
@@ -38,10 +36,7 @@ const confirmPasswordRules = ref([
 const isRegisterFormValid = computed(() => {
     if (!username.value) return false;
     if (!email.value || !/.+@.+\..+/.test(email.value)) return false;
-    if (!password.value || password.value.length < 8) return false;
-    if (!/[a-zA-Z]/.test(password.value)) return false;
-    if (!/[0-9]/.test(password.value)) return false;
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password.value)) return false;
+    if (!isPasswordValid(password.value)) return false;
     if (!confirmPassword.value || confirmPassword.value !== password.value) return false;
     return true;
 });
@@ -60,14 +55,12 @@ function validate(values: any, { setErrors }: any) {
     if (!password.value) {
         setErrors({ password: proxy.$t('createAccount.enterPassword') });
         hasError = true;
-    } else if (
-        password.value.length < 8 ||
-        !/[a-zA-Z]/.test(password.value) ||
-        !/[0-9]/.test(password.value) ||
-        !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password.value)
-    ) {
-        setErrors({ password: proxy.$t('createAccount.passwordRequirement') });
-        hasError = true;
+    } else {
+        const violationMsg = getPasswordViolationMessage(password.value, translate);
+        if (violationMsg) {
+            setErrors({ password: violationMsg });
+            hasError = true;
+        }
     }
     if (!confirmPassword.value || password.value !== confirmPassword.value) {
         setErrors({ confirmPassword: proxy.$t('createAccount.passwordMismatch') });
@@ -124,6 +117,8 @@ function validate(values: any, { setErrors }: any) {
                 color="primary"
                 :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
                 @click:append-inner="showPassword = !showPassword"
+                :hint="passwordPolicyHint"
+                persistent-hint
             ></VTextField>
 
             <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.confirmPassword') }}</v-label>

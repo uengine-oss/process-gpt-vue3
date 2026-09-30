@@ -157,3 +157,77 @@ export function formatViolationMessage(violation: SchemaRequiredViolation): stri
     const scopeLabel = violation.scope === 'process' ? '프로세스' : violation.elementName;
     return `[${scopeLabel}] ${violation.propertyLabel} 항목은 필수 입력입니다.`;
 }
+
+export interface MandatoryRuleEntry {
+    elementId: string;
+    elementName: string;
+    elementType: string;
+    taskCode: string;
+    /** mandatory_rule 원문을 줄 단위로 나눈 목록 (빈 줄 제외) */
+    rules: string[];
+    /** Rule 준수 여부를 바로 확인할 수 있게 함께 보여줄 태스크 속성값 */
+    props: {
+        input: string[];
+        output: string[];
+        procedure: string[];
+        raci: Record<string, string[]> | null;
+    };
+}
+
+function toStringArray(value: unknown): string[] {
+    if (Array.isArray(value)) return value.map((v) => toText(v)).filter((v) => v.trim() !== '');
+    const text = toText(value).trim();
+    return text ? [text] : [];
+}
+
+/**
+ * 검증 다이얼로그의 필수 Rule 체크리스트 수집.
+ * uengine json 에 mandatory_rule 값이 있는 태스크 계열 요소만 대상이며,
+ * 검증(에러 탐지)과 별개로 사람이 Rule 준수를 확인하는 용도라 위반을 만들지 않는다.
+ */
+export function collectMandatoryRuleChecklist(modeler: any): MandatoryRuleEntry[] {
+    const entries: MandatoryRuleEntry[] = [];
+    let elementRegistry: any = null;
+    try {
+        elementRegistry = modeler?.get('elementRegistry');
+    } catch {
+        elementRegistry = null;
+    }
+    if (!elementRegistry) return entries;
+
+    const seen = new Set<string>();
+    (elementRegistry.getAll?.() ?? []).forEach((el: any) => {
+        if (!el?.id || seen.has(el.id)) return;
+        if (el.type === 'label' || el.labelTarget) return;
+        const type = toText(el.type || el.$type);
+        if (!isTaskLikeType(type)) return;
+        seen.add(el.id);
+
+        const bo = el.businessObject || {};
+        const props = parseUengineProps(bo);
+        const rules = toText(props.mandatory_rule)
+            .split('\n')
+            .map((r) => r.trim())
+            .filter(Boolean);
+        if (rules.length === 0) return;
+
+        const raci =
+            props.raci && typeof props.raci === 'object' && !Array.isArray(props.raci)
+                ? (props.raci as Record<string, string[]>)
+                : null;
+        entries.push({
+            elementId: toText(el.id),
+            elementName: toText(bo.name).trim() || toText(el.id),
+            elementType: type,
+            taskCode: toText(props.taskCode),
+            rules,
+            props: {
+                input: toStringArray(props.input),
+                output: toStringArray(props.output),
+                procedure: toStringArray(props.procedure),
+                raci
+            }
+        });
+    });
+    return entries;
+}

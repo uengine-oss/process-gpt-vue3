@@ -87,6 +87,8 @@ export interface Backend {
     testRecordList(path: string): Promise<any>;
     findCurrentWorkItemByInstId(instId: string): Promise<any>;
     getUserList(options: any): Promise<any>;
+    /** 화면 표시용 사용자 목록 — 이메일이 마스킹되어 올 수 있다. 이메일을 값으로 쓰는 경로에는 쓰지 말 것. */
+    getMaskedUserList(options: any): Promise<any>;
     getGroupList(): Promise<any>;
     releaseVersion(releaseName: string): Promise<any>;
     uploadDefinition(file: File, path: string): Promise<any>;
@@ -166,6 +168,16 @@ export interface Backend {
     getPropertySchemas(taskType?: string): Promise<any>;
     savePropertySchema(schema: any): Promise<any>;
     deletePropertySchema(id: string): Promise<any>;
+
+    // 목록 관리 (option_list) — 속성 스키마 select 소스 'list' 가 참조 (PAL 전용 화면)
+    getOptionLists?(): Promise<any>;
+    saveOptionList?(list: any): Promise<any>;
+    deleteOptionList?(id: string): Promise<any>;
+
+    // 용어 정의 사전 (glossary_terms) — 프로세스별 용어 정의 + 통합 사전 (PAL 전용 화면)
+    getGlossaryTerms?(options?: { procDefId?: string }): Promise<any>;
+    saveGlossaryTerm?(term: any): Promise<any>;
+    deleteGlossaryTerm?(id: string): Promise<any>;
 
     getPaletteSettings(): Promise<any>;
     savePaletteSettings(settings: any): Promise<any>;

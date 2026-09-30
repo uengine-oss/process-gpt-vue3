@@ -830,6 +830,7 @@ import { getTenantId, resolveTenantId } from '@/utils/tenant';
 import { isLegacyProcessDefinition, convertLegacyProcessDefinitionToElements } from '@/utils/legacyProcessDefinition';
 import { processGptAgent } from '@/constants/processGptAgent';
 import { PROCESS_GPT_AGENT_ID } from '@/constants/processGptAgent';
+import { isStorageObjectUrl, resolveStorageUrl } from '@/shared/storageUrl';
 
 const backend = BackendFactory.createBackend();
 const fixedLangchainMainAgentService = new FixedBaseWorkAssistantAgentService('/agent');
@@ -5751,7 +5752,14 @@ export default {
             return out;
         },
 
-        buildMessageForAgent(userText, payload, policy) {
+        /**
+         * 에이전트에게 보낼 본문. 첨부는 `[InputData]` 블록으로 알린다.
+         *
+         * 주소는 **보내기 직전에 다시 서명한다.** 방에 쌓인 파일(session_files)은
+         * 며칠 전 메시지에서 꺼내 오는데, 그때 만든 서명 주소는 이미 만료됐다.
+         * 만료된 주소를 보내면 에이전트는 "첨부된 문서가 없습니다" 로 답한다.
+         */
+        async buildMessageForAgent(userText, payload, policy) {
             let messageForAgent = (userText || '').toString();
             // 첨부 정보는 기존 방식처럼 [InputData]로 전달
             const normalizedFiles = this.normalizePayloadFiles(payload);
@@ -5791,13 +5799,14 @@ export default {
             const hasSessionFile = sessionFiles.length > 0;
             if (hasImages || hasCurrentFile || hasSessionFile || payload?.hwpxUrl || payload?.hwpxEdit) {
                 const inputData = {};
-                if (hasImages) inputData.images = payload.images;
+                if (hasImages) inputData.images = await this.signAttachmentUrls(payload.images, 'chat-images');
                 if (hasCurrentFile) {
+                    const signedFiles = await this.signAttachmentUrls(normalizedFiles);
                     // 하위 호환: 첫 파일은 file, 전체는 files
-                    inputData.file = normalizedFiles[0];
-                    inputData.files = normalizedFiles;
+                    inputData.file = signedFiles[0];
+                    inputData.files = signedFiles;
                 }
-                if (hasSessionFile) inputData.session_files = sessionFiles;
+                if (hasSessionFile) inputData.session_files = await this.signAttachmentUrls(sessionFiles);
                 if (payload?.hwpxUrl) inputData.hwpx_url = payload.hwpxUrl;
                 if (payload?.hwpxEdit) inputData.hwpx_edit = payload.hwpxEdit;
                 messageForAgent += `\n\n[InputData]\n${JSON.stringify(inputData)}`;
@@ -5810,6 +5819,41 @@ export default {
 
             // must_reply (침묵 정책 제거)
             return messageForAgent;
+        },
+
+        /**
+         * 첨부 목록의 주소를 지금 열리는 것으로 바꾼다.
+         *
+         * 우리 저장소를 가리키면 새 서명 주소로, 바깥 주소(memento 등)면 그대로.
+         * 주소 칸 이름이 저장 시기마다 달라 채워진 칸을 모두 갱신한다.
+         */
+        async signAttachmentUrls(files, bucket = 'files') {
+            const urlKeys = ['url', 'fileUrl', 'publicUrl', 'signedUrl', 'fullPath'];
+            const list = Array.isArray(files) ? files : [];
+            return await Promise.all(
+                list.map(async (f) => {
+                    if (!f || typeof f !== 'object') return f;
+
+                    const current = urlKeys.map((k) => f[k]).find((v) => typeof v === 'string' && v);
+                    // 다시 서명할 수 있는 것만 손댄다.
+                    //   · 우리 Storage 주소            → 되돌려 읽어 새로 서명
+                    //   · bucket 과 path 를 둘 다 가진 것 → 그대로 서명
+                    // memento 가 준 주소·경로는 규칙이 달라 건드리지 않는다.
+                    //   (그쪽 file_path 를 버킷 경로로 넘겨짚으면 없는 객체를 가리킨다)
+                    const target = isStorageObjectUrl(current) ? current : f.bucket && f.path ? f : null;
+                    if (!target) return f;
+
+                    const signed = await resolveStorageUrl(target, { bucket });
+                    if (!signed) return f;
+
+                    const next = { ...f };
+                    for (const key of urlKeys) {
+                        if (next[key]) next[key] = signed;
+                    }
+                    if (!next.url && !next.fileUrl) next.fileUrl = signed;
+                    return next;
+                })
+            );
         },
 
         normalizeInputFile(file) {
@@ -8256,7 +8300,7 @@ export default {
 
                 let full = '';
                 let lastScrollAt = 0;
-                const messageForAgent = this.buildMessageForAgent(userText, payload, agentTarget.policy);
+                const messageForAgent = await this.buildMessageForAgent(userText, payload, agentTarget.policy);
                 const maybeScroll = () => {
                     const now = Date.now();
                     if (now - lastScrollAt < 120) return;
@@ -10641,10 +10685,14 @@ export default {
             this.imagePreviewDialog = true;
         },
 
-        openExternalUrl(url) {
+        async openExternalUrl(url) {
             if (!url) return;
             try {
-                window.open(url, '_blank');
+                // 자식(Chat·ChatThread)은 이미 서명해서 넘기지만, 답변 본문의 링크처럼
+                // 곧바로 들어오는 값도 있다. 우리 저장소 주소면 여기서 서명하고,
+                // 바깥 주소는 그대로 통과한다(버킷이 비공개라 서명 없이는 400).
+                const target = (await resolveStorageUrl(url)) || url;
+                window.open(target, '_blank');
             } catch (e) {}
         },
 

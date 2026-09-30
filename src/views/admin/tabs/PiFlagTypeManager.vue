@@ -41,7 +41,7 @@
                 <span class="cell-label">{{ item.label }}</span>
             </template>
             <template v-slot:[`item.description`]="{ item }">
-                <span class="cell-description">{{ item.description || '-' }}</span>
+                <span class="cell-description" :title="item.description || undefined">{{ item.description || '-' }}</span>
             </template>
             <template v-slot:[`item.sortOrder`]="{ item }">
                 <span class="cell-order">{{ item.sortOrder ?? 0 }}</span>
@@ -471,9 +471,16 @@ export default defineComponent({
     font-weight: 500;
 }
 
+/* max-width를 px로 고정해야 td가 내용 길이만큼 늘어나 다른 컬럼을 밀어내지 않는다 */
 .cell-description {
     color: #475569;
     line-height: 1.5;
+    display: inline-block;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+    white-space: nowrap;
 }
 
 .cell-order {

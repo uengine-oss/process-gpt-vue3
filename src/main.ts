@@ -42,6 +42,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import { initAuthClaimsListener } from '@/utils/authClaims';
+import { isIpAddressHost } from '@/utils/domainUtils.js';
 import VueTablerIcons from 'vue-tabler-icons';
 import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
@@ -54,6 +55,7 @@ import hammerDirective from '@/components/directive/hammerDirective';
 import i18nDirective from './plugins/i18nDirective';
 import { router } from './router';
 import { startUsageTracking } from '@/services/usageAnalytics';
+import { startPageViewLogging } from '@/services/activityAuditLog';
 import store from './store';
 import axios from 'axios';
 import Maska from 'maska';
@@ -300,7 +302,10 @@ async function setupTenant() {
     } else if (
         window.location.host.includes('localhost') ||
         window.location.host.includes('192.168') ||
-        window.location.host.includes('127.0.0.1')
+        window.location.host.includes('127.0.0.1') ||
+        // IP 직접 접속(데모 서버 등)은 서브도메인이 없어 첫 옥텟이 테넌트명으로
+        // 오인되므로 로컬 개발과 동일하게 VITE_TENANT_OVERRIDE 로 테넌트를 정한다.
+        isIpAddressHost()
     ) {
         Object.defineProperty(window, '$isTenantServer', {
             value: false,
@@ -417,6 +422,28 @@ async function initializeApp() {
     // 사용/도입 현황 분석(app_usage_events) — pal 모드 전용 수집
     if (window.$pal) {
         startUsageTracking(router);
+        // 활동 로그(admin_audit_log) 페이지 조회(page_view) 수집 — 감사로그 > 활동 로그 탭에 표시
+        startPageViewLogging(router);
+    }
+    // PAL 전용: 화면 곳곳의 this.$toast?.success/error(...) 를 App.vue 스낵바에 연결한다.
+    // $toast 가 어디에도 등록돼 있지 않아 옵셔널 체이닝으로 전부 조용히 무시됐고,
+    // 검증 통과처럼 토스트만 띄우는 피드백이 화면에 보이지 않았다.
+    if (window.$pal) {
+        const showSnackbar = (message: string, color: string) => {
+            const appRoot = (window as any).$app_;
+            if (!appRoot) return;
+            appRoot.snackbarMessage = message;
+            appRoot.snackbarColor = color;
+            appRoot.snackbar = true;
+            appRoot.snackbarSuccessStatus = color === 'success';
+            appRoot.clickCount = 0;
+        };
+        app.config.globalProperties.$toast = {
+            success: (message: string) => showSnackbar(message, 'success'),
+            error: (message: string) => showSnackbar(message, 'error'),
+            warning: (message: string) => showSnackbar(message, 'warning'),
+            info: (message: string) => showSnackbar(message, 'info')
+        };
     }
     // app.component('EasyDataTable', Vue3EasyDataTable);
     app.component('perfect-scrollbar', PerfectScrollbar);

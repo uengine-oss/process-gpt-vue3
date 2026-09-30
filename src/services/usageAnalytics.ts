@@ -633,6 +633,92 @@ function maxDate(current: string | null, next: string): string {
     return new Date(next).getTime() > new Date(current).getTime() ? next : current;
 }
 
+interface OrgTeamRef {
+    id: string;
+    name: string;
+}
+
+interface OrgChartIndex {
+    memberTeams: Map<string, OrgTeamRef>;
+    teamNames: Map<string, string>;
+    /** 정규화된 부서명 → 조직도 부서 (부서명은 조직도 전체에서 유일) */
+    teamsByName: Map<string, OrgTeamRef>;
+}
+
+function normalizeIdentifier(value: any): string {
+    return String(value ?? '')
+        .trim()
+        .toLowerCase();
+}
+
+/** 부서명 비교용 정규화 — orgChartModel.normalizeTeamName 과 동일 규칙 */
+function normalizeTeamNameKey(value: any): string {
+    return String(value ?? '')
+        .replace(/\s+/g, '')
+        .toLowerCase();
+}
+
+/**
+ * 조직도(configuration key='organization' value.chart) 트리에서
+ * 구성원 식별자(uid/email/이름) → 소속 부서 매핑을 만든다.
+ * 같은 사람이 여러 부서에 있으면 첫 번째 배치를 대표 부서로 쓴다.
+ */
+function buildOrgChartIndex(rawValue: any): OrgChartIndex | null {
+    const parsed = typeof rawValue === 'string' ? (() => { try { return JSON.parse(rawValue); } catch { return null; } })() : rawValue;
+    const chart = parsed?.chart || parsed;
+    if (!chart || typeof chart !== 'object' || !chart.id) return null;
+
+    const memberTeams = new Map<string, OrgTeamRef>();
+    const teamNames = new Map<string, string>();
+    const teamsByName = new Map<string, OrgTeamRef>();
+
+    const walk = (node: any, parentTeam: OrgTeamRef | null) => {
+        if (!node || typeof node !== 'object') return;
+        const data = node.data || {};
+        const isTeamNode = node.id === 'root' || data.isTeam === true;
+
+        if (isTeamNode) {
+            const team: OrgTeamRef = { id: String(node.id), name: normalizeText(data.name) || normalizeText(node.name) || String(node.id) };
+            teamNames.set(team.id, team.name);
+            const nameKey = normalizeTeamNameKey(team.name);
+            if (nameKey && !teamsByName.has(nameKey)) teamsByName.set(nameKey, team);
+            for (const child of node.children || []) walk(child, team);
+            return;
+        }
+
+        if (parentTeam) {
+            [node.id, data.id, data.email, data.name, data.username].forEach((identifier) => {
+                const key = normalizeIdentifier(identifier);
+                if (key && !memberTeams.has(key)) memberTeams.set(key, parentTeam);
+            });
+        }
+        for (const child of node.children || []) walk(child, parentTeam);
+    };
+
+    walk(chart, null);
+    return memberTeams.size > 0 || teamNames.size > 0 ? { memberTeams, teamNames, teamsByName } : null;
+}
+
+/** 이벤트/사용자 행의 식별자들로 조직도 소속 부서를 찾는다 */
+function orgTeamOf(index: OrgChartIndex | null, value: Partial<RawUser | RawUsageEvent | UsageIdentity>): OrgTeamRef | null {
+    if (!index) return null;
+    const candidates = [
+        (value as any).user_id,
+        (value as any).id,
+        value.email,
+        value.employee_no,
+        (value as any).user_name,
+        (value as any).username
+    ];
+    for (const candidate of candidates) {
+        const key = normalizeIdentifier(candidate);
+        if (!key) continue;
+        const team = index.memberTeams.get(key);
+        if (team) return team;
+    }
+    return null;
+}
+
 export async function getUsageAdoptionDashboard(options: { lookbackDays?: number; topLimit?: number } = {}): Promise<UsageAdoptionDashboard> {
     const supabase = (window as any).$supabase;
     if (!supabase) return emptyDashboard('Supabase is not configured.');
@@ -649,10 +735,10 @@ export async function getUsageAdoptionDashboard(options: { lookbackDays?: number
     const topLimit = options.topLimit || 10;
 
     try {
-        const [eventResult, userResult, modelResult, procResult] = await Promise.all([
+        const [eventResult, userResult, modelResult, procResult, orgResult] = await Promise.all([
             supabase
                 .from('app_usage_events')
-                .select('id, event_type, session_id, user_id, email, employee_no, proc_def_id, model_id, active_duration_ms, occurred_at')
+                .select('id, event_type, session_id, user_id, email, employee_no, user_name, department_id, department_name, org_code, org_name, proc_def_id, model_id, active_duration_ms, occurred_at')
                 .eq('tenant_id', tenantId)
                 .gte('occurred_at', lookbackStart.toISOString())
                 .order('occurred_at', { ascending: false })
@@ -663,7 +749,8 @@ export async function getUsageAdoptionDashboard(options: { lookbackDays?: number
                 .eq('tenant_id', tenantId)
                 .limit(10000),
             supabase.from('tb_bpmn_model').select('id,proc_def_id,name').eq('tenant_id', tenantId).limit(10000),
-            supabase.from('proc_def').select('id,name').eq('tenant_id', tenantId).limit(10000)
+            supabase.from('proc_def').select('id,uuid,name').eq('tenant_id', tenantId).limit(10000),
+            supabase.from('configuration').select('value').eq('tenant_id', tenantId).eq('key', 'organization').maybeSingle()
         ]);
 
         if (eventResult.error) {
@@ -682,13 +769,47 @@ export async function getUsageAdoptionDashboard(options: { lookbackDays?: number
             if (model.id) modelNameMap.set(String(model.id), model.name || model.proc_def_id || String(model.id));
             if (model.proc_def_id) procNameMap.set(String(model.proc_def_id), model.name || model.proc_def_id);
         });
+        // 같은 프로세스가 라우트에 따라 proc_def.id / uuid / model_id 로 제각기 기록되므로
+        // 별칭(소문자) → 대표 키 매핑을 만들어 집계 시 하나로 합친다.
+        const procCanonicalKey = new Map<string, string>();
         (procResult.data || []).forEach((proc: any) => {
-            if (proc.id) procNameMap.set(String(proc.id), proc.name || proc.id);
+            const canonical = String(proc.id || proc.uuid || '');
+            if (!canonical) return;
+            const name = proc.name || canonical;
+            procNameMap.set(canonical, name);
+            if (proc.id) procCanonicalKey.set(String(proc.id).toLowerCase(), canonical);
+            if (proc.uuid) {
+                procNameMap.set(String(proc.uuid), name);
+                procCanonicalKey.set(String(proc.uuid).toLowerCase(), canonical);
+            }
         });
+        (modelResult.data || []).forEach((model: any) => {
+            if (model.id && model.proc_def_id) {
+                const canonical = procCanonicalKey.get(String(model.proc_def_id).toLowerCase()) || String(model.proc_def_id);
+                procCanonicalKey.set(String(model.id).toLowerCase(), canonical);
+            }
+        });
+        function canonicalProcKey(rawKey: string): string {
+            return procCanonicalKey.get(rawKey.toLowerCase()) || rawKey;
+        }
+        const orgChartIndex = buildOrgChartIndex(orgResult?.data?.value);
 
         const userMap = new Map<string, RawUser>();
         const teamMembers = new Map<string, Set<string>>();
         const teamNames = new Map<string, string>();
+
+        // 부서 컬럼으로 폴백해 얻은 팀이 조직도의 부서와 이름이 같으면 조직도 팀으로 병합한다.
+        // (조직도 팀 id 는 노드 uuid, 폴백 팀 id 는 부서명 문자열이라 그대로 두면 같은 팀이 두 줄로 나뉜다)
+        function canonicalizeFallbackTeam(team: { id: string; name: string }) {
+            const orgTeam = orgChartIndex?.teamsByName.get(normalizeTeamNameKey(team.name));
+            return orgTeam || team;
+        }
+
+        // 조직도 트리(변경된 조직도)를 최우선으로 팀을 판정하고,
+        // 조직도에 배치되지 않은 사용자만 users/이벤트의 부서 컬럼으로 폴백한다.
+        function resolveTeamPreferOrg(value: Partial<RawUser | RawUsageEvent | UsageIdentity>) {
+            return orgTeamOf(orgChartIndex, value) || canonicalizeFallbackTeam(resolveTeam(value));
+        }
 
         users.forEach((user) => {
             const key = makeUserKey(user);
@@ -696,7 +817,7 @@ export async function getUsageAdoptionDashboard(options: { lookbackDays?: number
             if (user.id) userMap.set(String(user.id), user);
             if (user.email) userMap.set(String(user.email), user);
             if (user.employee_no) userMap.set(String(user.employee_no), user);
-            const team = resolveTeam(user);
+            const team = resolveTeamPreferOrg(user);
             teamNames.set(team.id, team.name);
             incrementSet(teamMembers, team.id, key);
         });
@@ -711,12 +832,20 @@ export async function getUsageAdoptionDashboard(options: { lookbackDays?: number
 
         function eventTeam(event: RawUsageEvent) {
             const source = eventUser(event);
+            // 1순위: 현재 조직도 기준 소속 (이벤트 식별자 → 매칭된 사용자 행 순으로 시도)
+            const orgTeam = orgTeamOf(orgChartIndex, event) || (source !== event ? orgTeamOf(orgChartIndex, source) : null);
+            if (orgTeam) {
+                teamNames.set(orgTeam.id, orgTeam.name);
+                return orgTeam;
+            }
+            // 폴백: 이벤트에 기록된 부서 스냅샷 → 사용자 행의 부서 컬럼 (이름이 같으면 조직도 팀으로 병합)
             const eventTeamSnapshot = resolveTeam(event);
             if (eventTeamSnapshot.id !== 'UNASSIGNED') {
-                teamNames.set(eventTeamSnapshot.id, eventTeamSnapshot.name);
-                return eventTeamSnapshot;
+                const merged = canonicalizeFallbackTeam(eventTeamSnapshot);
+                teamNames.set(merged.id, merged.name);
+                return merged;
             }
-            const team = resolveTeam(source);
+            const team = canonicalizeFallbackTeam(resolveTeam(source));
             teamNames.set(team.id, team.name);
             return team;
         }
@@ -799,7 +928,7 @@ export async function getUsageAdoptionDashboard(options: { lookbackDays?: number
         currentEvents
             .filter((event) => event.event_type === 'model_view' && (event.proc_def_id || event.model_id))
             .forEach((event) => {
-                const key = event.proc_def_id || event.model_id || 'unknown';
+                const key = canonicalProcKey(event.proc_def_id || event.model_id || 'unknown');
                 if (!modelViewMap.has(key)) {
                     modelViewMap.set(key, { event, viewers: new Set(), count: 0, lastSeen: null });
                 }
@@ -811,9 +940,10 @@ export async function getUsageAdoptionDashboard(options: { lookbackDays?: number
 
         const modelTop = Array.from(modelViewMap.entries())
             .map(([key, item]) => ({
-                procDefId: item.event.proc_def_id || key,
+                procDefId: key,
                 modelId: item.event.model_id || null,
                 modelName:
+                    procNameMap.get(key) ||
                     (item.event.model_id ? modelNameMap.get(String(item.event.model_id)) : null) ||
                     procNameMap.get(String(item.event.proc_def_id || key)) ||
                     item.event.proc_def_id ||
@@ -849,7 +979,7 @@ export async function getUsageAdoptionDashboard(options: { lookbackDays?: number
 
         function toUserRanking(userKey: string, value: number, extra: Partial<UserRankingMetric> = {}): UserRankingMetric {
             const user = userMap.get(userKey) || {};
-            const team = resolveTeam(user);
+            const team = resolveTeamPreferOrg({ ...user, user_id: userKey });
             return {
                 userKey,
                 userName: userDisplayName({ ...user, user_id: userKey }),

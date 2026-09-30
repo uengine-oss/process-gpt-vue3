@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import { getStageDef } from '@/utils/processStages';
+import { getExtraStatusDef, getStageDef } from '@/utils/processStages';
 
 export default {
     name: 'ProgressBadge',
@@ -163,15 +163,16 @@ export default {
                     icon: finalEdit.icon,
                     text: finalEdit.label
                 },
+                // wip / sunset 도 공유 정의(EXTRA_STATUS_DEFS — 테넌트 용어 설정 반영)를 쓴다
                 wip: {
-                    color: '#7B1FA2',
-                    icon: 'mdi-pencil-ruler',
-                    text: this.$t('progressBadge.wip') || '차세대 기획 중'
+                    color: getExtraStatusDef('wip').color,
+                    icon: getExtraStatusDef('wip').icon,
+                    text: getExtraStatusDef('wip').label
                 },
                 sunset: {
-                    color: '#C62828',
-                    icon: 'mdi-archive-arrow-down-outline',
-                    text: this.$t('progressBadge.sunset') || '폐기 예정'
+                    color: getExtraStatusDef('sunset').color,
+                    icon: getExtraStatusDef('sunset').icon,
+                    text: getExtraStatusDef('sunset').label
                 }
             };
         },

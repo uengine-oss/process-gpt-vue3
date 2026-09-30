@@ -1,3 +1,4 @@
+import { getHierarchyLabel } from '@/services/tenantCustomizationService';
 /**
  * AGE 라벨 → 비즈니스 레이어 매핑·팔레트·모양·엣지 화이트리스트
  * (specs/005 data-model.md §1·§3, contracts/explorer-new-ui.contract.md 스타일 규칙).
@@ -143,13 +144,22 @@ export function shapeForLabel(label: string): string {
     return LABEL_SHAPE[label] ?? 'ellipse';
 }
 
+/**
+ * 라벨 → 한글 표시명.
+ * MegaProcess / MajorProcess 는 테넌트 용어 설정(terminology.hierarchy)을 따르므로
+ * 정적 객체가 아니라 getter 로 읽는다(설정 로드 전에는 기본값).
+ */
 export const LABEL_KO: Record<string, string> = {
     Perspective: 'BSC 관점',
     Objective: '전략목표',
     KPI: 'KPI',
     Initiative: '실행과제',
-    MegaProcess: '메가 프로세스',
-    MajorProcess: '메이저 프로세스',
+    get MegaProcess() {
+        return getHierarchyLabel('mega');
+    },
+    get MajorProcess() {
+        return getHierarchyLabel('major');
+    },
     ProcessDefinition: '프로세스 정의',
     Activity: '테스크',
     Role: '역할(레인)',

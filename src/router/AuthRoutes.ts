@@ -62,6 +62,14 @@ const AuthRoutes = {
             name: 'Maintenance',
             path: '/auth/maintenance',
             component: () => import('@/views/authentication/PalMaintenance.vue')
+        },
+        {
+            // MFA(TOTP) 챌린지 화면 (docs/security.md 2-3, 항목 3)
+            // 로그인 후 aal1 인 사용자를 stores/auth.ts 와 라우터 가드(mfaGate)가 이 경로로 보낸다.
+            // ?redirect= 로 원래 목적지를 실어 오고, 검증에 성공하면 그리로 돌아간다.
+            name: 'Side Two Steps',
+            path: '/auth/two-step',
+            component: () => import('@/views/authentication/SideTwoStep.vue')
         }
         // {
         //     name: 'Boxed Forgot Password',

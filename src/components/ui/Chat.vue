@@ -595,7 +595,7 @@
                                                                                     class="mb-1"
                                                                                 >
                                                                                     <img
-                                                                                        :src="message.image"
+                                                                                        :src="signedSrc(message.image, 'chat-images')"
                                                                                         class="rounded-md"
                                                                                         alt="pro"
                                                                                         width="250"
@@ -615,12 +615,12 @@
                                                                                         class="ma-1"
                                                                                     >
                                                                                         <img
-                                                                                            :src="image.url || image"
+                                                                                            :src="signedSrc(image, 'chat-images')"
                                                                                             class="rounded-md"
                                                                                             alt="pro"
                                                                                             width="250"
                                                                                             style="cursor: pointer"
-                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                            @click="emitPreviewImage(image)"
                                                                                         />
                                                                                     </v-sheet>
                                                                                 </div>
@@ -826,7 +826,7 @@
                                                                                     class="mb-1"
                                                                                 >
                                                                                     <img
-                                                                                        :src="message.image"
+                                                                                        :src="signedSrc(message.image, 'chat-images')"
                                                                                         class="rounded-md"
                                                                                         alt="pro"
                                                                                         width="250"
@@ -844,12 +844,12 @@
                                                                                         class="ma-1"
                                                                                     >
                                                                                         <img
-                                                                                            :src="image.url || image"
+                                                                                            :src="signedSrc(image, 'chat-images')"
                                                                                             class="rounded-md"
                                                                                             alt="pro"
                                                                                             width="250"
                                                                                             style="cursor: pointer"
-                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                            @click="emitPreviewImage(image)"
                                                                                         />
                                                                                     </v-sheet>
                                                                                 </div>
@@ -1544,7 +1544,7 @@
                                                                                     class="mb-1"
                                                                                 >
                                                                                     <img
-                                                                                        :src="message.image"
+                                                                                        :src="signedSrc(message.image, 'chat-images')"
                                                                                         class="rounded-md"
                                                                                         alt="pro"
                                                                                         width="250"
@@ -1564,12 +1564,12 @@
                                                                                         class="ma-1"
                                                                                     >
                                                                                         <img
-                                                                                            :src="image.url || image"
+                                                                                            :src="signedSrc(image, 'chat-images')"
                                                                                             class="rounded-md"
                                                                                             alt="pro"
                                                                                             width="250"
                                                                                             style="cursor: pointer"
-                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                            @click="emitPreviewImage(image)"
                                                                                         />
                                                                                     </v-sheet>
                                                                                 </div>
@@ -3518,6 +3518,8 @@ import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { getTenantId } from '@/utils/tenant';
 import { normalizeOrchestration } from '@/utils/orchestration';
+// 첨부 이미지·파일 주소는 비공개 버킷의 서명 URL 이라 그릴 때 만들어야 한다.
+import { storageUrlMixin } from '@/utils/storageUrl';
 const backend = BackendFactory.createBackend();
 
 // getToolCallList()의 도구 결과 가공(JSON.parse/정규식/문자열 치환) 캐시.
@@ -3542,7 +3544,7 @@ export default {
         AgentMessagePanel,
         OpenUiRenderer
     },
-    mixins: [ProgressAnimated, ScrollBottomHandle],
+    mixins: [ProgressAnimated, ScrollBottomHandle, storageUrlMixin],
     props: {
         prompt: String,
         name: String,
@@ -4975,9 +4977,13 @@ export default {
             const message = (log.message || '').toString();
             return `[${level}/${category}] ${message}`;
         },
-        emitPreviewImage(url) {
+        async emitPreviewImage(url) {
             if (!url) return;
-            this.$emit('preview-image', url);
+            // 저장된 값은 경로이거나 옛 공개 URL 이다. 둘 다 지금은 그대로 열리지
+            // 않으므로 열기 직전에 서명 URL 로 바꾼다.
+            const signed = await this.signedUrl(url, 'chat-images');
+            if (!signed) return;
+            this.$emit('preview-image', signed);
         },
         emitPreviewBpmn(bpmn) {
             if (!bpmn) return;
@@ -5148,9 +5154,12 @@ export default {
             const id = String(agent?.id || '').trim();
             return id ? `${window.location.origin}/agent-chat/${encodeURIComponent(id)}` : '';
         },
-        emitOpenExternalUrl(url) {
+        async emitOpenExternalUrl(url) {
             if (!url) return;
-            this.$emit('open-external-url', url);
+            // 우리 저장소 주소면 서명해서, 바깥 주소면 그대로 넘긴다.
+            const resolved = await this.signedUrl(url);
+            if (!resolved) return;
+            this.$emit('open-external-url', resolved);
         },
         handleOpenUiStateUpdate(message, state) {
             try {
@@ -5281,8 +5290,10 @@ export default {
         async downloadAttachment(url, filename) {
             if (!url) return;
             const name = filename || this.getFilenameFromUrl(url) || 'download';
+            // 비공개 버킷이라 저장된 주소를 그냥 fetch 하면 400 이다. 먼저 서명한다.
+            const target = (await this.signedUrl(url)) || url;
             try {
-                const res = await fetch(url);
+                const res = await fetch(target);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const blob = await res.blob();
                 const objectUrl = URL.createObjectURL(blob);
@@ -6755,6 +6766,11 @@ export default {
                         const imageUrl = await backend.getImageUrl(data.path);
                         me.attachedImages.push({
                             id: `${Date.now()}-${Math.random()}`,
+                            // 메시지에 함께 저장된다. url(서명 URL)은 1시간이면 만료되므로
+                            // path·bucket 을 같이 남겨 다시 볼 때 새로 서명할 수 있게 한다.
+                            // (path 가 없는 옛 메시지는 url 을 되돌려 읽어 처리한다)
+                            path: data.path,
+                            bucket: 'chat-images',
                             url: imageUrl,
                             file: imageFile
                         });

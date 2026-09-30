@@ -18,8 +18,8 @@
                         <tr>
                             <th class="corner-cell">
                                 <div class="corner-content">
-                                    <span class="corner-row-label">{{ $t('processArchitecture.matrix.domain') }}</span>
-                                    <span class="corner-col-label">Mega Process</span>
+                                    <span class="corner-row-label">{{ hierarchyLabel('domain') }}</span>
+                                    <span class="corner-col-label">{{ hierarchyLabel('mega') }}</span>
                                     <div class="corner-diagonal"></div>
                                 </div>
                             </th>
@@ -184,6 +184,7 @@
 import { ref, computed, watch } from 'vue';
 import ProgressBadge from '@/components/ui/ProgressBadge.vue';
 import { compareMajorsByStage, getMajorStageLabel, majorMatchesDomain } from './processClassification';
+import { getHierarchyLabel as hierarchyLabel } from '@/services/tenantCustomizationService';
 
 const props = defineProps<{
     procMap: any;

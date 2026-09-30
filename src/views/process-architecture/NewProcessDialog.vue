@@ -1131,6 +1131,8 @@ async function createProcess() {
                 // 템플릿에서 생성한 프로세스는 일반 프로세스 — 템플릿 마커를 물려받지 않는다
                 delete cloneDefinition.type;
             }
+            // 모듈 템플릿의 불리언 마커(definition.isTemplate)도 마찬가지로 물려받지 않는다
+            delete cloneDefinition.isTemplate;
 
             const result = await backend.duplicateLocalProcess(sourceId, name, sourceDef.bpmn, cloneDefinition);
             newId = result?.newId || result?.id || result;

@@ -7,6 +7,10 @@ const storage = StorageBaseFactory.getStorage();
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
+import { mapPasswordServerError } from '@/utils/passwordPolicy';
+import { getAal, needsChallenge } from '@/utils/mfa';
+import { MFA_CHALLENGE_PATH } from '@/utils/mfaGate';
+
 export const useAuthStore = defineStore({
     id: 'auth',
     actions: {
@@ -55,7 +59,18 @@ export const useAuthStore = defineStore({
                     } else {
                         const tenantId = window.$tenantName;
                         await backend.setTenant(tenantId);
-                        router.push(window.$isTenantServer ? '/tenant/manage' : '/process-architecture');
+                        const target = window.$isTenantServer ? '/tenant/manage' : '/process-architecture';
+
+                        // MFA(TOTP) (docs/security.md 2-3, 항목 3)
+                        // 비밀번호만 통과한 세션(currentLevel=aal1, nextLevel=aal2)은 보호 화면을
+                        // 거치지 않고 바로 챌린지 화면으로 보낸다. 라우터 가드(mfaGate)도 같은 판정을
+                        // 하지만, 여기서 먼저 분기해야 보호 화면이 한 번 깜빡이지 않는다.
+                        const aal = await getAal();
+                        if (needsChallenge(aal)) {
+                            router.push({ path: MFA_CHALLENGE_PATH, query: { redirect: target } });
+                        } else {
+                            router.push(target);
+                        }
                     }
                 }
             } catch (e) {
@@ -84,9 +99,12 @@ export const useAuthStore = defineStore({
                                 errorMsg: proxy.$t('auth.userAlreadyRegistered')
                             });
                         } else {
+                            // GoTrue 비밀번호 정책 위반은 원문 대신 사용자 문구로 바꿔 안내한다.
+                            const policyMsg = mapPasswordServerError(result.errorMsg, (key: string, named?: any) => proxy.$t(key, named));
+                            const errorMsg = policyMsg || result.errorMsg;
                             await (window as any).$app_.try({
-                                action: () => Promise.reject(new Error(result.errorMsg)),
-                                errorMsg: result.errorMsg
+                                action: () => Promise.reject(new Error(errorMsg)),
+                                errorMsg: errorMsg
                             });
                         }
                     } else {
@@ -136,17 +154,36 @@ export const useAuthStore = defineStore({
             }
         },
         async updatePassword(password: string, proxy: any) {
+            const translate = (key: string, named?: any) => proxy.$t(key, named);
             try {
                 const result: any = await backend?.updateUser({ password: password });
-                if (!result.error) {
+                // 결과가 없으면(로그인 정보 없음 등) 기존과 동일하게 조용히 종료한다.
+                if (!result) return;
+                if (result.error) {
+                    // GoTrue 비밀번호 정책 위반 메시지를 사용자 문구로 변환한다.
+                    const rawMsg = result.errorMsg || result.error?.message || result.error;
+                    const errorMsg = mapPasswordServerError(rawMsg, translate) || rawMsg;
                     await (window as any).$app_.try({
-                        action: () => Promise.resolve(),
-                        successMsg: proxy.$t('auth.passwordUpdated')
+                        action: () => Promise.reject(new Error(errorMsg)),
+                        errorMsg: errorMsg
                     });
-                    router.push('/auth/login');
+                    return;
                 }
-            } catch (e) {
+                await (window as any).$app_.try({
+                    action: () => Promise.resolve(),
+                    successMsg: proxy.$t('auth.passwordUpdated')
+                });
+                router.push('/auth/login');
+            } catch (e: any) {
                 console.log(e);
+                const rawMsg = e?.response?.data?.message || e?.response?.data?.detail || e?.message;
+                const policyMsg = mapPasswordServerError(rawMsg, translate);
+                if (policyMsg) {
+                    await (window as any).$app_.try({
+                        action: () => Promise.reject(new Error(policyMsg)),
+                        errorMsg: policyMsg
+                    });
+                }
             }
         }
     }

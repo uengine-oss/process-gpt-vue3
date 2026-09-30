@@ -197,7 +197,13 @@ export default class CallActivityDrilldown {
         if (cached?.definitionId === definitionId && this._registry.get(cached.root.id)) return cached.root;
         const xml = await this._config.resolveXml(definitionId, element);
         if (generation !== this._generation || this._destroyed) return null;
-        if (typeof xml !== 'string' || !xml.trim()) throw new Error(`참조 프로세스 도면을 찾을 수 없습니다: ${definitionId}`);
+        if (typeof xml !== 'string' || !xml.trim()) {
+            // 도면을 못 얻는 원인은 "정의 미존재" 와 "공개 범위 밖(proc_def SELECT RLS 차단)" 두 가지인데
+            // 클라이언트에서는 구분되지 않는다(둘 다 0행). 호출부가 통합 안내를 띄우도록 코드를 붙인다.
+            const unavailable = new Error(`참조 프로세스 도면을 찾을 수 없습니다: ${definitionId}`);
+            unavailable.code = 'LINKED_PROCESS_UNAVAILABLE';
+            throw unavailable;
+        }
         const viewer = new BpmnViewer({ moddleExtensions: this._config.moddleExtensions || {} });
         try {
             await viewer.importXML(xml);

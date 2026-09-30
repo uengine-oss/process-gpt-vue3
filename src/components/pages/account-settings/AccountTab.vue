@@ -71,17 +71,22 @@
             <v-btn @click="updateUser" color="primary" variant="elevated" class="rounded-pill">{{ $t('accountTab.save') }} </v-btn>
             <!-- <v-btn size="large" class="bg-lighterror text-error"  rounded="pill">닫기</v-btn> -->
         </v-row>
+
+        <!-- 2단계 인증(MFA/TOTP) 등록·해제 — docs/security.md 2-3, 항목 3 -->
+        <MfaSection />
     </div>
 </template>
 
 <script>
 import { profileImages } from '@/components/pages/account-settings/profileImage';
 import { getMainDomainUrl } from '@/utils/domainUtils';
+import MfaSection from '@/components/pages/account-settings/MfaSection.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
+    components: { MfaSection },
     data: () => ({
         userInfo: {},
         imageChangeDialog: false,

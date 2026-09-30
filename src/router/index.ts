@@ -4,6 +4,7 @@ import AuthRoutes from './AuthRoutes';
 import TenantRoutes from './TenantRoutes';
 import { evaluateMaintenanceGate, MAINTENANCE_PATH } from '@/utils/maintenanceGate';
 import { membershipRedirect, SIGNUP_PENDING_PATH } from '@/utils/membershipGate';
+import { evaluateMfaGate, MFA_CHALLENGE_PATH, MFA_ENROLL_PATH, MFA_ENROLL_QUERY } from '@/utils/mfaGate';
 import { withCallActivityHistory } from '@/components/customDrilldown/drilldownHistory';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 
@@ -182,6 +183,18 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             const isLoggedIn = !error && !!data?.session?.user;
 
             return next(isLoggedIn ? '/process-architecture' : '/auth/login');
+        }
+
+        // MFA(TOTP) 게이트 (docs/security.md 2-3, 항목 3)
+        // 비밀번호만 통과한 세션(aal1)이 보호 화면에 들어오는 것을 막고,
+        // 테넌트가 MFA 필수인데 미등록이면 계정 설정의 등록 섹션으로 보낸다.
+        // SSO(IdP MFA) 세션과 인증/공개 화면은 evaluateMfaGate 안에서 걸러진다.
+        const mfaDecision = await evaluateMfaGate(to.path);
+        if (mfaDecision === 'challenge') {
+            return next({ path: MFA_CHALLENGE_PATH, query: { redirect: to.fullPath } });
+        }
+        if (mfaDecision === 'enroll') {
+            return next({ path: MFA_ENROLL_PATH, query: { ...MFA_ENROLL_QUERY } });
         }
 
         if (window.$mode !== 'uEngine') {

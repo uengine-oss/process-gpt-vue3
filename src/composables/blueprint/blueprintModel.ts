@@ -11,12 +11,19 @@
  */
 
 import { normalizeExecutableData, hasBpmnActivities, type ExecutableData } from './executableModel';
+import { getAnnualCostPerFte, getCurrency } from '@/services/tenantCustomizationService';
 
 export const TOBE_SCHEMA_VERSION = 1;
 
-/** 기본 연간 인건비 단가 (1 FTE 당, KRW) — ROI에서 FTE → 비용 환산 시 사용. 사용자가 수정 가능. */
+/**
+ * 기본 연간 인건비 단가 (1 FTE 당) / 통화 — ROI 초기값.
+ * 테넌트 운영 정책(operation_policy.annual_cost_per_fte / currency)을 따르며, 미설정 시 80,000,000 KRW.
+ * 사용자가 ROI 패널에서 건별로 수정할 수 있다.
+ */
 export const DEFAULT_ANNUAL_COST_PER_FTE = 80_000_000;
 export const DEFAULT_CURRENCY = 'KRW';
+export const getDefaultAnnualCostPerFte = () => getAnnualCostPerFte();
+export const getDefaultCurrency = () => getCurrency();
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -551,8 +558,8 @@ export function createSkillShift(partial: any = {}): SkillShiftModel {
 
 export function createEmptyRoi(): ToBeRoiConfig {
     return {
-        currency: DEFAULT_CURRENCY,
-        annual_cost_per_fte: DEFAULT_ANNUAL_COST_PER_FTE,
+        currency: getDefaultCurrency(),
+        annual_cost_per_fte: getDefaultAnnualCostPerFte(),
         baseline: { cost: 0, fte: 0 },
         cumulative: { cost: 0, fte: 0 }
     };
