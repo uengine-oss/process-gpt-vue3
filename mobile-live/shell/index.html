@@ -62,7 +62,17 @@
     <div class="offline" role="status">
         <strong>서버에 연결하지 못했습니다</strong>
         <p>네트워크를 확인한 뒤 다시 시도해 주세요. 사내망에서만 열리는 환경이라면 그 망에 연결돼 있는지도 함께 확인해 주세요.</p>
-        <button type="button" onclick="location.reload()">다시 시도</button>
+        <button type="button" onclick="retry()">다시 시도</button>
     </div>
+    <script>
+        // 이 화면은 앱 안의 파일이라 location.reload() 로는 이 화면만 다시 뜬다.
+        // 가려던 곳(마지막으로 보던 곳)은 네이티브가 window.__pgLastUrl 로 넣어 준다
+        // (MainActivity.injectShell). 아직 못 받았으면 루트로 — 포털이 조직 주소로 보내 준다.
+        function retry() {
+            location.href = window.__pgLastUrl || 'https://process-gpt.io/';
+        }
+        // 망이 돌아오면 누르지 않아도 다시 시도한다.
+        window.addEventListener('online', retry);
+    </script>
 </body>
 </html>
