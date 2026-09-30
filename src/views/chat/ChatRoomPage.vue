@@ -828,6 +828,7 @@ import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import ArtifactPanel from '@/components/ArtifactPanel.vue';
 import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/processArtifactPanel.js';
 import { buildHitlPanel, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
+import { shouldSteerInsteadOfNewTurn } from '@/shared/steering/index.js';
 import { shouldGenerateChatRoomName as sharedShouldGenerateChatRoomName } from '@/shared/chatRoom/index.js';
 import { formatToolName as sharedFormatToolName } from '@/shared/toolNames/index.js';
 import { chatFailureMessage, createPersistCircuit } from '@/shared/chatFailure/index.js';
@@ -3301,6 +3302,20 @@ export default {
                 await attachRouter.attachToStream(
                     roomId,
                     {
+                        // 재접속한 화면도 접수·반영을 똑같이 본다(스냅샷의 pending_steers 포함).
+                        onSteerAccepted: (event) => {
+                            if ((this.currentChatRoom?.id || this.roomId) !== roomId) return;
+                            this.noteSteerAccepted(event);
+                        },
+                        onSteerApplied: (event) => {
+                            if ((this.currentChatRoom?.id || this.roomId) !== roomId) return;
+                            // 본 스트림과 같은 처리 — 그때까지의 작업을 확정하고 새 말풍선을 연다.
+                            this.sealAssistantSegmentForSteer(agentId, roomId);
+                            full = '';
+                            const msg = this.activeStreams[agentId];
+                            if (msg) msg.content = '생각 중...';
+                            this.noteSteerApplied(event);
+                        },
                         onToken: (content) => {
                             // roomId가 바뀐 뒤 도착한 잔여 이벤트는 무시
                             if ((this.currentChatRoom?.id || this.roomId) !== roomId) return;
@@ -5115,6 +5130,23 @@ export default {
                             instruction: pageEdit.instruction
                         };
                     }
+                }
+
+                // ---- 진행 중인 턴이 있으면 새 턴을 돌리는 대신 방향을 바꾼다 ----
+                // 이게 없으면 작업 중에 보낸 수정 지시가 그 턴을 **대체**해, 지금까지 한
+                // 작업을 버리고 처음부터 다시 시작한다. 사용자가 원한 것은 방향 수정이다.
+                if (await this.trySteerActiveAgentTurn(roomId, msg.content || '', payload)) {
+                    // 작업 중에 보낸 수정 지시라는 사실을 메시지에 남긴다.
+                    //
+                    // 방에 다시 들어오면 에이전트가 그 사이에 한 일은 최종 답변 하나로 접혀
+                    // 보인다. 이 표시가 없으면 사용자 메시지 두 개가 잇따라 전송된 것처럼
+                    // 읽히고, 두 번째 말이 왜 저기 있는지 알 길이 없다.
+                    msg.steering = true;
+                    this.upsertMessageByKeys(msg);
+                    if (canWrite && !hideUserMessage) {
+                        await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+                    }
+                    return;
                 }
 
                 // ---- 멀티 에이전트 라우팅/스트리밍 ----
@@ -8620,6 +8652,18 @@ export default {
                         // 실제 반영은 applyStreamedContent 에서 60ms 단위로 묶어 수행한다.
                         scheduleStreamedContent();
                     },
+                    // 수정 지시의 접수와 반영은 서로 다른 이벤트다 — 접수만으로 반영된
+                    // 것처럼 보이면 사용자는 아직 안 바뀐 결과를 바뀐 것으로 읽는다.
+                    onSteerAccepted: (event) => this.noteSteerAccepted(event),
+                    onSteerApplied: (event) => {
+                        // 개입 전까지의 작업을 하나의 메시지로 확정하고, 새 말풍선을 연다.
+                        // 확정된 메시지는 사용자의 수정 지시보다 **위**에 남으므로, 방에 다시
+                        // 들어와도 "작업하던 중에 끼어들었다" 는 순서가 그대로 보인다.
+                        this.sealAssistantSegmentForSteer(agentId, targetRoomId);
+                        full = '';
+                        applyStreamedContent();
+                        this.noteSteerApplied(event);
+                    },
                     onPlanTools: (tools) => {
                         try {
                             if (!Array.isArray(tools)) return;
@@ -10878,6 +10922,135 @@ export default {
             // 계속 돌아가 LLM/도구 호출을 소비하고 산출물까지 만든다 — 사용자에겐
             // "중지를 눌렀는데 계속 동작"으로 보인다. 서버에도 중지를 알린다(베스트 에포트).
             this.stopAgentTurnOnServer(rid);
+        },
+
+        /** 이 방에서 지금 에이전트 턴이 돌고 있는가(스트리밍 중인 말풍선이 있는가). */
+        hasActiveAgentTurn() {
+            const streams = this.activeStreams || {};
+            return Object.keys(streams).some((k) => !!streams[k]);
+        },
+
+        /**
+         * 작업이 끝나기 전에 보낸 메시지를 **수정 지시**로 보낸다. 보냈으면 true.
+         *
+         * 중지하고 다시 시키는 것도, 새 턴으로 이전 턴을 대체하는 것도 지금까지의 작업을
+         * 버린다. 수정 지시는 맥락을 유지한 채 지시만 바꾼다.
+         *
+         * 아래 경우는 손대지 않고 기존 경로(새 턴)로 넘긴다 —
+         *   - 돌고 있는 턴이 없다(= 평범한 첫 메시지)
+         *   - 첨부가 있다(수정 지시는 텍스트만 나른다)
+         *   - 사람 확인(HITL) 답변이다(그 답변 자체가 이미 방향 전환이고, 재개 경로가 따로 있다)
+         *   - 서버가 미지원·턴 없음 등으로 거절했다
+         */
+        async trySteerActiveAgentTurn(roomId, text, payload) {
+            const rid = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+            const message = (text || '').toString().trim();
+            if (!rid) return false;
+            // 무엇을 수정 지시로 볼지는 @/shared/steering 이 정한다. 여기서 다시 판단하면
+            // 모바일과 갈라지고, 갈라지면 한쪽에서 사람 확인 답변이 가로채여 대화가 멎는다.
+            if (!shouldSteerInsteadOfNewTurn({ hasActiveTurn: this.hasActiveAgentTurn(), text: message, payload })) {
+                return false;
+            }
+
+            const router = this.getAgentRouterForOrchestration(payload?.orchestration || this.getRoomOrchestration());
+            if (!router || typeof router.steerStream !== 'function') return false;
+
+            let result;
+            try {
+                const [userJwt, tenantId] = await Promise.all([getValidToken(), resolveTenantId()]);
+                result = await router.steerStream(rid, message, {
+                    userJwt: userJwt || '',
+                    tenantId,
+                    userUid: this.userInfo?.id || this.userInfo?.uid || ''
+                });
+            } catch (e) {
+                console.warn('[Steer] 수정 지시 전송 실패 — 새 턴으로 되돌린다:', e);
+                return false;
+            }
+
+            if (!result?.accepted) {
+                // 거절도 따로 알리지 않는다 — 호출한 쪽이 평범한 새 메시지로 되돌리므로
+                // 사용자에게는 메시지가 그대로 전송되고 답이 오는 것으로 보인다.
+                console.info('[Steer] 수정 지시가 접수되지 않았다 — 새 턴으로 진행:', result?.reason || '');
+                return false;
+            }
+
+            this.noteSteerAccepted(result);
+            return true;
+        },
+
+        /**
+         * 수정 지시가 반영되는 시점에, 그때까지의 작업을 **하나의 완결된 메시지로 확정**한다.
+         *
+         * 이것이 없으면 방에 다시 들어왔을 때 에이전트가 그 사이에 한 일이 최종 답변 하나로
+         * 접혀 버려서, 사용자 메시지 두 개(원래 지시·수정 지시)가 잇따라 전송된 것처럼 보인다.
+         * 두 번째 말이 왜 저기 있는지 화면만 봐서는 알 수 없다.
+         *
+         * 확정한 메시지의 시각은 **턴이 시작된 시각**을 그대로 쓴다. 사용자의 수정 지시보다
+         * 앞선 시각이어야 그 위에 놓이고, 그래야 "작업하던 중에 끼어들었다" 는 순서가 남는다.
+         */
+        async sealAssistantSegmentForSteer(agentId, roomId) {
+            const live = this.activeStreams[agentId];
+            if (!live) return;
+            const hasText = !!(live.content || '').toString().trim() && !this._isPlaceholderContent(live.content);
+            const hasWork = Array.isArray(live.toolCalls) && live.toolCalls.length > 0;
+            if (!hasText && !hasWork) return; // 아직 보여 줄 것이 없으면 끊지 않는다
+
+            const sealedUuid = this.uuid();
+            const sealed = this.normalizeAssistantMessageForDisplay({
+                ...live,
+                uuid: sealedUuid,
+                clientUuid: sealedUuid,
+                rowUuid: null,
+                isLoading: false,
+                // 이 행은 서버가 저장하지 않는다(서버는 턴의 최종 답변 하나만 저장한다).
+                // 그래서 여기서 직접 저장해야 다시 들어왔을 때도 남는다.
+                __serverPersisted: false
+            });
+            this.messages.push(sealed);
+            this._stableSortMessages(this.messages);
+
+            // 새 말풍선으로 갈아 끼운다. 같은 객체를 비우면 방금 확정한 메시지와 참조가 얽혀
+            // 이후 토큰이 확정본까지 덮어쓴다.
+            const freshUuid = this.uuid();
+            this.activeStreams[agentId] = {
+                ...live,
+                uuid: freshUuid,
+                clientUuid: freshUuid,
+                rowUuid: null,
+                content: '생각 중...',
+                toolCalls: [],
+                executionSkills: [],
+                executionConnectors: [],
+                isLoading: true,
+                timeStamp: new Date().toISOString()
+            };
+
+            try {
+                const rid = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+                if (rid && this.shouldClientWriteChatDb(this.getRoomOrchestration())) {
+                    await backend.putObject(`db://chats/${sealedUuid}`, { uuid: sealedUuid, id: rid, messages: sealed });
+                }
+            } catch (e) {
+                // 저장에 실패해도 화면에는 남는다 — 이 턴을 실패시킬 이유는 아니다.
+                console.warn('[Steer] 개입 직전 작업 저장 실패(화면에는 유지):', e);
+            }
+        },
+
+        /**
+         * 수정 지시를 받았다(아직 반영 전).
+         *
+         * 화면에 따로 알리지 않는다. 사용자가 보낸 말은 이미 말풍선으로 올라가 있고,
+         * 반영은 이어지는 답변으로 드러난다 — 그 위에 알림 배지를 얹으면 대화 흐름 밖에
+         * 뜬 또 하나의 상태 표시가 되어, 읽을 것이 늘 뿐 알려 주는 것은 없다.
+         */
+        noteSteerAccepted(event) {
+            console.info('[Steer] 접수:', event?.directive_id || '');
+        },
+
+        /** 수정 지시가 실제로 반영되기 시작했다. 위와 같은 이유로 알리지 않는다. */
+        noteSteerApplied(event) {
+            console.info('[Steer] 반영:', event?.directive_id || '');
         },
 
         /** deepagents 서버에서 진행 중인 턴을 실제로 취소한다(중지 버튼용). */

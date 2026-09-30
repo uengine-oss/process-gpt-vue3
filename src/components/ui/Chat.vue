@@ -562,6 +562,17 @@
                                                                         class="chat-message-bubble bg-lightprimary rounded-md px-3 py-3 mb-1"
                                                                     >
                                                                         <div>
+                                                                            <!--
+                                                                                작업 중에 보낸 수정 지시라는 표시.
+
+                                                                                방에 다시 들어오면 에이전트가 그 사이에 한 일은 최종 답변
+                                                                                하나로 접혀 보인다. 이 줄이 없으면 사용자 메시지 두 개가
+                                                                                잇따라 전송된 것처럼 읽혀, 두 번째 말이 왜 저기 있는지
+                                                                                알 길이 없다.
+                                                                            -->
+                                                                            <div v-if="message.steering" class="steer-note">
+                                                                                작업 중에 보낸 수정 지시
+                                                                            </div>
                                                                             <div
                                                                                 v-if="message.replyUserName || message.replyContent"
                                                                                 class="reply-quote reply-quote--mine"
@@ -2897,8 +2908,9 @@
                                 </template>
                             </v-tooltip>
 
+                            <!-- 아래 전송/중지 단추와 같은 규칙: 쓸 말이 있으면 전송이 우선이다. -->
                             <v-btn
-                                v-if="!(showStopButton || isLoading)"
+                                v-if="!(showStopButton || isLoading) || !disableBtn"
                                 class="cp-send text-medium-emphasis"
                                 color="primary"
                                 variant="outlined"
@@ -3247,7 +3259,12 @@
                     </div>
 
                     <div>
-                        <template v-if="stopButtonOnly && inputOnly && (showStopButton || isLoading)">
+                        <!--
+                            응답 중이라도 **보낼 것이 있으면 전송**이 우선이다(아래 전송 단추의
+                            주석 참고). 그래서 중지만 남기는 단순화 모드에서도 초안이 있으면
+                            이 갈래를 타지 않는다.
+                        -->
+                        <template v-if="stopButtonOnly && inputOnly && (showStopButton || isLoading) && disableBtn">
                             <v-btn
                                 class="cp-send text-medium-emphasis"
                                 color="primary"
@@ -3316,8 +3333,18 @@
                                 </v-list>
                             </v-menu>
 
+                            <!--
+                                응답 중일 때 이 자리를 중지 단추가 독차지하면, 작업 도중에 방향을
+                                바꾸려는 사용자는 **보낼 방법이 사라진다** — 단추가 중지뿐이라
+                                Enter 를 아는 사람만 보낼 수 있다. 실제로 작업 중 수정 지시를
+                                보내려다 중지를 누르게 된다.
+
+                                그래서 기준을 입력 내용으로 둔다. 쓸 말이 있으면 전송, 입력창이
+                                비어 있을 때만 중지다. 응답을 멈추려는 사람은 입력창이 비어 있고,
+                                방향을 바꾸려는 사람은 이미 할 말을 적어 둔 상태다.
+                            -->
                             <v-btn
-                                v-if="!(showStopButton || isLoading) && !isGenerationFinished"
+                                v-if="!isGenerationFinished && (!(showStopButton || isLoading) || !disableBtn)"
                                 class="cp-send text-medium-emphasis"
                                 color="primary"
                                 variant="outlined"
@@ -7485,6 +7512,19 @@ pre {
     color: rgba(0, 0, 0, 0.55);
 }
 
+.steer-note {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    line-height: 1.3;
+    opacity: 0.65;
+}
+.steer-note::before {
+    content: '\21BB';
+    font-size: 12px;
+}
 .reply-quote {
     display: flex;
     gap: 10px;
