@@ -1,5 +1,6 @@
 import { router } from '@/router';
 import { defineStore } from 'pinia';
+import { homePath } from '@/utils/homePath';
 
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
@@ -31,7 +32,7 @@ export const useAuthStore = defineStore({
                 const result: any = await storage?.signInWithKeycloak();
 
                 if (!result.error) {
-                    router.push('/process-architecture');
+                    router.push(homePath());
                 } else {
                     await (window as any).$app_.try({
                         action: () => Promise.reject(new Error()),
@@ -69,8 +70,9 @@ export const useAuthStore = defineStore({
                         if (needsChallenge(aal)) {
                             router.push({ path: MFA_CHALLENGE_PATH, query: { redirect: target } });
                         } else {
-                            router.push(target);
+                            router.push(window.$isTenantServer ? '/tenant/manage' : homePath());
                         }
+                        
                     }
                 }
             } catch (e) {
@@ -131,7 +133,7 @@ export const useAuthStore = defineStore({
                                 action: () => Promise.resolve(),
                                 successMsg: proxy.$t('auth.registrationSuccess')
                             });
-                            router.push('/process-architecture');
+                            router.push(homePath());
                         }
                     }
                 }

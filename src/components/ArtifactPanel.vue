@@ -46,9 +46,10 @@
                     />
                     <!-- 서버에서 LibreOffice로 렌더한 PDF를 표시하고 다운로드는 원본을 유지한다. -->
                     <PdfViewer
-                        v-else-if="panel.type === 'docx' && panel.data.previewUrl"
+                        v-else-if="panel.type === 'docx' && panel.data.isPdfPreview"
                         :ref="(el) => setPanelRef(panel.id, el)"
                         :fileUrl="panel.data.previewUrl"
+                        :loading="!panel.data.previewUrl"
                         :fileName="panel.data.fileName || panel.label"
                         :downloadUrl="panel.data.fileUrl"
                         :downloadFileName="panel.data.fileName || panel.label"

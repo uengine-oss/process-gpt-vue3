@@ -753,6 +753,11 @@ const allRoutes: RouteRecordRaw[] = [
         name: 'Notifications',
         path: '/notifications',
         component: () => import('@/views/notifications/NotificationsPage.vue')
+    },
+    {
+        name: 'My Feedback',
+        path: '/my-feedback',
+        component: () => import('@/views/feedback/MyFeedback.vue')
     }
 ];
 

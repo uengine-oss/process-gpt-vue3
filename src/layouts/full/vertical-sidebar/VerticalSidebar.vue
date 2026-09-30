@@ -1,7 +1,7 @@
 <template>
     <v-btn
         icon
-        v-if="globalIsMobile.value"
+        v-if="globalIsMobile.value && !phoneShell"
         v-show="!$globalState.state.isMobileDrawerOpen"
         @click.stop="customizer.SET_SIDEBAR_DRAWER"
         class="mobile-side-bar-btn"
@@ -12,7 +12,7 @@
         <Icons :icon="'list-bold-duotone'" />
     </v-btn>
     <v-badge
-        v-if="notiCount > 0"
+        v-if="notiCount > 0 && !phoneShell"
         v-show="!$globalState.state.isMobileDrawerOpen"
         class="mobile-side-bar-btn"
         :style="mobileSideBarBtnStyle"
@@ -30,15 +30,18 @@
         :mobile-breakpoint="1279"
         app
         class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg"
-        elevation="10"
-        :rail="customizer.mini_sidebar"
+        :class="{ 'pg-m-sidebar': phoneShell }"
+        :elevation="phoneShell ? 0 : 10"
+        :rail="customizer.mini_sidebar && !phoneShell"
         expand-on-hover
-        width="275"
+        :width="phoneShell ? phoneState.width : 275"
     >
         <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc">
             <Logo :style="logoPadding" />
             <v-spacer></v-spacer>
-            <v-tooltip v-if="!pal && isAdmin" :text="$t('processDefinitionMap.title')" location="bottom">
+            <SimpleSidebarTools v-if="customizer.simpleUi" row="search" />
+            <SimpleSidebarTools v-if="customizer.simpleUi" row="nav" />
+            <v-tooltip v-if="!pal && isAdmin && !customizer.simpleUi" :text="$t('processDefinitionMap.title')" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn
                         icon
@@ -67,11 +70,36 @@
                 </template>
             </v-tooltip>
         </div>
-        <div class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
-            <v-row class="ma-0 pa-0" align="center">
+        <!--
+            휴대폰 간소화 화면의 머리. 클로드 모바일처럼 닫기(×)와 이름을 한 줄에 두고,
+            그 아래에 검색 · 새 채팅 · 할 일 줄을 글자와 함께 늘어놓는다(SimpleSidebarTools 'phone').
+        -->
+        <div v-if="phoneShell" class="pg-m-sidebar__head">
+            <div class="pg-m-sidebar__top">
+                <button type="button" class="pg-m-sidebar__close" aria-label="사이드바 닫기" @click.stop="customizer.SET_SIDEBAR_DRAWER">
+                    <v-icon size="20">mdi-close</v-icon>
+                </button>
+                <Logo class="pg-m-sidebar__logo" />
+            </div>
+            <SimpleSidebarTools row="phone" />
+        </div>
+        <div v-else class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
+            <v-row class="ma-0 pa-0 flex-nowrap" align="center">
                 <Logo />
                 <v-spacer></v-spacer>
-                <Icons @click.stop="customizer.SET_SIDEBAR_DRAWER" style="margin-top: -8px; cursor: pointer" :icon="'close'" :size="16" />
+                <!--
+                    1280px 아래에서는 사이드바가 서랍이라 이 줄이 대신 쓰인다.
+                    검색과 '⋯' 를 여기에도 두지 않으면, 서랍을 열어도 갈 곳이 없다.
+                -->
+                <SimpleSidebarTools v-if="customizer.simpleUi" row="search" />
+                <SimpleSidebarTools v-if="customizer.simpleUi" row="nav" />
+                <Icons
+                    v-if="!customizer.simpleUi"
+                    @click.stop="customizer.SET_SIDEBAR_DRAWER"
+                    style="margin-top: -8px; margin-left: 8px; cursor: pointer"
+                    :icon="'close'"
+                    :size="16"
+                />
             </v-row>
         </div>
         <!-- ---------------------------------------------- -->
@@ -93,7 +121,8 @@
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <VerticalHeader v-if="globalIsMobile.value && !pal" @update-noti-count="updateNotiCount" />
+                <!-- 휴대폰 간소화 화면은 알림을 앱바에 둔다. 여기 또 두면 두 벌이 된다. -->
+                <VerticalHeader v-if="globalIsMobile.value && !pal && !phoneShell" @update-noti-count="updateNotiCount" />
 
                 <!-- 프로젝트 타이틀 + 목록 -->
                 <!-- <div v-if="isShowProject" class="mb-4">
@@ -430,7 +459,9 @@
             <Footer class="mt-2" />
         </div>
         <div class="pa-4 px-4 bg-containerBg">
-            <ExtraBox />
+            <!-- 간소화에서는 계정 줄 하나로 — 누르면 설정 · 로그아웃이 나온다. -->
+            <SimpleSidebarTools v-if="customizer.simpleUi" row="account" class="hide-menu" />
+            <ExtraBox v-else />
         </div>
     </v-navigation-drawer>
 
@@ -478,6 +509,7 @@ import ChatList from '@/components/ui/ChatList.vue';
 import AgentCreateDialog from '@/components/ui/AgentCreateDialog.vue';
 
 import { useCustomizerStore } from '@/stores/customizer';
+import { usePhoneShell } from '@/shared/phoneShell';
 import { computed } from 'vue';
 import { buildDefinitionProposalMap } from '@/composables/useDefinitionProposals';
 
@@ -486,6 +518,7 @@ import NavCollapse from './NavCollapse/NavCollapse.vue';
 import NavGroup from './NavGroup/index.vue';
 import NavItem from './NavItem/index.vue';
 import ExtraBox from './extrabox/ExtraBox.vue';
+import SimpleSidebarTools from './SimpleSidebarTools.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { PROC_DEF_LIST_COLUMNS } from '@/components/api/ProcessGPTBackend';
 
@@ -509,6 +542,7 @@ export default {
         SidebarUserList,
         ExpandableList,
         Logo,
+        SimpleSidebarTools,
         NavCollapse,
         NavGroup,
         NavItem,
@@ -518,8 +552,13 @@ export default {
     },
     setup() {
         const customizer = useCustomizerStore();
+        // 휴대폰 간소화 화면에서는 이 사이드바가 클로드 모바일처럼 화면 전체를 덮는
+        // 목록이 된다. 여는 단추는 앱바 왼쪽 위에 있다(MobileAppBar).
+        const { active: phoneShell, state: phoneState } = usePhoneShell();
         return {
-            customizer
+            customizer,
+            phoneShell,
+            phoneState
         };
     },
     provide() {

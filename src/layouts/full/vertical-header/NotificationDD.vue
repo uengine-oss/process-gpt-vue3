@@ -2,9 +2,9 @@
     <!-- ---------------------------------------------- -->
     <!-- notifications DD -->
     <!-- ---------------------------------------------- -->
-    <v-menu v-model="menuOpen" :close-on-content-click="true" class="notification_popup">
+    <v-menu v-model="menuOpen" :close-on-content-click="true" :location="menuLocation" class="notification_popup">
         <template v-slot:activator="{ props }">
-            <v-btn icon flat v-bind="props" size="small" @click="isConfirm = true">
+            <v-btn icon flat v-bind="props" size="small" :aria-label="$t('NotificationDD.notification') || '알림'" @click="isConfirm = true">
                 <div class="position-realtive">
                     <!-- PAL: 미확인 건수를 숫자 뱃지로 표시 / 비 PAL: 기존 하트비트 점 유지 -->
                     <template v-if="isPal">
@@ -71,6 +71,12 @@ import { useDefaultSetting } from '@/stores/defaultSetting';
 const backend = BackendFactory.createBackend();
 
 export default {
+    props: {
+        menuLocation: {
+            type: String,
+            default: 'bottom'
+        }
+    },
     data: () => ({
         menuOpen: false,
         isConfirm: false,

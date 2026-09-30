@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import BackendFactory from '@/components/api/BackendFactory';
-import { loadPrChanges, type PrChanges } from '@/composables/usePrChanges';
+import { loadPrChanges, buildPlainFileView, type PrChanges } from '@/composables/usePrChanges';
+import { t } from '@/composables/i18nText';
+import PrDefinitionCompare from '@/components/pr/PrDefinitionCompare.vue';
 
-const props = withDefaults(defineProps<{ pr: any; showSummary?: boolean }>(), { showSummary: true });
-const emit = defineEmits<{ (e: 'summary', value: { summary: string; count: number }): void }>();
+const props = withDefaults(defineProps<{ pr: any; showSummary?: boolean; businessView?: boolean }>(), {
+    showSummary: true,
+    businessView: false
+});
+const emit = defineEmits<{
+    (e: 'summary', value: { summary: string; count: number; shape: 'files' | 'items'; unavailable: string }): void;
+}>();
 
 const backend = BackendFactory.createBackend() as any;
 
@@ -14,10 +21,43 @@ const changes = ref<PrChanges | null>(null);
 const activeFile = ref('');
 
 const files = computed(() => changes.value?.files || []);
+/**
+ * 기본 화면은 '요약 비교' — 변경 전/후 문장을 좌우로 세운 쪽이다.
+ * diff 기호와 헝크 머리글은 무엇이 업무적으로 달라지는지 말해 주지 않으므로,
+ * 그 형태는 '상세 Diff' 로 한 번 더 눌러야 나오게 둔다.
+ */
+const view = ref<'plain' | 'diff'>(props.businessView ? 'plain' : 'diff');
+/**
+ * 보기를 나눌 수 있는가.
+ * 스킬은 늘 나뉘고, 프로세스·의사결정은 비교할 정의 원본을 받아 왔을 때만 나뉜다 —
+ * 원본이 없으면 '상세 비교' 를 눌러도 빈 화면이 나온다.
+ */
+const showViewBar = computed(() => {
+    if (!changes.value || changes.value.unavailable) return false;
+    if (changes.value.shape === 'files') return true;
+    return !!changes.value.snapshots?.headXml;
+});
+const plainBlocks = computed(() => (changes.value?.shape === 'files' ? buildPlainFileView(files.value) : []));
+/** 파일 단위로 묶은 업무 관점 보기. 파일 하나가 한 덩어리로 읽혀야 한다. */
+const plainFiles = computed(() => {
+    const groups: { filename: string; label: string; status: string; blocks: typeof plainBlocks.value }[] = [];
+    for (const block of plainBlocks.value) {
+        let group = groups.find((g) => g.filename === block.filename);
+        if (!group) {
+            group = { filename: block.filename, label: block.label, status: block.status, blocks: [] };
+            groups.push(group);
+        }
+        group.blocks.push(block);
+    }
+    return groups;
+});
 const items = computed(() => changes.value?.items || []);
 const activeFileObj = computed(() => files.value.find((file) => file.filename === activeFile.value) || null);
 
-const KIND_LABEL: Record<string, string> = { added: '추가', modified: '변경', removed: '삭제' };
+/** 변경 항목의 동작 이름. 로케일 파일이 말을 갖는다. */
+function kindLabel(kind: string): string {
+    return t(`pr.changes.kind.${kind}`);
+}
 
 async function load() {
     loading.value = true;
@@ -25,20 +65,32 @@ async function load() {
     changes.value = null;
     activeFile.value = '';
     try {
-        const result = await loadPrChanges(backend, props.pr);
+        const result = await loadPrChanges(backend, props.pr, undefined, { withSnapshots: true });
         changes.value = result;
         // 패치가 담긴 파일을 먼저 연다. 첫 파일이 이름만 바뀐 파일이면 빈 화면으로 시작한다.
         activeFile.value = (result.files.find((file) => file.patch) || result.files[0])?.filename || '';
-        emit('summary', { summary: result.summary, count: result.files.length + result.items.length });
+        emit('summary', {
+            summary: result.summary,
+            count: result.files.length + result.items.length,
+            shape: result.shape,
+            unavailable: result.unavailable
+        });
     } catch (e: any) {
-        error.value = e?.message || '변경 내역을 불러오지 못했습니다.';
-        emit('summary', { summary: '', count: 0 });
+        error.value = e?.message || t('pr.changes.loadFailed');
+        emit('summary', { summary: '', count: 0, shape: 'files', unavailable: error.value });
     } finally {
         loading.value = false;
     }
 }
 
-watch(() => props.pr?.id, load, { immediate: true });
+watch(
+    () => props.pr?.id,
+    () => {
+        view.value = props.businessView ? 'plain' : 'diff';
+        load();
+    },
+    { immediate: true }
+);
 
 function fileTag(status: string): string {
     return { added: 'A', removed: 'D', modified: 'M', renamed: 'R' }[status] || '~';
@@ -53,7 +105,16 @@ function fileTagClass(status: string): string {
  * 사람이 붙인 이름과 같은 굵기로 두면 어느 쪽이 실제 업무 용어인지 구분이 안 된다.
  */
 function isRawId(item: { name: string; category: string }): boolean {
-    return item.category === '연결' && /^[A-Za-z0-9_.-]+$/.test(item.name);
+    return item.category === 'flow' && /^[A-Za-z0-9_.-]+$/.test(item.name);
+}
+
+/**
+ * 본문 줄이 하나도 잡히지 않은 파일에 세울 한 마디.
+ * 여기서 침묵하면 "바뀐 게 없다" 로 읽히므로, 왜 보여줄 것이 없는지를 말해 준다.
+ */
+function noBodyText(status: string): string {
+    const known = ['added', 'removed', 'renamed'];
+    return t(`pr.changes.noBody.${known.includes(status) ? status : 'modified'}`);
 }
 
 function diffLineClass(line: string): string {
@@ -74,7 +135,7 @@ function diffLineClass(line: string): string {
         <div v-else-if="error" class="pc-note">
             <v-icon size="18" color="grey-lighten-1" class="mr-1">mdi-alert-circle-outline</v-icon>
             {{ error }}
-            <v-btn class="ml-2" size="x-small" variant="text" color="primary" @click="load">다시 시도</v-btn>
+            <v-btn class="ml-2" size="x-small" variant="text" color="primary" @click="load">{{ $t('pr.changes.retry') }}</v-btn>
         </div>
 
         <template v-else-if="changes">
@@ -89,10 +150,45 @@ function diffLineClass(line: string): string {
                 {{ changes.unavailable }}
             </div>
 
-            <!-- 스킬: 파일 목록 + 깃 패치 -->
-            <div v-else-if="changes.shape === 'files'" class="pc-diff-wrap d-flex flex-grow-1">
+            <!-- 요약 비교 ↔ 상세 비교. 기본은 사람이 읽는 쪽이다. -->
+            <div v-if="showViewBar" class="pc-viewbar">
+                <button :class="['pc-viewbtn', { on: view === 'plain' }]" @click="view = 'plain'">{{ $t('pr.changes.viewPlain') }}</button>
+                <button :class="['pc-viewbtn', { on: view === 'diff' }]" @click="view = 'diff'">{{ $t('pr.changes.viewDiff') }}</button>
+            </div>
+
+            <!-- 스킬(업무 관점): 문단마다 무엇이 빠지고 무엇이 들어오는지 -->
+            <div v-if="!changes.unavailable && changes.shape === 'files' && view === 'plain'" class="pc-plain overflow-y-auto flex-grow-1">
+                <div v-for="group in plainFiles" :key="group.filename" class="pc-plain-file">
+                    <div class="pc-plain-head">
+                        <span :class="['ftag', fileTagClass(group.status)]">{{ fileTag(group.status) }}</span>
+                        <span class="pc-plain-label">{{ group.label }}</span>
+                        <span v-if="group.label !== group.filename" class="pc-plain-path">{{ group.filename }}</span>
+                    </div>
+                    <div v-for="(block, i) in group.blocks" :key="i" class="pc-plain-block">
+                        <div v-if="block.section" class="pc-plain-section">{{ block.section }}</div>
+                        <div v-if="!block.before.length && !block.after.length" class="pc-plain-none">
+                            {{ noBodyText(block.status) }}
+                        </div>
+                        <div v-else class="pc-plain-cols">
+                            <div class="pc-plain-col before">
+                                <div class="pc-plain-coltitle">{{ $t('pr.changes.before') }}</div>
+                                <div v-if="!block.before.length" class="pc-plain-empty">{{ $t('pr.changes.emptyBefore') }}</div>
+                                <p v-for="(line, li) in block.before" :key="li" class="pc-plain-line">{{ line }}</p>
+                            </div>
+                            <div class="pc-plain-col after">
+                                <div class="pc-plain-coltitle">{{ $t('pr.changes.after') }}</div>
+                                <div v-if="!block.after.length" class="pc-plain-empty">{{ $t('pr.changes.emptyAfter') }}</div>
+                                <p v-for="(line, li) in block.after" :key="li" class="pc-plain-line">{{ line }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 스킬(상세): 파일 목록 + 깃 패치 -->
+            <div v-else-if="!changes.unavailable && changes.shape === 'files'" class="pc-diff-wrap d-flex flex-grow-1">
                 <div class="pc-file-sidebar overflow-y-auto flex-shrink-0">
-                    <div class="pc-sidebar-label">변경 파일</div>
+                    <div class="pc-sidebar-label">{{ $t('pr.changes.fileList') }}</div>
                     <div
                         v-for="file in files"
                         :key="file.filename"
@@ -115,22 +211,45 @@ function diffLineClass(line: string): string {
                                 {{ line }}
                             </div>
                         </div>
-                        <div v-else class="pc-note">이 파일은 패치 데이터가 없습니다.</div>
+                        <div v-else class="pc-note">{{ $t('pr.changes.noPatch') }}</div>
                     </template>
-                    <div v-else class="pc-note">← 파일을 선택하세요</div>
+                    <div v-else class="pc-note">{{ $t('pr.changes.selectFile') }}</div>
                 </div>
             </div>
 
-            <!-- 프로세스·의사결정: 구조 비교 결과 -->
-            <div v-else class="pc-items overflow-y-auto flex-grow-1">
+            <!-- 프로세스·의사결정(상세): 다이어그램·규칙표 비교 -->
+            <PrDefinitionCompare
+                v-else-if="!changes.unavailable && changes.shape === 'items' && view === 'diff'"
+                :resource-type="pr.resource_type || 'bpmn'"
+                :base-xml="changes.snapshots?.baseXml || ''"
+                :head-xml="changes.snapshots?.headXml || ''"
+                :diff-activities-base="changes.snapshots?.diffActivitiesBase || {}"
+                :diff-activities-head="changes.snapshots?.diffActivitiesHead || {}"
+                class="flex-grow-1"
+            />
+
+            <!-- 프로세스·의사결정(요약): 무엇이 업무적으로 달라지는가 -->
+            <div v-else-if="!changes.unavailable" class="pc-items overflow-y-auto flex-grow-1">
                 <div v-for="(item, i) in items" :key="i" :class="['pc-item', 'pc-item--' + item.kind]">
-                    <span :class="['pc-kind', 'pc-kind--' + item.kind]">{{ KIND_LABEL[item.kind] }}</span>
+                    <span :class="['pc-kind', 'pc-kind--' + item.kind]">{{ kindLabel(item.kind) }}</span>
                     <div class="pc-item-body">
                         <div class="pc-item-title">
                             <span :class="['pc-item-name', { 'pc-item-name--id': isRawId(item) }]">{{ item.name }}</span>
-                            <span class="pc-item-cat">{{ item.category }}</span>
+                            <span class="pc-item-cat">{{ $t('pr.changes.category.' + item.category) }}</span>
                         </div>
                         <div v-if="item.detail" class="pc-item-detail">{{ item.detail }}</div>
+                        <!--
+                            "속성 변경" 이라고만 하면 무엇이 어떻게 달라지는지는 결국 다이어그램을
+                            열어 봐야 안다. 값이 잡히는 항목은 그 자리에서 좌우로 보여 준다.
+                        -->
+                        <div v-if="(item.fields || []).length" class="pc-item-fields">
+                            <div v-for="(field, fi) in item.fields" :key="fi" class="pc-field">
+                                <span class="pc-field-label">{{ field.label }}</span>
+                                <span class="pc-field-before">{{ field.before || $t('pr.changes.compare.empty') }}</span>
+                                <span class="pc-field-arrow">→</span>
+                                <span class="pc-field-after">{{ field.after || $t('pr.changes.compare.empty') }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -164,6 +283,150 @@ function diffLineClass(line: string): string {
     font-size: 12px;
     text-align: center;
     color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+/* ── 항목 카드의 값 짝 ── */
+.pc-item-fields {
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.pc-field {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 11.5px;
+    line-height: 1.5;
+}
+.pc-field-label {
+    color: rgba(var(--v-theme-on-surface), 0.42);
+    flex: none;
+}
+.pc-field-before {
+    color: rgb(var(--v-theme-error));
+    text-decoration: line-through;
+    text-decoration-color: rgba(var(--v-theme-error), 0.4);
+    overflow-wrap: anywhere;
+}
+.pc-field-arrow {
+    color: rgba(var(--v-theme-on-surface), 0.3);
+}
+.pc-field-after {
+    color: #2e6b16;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+/* ── 보기 전환 막대 ── */
+.pc-viewbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 12px;
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    flex: none;
+}
+.pc-viewbtn {
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: rgba(var(--v-theme-on-surface), 0.55);
+}
+.pc-viewbtn.on {
+    background: rgba(var(--v-theme-primary), 0.1);
+    color: rgb(var(--v-theme-primary));
+    font-weight: 600;
+}
+.pc-viewbar-note {
+    margin-left: auto;
+    font-size: 11px;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+/* ── 업무 관점 보기 ── */
+.pc-plain {
+    min-height: 0;
+    padding: 10px 12px 16px;
+}
+.pc-plain-file + .pc-plain-file {
+    margin-top: 14px;
+}
+.pc-plain-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 0 8px;
+}
+.pc-plain-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: rgba(var(--v-theme-on-surface), 0.85);
+}
+.pc-plain-path {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 10.5px;
+    color: rgba(var(--v-theme-on-surface), 0.4);
+    overflow-wrap: anywhere;
+}
+.pc-plain-block + .pc-plain-block {
+    margin-top: 10px;
+}
+.pc-plain-section {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    margin-bottom: 5px;
+}
+.pc-plain-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+@media (max-width: 720px) {
+    .pc-plain-cols {
+        grid-template-columns: 1fr;
+    }
+}
+.pc-plain-col {
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 8px;
+    padding: 8px 10px;
+    min-width: 0;
+}
+.pc-plain-col.before {
+    background: rgba(var(--v-theme-error), 0.04);
+}
+.pc-plain-col.after {
+    background: rgba(46, 107, 22, 0.05);
+}
+.pc-plain-coltitle {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: rgba(var(--v-theme-on-surface), 0.45);
+    margin-bottom: 5px;
+}
+.pc-plain-line {
+    margin: 0 0 4px;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: rgba(var(--v-theme-on-surface), 0.8);
+    overflow-wrap: anywhere;
+}
+.pc-plain-line:last-child {
+    margin-bottom: 0;
+}
+.pc-plain-empty,
+.pc-plain-none {
+    font-size: 11.5px;
+    color: rgba(var(--v-theme-on-surface), 0.42);
 }
 
 /* ── 스킬 파일 diff ── */

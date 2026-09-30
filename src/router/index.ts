@@ -7,6 +7,7 @@ import { membershipRedirect, SIGNUP_PENDING_PATH } from '@/utils/membershipGate'
 import { evaluateMfaGate, MFA_CHALLENGE_PATH, MFA_ENROLL_PATH, MFA_ENROLL_QUERY } from '@/utils/mfaGate';
 import { withCallActivityHistory } from '@/components/customDrilldown/drilldownHistory';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
+import { homePath, isMobileViewport, MOBILE_HOME } from '@/utils/homePath';
 
 declare global {
     interface Window {
@@ -182,7 +183,15 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             const { data, error } = (await window.$supabase?.auth?.getSession?.()) || {};
             const isLoggedIn = !error && !!data?.session?.user;
 
-            return next(isLoggedIn ? '/process-architecture' : '/auth/login');
+            return next(isLoggedIn ? homePath() : '/auth/login');
+        }
+
+        // 모바일에서 로그인한 채 조직 주소의 루트로 오면 첫 화면(정의 체계도)으로 보낸다.
+        // 루트는 홍보용 랜딩이라 휴대폰에서 로그인한 사람에게는 막다른 곳이다 — 모바일 앱도
+        // 켤 때 조직 주소의 루트만 열고 어디로 갈지는 여기에 맡긴다(utils/homePath).
+        if (to.path === '/' && isMobileViewport() && !window.$isTenantServer) {
+            const { data, error } = (await window.$supabase?.auth?.getSession?.()) || {};
+            if (!error && data?.session?.user) return next(MOBILE_HOME);
         }
 
         // MFA(TOTP) 게이트 (docs/security.md 2-3, 항목 3)
