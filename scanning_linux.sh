@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 # 아래의 프로젝트 이름, 버전 이름, 소스 코드 위치, 배포 방법 등 수정
 export PROJECT_NAME="ProcessGPT"
@@ -7,13 +7,17 @@ export SOURCE_PATH="/Users/kimsanghoon/IdeaProjects/process-gpt-vue3/"
 export SYNOPSYS_DETECT="/Users/kimsanghoon/SKT/detect-10.5.0.jar"
 export DISTRIBUTION="EXTERNAL"
 
+# BlackDuck API 토큰은 소스에 두지 않는다 — 실행 전에 환경변수로 넘긴다.
+#   BLACKDUCK_API_TOKEN=... ./scanning_linux.sh
+: "${BLACKDUCK_API_TOKEN:?BLACKDUCK_API_TOKEN 환경변수가 필요합니다}"
+
 
 current_time=$(date +"%Y-%m-%d_%H-%M-%S")
 log_file="log_${current_time}.log"
 java -jar ${SYNOPSYS_DETECT} \
     --blackduck.url=https://blackduck.sktelecom.com \
     --blackduck.trust.cert=true \
-    --blackduck.api.token=YjUwZWNkYTktOTkzNS00YzgwLWE0ODEtNTNlOTgzZGZlZTRlOjkxZDUyNTExLTMyNjAtNDM1MC04MjllLWM2ZTE3OTlkMzhjOA== \
+    --blackduck.api.token="${BLACKDUCK_API_TOKEN}" \
     --detect.project.name=${PROJECT_NAME} \
     --detect.project.version.name=${VERSION_NAME} \
     --detect.source.path=${SOURCE_PATH} \

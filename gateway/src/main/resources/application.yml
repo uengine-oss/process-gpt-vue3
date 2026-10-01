@@ -2,540 +2,552 @@ server:
     port: 8088
 ---
 spring:
-    profiles: default
+    config:
+        activate:
+            on-profile: default
     cloud:
         gateway:
-            # CORS 헤더가 두 번 실리는 것을 막는다.
-            #
-            # 게이트웨이도 붙이고 뒤의 서비스도 붙여서, 브라우저가
-            # "Access-Control-Allow-Origin 값이 둘" 이라며 응답을 통째로 버린다.
-            # 포털은 같은 출처라 겪지 않지만, 모바일 앱은 언제나 교차 출처라
-            # 이것이 없으면 응답을 하나도 받지 못한다.
-            #
-            # RETAIN_UNIQUE 가 아니라 RETAIN_FIRST 인 이유
-            #   두 값이 **다를 때**(게이트웨이는 요청 출처를 그대로, memento 는 `*`)
-            #   RETAIN_UNIQUE 는 서로 다르니 둘 다 남긴다 — 중복이 그대로 간다.
-            #   실제로 지식 베이스 조회가 이것 때문에 계속 실패했다.
-            #   첫 번째(게이트웨이가 붙인 실제 요청 출처)만 남기는 것이 맞다.
-            #   `*` 보다 좁고, 자격 증명을 실은 요청에도 유효한 값이다.
-            default-filters:
-                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+            # Spring Cloud Gateway 4.3+ 에서 server.webflux 아래로 이동
+            server:
+                webflux:
+                    # CORS 헤더가 두 번 실리는 것을 막는다.
+                    #
+                    # 게이트웨이도 붙이고 뒤의 서비스도 붙여서, 브라우저가
+                    # "Access-Control-Allow-Origin 값이 둘" 이라며 응답을 통째로 버린다.
+                    # 포털은 같은 출처라 겪지 않지만, 모바일 앱은 언제나 교차 출처라
+                    # 이것이 없으면 응답을 하나도 받지 못한다.
+                    #
+                    # RETAIN_UNIQUE 가 아니라 RETAIN_FIRST 인 이유
+                    #   두 값이 **다를 때**(게이트웨이는 요청 출처를 그대로, memento 는 `*`)
+                    #   RETAIN_UNIQUE 는 서로 다르니 둘 다 남긴다 — 중복이 그대로 간다.
+                    #   실제로 지식 베이스 조회가 이것 때문에 계속 실패했다.
+                    #   첫 번째(게이트웨이가 붙인 실제 요청 출처)만 남기는 것이 맞다.
+                    #   `*` 보다 좁고, 자격 증명을 실은 요청에도 유효한 값이다.
+                    default-filters:
+                        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
-            #<<< API Gateway / Routes
-            routes:
-                - id: litellm
-                  uri: http://localhost:4000
-                  predicates:
-                      - Path=/litellm/**
-                  filters:
-                    #   - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
-                      - SetRequestHeader=X-Forwarded-Prefix, /litellm
-                      - RewriteLocationResponseHeader=AS_IN_REQUEST, Location, ,
-                - id: completion
-                  uri: http://localhost:8000
-                  predicates:
-                      - Path=/completion/**
-                  filters:
-                      - RewritePath=/completion/?(?<segment>.*), /$\{segment}
-                - id: claude-skills
-                  uri: http://localhost:8765
-                  predicates:
-                      - Path=/claude-skills/**
-                  filters:
-                      - RewritePath=/claude-skills/?(?<segment>.*), /$\{segment}
-                - id: memento
-                  uri: http://localhost:8005
-                  predicates:
-                      - Path=/memento/**
-                  filters:
-                      - RewritePath=/memento/?(?<segment>.*), /$\{segment}
-                - id: glossary-backend
-                  uri: http://localhost:5504
-                  predicates:
-                      - Path=/robo,/robo/**
-                  filters:
-                      - RewritePath=/robo/?(?<segment>.*), /robo/$\{segment}
-                - id: agent-feedback
-                  uri: http://localhost:6789
-                  predicates:
-                      - Path=/api/agent-feedback/**
-                  filters:
-                      - RewritePath=/api/agent-feedback/?(?<segment>.*), /api/$\{segment}
-                # 피드백 제안 API — 프론트엔드가 /feedback-proposals 를 그대로 부른다.
-                # 위 /api/agent-feedback/** 는 /api/** 로 rewrite 되므로 닿지 않는다.
-                - id: agent-feedback-proposals
-                  uri: http://localhost:6789
-                  predicates:
-                      - Path=/feedback-proposals/**,/feedback-proposals
-                - id: voice
-                  uri: http://localhost:3000
-                  predicates:
-                      - Path=/voice/**
-                  filters:
-                      - RewritePath=/voice/?(?<segment>.*), /$\{segment}
-                - id: agent-router
-                  uri: http://localhost:8001
-                  predicates:
-                      - Path=/agent-router/**
-                  filters:
-                      - RewritePath=/agent-router/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                - id: process-gpt-deepagents
-                  uri: http://localhost:8888
-                  predicates:
-                      - Path=/process-gpt-deepagents/**
-                  filters:
-                      - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                # Codex 서비스 (deepagents 와 같은 chat/stream 계약, 별도 포트)
-                - id: process-gpt-codex
-                  uri: http://localhost:8891
-                  predicates:
-                      - Path=/process-gpt-codex/**
-                  filters:
-                      - RewritePath=/process-gpt-codex/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                # CLI Agent 서비스 (실행 CLI/모델 가용성 조회, 스킬/스트리밍)
-                - id: process-gpt-cli-agent
-                  uri: http://localhost:8890
-                  predicates:
-                      - Path=/process-gpt-cli-agent/**
-                  filters:
-                      - RewritePath=/process-gpt-cli-agent/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                - id: agent
-                  uri: http://localhost:8008
-                  predicates:
-                      - Path=/agent/**
-                  filters:
-                      - RewritePath=/agent/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                - id: wms-frontend
-                  uri: http://localhost:5273
-                  predicates:
-                      - Path=/wms/**
-                  filters:
-                      - RewritePath=/wms/?(?<segment>.*), /$\{segment}
-                - id: frontend
-                  uri: http://localhost:5173
-                  predicates:
-                      - Path=/**
-            #>>> API Gateway / Routes
-            globalcors:
-                corsConfigurations:
-                    '[/**]':
-                        allowedOrigins:
-                            - '*'
-                        allowedMethods:
-                            - '*'
-                        allowedHeaders:
-                            - '*'
-                        allowCredentials: true
+                    #<<< API Gateway / Routes
+                    routes:
+                        - id: litellm
+                          uri: http://localhost:4000
+                          predicates:
+                              - Path=/litellm/**
+                          filters:
+                            #   - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
+                              - SetRequestHeader=X-Forwarded-Prefix, /litellm
+                              - RewriteLocationResponseHeader=AS_IN_REQUEST, Location, ,
+                        - id: completion
+                          uri: http://localhost:8000
+                          predicates:
+                              - Path=/completion/**
+                          filters:
+                              - RewritePath=/completion/?(?<segment>.*), /$\{segment}
+                        - id: claude-skills
+                          uri: http://localhost:8765
+                          predicates:
+                              - Path=/claude-skills/**
+                          filters:
+                              - RewritePath=/claude-skills/?(?<segment>.*), /$\{segment}
+                        - id: memento
+                          uri: http://localhost:8005
+                          predicates:
+                              - Path=/memento/**
+                          filters:
+                              - RewritePath=/memento/?(?<segment>.*), /$\{segment}
+                        - id: glossary-backend
+                          uri: http://localhost:5504
+                          predicates:
+                              - Path=/robo,/robo/**
+                          filters:
+                              - RewritePath=/robo/?(?<segment>.*), /robo/$\{segment}
+                        - id: agent-feedback
+                          uri: http://localhost:6789
+                          predicates:
+                              - Path=/api/agent-feedback/**
+                          filters:
+                              - RewritePath=/api/agent-feedback/?(?<segment>.*), /api/$\{segment}
+                        # 피드백 제안 API — 프론트엔드가 /feedback-proposals 를 그대로 부른다.
+                        # 위 /api/agent-feedback/** 는 /api/** 로 rewrite 되므로 닿지 않는다.
+                        - id: agent-feedback-proposals
+                          uri: http://localhost:6789
+                          predicates:
+                              - Path=/feedback-proposals/**,/feedback-proposals
+                        - id: voice
+                          uri: http://localhost:3000
+                          predicates:
+                              - Path=/voice/**
+                          filters:
+                              - RewritePath=/voice/?(?<segment>.*), /$\{segment}
+                        - id: agent-router
+                          uri: http://localhost:8001
+                          predicates:
+                              - Path=/agent-router/**
+                          filters:
+                              - RewritePath=/agent-router/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                        - id: process-gpt-deepagents
+                          uri: http://localhost:8888
+                          predicates:
+                              - Path=/process-gpt-deepagents/**
+                          filters:
+                              - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                        # Codex 서비스 (deepagents 와 같은 chat/stream 계약, 별도 포트)
+                        - id: process-gpt-codex
+                          uri: http://localhost:8891
+                          predicates:
+                              - Path=/process-gpt-codex/**
+                          filters:
+                              - RewritePath=/process-gpt-codex/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                        # CLI Agent 서비스 (실행 CLI/모델 가용성 조회, 스킬/스트리밍)
+                        - id: process-gpt-cli-agent
+                          uri: http://localhost:8890
+                          predicates:
+                              - Path=/process-gpt-cli-agent/**
+                          filters:
+                              - RewritePath=/process-gpt-cli-agent/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                        - id: agent
+                          uri: http://localhost:8008
+                          predicates:
+                              - Path=/agent/**
+                          filters:
+                              - RewritePath=/agent/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                        - id: wms-frontend
+                          uri: http://localhost:5273
+                          predicates:
+                              - Path=/wms/**
+                          filters:
+                              - RewritePath=/wms/?(?<segment>.*), /$\{segment}
+                        - id: frontend
+                          uri: http://localhost:5173
+                          predicates:
+                              - Path=/**
+                    #>>> API Gateway / Routes
+                    globalcors:
+                        corsConfigurations:
+                            '[/**]':
+                                # allowCredentials=true 와 "*" 를 함께 쓸 수 없어 패턴으로 지정 (기존 동작과 동일)
+                                allowedOriginPatterns:
+                                    - '*'
+                                allowedMethods:
+                                    - '*'
+                                allowedHeaders:
+                                    - '*'
+                                allowCredentials: true
 ---
 spring:
-    profiles: docker
+    config:
+        activate:
+            on-profile: docker
     cloud:
         gateway:
-            # 기본 타임아웃 설정
-            httpclient:
-                connect-timeout: 10000
-                response-timeout: 600000 # 기본 응답 타임아웃: 600초
-                pool:
-                    type: ELASTIC
-                    max-connections: 100
-                    acquire-timeout: 45000
+            # Spring Cloud Gateway 4.3+ 에서 server.webflux 아래로 이동
+            server:
+                webflux:
+                    # 기본 타임아웃 설정
+                    httpclient:
+                        connect-timeout: 10000
+                        response-timeout: 600000 # 기본 응답 타임아웃: 600초
+                        pool:
+                            type: ELASTIC
+                            max-connections: 100
+                            acquire-timeout: 45000
 
-            # CORS 헤더 중복 정리 (위 default 프로파일의 설명과 같은 이유)
-            default-filters:
-                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+                    # CORS 헤더 중복 정리 (위 default 프로파일의 설명과 같은 이유)
+                    default-filters:
+                        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
-            # 라우트별 설정
-            routes:
-                # LiteLLM Proxy 라우트
-                - id: litellm
-                  uri: http://litellm-proxy:4000
-                  predicates:
-                      - Path=/litellm/**
-                  filters:
-                    #   - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
-                      - SetRequestHeader=X-Forwarded-Prefix, /litellm
-                      - RewriteLocationResponseHeader=AS_IN_REQUEST, Location, ,
-                  order: 1
+                    # 라우트별 설정
+                    routes:
+                        # LiteLLM Proxy 라우트
+                        - id: litellm
+                          uri: http://litellm-proxy:4000
+                          predicates:
+                              - Path=/litellm/**
+                          filters:
+                            #   - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
+                              - SetRequestHeader=X-Forwarded-Prefix, /litellm
+                              - RewriteLocationResponseHeader=AS_IN_REQUEST, Location, ,
+                          order: 1
 
-                # 2. MCP SSE 라우트: 무제한 타임아웃
-                - id: mcp-sse
-                  uri: http://mcp-proxy-service:80
-                  predicates:
-                      - Path=/mcp/*/sse/**
-                  #   metadata:
-                  #       response-timeout: 0 # 무제한
-                  filters:
-                      - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                  order: 1
+                        # 2. MCP SSE 라우트: 무제한 타임아웃
+                        - id: mcp-sse
+                          uri: http://mcp-proxy-service:80
+                          predicates:
+                              - Path=/mcp/*/sse/**
+                          #   metadata:
+                          #       response-timeout: 0 # 무제한
+                          filters:
+                              - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                          order: 1
 
-                # ===================================================================
-                # 3. MCP 서버 생성/상태 확인 라우트 (중간 우선순위)
-                # ===================================================================
-                - id: mcp-control
-                  uri: http://mcp-proxy-service:80
-                  predicates:
-                      # 정규식에서 비캡처 그룹 (?:...) 사용
-                      - Path=/mcp/*/{action:(?:create|status)}
-                  metadata:
-                      response-timeout: 300000 # 300초 = 5분
-                  filters:
-                      - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
-                  order: 2
+                        # ===================================================================
+                        # 3. MCP 서버 생성/상태 확인 라우트 (중간 우선순위)
+                        # ===================================================================
+                        - id: mcp-control
+                          uri: http://mcp-proxy-service:80
+                          predicates:
+                              # 정규식에서 비캡처 그룹 (?:...) 사용
+                              - Path=/mcp/*/{action:(?:create|status)}
+                          metadata:
+                              response-timeout: 300000 # 300초 = 5분
+                          filters:
+                              - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
+                          order: 2
 
-                # 4. MCP 일반 API 라우트: 기본 타임아웃(60초) 사용
-                - id: mcp-api
-                  uri: http://mcp-proxy-service:80
-                  predicates:
-                      - Path=/mcp/**
-                  filters:
-                      - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
-                  order: 3
+                        # 4. MCP 일반 API 라우트: 기본 타임아웃(60초) 사용
+                        - id: mcp-api
+                          uri: http://mcp-proxy-service:80
+                          predicates:
+                              - Path=/mcp/**
+                          filters:
+                              - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
+                          order: 3
 
-                # mcp-validator
-                - id: mcp-validator
-                  uri: http://mcp-validator:8800
-                  predicates:
-                      - Path=/mcp-validator/**
-                  filters:
-                      - RewritePath=/mcp-validator/?(?<segment>.*), /$\{segment}
-                  order: 4
+                        # mcp-validator
+                        - id: mcp-validator
+                          uri: http://mcp-validator:8800
+                          predicates:
+                              - Path=/mcp-validator/**
+                          filters:
+                              - RewritePath=/mcp-validator/?(?<segment>.*), /$\{segment}
+                          order: 4
 
-                # Completion 서비스
-                - id: completion
-                  uri: http://completion-service:8000
-                  predicates:
-                      - Path=/completion/**
-                  filters:
-                      - RewritePath=/completion/?(?<segment>.*), /$\{segment}
-                  order: 10
+                        # Completion 서비스
+                        - id: completion
+                          uri: http://completion-service:8000
+                          predicates:
+                              - Path=/completion/**
+                          filters:
+                              - RewritePath=/completion/?(?<segment>.*), /$\{segment}
+                          order: 10
 
-                # Claude Skills 서비스
-                - id: claude-skills
-                  uri: http://claude-skills:8765
-                  predicates:
-                      - Path=/claude-skills/**
-                  filters:
-                      - RewritePath=/claude-skills/?(?<segment>.*), /$\{segment}
-                  order: 20
+                        # Claude Skills 서비스
+                        - id: claude-skills
+                          uri: http://claude-skills:8765
+                          predicates:
+                              - Path=/claude-skills/**
+                          filters:
+                              - RewritePath=/claude-skills/?(?<segment>.*), /$\{segment}
+                          order: 20
 
-                # Memento 서비스
-                - id: memento
-                  uri: http://memento-service:8005
-                  predicates:
-                      - Path=/memento/**
-                  filters:
-                      - RewritePath=/memento/?(?<segment>.*), /$\{segment}
-                  order: 30
+                        # Memento 서비스
+                        - id: memento
+                          uri: http://memento-service:8005
+                          predicates:
+                              - Path=/memento/**
+                          filters:
+                              - RewritePath=/memento/?(?<segment>.*), /$\{segment}
+                          order: 30
 
-                # Glossary 백엔드 서비스
-                - id: glossary-backend
-                  uri: http://robo-data-glossary-backend:5504
-                  predicates:
-                      - Path=/robo,/robo/**
-                  filters:
-                      - RewritePath=/robo/?(?<segment>.*), /robo/$\{segment}
-                  order: 31
+                        # Glossary 백엔드 서비스
+                        - id: glossary-backend
+                          uri: http://robo-data-glossary-backend:5504
+                          predicates:
+                              - Path=/robo,/robo/**
+                          filters:
+                              - RewritePath=/robo/?(?<segment>.*), /robo/$\{segment}
+                          order: 31
 
-                # voice 서비스
-                - id: voice
-                  uri: http://react-voice-agent-service:3000
-                  predicates:
-                      - Path=/voice/**
-                  filters:
-                      - RewritePath=/voice/?(?<segment>.*), /$\{segment}
-                  order: 40
+                        # voice 서비스
+                        - id: voice
+                          uri: http://react-voice-agent-service:3000
+                          predicates:
+                              - Path=/voice/**
+                          filters:
+                              - RewritePath=/voice/?(?<segment>.*), /$\{segment}
+                          order: 40
 
-                - id: analytic
-                  uri: http://analytic-service:8000
-                  predicates:
-                      - Path=/api/analytics/**
-                  filters:
-                      - RewritePath=/api/analytics/?(?<segment>.*), /api/$\{segment}
-                  order: 44
+                        - id: analytic
+                          uri: http://analytic-service:8000
+                          predicates:
+                              - Path=/api/analytics/**
+                          filters:
+                              - RewritePath=/api/analytics/?(?<segment>.*), /api/$\{segment}
+                          order: 44
 
-                # Agent Router 서비스 (agent pod warmup/proxy, SSE 지원)
-                - id: agent-router
-                  uri: http://agent-router:8001
-                  predicates:
-                      - Path=/agent-router/**
-                  filters:
-                      - RewritePath=/agent-router/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                  order: 45
+                        # Agent Router 서비스 (agent pod warmup/proxy, SSE 지원)
+                        - id: agent-router
+                          uri: http://agent-router:8001
+                          predicates:
+                              - Path=/agent-router/**
+                          filters:
+                              - RewritePath=/agent-router/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                          order: 45
 
-                # DeepAgents Router 서비스 (별도 런타임/포트, SSE 지원)
-                - id: process-gpt-deepagents
-                  uri: http://process-gpt-deepagents:8888
-                  predicates:
-                      - Path=/process-gpt-deepagents/**
-                  filters:
-                      - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                  order: 45
+                        # DeepAgents Router 서비스 (별도 런타임/포트, SSE 지원)
+                        - id: process-gpt-deepagents
+                          uri: http://process-gpt-deepagents:8888
+                          predicates:
+                              - Path=/process-gpt-deepagents/**
+                          filters:
+                              - RewritePath=/process-gpt-deepagents/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                          order: 45
 
-                # Codex 서비스 (deepagents 와 같은 chat/stream 계약, 별도 포트)
-                - id: process-gpt-codex
-                  uri: http://process-gpt-codex:8891
-                  predicates:
-                      - Path=/process-gpt-codex/**
-                  filters:
-                      - RewritePath=/process-gpt-codex/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                  order: 45
+                        # Codex 서비스 (deepagents 와 같은 chat/stream 계약, 별도 포트)
+                        - id: process-gpt-codex
+                          uri: http://process-gpt-codex:8891
+                          predicates:
+                              - Path=/process-gpt-codex/**
+                          filters:
+                              - RewritePath=/process-gpt-codex/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                          order: 45
 
-                # CLI Agent 서비스 (실행 CLI/모델 가용성 조회, 스킬/스트리밍)
-                - id: process-gpt-cli-agent
-                  uri: http://process-gpt-cli-agent:8890
-                  predicates:
-                      - Path=/process-gpt-cli-agent/**
-                  filters:
-                      - RewritePath=/process-gpt-cli-agent/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                  order: 45
+                        # CLI Agent 서비스 (실행 CLI/모델 가용성 조회, 스킬/스트리밍)
+                        - id: process-gpt-cli-agent
+                          uri: http://process-gpt-cli-agent:8890
+                          predicates:
+                              - Path=/process-gpt-cli-agent/**
+                          filters:
+                              - RewritePath=/process-gpt-cli-agent/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                          order: 45
 
-                # Work Assistant Agent 서비스 (SSE 스트리밍 지원)
-                - id: agent
-                  uri: http://process-gpt-base-agent-langchain-react-service:8000
-                  predicates:
-                      - Path=/agent/**
-                  filters:
-                      - RewritePath=/agent/?(?<segment>.*), /$\{segment}
-                      - AddResponseHeader=X-Accel-Buffering, no
-                  order: 46
+                        # Work Assistant Agent 서비스 (SSE 스트리밍 지원)
+                        - id: agent
+                          uri: http://process-gpt-base-agent-langchain-react-service:8000
+                          predicates:
+                              - Path=/agent/**
+                          filters:
+                              - RewritePath=/agent/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                          order: 46
 
-                - id: agent-feedback
-                  uri: http://agent-feedback-service:6789
-                  predicates:
-                      - Path=/api/agent-feedback/**
-                  filters:
-                      - RewritePath=/api/agent-feedback/?(?<segment>.*), /api/$\{segment}
-                  order: 47
+                        - id: agent-feedback
+                          uri: http://agent-feedback-service:6789
+                          predicates:
+                              - Path=/api/agent-feedback/**
+                          filters:
+                              - RewritePath=/api/agent-feedback/?(?<segment>.*), /api/$\{segment}
+                          order: 47
 
-                # 피드백 제안 조회/승인·반려 API. 프론트엔드(ProcessGPTBackend.ts)가
-                # /feedback-proposals 를 그대로 호출하는데, agent-feedback 서비스의
-                # 이 라우터는 /feedback-proposals 에 마운트돼 있어 위의
-                # /api/agent-feedback/** (→ /api/** 로 rewrite) 로는 닿지 않는다.
-                # 라우트가 없으면 SPA 폴백으로 index.html 이 돌아가 "내 피드백"
-                # 화면과 제안 배지가 통째로 동작하지 않는다. prefix 를 벗기지 않고
-                # 그대로 넘긴다.
-                - id: agent-feedback-proposals
-                  uri: http://agent-feedback-service:6789
-                  predicates:
-                      - Path=/feedback-proposals/**,/feedback-proposals
-                  order: 47
+                        # 피드백 제안 조회/승인·반려 API. 프론트엔드(ProcessGPTBackend.ts)가
+                        # /feedback-proposals 를 그대로 호출하는데, agent-feedback 서비스의
+                        # 이 라우터는 /feedback-proposals 에 마운트돼 있어 위의
+                        # /api/agent-feedback/** (→ /api/** 로 rewrite) 로는 닿지 않는다.
+                        # 라우트가 없으면 SPA 폴백으로 index.html 이 돌아가 "내 피드백"
+                        # 화면과 제안 배지가 통째로 동작하지 않는다. prefix 를 벗기지 않고
+                        # 그대로 넘긴다.
+                        - id: agent-feedback-proposals
+                          uri: http://agent-feedback-service:6789
+                          predicates:
+                              - Path=/feedback-proposals/**,/feedback-proposals
+                          order: 47
 
-                # VNC 라우팅 (Consumer ID 기반) - dev 네임스페이스 (uengine.process-gpt.io)
-                - id: vnc-0-dev
-                  uri: http://browser-server-0.dev.svc.cluster.local:6080
-                  predicates:
-                      - Host=uengine.process-gpt.io
-                      - Path=/vnc/processgpt-browser-server-0/**
-                  filters:
-                      - RewritePath=/vnc/processgpt-browser-server-0/(?<remaining>.*), /$\{remaining}
-                  order: 50
+                        # VNC 라우팅 (Consumer ID 기반) - dev 네임스페이스 (uengine.process-gpt.io)
+                        - id: vnc-0-dev
+                          uri: http://browser-server-0.dev.svc.cluster.local:6080
+                          predicates:
+                              - Host=uengine.process-gpt.io
+                              - Path=/vnc/processgpt-browser-server-0/**
+                          filters:
+                              - RewritePath=/vnc/processgpt-browser-server-0/(?<remaining>.*), /$\{remaining}
+                          order: 50
 
-                - id: vnc-1-dev
-                  uri: http://browser-server-1.dev.svc.cluster.local:6080
-                  predicates:
-                      - Host=uengine.process-gpt.io
-                      - Path=/vnc/processgpt-browser-server-1/**
-                  filters:
-                      - RewritePath=/vnc/processgpt-browser-server-1/(?<remaining>.*), /$\{remaining}
-                  order: 51
+                        - id: vnc-1-dev
+                          uri: http://browser-server-1.dev.svc.cluster.local:6080
+                          predicates:
+                              - Host=uengine.process-gpt.io
+                              - Path=/vnc/processgpt-browser-server-1/**
+                          filters:
+                              - RewritePath=/vnc/processgpt-browser-server-1/(?<remaining>.*), /$\{remaining}
+                          order: 51
 
-                - id: vnc-2-dev
-                  uri: http://browser-server-2.dev.svc.cluster.local:6080
-                  predicates:
-                      - Host=uengine.process-gpt.io
-                      - Path=/vnc/processgpt-browser-server-2/**
-                  filters:
-                      - RewritePath=/vnc/processgpt-browser-server-2/(?<remaining>.*), /$\{remaining}
-                  order: 52
+                        - id: vnc-2-dev
+                          uri: http://browser-server-2.dev.svc.cluster.local:6080
+                          predicates:
+                              - Host=uengine.process-gpt.io
+                              - Path=/vnc/processgpt-browser-server-2/**
+                          filters:
+                              - RewritePath=/vnc/processgpt-browser-server-2/(?<remaining>.*), /$\{remaining}
+                          order: 52
 
-                - id: vnc-3-dev
-                  uri: http://browser-server-3.dev.svc.cluster.local:6080
-                  predicates:
-                      - Host=uengine.process-gpt.io
-                      - Path=/vnc/processgpt-browser-server-3/**
-                  filters:
-                      - RewritePath=/vnc/processgpt-browser-server-3/(?<remaining>.*), /$\{remaining}
-                  order: 53
+                        - id: vnc-3-dev
+                          uri: http://browser-server-3.dev.svc.cluster.local:6080
+                          predicates:
+                              - Host=uengine.process-gpt.io
+                              - Path=/vnc/processgpt-browser-server-3/**
+                          filters:
+                              - RewritePath=/vnc/processgpt-browser-server-3/(?<remaining>.*), /$\{remaining}
+                          order: 53
 
-                - id: vnc-4-dev
-                  uri: http://browser-server-4.dev.svc.cluster.local:6080
-                  predicates:
-                      - Host=uengine.process-gpt.io
-                      - Path=/vnc/processgpt-browser-server-4/**
-                  filters:
-                      - RewritePath=/vnc/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
-                  order: 54
+                        - id: vnc-4-dev
+                          uri: http://browser-server-4.dev.svc.cluster.local:6080
+                          predicates:
+                              - Host=uengine.process-gpt.io
+                              - Path=/vnc/processgpt-browser-server-4/**
+                          filters:
+                              - RewritePath=/vnc/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
+                          order: 54
 
-                # VNC 라우팅 (Consumer ID 기반) - default 네임스페이스 (그 외 모든 호스트)
-                - id: vnc-0-default
-                  uri: http://browser-server-0.default.svc.cluster.local:6080
-                  predicates:
-                      - Path=/vnc/processgpt-browser-server-0/**
-                  filters:
-                      - RewritePath=/vnc/processgpt-browser-server-0/(?<remaining>.*), /$\{remaining}
-                  order: 55
+                        # VNC 라우팅 (Consumer ID 기반) - default 네임스페이스 (그 외 모든 호스트)
+                        - id: vnc-0-default
+                          uri: http://browser-server-0.default.svc.cluster.local:6080
+                          predicates:
+                              - Path=/vnc/processgpt-browser-server-0/**
+                          filters:
+                              - RewritePath=/vnc/processgpt-browser-server-0/(?<remaining>.*), /$\{remaining}
+                          order: 55
 
-                - id: vnc-1-default
-                  uri: http://browser-server-1.default.svc.cluster.local:6080
-                  predicates:
-                      - Path=/vnc/processgpt-browser-server-1/**
-                  filters:
-                      - RewritePath=/vnc/processgpt-browser-server-1/(?<remaining>.*), /$\{remaining}
-                  order: 56
+                        - id: vnc-1-default
+                          uri: http://browser-server-1.default.svc.cluster.local:6080
+                          predicates:
+                              - Path=/vnc/processgpt-browser-server-1/**
+                          filters:
+                              - RewritePath=/vnc/processgpt-browser-server-1/(?<remaining>.*), /$\{remaining}
+                          order: 56
 
-                - id: vnc-2-default
-                  uri: http://browser-server-2.default.svc.cluster.local:6080
-                  predicates:
-                      - Path=/vnc/processgpt-browser-server-2/**
-                  filters:
-                      - RewritePath=/vnc/processgpt-browser-server-2/(?<remaining>.*), /$\{remaining}
-                  order: 57
+                        - id: vnc-2-default
+                          uri: http://browser-server-2.default.svc.cluster.local:6080
+                          predicates:
+                              - Path=/vnc/processgpt-browser-server-2/**
+                          filters:
+                              - RewritePath=/vnc/processgpt-browser-server-2/(?<remaining>.*), /$\{remaining}
+                          order: 57
 
-                - id: vnc-3-default
-                  uri: http://browser-server-3.default.svc.cluster.local:6080
-                  predicates:
-                      - Path=/vnc/processgpt-browser-server-3/**
-                  filters:
-                      - RewritePath=/vnc/processgpt-browser-server-3/(?<remaining>.*), /$\{remaining}
-                  order: 58
+                        - id: vnc-3-default
+                          uri: http://browser-server-3.default.svc.cluster.local:6080
+                          predicates:
+                              - Path=/vnc/processgpt-browser-server-3/**
+                          filters:
+                              - RewritePath=/vnc/processgpt-browser-server-3/(?<remaining>.*), /$\{remaining}
+                          order: 58
 
-                - id: vnc-4-default
-                  uri: http://browser-server-4.default.svc.cluster.local:6080
-                  predicates:
-                      - Path=/vnc/processgpt-browser-server-4/**
-                  filters:
-                      - RewritePath=/vnc/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
-                  order: 59
+                        - id: vnc-4-default
+                          uri: http://browser-server-4.default.svc.cluster.local:6080
+                          predicates:
+                              - Path=/vnc/processgpt-browser-server-4/**
+                          filters:
+                              - RewritePath=/vnc/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
+                          order: 59
 
-                # API 라우팅 (Consumer ID 기반) - dev 네임스페이스 (uengine.process-gpt.io)
-                - id: api-0-dev
-                  uri: http://browser-server-0.dev.svc.cluster.local:5001
-                  predicates:
-                      - Host=uengine.process-gpt.io
-                      - Path=/api/processgpt-browser-server-0/**
-                  filters:
-                      - RewritePath=/api/processgpt-browser-server-0/(?<remaining>.*), /$\{remaining}
-                  order: 60
+                        # API 라우팅 (Consumer ID 기반) - dev 네임스페이스 (uengine.process-gpt.io)
+                        - id: api-0-dev
+                          uri: http://browser-server-0.dev.svc.cluster.local:5001
+                          predicates:
+                              - Host=uengine.process-gpt.io
+                              - Path=/api/processgpt-browser-server-0/**
+                          filters:
+                              - RewritePath=/api/processgpt-browser-server-0/(?<remaining>.*), /$\{remaining}
+                          order: 60
 
-                - id: api-1-dev
-                  uri: http://browser-server-1.dev.svc.cluster.local:5001
-                  predicates:
-                      - Host=uengine.process-gpt.io
-                      - Path=/api/processgpt-browser-server-1/**
-                  filters:
-                      - RewritePath=/api/processgpt-browser-server-1/(?<remaining>.*), /$\{remaining}
-                  order: 61
+                        - id: api-1-dev
+                          uri: http://browser-server-1.dev.svc.cluster.local:5001
+                          predicates:
+                              - Host=uengine.process-gpt.io
+                              - Path=/api/processgpt-browser-server-1/**
+                          filters:
+                              - RewritePath=/api/processgpt-browser-server-1/(?<remaining>.*), /$\{remaining}
+                          order: 61
 
-                - id: api-2-dev
-                  uri: http://browser-server-2.dev.svc.cluster.local:5001
-                  predicates:
-                      - Host=uengine.process-gpt.io
-                      - Path=/api/processgpt-browser-server-2/**
-                  filters:
-                      - RewritePath=/api/processgpt-browser-server-2/(?<remaining>.*), /$\{remaining}
-                  order: 62
+                        - id: api-2-dev
+                          uri: http://browser-server-2.dev.svc.cluster.local:5001
+                          predicates:
+                              - Host=uengine.process-gpt.io
+                              - Path=/api/processgpt-browser-server-2/**
+                          filters:
+                              - RewritePath=/api/processgpt-browser-server-2/(?<remaining>.*), /$\{remaining}
+                          order: 62
 
-                - id: api-3-dev
-                  uri: http://browser-server-3.dev.svc.cluster.local:5001
-                  predicates:
-                      - Host=uengine.process-gpt.io
-                      - Path=/api/processgpt-browser-server-3/**
-                  filters:
-                      - RewritePath=/api/processgpt-browser-server-3/(?<remaining>.*), /$\{remaining}
-                  order: 63
+                        - id: api-3-dev
+                          uri: http://browser-server-3.dev.svc.cluster.local:5001
+                          predicates:
+                              - Host=uengine.process-gpt.io
+                              - Path=/api/processgpt-browser-server-3/**
+                          filters:
+                              - RewritePath=/api/processgpt-browser-server-3/(?<remaining>.*), /$\{remaining}
+                          order: 63
 
-                - id: api-4-dev
-                  uri: http://browser-server-4.dev.svc.cluster.local:5001
-                  predicates:
-                      - Host=uengine.process-gpt.io
-                      - Path=/api/processgpt-browser-server-4/**
-                  filters:
-                      - RewritePath=/api/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
-                  order: 64
+                        - id: api-4-dev
+                          uri: http://browser-server-4.dev.svc.cluster.local:5001
+                          predicates:
+                              - Host=uengine.process-gpt.io
+                              - Path=/api/processgpt-browser-server-4/**
+                          filters:
+                              - RewritePath=/api/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
+                          order: 64
 
-                # API 라우팅 (Consumer ID 기반) - default 네임스페이스 (그 외 모든 호스트)
-                - id: api-0-default
-                  uri: http://browser-server-0.default.svc.cluster.local:5001
-                  predicates:
-                      - Path=/api/processgpt-browser-server-0/**
-                  filters:
-                      - RewritePath=/api/processgpt-browser-server-0/(?<remaining>.*), /$\{remaining}
-                  order: 65
+                        # API 라우팅 (Consumer ID 기반) - default 네임스페이스 (그 외 모든 호스트)
+                        - id: api-0-default
+                          uri: http://browser-server-0.default.svc.cluster.local:5001
+                          predicates:
+                              - Path=/api/processgpt-browser-server-0/**
+                          filters:
+                              - RewritePath=/api/processgpt-browser-server-0/(?<remaining>.*), /$\{remaining}
+                          order: 65
 
-                - id: api-1-default
-                  uri: http://browser-server-1.default.svc.cluster.local:5001
-                  predicates:
-                      - Path=/api/processgpt-browser-server-1/**
-                  filters:
-                      - RewritePath=/api/processgpt-browser-server-1/(?<remaining>.*), /$\{remaining}
-                  order: 66
+                        - id: api-1-default
+                          uri: http://browser-server-1.default.svc.cluster.local:5001
+                          predicates:
+                              - Path=/api/processgpt-browser-server-1/**
+                          filters:
+                              - RewritePath=/api/processgpt-browser-server-1/(?<remaining>.*), /$\{remaining}
+                          order: 66
 
-                - id: api-2-default
-                  uri: http://browser-server-2.default.svc.cluster.local:5001
-                  predicates:
-                      - Path=/api/processgpt-browser-server-2/**
-                  filters:
-                      - RewritePath=/api/processgpt-browser-server-2/(?<remaining>.*), /$\{remaining}
-                  order: 67
+                        - id: api-2-default
+                          uri: http://browser-server-2.default.svc.cluster.local:5001
+                          predicates:
+                              - Path=/api/processgpt-browser-server-2/**
+                          filters:
+                              - RewritePath=/api/processgpt-browser-server-2/(?<remaining>.*), /$\{remaining}
+                          order: 67
 
-                - id: api-3-default
-                  uri: http://browser-server-3.default.svc.cluster.local:5001
-                  predicates:
-                      - Path=/api/processgpt-browser-server-3/**
-                  filters:
-                      - RewritePath=/api/processgpt-browser-server-3/(?<remaining>.*), /$\{remaining}
-                  order: 68
+                        - id: api-3-default
+                          uri: http://browser-server-3.default.svc.cluster.local:5001
+                          predicates:
+                              - Path=/api/processgpt-browser-server-3/**
+                          filters:
+                              - RewritePath=/api/processgpt-browser-server-3/(?<remaining>.*), /$\{remaining}
+                          order: 68
 
-                - id: api-4-default
-                  uri: http://browser-server-4.default.svc.cluster.local:5001
-                  predicates:
-                      - Path=/api/processgpt-browser-server-4/**
-                  filters:
-                      - RewritePath=/api/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
-                  order: 69
+                        - id: api-4-default
+                          uri: http://browser-server-4.default.svc.cluster.local:5001
+                          predicates:
+                              - Path=/api/processgpt-browser-server-4/**
+                          filters:
+                              - RewritePath=/api/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
+                          order: 69
 
-                # WMS 샘플 앱 (process-gpt-sample-app-wms)
-                - id: wms-frontend
-                  uri: http://wms-frontend:5273
-                  predicates:
-                      - Path=/wms/**
-                  filters:
-                      - RewritePath=/wms/?(?<segment>.*), /$\{segment}
-                  order: 70
+                        # WMS 샘플 앱 (process-gpt-sample-app-wms)
+                        - id: wms-frontend
+                          uri: http://wms-frontend:5273
+                          predicates:
+                              - Path=/wms/**
+                          filters:
+                              - RewritePath=/wms/?(?<segment>.*), /$\{segment}
+                          order: 70
 
-                # Frontend 서비스 (catch-all)
-                - id: frontend
-                  uri: http://frontend-service:5173
-                  predicates:
-                      - Path=/**
-                  order: 999
+                        # Frontend 서비스 (catch-all)
+                        - id: frontend
+                          uri: http://frontend-service:5173
+                          predicates:
+                              - Path=/**
+                          order: 999
 
-            globalcors:
-                corsConfigurations:
-                    '[/**]':
-                        allowedOrigins:
-                            - '*'
-                        allowedMethods:
-                            - '*'
-                        allowedHeaders:
-                            - '*'
-                        allowCredentials: true
-                        exposedHeaders:
-                            - 'Cache-Control'
-                            - 'Connection'
-                            - 'Content-Type'
-                            - 'Transfer-Encoding'
-                            - 'X-Accel-Buffering'
+                    globalcors:
+                        corsConfigurations:
+                            '[/**]':
+                                # allowCredentials=true 와 "*" 를 함께 쓸 수 없어 패턴으로 지정 (기존 동작과 동일)
+                                allowedOriginPatterns:
+                                    - '*'
+                                allowedMethods:
+                                    - '*'
+                                allowedHeaders:
+                                    - '*'
+                                allowCredentials: true
+                                exposedHeaders:
+                                    - 'Cache-Control'
+                                    - 'Connection'
+                                    - 'Content-Type'
+                                    - 'Transfer-Encoding'
+                                    - 'X-Accel-Buffering'
 # 로깅 레벨
 logging:
     level:

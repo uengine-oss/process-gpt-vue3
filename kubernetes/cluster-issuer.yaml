@@ -11,7 +11,10 @@ spec:
     solvers:
     - dns01:
         route53:
-          accessKeyID: AKIA6H47RAWMRDKWWEPK
+          # Access Key ID도 Secret에서 읽는다 (매니페스트에 키 식별자를 두지 않음)
+          accessKeyIDSecretRef:
+            key: accessKeyID
+            name: route53-credentials
           region: us-east-1
           role: arn:aws:iam::979050235289:role/cert-manager
           secretAccessKeySecretRef:

@@ -155,6 +155,11 @@ function main() {
         console.log('No <script> blocks found in .vue files.');
         process.exit(0);
     }
+    // --extract-only: .vue <script> 추출만 하고 끝낸다 (CI 보안 점검이 semgrep 을 직접 돌릴 때 사용)
+    if (process.argv.includes('--extract-only')) {
+        console.log(`Extracted ${extractedCount} script block(s) to ${path.relative(ROOT, OUT_DIR)}`);
+        process.exit(0);
+    }
     runSemgrep();
 }
 

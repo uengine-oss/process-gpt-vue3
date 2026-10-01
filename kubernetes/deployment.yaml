@@ -13,9 +13,29 @@ spec:
       labels:
         app: frontend
     spec:
+      # 보안 기본값 (Trivy KSV-0118): seccomp 기본 프로파일
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
       - name: frontend
         image: ghcr.io/uengine-oss/process-gpt:a787c64
+        # 보안 기본값 (Trivy KSV-0014/0118): 읽기 전용 루트 FS, 권한 상승·커널 권한 제거
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        # run.sh 가 빌드 산출물을 복사하고 환경변수를 주입하는 서빙 디렉터리 (이 변경 이후 빌드된 이미지 필요)
+        - name: www
+          mountPath: /opt/www
         ports:
         - containerPort: 8080
         resources:
@@ -38,6 +58,11 @@ spec:
             secretKeyRef:
               name: my-secrets
               key: SUPABASE_KEY
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: www
+        emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -54,9 +79,19 @@ spec:
       labels:
         app: execution
     spec:
+      # 보안 기본값 (Trivy KSV-0118): seccomp 기본 프로파일
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: execution
         image: ghcr.io/uengine-oss/process-gpt-execution:ee41747
+        # 보안 기본값 (Trivy KSV-0014/0118): 읽기 전용 루트 FS, 권한 상승·커널 권한 제거
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         ports:
         - containerPort: 8000
         resources:
@@ -122,10 +157,14 @@ spec:
               name: langsmith-secrets
               key: LANGSMITH_PROJECT
         volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         - mountPath: /etc/secrets
           name: firebase-credentials
           readOnly: true
       volumes:
+      - name: tmp
+        emptyDir: {}
       - name: firebase-credentials
         secret:
           defaultMode: 420
@@ -146,9 +185,22 @@ spec:
       labels:
         app: autonomous
     spec:
+      # 보안 기본값 (Trivy KSV-0118): seccomp 기본 프로파일
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: autonomous
         image: ghcr.io/uengine-oss/process-gpt-autonomous:6778a3c
+        # 보안 기본값 (Trivy KSV-0014/0118): 읽기 전용 루트 FS, 권한 상승·커널 권한 제거
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         ports:
         - containerPort: 6789
         resources:
@@ -163,6 +215,9 @@ spec:
         #     secretKeyRef:
         #       name: serper-api-key-secret
         #       key: SERPER_API_KEY
+      volumes:
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -179,9 +234,19 @@ spec:
       labels:
         app: memento
     spec:
+      # 보안 기본값 (Trivy KSV-0118): seccomp 기본 프로파일
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: memento
         image: ghcr.io/uengine-oss/process-gpt-memento:16cfe7f
+        # 보안 기본값 (Trivy KSV-0014/0118): 읽기 전용 루트 FS, 권한 상승·커널 권한 제거
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         ports:
         - containerPort: 8005
         resources:
@@ -212,10 +277,14 @@ spec:
               name: my-config
               key: GOOGLE_DRIVE_FOLDER_ID
         volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         - name: google-credentials
           mountPath: "/secrets"
           readOnly: true
       volumes:
+      - name: tmp
+        emptyDir: {}
       - name: google-credentials
         secret:
           secretName: google-credentials
