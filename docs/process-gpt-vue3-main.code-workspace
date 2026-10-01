@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../process-gpt-completion"
+		}
+	],
+    "settings": {
+        "java.compile.nullAnalysis.mode": "automatic",
+        "javascript.validate.enable": false
+    }
+}

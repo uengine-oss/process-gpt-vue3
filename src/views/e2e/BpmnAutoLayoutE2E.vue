@@ -51,6 +51,14 @@
                         </v-tooltip>
                         <v-tooltip location="bottom">
                             <template #activator="{ props }">
+                                <v-icon v-bind="props" class="e2e-column-row-layout-button" size="small" @click="applyColumnRowLayout">
+                                    mdi-view-column-outline
+                                </v-icon>
+                            </template>
+                            <span>Auto layout (new: column/row)</span>
+                        </v-tooltip>
+                        <v-tooltip location="bottom">
+                            <template #activator="{ props }">
                                 <v-icon v-bind="props" class="e2e-rotate-button" size="small" @click="rotateLayout">
                                     mdi-crop-rotate
                                 </v-icon>
@@ -172,6 +180,9 @@ export default {
         onDiagramLoaded() {},
         applyAutoLayout() {
             this.$refs.bpmn?.applyAutoLayout?.();
+        },
+        applyColumnRowLayout() {
+            return this.$refs.bpmn?.applyColumnRowLayout?.();
         },
         rotateLayout(event) {
             window.event = event;

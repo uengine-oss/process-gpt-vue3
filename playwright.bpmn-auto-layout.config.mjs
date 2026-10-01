@@ -5,7 +5,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
     testDir: './e2e/bpmn-auto-layout',
-    testMatch: ['bpmn-auto-layout.spec.mjs', 'bpmn-auto-orientation.spec.mjs'],
+    testMatch: ['bpmn-auto-layout.spec.mjs', 'bpmn-auto-orientation.spec.mjs', 'bpmn-layout-compare.spec.mjs'],
     fullyParallel: false,
     workers: 1,
     reporter: [
@@ -17,6 +17,8 @@ export default defineConfig({
     use: {
         baseURL,
         trace: 'on-first-retry',
+        // PLAYWRIGHT_CHANNEL=chrome 으로 설치된 Chrome 을 사용 (playwright 번들 브라우저 미설치 환경)
+        ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
         screenshot: 'only-on-failure'
     },
     projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
