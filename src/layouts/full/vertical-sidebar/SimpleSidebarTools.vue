@@ -29,6 +29,42 @@
         </div>
 
         <!--
+            휴대폰 간소화 화면. 클로드 모바일 사이드바처럼 글자를 붙인 줄로 늘어놓는다 —
+            좁은 폭에서 아이콘만 두면 무엇인지 알 수 없고, '⋯' 로 접어 두면 한 번 더 눌러야 한다.
+            자주 가는 곳(새 채팅 · 할 일)만 펴 두고 나머지는 '더보기' 로 접는다.
+        -->
+        <div v-else-if="row === 'phone'" class="pg-sidetools__phone" data-testid="mobile-sidebar-nav">
+            <div class="pg-sidetools__phone-search">
+                <Searchbar />
+            </div>
+            <!-- '새 채팅' 은 늘 새로 시작하는 줄이라 지금 화면 표시를 하지 않는다(클로드도 같다). -->
+            <button type="button" class="pg-m-row" @click="go(newChatItem)">
+                <span class="pg-m-row__icon pg-m-row__icon--plus"><v-icon size="16">mdi-plus</v-icon></span>
+                <span class="pg-m-row__label">새 채팅</span>
+            </button>
+            <button
+                type="button"
+                class="pg-m-row"
+                :class="{ 'pg-m-row--on': isOn(todoItem) }"
+                data-testid="mobile-sidebar-todo"
+                @click="go(todoItem)"
+            >
+                <span class="pg-m-row__icon"><Icons icon="overview" :size="18" /></span>
+                <span class="pg-m-row__label">{{ todoItem.label }}</span>
+            </button>
+            <template v-if="moreOpen">
+                <button v-for="item in moreItems" :key="item.to" type="button" class="pg-m-row" :class="{ 'pg-m-row--on': isOn(item) }" @click="go(item)">
+                    <span class="pg-m-row__icon"><Icons :icon="item.icon" :size="18" /></span>
+                    <span class="pg-m-row__label">{{ item.label }}</span>
+                </button>
+            </template>
+            <button type="button" class="pg-m-row pg-m-row--muted" :aria-expanded="moreOpen" @click="moreOpen = !moreOpen">
+                <span class="pg-m-row__icon"><v-icon size="18">{{ moreOpen ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon></span>
+                <span class="pg-m-row__label">{{ moreOpen ? '접기' : '더보기' }}</span>
+            </button>
+        </div>
+
+        <!--
             계정. 클로드처럼 계정을 누르면 설정과 로그아웃이 나온다 —
             설정 톱니를 따로 띄워 둘 이유가 없다.
             알림은 상태를 알리는 것이라 접지 않고 옆에 남긴다.
@@ -59,7 +95,8 @@
             </v-menu>
 
             <v-spacer></v-spacer>
-            <NotificationDD />
+            <!-- 휴대폰에서는 알림이 앱바에 있다. 두 군데 두지 않는다. -->
+            <NotificationDD v-if="!phoneShell" />
         </div>
     </div>
 </template>
@@ -79,6 +116,8 @@
 import Searchbar from '../vertical-header/Searchbar.vue';
 import NotificationDD from '../vertical-header/NotificationDD.vue';
 import { useAuthStore } from '@/stores/auth';
+import { useCustomizerStore } from '@/stores/customizer';
+import { usePhoneShell } from '@/shared/phoneShell';
 
 export default {
     name: 'SimpleSidebarTools',
@@ -90,9 +129,14 @@ export default {
             default: 'nav'
         }
     },
+    setup() {
+        const { active: phoneShell } = usePhoneShell();
+        return { customizer: useCustomizerStore(), phoneShell };
+    },
     data: () => ({
         name: '',
         picture: '',
+        moreOpen: false,
         authStore: useAuthStore()
     }),
     mounted() {
@@ -129,6 +173,16 @@ export default {
                 items.push({ to: '/admin', icon: 'user-admin', label: this.$t('headerMenu.admin') });
             }
             return items;
+        },
+        newChatItem() {
+            return { to: '/definition-map', icon: 'write', label: '새 채팅' };
+        },
+        todoItem() {
+            return this.navItems.find((i) => i.to === '/todolist');
+        },
+        /** '더보기' 안에 접어 둘 곳. 위에 펴 둔 두 줄은 뺀다. */
+        moreItems() {
+            return this.navItems.filter((i) => i.to !== '/definition-map' && i.to !== '/todolist');
         }
     },
     methods: {
@@ -137,7 +191,12 @@ export default {
             return p === item.to || p.startsWith(item.to + '/');
         },
         go(item) {
-            if (this.$route.path !== item.to) this.$router.push(item.to);
+            if (this.$route.path !== item.to) {
+                this.$router.push(item.to);
+            } else if (this.row === 'phone' && this.customizer.Sidebar_drawer) {
+                // 이미 그 화면이면 경로가 바뀌지 않아 레이아웃이 닫지 않는다. 여기서 닫는다.
+                this.customizer.SET_SIDEBAR_DRAWER();
+            }
         },
         goSettings() {
             if (this.$route.path !== '/account-settings') this.$router.push('/account-settings');

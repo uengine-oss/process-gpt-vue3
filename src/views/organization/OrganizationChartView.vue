@@ -386,6 +386,7 @@ export default { name: 'OrganizationChartView' };
 import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import BackendFactory from '@/components/api/BackendFactory';
+import { writeActivityLog } from '@/services/activityAuditLog';
 import AgentBadgesDiagram from '@/components/ui/AgentBadgesDiagram.vue';
 import AgentCreateDialog from '@/components/ui/AgentCreateDialog.vue';
 import OrganizationEditDialog from '@/components/ui/OrganizationEditDialog.vue';
@@ -395,6 +396,7 @@ import MembershipApprovalPanel from './MembershipApprovalPanel.vue';
 import { useMembershipRequestsStore } from '@/stores/membershipRequests';
 import { getResolvedRole, getIsAdminClaim } from '@/utils/authClaims';
 import { hasRoleAtLeast, isAdminRole, ROLE_HIERARCHY, ROLE_META } from '@/utils/roles';
+import { isMaskedEmail } from '@/utils/piiMasking';
 import {
     ROOT_ID,
     assignedMemberIds,
@@ -555,9 +557,24 @@ function toast(message, color = 'success') {
 
 /* ── 로드 / 저장 ────────────────────────────────────── */
 
+/**
+ * 조직도 사용자 목록.
+ *
+ * 읽기 전용 사용자(viewer/editor/reviewer)에게는 마스킹 뷰 `users_masked` 를
+ * 준다 — 조직도는 전 직원 이메일이 한 화면에 늘어서는 자리다.
+ *
+ * 편집 권한이 있는 사용자(owner 이상)에게는 원본 `users` 를 준다. 배치할 때
+ * `createMemberNode()` 가 이메일을 조직도 JSON 에 복사해 저장하고,
+ * `organizationUtils` 가 그 값으로 권한·공개범위를 매칭하기 때문이다.
+ * 마스킹된 값이 저장되면 그 사람이 조용히 팀에서 빠진다.
+ * (DB 뷰의 원본 노출 기준은 admin 이라 owner 는 뷰에서도 마스킹된다 —
+ *  그래서 역할이 아니라 편집 권한으로 조회 대상을 가른다.)
+ * 그래도 마스킹 값이 섞여 들어올 수 있어 memberNodeFor() 가 한 번 더 막는다.
+ */
 async function loadUsers() {
     try {
-        const list = await backend.getUserList({
+        const fetchUsers = editable.value ? backend.getUserList : backend.getMaskedUserList;
+        const list = await fetchUsers.call(backend, {
             orderBy: 'username',
             sort: 'asc',
             match: { tenant_id: window.$tenantName }
@@ -585,8 +602,11 @@ function mergeUsers() {
 
 async function loadPendingMembers() {
     try {
+        // 사전등록 인원은 이메일이 곧 표시 이름이다(아직 계정이 없어 username 이 없다).
+        // 사전등록 자체는 admin(canManageRoles) 만 하고, admin 은 마스킹 뷰에서도
+        // 원본을 받으므로 조회는 항상 마스킹 뷰로 보낸다.
         const { data, error } = await window.$supabase
-            .from('pending_org_members')
+            .from(window.$pal ? 'pending_org_members_masked' : 'pending_org_members')
             .select('id,email,role,team_id,created_at')
             .eq('tenant_id', window.$tenantName);
         if (error) throw error;
@@ -617,7 +637,53 @@ async function loadChart() {
         console.error('[OrganizationChart] 조직도 로드 실패:', error);
         root.value = createRoot(window.$tenantName || '조직');
     }
+    rememberStoredEmails();
     expandAll();
+}
+
+/* ── 조직도 JSON 의 이메일 보존 ──────────────────────
+ *
+ * 조직도 노드는 이메일을 복사해서 들고 있고, organizationUtils 가 그 값으로
+ * "이 사람이 이 팀 소속인가" 를 판정한다(공개범위·권한). 마스킹된 값이 저장되면
+ * 그 사람이 조용히 팀에서 빠지므로, 마스킹 값은 절대 쓰지 않고 조직도에
+ * 이미 있던 원본을 되살려 쓴다.
+ */
+const storedEmailById = new Map();
+
+function rememberStoredEmails() {
+    walk(root.value, (node) => {
+        const email = node.data?.email;
+        if (email && !isMaskedEmail(email)) storedEmailById.set(node.id, email);
+    });
+}
+
+/** createMemberNode 래퍼 — 마스킹된 이메일이 조직도에 저장되지 않게 한다. */
+function memberNodeFor(user, parentId) {
+    const node = createMemberNode(user, parentId);
+    if (!isMaskedEmail(node.data.email)) {
+        if (node.data.email) storedEmailById.set(node.id, node.data.email);
+        return node;
+    }
+    const known = storedEmailById.get(node.id);
+    // 원본을 모르면 마스킹 값을 남기느니 비워 둔다. 잘못된 값으로 매칭되는 것이
+    // 값이 없는 것보다 나쁘다(다른 사람으로 오인될 수 있다).
+    node.data.email = known || undefined;
+    return node;
+}
+
+/* ── 활동 로그 ──────────────────────────────────────── */
+
+// 세부 액션 로그(org_team_create 등)가 이번 저장 사이클을 이미 설명했으면
+// persist 의 일반(org_chart_update) 로그를 건너뛰어 같은 변경이 두 번 적재되는 것을 막는다.
+let saveCoveredByActionLog = false;
+
+/**
+ * 조직도 활동 로그 기록. PAL 전용·실패 무시(writeActivityLog 관례).
+ * coversSave=true(기본)면 뒤따르는 debounce 저장의 일반 로그를 억제한다.
+ */
+function logOrgActivity(entry, coversSave = true) {
+    if (coversSave) saveCoveredByActionLog = true;
+    writeActivityLog({ target_type: 'organization', ...entry });
 }
 
 let saveTimer = null;
@@ -636,6 +702,10 @@ async function persist() {
         if (configUuid.value) putObj.uuid = configUuid.value;
         await backend.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
         lastSavedAt.value = Date.now();
+        // 세부 액션 로그가 없는 변경(부서 드래그 이동·리더 지정·에이전트 수정·사전등록 등)만 일반 로그로 남긴다
+        if (!saveCoveredByActionLog) {
+            writeActivityLog({ action: 'org_chart_update', target_type: 'organization', target_name: '조직도' });
+        }
         return true;
     } catch (error) {
         console.error('[OrganizationChart] 저장 실패:', error);
@@ -644,6 +714,7 @@ async function persist() {
         return false;
     } finally {
         saving.value = false;
+        saveCoveredByActionLog = false;
     }
 }
 
@@ -697,7 +768,11 @@ function recomputeMatches() {
 
     walk(root.value, (node) => {
         const user = userById.get(node.id);
-        const haystack = [displayName(node), node.data?.email, user?.username, user?.email, node.data?.description]
+        // 조직도 JSON 의 이메일은 마스킹 뷰를 거치지 않는다. 검색 대상에 그대로
+        // 두면 화면에 안 보이는 주소를 질의로 맞혀 볼 수 있으므로, 원본 목록을
+        // 받는(편집 권한 있는) 사용자에게만 검색 대상에 넣는다.
+        const storedEmail = editable.value ? node.data?.email : null;
+        const haystack = [displayName(node), storedEmail, user?.username, user?.email, node.data?.description]
             .filter(Boolean)
             .join(' ')
             .toLowerCase();
@@ -808,9 +883,16 @@ async function handleDrop(targetTeam) {
         if (payload.fromTeamId) removeMemberFromTeam(root.value, payload.fromTeamId, payload.id);
         const user = users.value.find((candidate) => candidate.id === payload.id);
         if (!user) return;
-        attachNode(root.value, targetTeam.id, createMemberNode(user, targetTeam.id));
+        attachNode(root.value, targetTeam.id, memberNodeFor(user, targetTeam.id));
         expandedIds.add(targetTeam.id);
         scheduleSave();
+        logOrgActivity({
+            action: 'org_member_assign',
+            target_id: targetTeam.id,
+            target_name: displayName(targetTeam),
+            after_value: { members: [user.username || user.email || user.id], team: displayName(targetTeam) },
+            comment: '드래그 이동'
+        });
         await syncUserDepartments([payload.id]);
         toast(`${user.username || user.email} 님을 ${displayName(targetTeam)} 에 배치했습니다.`);
     }
@@ -851,6 +933,7 @@ function commitAddTeam() {
     expandedIds.add(team.id);
     selectTeam(team);
     scheduleSave();
+    logOrgActivity({ action: 'org_team_create', target_id: team.id, target_name: name });
     toast(`'${name}' 부서를 추가했습니다.`);
 }
 
@@ -869,6 +952,12 @@ async function commitRemoveTeam() {
     removeNodeEverywhere(root.value, team.id);
     selectTeam(parent || root.value);
     scheduleSave();
+    logOrgActivity({
+        action: 'org_team_delete',
+        target_id: team.id,
+        target_name: displayName(team),
+        before_value: { memberCount: affected.length }
+    });
     const pendingIds = affected.filter((id) => pendingMembers.value.some((member) => member.id === id));
     if (pendingIds.length) {
         const { error } = await window.$supabase.from('pending_org_members').delete().in('id', pendingIds);
@@ -890,9 +979,23 @@ function onUpdateTeam({ team, patch }) {
         toast('이미 같은 이름의 부서가 있습니다.', 'warning');
         return;
     }
+    // 변경 필드의 이전/이후 값만 추려 로그에 남긴다
+    const before = {};
+    const after = {};
+    for (const key of Object.keys(patch)) {
+        before[key] = key === 'name' ? target.name ?? target.data?.name : target.data?.[key];
+        after[key] = patch[key];
+    }
     target.data = { ...target.data, ...patch };
     if (patch.name) target.name = patch.name;
     scheduleSave();
+    logOrgActivity({
+        action: 'org_team_update',
+        target_id: target.id,
+        target_name: displayName(target),
+        before_value: before,
+        after_value: after
+    });
 }
 
 function onMoveTeam({ team, parentId }) {
@@ -928,19 +1031,28 @@ async function commitPreRegister() {
     const team = findNode(root.value, preRegister.value.teamId);
     try {
         if (!team) throw new Error('선택한 부서를 찾을 수 없습니다.');
-        if (users.value.some((user) => (user.email || '').trim().toLowerCase() === email)) {
-            throw new Error('이미 가입했거나 사전등록된 이메일입니다.');
-        }
+        // 목록의 이메일은 마스킹돼 있을 수 있으므로 클라이언트에서 비교하지 않는다.
+        // 존재 여부만 서버가 판정한다(이메일 목록을 내려주지 않는 RPC).
+        // 사전등록 쪽 중복은 pending_org_members 의 (tenant_id, lower(email))
+        // 유니크 인덱스가 잡아 아래 insert 에서 23505 로 돌아온다.
+        const { data: alreadyJoined, error: existsError } = await window.$supabase.rpc('tenant_user_email_exists', { p_email: email });
+        if (existsError) throw existsError;
+        if (alreadyJoined) throw new Error('이미 가입한 이메일입니다.');
         const { data, error } = await window.$supabase
             .from('pending_org_members')
             .insert({ tenant_id: window.$tenantName, email, team_id: team.id, role: preRegister.value.role })
             .select('id,email,role,team_id,created_at')
             .single();
-        if (error) throw error;
+        if (error) {
+            if (error.code === '23505') throw new Error('이미 사전등록된 이메일입니다.');
+            throw error;
+        }
+        // insert 는 원본 테이블이라 반환된 email 도 원본이다. 조직도 노드는 이
+        // 값(관리자가 방금 입력한 주소)을 그대로 저장해야 가입 시 매칭된다.
         const pending = { ...data, username: email, pending: true, is_agent: false, department_id: team.id };
         pendingMembers.value.push(pending);
         mergeUsers();
-        attachNode(root.value, team.id, createMemberNode(pending, team.id));
+        attachNode(root.value, team.id, memberNodeFor(pending, team.id));
         expandedIds.add(team.id);
         const saved = await persist();
         if (!saved) {
@@ -969,11 +1081,21 @@ async function onAddMembers({ team, userIds }) {
     for (const userId of userIds) {
         const user = users.value.find((candidate) => candidate.id === userId);
         if (!user) continue;
-        if (attachNode(root.value, target.id, createMemberNode(user, target.id))) added += 1;
+        if (attachNode(root.value, target.id, memberNodeFor(user, target.id))) added += 1;
     }
     if (!added) return;
     expandedIds.add(target.id);
     scheduleSave();
+    const memberNames = userIds
+        .map((userId) => users.value.find((candidate) => candidate.id === userId))
+        .filter(Boolean)
+        .map((user) => user.username || user.email || user.id);
+    logOrgActivity({
+        action: 'org_member_assign',
+        target_id: target.id,
+        target_name: displayName(target),
+        after_value: { members: memberNames, team: displayName(target) }
+    });
     await syncUserDepartments(userIds);
     toast(`${added}명을 ${displayName(target)} 에 추가했습니다.`);
 }
@@ -986,6 +1108,12 @@ async function onRemoveMember({ team, member }) {
     }
     if (selectedId.value === member.id) selectedId.value = team.id;
     scheduleSave();
+    logOrgActivity({
+        action: 'org_member_remove',
+        target_id: member.id,
+        target_name: displayName(member),
+        before_value: { team: displayName(team) }
+    });
     const pending = pendingMembers.value.find((candidate) => candidate.id === member.id);
     if (pending) {
         const { error } = await window.$supabase.from('pending_org_members').delete().eq('id', member.id);
@@ -1006,7 +1134,7 @@ async function onMoveMember({ member, fromTeam, toTeamId }) {
     if (!targetTeam) return;
     if (fromTeam) removeMemberFromTeam(root.value, fromTeam.id, member.id);
     const user = users.value.find((candidate) => candidate.id === member.id);
-    attachNode(root.value, toTeamId, user ? createMemberNode(user, toTeamId) : { ...member, children: undefined });
+    attachNode(root.value, toTeamId, user ? memberNodeFor(user, toTeamId) : { ...member, children: undefined });
     expandedIds.add(toTeamId);
     scheduleSave();
     const pending = pendingMembers.value.find((candidate) => candidate.id === member.id);
@@ -1047,6 +1175,14 @@ async function applyRole(userId, role) {
         // 조직도 노드에 캐시된 role 도 최신으로 유지
         walk(root.value, (node) => {
             if (node.id === userId && node.data) node.data.role = role;
+        });
+        // 단건(onUpdateRole)·일괄(onUpdateRoles) 모두 여기 한 곳에서만 기록해 중복을 막는다
+        logOrgActivity({
+            action: 'org_role_update',
+            target_id: userId,
+            target_name: user.username || user.email || String(userId),
+            before_value: { role: previousRole },
+            after_value: { role }
         });
         return true;
     } catch (error) {
@@ -1091,7 +1227,7 @@ async function onAgentAssigned({ agent, teamId }) {
     await loadUsers();
     const target = findNode(root.value, teamId || agentTargetTeamId.value);
     if (!agent || !agent.id || !target) return;
-    attachNode(root.value, target.id, createMemberNode({ ...agent, is_agent: true }, target.id));
+    attachNode(root.value, target.id, memberNodeFor({ ...agent, is_agent: true }, target.id));
     expandedIds.add(target.id);
     scheduleSave();
     toast(`에이전트 '${agent.name}' 를 ${displayName(target)} 에 추가했습니다.`);
@@ -1153,6 +1289,8 @@ async function onAgentDialogSubmit(type, editNode) {
         users.value = users.value.filter((user) => user.id !== id);
         eventBus?.emit('agentDeleted', { id });
         scheduleSave();
+        // 위에서 이미 노드를 제거했으므로 onAgentDeleted 쪽에서는 다시 기록되지 않는다
+        logOrgActivity({ action: 'org_agent_delete', target_id: id, target_name: data?.name || editNode?.name || String(id) });
         toast('에이전트를 삭제했습니다.');
     } else {
         try {
@@ -1237,17 +1375,34 @@ function onResize() {
 /* ── EventBus 동기화 ────────────────────────────────── */
 
 async function onUserDeleted(userId) {
-    if (removeNodeEverywhere(root.value, userId)) scheduleSave();
+    const deletedUser = users.value.find((candidate) => candidate.id === userId);
+    const removed = removeNodeEverywhere(root.value, userId);
+    if (removed) scheduleSave();
     users.value = users.value.filter((user) => user.id !== userId);
+    // 조직도에 없던 사용자면 저장이 없으므로 일반 로그 억제 플래그는 세우지 않는다
+    logOrgActivity(
+        { action: 'org_user_delete', target_id: userId, target_name: deletedUser?.username || deletedUser?.email || String(userId) },
+        removed
+    );
 }
 async function onAgentDeleted(payload) {
     const id = payload?.id || payload;
     if (!id) return;
-    if (removeNodeEverywhere(root.value, id)) scheduleSave();
+    if (removeNodeEverywhere(root.value, id)) {
+        scheduleSave();
+        // 이 화면의 삭제(onAgentDialogSubmit)는 노드를 먼저 지우고 이벤트를 쏘므로
+        // 여기서는 화면 밖에서 삭제된 에이전트가 조직도에 남아 있던 경우만 기록된다
+        const agentUser = users.value.find((candidate) => candidate.id === id);
+        logOrgActivity({ action: 'org_agent_delete', target_id: id, target_name: agentUser?.username || agentUser?.name || String(id) });
+    }
     users.value = users.value.filter((user) => user.id !== id);
 }
-async function onAgentAdded() {
+async function onAgentAdded(agent) {
     await loadUsers();
+    // 생성 1건당 1회 — 팀 배치 체크 시 뒤따르는 onAgentAssigned 의 조직도 저장은 이 로그가 함께 설명한다
+    if (agent?.id) {
+        logOrgActivity({ action: 'org_agent_create', target_id: agent.id, target_name: agent.name || agent.username || String(agent.id) });
+    }
 }
 
 /* ── 라이프사이클 ───────────────────────────────────── */

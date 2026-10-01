@@ -1,5 +1,6 @@
 <template>
-    <v-card elevation="10">
+    <SimpleInstanceList v-if="customizer.simpleUi" />
+    <v-card v-else elevation="10">
         <div class="pa-4" :class="this.globalIsMobile.value ? 'todolist-card-box-is-mobile' : 'todolist-card-box'">
             <div class="d-flex align-center justify-space-between ml-2 mt-1">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('todoList.title') }}</h5>
@@ -45,6 +46,8 @@
 <script>
 import KanbanBoard from './KanbanBoard.vue';
 import TodoDialog from './TodoDialog.vue';
+import SimpleInstanceList from './SimpleInstanceList.vue';
+import { useCustomizerStore } from '@/stores/customizer';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -52,7 +55,11 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         KanbanBoard,
-        TodoDialog
+        TodoDialog,
+        SimpleInstanceList
+    },
+    setup() {
+        return { customizer: useCustomizerStore() };
     },
     data() {
         return {

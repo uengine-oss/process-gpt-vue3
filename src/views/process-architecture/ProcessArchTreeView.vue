@@ -114,7 +114,7 @@
                                     >mdi-plus</v-icon
                                 >
                             </template>
-                            <span>Major 프로세스 추가</span>
+                            <span>{{ hierarchyLabel('major') }} 추가</span>
                         </v-tooltip>
 
                         <!-- Edit button for mega/major -->
@@ -244,6 +244,7 @@
 import { ref, computed, watch, getCurrentInstance } from 'vue';
 import ProgressBadge from '@/components/ui/ProgressBadge.vue';
 import { compareMajorsByStage, getMajorBusinessDomain, getMajorStageLabel, majorMatchesDomain } from './processClassification';
+import { getHierarchyLabel as hierarchyLabel } from '@/services/tenantCustomizationService';
 
 const instance = getCurrentInstance();
 const t = (key: string, params?: any) => {

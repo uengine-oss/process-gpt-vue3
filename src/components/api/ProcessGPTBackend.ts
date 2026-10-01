@@ -4,6 +4,8 @@ import { recordUsageEvent } from '@/services/usageAnalytics';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 // 웹과 앱이 같은 규칙으로 기기를 구분한다. 자세한 이유는 그 파일에.
 import { deviceId, deviceType } from '@/shared/deviceIdentity/index.js';
+// Storage 에서 파일을 꺼내는 지점은 다운로드 이력에 남는다 (docs/security.md 3-3).
+import { DOWNLOAD_ACTIONS, recordFileDownload } from '@/shared/downloadAudit';
 const storage = StorageBaseFactory.getStorage();
 
 // getFieldValue 의 참조정보 조회를 폼 단위로 합치기 위한 짧은 in-flight 캐시.
@@ -53,6 +55,7 @@ import { convertXMLToJSON as convertXMLToJSONShared } from '@/utils/bpmnXmlToDef
 import { applySelectedChanges } from '@/utils/bpmnSelectiveMerge';
 import { getTenantId, setCachedJwtTenantId } from '@/utils/tenant';
 import { EventBus } from '@/utils/eventBus';
+import { getPublicFeedbackDays } from '@/services/tenantCustomizationService';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 import { formatRequesterName } from '@/composables/usePrUtils';
@@ -4144,6 +4147,49 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * 화면 **표시용** 사용자 목록. `getUserList()` 와 결과 모양은 같고, 조회
+     * 대상만 `users` → `public.users_masked` 로 바뀐다
+     * (`supabase/migrations/20260911_pii_masking.sql`).
+     *
+     * 뷰는 admin 이상·본인 행·에이전트 행에는 원본 이메일을, 그 밖에는
+     * `ab***@domain.com` 을 돌려준다. `security_invoker = true` 라 기반 테이블의
+     * RLS 도 그대로 적용된다.
+     *
+     * **쓰면 안 되는 곳**: 이메일을 값(identifier)으로 쓰는 경로.
+     * 담당자·owner 선택(`item-value="email"`), 채팅 참가자 매칭, 알림 발송 대상,
+     * 위임 대상 검색 등은 마스킹된 값을 저장하면 기능이 조용히 깨진다.
+     * 그런 곳은 계속 `getUserList()` 를 쓴다.
+     *
+     * 비 PAL 모드에서는 기존 동작을 그대로 둔다(레포 규칙: 변경은 PAL 전용).
+     */
+    async getMaskedUserList(options: any) {
+        if (!(window as any).$pal) {
+            return await this.getUserList(options);
+        }
+
+        try {
+            if (!options) options = {};
+
+            const filter = {
+                orderBy: 'username',
+                sort: 'asc',
+                match: {
+                    tenant_id: window.$tenantName
+                }
+            };
+
+            Object.keys(options).forEach((key) => {
+                filter[key] = options[key];
+            });
+
+            return await dedupe(`users_masked:${JSON.stringify(filter)}`, () => storage.list('users_masked', filter));
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getGroupList() {
         try {
             const options = {
@@ -6491,6 +6537,13 @@ class ProcessGPTBackend implements Backend {
             const { data, error } = await this._marketplaceBucket().download(entry.package_path);
             if (error || !data) throw new Error('패키지 다운로드 실패: ' + (error?.message || 'no data'));
             zipData = await data.arrayBuffer();
+            await recordFileDownload({
+                bucket: 'process-components',
+                path: entry.package_path,
+                fileName: entry.name || entry.package_path,
+                action: DOWNLOAD_ACTIONS.DOWNLOAD,
+                metadata: { source: 'ProcessGPTBackend.installProcessComponent' }
+            });
         } else {
             const blob = await this.synthesizeLegacyPackage(entry);
             zipData = await blob.arrayBuffer();
@@ -6672,6 +6725,13 @@ class ProcessGPTBackend implements Backend {
             const { data, error } = await this._marketplaceBucket().download(latest.package_path);
             if (error || !data) throw new Error('패키지 다운로드 실패: ' + (error?.message || 'no data'));
             zipData = await data.arrayBuffer();
+            await recordFileDownload({
+                bucket: 'process-components',
+                path: latest.package_path,
+                fileName: latest.name || latest.package_path,
+                action: DOWNLOAD_ACTIONS.DOWNLOAD,
+                metadata: { source: 'ProcessGPTBackend.updateInstalledComponent' }
+            });
         } else {
             const blob = await this.synthesizeLegacyPackage(latest);
             zipData = await blob.arrayBuffer();
@@ -9629,6 +9689,78 @@ class ProcessGPTBackend implements Backend {
         });
     }
 
+    // ── 목록 관리 (option_list) — 속성 스키마 select 소스 'list' 참조 대상 ──
+
+    async getOptionLists() {
+        const storage = StorageBaseFactory.getStorage();
+        const result = await storage.list('option_list', {
+            match: { tenant_id: window.$tenantName },
+            orderBy: 'name'
+        });
+        return result || [];
+    }
+
+    async saveOptionList(list: any) {
+        const storage = StorageBaseFactory.getStorage();
+        const data = {
+            ...list,
+            id: list.id || this.uuid(),
+            tenant_id: window.$tenantName,
+            updated_at: new Date().toISOString()
+        };
+        await storage.putObject('option_list', data, {
+            onConflict: 'id'
+        });
+        return data;
+    }
+
+    async deleteOptionList(id: string) {
+        const storage = StorageBaseFactory.getStorage();
+        await storage.delete('option_list', {
+            match: { id: id }
+        });
+    }
+
+    // ── 용어 정의 사전 (glossary_terms) — 프로세스별 용어 정의 + 통합 사전 ──
+
+    async getGlossaryTerms(options?: { procDefId?: string }) {
+        const storage = StorageBaseFactory.getStorage();
+        const queryOptions: any = {
+            match: { tenant_id: window.$tenantName },
+            orderBy: 'term'
+        };
+        if (options?.procDefId) {
+            queryOptions.match.proc_def_id = options.procDefId;
+            queryOptions.orderBy = 'display_order';
+        }
+        const result = await storage.list('glossary_terms', queryOptions);
+        return result || [];
+    }
+
+    async saveGlossaryTerm(term: any) {
+        const storage = StorageBaseFactory.getStorage();
+        const data = {
+            ...term,
+            id: term.id || this.uuid(),
+            tenant_id: window.$tenantName,
+            updated_at: new Date().toISOString()
+        };
+        if (!term.id) {
+            data.created_at = new Date().toISOString();
+        }
+        await storage.putObject('glossary_terms', data, {
+            onConflict: 'id'
+        });
+        return data;
+    }
+
+    async deleteGlossaryTerm(id: string) {
+        const storage = StorageBaseFactory.getStorage();
+        await storage.delete('glossary_terms', {
+            match: { id: id }
+        });
+    }
+
     async getTaskCatalogList(options?: any) {
         const storage = StorageBaseFactory.getStorage();
         const queryOptions: any = {
@@ -9642,7 +9774,8 @@ class ProcessGPTBackend implements Backend {
             queryOptions.match.system_name = options.systemName;
         }
         if (options?.search) {
-            queryOptions.like = { display_name: `%${options.search}%` };
+            // StorageBaseSupabase.list 는 like 를 {key, value} 형태로 읽는다
+            queryOptions.like = { key: 'display_name', value: `%${options.search}%` };
         }
         const result = await storage.list('task_catalog', queryOptions);
         return result || [];
@@ -9659,7 +9792,8 @@ class ProcessGPTBackend implements Backend {
     async saveTaskCatalog(item: any) {
         const storage = StorageBaseFactory.getStorage();
         const systemName = item.system_name || item.systemName;
-        const displayName = `${item.name} [${systemName}]`;
+        // 시스템은 구형 카탈로그 구조 — 없으면 이름만으로 표시명을 만든다
+        const displayName = systemName ? `${item.name} [${systemName}]` : item.display_name || item.name;
         const data = {
             ...item,
             id: item.id || this.uuid(),
@@ -10870,7 +11004,7 @@ class ProcessGPTBackend implements Backend {
                         if (currentState.field_status === 'approved') {
                             updateData.state = 'public_feedback';
                             updateData.public_feedback_started_at = now;
-                            updateData.public_feedback_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                            updateData.public_feedback_ends_at = new Date(Date.now() + getPublicFeedbackDays() * 24 * 60 * 60 * 1000).toISOString();
                             toState = 'public_feedback';
                         }
                         break;
@@ -10885,7 +11019,7 @@ class ProcessGPTBackend implements Backend {
                         updateData.field_review_comment = comment || null;
                         updateData.state = 'public_feedback';
                         updateData.public_feedback_started_at = now;
-                        updateData.public_feedback_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                        updateData.public_feedback_ends_at = new Date(Date.now() + getPublicFeedbackDays() * 24 * 60 * 60 * 1000).toISOString();
                         toState = 'public_feedback';
                         break;
 

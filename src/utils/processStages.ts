@@ -5,6 +5,9 @@
  * 대시보드 / 리뷰보드 / 체계도 세 곳에서 동일하게 사용한다.
  */
 
+import { reactive } from 'vue';
+import { DEFAULT_STAGE_TERMS, hexToRgbTriplet } from '@/utils/tenantCustomizationCore';
+
 export type Stage = 'draft' | 'in_review' | 'public_feedback' | 'final_edit' | 'published';
 export type ProcessStatus = Stage | 'none' | 'wip' | 'sunset';
 
@@ -27,7 +30,7 @@ export interface StageDef {
 }
 
 export const STAGE_DEFS: readonly StageDef[] = [
-    {
+    reactive({
         stage: 'draft',
         order: 0,
         label: '0단계',
@@ -36,8 +39,8 @@ export const STAGE_DEFS: readonly StageDef[] = [
         vuetifyColor: 'grey',
         icon: 'mdi-pencil-outline',
         cls: 'stage-slate'
-    },
-    {
+    }),
+    reactive({
         stage: 'in_review',
         order: 1,
         label: '1단계',
@@ -46,8 +49,8 @@ export const STAGE_DEFS: readonly StageDef[] = [
         vuetifyColor: 'blue',
         icon: 'mdi-eye-outline',
         cls: 'stage-blue'
-    },
-    {
+    }),
+    reactive({
         stage: 'public_feedback',
         order: 2,
         label: '2단계',
@@ -56,8 +59,8 @@ export const STAGE_DEFS: readonly StageDef[] = [
         vuetifyColor: 'purple',
         icon: 'mdi-bullhorn-outline',
         cls: 'stage-violet'
-    },
-    {
+    }),
+    reactive({
         stage: 'final_edit',
         order: 3,
         label: '3단계',
@@ -66,8 +69,8 @@ export const STAGE_DEFS: readonly StageDef[] = [
         vuetifyColor: 'amber',
         icon: 'mdi-file-edit-outline',
         cls: 'stage-amber'
-    },
-    {
+    }),
+    reactive({
         stage: 'published',
         order: 4,
         label: '4단계',
@@ -76,8 +79,88 @@ export const STAGE_DEFS: readonly StageDef[] = [
         vuetifyColor: 'success',
         icon: 'mdi-check-circle',
         cls: 'stage-emerald'
-    }
+    })
 ];
+
+/** 기본 라벨·색 — 테넌트 오버라이드 해제 시 되돌릴 원본 (tenantCustomizationCore 와 같은 값) */
+const STAGE_BASE: Record<Stage, { label: string; shortLabel: string; color: string; vuetifyColor: string }> = {
+    draft: { label: '0단계', shortLabel: '초안', color: '#94a3b8', vuetifyColor: 'grey' },
+    in_review: { label: '1단계', shortLabel: '검토', color: '#3B82F6', vuetifyColor: 'blue' },
+    public_feedback: { label: '2단계', shortLabel: '공람', color: '#8B5CF6', vuetifyColor: 'purple' },
+    final_edit: { label: '3단계', shortLabel: '최종수정', color: '#F59E0B', vuetifyColor: 'amber' },
+    published: { label: '4단계', shortLabel: '배포완료', color: '#10B981', vuetifyColor: 'success' }
+};
+
+export type ExtraStatus = 'wip' | 'sunset';
+
+export interface ExtraStatusDef {
+    status: ExtraStatus;
+    label: string;
+    color: string;
+    icon: string;
+}
+
+/**
+ * 5단계 밖의 두 상태(차세대 기획 중 / 폐기 예정).
+ * 예전에는 ProgressBadge 와 체계도 CSS 에 각각 hex 가 박혀 있었다 — 여기 한 곳으로 모은다.
+ */
+export const EXTRA_STATUS_DEFS: Record<ExtraStatus, ExtraStatusDef> = {
+    wip: reactive({ status: 'wip', label: DEFAULT_STAGE_TERMS.wip.label, color: DEFAULT_STAGE_TERMS.wip.color, icon: 'mdi-pencil-ruler' }),
+    sunset: reactive({ status: 'sunset', label: DEFAULT_STAGE_TERMS.sunset.label, color: DEFAULT_STAGE_TERMS.sunset.color, icon: 'mdi-archive-arrow-down-outline' })
+};
+
+export function getExtraStatusDef(status: ExtraStatus): ExtraStatusDef {
+    return EXTRA_STATUS_DEFS[status];
+}
+
+export interface StageTermOverride {
+    label?: string;
+    shortLabel?: string;
+    color?: string;
+}
+
+/**
+ * 테넌트 용어 설정을 공유 단계 정의에 반영한다(reactive 라 템플릿은 즉시 갱신).
+ * 색을 바꾸면 vuetifyColor 도 hex 로 바꿔 v-chip/v-btn 이 같은 색을 쓰게 한다.
+ * 값이 기본과 같으면 원본으로 되돌린다(설정 초기화 대응).
+ */
+export function applyStageTermOverrides(terms: Partial<Record<Stage | ExtraStatus, StageTermOverride>>) {
+    for (const def of STAGE_DEFS) {
+        const base = STAGE_BASE[def.stage];
+        const next = terms?.[def.stage] || {};
+        def.label = next.label || base.label;
+        def.shortLabel = next.shortLabel || base.shortLabel;
+        const color = next.color || base.color;
+        def.color = color;
+        def.vuetifyColor = color.toLowerCase() === base.color.toLowerCase() ? base.vuetifyColor : color;
+    }
+    for (const status of ['wip', 'sunset'] as ExtraStatus[]) {
+        const def = EXTRA_STATUS_DEFS[status];
+        const next = terms?.[status] || {};
+        def.label = next.label || DEFAULT_STAGE_TERMS[status].label;
+        def.color = next.color || DEFAULT_STAGE_TERMS[status].color;
+    }
+    applyStageCssVariables();
+}
+
+/**
+ * 단계 색을 :root CSS 변수로 내보낸다.
+ * ExecutiveSummary(.stage-*)와 체계도(.sub-node--*)의 CSS 가 이 변수를 읽으므로
+ * TS hex / CSS 두 곳에 색을 따로 정의하지 않는다.
+ *   --pal-stage-<stage>      : hex
+ *   --pal-stage-<stage>-rgb  : "r, g, b" (rgba() 용)
+ */
+export function applyStageCssVariables() {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement.style;
+    const set = (name: string, color: string) => {
+        root.setProperty(`--pal-stage-${name}`, color);
+        root.setProperty(`--pal-stage-${name}-rgb`, hexToRgbTriplet(color));
+    };
+    for (const def of STAGE_DEFS) set(def.stage.replace(/_/g, '-'), def.color);
+    set('wip', EXTRA_STATUS_DEFS.wip.color);
+    set('sunset', EXTRA_STATUS_DEFS.sunset.color);
+}
 
 export function getStageDef(stage: Stage): StageDef {
     return STAGE_DEFS.find((s) => s.stage === stage)!;
@@ -191,24 +274,31 @@ export function isCallActivitySubModule(def: any): boolean {
  *
  * 템플릿은 definition.type === 'template' 로 마킹된다(모듈 마커와 동일 규약 —
  * type 컬럼은 duplicateLocalProcess 등이 'bpmn' 으로 덮어쓸 수 있어 definition 이 정본).
+ * 모듈(call-activity-sub)은 type 슬롯을 모듈 마커가 이미 쓰고 있으므로
+ * definition.isTemplate === true 불리언 플래그로 마킹한다 (두 마커 공존 가능).
  * 프로세스 목록의 템플릿 지정/필터와 새 프로세스 등록의 '템플릿' 생성 방식이 이 마커를 사용한다.
  */
 export function isTemplateDefinition(def: any): boolean {
     if (!def) return false;
     if (String(def.type ?? '').trim() === 'template') return true;
+    if (def.isTemplate === true) return true;
 
     const raw = def.definition;
     let type = '';
+    let flag = false;
     if (raw && typeof raw === 'object') {
         type = String(raw.type ?? '');
+        flag = raw.isTemplate === true;
     } else if (typeof raw === 'string') {
         try {
-            type = String(JSON.parse(raw)?.type ?? '');
+            const parsed = JSON.parse(raw);
+            type = String(parsed?.type ?? '');
+            flag = parsed?.isTemplate === true;
         } catch {
             return false;
         }
     }
-    return type === 'template';
+    return type === 'template' || flag;
 }
 
 /**

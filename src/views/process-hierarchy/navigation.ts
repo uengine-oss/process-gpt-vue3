@@ -98,19 +98,20 @@ export function navigateToProcessHierarchy(
 /**
  * 다이어그램 노드(Call Activity / Start·End 이벤트 / Collaboration)에 연결된 프로세스(definitionId)를
  * "새 창"으로 여는 표준 진입점.
- * - 좌측 트리(left)는 접고, 우측 속성 사이드바(right)는 열린 상태로 띄운다.
+ * - 좌측 트리(left)와 우측 속성 사이드바(right) 모두 열린 상태로 띄운다 (모든 패널 기본 열림 정책).
  */
 export function openLinkedProcessInNewTab(
     router: Router,
-    params: { id?: string; name?: string } = {}
+    params: { id?: string; name?: string; mode?: string } = {}
 ) {
     return navigateToProcessHierarchy(
         router,
         {
             id: params.id,
             name: params.name,
+            mode: params.mode,
             entry: PROCESS_HIERARCHY_ENTRY.ARCHITECTURE,
-            left: PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED,
+            left: PROCESS_HIERARCHY_PANEL_STATE.EXPANDED,
             right: PROCESS_HIERARCHY_PANEL_STATE.OPEN
         },
         { openInNewTab: true }
@@ -122,12 +123,9 @@ export function resolveProcessHierarchyEntryState(routeQuery: Record<string, unk
 
     const mode = pickString(routeQuery.mode, Object.values(PROCESS_HIERARCHY_MODE), PROCESS_HIERARCHY_MODE.VIEW);
 
-    const defaultLeft =
-        entry === PROCESS_HIERARCHY_ENTRY.ARCHITECTURE ||
-        entry === PROCESS_HIERARCHY_ENTRY.ANALYSIS ||
-        entry === PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD
-            ? PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED
-            : PROCESS_HIERARCHY_PANEL_STATE.EXPANDED;
+    // 모든 패널은 기본 "열림"으로 시작한다. 특정 진입(아키텍처/분석/리뷰보드)에서
+    // 트리를 접고 싶으면 링크가 ?left=collapsed 를 명시적으로 넘긴다.
+    const defaultLeft = PROCESS_HIERARCHY_PANEL_STATE.EXPANDED;
 
     const defaultRight = PROCESS_HIERARCHY_PANEL_STATE.OPEN;
 

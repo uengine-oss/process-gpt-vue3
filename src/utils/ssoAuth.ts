@@ -5,6 +5,7 @@
 
 import jwtDecode from 'jwt-decode';
 import { isAdminRole } from '@/utils/roles';
+import { homePath } from '@/utils/homePath';
 
 interface SsoUser {
     id: string;
@@ -79,7 +80,7 @@ const SSO_POST_LOGIN_REDIRECT_KEY = 'sso_post_login_redirect';
 const SSO_REAUTH_REASON_KEY = 'sso_reauth_reason';
 
 function getDefaultPostLoginPath(): string {
-    return '/process-architecture';
+    return homePath();
 }
 
 function getBasePathPrefix(): string {

@@ -49,7 +49,15 @@
         "passthroughGateway": "불필요한 통과형 게이트웨이: 들어오는 연결 1개, 나가는 연결 1개로 게이트웨이가 필요하지 않습니다.",
         "missingDefaultFlow": "ExclusiveGateway에 2개 이상의 나가는 흐름이 있지만 기본 흐름(default)이 설정되지 않았습니다.",
         "eventBasedGatewayInsufficient": "EventBasedGateway는 최소 2개의 나가는 연결이 필요합니다.",
-        "emptyLane": "레인에 플로우 노드(태스크, 이벤트, 게이트웨이)가 없습니다."
+        "emptyLane": "레인에 플로우 노드(태스크, 이벤트, 게이트웨이)가 없습니다.",
+        "passed": "BPMN 구조 검증 통과 — 발견된 문제가 없습니다.",
+        "mandatoryRules": "필수 Rule 체크리스트",
+        "mandatoryRulesHint": "Rule을 선택하면 해당 태스크로 이동하고 속성값을 함께 표시합니다.",
+        "ruleConfirmed": "확인",
+        "ruleFullText": "필수 Rule",
+        "ruleOverviewTitle": "필수 Rule 모아보기",
+        "ruleOverviewTooltip": "전체 태스크의 필수 Rule을 모아 확인합니다",
+        "ruleOverviewEmpty": "필수 Rule이 입력된 태스크가 없습니다. 속성패널의 \"필수 Rule(통제)\" 섹션에서 입력할 수 있습니다."
     },
     "save": {
         "noChanges": "변경 사항이 없습니다."
@@ -1243,7 +1251,68 @@
         "columnVersion": "버전",
         "exportCsv": "CSV 내보내기",
         "viewFullLog": "전체 로그 보기",
-        "noLogs": "로그가 없습니다."
+        "noLogs": "로그가 없습니다.",
+        "tabApproval": "승인 이력",
+        "tabAdmin": "관리자 감사 로그",
+        "tabLogin": "로그인 이력",
+        "tabDownload": "다운로드 이력",
+        "downloadAudit": {
+            "filterEmail": "이메일",
+            "filterEmailPlaceholder": "이메일 검색",
+            "filterBucket": "버킷",
+            "allBuckets": "전체 버킷",
+            "columnTime": "시각",
+            "columnEmail": "이메일",
+            "columnFile": "파일명",
+            "columnPath": "경로",
+            "columnBucket": "버킷",
+            "columnAction": "액션",
+            "columnIp": "IP",
+            "actionDownload": "다운로드",
+            "actionSignedUrl": "주소 발급",
+            "actionView": "열람",
+            "empty": "다운로드 이력이 없습니다.",
+            "loadError": "다운로드 이력을 불러오지 못했습니다."
+        },
+        "loginAudit": {
+            "filterEmail": "이메일",
+            "filterEmailPlaceholder": "이메일 검색",
+            "filterAction": "액션",
+            "filterSuccess": "성공 여부",
+            "allActions": "전체 액션",
+            "allResults": "전체",
+            "resultSuccess": "성공",
+            "resultFailure": "실패",
+            "columnTime": "시각",
+            "columnEmail": "이메일",
+            "columnAction": "액션",
+            "columnResult": "성공 여부",
+            "columnError": "실패 사유",
+            "columnIp": "IP",
+            "columnUserAgent": "접속 환경",
+            "columnProvider": "provider/method",
+            "actionLogin": "로그인",
+            "actionLoginFailed": "로그인 실패",
+            "actionLogout": "로그아웃",
+            "actionLoginOauth": "SSO 로그인",
+            "empty": "로그인 이력이 없습니다.",
+            "lockout": {
+                "title": "잠금 계정",
+                "empty": "현재 잠긴 계정이 없습니다.",
+                "refresh": "새로고침",
+                "columnAccount": "계정",
+                "columnFailedCount": "실패 횟수",
+                "columnLockedAt": "잠금 시각",
+                "columnLockedUntil": "해제 예정",
+                "remaining": "(약 {minutes}분 남음)",
+                "unlock": "잠금 해제",
+                "cancel": "취소",
+                "confirmTitle": "잠금을 해제할까요?",
+                "confirmDesc": "실패 횟수를 초기화하고 즉시 다시 로그인할 수 있게 합니다. 해제 기록은 관리자 감사 로그에 남습니다.",
+                "loadError": "잠금 계정을 불러오지 못했습니다.",
+                "unlockError": "잠금 해제에 실패했습니다."
+            }
+        }
     },
     "businessId": {
         "label": "시점 전환",
@@ -1742,7 +1811,7 @@
         "enterName": "이름을 입력하세요",
         "enterConfirmPassword": "비밀번호 확인을 입력하세요",
         "passwordMismatch": "비밀번호가 일치하지 않습니다",
-        "passwordRequirement": "비밀번호는 8자 이상, 영문·숫자·특수문자를 포함해야 합니다.",
+        "passwordRequirement": "비밀번호는 10자 이상이며 영문 대문자·소문자·숫자·특수문자를 각각 1자 이상 포함해야 합니다.",
         "signUp": "회원가입",
         "checkEmailMessage": "회원가입이 완료되었습니다. 이메일 함을 확인하여 계정을 활성화하세요.",
         "registrationFailed": "회원가입 과정에서 오류가 발생했습니다. 입력 정보를 확인 후 다시 시도해주세요."
@@ -1794,6 +1863,7 @@
     },
     "ExtraBox": {
         "logOut": "로그아웃",
+        "accountSettings": "계정 설정",
         "myAccount": "설정"
     },
     "BpmnPropertyPanel": {
@@ -1948,7 +2018,23 @@
         "eventKey": "이벤트 키"
     },
     "NotificationDD": {
-        "notification": "알림"
+        "notification": "알림",
+        "viewAll": "전체 알림 보기",
+        "typeSecurity": "보안",
+        "typeSurvey": "설문",
+        "typeGeneral": "일반"
+    },
+    "NotificationsPage": {
+        "title": "알림",
+        "unread": "안 읽음",
+        "all": "전체",
+        "markAllRead": "모두 읽음",
+        "refresh": "새로고침",
+        "empty": "알림이 없습니다.",
+        "emptyUnread": "읽지 않은 알림이 없습니다.",
+        "typeSecurity": "보안",
+        "typeSurvey": "설문",
+        "typeGeneral": "일반"
     },
     "Customizer": {
         "settings": "테마 설정",
@@ -3049,11 +3135,54 @@
         "passwordUpdated": "비밀번호가 변경되었습니다.",
         "signupPendingApproval": "회원가입 요청이 접수되었습니다. 관리자 승인 후 로그인할 수 있습니다."
     },
+    "passwordPolicy": {
+        "required": "비밀번호를 입력하세요",
+        "mismatch": "비밀번호가 일치하지 않습니다",
+        "hint": "비밀번호는 {min}자 이상이며 영문 대문자·소문자·숫자·특수문자를 각각 1자 이상 포함해야 합니다.",
+        "unmet": "비밀번호 조건이 부족합니다: {items}",
+        "ruleMinLength": "{min}자 이상",
+        "ruleLowercase": "영문 소문자 1자 이상",
+        "ruleUppercase": "영문 대문자 1자 이상",
+        "ruleDigit": "숫자 1자 이상",
+        "ruleSpecial": "특수문자 1자 이상",
+        "serverRejected": "비밀번호가 보안 정책에 맞지 않습니다. {min}자 이상이며 영문 대문자·소문자·숫자·특수문자를 각각 1자 이상 포함해야 합니다.",
+        "serverLeaked": "유출 이력이 있는 비밀번호는 사용할 수 없습니다. 다른 비밀번호를 입력해주세요.",
+        "serverSameAsOld": "새 비밀번호는 이전 비밀번호와 다르게 설정해주세요."
+    },
+    "mfa": {
+        "sectionTitle": "2단계 인증 (OTP)",
+        "sectionDescription": "인증 앱의 6자리 코드를 로그인 시 한 번 더 확인합니다.",
+        "notEnrolled": "아직 2단계 인증을 사용하지 않습니다. 사용을 켜면 로그인할 때마다 인증 앱의 코드를 입력하게 됩니다.",
+        "enable": "2단계 인증 사용",
+        "disable": "해제",
+        "cancel": "취소",
+        "confirmEnroll": "확인",
+        "scanQr": "인증 앱(Google Authenticator, Authy 등)으로 아래 QR 코드를 스캔하세요.",
+        "manualEntry": "QR 코드를 쓸 수 없다면 아래 키를 인증 앱에 직접 입력하세요.",
+        "enterCode": "인증 앱에 표시된 6자리 코드를 입력하세요",
+        "enterCodeToDisable": "해제하려면 현재 인증 앱의 6자리 코드를 입력하세요",
+        "codeLength": "{length}자리 숫자를 입력하세요.",
+        "verifyButton": "인증하기",
+        "verifyFailed": "코드가 올바르지 않거나 만료되었습니다. 다시 입력해주세요.",
+        "noFactor": "등록된 인증 수단이 없습니다. 계정 설정에서 2단계 인증을 먼저 등록하세요.",
+        "enrollSuccess": "2단계 인증이 설정되었습니다.",
+        "unenrollSuccess": "2단계 인증이 해제되었습니다.",
+        "registeredAt": "등록: {date}",
+        "secretCopied": "키를 복사했습니다.",
+        "secretCopyFailed": "복사에 실패했습니다. 키를 직접 선택해 복사하세요.",
+        "disableTitle": "2단계 인증 해제",
+        "disableWarning": "해제하면 로그인할 때 비밀번호만으로 접속할 수 있게 됩니다.",
+        "disableBlockedByPolicy": "이 조직은 2단계 인증을 필수로 설정했습니다. 해제하면 다음 로그인 때 다시 등록해야 합니다.",
+        "requiredByTenant": "이 조직은 2단계 인증이 필수입니다. 계속하려면 아래에서 등록을 완료하세요.",
+        "policyRequired": "이 조직은 2단계 인증을 필수로 운영합니다.",
+        "challengeTitle": "2단계 인증",
+        "challengeSubtitle": "인증 앱에 표시된 6자리 코드를 입력하세요.",
+        "lostDevice": "인증 기기를 쓸 수 없나요?",
+        "backToLogin": "로그인 화면으로"
+    },
     "StorageBaseSupabase": {
         "emailNotConfirmed": "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요.",
-        "wrongPassword": "아이디 또는 비밀번호가 잘못되었습니다. 로그인 정보를 확인해주시기 바랍니다.",
-        "wrongId": "아이디 또는 비밀번호가 잘못되었습니다. 로그인 정보를 확인해주시기 바랍니다.",
-        "notRegisteredEmail": "가입된 이메일주소가 아닙니다.",
+        "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않습니다.",
         "loginRequired": "로그인이 필요합니다.",
         "unRegisteredTenant": "가입되지 않은 테넌트입니다.",
         "signupPendingApproval": "관리자 승인 대기 중인 계정입니다. 승인 후 로그인해주세요.",
@@ -4327,7 +4456,7 @@
         "propertySchemas": "속성 스키마",
         "schemasDescription": "적용 대상별로 입력 가능한 속성들을 정의하세요.",
         "catalog": "카탈로그",
-        "catalogDescription": "저장된 Task 템플릿 목록입니다. 드래그하여 BPMN 다이어그램에 추가할 수 있습니다.",
+        "catalogDescription": "자주 쓰는 Task를 템플릿으로 등록해 두면, 순서도의 요소 변경(스패너) 메뉴와 속성패널에서 불러와 적용할 수 있습니다.",
         "catalogSection": "Task 카탈로그",
         "visible": "표시",
         "hidden": "숨김",
@@ -4369,6 +4498,10 @@
         "noCatalogItems": "카탈로그에 등록된 Task가 없습니다.",
         "saveToCatalog": "카탈로그에 저장",
         "loadFromCatalog": "카탈로그에서 불러오기",
+        "apply": "적용",
+        "applyHint": "적용하면 Task 유형·이름·속성이 선택한 카탈로그 값으로 바뀝니다.",
+        "panelPreviewHint": "아래는 순서도 속성패널(Task 탭)과 같은 구성입니다. 유형을 바꾸면 표시 항목이 함께 바뀝니다.",
+        "setInDiagram": "순서도에서 설정",
         "search": "검색",
         "filterByTaskType": "Task 종류로 필터",
         "filterBySystem": "시스템으로 필터",
@@ -5090,6 +5223,53 @@
             "maintenanceActivatedBy": "점검 설정자",
             "maintenanceActivatedAt": "점검 시작 시각"
         },
+        "security": {
+            "title": "보안 설정",
+            "pageDescription": "테넌트 전체에 적용되는 보안 정책입니다. 변경 내역은 관리자 감사 로그에 남습니다.",
+            "usingDefault": "기본값 사용 중",
+            "save": "저장",
+            "saved": "저장했습니다.",
+            "saveFailed": "저장에 실패했습니다.",
+            "valueRequired": "값을 입력하세요.",
+            "valueInteger": "정수로 입력하세요.",
+            "valueRange": "{min} ~ {max} 사이로 입력하세요.",
+            "rangeHint": "{min} ~ {max} 사이",
+            "minuteSuffix": "분",
+            "secondSuffix": "초",
+            "countSuffix": "회",
+            "daySuffix": "일",
+            "sessionTitle": "세션 타임아웃",
+            "sessionDescription": "일정 시간 조작이 없으면 경고 후 자동으로 로그아웃합니다.",
+            "sessionIdleMinutes": "유휴 허용 시간",
+            "sessionIdleHint": "0을 입력하면 유휴 타임아웃을 사용하지 않습니다.",
+            "sessionWarningSeconds": "경고 후 유예",
+            "sessionNote": "변경한 값은 사용자가 화면을 새로 열 때(새로고침·재로그인) 적용됩니다.",
+            "sessionDisabledNote": "유휴 허용 시간이 0이라 유휴 타임아웃이 비활성 상태입니다. 자동 로그아웃이 동작하지 않습니다.",
+            "lockoutTitle": "로그인 잠금",
+            "lockoutDescription": "짧은 기간에 비밀번호를 반복해서 틀리면 계정을 일정 시간 잠급니다.",
+            "lockoutMaxAttempts": "잠금까지 실패 횟수",
+            "lockoutAttemptsHint": "0을 입력하면 잠금을 사용하지 않습니다.",
+            "lockoutWindowMinutes": "실패 집계 기간",
+            "lockoutWindowHint": "이 기간 안의 실패만 셉니다.",
+            "lockoutDurationMinutes": "잠금 유지 시간",
+            "lockoutDurationHint": "잠긴 동안은 비밀번호가 맞아도 거절합니다.",
+            "lockoutNote": "잠금 판정은 데이터베이스 훅이 수행하며, 변경한 값은 다음 로그인 시도부터 적용됩니다. 잠긴 계정 해제는 감사 로그 화면의 '로그인 이력' 탭에서 할 수 있습니다.",
+            "lockoutDisabledNote": "실패 횟수가 0이라 로그인 잠금이 비활성 상태입니다. 비밀번호 반복 시도를 막지 않습니다.",
+            "mfaTitle": "다단계 인증(MFA)",
+            "mfaDescription": "필수로 설정하면 MFA를 등록하지 않은 사용자는 계정 설정 화면으로 이동해 등록을 마쳐야 합니다.",
+            "mfaRequire": "MFA 필수",
+            "mfaSsoNote": "SSO로 로그인하는 사용자는 IdP의 MFA 정책을 따르므로 이 설정에서 제외됩니다. 설정 조회에 실패하면 사용자가 잠기지 않도록 필수가 아닌 것으로 처리합니다.",
+            "downloadTitle": "다운로드 이상 탐지",
+            "downloadDescription": "하루 다운로드 건수가 임계치를 넘은 사용자가 있으면 같은 테넌트 관리자에게 알림을 보냅니다.",
+            "downloadThreshold": "일 임계치",
+            "downloadNote": "탐지는 매시 예약 작업이 수행하며, 같은 사용자·같은 날짜에 대해서는 하루 한 번만 알립니다.",
+            "retentionTitle": "감사 로그 보관 정책",
+            "retentionDescription": "관리자 감사 로그와 로그인 이력을 원본 테이블에 보관하는 기간입니다. 기간이 지난 기록은 매일 새벽 보관용 테이블로 옮겨지며, 삭제되지 않습니다.",
+            "retentionDays": "보관 일수",
+            "retentionCutoff": "이관 기준일",
+            "retentionCutoffSuffix": "이전 기록",
+            "retentionNote": "실제 이관은 매일 03:00 예약 작업이 수행합니다. 설정을 바꿔도 즉시 반영되지는 않습니다."
+        },
         "kpiTarget": {},
         "auditTrail": {
             "title": "감사 로그",
@@ -5261,6 +5441,69 @@
             "cancel": "취소",
             "noTabs": "등록된 대시보드 탭이 없습니다.",
             "emptyHint": "설정에서 Grafana URL을 등록하면 이 탭에 대시보드가 표시됩니다."
+        }
+    },
+    "sessionTimeout": {
+        "title": "곧 로그아웃됩니다",
+        "message": "{minutes}분 동안 사용하지 않아 보안을 위해 자동으로 로그아웃됩니다.",
+        "countdown": "{seconds}초 뒤 로그아웃됩니다.",
+        "extend": "로그인 유지",
+        "logoutNow": "지금 로그아웃"
+    },
+    "processVisibility": {
+        "title": "공개 범위",
+        "all": "전체 공개",
+        "org": "조직 한정",
+        "private": "비공개",
+        "allHint": "같은 테넌트의 모든 사용자가 이 프로세스를 조회할 수 있습니다.",
+        "orgHint": "선택한 조직(및 하위 부서)에 속한 사용자와 관리자만 조회할 수 있습니다.",
+        "privateHint": "담당자 본인과 관리자만 조회할 수 있습니다.",
+        "orgLabel": "공개 조직",
+        "orgPlaceholder": "조직도에서 부서를 선택하세요",
+        "orgNoData": "검색 결과가 없습니다",
+        "orgEmptyWarning": "공개 조직을 선택하지 않으면 관리자만 이 프로세스를 조회할 수 있습니다.",
+        "privateNoOwnerWarning": "담당자가 지정되지 않아 관리자만 이 프로세스를 조회할 수 있습니다.",
+        "accessDeniedTitle": "이 프로세스를 볼 수 있는 권한이 없습니다",
+        "accessDeniedDesc": "프로세스가 없거나 공개 범위 밖이라 열람할 수 없습니다. 담당자 또는 관리자에게 권한을 요청하세요.",
+        "accessDeniedShort": "프로세스가 없거나 볼 수 있는 권한이 없습니다.",
+        "backToArchitecture": "체계도로 돌아가기"
+    },
+    "terminology": {
+        "hierarchy": {
+            "domain": "도메인",
+            "mega": "메가프로세스",
+            "major": "메이저프로세스",
+            "sub": "서브프로세스"
+        },
+        "stages": {
+            "draft": {
+                "label": "0단계",
+                "shortLabel": "초안"
+            },
+            "in_review": {
+                "label": "1단계",
+                "shortLabel": "검토"
+            },
+            "public_feedback": {
+                "label": "2단계",
+                "shortLabel": "공람"
+            },
+            "final_edit": {
+                "label": "3단계",
+                "shortLabel": "최종수정"
+            },
+            "published": {
+                "label": "4단계",
+                "shortLabel": "배포완료"
+            },
+            "wip": {
+                "label": "차세대 기획 중",
+                "shortLabel": "차세대 기획 중"
+            },
+            "sunset": {
+                "label": "폐기 예정",
+                "shortLabel": "폐기 예정"
+            }
         }
     },
         "mergeRequestBoard": {

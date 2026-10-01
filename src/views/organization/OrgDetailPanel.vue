@@ -446,6 +446,7 @@ import {
     isDuplicateTeamName,
     pathLabel
 } from './orgChartModel';
+import { maskEmail } from '@/utils/piiMasking';
 
 const props = defineProps({
     root: { type: Object, default: null },
@@ -739,7 +740,13 @@ function memberName(member) {
 }
 function memberEmail(member) {
     const user = userById.value.get(member.id);
-    return user?.email || member.data?.email || '';
+    // 사용자 목록(props.users)은 이미 마스킹 정책이 반영된 값이다.
+    if (user?.email) return user.email;
+    // 조직도 JSON 에 복사돼 있는 이메일은 DB 마스킹 뷰를 거치지 않는다.
+    // 원본 목록을 받지 못하는(편집 권한 없는) 사용자에게는 여기서 가린다.
+    const stored = member.data?.email || '';
+    if (!stored) return '';
+    return props.editable ? stored : maskEmail(stored);
 }
 function memberProfile(member) {
     const user = userById.value.get(member.id);

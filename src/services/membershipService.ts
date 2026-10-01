@@ -1,3 +1,5 @@
+import { writeActivityLog } from '@/services/activityAuditLog';
+
 export type RequestStatus = 'pending' | 'approved' | 'rejected';
 export type RequestKind = 'signup' | 'role';
 export interface MembershipRequest {
@@ -27,7 +29,13 @@ export async function listMembershipRequests(kind: RequestKind, status?: Request
     if (authError) throw authError;
     const user = sessionData.session?.user;
     if (!user) throw new Error('로그인이 필요합니다.');
-    let query = client().from(kind === 'signup' ? 'signup_requests' : 'admin_requests').select('*')
+    // 목록은 화면 표시 전용이고, 승인/반려는 request id(uuid)로 처리한다.
+    // 그래서 이메일 마스킹 뷰를 읽는다 — 승인 권한자(admin)와 본인 신청에는
+    // 뷰가 원본을 그대로 돌려주므로 승인 화면 동작은 그대로다.
+    // (supabase/migrations/20260911_pii_masking.sql)
+    const table = kind === 'signup' ? 'signup_requests' : 'admin_requests';
+    const source = (window as any).$pal ? `${table}_masked` : table;
+    let query = client().from(source).select('*')
         .eq('tenant_id', user.app_metadata.tenant_id).order('created_at', { ascending: false });
     if (status) query = query.eq('status', status);
     if (mine) query = query.eq('user_id', user.id);
@@ -38,12 +46,28 @@ export async function listMembershipRequests(kind: RequestKind, status?: Request
 export async function requestRole(requestedRole: string, reason: string) {
     const { error } = await client().rpc('request_membership_role', { requested_role: requestedRole, reason });
     if (error) throw error;
+    // 활동 로그 (PAL 전용, 실패 무시) — RPC가 request id를 돌려주지 않아 신청자 user id를 target 으로 쓴다
+    const { data: sessionData } = await client().auth.getSession();
+    writeActivityLog({
+        action: 'role_request_submit',
+        target_type: 'role_request',
+        target_id: sessionData?.session?.user?.id,
+        target_name: requestedRole,
+        after_value: { requested_role: requestedRole, reason }
+    });
 }
 export async function reviewRequest(kind: RequestKind, id: string, decision: RequestStatus, reason = '', signupRole = 'viewer') {
     const { error } = await client().rpc('review_membership_request', {
         request_kind: kind, request_id: id, decision, review_reason: reason, signup_role: signupRole
     });
     if (error) throw error;
+    // 활동 로그 (PAL 전용, 실패 무시)
+    writeActivityLog({
+        action: decision === 'approved' ? 'role_request_approve' : 'role_request_reject',
+        target_type: 'role_request',
+        target_id: id,
+        after_value: { request_kind: kind, decision, review_reason: reason, signup_role: signupRole }
+    });
 }
 export async function getRequestCounts() {
     const { data, error } = await client().rpc('membership_request_counts');

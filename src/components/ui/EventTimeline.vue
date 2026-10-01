@@ -582,6 +582,8 @@
 import { marked } from 'marked';
 import { parseFileDocument } from '@/utils/upstageParser';
 import BackendFactory from '@/components/api/BackendFactory';
+// 에이전트 산출물 주소가 우리 저장소를 가리키면 비공개라 서명해야 열린다.
+import { resolveStorageUrl } from '@/shared/storageUrl';
 
 export default {
     props: {
@@ -1302,8 +1304,11 @@ export default {
                     return;
                 }
 
+                // 우리 저장소 주소면 서명해서 받는다(비공개 버킷). 바깥 주소는 그대로.
+                const target = (await resolveStorageUrl(fileData.url)) || fileData.url;
+
                 // URL에서 파일 가져오기
-                const response = await fetch(fileData.url);
+                const response = await fetch(target);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -1326,10 +1331,11 @@ export default {
                 alert('파일 다운로드에 실패했습니다.');
             }
         },
-        openFileLink(url) {
+        async openFileLink(url) {
             if (!url) return;
+            const target = (await resolveStorageUrl(url)) || url;
             const link = document.createElement('a');
-            link.href = url;
+            link.href = target;
             link.target = '_blank';
             link.rel = 'noopener noreferrer';
             link.download = '';

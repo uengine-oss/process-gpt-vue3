@@ -39,6 +39,13 @@ export interface BuiltinPanelProperty {
     description?: string;
     /** 최초 스키마 생성 시 함께 저장할 위젯별 설정 */
     config?: Record<string, unknown>;
+    /**
+     * 레지스트리에 나중에 추가된 항목: 패널 행을 이미 가진 기존 테넌트에도
+     * (키가 DB에 전혀 없을 때) 행을 생성한다 — 스튜디오에서 노출/순서를
+     * 제어하려면 행이 있어야 하기 때문. 영구 삭제 시 다음 동기화에서 재생성되므로
+     * 숨기려면 삭제 대신 노출 해제를 사용한다.
+     */
+    autoSeed?: boolean;
 }
 
 const PANEL = 'ProcessHierarchyProperties.vue';
@@ -58,6 +65,7 @@ export const BUILTIN_PANEL_PROPERTIES: BuiltinPanelProperty[] = [
     { taskType: 'process', key: 'total_duration', labelKo: '프로세스 전체 소요시간', propertyType: 'boolean', widget: 'section', tab: 'process', panel: PANEL, displayOrder: 90, description: '읽기 전용 집계 섹션' },
     { taskType: 'process', key: 'total_cost', labelKo: '프로세스 전체 비용', propertyType: 'boolean', widget: 'section', tab: 'process', panel: PANEL, displayOrder: 100, description: '읽기 전용 집계 섹션' },
     { taskType: 'process', key: 'task_count', labelKo: 'Task 개수', propertyType: 'boolean', widget: 'section', tab: 'process', panel: PANEL, displayOrder: 110, description: '읽기 전용 집계 섹션' },
+    { taskType: 'process', key: 'glossary', labelKo: '용어 정의', propertyType: 'boolean', widget: 'section', tab: 'process', panel: PANEL, displayOrder: 55, autoSeed: true, description: '프로세스에서 사용하는 용어 정의 사전 (PAL 전용). 통합 용어 사전과 연동' },
 
     // ============================================================
     // PI Flag 탭 (프로세스 수준, 소유자에게만 표시)
@@ -89,6 +97,7 @@ export const BUILTIN_PANEL_PROPERTIES: BuiltinPanelProperty[] = [
     { taskType: 'task', key: 'system_mapping', labelKo: '시스템 매핑', propertyType: 'select', widget: 'autocomplete', binding: 'taskSystemSingle', tab: 'task', panel: PANEL, displayOrder: 120 },
     { taskType: 'task', key: 'related_project_mapping', labelKo: '연관 과제 매핑', propertyType: 'multiselect', widget: 'autocomplete', binding: 'taskForm.relatedProjects', tab: 'task', panel: PANEL, displayOrder: 130, description: '단일/동시(멀티) 매핑 모드 포함' },
     { taskType: 'task', key: 'pi_flag', labelKo: 'PI Flag', propertyType: 'boolean', widget: 'section', tab: 'task', panel: PANEL, displayOrder: 140, description: '요소별 PI Flag 코멘트 작성·반영 (소유자에게만 표시)' },
+    { taskType: 'task', key: 'task_catalog', labelKo: 'Task 카탈로그', propertyType: 'boolean', widget: 'section', tab: 'task', panel: PANEL, displayOrder: 30, autoSeed: true, description: '카탈로그 적용·등록 도구 섹션 (PAL 전용). 표시 순서·노출을 여기서 제어' },
 
     // ============================================================
     // 특정 요소 전용 섹션

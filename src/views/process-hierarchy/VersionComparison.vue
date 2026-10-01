@@ -70,6 +70,7 @@
                         :procMap="procMap"
                         :metricsMap="metricsMap"
                         :definitionList="definitionList"
+                        :visibleProcessIds="visibleProcessIdSet"
                         :selectedId="selectedProcessId"
                         @select="handleSelectProcess"
                         :hideHeader="true"
@@ -300,6 +301,8 @@ export default {
             procMap: null,
             metricsMap: null,
             definitionList: [],
+            // proc_def 목록(= RLS 로 걸러진 접근 가능 집합)을 실제로 받아왔는지 — 실패 시 공개 범위 필터 해제
+            definitionListLoaded: false,
 
             // Selected process
             selectedProcessId: '',
@@ -337,6 +340,24 @@ export default {
         };
     },
     computed: {
+        /**
+         * 공개 범위(proc_def.visibility) 필터용 id 집합 — ProcessHierarchy.vue 와 같은 규약.
+         * 트리는 configuration.proc_map 에서 구조를 받아 proc_def RLS 를 거치지 않으므로,
+         * RLS 하에서 실제 조회된 definitionList 에 없는 id 는 트리에서 제외한다.
+         * null 이면 필터링하지 않는다(비 PAL / 목록 로드 실패 시 fail-open).
+         */
+        visibleProcessIdSet() {
+            if (!window.$pal) return null;
+            if (!this.definitionListLoaded) return null;
+            const ids = new Set();
+            (this.definitionList || []).forEach((def) => {
+                const id = String(def?.id || def?.file_name || '').trim();
+                if (!id) return;
+                ids.add(id);
+                ids.add(id.toLowerCase());
+            });
+            return ids;
+        },
         isAdmin() {
             const role = localStorage.getItem('role');
             return role === 'superAdmin' || authClaimsState.isAdmin;
@@ -486,6 +507,7 @@ export default {
                     }
                 });
                 this.definitionList = defs;
+                this.definitionListLoaded = true;
             } catch (e) {
                 console.error('Failed to load initial data:', e);
             } finally {

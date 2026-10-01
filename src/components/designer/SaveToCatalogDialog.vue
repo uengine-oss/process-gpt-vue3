@@ -90,6 +90,7 @@
 <script>
 import { defineComponent, ref, computed, watch } from 'vue';
 import { useTaskCatalogStore } from '@/stores/taskCatalog';
+import { getAnnualWorkingHours, getCycleFactor } from '@/services/tenantCustomizationService';
 
 export default defineComponent({
     name: 'SaveToCatalogDialog',
@@ -207,7 +208,7 @@ export default defineComponent({
                 const hours = fteData.value.hoursPerTime || 0;
                 const annual = annualRepeatCount.value;
                 const people = fteData.value.peopleCount || 0;
-                const fte = (hours * annual * people) / 2080;
+                const fte = (hours * annual * people) / getAnnualWorkingHours();
                 formData.value.fte = parseFloat(fte.toFixed(3));
             }
         };

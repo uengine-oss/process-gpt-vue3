@@ -1,3 +1,4 @@
+import { getHierarchyLabel } from '@/services/tenantCustomizationService';
 import { getMajorBusinessDomain } from '@/views/process-architecture/processClassification';
 import { toSafeText } from '@/utils/safeText';
 
@@ -216,10 +217,11 @@ export function findMatchingDataFreezeItem(
 }
 
 export function formatDataFreezeScopeLabel(scope: DataFreezeScope): string {
+    // 계층 레벨명은 테넌트 용어 설정(terminology.hierarchy)을 따른다
     const scopeLabelMap: Record<DataFreezeScope, string> = {
-        domain: '도메인',
-        mega_process: 'Mega 프로세스',
-        major_process: 'Major 프로세스',
+        domain: getHierarchyLabel('domain'),
+        mega_process: getHierarchyLabel('mega'),
+        major_process: getHierarchyLabel('major'),
         subprocess: '프로세스'
     };
 

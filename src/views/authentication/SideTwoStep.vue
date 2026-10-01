@@ -1,7 +1,20 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue';
 import Logo from '@/layouts/full/logo/Logo.vue';
 /*form component*/
 import TwoStepForm from '@/components/auth/TwoStepForm.vue';
+
+// 어느 계정으로 2단계 인증 중인지 보여준다 (기존 템플릿의 마스킹된 번호 자리).
+const accountEmail = ref('');
+
+onMounted(async () => {
+    try {
+        const { data } = (await (window as any).$supabase?.auth?.getUser?.()) || {};
+        accountEmail.value = data?.user?.email || localStorage.getItem('email') || '';
+    } catch (_e) {
+        accountEmail.value = localStorage.getItem('email') || '';
+    }
+});
 </script>
 
 <template>
@@ -24,11 +37,11 @@ import TwoStepForm from '@/components/auth/TwoStepForm.vue';
             </v-col>
             <v-col cols="12" lg="4" xl="3" class="d-flex align-center justify-center bg-surface">
                 <div class="pa-sm-6 pa-4 w-100">
-                    <h3 class="text-h4 font-weight-semibold">Two Step Verification</h3>
+                    <h3 class="text-h4 font-weight-semibold">{{ $t('mfa.challengeTitle') }}</h3>
                     <p class="text-subtitle-1 text-grey100 mt-2 text-13">
-                        We sent a verification code to your mobile. Enter the code from the mobile in the field below.
+                        {{ $t('mfa.challengeSubtitle') }}
                     </p>
-                    <h6 class="text-subtitle-1 mt-3 font-weight-medium">******1234</h6>
+                    <h6 v-if="accountEmail" class="text-subtitle-1 mt-3 font-weight-medium">{{ accountEmail }}</h6>
                     <!---Form---->
                     <TwoStepForm />
                     <!------->

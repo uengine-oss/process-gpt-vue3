@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import axios from 'axios';
+import {
+    createPasswordRules,
+    getPasswordPolicyHint,
+    getPasswordViolationMessage,
+    isPasswordValid,
+    mapPasswordServerError
+} from '@/utils/passwordPolicy';
 
 const username = ref(localStorage.getItem('userName') || localStorage.getItem('email')?.split('@')[0] || '');
 const password = ref('');
@@ -13,10 +20,8 @@ const usernameRules = ref([
     (v: string) => /^[a-zA-Z0-9가-힣_]+$/.test(v) || '사용자명은 영문, 한글, 숫자, 언더스코어만 사용 가능합니다'
 ]);
 
-const passwordRules = ref([
-    (v: string) => !!v || '비밀번호는 필수입니다',
-    (v: string) => v.length >= 8 || '비밀번호는 최소 8자 이상이어야 합니다'
-]);
+const passwordRules = ref(createPasswordRules());
+const passwordPolicyHint = getPasswordPolicyHint();
 
 const confirmPasswordRules = ref([
     (v: string) => !!v || '비밀번호 확인은 필수입니다',
@@ -37,6 +42,12 @@ async function setInitialSettings() {
         return;
     }
 
+    // 서버(GoTrue) 비밀번호 정책과 동일한 규칙을 클라이언트에서 먼저 확인한다.
+    if (!isPasswordValid(password.value)) {
+        alert(getPasswordViolationMessage(password.value));
+        return;
+    }
+
     isLoading.value = true;
 
     try {
@@ -51,9 +62,11 @@ async function setInitialSettings() {
         // 성공 처리
         alert('초기 설정이 성공적으로 완료되었습니다. 로그인 후 이용 가능합니다.');
         window.location.href = '/auth/login';
-    } catch (error) {
+    } catch (error: any) {
         console.error('초기 설정 실패:', error);
-        alert('초기 설정에 실패했습니다. 다시 시도해주세요.');
+        // 서버(GoTrue)가 비밀번호 정책 위반으로 거부한 경우 이해 가능한 문구로 안내한다.
+        const rawMessage = error?.response?.data?.message || error?.response?.data?.detail || error?.message;
+        alert(mapPasswordServerError(rawMessage) || '초기 설정에 실패했습니다. 다시 시도해주세요.');
     } finally {
         isLoading.value = false;
     }
@@ -79,6 +92,8 @@ async function setInitialSettings() {
                 required
                 type="password"
                 placeholder="새 비밀번호를 입력하세요"
+                :hint="passwordPolicyHint"
+                persistent-hint
             ></VTextField>
 
             <v-label class="text-subtitle-1 font-weight-medium pb-2 text-lightText mt-4">비밀번호 확인</v-label>

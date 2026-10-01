@@ -46,6 +46,13 @@
             </v-row>
         </div>
         <RouterView v-else></RouterView>
+
+        <!--
+            유휴 세션 타임아웃 경고 (docs/security.md 2-1, 항목 12).
+            로그인 여부·테넌트 설정 판단은 컴포저블이 하므로 여기서는 항상 얹어 둔다 —
+            로그인 직후에 다시 마운트되지 않아도 타이머가 붙도록.
+        -->
+        <IdleTimeoutDialog />
     </div>
 </template>
 
@@ -55,15 +62,17 @@ import { RouterView } from 'vue-router';
 import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import partialParse from 'partial-json-parser';
-import { getMainDomainUrl } from '@/utils/domainUtils';
+import { getMainDomainUrl, isIpAddressHost } from '@/utils/domainUtils';
 import { setCachedJwtTenantId } from '@/utils/tenant';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { browserActivitySource, startPresence } from '@/shared/presence/index.js';
 import { deviceId, deviceType } from '@/shared/deviceIdentity/index.js';
+import IdleTimeoutDialog from '@/components/auth/IdleTimeoutDialog.vue';
 
 export default {
     components: {
-        RouterView
+        RouterView,
+        IdleTimeoutDialog
     },
     data: () => ({
         show: false,
@@ -235,7 +244,9 @@ export default {
                         // anon 세션이면 RLS(tenants_select_policy: TO authenticated)에 막혀
                         // 실제로 존재하는 테넌트도 "없음"으로 오판된다. 로그인으로만 보낸다.
                         const localHost = window.location.hostname;
-                        if (localHost === 'localhost' || localHost === '127.0.0.1' || localHost.startsWith('192.168')) {
+                        // IP 직접 접속(데모 서버)도 메인 도메인이 같은 origin 으로 되돌아와
+                        // alert 무한 루프가 되므로 로컬 개발 호스트와 동일하게 처리한다.
+                        if (localHost === 'localhost' || localHost === '127.0.0.1' || localHost.startsWith('192.168') || isIpAddressHost(localHost)) {
                             if (!window.location.pathname.startsWith('/auth/')) {
                                 this.$router.push('/auth/login');
                             }

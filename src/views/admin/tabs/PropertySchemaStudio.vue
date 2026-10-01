@@ -22,7 +22,10 @@
                 <select v-model="selectedTarget" class="form-select filter-select">
                     <option v-for="opt in filterTargets" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
-                <input v-model="searchText" class="form-input filter-search" placeholder="키 · 라벨 · 설명 검색" />
+                <div class="filter-search-wrap">
+                    <v-icon size="15" class="filter-search-icon">mdi-magnify</v-icon>
+                    <input v-model="searchText" class="form-input filter-search" placeholder="키 · 라벨 · 설명 검색" />
+                </div>
                 <label class="checkbox-label">
                     <input type="checkbox" v-model="showInactive" />
                     <span>{{ $t('adminConsole.propertySchema.showInactive') }}</span>
@@ -371,6 +374,7 @@
                                     <div class="form-group" style="flex: 1;">
                                         <select v-model="formData.select_source_type" class="form-select">
                                             <option value="static">Static Options (직접 입력)</option>
+                                            <option value="list">Managed List (목록 관리)</option>
                                             <option value="api">External API (외부 API)</option>
                                         </select>
                                     </div>
@@ -389,6 +393,22 @@
                                         <v-icon size="14">mdi-plus</v-icon>
                                         {{ $t('taskCatalog.addOption') }}
                                     </button>
+                                </div>
+
+                                <div v-if="formData.select_source_type === 'list'" class="options-section">
+                                    <div class="form-group">
+                                        <label class="form-label">참조 목록 <span class="required-mark">*</span></label>
+                                        <select v-model="formData.list_key" class="form-select">
+                                            <option value="">- 목록 선택 -</option>
+                                            <option v-for="l in optionLists" :key="l.list_key" :value="l.list_key" :disabled="l.is_active === false">
+                                                {{ l.name }} ({{ l.list_key }}, 항목 {{ (l.items || []).length }}개){{ l.is_active === false ? ' · 비활성' : '' }}
+                                            </option>
+                                        </select>
+                                        <div class="field-hint">
+                                            목록의 항목 관리(추가·순서·라벨)는 관리자 콘솔의 <strong>목록 관리</strong> 메뉴에서 합니다.
+                                            목록을 수정하면 이 속성을 쓰는 모든 화면에 즉시 반영됩니다.
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div v-if="formData.select_source_type === 'api'" class="options-section">
@@ -808,6 +828,8 @@ const defaultFormData = () => ({
     number_use_comma: false,
     number_unit: '',
     select_source_type: 'static',
+    // 목록 관리(option_list) 참조 (config.list 로 저장)
+    list_key: '',
     select_api_endpoint: '',
     select_api_label_field: '',
     select_api_value_field: '',
@@ -1051,6 +1073,9 @@ export default defineComponent({
                     if (api.search_param) chips.push(`검색: ${api.search_param}`);
                     if (Array.isArray(api.fill_map) && api.fill_map.length) chips.push(`자동 채움 ${api.fill_map.length}건`);
                     if (/\{\{\s*fields\./.test(item.select_api_endpoint || '')) chips.push('종속 선택');
+                } else if (item.select_source_type === 'list') {
+                    const lk = item.config?.list?.list_key || '';
+                    chips.push(lk ? `목록: ${optionListName(lk)}` : '목록: 미설정');
                 } else chips.push(`선택지 ${(item.options || []).length}개`);
             }
             if (item.property_type === 'db-select') {
@@ -1101,6 +1126,7 @@ export default defineComponent({
             general: { icon: 'mdi-information-outline', color: 'blue-grey' },
             group: { icon: 'mdi-shape-outline', color: 'blue-grey' },
             manual_links: { icon: 'mdi-link-variant', color: 'indigo' },
+            glossary: { icon: 'mdi-book-open-variant', color: 'brown' },
             api_integrations_summary: { icon: 'mdi-api', color: 'teal' },
             system_list: { icon: 'mdi-server-network', color: 'blue' },
             related_project_list: { icon: 'mdi-clipboard-list-outline', color: 'purple' },
@@ -1125,7 +1151,8 @@ export default defineComponent({
             costing: { icon: 'mdi-clock-outline', color: 'teal' },
             system_mapping: { icon: 'mdi-server-network', color: 'blue' },
             related_projects: { icon: 'mdi-clipboard-list-outline', color: 'purple' },
-            pi_flag: { icon: 'mdi-flag-outline', color: 'red' }
+            pi_flag: { icon: 'mdi-flag-outline', color: 'red' },
+            task_catalog: { icon: 'mdi-folder-star', color: 'amber-darken-2' }
         };
         const sectionIcon = (id) => SECTION_ICONS[id] || SECTION_ICONS[id.startsWith('group-') ? 'group' : 'general'] || SECTION_ICONS.general;
 
@@ -1250,7 +1277,9 @@ export default defineComponent({
                     seqflow: '선 정보',
                     lane_basic: 'Lane 기본',
                     send_mail: '메일 발송 설정',
-                    costing: 'FTE / OPEX'
+                    costing: 'FTE / OPEX',
+                    task_catalog: 'Task 카탈로그',
+                    glossary: '용어 정의'
                 };
                 if (def.contentKeys && fallbackNames[def.id]) return fallbackNames[def.id];
                 return anchor?.property_label || fallbackNames[def.id] || def.id;
@@ -1320,7 +1349,8 @@ export default defineComponent({
         const dialogPreviewModel = reactive({});
         const dialogPreviewField = computed(() => buildSchemaFromForm(formData.value, editingSchema.value));
         const dialogPreviewKey = computed(
-            () => `${formData.value.property_type}::${formData.value.select_source_type}::${formData.value.db_table}::${formData.value.select_api_endpoint}`
+            () =>
+                `${formData.value.property_type}::${formData.value.select_source_type}::${formData.value.db_table}::${formData.value.select_api_endpoint}::${formData.value.list_key}`
         );
         const isPanelForm = computed(() => !!editingSchema.value && isDedicatedPanelSchema(editingSchema.value));
 
@@ -1389,6 +1419,13 @@ export default defineComponent({
                 config.visible_when = { field: condField, op: fd.cond_op || 'eq', value: fd.cond_value ?? '' };
             } else {
                 delete config.visible_when;
+            }
+            if (fd.property_type === 'select' || fd.property_type === 'multiselect') {
+                if (fd.select_source_type === 'list' && String(fd.list_key || '').trim()) {
+                    config.list = { list_key: String(fd.list_key).trim() };
+                } else {
+                    delete config.list;
+                }
             }
             if ((fd.property_type === 'select' || fd.property_type === 'multiselect') && fd.select_source_type === 'api') {
                 const headers = (fd.api_headers || []).filter((h) => String(h?.key || '').trim());
@@ -1515,6 +1552,7 @@ export default defineComponent({
                 number_use_comma: !!schema.number_use_comma,
                 number_unit: schema.number_unit || '',
                 select_source_type: schema.select_source_type || 'static',
+                list_key: schema.config?.list?.list_key || '',
                 select_api_endpoint: schema.select_api_endpoint || '',
                 select_api_label_field: schema.select_api_label_field || '',
                 select_api_value_field: schema.select_api_value_field || '',
@@ -1583,6 +1621,14 @@ export default defineComponent({
             }
             if (formData.value.property_type === 'db-select' && !String(formData.value.db_table || '').trim()) {
                 proxy.$try({ action: async () => {}, warningMsg: 'DB-Select 속성은 Table 을 입력해야 합니다.' });
+                return;
+            }
+            if (
+                (formData.value.property_type === 'select' || formData.value.property_type === 'multiselect') &&
+                formData.value.select_source_type === 'list' &&
+                !String(formData.value.list_key || '').trim()
+            ) {
+                proxy.$try({ action: async () => {}, warningMsg: '참조할 목록을 선택해야 합니다. 목록이 없다면 목록 관리 메뉴에서 먼저 만들어 주세요.' });
                 return;
             }
             saving.value = true;
@@ -1905,6 +1951,13 @@ export default defineComponent({
             a.download = `property-schema-template-${new Date().toISOString().slice(0, 10)}.json`;
             a.click();
             URL.revokeObjectURL(a.href);
+            // 활동 로그: 내보내기 성공 후에만 기록
+            adminStore.writeAdminAuditLog({
+                action: 'schema_export',
+                target_type: 'property_schema',
+                target_name: '스키마 템플릿',
+                after_value: { count: fields.length }
+            });
         };
 
         const onImportFilePicked = async (event) => {
@@ -1991,9 +2044,25 @@ export default defineComponent({
             }
         };
 
+        // ---- 목록 관리(option_list) — select 소스 'list' 의 참조 대상 ----
+        const optionLists = ref([]);
+        const loadOptionLists = async () => {
+            try {
+                const backend = BackendFactory.createBackend();
+                if (typeof backend.getOptionLists !== 'function') return;
+                optionLists.value = (await backend.getOptionLists()) || [];
+            } catch (e) {
+                console.warn('[PropertySchemaStudio] loadOptionLists failed:', e);
+            }
+        };
+        const optionListName = (listKey) => {
+            const found = (optionLists.value || []).find((l) => l.list_key === listKey);
+            return found ? found.name : listKey;
+        };
+
         // ---- Init ----
         const init = async () => {
-            await loadSchemas();
+            await Promise.all([loadSchemas(), loadOptionLists()]);
             try {
                 const seeded = await taskCatalogStore.syncPanelPropertySchemas();
                 if (seeded > 0) await loadSchemas({ silent: true });
@@ -2018,6 +2087,7 @@ export default defineComponent({
             searchText,
             previewScope,
             previewModel,
+            optionLists,
             softDeleteDialogOpen,
             softDeleteTarget,
             softDeleteUsageCount,
@@ -2118,13 +2188,32 @@ export default defineComponent({
     margin-bottom: 12px;
 }
 
-.filter-select {
-    min-width: 180px;
+/* 공통 .form-select/.form-input 규칙(width: 100% 등)과 같은 특이도면 뒤에 오는 공통 규칙이
+   이겨버리므로, 툴바 전용 오버라이드는 .filter-row 를 붙여 특이도를 올린다 */
+.filter-row .filter-select {
+    width: 200px;
+    flex: 0 0 auto;
 }
 
-.filter-search {
+.filter-search-wrap {
+    position: relative;
     flex: 1;
     max-width: 320px;
+    min-width: 0;
+}
+
+.filter-search-icon {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgb(var(--v-theme-textSecondary));
+    pointer-events: none;
+}
+
+.filter-row .filter-search {
+    width: 100%;
+    padding-left: 30px;
 }
 
 /* ── 폼 공통 (기존 규칙 유지) ── */

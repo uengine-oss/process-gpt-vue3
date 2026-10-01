@@ -102,6 +102,8 @@ openspec/*
 !openspec/project.md
 !openspec/specs/
 openspec/specs/*
+!openspec/specs/simple-ui-mobile-work/
+!openspec/specs/simple-ui-mobile-work/spec.md
 !openspec/specs/bpmn-artifact-display/
 !openspec/specs/bpmn-artifact-display/spec.md
 !openspec/specs/deep-agent-chat-state/
@@ -126,3 +128,6 @@ test-results/
 # 스크린샷
 Screenshot*.png
 dist-mobile
+
+# 세션별 프롬프트 로그 (session-prompt-log.sh 훅)
+.claude/prompt-history/

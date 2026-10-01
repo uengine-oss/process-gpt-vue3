@@ -2,15 +2,15 @@
 /** 누적 예상 ROI 위젯 — 선택된 To-Be 솔루션 기반으로 실시간 롤링 표시. */
 import { ref, computed, watch, onBeforeUnmount, inject } from 'vue';
 import { AN_STUDIO_KEY } from '@/composables/anStudio/useAnStudio';
+import { getAnnualWorkingHours, getCycleFactor } from '@/services/tenantCustomizationService';
 
 const an = inject(AN_STUDIO_KEY)!;
 const roi = an.roi;
 
-const ANNUAL_HOURS = 2080;
 
 const targetKrw = computed(() => Math.round(roi.totalSavingsKrw.value || 0));
 const targetFte = computed(() => Math.max(0, roi.savings.value.fte || 0));
-const targetHours = computed(() => Math.round((targetFte.value * ANNUAL_HOURS) / 12));
+const targetHours = computed(() => Math.round((targetFte.value * getAnnualWorkingHours()) / getCycleFactor('Monthly')));
 const ratePct = computed(() => roi.savingsRatePct.value || 0);
 const count = computed(() => roi.selectedCount.value || 0);
 

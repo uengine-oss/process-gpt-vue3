@@ -84,4 +84,47 @@ export function getAllMenuOverrides(): MenuRoleOverride[] {
     return Array.from(state.overrides.values());
 }
 
+/**
+ * menu_path 의 필요 역할 override 를 upsert 한다. (RLS: admin 전용 쓰기)
+ * 성공 시 메모리 캐시를 새로고침해 lookupRequiredRole 이 즉시 새 값을 보게 한다.
+ */
+export async function upsertMenuRoleOverride(menuPath: string, requiredRole: RoleType, name?: string): Promise<void> {
+    const supabase = getSupabase();
+    const tenantId = getCurrentTenantId();
+    if (!supabase || !tenantId) throw new Error('Supabase/tenant not initialized');
+
+    const { error } = await supabase.from('menu_role_overrides').upsert(
+        {
+            tenant_id: tenantId,
+            menu_path: menuPath,
+            required_role: requiredRole,
+            name: name || menuPath,
+            updated_at: new Date().toISOString(),
+            updated_by: (window as any).$user?.id || localStorage.getItem('uid') || null
+        },
+        { onConflict: 'tenant_id,menu_path' }
+    );
+    if (error) throw error;
+
+    await loadMenuRoleOverrides();
+}
+
+/**
+ * menu_path 의 override 행을 삭제해 코드 기본값으로 되돌린다. (행 삭제 = 기본값 복귀)
+ */
+export async function deleteMenuRoleOverride(menuPath: string): Promise<void> {
+    const supabase = getSupabase();
+    const tenantId = getCurrentTenantId();
+    if (!supabase || !tenantId) throw new Error('Supabase/tenant not initialized');
+
+    const { error } = await supabase
+        .from('menu_role_overrides')
+        .delete()
+        .eq('tenant_id', tenantId)
+        .eq('menu_path', menuPath);
+    if (error) throw error;
+
+    await loadMenuRoleOverrides();
+}
+
 export const menuRoleOverrideState = readonly(state);

@@ -245,6 +245,8 @@
 import { ref, computed, watch, getCurrentInstance, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import ProgressBadge from '@/components/ui/ProgressBadge.vue';
 import { compareMajorsByStage, getMajorBusinessDomain, majorMatchesDomain } from './processClassification';
+import { getHierarchyLabel } from '@/services/tenantCustomizationService';
+import { getStageDef } from '@/utils/processStages';
 
 const instance = getCurrentInstance();
 const t = (key: string) => {
@@ -292,55 +294,56 @@ const unassignedDomain = {
 let resizeObserver: ResizeObserver | null = null;
 let resizeFrame: number | null = null;
 
+// 계층 레벨명은 테넌트 용어 설정(terminology.hierarchy) 단일 소스에서 읽는다.
+// 예전엔 i18n 키 + 한글 fallback 리터럴이 뷰마다 중복돼 있어 한 곳만 바뀌는 일이 잦았다.
 const structureLegendItems = computed(() => [
     {
         key: 'domain',
-        label: t('processArchitecture.hierarchy.legendItems.domain') || '도메인',
+        label: getHierarchyLabel('domain'),
         className: 'domain-node-color'
     },
     {
         key: 'mega',
-        label: t('processArchitecture.hierarchy.legendItems.mega') || '메가프로세스',
+        label: getHierarchyLabel('mega'),
         className: 'mega-node-color'
     },
     {
         key: 'major',
-        label: t('processArchitecture.hierarchy.legendItems.major') || '메이저프로세스',
+        label: getHierarchyLabel('major'),
         className: 'major-node-color'
     },
     {
         key: 'sub',
-        label: t('processArchitecture.hierarchy.legendItems.sub') || '서브프로세스',
+        label: getHierarchyLabel('sub'),
         className: 'sub-node-color'
     }
 ]);
 
+// 상태 라벨은 공유 STAGE_DEFS(테넌트 용어 설정 반영)의 shortLabel 을 쓴다.
 const statusLegendItems = computed(() => [
     {
         key: 'draft',
-        label: t('progressBadge.draft') || '초안',
+        label: getStageDef('draft').shortLabel,
         className: 'legend-pill--draft'
     },
     {
         key: 'in_review',
-        label: t('progressBadge.in_review') || t('progressBadge.review') || '검토',
+        label: getStageDef('in_review').shortLabel,
         className: 'legend-pill--review'
     },
     {
         key: 'public_feedback',
-        label: t('progressBadge.public_feedback') || t('progressBadge.public_review') || '공람',
+        label: getStageDef('public_feedback').shortLabel,
         className: 'legend-pill--public-feedback'
     },
     {
         key: 'final_edit',
-        label: t('progressBadge.final_edit') || '최종수정',
+        label: getStageDef('final_edit').shortLabel,
         className: 'legend-pill--final-edit'
     },
     {
-        // 라벨은 체계도 전용 키를 쓴다. 공용 progressBadge.published('완료')는
-        // 정의도(definition-map)의 ProcessTooltip 도 함께 쓰므로 여기서 바꾸면 비 PAL 화면까지 영향을 준다.
         key: 'published',
-        label: t('processArchitecture.hierarchy.legendItems.published') || '배포됨',
+        label: getStageDef('published').shortLabel,
         className: 'legend-pill--published'
     }
     // 'wip'(차세대 기획 중) / 'sunset'(폐기 예정) 은 범례에서 제외한다.
@@ -1009,7 +1012,7 @@ onBeforeUnmount(() => {
  * 갱신 도트가 묻힌다.
  */
 .sub-node {
-    --stage-rgb: 148, 163, 184;
+    --stage-rgb: var(--pal-stage-draft-rgb, 148, 163, 184);
     --node-fill: rgba(var(--stage-rgb), 0.1);
     --node-fill-hover: rgba(var(--stage-rgb), 0.2);
     --node-line-hover: rgba(var(--stage-rgb), 0.5);
@@ -1039,7 +1042,9 @@ onBeforeUnmount(() => {
 }
 
 /*
- * 상태별 색 = 공유 5단계 팔레트 (src/utils/processStages.ts STAGE_DEFS)
+ * 상태별 색 = 공유 5단계 팔레트 (src/utils/processStages.ts STAGE_DEFS).
+ * 값은 :root 의 --pal-stage-*-rgb(applyStageCssVariables 가 STAGE_DEFS 색으로 채움)를 읽고,
+ * 변수가 없을 때만 아래 기본 rgb 로 떨어진다 — 테넌트 용어 설정에서 색을 바꾸면 여기도 따라온다.
  *   0단계 초안 #94a3b8 · 1단계 검토 #3B82F6 · 2단계 공람 #8B5CF6
  *   3단계 최종수정 #F59E0B · 4단계 배포완료 #10B981
  * 예전 값은 검토=주황 / 공람=파랑 / 최종수정=보라 로 순서가 뒤섞여 있어
@@ -1048,33 +1053,33 @@ onBeforeUnmount(() => {
  */
 .sub-node--none,
 .sub-node--draft {
-    --stage-rgb: 148, 163, 184;
+    --stage-rgb: var(--pal-stage-draft-rgb, 148, 163, 184);
 }
 
 .sub-node--review,
 .sub-node--in-review {
-    --stage-rgb: 59, 130, 246;
+    --stage-rgb: var(--pal-stage-in-review-rgb, 59, 130, 246);
 }
 
 .sub-node--public-review,
 .sub-node--public-feedback {
-    --stage-rgb: 139, 92, 246;
+    --stage-rgb: var(--pal-stage-public-feedback-rgb, 139, 92, 246);
 }
 
 .sub-node--final-edit {
-    --stage-rgb: 245, 158, 11;
+    --stage-rgb: var(--pal-stage-final-edit-rgb, 245, 158, 11);
 }
 
 .sub-node--published {
-    --stage-rgb: 16, 185, 129;
+    --stage-rgb: var(--pal-stage-published-rgb, 16, 185, 129);
 }
 
 .sub-node--wip {
-    --stage-rgb: 123, 31, 162;
+    --stage-rgb: var(--pal-stage-wip-rgb, 123, 31, 162);
 }
 
 .sub-node--sunset {
-    --stage-rgb: 198, 40, 40;
+    --stage-rgb: var(--pal-stage-sunset-rgb, 198, 40, 40);
 }
 
 .sub-node .fav-btn {
@@ -1180,7 +1185,7 @@ onBeforeUnmount(() => {
 
 /* 상태 범례는 서브 노드의 좌측 레일과 같은 색을 쓴다 (색 정의는 --stage-rgb 한 곳). */
 .legend-pill {
-    --stage-rgb: 148, 163, 184;
+    --stage-rgb: var(--pal-stage-draft-rgb, 148, 163, 184);
     width: 14px;
     height: 14px;
     border-radius: 999px;
@@ -1188,24 +1193,24 @@ onBeforeUnmount(() => {
 }
 
 .legend-pill--draft {
-    --stage-rgb: 148, 163, 184;
+    --stage-rgb: var(--pal-stage-draft-rgb, 148, 163, 184);
 }
 
 .legend-pill--review {
-    --stage-rgb: 59, 130, 246;
+    --stage-rgb: var(--pal-stage-in-review-rgb, 59, 130, 246);
 }
 
 .legend-pill--public-review,
 .legend-pill--public-feedback {
-    --stage-rgb: 139, 92, 246;
+    --stage-rgb: var(--pal-stage-public-feedback-rgb, 139, 92, 246);
 }
 
 .legend-pill--final-edit {
-    --stage-rgb: 245, 158, 11;
+    --stage-rgb: var(--pal-stage-final-edit-rgb, 245, 158, 11);
 }
 
 .legend-pill--published {
-    --stage-rgb: 16, 185, 129;
+    --stage-rgb: var(--pal-stage-published-rgb, 16, 185, 129);
 }
 
 

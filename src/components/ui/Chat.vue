@@ -606,7 +606,7 @@
                                                                                     class="mb-1"
                                                                                 >
                                                                                     <img
-                                                                                        :src="message.image"
+                                                                                        :src="signedSrc(message.image, 'chat-images')"
                                                                                         class="rounded-md"
                                                                                         alt="pro"
                                                                                         width="250"
@@ -626,12 +626,12 @@
                                                                                         class="ma-1"
                                                                                     >
                                                                                         <img
-                                                                                            :src="image.url || image"
+                                                                                            :src="signedSrc(image, 'chat-images')"
                                                                                             class="rounded-md"
                                                                                             alt="pro"
                                                                                             width="250"
                                                                                             style="cursor: pointer"
-                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                            @click="emitPreviewImage(image)"
                                                                                         />
                                                                                     </v-sheet>
                                                                                 </div>
@@ -648,7 +648,7 @@
                                                                                         )"
                                                                                         :key="`msg-file-${index}-${fileIdx}`"
                                                                                         rounded="lg"
-                                                                                        class="pa-2 d-inline-flex align-center"
+                                                                                        class="pa-2 d-inline-flex align-center pg-msg-file"
                                                                                         style="
                                                                                             gap: 10px;
                                                                                             cursor: pointer;
@@ -718,6 +718,7 @@
                                                                                                     attachedFile.file_id
                                                                                                 )
                                                                                             "
+                                                                                            class="pg-msg-file__dl"
                                                                                             @click.stop="downloadMessageFile(attachedFile)"
                                                                                         >
                                                                                             <v-icon size="14">mdi-download</v-icon>
@@ -822,7 +823,7 @@
                                                                                     class="mb-1"
                                                                                 >
                                                                                     <img
-                                                                                        :src="message.image"
+                                                                                        :src="signedSrc(message.image, 'chat-images')"
                                                                                         class="rounded-md"
                                                                                         alt="pro"
                                                                                         width="250"
@@ -840,12 +841,12 @@
                                                                                         class="ma-1"
                                                                                     >
                                                                                         <img
-                                                                                            :src="image.url || image"
+                                                                                            :src="signedSrc(image, 'chat-images')"
                                                                                             class="rounded-md"
                                                                                             alt="pro"
                                                                                             width="250"
                                                                                             style="cursor: pointer"
-                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                            @click="emitPreviewImage(image)"
                                                                                         />
                                                                                     </v-sheet>
                                                                                 </div>
@@ -860,7 +861,7 @@
                                                                                         )"
                                                                                         :key="`msg-file-mine-${index}-${fileIdx}`"
                                                                                         rounded="lg"
-                                                                                        class="pa-2 d-inline-flex align-center"
+                                                                                        class="pa-2 d-inline-flex align-center pg-msg-file"
                                                                                         style="
                                                                                             gap: 10px;
                                                                                             cursor: pointer;
@@ -930,6 +931,7 @@
                                                                                                     attachedFile.file_id
                                                                                                 )
                                                                                             "
+                                                                                            class="pg-msg-file__dl"
                                                                                             @click.stop="downloadMessageFile(attachedFile)"
                                                                                         >
                                                                                             <v-icon size="14">mdi-download</v-icon>
@@ -1163,7 +1165,7 @@
                                                             v-if="shouldDisplayUserInfo(message, index) && !message.__humanFeedback"
                                                             class="ma-0 pa-0"
                                                         >
-                                                            <v-row class="ma-0 pa-0 d-flex align-center mb-2">
+                                                            <v-row class="ma-0 pa-0 d-flex align-center mb-2 chat-sender-row">
                                                                 <v-avatar size="28" style="margin-right: 8px">
                                                                     <img
                                                                         v-if="message.role == 'system'"
@@ -1336,6 +1338,7 @@
                                                                 <div
                                                                     v-if="shouldRenderMessageBubble(message)"
                                                                     class="message-bubble-wrap message-bubble-wrap--other"
+                                                                    :data-role="message.role"
                                                                     @mouseenter="replyIndex = index"
                                                                     @mouseleave="replyIndex = -1"
                                                                 >
@@ -1389,6 +1392,17 @@
                                                                                     >
                                                                                 </div>
                                                                             </div>
+                                                                        </div>
+                                                                        <!-- 채팅에서 시작한 프로세스: 시작하는 중 표시 → 실행 카드(누르면 인스턴스 채팅) -->
+                                                                        <div
+                                                                            v-if="getProcessLaunches(message).length"
+                                                                            class="chat-process-launches mt-2"
+                                                                        >
+                                                                            <ProcessLaunchCard
+                                                                                v-for="(launch, lIdx) in getProcessLaunches(message)"
+                                                                                :key="`launch-live-${index}-${lIdx}`"
+                                                                                :launch="launch"
+                                                                            />
                                                                         </div>
                                                                         <div
                                                                             class="d-flex align-center"
@@ -1458,7 +1472,7 @@
                                                                                     <v-icon size="13" class="mr-1"
                                                                                         >mdi-timeline-check-outline</v-icon
                                                                                     >
-                                                                                    실행 상세 {{ getToolCallList(message).length }}건
+                                                                                    {{ toolSummaryLabel(message) }}
                                                                                 </summary>
                                                                                 <div class="chat-tool-activity__list">
                                                                                     <div
@@ -1510,6 +1524,18 @@
                                                                                     </div>
                                                                                 </div>
                                                                             </details>
+                                                                            <!-- 채팅에서 시작한 프로세스 — 대화에 카드로 남고, 누르면 인스턴스 채팅으로 간다 -->
+                                                                            <div
+                                                                                v-if="chatRoomMode && getProcessLaunches(message).length"
+                                                                                class="chat-process-launches mb-2"
+                                                                            >
+                                                                                <ProcessLaunchCard
+                                                                                    v-for="(launch, lIdx) in getProcessLaunches(message)"
+                                                                                    :key="`launch-${index}-${lIdx}`"
+                                                                                    :launch="launch"
+                                                                                    settled
+                                                                                />
+                                                                            </div>
                                                                             <!-- 첨부(이미지/파일): content가 비어도 메시지로 렌더링 + 답장 가능 -->
                                                                             <div
                                                                                 v-if="
@@ -1525,7 +1551,7 @@
                                                                                     class="mb-1"
                                                                                 >
                                                                                     <img
-                                                                                        :src="message.image"
+                                                                                        :src="signedSrc(message.image, 'chat-images')"
                                                                                         class="rounded-md"
                                                                                         alt="pro"
                                                                                         width="250"
@@ -1545,12 +1571,12 @@
                                                                                         class="ma-1"
                                                                                     >
                                                                                         <img
-                                                                                            :src="image.url || image"
+                                                                                            :src="signedSrc(image, 'chat-images')"
                                                                                             class="rounded-md"
                                                                                             alt="pro"
                                                                                             width="250"
                                                                                             style="cursor: pointer"
-                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                            @click="emitPreviewImage(image)"
                                                                                         />
                                                                                     </v-sheet>
                                                                                 </div>
@@ -1567,7 +1593,7 @@
                                                                                         )"
                                                                                         :key="`msg-file-other-${index}-${fileIdx}`"
                                                                                         rounded="lg"
-                                                                                        class="pa-2 d-inline-flex align-center"
+                                                                                        class="pa-2 d-inline-flex align-center pg-msg-file"
                                                                                         style="
                                                                                             gap: 10px;
                                                                                             cursor: pointer;
@@ -1637,6 +1663,7 @@
                                                                                                     attachedFile.file_id
                                                                                                 )
                                                                                             "
+                                                                                            class="pg-msg-file__dl"
                                                                                             @click.stop="downloadMessageFile(attachedFile)"
                                                                                         >
                                                                                             <v-icon size="14">mdi-download</v-icon>
@@ -2337,7 +2364,7 @@
                                                                         </div>
                                                                         <!-- get_form_fields 도구 결과 폼 렌더링 -->
                                                                         <div
-                                                                            v-if="chatRoomMode && getFormFieldsFromToolCalls(message)"
+                                                                            v-if="chatRoomMode && showStartForm(message, index)"
                                                                             class="mt-2 mb-2"
                                                                         >
                                                                             <DynamicForm
@@ -3301,7 +3328,13 @@
                                 <Icons v-else :icon="'stop'" :size="'16'" />
                             </v-btn>
 
-                            <v-menu v-else location="top end">
+                            <!-- 휴대폰 간소화 화면에서는 '+' 와 같은 하단 시트로 연다(_phone-shell-chat.scss). -->
+                            <v-menu
+                                v-else
+                                location="top end"
+                                :content-class="phoneShell ? 'pg-plus-sheet' : ''"
+                                :scrim="phoneShell ? 'rgba(0, 0, 0, 0.25)' : false"
+                            >
                                 <template v-slot:activator="{ props }">
                                     <v-btn
                                         v-bind="props"
@@ -3322,6 +3355,10 @@
                                     </v-btn>
                                 </template>
                                 <v-list density="compact" min-width="200">
+                                    <template v-if="phoneShell">
+                                        <div class="pg-plus-sheet__handle" aria-hidden="true"></div>
+                                        <div class="pg-plus-sheet__title">음성</div>
+                                    </template>
                                     <v-list-item @click="startVoiceRecording()" prepend-icon="mdi-microphone" title="음성으로 입력"></v-list-item>
                                     <v-list-item
                                         :disabled="!enableDesktopVoice"
@@ -3506,10 +3543,15 @@ import AgentMessagePanel from '@/components/ui/AgentMessagePanel.vue';
 import { marked } from 'marked';
 import mermaid from 'mermaid';
 import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
+import ProcessLaunchCard from '@/components/chat/ProcessLaunchCard.vue';
+import { isExecuteProcessTool, processLaunchesOf } from '@/shared/processLaunch';
 
 import BackendFactory from '@/components/api/BackendFactory';
+import { usePhoneShell } from '@/shared/phoneShell';
 import { getTenantId } from '@/utils/tenant';
 import { normalizeOrchestration } from '@/utils/orchestration';
+// 첨부 이미지·파일 주소는 비공개 버킷의 서명 URL 이라 그릴 때 만들어야 한다.
+import { storageUrlMixin } from '@/utils/storageUrl';
 const backend = BackendFactory.createBackend();
 
 // getToolCallList()의 도구 결과 가공(JSON.parse/정규식/문자열 치환) 캐시.
@@ -3519,6 +3561,8 @@ const backend = BackendFactory.createBackend();
 // 문서를 여러 번 읽는 스킬). message 객체는 스트리밍 동안 참조가 유지되므로(ChatRoomPage.vue의
 // activeStreams) WeakMap + 가벼운 시그니처(원문 내용은 안 건드리고 길이/상태만)로 무효화한다.
 const _toolCallListCache = new WeakMap();
+// getProcessLaunches() 캐시 — 같은 이유로, 실행 도구의 상태 · 결과 길이가 바뀔 때만 다시 읽는다.
+const _processLaunchCache = new WeakMap();
 
 export default {
     components: {
@@ -3532,9 +3576,10 @@ export default {
         ProcessWorkResult,
         DetailComponent,
         AgentMessagePanel,
-        OpenUiRenderer
+        OpenUiRenderer,
+        ProcessLaunchCard
     },
-    mixins: [ProgressAnimated, ScrollBottomHandle],
+    mixins: [ProgressAnimated, ScrollBottomHandle, storageUrlMixin],
     props: {
         prompt: String,
         name: String,
@@ -3690,6 +3735,12 @@ export default {
         'openui-action',
         'openui-parse-result'
     ],
+    setup() {
+        // 휴대폰 간소화 화면(클로드 모바일 모양)인지. 모양은 전역 스타일이 바꾸고,
+        // 여기서는 글자가 달라지는 곳(도구 요약 한 줄 등)만 이 값을 본다.
+        const { active: phoneShell } = usePhoneShell();
+        return { phoneShell };
+    },
     data() {
         return {
             workIcons: {
@@ -4746,6 +4797,20 @@ export default {
             return this.withExternalLinks(this.withMermaidContainers(marked(raw)));
         },
         /** 채팅 메시지 하단 인라인 '도구 사용 내역'(Claude Desktop식) 용 정규화 목록 */
+        /**
+         * 접힌 도구 사용 내역의 한 줄.
+         *
+         * 휴대폰에서는 클로드처럼 '무엇을 했는지' 를 과거형 한 줄로 적는다(예: 도구 3개 실행함).
+         * 건수만 적힌 '실행 상세 3건' 은 무엇을 펼치는지 알려 주지 않는다.
+         * 실패한 것이 있으면 뒤에 붙인다 — 접힌 채로도 문제가 있었는지는 보여야 한다.
+         */
+        toolSummaryLabel(message) {
+            const list = this.getToolCallList(message);
+            if (!this.phoneShell) return `실행 상세 ${list.length}건`;
+            const failed = list.filter((tc) => tc && tc.status === 'error').length;
+            const head = `도구 ${list.length}개 실행함`;
+            return failed > 0 ? `${head} · ${failed}개 실패` : head;
+        },
         getToolCallList(message) {
             if (!message || typeof message !== 'object') return [];
             const tools = Array.isArray(message.toolCalls) ? message.toolCalls : [];
@@ -4784,6 +4849,21 @@ export default {
             if (!cached || cached.result !== list) return [...list].reverse();
             if (!cached.reversed) cached.reversed = [...list].reverse();
             return cached.reversed;
+        },
+        /**
+         * 이 메시지에서 시작한 프로세스(execute_process) — 대화 안의 실행 카드로 그린다.
+         * 도구 기록은 메시지와 함께 저장되므로 채팅방을 다시 열어도 같은 카드가 나온다.
+         */
+        getProcessLaunches(message) {
+            if (!message || typeof message !== 'object' || !Array.isArray(message.toolCalls)) return [];
+            const launches = message.toolCalls.filter((t) => t && isExecuteProcessTool(t.name));
+            if (!launches.length) return [];
+            const sig = launches.map((t) => `${t.status || ''}:${typeof t.output === 'string' ? t.output.length : t.output ? 1 : 0}`).join(',');
+            const cached = _processLaunchCache.get(message);
+            if (cached && cached.sig === sig) return cached.result;
+            const result = processLaunchesOf({ toolCalls: launches });
+            _processLaunchCache.set(message, { sig, result });
+            return result;
         },
         hasRunningTool(message) {
             const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
@@ -4942,10 +5022,27 @@ export default {
                 return null;
             }
         },
+        /**
+         * 프로세스 시작 폼(get_form_fields 결과)을 입력란으로 보일 때인가.
+         *
+         * 폼은 '이 값을 채워 제출해 달라' 는 물음이다. 그래서
+         * - 같은 답에서 이미 프로세스를 시작했으면(execute_process) 보이지 않는다 — 에이전트가
+         *   사용자가 준 값으로 바로 실행한 경우다. 남겨 두면 실행 카드 아래에 '제출' 이 또 붙어,
+         *   누르면 같은 프로세스가 한 번 더 시작된다.
+         * - 그 뒤로 대화가 이어졌으면(폼을 제출했거나 다른 이야기로 넘어감) 지난 물음이라 보이지 않는다.
+         */
+        showStartForm(message, index) {
+            if (this.getProcessLaunches(message).length) return false;
+            const list = this.userFilteredMessages || [];
+            if (index < list.length - 1) return false;
+            return !!this.getFormFieldsFromToolCalls(message);
+        },
         submitFormFields(message) {
             const formData = this.getFormFieldsFromToolCalls(message);
             const values = this.formFieldsFormValues[message.uuid] || {};
-            const lines = [];
+            const lines = [
+                `[프로세스 시작 폼 제출] form_key=${formData?.formId || ''} activity_id=${formData?.activityName || ''}`
+            ];
             if (formData && Array.isArray(formData.fieldsJson)) {
                 formData.fieldsJson.forEach((f) => {
                     const label = f.label || f.key || '';
@@ -4989,9 +5086,13 @@ export default {
             const message = (log.message || '').toString();
             return `[${level}/${category}] ${message}`;
         },
-        emitPreviewImage(url) {
+        async emitPreviewImage(url) {
             if (!url) return;
-            this.$emit('preview-image', url);
+            // 저장된 값은 경로이거나 옛 공개 URL 이다. 둘 다 지금은 그대로 열리지
+            // 않으므로 열기 직전에 서명 URL 로 바꾼다.
+            const signed = await this.signedUrl(url, 'chat-images');
+            if (!signed) return;
+            this.$emit('preview-image', signed);
         },
         emitPreviewBpmn(bpmn) {
             if (!bpmn) return;
@@ -5162,9 +5263,12 @@ export default {
             const id = String(agent?.id || '').trim();
             return id ? `${window.location.origin}/agent-chat/${encodeURIComponent(id)}` : '';
         },
-        emitOpenExternalUrl(url) {
+        async emitOpenExternalUrl(url) {
             if (!url) return;
-            this.$emit('open-external-url', url);
+            // 우리 저장소 주소면 서명해서, 바깥 주소면 그대로 넘긴다.
+            const resolved = await this.signedUrl(url);
+            if (!resolved) return;
+            this.$emit('open-external-url', resolved);
         },
         handleOpenUiStateUpdate(message, state) {
             try {
@@ -5366,8 +5470,10 @@ export default {
         async downloadAttachment(url, filename, options = {}) {
             if (!url) return false;
             const name = filename || this.getFilenameFromUrl(url) || 'download';
+            // 비공개 버킷이라 저장된 주소를 그냥 fetch 하면 400 이다. 먼저 서명한다.
+            const target = (await this.signedUrl(url)) || url;
             try {
-                const res = await fetch(url);
+                const res = await fetch(target);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const blob = await res.blob();
                 const objectUrl = URL.createObjectURL(blob);
@@ -6861,6 +6967,11 @@ export default {
                         const imageUrl = await backend.getImageUrl(data.path);
                         me.attachedImages.push({
                             id: `${Date.now()}-${Math.random()}`,
+                            // 메시지에 함께 저장된다. url(서명 URL)은 1시간이면 만료되므로
+                            // path·bucket 을 같이 남겨 다시 볼 때 새로 서명할 수 있게 한다.
+                            // (path 가 없는 옛 메시지는 url 을 되돌려 읽어 처리한다)
+                            path: data.path,
+                            bucket: 'chat-images',
                             url: imageUrl,
                             file: imageFile
                         });

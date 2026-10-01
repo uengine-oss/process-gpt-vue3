@@ -78,6 +78,7 @@
 import { commonSettingInfos } from './CommonSettingInfos.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import HwpxEditorDialog from './HwpxEditorDialog.vue';
+import { isStorageObjectUrl } from '@/shared/storageUrl';
 import { fileNameOf, isWorkspacePath, withWorkspaceUrl } from '@/utils/workspaceFile';
 
 export default {
@@ -209,7 +210,11 @@ export default {
 
     methods: {
         isRemoteUrl(path) {
-            return typeof path === 'string' && /^https?:\/\//i.test(path);
+            if (typeof path !== 'string' || !/^https?:\/\//i.test(path)) return false;
+            // 우리 Storage 주소는 여기서 fetch 하면 안 된다. 버킷이 비공개라
+            // 익명 fetch 는 400 이다. backend.downloadFile 로 내려보내면 로그인
+            // 세션으로 받아 온다 — 옛 데이터에 박혀 있는 공개 URL 도 그 길로 살아난다.
+            return !isStorageObjectUrl(path);
         },
         async fetchFileFromUrl(url, fileName) {
             try {

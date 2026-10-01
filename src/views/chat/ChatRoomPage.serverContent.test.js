@@ -16,6 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createPersistCircuit } from '../../shared/chatFailure/index.js';
+import { parseMcpToolOutput } from '../../shared/toolOutput.js';
 
 const FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'ChatRoomPage.vue');
 const source = fs.readFileSync(FILE, 'utf8');
@@ -46,11 +47,20 @@ function extractMethod(name) {
     return `${name}: ${isAsync ? 'async ' : ''}function ${signature}${source.slice(bodyStart, end + 1)}`;
 }
 
-const METHODS = ['_isPlaceholderContent', 'carryOptimisticOnlyFields', 'adoptServerFinalContent', 'persistMessageFrontendState'];
+const METHODS = [
+    '_isPlaceholderContent',
+    'carryOptimisticOnlyFields',
+    'adoptServerFinalContent',
+    'persistMessageFrontendState',
+    'parseToolOutput',
+    'noteExecutedInstance'
+];
 
 function buildComponent({ failPut = false } = {}) {
     const writes = [];
     const attempts = [];
+    // parseToolOutput 은 shared/toolOutput 을 부른다. 꺼낸 메서드는 모듈 밖에서 돌므로 전역으로 넘긴다.
+    globalThis.parseMcpToolOutput = parseMcpToolOutput;
     globalThis.backend = {
         putObject: async (key, row) => {
             attempts.push({ key, row });
@@ -61,10 +71,14 @@ function buildComponent({ failPut = false } = {}) {
     // eslint-disable-next-line no-eval
     const methods = (0, eval)(`({${METHODS.map(extractMethod).join(',\n')}})`);
     const failures = [];
+    const routes = [];
+    const events = [];
     return {
         writes,
         attempts,
         failures,
+        routes,
+        events,
         vm: {
             ...methods,
             _frontendStatePersistTimers: {},
@@ -79,6 +93,8 @@ function buildComponent({ failPut = false } = {}) {
             uuid: () => 'err-' + failures.length,
             currentChatRoom: { id: 'room-1' },
             roomId: 'room-1',
+            EventBus: { emit: (name) => events.push(name) },
+            $router: { push: (route) => routes.push(route) },
             setAgentStatus() {},
             scrollToBottomSafe() {},
             scheduleServerRowPersistFallback() {},
@@ -88,6 +104,22 @@ function buildComponent({ failPut = false } = {}) {
         }
     };
 }
+
+test('프로세스 실행이 끝나도 채팅방에 머물고, 인스턴스 목록만 새로 고친다', () => {
+    const { vm, routes, events } = buildComponent();
+    vm.noteExecutedInstance('{"process_instance_id":"vacation.1234"}');
+
+    // 인스턴스로 넘어가는 것은 대화 안의 실행 카드를 눌렀을 때다.
+    assert.deepStrictEqual(routes, []);
+    assert.deepStrictEqual(events, ['instances-updated']);
+});
+
+test('실행 오류 응답은 인스턴스 목록도 건드리지 않는다', () => {
+    const { vm, routes, events } = buildComponent();
+    vm.noteExecutedInstance('{"error":"실행 실패","process_instance_id":"vacation.1234"}');
+    assert.deepStrictEqual(routes, []);
+    assert.deepStrictEqual(events, []);
+});
 
 function streamingBubble() {
     return {

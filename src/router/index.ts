@@ -4,8 +4,10 @@ import AuthRoutes from './AuthRoutes';
 import TenantRoutes from './TenantRoutes';
 import { evaluateMaintenanceGate, MAINTENANCE_PATH } from '@/utils/maintenanceGate';
 import { membershipRedirect, SIGNUP_PENDING_PATH } from '@/utils/membershipGate';
+import { evaluateMfaGate, MFA_CHALLENGE_PATH, MFA_ENROLL_PATH, MFA_ENROLL_QUERY } from '@/utils/mfaGate';
 import { withCallActivityHistory } from '@/components/customDrilldown/drilldownHistory';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
+import { homePath, isMobileViewport, MOBILE_HOME } from '@/utils/homePath';
 
 declare global {
     interface Window {
@@ -181,7 +183,27 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             const { data, error } = (await window.$supabase?.auth?.getSession?.()) || {};
             const isLoggedIn = !error && !!data?.session?.user;
 
-            return next(isLoggedIn ? '/process-architecture' : '/auth/login');
+            return next(isLoggedIn ? homePath() : '/auth/login');
+        }
+
+        // 모바일에서 로그인한 채 조직 주소의 루트로 오면 첫 화면(정의 체계도)으로 보낸다.
+        // 루트는 홍보용 랜딩이라 휴대폰에서 로그인한 사람에게는 막다른 곳이다 — 모바일 앱도
+        // 켤 때 조직 주소의 루트만 열고 어디로 갈지는 여기에 맡긴다(utils/homePath).
+        if (to.path === '/' && isMobileViewport() && !window.$isTenantServer) {
+            const { data, error } = (await window.$supabase?.auth?.getSession?.()) || {};
+            if (!error && data?.session?.user) return next(MOBILE_HOME);
+        }
+
+        // MFA(TOTP) 게이트 (docs/security.md 2-3, 항목 3)
+        // 비밀번호만 통과한 세션(aal1)이 보호 화면에 들어오는 것을 막고,
+        // 테넌트가 MFA 필수인데 미등록이면 계정 설정의 등록 섹션으로 보낸다.
+        // SSO(IdP MFA) 세션과 인증/공개 화면은 evaluateMfaGate 안에서 걸러진다.
+        const mfaDecision = await evaluateMfaGate(to.path);
+        if (mfaDecision === 'challenge') {
+            return next({ path: MFA_CHALLENGE_PATH, query: { redirect: to.fullPath } });
+        }
+        if (mfaDecision === 'enroll') {
+            return next({ path: MFA_ENROLL_PATH, query: { ...MFA_ENROLL_QUERY } });
         }
 
         if (window.$mode !== 'uEngine') {

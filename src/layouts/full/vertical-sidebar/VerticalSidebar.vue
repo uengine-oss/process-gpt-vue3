@@ -1,7 +1,7 @@
 <template>
     <v-btn
         icon
-        v-if="globalIsMobile.value"
+        v-if="globalIsMobile.value && !phoneShell"
         v-show="!$globalState.state.isMobileDrawerOpen"
         @click.stop="customizer.SET_SIDEBAR_DRAWER"
         class="mobile-side-bar-btn"
@@ -12,7 +12,7 @@
         <Icons :icon="'list-bold-duotone'" />
     </v-btn>
     <v-badge
-        v-if="notiCount > 0"
+        v-if="notiCount > 0 && !phoneShell"
         v-show="!$globalState.state.isMobileDrawerOpen"
         class="mobile-side-bar-btn"
         :style="mobileSideBarBtnStyle"
@@ -30,10 +30,11 @@
         :mobile-breakpoint="1279"
         app
         class="leftSidebar ml-sm-5 mt-sm-5 bg-containerBg"
-        elevation="10"
-        :rail="customizer.mini_sidebar"
+        :class="{ 'pg-m-sidebar': phoneShell }"
+        :elevation="phoneShell ? 0 : 10"
+        :rail="customizer.mini_sidebar && !phoneShell"
         expand-on-hover
-        width="275"
+        :width="phoneShell ? phoneState.width : 275"
     >
         <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc">
             <Logo :style="logoPadding" />
@@ -69,7 +70,20 @@
                 </template>
             </v-tooltip>
         </div>
-        <div class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
+        <!--
+            휴대폰 간소화 화면의 머리. 클로드 모바일처럼 닫기(×)와 이름을 한 줄에 두고,
+            그 아래에 검색 · 새 채팅 · 할 일 줄을 글자와 함께 늘어놓는다(SimpleSidebarTools 'phone').
+        -->
+        <div v-if="phoneShell" class="pg-m-sidebar__head">
+            <div class="pg-m-sidebar__top">
+                <button type="button" class="pg-m-sidebar__close" aria-label="사이드바 닫기" @click.stop="customizer.SET_SIDEBAR_DRAWER">
+                    <v-icon size="20">mdi-close</v-icon>
+                </button>
+                <Logo class="pg-m-sidebar__logo" />
+            </div>
+            <SimpleSidebarTools row="phone" />
+        </div>
+        <div v-else class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
             <v-row class="ma-0 pa-0 flex-nowrap" align="center">
                 <Logo />
                 <v-spacer></v-spacer>
@@ -107,7 +121,8 @@
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <VerticalHeader v-if="globalIsMobile.value && !pal" @update-noti-count="updateNotiCount" />
+                <!-- 휴대폰 간소화 화면은 알림을 앱바에 둔다. 여기 또 두면 두 벌이 된다. -->
+                <VerticalHeader v-if="globalIsMobile.value && !pal && !phoneShell" @update-noti-count="updateNotiCount" />
 
                 <!-- 프로젝트 타이틀 + 목록 -->
                 <!-- <div v-if="isShowProject" class="mb-4">
@@ -225,16 +240,26 @@
                     </v-col>
                 </div>
 
-                <!-- PAL 프로세스 관리 메뉴 -->
-                <div v-if="pal && processItem.length > 0" class="mb-4">
+                <!-- PAL 알림 메뉴: PAL 은 헤더(종 드롭다운)를 쓰지 않으므로 사이드바가 진입점이다.
+                     클릭 시 작은 패널로 목록을 보여주고, '전체 알림 보기'로 페이지 이동한다. -->
+                <div v-if="pal" class="mb-4">
+                    <v-col class="pa-0">
+                        <NotificationSidebarMenu />
+                    </v-col>
+                </div>
+
+                <!-- PAL 프로세스 관리 메뉴 (테넌트 메뉴 설정: 숨김/이름/순서 반영) -->
+                <div v-if="pal && palProcessItems.length > 0" class="mb-4">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('processHierarchy.processManagement') }}
                     </div>
                     <v-col class="pa-0">
                         <v-list-item
-                            v-for="item in processItem"
-                            :key="item.title"
-                            :to="item.to"
+                            v-for="item in palProcessItems"
+                            :key="item.key || item.title"
+                            :to="item.external ? undefined : item.to"
+                            :href="item.external ? item.href : undefined"
+                            :target="item.external ? '_blank' : undefined"
                             :disabled="item.disable"
                             density="compact"
                             class="leftPadding sidebar-list-hover-bg"
@@ -243,30 +268,30 @@
                             <template #prepend>
                                 <Icons :icon="item.icon" :size="20" class="mr-2" />
                             </template>
-                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                            <v-list-item-title>{{ item.label || $t(item.title) }}</v-list-item-title>
                         </v-list-item>
                     </v-col>
                 </div>
 
-                <!-- PAL 조직 관리 메뉴 -->
-                <div v-if="pal" class="mb-4">
+                <!-- PAL 조직 관리 메뉴 (테넌트 메뉴 설정: 숨김/이름/순서 반영) -->
+                <div v-if="pal && palOrgItems.length > 0" class="mb-4">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">조직관리</div>
                     <v-col class="pa-0">
                         <v-list-item
-                            to="/organization"
+                            v-for="item in palOrgItems"
+                            :key="item.key || item.to"
+                            :to="item.external ? undefined : item.to"
+                            :href="item.external ? item.href : undefined"
+                            :target="item.external ? '_blank' : undefined"
                             density="compact"
                             class="leftPadding sidebar-list-hover-bg"
-                            :class="{ 'sidebar-list-hover-bg--active': $route?.path === '/organization' }"
+                            :class="{ 'sidebar-list-hover-bg--active': $route?.path === item.to }"
                         >
                             <template #prepend>
-                                <Icons icon="side-group" :size="20" class="mr-2" />
+                                <Icons :icon="item.icon" :size="20" class="mr-2" />
                             </template>
-                            <v-list-item-title>조직도</v-list-item-title>
-                            <template #append><MembershipRequestBadge /></template>
-                        </v-list-item>
-                        <v-list-item to="/admin-request" density="compact" class="leftPadding sidebar-list-hover-bg">
-                            <template #prepend><Icons icon="user-admin" :size="20" class="mr-2" /></template>
-                            <v-list-item-title>권한 변경 신청</v-list-item-title>
+                            <v-list-item-title>{{ item.label || item.title }}</v-list-item-title>
+                            <template v-if="item.badge" #append><MembershipRequestBadge /></template>
                         </v-list-item>
                     </v-col>
                 </div>
@@ -384,16 +409,18 @@
                     </ExpandableList>
                 </v-col>
 
-                <!-- 분석(Analytics) 타이틀 + 목록 -->
-                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4 mt-8">
+                <!-- 분석(Analytics) 타이틀 + 목록 (PAL: 테넌트 메뉴 설정 반영) -->
+                <div v-if="displayedAnalyticsItems.length > 0 && !gs" class="mb-4 mt-8">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('VerticalSidebar.analytics') }}
                     </div>
                     <v-col class="pa-0">
                         <v-list-item
-                            v-for="item in analyticsItem"
-                            :key="item.title"
-                            :to="item.to"
+                            v-for="item in displayedAnalyticsItems"
+                            :key="item.key || item.title"
+                            :to="item.external ? undefined : item.to"
+                            :href="item.external ? item.href : undefined"
+                            :target="item.external ? '_blank' : undefined"
                             :disabled="item.disable"
                             density="compact"
                             class="leftPadding sidebar-list-hover-bg"
@@ -402,30 +429,21 @@
                             <template v-slot:prepend>
                                 <Icons :icon="item.icon" :size="20" class="mr-2" />
                             </template>
-                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                            <v-list-item-title>{{ item.label || $t(item.title) }}</v-list-item-title>
                         </v-list-item>
                     </v-col>
                 </div>
 
-                <div v-if="pal && isAdmin" class="mb-4 mt-8">
+                <!-- PAL 관리자 메뉴 (테넌트 메뉴 설정: 숨김/이름/순서 + 메뉴별 필요 역할 반영) -->
+                <div v-if="pal && isAdmin && palAdminItems.length > 0" class="mb-4 mt-8">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">관리자</div>
                     <v-col class="pa-0">
                         <v-list-item
-                            v-for="item in [
-                                { title: '속성 스키마', icon: 'formList', to: '/admin-console/property-schemas' },
-                                { title: '수정 잠금', icon: 'lock', to: '/admin-console/data-freeze' },
-                                { title: '휴지통', icon: 'trash', to: '/admin-console/recycle-bin' },
-                                { title: '시스템 운영', icon: 'settings', to: '/admin-console/system-operations' },
-                                { title: 'KPI 목표', icon: 'target', to: '/admin-console/kpi-targets' },
-                                { title: '사용 활성도', icon: 'graph-up-linear', to: '/admin-console/usage-adoption' },
-                                { title: '감사 로그', icon: 'document', to: '/admin-console/audit-trail' },
-                                { title: 'PI Flag', icon: 'flag-line-duotone', to: '/admin-console/pi-flags' },
-                                { title: 'Task 종류 설정', icon: 'completed-task', to: '/admin-console/task-types' },
-                                { title: '업무분장', icon: 'users-group-rounded-line-duotone', to: '/work-assignment' },
-                                { title: '사내 정책문서', icon: 'submit-document', to: '/policy-document' }
-                            ]"
-                            :key="item.to"
-                            :to="item.to"
+                            v-for="item in palAdminItems"
+                            :key="item.key || item.to"
+                            :to="item.external ? undefined : item.to"
+                            :href="item.external ? item.href : undefined"
+                            :target="item.external ? '_blank' : undefined"
                             density="compact"
                             class="leftPadding sidebar-list-hover-bg"
                             :class="{ 'sidebar-list-hover-bg--active': $route?.path === item.to }"
@@ -433,7 +451,7 @@
                             <template v-slot:prepend>
                                 <Icons :icon="item.icon" :size="20" class="mr-2" />
                             </template>
-                            <v-list-item-title>{{ item.title }}</v-list-item-title>
+                            <v-list-item-title>{{ item.label || item.title }}</v-list-item-title>
                         </v-list-item>
                     </v-col>
                 </div>
@@ -480,13 +498,18 @@ import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.
 import AgentList from '@/components/ui/AgentList.vue';
 import SkillList from '@/components/ui/SkillList.vue';
 import MembershipRequestBadge from '@/components/ui/MembershipRequestBadge.vue';
-import { getIsAdminClaim } from '@/utils/authClaims';
+import NotificationSidebarMenu from '@/components/ui/NotificationSidebarMenu.vue';
+import { getIsAdminClaim, authClaimsState } from '@/utils/authClaims';
+import { loadMenuSettings, getCustomMenuItems } from '@/services/menuSettingsService';
+import { lookupRequiredRole } from '@/utils/routePermissions';
+import { resolveRole, hasRoleAtLeast } from '@/utils/roles';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 import SidebarUserList from '@/components/ui/SidebarUserList.vue';
 import ChatList from '@/components/ui/ChatList.vue';
 import AgentCreateDialog from '@/components/ui/AgentCreateDialog.vue';
 
 import { useCustomizerStore } from '@/stores/customizer';
+import { usePhoneShell } from '@/shared/phoneShell';
 import { computed } from 'vue';
 import { buildDefinitionProposalMap } from '@/composables/useDefinitionProposals';
 
@@ -508,6 +531,7 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         MembershipRequestBadge,
+        NotificationSidebarMenu,
         ProcessInstanceList,
         ChatList,
         ProjectList,
@@ -528,8 +552,13 @@ export default {
     },
     setup() {
         const customizer = useCustomizerStore();
+        // 휴대폰 간소화 화면에서는 이 사이드바가 클로드 모바일처럼 화면 전체를 덮는
+        // 목록이 된다. 여는 단추는 앱바 왼쪽 위에 있다(MobileAppBar).
+        const { active: phoneShell, state: phoneState } = usePhoneShell();
         return {
-            customizer
+            customizer,
+            phoneShell,
+            phoneState
         };
     },
     provide() {
@@ -569,7 +598,9 @@ export default {
         currentUserInfo: null,
         processProposalsMap: new Map(),
         dmnProposalsMap: new Map(),
-        definitionProposalsWatchRef: null
+        definitionProposalsWatchRef: null,
+        // PAL 전용 — 테넌트별 메뉴 표시 설정 (configuration key='menu_settings')
+        palMenuSettings: { items: {} }
     }),
     computed: {
         mobileSideBarBtnStyle() {
@@ -601,6 +632,58 @@ export default {
             if (this.pal) return getIsAdminClaim();
             const isAdmin = localStorage.getItem('isAdmin') == 'true';
             return isAdmin;
+        },
+        // ---- PAL 전용: 테넌트 메뉴 설정(숨김/이름/순서) + 필요 역할을 반영한 표시 목록 ----
+        palAdminItems() {
+            if (!this.pal) return [];
+            let items = [
+                { title: '속성 스키마', icon: 'formList', to: '/admin-console/property-schemas' },
+                { title: '목록 관리', icon: 'list-bold-duotone', to: '/admin-console/option-lists' },
+                { title: '수정 잠금', icon: 'lock', to: '/admin-console/data-freeze' },
+                { title: '휴지통', icon: 'trash', to: '/admin-console/recycle-bin' },
+                { title: '시스템 운영', icon: 'settings', to: '/admin-console/system-operations' },
+                { title: '보안 설정', icon: 'user-lock', to: '/admin-console/security-settings' },
+                { title: 'KPI 목표', icon: 'target', to: '/admin-console/kpi-targets' },
+                { title: '사용 활성도', icon: 'graph-up-linear', to: '/admin-console/usage-adoption' },
+                { title: '감사 로그', icon: 'document', to: '/admin-console/audit-trail' },
+                { title: 'PI Flag', icon: 'flag-line-duotone', to: '/admin-console/pi-flags' },
+                { title: 'Task 종류 설정', icon: 'completed-task', to: '/admin-console/task-types' },
+                { title: '카탈로그', icon: 'list-bold-duotone', to: '/admin-console/task-catalog' },
+                { title: '업무분장', icon: 'users-group-rounded-line-duotone', to: '/work-assignment' },
+                { title: '사내 정책문서', icon: 'submit-document', to: '/policy-document' },
+                { title: '메뉴 관리', icon: 'menu', to: '/admin-console/menu-settings' },
+                { title: '용어·분류 설정', icon: 'write', to: '/admin-console/terminology' },
+                { title: '운영 정책', icon: 'tuning-square-2-linear', to: '/admin-console/operation-policy' }
+            ];
+            // 메뉴별 필요 역할(menu_role_overrides 포함) 반영 — 판정 실패 시 기존 isAdmin 게이트만 적용
+            try {
+                const role = resolveRole(getIsAdminClaim(), authClaimsState.role);
+                items = items.filter((item) => {
+                    const required = lookupRequiredRole(item.to);
+                    return !required || hasRoleAtLeast(role, required);
+                });
+            } catch (e) {
+                // ignore — 섹션 자체가 isAdmin 게이트로 보호됨
+            }
+            return this.applyPalMenuSettings(items, 'admin');
+        },
+        palProcessItems() {
+            if (!this.pal) return this.processItem;
+            return this.applyPalMenuSettings(this.processItem, 'process');
+        },
+        palOrgItems() {
+            if (!this.pal) return [];
+            return this.applyPalMenuSettings(
+                [
+                    { title: '조직도', icon: 'side-group', to: '/organization', badge: true },
+                    { title: '권한 변경 신청', icon: 'user-admin', to: '/admin-request' }
+                ],
+                'org'
+            );
+        },
+        displayedAnalyticsItems() {
+            if (!this.pal) return this.analyticsItem;
+            return this.applyPalMenuSettings(this.analyticsItem, 'analytics');
         }
     },
     async mounted() {
@@ -626,6 +709,15 @@ export default {
         this.loadCurrentUser();
         this.loadDefinitionProposals();
         this.subscribeDefinitionProposals();
+
+        // PAL 전용 — 테넌트별 메뉴 표시 설정 로드 (실패해도 기본 메뉴 그대로 표시)
+        if (this.pal) {
+            loadMenuSettings()
+                .then((settings) => {
+                    this.palMenuSettings = settings || { items: {} };
+                })
+                .catch((e) => console.warn('메뉴 설정 로드 실패:', e));
+        }
     },
     beforeUnmount() {
         if (this.definitionProposalsWatchRef && typeof this.definitionProposalsWatchRef.unsubscribe === 'function') {
@@ -633,6 +725,51 @@ export default {
         }
     },
     methods: {
+        /**
+         * PAL 전용 — 메뉴 항목 배열에 테넌트 메뉴 설정을 적용한다.
+         * 숨김 필터(메뉴 관리 자신은 제외) → 이름 오버라이드(label) → 사용자 정의 메뉴 합류 → 순서 정렬.
+         * order 미지정 항목은 원래 상대 순서를 유지하고, 사용자 정의 메뉴는 order 가 없으면 섹션 끝에 붙는다.
+         * 사용자 정의 메뉴의 requiredRole 은 표시 조건일 뿐 접근 권한이 아니다(내부 경로는 기존 라우팅 검사).
+         */
+        applyPalMenuSettings(items, section) {
+            if (!this.pal || !Array.isArray(items)) return items;
+            const settings = (this.palMenuSettings && this.palMenuSettings.items) || {};
+            const base = items
+                .filter((item) => {
+                    if (!item.to || item.to === '/admin-console/menu-settings') return true;
+                    return settings[item.to]?.hidden !== true;
+                })
+                .map((item, idx) => {
+                    const setting = (item.to && settings[item.to]) || {};
+                    return {
+                        ...item,
+                        label: setting.label || item.label,
+                        _order: typeof setting.order === 'number' ? setting.order : 100000 + idx
+                    };
+                });
+
+            let role = null;
+            try {
+                role = resolveRole(getIsAdminClaim(), authClaimsState.role);
+            } catch (e) {
+                role = null;
+            }
+            const custom = (section ? getCustomMenuItems(section) : [])
+                .filter((item) => !item.requiredRole || !role || hasRoleAtLeast(role, item.requiredRole))
+                .map((item, idx) => ({
+                    title: item.label,
+                    label: item.label,
+                    icon: item.icon || (item.external ? 'browser' : 'document'),
+                    to: item.external ? undefined : item.target,
+                    href: item.external ? item.target : undefined,
+                    external: item.external,
+                    custom: true,
+                    key: `custom:${item.id}`,
+                    _order: typeof item.order === 'number' ? item.order : 200000 + idx
+                }));
+
+            return [...base, ...custom].sort((a, b) => a._order - b._order);
+        },
         async loadCurrentUser() {
             try {
                 this.currentUserInfo = await backend.getUserInfo();
@@ -825,6 +962,13 @@ export default {
                               icon: 'delegation',
                               BgColor: 'primary',
                               to: '/call-activity-management',
+                              disable: false
+                          },
+                          {
+                              title: '용어 사전',
+                              icon: 'document',
+                              BgColor: 'primary',
+                              to: '/glossary',
                               disable: false
                           }
                       ]

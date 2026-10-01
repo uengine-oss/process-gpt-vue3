@@ -21,6 +21,7 @@
                         :procMap="procMap"
                         :metricsMap="metricsMap"
                         :definitionList="definitionList"
+                        :visibleProcessIds="visibleProcessIdSet"
                         :selectedId="selectedProcessId"
                         :collapsed="false"
                         :loading="loading"
@@ -43,6 +44,28 @@
 
             <!-- Center Panel: BPMN Designer -->
             <div class="hierarchy-center-panel">
+                <!--
+                    공개 범위(proc_def.visibility) 밖의 프로세스로 직접 진입했을 때의 안내.
+                    RLS 로 조회 결과가 0행이면 "없음"과 "권한 없음"을 구분할 수 없으므로(구분하지 않는 편이
+                    존재 자체를 노출하지 않아 안전하다) 통합 문구를 쓴다. 디자이너는 그대로 두고 위에 덮는다 —
+                    다른 프로세스를 고르면 오버레이만 사라지고 에디터 상태는 재생성되지 않는다.
+                -->
+                <div v-if="processAccessDenied" class="hierarchy-access-denied">
+                    <v-icon size="64" color="grey-lighten-1">mdi-lock-outline</v-icon>
+                    <div class="text-h6 text-medium-emphasis mt-4">
+                        {{ $t('processVisibility.accessDeniedTitle') || '이 프로세스를 볼 수 있는 권한이 없습니다' }}
+                    </div>
+                    <div class="text-body-2 text-medium-emphasis mt-1 access-denied-desc">
+                        {{
+                            $t('processVisibility.accessDeniedDesc') ||
+                            '프로세스가 없거나 공개 범위 밖이라 열람할 수 없습니다. 담당자 또는 관리자에게 권한을 요청하세요.'
+                        }}
+                    </div>
+                    <v-btn class="mt-5" color="primary" variant="flat" rounded="lg" size="small" @click="goBackToArchitecture">
+                        <v-icon start size="16">mdi-sitemap-outline</v-icon>
+                        {{ $t('processVisibility.backToArchitecture') || '체계도로 돌아가기' }}
+                    </v-btn>
+                </div>
                 <ProcessHierarchyDesigner
                     ref="designer"
                     :bpmn="bpmnXml"
@@ -50,7 +73,7 @@
                     :processDefinition="processDefinition"
                     :definitionPath="selectedProcessId"
                     :definitionList="definitionList"
-                    :loading="loadingProcess"
+                    :loading="loadingProcess || pendingRouteSelection"
                     :recoveryBackup="recoveryBackup"
                     :isViewMode="isReadOnlyMode"
                     :editorMode="editorMode"
@@ -666,6 +689,7 @@ import { canEdit as roleCanEdit, isOwnerOrAbove } from '@/utils/roles';
 import { isDesignatedOwner } from '@/utils/reviewPermissions';
 import { describeDataFreeze, findMatchingDataFreezeItem, normalizeDataFreezeList } from '@/utils/dataFreeze';
 import { syncProjectMappingsFromModeler } from '@/services/projectMappingsApi';
+import { buildVisibilityUpdatePayload } from '@/utils/procDefVisibility';
 
 const backend = BackendFactory.createBackend();
 const storage = StorageBaseFactory.getStorage();
@@ -702,6 +726,15 @@ export default {
             metricsMap: null,
             dataFreezeList: [],
             definitionList: [],
+            // proc_def 목록(= RLS 로 걸러진 접근 가능 집합)을 실제로 받아왔는지. 실패하면
+            // 트리를 통째로 비우지 않도록 공개 범위 필터를 끈다(fail-open).
+            definitionListLoaded: false,
+            // 공개 범위 밖(또는 존재하지 않는) 프로세스로 직접 진입했을 때의 안내 표시 여부
+            processAccessDenied: false,
+            // 체계도 등에서 특정 프로세스를 지목해 들어왔지만 아직 로드가 시작되지 않은 상태.
+            // 이 동안 "프로세스를 선택하세요" 빈 안내 대신 로딩을 보여준다 — 빈 안내가 뜨면
+            // 사용자는 클릭이 무시된 것으로 오인하고 트리를 다시 클릭하게 된다.
+            pendingRouteSelection: false,
             selectedProcessId: '',
             selectedProcessName: '',
             bpmnXml: '',
@@ -826,16 +859,36 @@ export default {
     },
     async mounted() {
         this.applyEntryStateFromRoute();
-        await this.loadInitialData();
         // Auto-select process from query parameter (from Process Architecture navigation)
         // URL 의 id 는 영구 UUID(신규 표준) 또는 legacy id(과거 북마크) — 내부용 legacy id 로 정규화
         const routeId = this.getRouteText(this.$route?.params?.id);
         const queryId = this.getRouteText(this.$route?.query?.id);
         const queryName = this.getRouteText(this.$route?.query?.name);
-        const initialId = (await resolveProcessRouteId(routeId || queryId)) || this.findProcessIdByName(queryName);
-        if (initialId) {
-            await this.handleSelectProcess(initialId, queryName || initialId);
+        const requestedRouteId = routeId || queryId;
+        // URL 이 프로세스를 지목했으면 대상 로드가 시작될 때까지 빈 안내 대신 로딩을 보여준다.
+        if (requestedRouteId || queryName) this.pendingRouteSelection = true;
+        // 트리 등 초기 데이터와 대상 프로세스 해석·로드는 서로 독립이므로 병렬로 진행한다 —
+        // 체계도에서 클릭해 들어온 사용자가 순서도를 보기까지의 직렬 왕복을 줄인다.
+        // (loadProcess 안의 definitionList 갱신/procMap 사용부는 목록 미로드 상태를 안전히 처리한다)
+        const initialDataPromise = this.loadInitialData();
+        let initialId = await resolveProcessRouteId(requestedRouteId);
+        if (!initialId) {
+            // 이름 폴백은 definitionList/procMap 이 필요하므로 초기 데이터 로드를 기다린다.
+            await initialDataPromise;
+            initialId = this.findProcessIdByName(queryName);
         }
+        try {
+            if (initialId) {
+                await this.handleSelectProcess(initialId, queryName || initialId);
+            } else if (requestedRouteId || queryName) {
+                // URL 이 프로세스를 지목했는데 아무것도 못 찾았다 — RLS 로 가려졌거나 존재하지 않는다.
+                // (resolveProcessRouteId 는 uuid 조회 실패 시 이 둘을 구분하지 않고 null 을 돌려준다)
+                this.markProcessAccessDenied(requestedRouteId || queryName);
+            }
+        } finally {
+            this.pendingRouteSelection = false;
+        }
+        await initialDataPromise;
         window.addEventListener('mousemove', this.onResize);
         window.addEventListener('mouseup', this.stopResize);
         // [6.2.1] Offline 감지 → 자동 로컬 백업
@@ -893,6 +946,35 @@ export default {
         }
     },
     computed: {
+        /**
+         * 공개 범위(proc_def.visibility) 필터용 — 트리에 노출해도 되는 proc_def id 집합.
+         *
+         * 트리 구조(mega/major/sub)는 configuration.proc_map(JSONB) 한 행에서 오므로 proc_def 의
+         * SELECT RLS(proc_def_select_visibility)를 거치지 않는다. 반면 definitionList 는
+         * PalModeBackend.listDefinitionStatusLite() 가 authenticated 키로 proc_def 를 직접
+         * 조회한 결과라 이미 RLS 로 걸러져 있다. 그래서 "RLS 결과에 없는 id 는 트리에서 제외"한다.
+         * 관리자/작성자는 RLS 자체가 통과시키므로 집합에 그대로 남는다.
+         *
+         * null 을 돌려주면 트리는 필터링하지 않는다(fail-open):
+         *  - PAL 모드가 아닐 때 (visibility 기본값이 'all' 이라 비 PAL 동작은 바뀌지 않아야 한다)
+         *  - proc_def 목록 조회가 실패했을 때 (트리가 통째로 비는 회귀 방지)
+         */
+        visibleProcessIdSet() {
+            if (!window.$pal) return null;
+            // PAL + uEngine: PalUengineBackend 에는 listDefinitionStatusLite 가 없어
+            // null-skip 프록시가 빈 배열을 돌려준다. 이를 "전부 숨김"으로 해석하면
+            // 트리가 통째로 비므로 필터를 끈다 (useProcessArchitecture 와 동일 규약).
+            if (window.$mode === 'uEngine') return null;
+            if (!this.definitionListLoaded) return null;
+            const ids = new Set();
+            (this.definitionList || []).forEach((def) => {
+                const id = toSafeText(def?.id || def?.file_name).trim();
+                if (!id) return;
+                ids.add(id);
+                ids.add(id.toLowerCase());
+            });
+            return ids;
+        },
         /** 실행 기능 노출 여부 — execFeatureGate 단일 게이트 (엔진 모드 + 플래그 + admin) */
         isExecUser() {
             return canUseExecFeatures();
@@ -1240,20 +1322,28 @@ export default {
         '$route.params.id': {
             immediate: false,
             async handler(newId) {
-                const normalizedId = await resolveProcessRouteId(this.getRouteText(newId));
+                const requestedId = this.getRouteText(newId);
+                const normalizedId = await resolveProcessRouteId(requestedId);
                 if (normalizedId && normalizedId !== this.selectedProcessId) {
                     const routeName = this.getRouteText(this.$route?.query?.name);
                     await this.handleSelectProcess(normalizedId, routeName || normalizedId);
+                } else if (!normalizedId && requestedId) {
+                    // uuid → proc_def 조회 0행: 미존재 또는 공개 범위 밖
+                    this.markProcessAccessDenied(requestedId);
                 }
             }
         },
         '$route.query.id': {
             immediate: false,
             async handler(newId) {
-                const normalizedId = await resolveProcessRouteId(this.getRouteText(newId));
+                const requestedId = this.getRouteText(newId);
+                const normalizedId = await resolveProcessRouteId(requestedId);
                 if (normalizedId && normalizedId !== this.selectedProcessId) {
                     const routeName = this.getRouteText(this.$route?.query?.name);
                     await this.handleSelectProcess(normalizedId, routeName || normalizedId);
+                } else if (!normalizedId && requestedId) {
+                    // uuid → proc_def 조회 0행: 미존재 또는 공개 범위 밖
+                    this.markProcessAccessDenied(requestedId);
                 }
             }
         },
@@ -2341,6 +2431,11 @@ export default {
                 this.procMap = procMapResult.status === 'fulfilled' ? procMapResult.value : null;
                 this.metricsMap = metricsResult.status === 'fulfilled' ? metricsResult.value : null;
                 const defList = defListResult.status === 'fulfilled' ? defListResult.value : [];
+                // 목록 조회가 실패하면 공개 범위 필터를 끈다 — 트리가 통째로 비는 쪽이 더 나쁜 회귀다.
+                this.definitionListLoaded = defListResult.status === 'fulfilled';
+                if (defListResult.status === 'rejected') {
+                    console.warn('[ProcessHierarchy] 프로세스 정의 목록 로드 실패 — 공개 범위 필터를 적용하지 않습니다:', defListResult.reason);
+                }
                 this.definitionList = this.normalizeDefinitionList(defList);
                 this.dataFreezeList = normalizeDataFreezeList(freezeResult.status === 'fulfilled' ? freezeResult.value : []);
 
@@ -2360,6 +2455,25 @@ export default {
         checkUnsavedChanges() {
             if (!this.selectedProcessId || !this.savedBpmnXml) return false;
             return this.bpmnXml !== this.savedBpmnXml;
+        },
+
+        /**
+         * 공개 범위 밖(또는 존재하지 않는) 프로세스로 진입했음을 화면에 알린다.
+         * URL 직접 진입 / CallActivity 드릴다운 "새 탭으로 열기" 모두 이 경로로 수렴한다.
+         */
+        markProcessAccessDenied(requestedId = '') {
+            this.processAccessDenied = true;
+            this.bpmnLoaded = false;
+            this.selectedElement = null;
+            console.info('[ProcessHierarchy] 프로세스 조회 결과 없음(미존재 또는 공개 범위 밖):', this.getRouteText(requestedId));
+        },
+
+        /** 안내 화면의 복귀 동선 — 프로세스 체계도로 돌아간다. */
+        goBackToArchitecture() {
+            this.processAccessDenied = false;
+            this.$router.push({ name: 'Process Architecture' }).catch((navigationError) => {
+                console.debug('[ProcessHierarchy] 체계도 복귀 네비게이션 스킵:', navigationError);
+            });
         },
 
         async refreshDataFreezeList({ silent = false } = {}) {
@@ -2392,6 +2506,9 @@ export default {
             // 다른 프로세스로 전환 → 저장되지 않은(임시저장만 된) 감사 버퍼 폐기
             this.pendingPropertyAudits = {};
 
+            // 새 대상으로 넘어가므로 이전 "권한 없음" 안내는 걷는다 (loadProcess 가 다시 판정한다)
+            this.processAccessDenied = false;
+
             // 이전 프로세스에 대한 편집 lock 해제
             if (this.requestedMode === PROCESS_HIERARCHY_MODE.EDIT && this.selectedProcessId) {
                 await this.releaseProcessEditLock(this.selectedProcessId);
@@ -2415,26 +2532,31 @@ export default {
             // URL 동기화 (새로고침 시 선택 유지)
             // ID에 슬래시가 포함될 수 있으므로 path param 대신 query로 동기화.
             // URL 표기는 영구 UUID 기준 — legacy id 링크로 들어와도 uuid 로 치환된다(조회 실패 시 legacy 유지).
+            // uuid 조회(1왕복)가 순서도 로딩을 막지 않도록 기다리지 않는다 — 결과는 URL 표기뿐이다.
             const currentRouteId = this.getRouteText(this.$route?.params?.id) || this.getRouteText(this.$route?.query?.id);
-            const desiredRouteId = (await processUuidForRoute(selectedId)) || selectedId;
-            if (currentRouteId !== desiredRouteId) {
-                const nextQuery = { ...this.$route.query, id: desiredRouteId };
-                if (selectedName) nextQuery.name = selectedName;
-                else delete nextQuery.name;
-                const routeSyncMethod = options.routeSyncMode === 'push' ? 'push' : 'replace';
-                await this.$router[routeSyncMethod]({
-                    path: '/process-hierarchy',
-                    query: nextQuery
-                }).catch((navigationError) => {
-                    console.debug('[ProcessHierarchy] route sync skipped:', navigationError);
-                });
-            }
+            void (async () => {
+                const desiredRouteId = (await processUuidForRoute(selectedId)) || selectedId;
+                // 조회하는 사이 다른 프로세스로 이동했으면 낡은 URL 로 덮지 않는다.
+                if (this.selectedProcessId !== selectedId) return;
+                if (currentRouteId !== desiredRouteId) {
+                    const nextQuery = { ...this.$route.query, id: desiredRouteId };
+                    if (selectedName) nextQuery.name = selectedName;
+                    else delete nextQuery.name;
+                    const routeSyncMethod = options.routeSyncMode === 'push' ? 'push' : 'replace';
+                    await this.$router[routeSyncMethod]({
+                        path: '/process-hierarchy',
+                        query: nextQuery
+                    }).catch((navigationError) => {
+                        console.debug('[ProcessHierarchy] route sync skipped:', navigationError);
+                    });
+                }
+            })();
 
-            await this.refreshDataFreezeList({ silent: true });
+            // 수정 잠금 목록은 표시 부가정보 — 로딩 경로를 막지 않는다(fire-and-forget, 실패는 내부에서 무시).
+            void this.refreshDataFreezeList({ silent: true });
 
-            // Lock 체크: 다른 사용자가 편집 중인지 확인
-            await this.checkEditLock(selectedId);
-            await this.loadProcess(selectedId);
+            // Lock 체크(다른 사용자가 편집 중인지)와 프로세스 로드는 독립 — 병렬로 진행한다.
+            await Promise.all([this.checkEditLock(selectedId), this.loadProcess(selectedId)]);
             if (this.requestedMode === PROCESS_HIERARCHY_MODE.HISTORY) {
                 await this.handleVersionHistory();
             }
@@ -2669,6 +2791,7 @@ export default {
             const normalizedId = this.getRouteText(id);
             if (!normalizedId) return;
             this.loadingProcess = true;
+            this.processAccessDenied = false;
             this.bpmnXml = '';
             try {
                 const [def, reviewContext, hierarchyMeta] = await Promise.all([
@@ -2751,10 +2874,13 @@ export default {
                         await this.syncProcessHierarchyMetadata(normalizedId, this.procMap);
                     }
                 } else {
+                    // proc_def 조회가 0행 — "존재하지 않음"과 "공개 범위 밖(RLS 차단)"을 클라이언트에서
+                    // 구분할 수 없다. 구분하지 않는 편이 존재 여부를 노출하지 않아 보안상 낫다.
                     this.processDefinition = null;
                     this.bpmnXml = '';
                     this.processVariables = [];
                     this.roles = [];
+                    this.markProcessAccessDenied(normalizedId);
                 }
                 this.loadHistoryVersionsQuiet();
             } catch (e) {
@@ -3990,6 +4116,10 @@ export default {
                 const parentChange = data._parentChange;
                 delete data._parentChange;
 
+                // 공개 범위 (PAL 전용, docs/security.md 4-2) — proc_def 컬럼으로 직접 저장한다.
+                const visibilityChange = data._visibility;
+                delete data._visibility;
+
                 const currentDefBefore = this.processDefinition.definition || {};
                 const beforeSnapshot = {
                     name: this.processDefinition.name,
@@ -4068,6 +4198,11 @@ export default {
                     definition: updatedDef
                 };
 
+                // visibility / allowed_org_codes 는 기본값('all')에서 벗어난 경우에만 payload 에 넣는다.
+                // (20260911_proc_def_visibility.sql 미적용 환경에서 기존 저장이 깨지지 않도록)
+                const visibilityPayload = buildVisibilityUpdatePayload(visibilityChange?.next, visibilityChange?.previous);
+                Object.assign(updatePayload, visibilityPayload);
+
                 // FR-012: 프로세스명이 실제로 바뀌면 BPMN XML 의 <process name> 도 함께 갱신한다.
                 //   <process id> 는 변경하지 않는다 (C4: id = proc_def_id = proc_map.sub.id = calledElement 타깃).
                 //   name 만 바꾼 businessObject 를 재직렬화해 proc_def.bpmn 컬럼에 반영(별도 저장 호출 없이 동일 payload 로).
@@ -4094,6 +4229,11 @@ export default {
                 }
 
                 await backend.updateProcessDefinitionMetadata(this.selectedProcessId, updatePayload, '속성 저장');
+
+                if (Object.prototype.hasOwnProperty.call(visibilityPayload, 'visibility')) {
+                    this.processDefinition.visibility = visibilityPayload.visibility;
+                    this.processDefinition.allowed_org_codes = visibilityPayload.allowed_org_codes;
+                }
 
                 this.processDefinition.definition = updatedDef;
 
@@ -5126,11 +5266,31 @@ export default {
 }
 
 .hierarchy-center-panel {
+    position: relative;
     flex: 1;
     min-width: 400px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+}
+
+/* 공개 범위 밖 프로세스 진입 안내 — 디자이너 위를 덮는 캔버스 중앙 empty-state */
+.hierarchy-access-denied {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    background-color: #ffffff;
+    background-color: rgb(var(--v-theme-surface));
+}
+
+.hierarchy-access-denied .access-denied-desc {
+    max-width: 420px;
 }
 
 .hierarchy-right-panel {

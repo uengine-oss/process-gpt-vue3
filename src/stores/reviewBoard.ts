@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import BackendFactory from '@/components/api/BackendFactory';
+import { getFeedbackAlertDays, getStalledDays } from '@/services/tenantCustomizationService';
 
 const backend: any = BackendFactory.createBackend();
 
@@ -117,17 +118,19 @@ export const useReviewBoardStore = defineStore({
         publishedItems: (state) => state.items.filter((i) => i.state === 'published'),
         rejectedItems: (state) => state.items.filter((i) => i.state === 'rejected'),
 
-        // Critical Alert: 공람 D-7 이하 또는 7일 이상 정체
+        // Critical Alert: 공람 마감 D-n 이하 또는 n일 이상 정체 — 기준 일수는 테넌트 운영 정책(기본 7/7)
         criticalAlerts: (state): ReviewItem[] => {
+            const alertDays = getFeedbackAlertDays();
+            const stalledDays = getStalledDays();
             return state.items.filter((item) => {
                 if (
                     item.public_feedback_days_remaining !== null &&
                     item.public_feedback_days_remaining !== undefined &&
-                    item.public_feedback_days_remaining <= 7
+                    item.public_feedback_days_remaining <= alertDays
                 ) {
                     return true;
                 }
-                if (item.days_since_update && item.days_since_update >= 7 && !['published', 'archived', 'cancelled'].includes(item.state)) {
+                if (item.days_since_update && item.days_since_update >= stalledDays && !['published', 'archived', 'cancelled'].includes(item.state)) {
                     return true;
                 }
                 return false;

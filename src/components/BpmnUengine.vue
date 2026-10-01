@@ -262,6 +262,10 @@ export default {
         }
     },
     async mounted() {
+        // 디자이너가 :key 변경으로 이 인스턴스를 곧바로 파괴·재생성할 수 있다.
+        // mounted 는 아래 await 들 때문에 파괴 후에도 이어서 실행되므로, 각 await 뒤에서
+        // 이 플래그를 확인해 죽은 인스턴스가 viewer 생성/import/리스너 등록을 하지 않게 한다.
+        this._unmounted = false;
         this.onLoadStart();
         this.canvasContainer = document.getElementById('canvas-container');
         this._recordDiagramUserInput = (event) => {
@@ -289,6 +293,7 @@ export default {
 
         // Load palette settings before initializing viewer
         await this.loadPaletteSettings();
+        if (this._unmounted) return;
 
         this.initializeViewer();
         this.setDiagramEvent();
@@ -330,9 +335,13 @@ export default {
 </bpmn:definitions>`;
             }
         }
+        // 위 분기의 await(팀명 조회) 중에 인스턴스가 파괴됐으면 여기서 멈춘다 —
+        // beforeUnmount 가 이미 실행돼 아래에서 등록하는 리스너는 해제될 곳이 없다.
+        if (this._unmounted) return;
         Promise.resolve()
             .then(() => {
-                if (!this.diagramXML) return;
+                // bpmnViewer 가 null 이면 그 사이 beforeUnmount 로 파괴된 것 — 조용히 종료.
+                if (!this.diagramXML || !this.bpmnViewer) return;
                 let xml = this.diagramXML;
                 // <uengine:json> 요소 형식은 모드와 무관하게 json 속성 형식으로 정규화해서 import 한다 —
                 // moddle 스키마(json isAttr)가 요소 형식을 못 읽어 RACI 등 확장 데이터가 유실된다.
@@ -341,6 +350,7 @@ export default {
                 return this.bpmnViewer.importXML(xml);
             })
             .catch((e) => {
+                if (this._unmounted) return;
                 console.error('[BpmnUengine] 초기 import 실패:', e);
                 this.$emit('error', e);
             })
@@ -357,6 +367,8 @@ export default {
         document.addEventListener('keydown', this._keyboardHandler);
     },
     beforeUnmount() {
+        // mounted 의 await 이후 구간이 파괴된 인스턴스에서 계속 실행되지 않도록 표시
+        this._unmounted = true;
         if (this._recordDiagramUserInput) {
             document.removeEventListener('mousedown', this._recordDiagramUserInput, true);
             document.removeEventListener('keydown', this._recordDiagramUserInput, true);
@@ -925,6 +937,11 @@ export default {
 
                 // 팔레트·변경 메뉴가 읽는 window 전역(실효 노출 목록 포함) 발행
                 catalogStore.publishPaletteSettingsToWindow();
+
+                // PAL: 변경(replace) 메뉴의 Task Catalog 엔트리가 스토어 목록을 읽는다
+                if (window.$pal && !catalogStore.catalogLoaded) {
+                    await catalogStore.loadCatalog();
+                }
             } catch (error) {
                 console.error('Failed to load palette settings:', error);
                 // Set default settings
@@ -2015,6 +2032,13 @@ export default {
                     onAfterEnter: () => self.resetZoom(),
                     onError: (error) => {
                         console.warn('CallActivity 펼쳐보기 실패', error);
+                        // 공개 범위(proc_def.visibility) 밖이면 조회가 0행이라 도면을 못 얻는다 —
+                        // 프로세스 계층 화면의 직접 진입 안내와 같은 통합 문구를 토스트로 보여준다.
+                        if (error?.code === 'LINKED_PROCESS_UNAVAILABLE') {
+                            self.$toast?.warning(
+                                self.$t?.('processVisibility.accessDeniedShort') || '프로세스가 없거나 볼 수 있는 권한이 없습니다.'
+                            );
+                        }
                         self.$emit('error', error);
                     }
                 }]
@@ -3032,12 +3056,6 @@ export default {
         createTaskFromCatalog(catalogItem, position) {
             if (!this.bpmnViewer) return;
 
-            console.log('=== createTaskFromCatalog ===');
-            console.log('catalogItem:', catalogItem);
-            console.log('catalogItem.task_type:', catalogItem.task_type);
-            console.log('catalogItem.name:', catalogItem.name);
-            console.log('catalogItem.properties:', catalogItem.properties);
-
             const modeling = this.bpmnViewer.get('modeling');
             const elementFactory = this.bpmnViewer.get('elementFactory');
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
@@ -3081,11 +3099,9 @@ export default {
             if (!taskType.startsWith('bpmn:')) {
                 taskType = 'bpmn:' + taskType;
             }
-            console.log('Final taskType:', taskType);
 
             // Task name - use the name from catalog (original task name)
             const taskName = catalogItem.name || catalogItem.display_name || 'New Task';
-            console.log('Task name:', taskName);
 
             // Create business object for the task with the correct type
             const businessObject = bpmnFactory.create(taskType, {
@@ -3100,7 +3116,6 @@ export default {
 
             // Add shape to canvas
             const createdShape = modeling.createShape(shape, position, parent);
-            console.log('Created shape:', createdShape);
 
             // Prepare extension elements with ALL properties from catalog
             const propertiesJson = {
@@ -3108,7 +3123,6 @@ export default {
                 _catalogId: catalogItem.id,
                 _systemName: catalogItem.system_name
             };
-            console.log('Properties to save:', propertiesJson);
 
             // Create extension elements
             const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
@@ -3121,9 +3135,6 @@ export default {
             modeling.updateProperties(createdShape, {
                 extensionElements: extensionElements
             });
-
-            console.log(`Created ${taskType} from catalog: ${taskName}`);
-            console.log('=== createTaskFromCatalog done ===');
         },
         openColorRulesetDialog() {
             // Load rules from BPMN XML before opening dialog

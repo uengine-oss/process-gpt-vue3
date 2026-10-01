@@ -6,28 +6,44 @@ import {
     PROCESS_HIERARCHY_ENTRY
 } from '@/views/process-hierarchy/navigation';
 import { getMajorBusinessDomain } from './processClassification';
+import { isUncategorizedProcess } from '@/utils/uncategorizedProcess';
 import { collectHierarchyProcIds, collectModuleProcIds, deriveStatus } from '@/utils/processStages';
 import { formatDateKST } from '@/utils/datetime';
+import { getPublicFeedbackDays } from '@/services/tenantCustomizationService';
 export { generateProcessId, collectAllProcessIds, isPidInUse } from './processIdUtils';
 
 export type ViewMode = 'card' | 'matrix' | 'tree' | 'mermaid';
 
-/** 도메인 표시 순서: Access > Core > IP > 유선 > 설비 > 공통 */
-export const DOMAIN_SORT_ORDER = ['Access', 'Core', 'IP', '유선', '설비', '공통'];
+/**
+ * 이전 버전이 최초 진입 시 URL 에 자동 기록하던 기본 도메인 필터(특정 고객사 값).
+ * 지금은 도메인 추론 시드로 쓰지 않으며, 옛 URL 을 전체뷰로 정리하는 용도로만 남긴다.
+ */
+export const DEFAULT_SELECTED_DOMAINS = ['Access', 'Core', 'IP', '유선', '설비', '공통'];
 
-/** 이전 버전이 최초 진입 시 URL에 자동 기록하던 기본 도메인 필터 */
-export const DEFAULT_SELECTED_DOMAINS = [...DOMAIN_SORT_ORDER];
-
-export function getDomainSortIndex(name: string): number {
-    const idx = DOMAIN_SORT_ORDER.indexOf(name);
-    return idx >= 0 ? idx : DOMAIN_SORT_ORDER.length;
+/**
+ * @deprecated 고정 시드 순서가 사라져 항상 0 을 돌려준다.
+ * 도메인 순서는 metrics.domains[].order(관리자 지정) → 없으면 등록 순서다.
+ */
+export function getDomainSortIndex(_name: string): number {
+    return 0;
 }
 
-export function sortDomains<T extends { name: string }>(domains: T[]): T[] {
-    return [...domains].sort((a, b) => getDomainSortIndex(a.name) - getDomainSortIndex(b.name));
+export function sortDomains<T extends { name: string; order?: number }>(domains: T[]): T[] {
+    // 관리자가 지정한 order 가 하나라도 있으면 order 우선 정렬(미지정은 등록 순서로 뒤에).
+    // order 가 전혀 없는 테넌트는 등록 순서를 그대로 유지한다(안정 정렬).
+    const hasExplicitOrder = domains.some((d) => Number.isFinite(Number((d as any)?.order)));
+    const sortKey = (d: T, index: number): number => {
+        const order = Number((d as any)?.order);
+        if (hasExplicitOrder && Number.isFinite(order)) return order;
+        return 10_000 + index;
+    };
+    return domains
+        .map((d, index) => ({ d, k: sortKey(d, index) }))
+        .sort((a, b) => a.k - b.k)
+        .map((x) => x.d);
 }
 
-type DomainOption = { id: string; name: string; color?: string };
+type DomainOption = { id: string; name: string; color?: string; order?: number };
 
 function normalizeDomainKey(value: unknown): string {
     return String(value ?? '').trim().toLowerCase();
@@ -209,10 +225,12 @@ function toDomainOption(domain: any): DomainOption | null {
     const name = String(domain?.name ?? domain?.id ?? '').trim();
     const id = String(domain?.id ?? domain?.name ?? '').trim();
     if (!name || !id) return null;
+    const order = Number(domain?.order);
     return {
         id,
         name,
-        color: domain?.color
+        color: domain?.color,
+        ...(Number.isFinite(order) ? { order } : {})
     };
 }
 
@@ -237,6 +255,7 @@ export function mergeDomainLists(primary: any[] = [], secondary: any[] = []): Do
         if (!existing.color && normalized.color) existing.color = normalized.color;
         if (!existing.name && normalized.name) existing.name = normalized.name;
         if (!existing.id && normalized.id) existing.id = normalized.id;
+        if (existing.order === undefined && normalized.order !== undefined) existing.order = normalized.order;
     };
 
     for (const domain of primary || []) mergeOne(domain);
@@ -245,11 +264,17 @@ export function mergeDomainLists(primary: any[] = [], secondary: any[] = []): Do
     return merged;
 }
 
-export function deriveDomainsFromProcMap(map: any): DomainOption[] {
+/**
+ * proc_map 에서 도메인 목록을 보강한다.
+ * 추론 근거는 테넌트 도메인 목록(knownDomains = metrics.domains)뿐이다 — 예전의 고정 6개 시드
+ * ('Access','Core',…)는 "설비관리" 같은 이름에서 통신사 도메인을 만들어 DB 에 굳혔으므로 제거했다.
+ * 도메인 추론이 꺼진 테넌트는 major 의 명시 필드(domain/domain_id)만 반영된다.
+ */
+export function deriveDomainsFromProcMap(map: any, knownDomains: DomainOption[] = []): DomainOption[] {
     if (!map?.mega_proc_list) return [];
 
     const seen = new Set<string>();
-    const knownDomainSeed = DOMAIN_SORT_ORDER.map((name) => ({ id: name, name }));
+    const knownDomainSeed = (knownDomains || []).filter((d) => d?.name || d?.id).map((d) => ({ id: d.id || d.name, name: d.name || d.id }));
     const list: DomainOption[] = [];
 
     const addDerivedDomain = (domain: DomainOption | null) => {
@@ -417,6 +442,8 @@ export function useProcessArchitecture() {
     const activeView: Ref<ViewMode> = ref('mermaid');
     const processStatuses: Ref<Map<string, ProcessStatus>> = ref(new Map());
     const allProcDefs: Ref<any[]> = ref([]);
+    // proc_def 목록(RLS 적용) 조회가 한 번이라도 성공했는지 — 공개 범위 필터의 fail-open 판정에 쓴다.
+    const procDefsLoaded = ref(false);
     const showToBe = ref(false);
 
     // Filter presets - persisted in localStorage
@@ -540,7 +567,7 @@ export function useProcessArchitecture() {
                 try {
                     const { data: approvalStates } = await supabase
                         .from('proc_def_approval_state')
-                        .select('proc_def_id, state, version, version_label, major_version, minor_version, created_at, updated_at')
+                        .select('proc_def_id, state, version, version_label, major_version, minor_version, created_at, updated_at, public_feedback_ends_at')
                         .eq('tenant_id', (window as any).$tenantName)
                         .order('created_at', { ascending: false });
 
@@ -607,6 +634,7 @@ export function useProcessArchitecture() {
                 ...def,
                 created_by: def.created_by || creatorByProcId.get(def.id) || null
             }));
+            procDefsLoaded.value = true;
             if (myProcessFilter.value.myOrganization) {
                 await hydrateProcessBpmnForSwimlaneFilter();
             }
@@ -636,14 +664,28 @@ export function useProcessArchitecture() {
                 let dDay: number | undefined;
                 let reviewEndDate: string | undefined;
 
-                // Calculate D-day for public_feedback: 30 days from review start date
+                // 공람 D-day: DB 의 public_feedback_ends_at(관리자가 건별로 조정 가능)을 우선 읽는다.
+                // 없을 때만 시작일 + 테넌트 공람 기간(operation_policy.public_feedback_days)으로 계산한다.
+                // 예전에는 항상 30일을 재계산해 리뷰보드에서 기간을 바꿔도 체계도에 반영되지 않았다.
                 if (status === 'public_feedback' && approval) {
-                    const reviewStartStr = approval.updated_at || approval.created_at || def.updated_at || def.created_at;
-                    if (reviewStartStr) {
-                        const reviewStart = new Date(reviewStartStr);
-                        reviewStart.setHours(0, 0, 0, 0);
-                        const endDate = new Date(reviewStart);
-                        endDate.setDate(endDate.getDate() + 30);
+                    let endDate: Date | null = null;
+                    if (approval.public_feedback_ends_at) {
+                        const parsed = new Date(approval.public_feedback_ends_at);
+                        if (!Number.isNaN(parsed.getTime())) {
+                            parsed.setHours(0, 0, 0, 0);
+                            endDate = parsed;
+                        }
+                    }
+                    if (!endDate) {
+                        const reviewStartStr = approval.updated_at || approval.created_at || def.updated_at || def.created_at;
+                        if (reviewStartStr) {
+                            const reviewStart = new Date(reviewStartStr);
+                            reviewStart.setHours(0, 0, 0, 0);
+                            endDate = new Date(reviewStart);
+                            endDate.setDate(endDate.getDate() + getPublicFeedbackDays());
+                        }
+                    }
+                    if (endDate) {
                         reviewEndDate = formatDateKST(endDate);
                         const diffMs = endDate.getTime() - today.getTime();
                         dDay = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
@@ -665,10 +707,14 @@ export function useProcessArchitecture() {
 
     // 도메인: metrics 값을 기본으로 사용하되, procMap에서 누락된 도메인을 보강한다.
     // metrics가 부분 응답이어도 화면 분류가 "미분류"로 무너지지 않도록 union 처리한다.
+    //
+    // '미분류'는 도메인이 아니라 "도메인 미지정"을 가리키는 시스템 예약 항목이므로
+    // 도메인 목록에서 제외한다. (과거 정의체계도 화면이 metrics 에 저장해 둔 행도 함께 걸러진다)
     const domains = computed(() => {
         const fromMetrics = Array.isArray(metricsMap.value?.domains) ? metricsMap.value.domains : [];
-        const fromProcMap = deriveDomainsFromProcMap(procMap.value);
-        return sortDomains(mergeDomainLists(fromMetrics, fromProcMap));
+        const fromProcMap = deriveDomainsFromProcMap(procMap.value, fromMetrics);
+        const merged = mergeDomainLists(fromMetrics, fromProcMap).filter((domain) => !isUncategorizedProcess(domain));
+        return sortDomains(merged);
     });
 
     function buildDomainFilterSet(filterValues: string[]): Set<string> {
@@ -859,8 +905,79 @@ export function useProcessArchitecture() {
         return true;
     }
 
-    const filteredProcMap = computed(() => {
+    /**
+     * 공개 범위(proc_def.visibility) 필터용 — 체계도에 노출해도 되는 proc_def id 집합.
+     *
+     * 체계도 계층은 configuration.proc_map(JSONB) 한 행에서 오므로 proc_def 의 SELECT RLS
+     * (proc_def_select_visibility)를 거치지 않는다. 반면 allProcDefs 는 listDefinitionStatusLite()
+     * 가 proc_def 를 직접 조회한 결과라 이미 RLS 로 걸러져 있다. 그래서 계층도 화면과 동일하게
+     * "RLS 결과에 없는 id 는 표시 계층에서만 제외"한다. 관리자/작성자는 RLS 가 통과시킨다.
+     *
+     * null 이면 필터링하지 않는다(fail-open):
+     *  - PAL 모드가 아닐 때 (visibility 기본값이 'all' 이라 비 PAL 동작은 바뀌지 않아야 한다)
+     *  - PAL + uEngine 모드일 때 (PalUengineBackend 는 supabase proc_def 를 읽지 않는다.
+     *    listDefinitionStatusLite 자체가 없어 BackendFactory 의 null-skip 프록시가 [] 를
+     *    돌려주므로, 이를 "아무것도 못 본다"로 해석하면 체계도가 통째로 비어버린다.)
+     *  - proc_def 목록 조회가 아직/영영 실패했을 때 (체계도가 통째로 비는 회귀 방지)
+     */
+    const visibleProcessIdSet = computed<Set<string> | null>(() => {
+        if (typeof window === 'undefined' || !(window as any).$pal) return null;
+        if ((window as any).$mode === 'uEngine') return null;
+        if (!procDefsLoaded.value) return null;
+        const ids = new Set<string>();
+        for (const def of allProcDefs.value || []) {
+            const id = String(def?.id ?? '').trim();
+            if (!id) continue;
+            ids.add(id);
+            ids.add(id.toLowerCase());
+        }
+        return ids;
+    });
+
+    /**
+     * 공개 범위 판정. 집합이 없으면(비 PAL / 로드 실패) 항상 true.
+     * proc_map 의 id 표기와 proc_def.id 표기가 대소문자로 어긋나는 사례가 있어 소문자도 함께 본다.
+     */
+    function isSubProcessVisible(subId: unknown, visibleIds: Set<string> | null): boolean {
+        if (!visibleIds) return true;
+        const id = String(subId ?? '').trim();
+        if (!id) return false;
+        return visibleIds.has(id) || visibleIds.has(id.toLowerCase());
+    }
+
+    /**
+     * 표시 전용 proc_map — 공개 범위 밖 sub 프로세스만 제거한다(mega/major/도메인 구조는 유지).
+     *
+     * !! 저장 경로에서는 절대 쓰지 말 것 !!
+     * 이 맵을 putProcessDefinitionMap 으로 되쓰면 "보이지 않는" 프로세스가 proc_map 에서 삭제된다.
+     * 편집·저장(handleMoveSub / saveEditProcess / RestructureStudio / NewProcessDialog PID 생성)은
+     * 반드시 원본 procMap 을 clone 해서 쓴다.
+     */
+    const visibleProcMap = computed(() => {
         const map = procMap.value;
+        const visibleIds = visibleProcessIdSet.value;
+        if (!visibleIds || !map?.mega_proc_list) return map;
+
+        let changed = false;
+        const megaList = map.mega_proc_list.map((mega: any) => ({
+            ...mega,
+            major_proc_list: (mega.major_proc_list || []).map((major: any) => {
+                const subs = major.sub_proc_list || [];
+                const kept = subs.filter((sub: any) => isSubProcessVisible(sub?.id, visibleIds));
+                if (kept.length === subs.length) return major;
+                changed = true;
+                return { ...major, sub_proc_list: kept };
+            })
+        }));
+
+        // 숨길 게 없으면 원본 참조를 그대로 유지(불필요한 재렌더 방지)
+        if (!changed) return map;
+        return { ...map, mega_proc_list: megaList };
+    });
+
+    const filteredProcMap = computed(() => {
+        // 표시용 필터는 모두 visibleProcMap(공개 범위 적용본) 위에서 동작한다.
+        const map = visibleProcMap.value;
         if (!map || !map.mega_proc_list) return { mega_proc_list: [] };
 
         const query = debouncedSearchQuery.value.toLowerCase().trim();
@@ -1135,8 +1252,11 @@ export function useProcessArchitecture() {
         return favorites.value.has(id);
     }
 
-    // Top 5 recently viewed items
-    const topRecentlyViewed = computed(() => recentlyViewed.value.slice(0, 5));
+    // Top 5 recently viewed items — 공개 범위 밖(=RLS 결과에 없는) 프로세스는 최근 목록에서도 감춘다.
+    const topRecentlyViewed = computed(() => {
+        const visibleIds = visibleProcessIdSet.value;
+        return recentlyViewed.value.filter((item) => isSubProcessVisible(item?.id, visibleIds)).slice(0, 5);
+    });
 
     function getDomainColor(domainName: string): string {
         const d = domains.value.find((d: any) => d.name === domainName);
@@ -1531,6 +1651,8 @@ export function useProcessArchitecture() {
         loadData,
         loadProcessStatuses,
         domains,
+        visibleProcMap,
+        visibleProcessIdSet,
         filteredProcMap,
         filteredMetricsMap,
         stats,

@@ -391,6 +391,18 @@ export default {
         procMap: { type: Object, default: null },
         metricsMap: { type: Object, default: null },
         definitionList: { type: Array, default: () => [] },
+        /**
+         * 공개 범위(proc_def.visibility) 필터.
+         *
+         * 트리 구조는 configuration.proc_map(JSONB)에서 오기 때문에 proc_def 의 SELECT RLS
+         * (proc_def_select_visibility)를 전혀 거치지 않는다 — proc_map 에 이름·계층이 복제돼
+         * 있어서다. 그래서 "RLS 하에서 실제로 조회된 proc_def id 집합"(= definitionList)을
+         * 받아 그 밖의 sub 노드를 트리에서 제외한다.
+         *
+         * null 이면 필터링하지 않는다(비 PAL 모드 / 목록 로드 실패 시 fail-open).
+         * mega·major(구조) 노드는 그대로 두고 sub(프로세스) 노드만 숨긴다.
+         */
+        visibleProcessIds: { type: Set, default: null },
         selectedId: { type: String, default: '' },
         hideHeader: { type: Boolean, default: false },
         collapsed: { type: Boolean, default: false },
@@ -512,6 +524,8 @@ export default {
                         if (major.sub_proc_list) {
                             for (const [subIndex, sub] of major.sub_proc_list.entries()) {
                                 const subId = toSafeText(sub?.id || `${majorId}-sub-${subIndex}`).trim() || `${majorId}-sub-${subIndex}`;
+                                // 공개 범위 밖(= RLS 로 proc_def 조회 결과에 없는) 프로세스는 트리에서 제외한다.
+                                if (!this.isProcessVisible(subId)) continue;
                                 majorNode.children.push({
                                     id: subId,
                                     name: toSafeText(sub?.name || subId),
@@ -524,8 +538,10 @@ export default {
                     }
                 }
 
+                // 관리자가 도메인 관리에서 지정한 순서(metrics.domains[].order)를 따른다.
+                // order 가 없는 테넌트는 기존 시드 순서를 그대로 쓴다(하위호환).
                 const sortedDomainKeys = Object.keys(domainGroups).sort(
-                    (a, b) => getDomainSortIndex(domainGroups[a].name) - getDomainSortIndex(domainGroups[b].name)
+                    (a, b) => this.getDomainOrderIndex(domainGroups[a]) - this.getDomainOrderIndex(domainGroups[b])
                 );
                 for (const domainId of sortedDomainKeys) {
                     megaNode.children.push(domainGroups[domainId]);
@@ -569,6 +585,28 @@ export default {
         },
     },
     methods: {
+        /**
+         * 공개 범위 판정. visibleProcessIds 가 주어지지 않으면(비 PAL / 로드 실패) 항상 true.
+         * proc_map 의 id 표기와 proc_def.id 표기가 대소문자로 어긋나는 사례가 있어 소문자도 함께 본다.
+         */
+        isProcessVisible(procDefId) {
+            if (!this.visibleProcessIds) return true;
+            const id = toSafeText(procDefId).trim();
+            if (!id) return false;
+            return this.visibleProcessIds.has(id) || this.visibleProcessIds.has(id.toLowerCase());
+        },
+        /**
+         * 도메인 정렬 키 — 관리자가 지정한 metrics.domains[].order 우선.
+         * order 가 지정된 도메인이 하나도 없으면 기존 시드 순서로 폴백한다.
+         */
+        getDomainOrderIndex(group) {
+            const list = this.metricsMap?.domains || [];
+            const name = toSafeText(group?.name).trim();
+            const matched = list.find((d) => toSafeText(d?.name).trim() === name || toSafeText(d?.id).trim() === name);
+            const order = Number(matched?.order);
+            if (Number.isFinite(order) && list.some((d) => Number.isFinite(Number(d?.order)))) return order;
+            return 10000 + getDomainSortIndex(name);
+        },
         filterNodes(nodes, query) {
             const result = [];
             for (const node of nodes) {

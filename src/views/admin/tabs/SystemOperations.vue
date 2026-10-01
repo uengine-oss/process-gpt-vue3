@@ -191,6 +191,12 @@
             </div>
         </div>
 
+        <!--
+            감사 로그 보관 정책은 보안 설정 화면(/admin-console/security-settings)으로
+            옮겼다 — 세션 타임아웃·로그인 잠금·MFA·다운로드 임계치와 함께 보는 편이
+            운영에 맞아서다. store 액션(fetch/saveAuditLogRetention)은 그대로 쓴다.
+        -->
+
         <!-- ===================== Section 3: Restructure Cut-over Jobs ===================== -->
         <div class="section-card">
             <div class="section-header">
