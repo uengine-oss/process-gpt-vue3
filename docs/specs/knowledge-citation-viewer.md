@@ -17,7 +17,7 @@ PDF 는 원본 쪽, HWPX·DOCX 는 memento 가 만든 변환본 PDF 쪽 위에 �
 | `src/components/knowledge/citation/CitationViewer.vue` | 원문 화면과 칠할 자리 결정 |
 | `src/components/knowledge/citation/citationApi.js` | memento `/document/blocks`·`/document/page-image`·`/document/locate` |
 | `src/components/ui/Chat.vue` | 칩 클릭 → 뷰어 대화상자 |
-| `src/views/knowledge/CitationLabPage.vue` | `/knowledge/citation-lab` 확인용 화면 |
+| `src/views/_lab/CitationLabPage.vue` (gitignore, 로컬 전용) | 개발 서버에서 `/lab/citation-lab` 확인용 화면 |
 
 ## 인용 → 칩 (`withKbCitations`)
 
@@ -38,8 +38,9 @@ PDF 는 원본 쪽, HWPX·DOCX 는 memento 가 만든 변환본 PDF 쪽 위에 �
 
 ## 알려진 한계
 
-- 2단 PDF 는 memento 파서가 두 단을 한 줄씩 번갈아 추출해, 원문 그대로인 발췌도 찾지 못하고 섹션 표시로 떨어진다
-  (검증셋 KoPub). 파서 쪽 과제.
+- 2단 PDF 는 memento 파서가 두 단을 한 줄씩 번갈아 추출해 원문 그대로인 발췌도 못 찾았다. 파서는 고쳤고
+  (memento `PARSER_VERSION 2026-09-30.layout`, 거부됐던 KoPub 발췌 0/22 → 16/22), 재인덱싱한 문서부터 풀린다.
+- HWPX 변환본은 rhwp 가 다단·쪽 넘김 표를 제대로 그리지 못해 쪽 모양이 원본과 다를 수 있다.
 - HWPX 변환본이 아직 없으면 첫 열람이 30~70초 걸린다. 배포 뒤 memento `scripts/prewarm_renditions.py` 로 채운다.
 
 ## 테스트

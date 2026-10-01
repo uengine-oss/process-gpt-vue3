@@ -210,11 +210,6 @@ const allRoutes: RouteRecordRaw[] = [
         path: '/knowledge',
         component: () => import('@/views/knowledge/KnowledgeBasePage.vue')
     },
-    {
-        name: 'Citation Lab',
-        path: '/knowledge/citation-lab',
-        component: () => import('@/views/knowledge/CitationLabPage.vue')
-    },
 
     {
         name: 'Skills Management',
@@ -696,6 +691,14 @@ const allRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/review-board/MergeRequestBoard.vue')
     }
 ];
+
+// 로컬 확인용 화면: src/views/_lab/ 은 gitignore 되어 있고, 개발 서버에서 거기 둔 파일만 /lab/<이름> 으로 붙는다.
+const labPages = import.meta.env.DEV ? import.meta.glob('../views/_lab/*.vue') : {};
+for (const [file, component] of Object.entries(labPages)) {
+    const name = file.split('/').pop()!.replace(/\.vue$/, '');
+    const slug = name.replace(/Page$/, '').replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+    allRoutes.push({ name: `Lab ${name}`, path: `/lab/${slug}`, component } as RouteRecordRaw);
+}
 
 const MainRoutes = {
     path: '/main',

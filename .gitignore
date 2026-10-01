@@ -126,3 +126,6 @@ test-results/
 # 스크린샷
 Screenshot*.png
 dist-mobile
+
+# 로컬 확인용 화면(개발 서버에서만 /lab/<이름> 으로 붙는다)
+src/views/_lab/
